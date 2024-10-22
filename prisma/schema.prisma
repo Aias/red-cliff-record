@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Extract {
+  id String @id @default(cuid())
+  title String
+  extract String?
+  creators Creator[] @relation("ExtractCreators")
+  spaces Space[] @relation("ExtractSpaces")
+  notes String?
+  sourceUrl String?
+  michelinStars Int?
+  formatId String?
+  format ExtractFormat? @relation(fields: [formatId], references: [id])
+  parentId String?
+  parent Extract? @relation("ParentChild", fields: [parentId], references: [id])
+  children Extract[] @relation("ParentChild")
+  relatedTo ExtractRelation[] @relation("relatedTo")
+  relatedFrom ExtractRelation[] @relation("relatedFrom")
+  attachments Attachment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  publishedOn DateTime?
+}
+
+model ExtractRelation {
+  fromId String
+  from Extract @relation("relatedFrom", fields: [fromId], references: [id])
+  toId String
+  to Extract @relation("relatedTo", fields: [toId], references: [id])
+  annotation String?
+
+  @@id([fromId, toId])
+}
+
+model ExtractFormat {
+  id String @id @default(cuid())
+  name String
+  extracts Extract[]
+}
+
+model Attachment {
+  id String @id @default(cuid())
+  url String
+  caption String?
+  extractId String
+  extract Extract @relation(fields: [extractId], references: [id])
+}
+
+model Creator {
+  id String @id @default(cuid())
+  name String
+  siteUrl String?
+  extracts Extract[] @relation("ExtractCreators")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Space {
+  id String @id @default(cuid())
+  topic String
+  title String?
+  icon String?
+  description String?
+  extracts Extract[] @relation("ExtractSpaces")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
