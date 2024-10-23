@@ -671,7 +671,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prisma/client@npm:5.21.1":
+"@prisma/client@npm:^5.21.1":
   version: 5.21.1
   resolution: "@prisma/client@npm:5.21.1"
   peerDependencies:
@@ -1288,7 +1288,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "barnsworthburning@workspace:."
   dependencies:
-    "@prisma/client": "npm:5.21.1"
+    "@prisma/client": "npm:^5.21.1"
     "@radix-ui/colors": "npm:^3.0.0"
     "@sveltejs/adapter-cloudflare": "npm:4.7.3"
     "@sveltejs/kit": "npm:^2.7.2"
