@@ -27,6 +27,7 @@ model Extract {
   format ExtractFormat? @relation(fields: [formatId], references: [id])
   parentId String?
   parent Extract? @relation("ParentChild", fields: [parentId], references: [id])
+  childOrder Int @default(0)
   children Extract[] @relation("ParentChild")
   relatedTo ExtractRelation[] @relation("relatedTo")
   relatedFrom ExtractRelation[] @relation("relatedFrom")

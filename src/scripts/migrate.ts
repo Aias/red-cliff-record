@@ -1,0 +1,223 @@
+import { PrismaClient } from '@prisma/client';
+import Airtable, { type Attachment } from 'airtable';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const prisma = new PrismaClient();
+
+Airtable.configure({
+	apiKey: process.env.VITE_AIRTABLE_ACCESS_TOKEN
+});
+
+const base = Airtable.base('appNAUPSEyCYlPtvG');
+
+const LARGE_BATCH_SIZE = 1000;
+const SMALL_BATCH_SIZE = 50;
+const MIGRATE_CREATORS = false;
+const MIGRATE_SPACES = false;
+const MIGRATE_EXTRACTS = true;
+
+async function migrateCreators() {
+	try {
+		await prisma.creator.deleteMany({});
+		console.log('Creator table cleared');
+
+		const creators = await base('creators').select().all();
+		const creatorData = creators.map((record) => ({
+			id: record.id,
+			name: record.get('name') as string,
+			siteUrl: record.get('site') as string,
+			createdAt: new Date(record.get('createdTime') as string),
+			updatedAt: new Date(record.get('lastUpdated') as string)
+		}));
+
+		// Create creators
+		for (let i = 0; i < creatorData.length; i += LARGE_BATCH_SIZE) {
+			const batch = creatorData.slice(i, i + LARGE_BATCH_SIZE);
+			await prisma.creator.createMany({
+				data: batch,
+				skipDuplicates: true
+			});
+			console.log(`Processed ${i + batch.length} creators`);
+		}
+
+		console.log('Creators migrated successfully');
+	} catch (error) {
+		console.error('Error migrating creators:', error);
+	}
+}
+
+async function migrateSpaces() {
+	try {
+		await prisma.space.deleteMany({});
+		console.log('Space table cleared');
+
+		const spaces = await base('spaces').select().all();
+		const spaceData = spaces.map((record) => ({
+			id: record.id,
+			topic: record.get('topic') as string,
+			title: record.get('title') as string,
+			icon: record.get('icon') as string,
+			description: record.get('description') as string,
+			createdAt: new Date(record.get('createdTime') as string),
+			updatedAt: new Date(record.get('lastUpdated') as string)
+		}));
+
+		// Create spaces
+		for (let i = 0; i < spaceData.length; i += LARGE_BATCH_SIZE) {
+			const batch = spaceData.slice(i, i + LARGE_BATCH_SIZE);
+			await prisma.space.createMany({
+				data: batch,
+				skipDuplicates: true
+			});
+			console.log(`Processed ${i + batch.length} spaces`);
+		}
+
+		console.log('Spaces migrated successfully');
+	} catch (error) {
+		console.error('Error migrating spaces:', error);
+	}
+}
+
+async function migrateExtracts() {
+	try {
+		await prisma.extractRelation.deleteMany({});
+		await prisma.extractFormat.deleteMany({});
+		await prisma.attachment.deleteMany({});
+		await prisma.extract.deleteMany({});
+		console.log('Extract-related tables cleared');
+
+		const extracts = await base('extracts').select().all();
+		const uniqueFormats = new Set<string>();
+
+		// Step 1: Prepare non-relational data
+		const extractData = extracts.map((record) => {
+			const format = record.get('format') as string;
+			if (format) uniqueFormats.add(format);
+
+			return {
+				id: record.id,
+				title: record.get('title') as string,
+				extract: record.get('extract') as string,
+				notes: record.get('notes') as string,
+				sourceUrl: record.get('source') as string,
+				michelinStars: record.get('michelinStars') as number,
+				createdAt: new Date(record.get('extractedOn') as string),
+				updatedAt: new Date(record.get('lastUpdated') as string),
+				publishedOn: new Date(record.get('publishedOn') as string)
+			};
+		});
+
+		// Step 2: Create ExtractFormat records in batches
+		const formatData = Array.from(uniqueFormats).map((format) => ({ name: format }));
+
+		await Promise.all([
+			// Create ExtractFormat records
+			(async () => {
+				for (let i = 0; i < formatData.length; i += LARGE_BATCH_SIZE) {
+					const batch = formatData.slice(i, i + LARGE_BATCH_SIZE);
+					await prisma.extractFormat.createMany({
+						data: batch,
+						skipDuplicates: true
+					});
+					console.log(`Processed ${i + batch.length} extract formats`);
+				}
+			})(),
+			// Create Extract records
+			(async () => {
+				for (let i = 0; i < extractData.length; i += LARGE_BATCH_SIZE) {
+					const batch = extractData.slice(i, i + LARGE_BATCH_SIZE);
+					await prisma.extract.createMany({
+						data: batch,
+						skipDuplicates: true
+					});
+					console.log(`Processed ${i + batch.length} extracts`);
+				}
+			})()
+		]);
+
+		// Step 4: Update relations in small, parallelized batches
+		const formatMap = new Map((await prisma.extractFormat.findMany()).map((f) => [f.name, f.id]));
+
+		for (let i = 0; i < extracts.length; i += SMALL_BATCH_SIZE) {
+			const batch = extracts.slice(i, i + SMALL_BATCH_SIZE);
+			const updatePromises = batch.map(async (record) => {
+				const creators = record.get('creators') as string[] | undefined;
+				const spaces = record.get('spaces') as string[] | undefined;
+				const parent = record.get('parent') as string[] | undefined;
+				const updateData = {
+					where: { id: record.id },
+					data: {
+						formatId: record.get('format') ? formatMap.get(record.get('format') as string) : null,
+						creators: {
+							set: creators?.map((id) => ({ id })) || []
+						},
+						spaces: {
+							set: spaces?.map((id) => ({ id })) || []
+						},
+						parentId: parent?.[0] || null
+					}
+				};
+
+				await prisma.extract.update(updateData);
+				console.log(`Updated relations for ${record.get('title')}`);
+			});
+
+			await Promise.all(updatePromises);
+		}
+
+		// Step 5: Create ExtractRelation records
+		const relationData = extracts.flatMap((record) =>
+			((record.get('connections') as string[] | undefined) || []).map((connectionId) => ({
+				fromId: record.id,
+				toId: connectionId
+			}))
+		);
+
+		for (let i = 0; i < relationData.length; i += LARGE_BATCH_SIZE) {
+			const batch = relationData.slice(i, i + LARGE_BATCH_SIZE);
+			await prisma.extractRelation.createMany({
+				data: batch,
+				skipDuplicates: true
+			});
+			console.log(`Processed ${i + batch.length} extract relations`);
+		}
+
+		// Step 6: Create Attachment records
+		console.log('Creating Attachment records...');
+		const attachmentData = extracts.flatMap((record) => {
+			const images = (record.get('images') as Attachment[] | undefined) || [];
+			const imageCaption = record.get('imageCaption') as string | undefined;
+			return images?.map((image) => ({
+				id: image.id,
+				url: image.url,
+				caption: imageCaption,
+				extractId: record.id
+			}));
+		});
+
+		for (let i = 0; i < attachmentData.length; i += LARGE_BATCH_SIZE) {
+			const batch = attachmentData.slice(i, i + LARGE_BATCH_SIZE);
+			await prisma.attachment.createMany({
+				data: batch,
+				skipDuplicates: true
+			});
+			console.log(`Processed ${i + batch.length} attachments`);
+		}
+
+		console.log('Extract migration completed successfully');
+	} catch (error) {
+		console.error('Error during migration:', error);
+	} finally {
+		await prisma.$disconnect();
+	}
+}
+
+async function migrateAll() {
+	if (MIGRATE_CREATORS) await migrateCreators();
+	if (MIGRATE_SPACES) await migrateSpaces();
+	if (MIGRATE_EXTRACTS) await migrateExtracts();
+}
+
+migrateAll();
