@@ -91,10 +91,29 @@ async function migrateExtracts() {
 		const extracts = await base('extracts').select().all();
 		const uniqueFormats = new Set<string>();
 
+		// Create a map of extracts for quick lookup
+		const extractMap = new Map(extracts.map((record) => [record.id, record]));
+
 		// Step 1: Prepare non-relational data
 		const extractData = extracts.map((record) => {
 			const format = record.get('format') as string;
 			if (format) uniqueFormats.add(format);
+
+			const parentId = (record.get('parent') as string[] | undefined)?.[0];
+			let childOrder = 0;
+
+			if (parentId) {
+				const parentRecord = extractMap.get(parentId);
+				if (parentRecord) {
+					const childrenArray = parentRecord.get('children') as string[] | undefined;
+					if (childrenArray) {
+						const childIndex = childrenArray.indexOf(record.id);
+						if (childIndex !== -1) {
+							childOrder = childIndex;
+						}
+					}
+				}
+			}
 
 			return {
 				id: record.id,
@@ -105,7 +124,8 @@ async function migrateExtracts() {
 				michelinStars: record.get('michelinStars') as number,
 				createdAt: new Date(record.get('extractedOn') as string),
 				updatedAt: new Date(record.get('lastUpdated') as string),
-				publishedOn: new Date(record.get('publishedOn') as string)
+				publishedOn: new Date(record.get('publishedOn') as string),
+				childOrder: childOrder
 			};
 		});
 
