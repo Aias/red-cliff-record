@@ -22,13 +22,21 @@ model Extract {
   publishedOn   DateTime?
   childOrder    Int               @default(0)
   attachments   Attachment[]
-  format        ExtractFormat    @relation(fields: [formatId], references: [id])
+  format        ExtractFormat     @relation(fields: [formatId], references: [id])
   parent        Extract?          @relation("ParentChild", fields: [parentId], references: [id])
   children      Extract[]         @relation("ParentChild")
   relatedFrom   ExtractRelation[] @relation("relatedFrom")
   relatedTo     ExtractRelation[] @relation("relatedTo")
   creators      Creator[]         @relation("ExtractCreators")
   spaces        Space[]           @relation("ExtractSpaces")
+
+  // Basic indexes
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([publishedOn])
+  // Composite indexes for common queries
+  @@index([publishedOn, createdAt]) // For ordering and filtering
+  @@index([parentId, childOrder]) // For ordering children
 }
 
 model ExtractRelation {
@@ -39,12 +47,15 @@ model ExtractRelation {
   to         Extract @relation("relatedTo", fields: [toId], references: [id])
 
   @@id([fromId, toId])
+  @@index([annotation])
 }
 
 model ExtractFormat {
   id       String    @id @default(cuid())
   name     String
   extracts Extract[]
+
+  @@index([name])
 }
 
 model Attachment {
@@ -55,6 +66,8 @@ model Attachment {
   extractId String
   extension String?
   extract   Extract @relation(fields: [extractId], references: [id])
+
+  @@index([extension])
 }
 
 model Creator {
@@ -64,6 +77,10 @@ model Creator {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   extracts  Extract[] @relation("ExtractCreators")
+
+  @@index([name])
+  @@index([createdAt])
+  @@index([updatedAt])
 }
 
 model Space {
@@ -75,4 +92,8 @@ model Space {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   extracts    Extract[] @relation("ExtractSpaces")
+
+  @@index([topic])
+  @@index([createdAt])
+  @@index([updatedAt])
 }

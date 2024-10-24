@@ -8,7 +8,6 @@ import {
 	type IExtract
 } from '$types/Airtable';
 import { prisma } from '$lib/server/prisma';
-import { type Extract } from '@prisma/client';
 import markdown from '$helpers/markdown';
 import { getArticle, combineAsList } from '$helpers/grammar';
 import xmlFormatter from 'xml-formatter';
