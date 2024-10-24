@@ -7,6 +7,8 @@ import {
 	type IBaseExtract,
 	type IExtract
 } from '$types/Airtable';
+import { prisma } from '$lib/server/prisma';
+import { type Extract } from '@prisma/client';
 import markdown from '$helpers/markdown';
 import { getArticle, combineAsList } from '$helpers/grammar';
 import xmlFormatter from 'xml-formatter';
@@ -69,8 +71,7 @@ const generateContentMarkup = (extract: IExtract, isChild: boolean = false) => {
 		markup += '<ul>\n';
 		markup += connections
 			.map(
-				(connection) =>
-					`<li>${makeSiteLink(`extracts/${connection.id}`, connection.name)}</li>\n`
+				(connection) => `<li>${makeSiteLink(`extracts/${connection.id}`, connection.name)}</li>\n`
 			)
 			.join('');
 		markup += '</ul>\n';
@@ -137,8 +138,7 @@ const atom = (entries: IExtract[] = [], children: IExtract[] = []) => {
 	${meta.tags.map((tag) => `<category term="${tag}" />`).join('\n')}
 	${entries
 		.map((extract) => {
-			const { title, id, creators, source, lastUpdated, publishedOn, spaces, images } =
-				extract;
+			const { title, id, creators, source, lastUpdated, publishedOn, spaces, images } = extract;
 			const extractChildren =
 				extract.children
 					?.map((child) => children.find((entry) => entry.id === child.id))
@@ -197,6 +197,26 @@ export async function GET() {
 		fields: extractFields
 	};
 	const extracts = await airtableFetch<IBaseExtract>(Table.Extracts, fetchEntryOptions);
+	const dbExtracts = await prisma.extract.findMany({
+		where: {
+			publishedOn: {
+				not: null
+			},
+			OR: [
+				{
+					parentId: null
+				},
+				{
+					children: {
+						some: {}
+					}
+				}
+			]
+		},
+		take: 30,
+		orderBy: [{ publishedOn: 'desc' }, { createdAt: 'desc' }]
+	});
+	console.log(dbExtracts);
 	const feedEntries = extracts.map(mapExtractRecord);
 	const parentIds = feedEntries.map((extract) => extract.id).join(',');
 

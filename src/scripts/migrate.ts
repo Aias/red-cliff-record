@@ -13,9 +13,9 @@ Airtable.configure({
 const base = Airtable.base('appNAUPSEyCYlPtvG');
 
 const LARGE_BATCH_SIZE = 1000;
-const SMALL_BATCH_SIZE = 50;
-const MIGRATE_CREATORS = false;
-const MIGRATE_SPACES = false;
+const SMALL_BATCH_SIZE = 100;
+const MIGRATE_CREATORS = true;
+const MIGRATE_SPACES = true;
 const MIGRATE_EXTRACTS = true;
 
 async function migrateCreators() {
