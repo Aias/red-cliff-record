@@ -213,10 +213,26 @@ export async function GET() {
 				}
 			]
 		},
+		include: {
+			format: true,
+			attachments: true,
+			creators: {
+				select: {
+					id: true,
+					name: true
+				}
+			},
+			spaces: {
+				select: {
+					id: true,
+					topic: true
+				}
+			}
+		},
 		take: 30,
 		orderBy: [{ publishedOn: 'desc' }, { createdAt: 'desc' }]
 	});
-	console.log(dbExtracts);
+	console.log(dbExtracts.slice(0, 2));
 	const feedEntries = extracts.map(mapExtractRecord);
 	const parentIds = feedEntries.map((extract) => extract.id).join(',');
 
