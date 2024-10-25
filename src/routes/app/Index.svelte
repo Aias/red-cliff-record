@@ -2,12 +2,12 @@
 	import { page } from '$app/stores';
 	import { entityTypes, type EntityType } from '$helpers/params';
 	import Link from '$components/Link.svelte';
-	import type { ICreator, ISpace } from '$types/Airtable';
+	import type { CreatorSearchResult, SpaceSearchResult } from '$lib/queries';
 	import type { HTMLOlAttributes } from 'svelte/elements';
 
 	interface IndexProps extends HTMLOlAttributes {
-		creators: ICreator[];
-		spaces: ISpace[];
+		creators: CreatorSearchResult[];
+		spaces: SpaceSearchResult[];
 	}
 	let { creators, spaces, ...restProps }: IndexProps = $props();
 
@@ -25,13 +25,13 @@
 			type: entityTypes.creator,
 			name: c.name || 'Unknown',
 			id: c.id,
-			count: c.numExtracts
+			count: c._count.extracts
 		}));
 		const spaceEntries = spaces.map((s) => ({
 			type: entityTypes.space,
 			name: s.topic || 'general',
 			id: s.id,
-			count: s.numExtracts
+			count: s._count.extracts
 		}));
 		const all = [...creatorEntries, ...spaceEntries].sort(sortByName);
 

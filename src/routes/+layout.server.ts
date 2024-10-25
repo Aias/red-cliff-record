@@ -1,17 +1,28 @@
-import { createApi } from '$lib/api';
+import { creatorInclude, spaceInclude } from '$lib/queries.js';
+import { prisma } from '$lib/server/prisma';
 
-export async function load({ fetch }) {
-	const api = createApi(fetch);
-
+export async function load({}) {
 	const [creators, spaces] = await Promise.all([
-		api.creators.list(),
-		api.spaces.list()
-		// api.extracts.list(),
+		prisma.creator.findMany({
+			include: creatorInclude,
+			orderBy: {
+				extracts: {
+					_count: 'desc'
+				}
+			},
+			take: 100
+		}),
+		prisma.space.findMany({
+			include: spaceInclude,
+			orderBy: {
+				extracts: { _count: 'desc' }
+			},
+			take: 100
+		})
 	]);
 
 	return {
 		creators,
-		spaces,
-		extracts: undefined
+		spaces
 	};
 }
