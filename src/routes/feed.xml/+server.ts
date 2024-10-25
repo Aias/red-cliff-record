@@ -1,59 +1,116 @@
-import { mapExtractRecord } from '$helpers/mapping';
-import { airtableFetch } from '$lib/server/requests';
-import {
-	extractFields,
-	ExtractView,
-	Table,
-	type IBaseExtract,
-	type IExtract
-} from '$types/Airtable';
 import { prisma } from '$lib/server/prisma';
 import markdown from '$helpers/markdown';
 import { getArticle, combineAsList } from '$helpers/grammar';
 import xmlFormatter from 'xml-formatter';
 
+const feedQuery = () => {
+	// First define the include structure separately
+	const extractInclude = {
+		format: true,
+		attachments: true,
+		creators: {
+			select: {
+				id: true,
+				name: true
+			}
+		},
+		spaces: {
+			select: {
+				id: true,
+				topic: true
+			}
+		},
+		parent: true,
+		connectedTo: {
+			include: {
+				to: {
+					select: {
+						id: true,
+						title: true
+					}
+				}
+			}
+		}
+	} as const;
+
+	// Add children with the same include structure
+	const recursiveInclude = {
+		...extractInclude,
+		children: {
+			include: extractInclude
+		}
+	} as const;
+
+	// Use in query
+	const query = prisma.extract.findMany({
+		where: {
+			publishedOn: {
+				not: null
+			},
+			OR: [
+				{
+					parentId: null
+				},
+				{
+					children: {
+						some: {}
+					}
+				}
+			]
+		},
+		include: recursiveInclude,
+		take: 30,
+		orderBy: [{ publishedOn: 'desc' }, { createdAt: 'desc' }]
+	});
+	return query;
+};
+type FeedItem = Awaited<ReturnType<typeof feedQuery>>[number];
+
 const makeSiteLink = (relativePath: string, title: string) =>
 	`<a href="${meta.url}/${relativePath}">${title}</a>`;
 
-const generateContentMarkup = (extract: IExtract, isChild: boolean = false) => {
+const generateContentMarkup = (extract: FeedItem, isChild: boolean = false) => {
 	const {
 		extract: content,
 		notes,
 		format,
-		source,
-		images,
-		imageCaption,
+		sourceUrl,
+		attachments,
 		creators,
-		connections,
+		connectedTo,
 		spaces,
 		parent
 	} = extract;
-	let type = (format || 'extract').toLowerCase();
+	let type = (format ? format.name : 'extract').toLowerCase();
 	let markup = '<article>\n';
 	if (!isChild) {
 		markup += '<header>\n';
 		markup += '<p>';
 		markup += `${getArticle(type)} <strong>${type}</strong>`;
-		if (creators) {
+		if (creators.length > 0) {
 			const creatorsMarkup = markdown.parseInline(
 				combineAsList(creators.map((c) => `[${c.name}](${meta.url}/creators/${c.id})`))
 			);
 			markup += ` by ${creatorsMarkup}`;
 		}
 		if (parent) {
-			markup += ` from <em>${parent.name}</em>`;
+			markup += ` from <em>${parent.title}</em>`;
 		}
 		markup += '.</p>\n';
 		markup += '</header>\n';
 	}
 	markup += '<section>\n';
-	if (images) {
+	if (attachments) {
 		markup += '<figure>\n';
-		markup += images
-			.map(({ url, filename }) => `<img src="${url}" alt="${filename}" />\n`)
+		markup += attachments
+			.map(
+				({ id, extension }) =>
+					`<img src="https://assets.barnsworthburning.net/${id}${extension}" alt="Alt text for all images coming soon!" />\n`
+			)
 			.join('');
-		if (imageCaption) {
-			markup += `<figcaption>${markdown.parse(imageCaption)}</figcaption>\n`;
+		const caption = attachments[0]?.caption;
+		if (caption) {
+			markup += `<figcaption>${markdown.parse(caption)}</figcaption>\n`;
 		}
 		markup += '</figure>\n';
 	}
@@ -62,23 +119,24 @@ const generateContentMarkup = (extract: IExtract, isChild: boolean = false) => {
 		markup += markdown.parse(content);
 		markup += '</blockquote>\n';
 	}
-	if (source) {
-		markup += `<p>[<a href="${source}">Source</a>]</p>\n`;
+	if (sourceUrl) {
+		markup += `<p>[<a href="${sourceUrl}">Source</a>]</p>\n`;
 	}
-	if (connections) {
+	if (connectedTo.length > 0) {
 		markup += '<p>Related:</p>\n';
 		markup += '<ul>\n';
-		markup += connections
+		markup += connectedTo
 			.map(
-				(connection) => `<li>${makeSiteLink(`extracts/${connection.id}`, connection.name)}</li>\n`
+				(connection) =>
+					`<li>${makeSiteLink(`extracts/${connection.to.id}`, connection.to.title)}</li>\n`
 			)
 			.join('');
 		markup += '</ul>\n';
 	}
-	if (spaces) {
+	if (spaces.length > 0) {
 		markup += `<p>\n<small>`;
 		markup += spaces
-			.map((space) => makeSiteLink(`spaces/${space.id}`, `#${space.name}`))
+			.map((space) => makeSiteLink(`spaces/${space.id}`, `#${space.topic}`))
 			.join(' • ');
 		markup += `</small>\n</p>\n`;
 	}
@@ -96,6 +154,37 @@ const cleanLink = (link: string) => {
 	return link.replace(/&/g, '&amp;');
 };
 
+const extensionToMimeType = (extension?: string | null) => {
+	if (!extension) return 'image';
+	let ext = extension.toLowerCase().replace('.', '');
+	switch (ext) {
+		case 'jpg':
+		case 'jpeg':
+			return 'image/jpeg';
+		case 'png':
+			return 'image/png';
+		case 'gif':
+			return 'image/gif';
+		case 'bmp':
+			return 'image/bmp';
+		case 'webp':
+			return 'image/webp';
+		case 'svg':
+			return 'image/svg+xml';
+		case 'tiff':
+		case 'tif':
+			return 'image/tiff';
+		case 'ico':
+			return 'image/x-icon';
+		case 'heic':
+			return 'image/heic';
+		case 'heif':
+			return 'image/heif';
+		default:
+			return 'image';
+	}
+};
+
 const meta = {
 	title: 'barnsworthburning',
 	description: 'A commonplace book.',
@@ -108,14 +197,16 @@ const meta = {
 	url: 'https://barnsworthburning.net'
 };
 
-const atom = (entries: IExtract[] = [], children: IExtract[] = []) => {
+const atom = async () => {
+	const extracts = await feedQuery();
+
 	const feedUpdated = new Date(
 		Math.max(
-			...entries.map((entry) =>
+			...extracts.map((entry) =>
 				Math.max(
-					new Date(entry.lastUpdated).getTime(),
-					new Date(entry.publishedOn).getTime(),
-					new Date(entry.extractedOn).getTime()
+					entry.updatedAt ? new Date(entry.updatedAt).getTime() : 0,
+					entry.publishedOn ? new Date(entry.publishedOn).getTime() : 0,
+					entry.createdAt ? new Date(entry.createdAt).getTime() : 0
 				)
 			)
 		)
@@ -135,13 +226,20 @@ const atom = (entries: IExtract[] = [], children: IExtract[] = []) => {
     </author>
     <updated>${feedUpdated}</updated>
 	${meta.tags.map((tag) => `<category term="${tag}" />`).join('\n')}
-	${entries
+	${extracts
 		.map((extract) => {
-			const { title, id, creators, source, lastUpdated, publishedOn, spaces, images } = extract;
-			const extractChildren =
-				extract.children
-					?.map((child) => children.find((entry) => entry.id === child.id))
-					.filter((child): child is IExtract => !!child) || [];
+			const {
+				title,
+				id,
+				creators,
+				sourceUrl,
+				updatedAt,
+				publishedOn,
+				createdAt,
+				spaces,
+				attachments,
+				children
+			} = extract;
 
 			let entry = `<entry>`;
 			entry += `<id>${meta.url}/extracts/${id}</id>`;
@@ -151,32 +249,32 @@ const atom = (entries: IExtract[] = [], children: IExtract[] = []) => {
 					.map((creator) => `<author><name><![CDATA[${creator.name}]]></name></author>`)
 					.join('\n');
 			}
-			entry += `<published>${new Date(publishedOn).toISOString()}</published>`;
-			entry += `<updated>${new Date(Math.max(new Date(publishedOn).getTime(), new Date(lastUpdated).getTime())).toISOString()}</updated>`;
+			entry += `<published>${new Date(publishedOn ?? updatedAt ?? createdAt).toISOString()}</published>`;
+			entry += `<updated>${new Date(Math.max(publishedOn ? new Date(publishedOn).getTime() : 0, updatedAt ? new Date(updatedAt).getTime() : 0)).toISOString()}</updated>`;
 			entry += `<link rel="alternate" href="${meta.url}/extracts/${id}" />`;
-			if (source) {
-				entry += `<link rel="via" href="${cleanLink(source)}" />`;
+			if (sourceUrl) {
+				entry += `<link rel="via" href="${cleanLink(sourceUrl)}" />`;
 			}
-			if (images) {
-				entry += images
+			if (attachments) {
+				entry += attachments
 					.map(
-						(image) =>
-							`<link rel="enclosure" href="${cleanLink(image.url)}" type="${image.type}" />`
+						(attachment) =>
+							`<link rel="enclosure" href="${cleanLink(`https://assets.barnsworthburning.net/${attachment.id}${attachment.extension}`)}" type="${extensionToMimeType(attachment.extension)}" />`
 					)
 					.join('\n');
 			}
 			if (spaces) {
-				entry += spaces.map((space) => `<category term="${space.name}" />`).join('\n');
+				entry += spaces.map((space) => `<category term="${space.topic}" />`).join('\n');
 			}
 			entry += `<content type="html"><![CDATA[`;
 			entry += generateContentMarkup(extract);
-			if (extractChildren.length) {
-				entry += extractChildren
+			if (children.length) {
+				entry += children
 					.map((child) => {
 						const { title } = child;
 						let childMarkup = `<br><hr><br>`;
 						childMarkup += `<h3>${title}</h3>`;
-						childMarkup += generateContentMarkup(child, true);
+						childMarkup += generateContentMarkup(child as FeedItem, true);
 						return childMarkup;
 					})
 					.join('\n');
@@ -190,59 +288,8 @@ const atom = (entries: IExtract[] = [], children: IExtract[] = []) => {
 };
 
 export async function GET() {
-	const fetchEntryOptions = {
-		view: ExtractView.Feed,
-		maxRecords: 30,
-		fields: extractFields
-	};
-	const extracts = await airtableFetch<IBaseExtract>(Table.Extracts, fetchEntryOptions);
-	const dbExtracts = await prisma.extract.findMany({
-		where: {
-			publishedOn: {
-				not: null
-			},
-			OR: [
-				{
-					parentId: null
-				},
-				{
-					children: {
-						some: {}
-					}
-				}
-			]
-		},
-		include: {
-			format: true,
-			attachments: true,
-			creators: {
-				select: {
-					id: true,
-					name: true
-				}
-			},
-			spaces: {
-				select: {
-					id: true,
-					topic: true
-				}
-			}
-		},
-		take: 30,
-		orderBy: [{ publishedOn: 'desc' }, { createdAt: 'desc' }]
-	});
-	console.log(dbExtracts.slice(0, 2));
-	const feedEntries = extracts.map(mapExtractRecord);
-	const parentIds = feedEntries.map((extract) => extract.id).join(',');
-
-	const fetchChildOptions = {
-		filterByFormula: `AND(parent, FIND(ARRAYJOIN(parentId), '${parentIds}') > 0)`,
-		fields: extractFields
-	};
-	const childExtracts = await airtableFetch<IBaseExtract>(Table.Extracts, fetchChildOptions);
-	const entryChildren = childExtracts.map(mapExtractRecord);
-
-	const responseBody = xmlFormatter(atom(feedEntries, entryChildren), {
+	const atomContent = await atom();
+	const responseBody = xmlFormatter(atomContent, {
 		collapseContent: true
 	});
 	const responseOptions = {

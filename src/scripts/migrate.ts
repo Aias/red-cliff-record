@@ -124,7 +124,7 @@ async function migrateExtracts() {
 				michelinStars: record.get('michelinStars') as number,
 				createdAt: new Date(record.get('extractedOn') as string),
 				updatedAt: new Date(record.get('lastUpdated') as string),
-				publishedOn: new Date(record.get('publishedOn') as string),
+				publishedOn: record.get('published') ? new Date(record.get('publishedOn') as string) : null,
 				childOrder: childOrder
 			};
 		});

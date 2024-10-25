@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs/promises';
 import path from 'path';
+import { extensions } from './helpers';
 
 const prisma = new PrismaClient();
 
@@ -13,13 +14,15 @@ async function setAttachmentTypes() {
 		const extensionMap: { [key: string]: string[] } = {};
 
 		for (const file of files) {
-			const ext = path.extname(file);
-			const attachmentId = path.basename(file, ext);
+			const ext = path.extname(file).toLowerCase();
+			if (ext in extensions) {
+				const attachmentId = path.basename(file, ext);
 
-			if (!extensionMap[ext]) {
-				extensionMap[ext] = [];
+				if (!extensionMap[ext]) {
+					extensionMap[ext] = [];
+				}
+				extensionMap[ext].push(attachmentId);
 			}
-			extensionMap[ext].push(attachmentId);
 		}
 
 		// Update the database in bulk for each extension

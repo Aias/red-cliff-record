@@ -7,6 +7,7 @@ import {
 import dotenv from 'dotenv';
 import fs from 'fs/promises';
 import path from 'path';
+import { getContentTypeFromExtension } from './helpers';
 
 dotenv.config();
 
@@ -77,20 +78,6 @@ async function uploadAttachment(tempDir: string, filename: string) {
 	} catch (error) {
 		console.error(`Error uploading ${filename}:`, error);
 	}
-}
-
-function getContentTypeFromExtension(extension: string): string {
-	const extToMime: { [key: string]: string } = {
-		'.jpg': 'image/jpeg',
-		'.jpeg': 'image/jpeg',
-		'.png': 'image/png',
-		'.gif': 'image/gif',
-		'.webp': 'image/webp',
-		'.svg': 'image/svg+xml'
-		// Add more extensions as needed
-	};
-
-	return extToMime[extension.toLowerCase()] || 'application/octet-stream';
 }
 
 uploadAttachments();

@@ -2,6 +2,7 @@ import Airtable, { type Attachment } from 'airtable';
 import dotenv from 'dotenv';
 import fs from 'fs/promises';
 import path from 'path';
+import { getExtensionFromContentType } from './helpers';
 
 dotenv.config();
 
@@ -75,22 +76,6 @@ function getFileExtension(image: Attachment): string {
 
 	// If no extension in filename, try to infer from type
 	return getExtensionFromContentType(image.type) || '';
-}
-
-function getExtensionFromContentType(contentType: string | null): string | null {
-	if (!contentType) return null;
-
-	const mimeToExt: { [key: string]: string } = {
-		'image/jpg': '.jpg',
-		'image/jpeg': '.jpg',
-		'image/png': '.png',
-		'image/gif': '.gif',
-		'image/webp': '.webp',
-		'image/svg+xml': '.svg'
-		// Add more mime types as needed
-	};
-
-	return mimeToExt[contentType] || null;
 }
 
 downloadAttachments();

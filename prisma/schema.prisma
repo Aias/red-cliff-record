@@ -8,6 +8,11 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// datasource db {
+//   provider  = "sqlite"
+//   url       = "file:./data.db"
+// }
+
 model Extract {
   id            String            @id @default(cuid())
   title         String
@@ -15,18 +20,18 @@ model Extract {
   notes         String?
   sourceUrl     String?
   michelinStars Int               @default(0)
-  formatId      String
+  formatId      String?
   parentId      String?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   publishedOn   DateTime?
   childOrder    Int               @default(0)
   attachments   Attachment[]
-  format        ExtractFormat     @relation(fields: [formatId], references: [id])
+  format        ExtractFormat?    @relation(fields: [formatId], references: [id])
   parent        Extract?          @relation("ParentChild", fields: [parentId], references: [id])
   children      Extract[]         @relation("ParentChild")
-  relatedFrom   ExtractRelation[] @relation("relatedFrom")
-  relatedTo     ExtractRelation[] @relation("relatedTo")
+  connectedFrom ExtractRelation[] @relation("target")
+  connectedTo   ExtractRelation[] @relation("source")
   creators      Creator[]         @relation("ExtractCreators")
   spaces        Space[]           @relation("ExtractSpaces")
 
@@ -43,8 +48,8 @@ model ExtractRelation {
   fromId     String
   toId       String
   annotation String?
-  from       Extract @relation("relatedFrom", fields: [fromId], references: [id])
-  to         Extract @relation("relatedTo", fields: [toId], references: [id])
+  from       Extract @relation("source", fields: [fromId], references: [id])
+  to         Extract @relation("target", fields: [toId], references: [id])
 
   @@id([fromId, toId])
   @@index([annotation])
