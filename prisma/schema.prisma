@@ -3,15 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider  = "sqlite"
+  url       = "file:./data.db"
 }
-
-// datasource db {
-//   provider  = "sqlite"
-//   url       = "file:./data.db"
-// }
 
 model Extract {
   id            String            @id @default(cuid())

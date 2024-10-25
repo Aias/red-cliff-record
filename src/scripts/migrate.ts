@@ -36,8 +36,7 @@ async function migrateCreators() {
 		for (let i = 0; i < creatorData.length; i += LARGE_BATCH_SIZE) {
 			const batch = creatorData.slice(i, i + LARGE_BATCH_SIZE);
 			await prisma.creator.createMany({
-				data: batch,
-				skipDuplicates: true
+				data: batch
 			});
 			console.log(`Processed ${i + batch.length} creators`);
 		}
@@ -68,8 +67,7 @@ async function migrateSpaces() {
 		for (let i = 0; i < spaceData.length; i += LARGE_BATCH_SIZE) {
 			const batch = spaceData.slice(i, i + LARGE_BATCH_SIZE);
 			await prisma.space.createMany({
-				data: batch,
-				skipDuplicates: true
+				data: batch
 			});
 			console.log(`Processed ${i + batch.length} spaces`);
 		}
@@ -138,8 +136,7 @@ async function migrateExtracts() {
 				for (let i = 0; i < formatData.length; i += LARGE_BATCH_SIZE) {
 					const batch = formatData.slice(i, i + LARGE_BATCH_SIZE);
 					await prisma.extractFormat.createMany({
-						data: batch,
-						skipDuplicates: true
+						data: batch
 					});
 					console.log(`Processed ${i + batch.length} extract formats`);
 				}
@@ -149,8 +146,7 @@ async function migrateExtracts() {
 				for (let i = 0; i < extractData.length; i += LARGE_BATCH_SIZE) {
 					const batch = extractData.slice(i, i + LARGE_BATCH_SIZE);
 					await prisma.extract.createMany({
-						data: batch,
-						skipDuplicates: true
+						data: batch
 					});
 					console.log(`Processed ${i + batch.length} extracts`);
 				}
@@ -198,8 +194,7 @@ async function migrateExtracts() {
 		for (let i = 0; i < relationData.length; i += LARGE_BATCH_SIZE) {
 			const batch = relationData.slice(i, i + LARGE_BATCH_SIZE);
 			await prisma.extractRelation.createMany({
-				data: batch,
-				skipDuplicates: true
+				data: batch
 			});
 			console.log(`Processed ${i + batch.length} extract relations`);
 		}
@@ -220,8 +215,7 @@ async function migrateExtracts() {
 		for (let i = 0; i < attachmentData.length; i += LARGE_BATCH_SIZE) {
 			const batch = attachmentData.slice(i, i + LARGE_BATCH_SIZE);
 			await prisma.attachment.createMany({
-				data: batch,
-				skipDuplicates: true
+				data: batch
 			});
 			console.log(`Processed ${i + batch.length} attachments`);
 		}
