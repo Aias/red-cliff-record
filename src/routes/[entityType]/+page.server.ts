@@ -1,8 +1,6 @@
-import { createApi } from '$lib/api';
 import { error } from '@sveltejs/kit';
-
-export async function load({ fetch, params }) {
-	const api = createApi(fetch);
+import { getCreatorsList, getExtractsList, getSpacesList } from '$lib/queries';
+export async function load({ params }) {
 	const { entityType } = params;
 
 	let creatorsPromise;
@@ -11,15 +9,15 @@ export async function load({ fetch, params }) {
 
 	switch (entityType) {
 		case 'creators':
-			creatorsPromise = api.creators.list();
+			creatorsPromise = getCreatorsList();
 			break;
 
 		case 'spaces':
-			spacesPromise = api.spaces.list();
+			spacesPromise = getSpacesList();
 			break;
 
 		case 'extracts':
-			extractsPromise = api.extracts.list();
+			extractsPromise = getExtractsList();
 			break;
 
 		default:

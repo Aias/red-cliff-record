@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { entityTypes } from '$helpers/params';
 	import LinkGroup from '$components/LinkGroup.svelte';
-	import type { ICreator } from '$types/Airtable';
+	import type { CreatorListResult } from '$lib/queries';
 
 	interface CreatorListProps {
-		creators: ICreator[];
+		creators: CreatorListResult;
 	}
 	let { creators }: CreatorListProps = $props();
 </script>
@@ -16,7 +16,10 @@
 				groupType={entityTypes.creator}
 				groupId={entity.id}
 				groupName={entity.name || 'Unknown'}
-				links={entity.extracts}
+				links={entity.extracts.map((e) => ({
+					id: e.id,
+					name: e.title
+				}))}
 			/>
 		</li>
 	{/each}

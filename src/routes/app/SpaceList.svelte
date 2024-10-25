@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { entityTypes } from '$helpers/params';
 	import LinkGroup from '$components/LinkGroup.svelte';
-	import type { ISpace } from '$types/Airtable';
+	import type { SpaceListResult } from '$lib/queries';
 
 	interface SpaceListProps {
-		spaces: ISpace[];
+		spaces: SpaceListResult;
 	}
 	let { spaces }: SpaceListProps = $props();
 </script>
@@ -18,7 +18,10 @@
 				groupType={entityTypes.space}
 				groupId={id}
 				{groupName}
-				links={extracts?.slice().reverse()}
+				links={extracts.map((e) => ({
+					id: e.id,
+					name: e.title
+				}))}
 			/>
 		</li>
 	{/each}

@@ -4,10 +4,10 @@
 	import { getArticle } from '$helpers/grammar.js';
 	import Link from '$components/Link.svelte';
 	import BlockLink from '$components/BlockLink.svelte';
-	import type { IExtract } from '$types/Airtable';
+	import type { ExtractListResult } from '$lib/queries';
 
 	interface ExtractListProps {
-		extracts: IExtract[];
+		extracts: ExtractListResult;
 	}
 	let { extracts }: ExtractListProps = $props();
 </script>
@@ -19,18 +19,18 @@
 			michelinStars,
 			title,
 			creators,
-			extract: quote,
-			format = 'Fragment',
-			images,
-			imageCaption,
+			content: quote,
+			format,
+			attachments,
 			notes
 		} = extract}
+		{@const imageCaption = attachments?.[0]?.caption}
 		{@const content = quote || imageCaption || notes}
 		<BlockLink element="li">
 			<article>
 				<section>
 					<header>
-						{#if michelinStars}
+						{#if michelinStars > 0}
 							<span class="stars">
 								{#each Array(michelinStars) as _}
 									<span>⭐</span>
@@ -40,7 +40,7 @@
 						<strong class="title">
 							<Link class="main-link" toId={id} inherit>{title}</Link>
 						</strong>
-						{#if creators}
+						{#if creators.length > 0}
 							<CreatorList {creators} class="creators" />
 						{/if}
 					</header>
@@ -54,16 +54,16 @@
 						</blockquote>
 					{:else}
 						<p class="summary">
-							<span>({getArticle(format)} {format.toLowerCase()})</span>
+							<span>({getArticle(format?.name ?? 'Fragment')} {format?.name.toLowerCase()})</span>
 						</p>
 					{/if}
 				</section>
-				{#if images}
-					{@const mainImage = images[0]}
+				{#if attachments.length > 0}
+					{@const mainImage = attachments[0]}
 					<figure>
 						<img
 							src={mainImage.url}
-							alt={imageCaption ?? mainImage.filename}
+							alt={mainImage.altText || mainImage.caption || 'No alt text provided.'}
 							loading="lazy"
 						/>
 					</figure>
