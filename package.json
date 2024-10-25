@@ -23,7 +23,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"migrate": "bun run src/scripts/migrate.ts && bun run src/scripts/set-attachment-types.ts"
 	},
 	"dependencies": {
 		"@prisma/client": "^5.21.1",

@@ -25,22 +25,37 @@ async function setAttachmentTypes() {
 			}
 		}
 
-		// Update the database in bulk for each extension
-		for (const [ext, ids] of Object.entries(extensionMap)) {
-			await prisma.attachment.updateMany({
-				where: {
-					id: { in: ids }
-				},
-				data: {
-					extension: ext
-				}
-			});
-			console.log(`Updated ${ids.length} attachments with extension ${ext}`);
-		}
+		// Use a transaction to update extensions and URLs
+		await prisma.$transaction(async (tx) => {
+			// Update the database in bulk for each extension
+			for (const [ext, ids] of Object.entries(extensionMap)) {
+				await tx.attachment.updateMany({
+					where: {
+						id: { in: ids }
+					},
+					data: {
+						extension: ext
+					}
+				});
+				console.log(`Updated ${ids.length} attachments with extension ${ext}`);
+			}
 
-		console.log('All attachment types set successfully');
+			// Update URLs for all attachments
+			const attachments = await tx.attachment.findMany();
+			for (const attachment of attachments) {
+				await tx.attachment.update({
+					where: { id: attachment.id },
+					data: {
+						url: `https://assets.barnsworthburning.net/${attachment.id}${attachment.extension}`
+					}
+				});
+			}
+			console.log('Updated URLs for all attachments');
+		});
+
+		console.log('All attachment types and URLs set successfully');
 	} catch (error) {
-		console.error('Error setting attachment types:', error);
+		console.error('Error setting attachment types and URLs:', error);
 	} finally {
 		await prisma.$disconnect();
 	}
