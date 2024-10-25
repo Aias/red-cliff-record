@@ -1,8 +1,7 @@
 import { error } from '@sveltejs/kit';
-import { airtableFetch } from '$lib/server/requests';
-import { mapExtractRecord } from '$helpers/mapping';
-import { extractFields, ExtractView, type IBaseExtract, Table } from '$types/Airtable';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const MAX_RECORDS = 200;
 
 export async function load({ url }) {
@@ -12,22 +11,35 @@ export async function load({ url }) {
 			search: undefined
 		};
 	}
-	const query = decodeURIComponent(queryParam).toLowerCase().replace(/'/g, "\\'");
+	const query = queryParam.toLowerCase();
 
-	const extractResults = await airtableFetch<IBaseExtract>(Table.Extracts, {
-		view: ExtractView.Best,
-		maxRecords: MAX_RECORDS,
-		filterByFormula: `FIND('${query}', search) > 0`,
-		fields: extractFields
-	});
+	try {
+		const searchResults = await prisma.extract.findMany({
+			where: {
+				OR: [
+					{ title: { contains: query } },
+					{ extract: { contains: query } },
+					{ notes: { contains: query } },
+					{ sourceUrl: { contains: query } }
+				]
+			},
+			take: MAX_RECORDS,
+			orderBy: [{ michelinStars: 'desc' }, { updatedAt: 'desc' }]
+		});
 
-	if (!extractResults) {
-		error(404, {
-			message: 'No results found.'
+		if (searchResults.length === 0) {
+			error(404, {
+				message: 'No results found.'
+			});
+		}
+
+		return {
+			search: searchResults
+		};
+	} catch (err) {
+		console.error('Search query failed:', err);
+		error(500, {
+			message: 'An error occurred while searching.'
 		});
 	}
-
-	return {
-		search: extractResults.map(mapExtractRecord)
-	};
 }

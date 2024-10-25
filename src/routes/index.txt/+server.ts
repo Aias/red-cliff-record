@@ -1,22 +1,55 @@
 import { getContentType } from '$helpers/content';
-import { createApi } from '$lib/api';
+import { prisma } from '$lib/server/prisma';
 import { text } from '@sveltejs/kit';
 
-export async function GET({ fetch, url }) {
-	const api = createApi(fetch);
-
-	const [creators, spaces] = await Promise.all([api.creators.list(), api.spaces.list()]);
+export async function GET({ url }) {
+	const [creators, spaces] = await Promise.all([
+		prisma.creator.findMany({
+			select: {
+				id: true,
+				name: true,
+				_count: {
+					select: {
+						extracts: true
+					}
+				}
+			},
+			take: 100,
+			orderBy: {
+				extracts: {
+					_count: 'desc'
+				}
+			}
+		}),
+		prisma.space.findMany({
+			select: {
+				id: true,
+				topic: true,
+				_count: {
+					select: {
+						extracts: true
+					}
+				}
+			},
+			take: 100,
+			orderBy: {
+				extracts: {
+					_count: 'desc'
+				}
+			}
+		})
+	]);
 
 	const combinedList = [
 		...creators.map((creator) => ({
 			nameWithLink: `[${creator.name}](https://barnsworthburning.net/creators/${creator.id})`,
 			type: 'Creator',
-			numExtracts: creator.numExtracts
+			numExtracts: creator._count.extracts
 		})),
 		...spaces.map((space) => ({
 			nameWithLink: `[${space.topic || 'Untitled'}](https://barnsworthburning.net/spaces/${space.id})`,
 			type: 'Topic',
-			numExtracts: space.numExtracts
+			numExtracts: space._count.extracts
 		}))
 	].sort((a, b) => a.nameWithLink.localeCompare(b.nameWithLink));
 
