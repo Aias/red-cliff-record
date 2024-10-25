@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { PrismaClient } from '@prisma/client';
+import { extractInclude } from '$lib/queries';
 
 const prisma = new PrismaClient();
 const MAX_RECORDS = 200;
@@ -15,10 +16,11 @@ export async function load({ url }) {
 
 	try {
 		const searchResults = await prisma.extract.findMany({
+			include: extractInclude,
 			where: {
 				OR: [
 					{ title: { contains: query } },
-					{ extract: { contains: query } },
+					{ content: { contains: query } },
 					{ notes: { contains: query } },
 					{ sourceUrl: { contains: query } }
 				]

@@ -10,7 +10,7 @@ datasource db {
 model Extract {
   id            String            @id @default(cuid())
   title         String
-  extract       String?
+  content       String?
   notes         String?
   sourceUrl     String?
   michelinStars Int               @default(0)
@@ -59,11 +59,11 @@ model ExtractFormat {
 
 model Attachment {
   id        String  @id @default(cuid())
-  url       String
+  url       String  @default("")
   caption   String?
   altText   String?
   extractId String
-  extension String?
+  extension String  @default("")
   extract   Extract @relation(fields: [extractId], references: [id])
 
   @@index([extension])

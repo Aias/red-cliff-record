@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Extract from './Extract.svelte';
-	import type { IExtract } from '$types/Airtable';
+	import type { ExtractSearchResult } from '$lib/queries';
 
 	interface GalleryProps {
-		extracts: IExtract[];
+		extracts: ExtractSearchResult[];
 	}
 
 	let { extracts }: GalleryProps = $props();

@@ -6,15 +6,15 @@
 	import RelationList from './RelationList.svelte';
 	import AirtableImage from './AirtableImage.svelte';
 	import Link from './Link.svelte';
-	import { AirtableBaseId, ExtractView, Table, type IExtract } from '$types/Airtable';
+	import { AirtableBaseId, ExtractView, Table } from '$types/Airtable';
+	import type { ExtractSearchResult } from '$lib/queries';
 	import { classnames } from '$helpers/classnames';
 	import type { HTMLAttributes } from 'svelte/elements';
 	import CreatorList from './CreatorList.svelte';
-	// import SourceLink from './SourceLink.svelte';
 
 	interface ExtractProps<T extends keyof HTMLElementTagNameMap>
 		extends HTMLAttributes<HTMLElementTagNameMap[T]> {
-		extract: IExtract;
+		extract: ExtractSearchResult;
 		element?: T;
 		suppressBlockLink?: boolean;
 		variant?: 'default' | 'card';
@@ -32,14 +32,12 @@
 	let title = $derived(extract.title);
 	let extractContent = $derived(extract.extract);
 	let notes = $derived(extract.notes);
-	let images = $derived(extract.images);
-	let imageCaption = $derived(extract.imageCaption);
-	let source = $derived(extract.source);
+	let images = $derived(extract.attachments);
+	let imageCaption = $derived(extract.attachments?.[0]?.caption);
 
 	let parent = $derived(extract.parent);
-	let parentCreators = $derived(extract.parentCreators);
 	let children = $derived(extract.children);
-	let connections = $derived(extract.connections);
+	let connections = $derived(extract.connectedTo.map(({ to }) => to));
 	let spaces = $derived(extract.spaces);
 
 	let hasRelations = $derived(children || connections || spaces);
@@ -60,8 +58,7 @@
 >
 	{#if parent}
 		<section class="extract-parent">
-			<strong class="parent-title"><Link toId={parent.id} inherit>{parent.name}</Link></strong
-			>
+			<strong class="parent-title"><Link toId={parent.id} inherit>{parent.name}</Link></strong>
 			{#if parentCreators}
 				<CreatorList class="parent-creators" creators={parentCreators} />
 			{/if}

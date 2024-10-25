@@ -70,17 +70,8 @@ const makeSiteLink = (relativePath: string, title: string) =>
 	`<a href="${meta.url}/${relativePath}">${title}</a>`;
 
 const generateContentMarkup = (extract: FeedItem, isChild: boolean = false) => {
-	const {
-		extract: content,
-		notes,
-		format,
-		sourceUrl,
-		attachments,
-		creators,
-		connectedTo,
-		spaces,
-		parent
-	} = extract;
+	const { content, notes, format, sourceUrl, attachments, creators, connectedTo, spaces, parent } =
+		extract;
 	let type = (format ? format.name : 'extract').toLowerCase();
 	let markup = '<article>\n';
 	if (!isChild) {

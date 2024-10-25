@@ -116,7 +116,7 @@ async function migrateExtracts() {
 			return {
 				id: record.id,
 				title: record.get('title') as string,
-				extract: record.get('extract') as string,
+				content: record.get('extract') as string,
 				notes: record.get('notes') as string,
 				sourceUrl: record.get('source') as string,
 				michelinStars: record.get('michelinStars') as number,
@@ -204,9 +204,9 @@ async function migrateExtracts() {
 		const attachmentData = extracts.flatMap((record) => {
 			const images = (record.get('images') as Attachment[] | undefined) || [];
 			const imageCaption = record.get('imageCaption') as string | undefined;
+
 			return images?.map((image) => ({
 				id: image.id,
-				url: image.url,
 				caption: imageCaption,
 				extractId: record.id
 			}));
