@@ -42,8 +42,8 @@ model ExtractRelation {
   fromId     String
   toId       String
   annotation String?
-  from       Extract @relation("source", fields: [fromId], references: [id])
-  to         Extract @relation("target", fields: [toId], references: [id])
+  from       Extract @relation("source", fields: [fromId], references: [id], onDelete: Cascade)
+  to         Extract @relation("target", fields: [toId], references: [id], onDelete: Cascade)
 
   @@id([fromId, toId])
   @@index([annotation])
