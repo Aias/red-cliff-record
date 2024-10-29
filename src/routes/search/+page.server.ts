@@ -18,6 +18,20 @@ export async function load({ url }) {
 		const searchResults = await prisma.extract.findMany({
 			include: extractInclude,
 			take: MAX_RECORDS,
+			where: {
+				title: {
+					search: query
+				},
+				content: {
+					search: query
+				},
+				notes: {
+					search: query
+				},
+				sourceUrl: {
+					search: query
+				}
+			},
 			orderBy: {
 				_relevance: {
 					fields: ['title', 'content', 'notes', 'sourceUrl'],
