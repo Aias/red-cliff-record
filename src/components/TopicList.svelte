@@ -8,7 +8,7 @@
 	let { topics }: TopicListProps = $props();
 </script>
 
-{#if topics}
+{#if topics.length > 0}
 	<ul class="tag-list">
 		{#each topics as topic (topic.id)}
 			<li class="tag"><Link toType="space" toId={topic.id}>{topic.topic}</Link></li>

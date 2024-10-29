@@ -27,12 +27,10 @@
 	<svelte:element this={element} class:citation={true} class={classnames(className, 'text-mono')}>
 		{#if format !== formats.Fragment}
 			<span class="article">{getArticle(format)}</span>
-			<strong class="format">{format}</strong>
+			<strong class="format">{format} </strong>
 		{/if}
-		{#if format && creators && creators.length > 0}
-			<span> by </span>
-		{/if}
-		{#if creators && creators.length > 0}
+		{#if creators.length > 0}
+			<span>by </span>
 			<CreatorList {creators} />
 		{/if}
 		{#if sourceUrl}

@@ -4,13 +4,13 @@
 
 	interface EntityLayoutProps {
 		title: string;
-		extracts?: ExtractSearchResult[];
+		extracts: ExtractSearchResult[];
 	}
 	let { title, extracts }: EntityLayoutProps = $props();
 </script>
 
 <h1>{title}</h1>
-{#if extracts}
+{#if extracts.length > 0}
 	<ExtractGallery {extracts} />
 {:else}
 	<em>No associated extracts.</em>

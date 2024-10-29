@@ -9,7 +9,7 @@ export async function load({ url }) {
 	const queryParam = url.searchParams.get('q');
 	if (!queryParam) {
 		return {
-			search: undefined
+			search: []
 		};
 	}
 	const query = queryParam.toLowerCase();
@@ -28,12 +28,6 @@ export async function load({ url }) {
 			take: MAX_RECORDS,
 			orderBy: [{ michelinStars: 'desc' }, { updatedAt: 'desc' }]
 		});
-
-		if (searchResults.length === 0) {
-			error(404, {
-				message: 'No results found.'
-			});
-		}
 
 		return {
 			search: searchResults

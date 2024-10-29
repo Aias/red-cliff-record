@@ -3,8 +3,8 @@
 	import type { ExtractSearchResult } from '$lib/queries';
 
 	interface EntityItemProps {
-		title?: string;
-		extracts?: ExtractSearchResult[];
+		title: string;
+		extracts: ExtractSearchResult[];
 	}
 	let { title = 'Unknown', extracts }: EntityItemProps = $props();
 </script>
@@ -16,7 +16,7 @@
 <h1>
 	{title}
 </h1>
-{#if extracts}
+{#if extracts.length > 0}
 	<ExtractGallery {extracts} />
 {:else}
 	<em>No associated extracts.</em>

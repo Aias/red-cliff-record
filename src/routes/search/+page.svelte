@@ -72,7 +72,7 @@
 	</form>
 </div>
 
-{#if results && results.length > 0}
+{#if results.length > 0}
 	<ExtractGallery extracts={results} />
 {:else if !currentQuery}
 	<div class="empty-state">

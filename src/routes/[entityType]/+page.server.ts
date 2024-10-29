@@ -3,36 +3,20 @@ import { getCreatorsList, getExtractsList, getSpacesList } from '$lib/queries';
 export async function load({ params }) {
 	const { entityType } = params;
 
-	let creatorsPromise;
-	let spacesPromise;
-	let extractsPromise;
-
 	switch (entityType) {
 		case 'creators':
-			creatorsPromise = getCreatorsList();
-			break;
+			const creators = await getCreatorsList();
+			return { recentCreators: creators };
 
 		case 'spaces':
-			spacesPromise = getSpacesList();
-			break;
+			const spaces = await getSpacesList();
+			return { recentSpaces: spaces };
 
 		case 'extracts':
-			extractsPromise = getExtractsList();
-			break;
+			const extracts = await getExtractsList();
+			return { recentExtracts: extracts };
 
 		default:
 			error(500, 'Invalid entity type');
 	}
-
-	const [creators, spaces, extracts] = await Promise.all([
-		creatorsPromise,
-		spacesPromise,
-		extractsPromise
-	]);
-
-	return {
-		recentCreators: creators,
-		recentSpaces: spaces,
-		recentExtracts: extracts
-	};
 }

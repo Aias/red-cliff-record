@@ -45,7 +45,7 @@
 	);
 	let spaces = $derived(extract.spaces);
 
-	let hasRelations = $derived(children || connections || spaces);
+	let hasRelations = $derived(children.length > 0 || connections.length > 0 || spaces.length > 0);
 
 	let airtableUrl = $derived(
 		`https://airtable.com/${AirtableBaseId}/${Table.Extracts}/${ExtractView.EntryView}/${extract.id}`
@@ -85,7 +85,7 @@
 			</header>
 		{/if}
 		<figure class="extract-main">
-			{#if images}
+			{#if images.length > 0}
 				{#each images as image (image.id)}
 					<Image {image} />
 				{/each}
@@ -110,7 +110,7 @@
 				{#if connections.length > 0}
 					<RelationList items={connections} symbol="⮂" label="Connections" />
 				{/if}
-				{#if spaces}
+				{#if spaces.length > 0}
 					<TopicList topics={spaces} />
 				{/if}
 			</nav>
