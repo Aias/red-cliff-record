@@ -1,14 +1,13 @@
 <script lang="ts">
 	import EntityLayout from './EntityLayout.svelte';
-	import type { ICreator, IExtract } from '$types/Airtable';
+	import type { CreatorWithExtractsResult } from '$lib/queries';
 
 	interface CreatorItemProps {
-		creator: ICreator;
-		extracts?: IExtract[];
+		creator: NonNullable<CreatorWithExtractsResult>;
 	}
-	let { creator, extracts }: CreatorItemProps = $props();
+	let { creator }: CreatorItemProps = $props();
 
 	let creatorName = $derived(creator.name || 'Anonymous');
 </script>
 
-<EntityLayout title={creatorName} {extracts} />
+<EntityLayout title={creatorName} extracts={creator.extracts} />

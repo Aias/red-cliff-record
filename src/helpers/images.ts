@@ -1,10 +1,10 @@
-import type { IExtract } from '$types/Airtable';
+import type { ExtractSearchResult } from '$lib/queries';
 
-export const findFirstImageUrl = (extracts?: IExtract[]): string | null => {
+export const findFirstImageUrl = (extracts?: ExtractSearchResult[]): string | null => {
 	if (extracts && extracts.length > 0) {
 		for (const extract of extracts) {
-			if (extract.images && extract.images.length > 0) {
-				return extract.images[0].url;
+			if (extract.attachments.length > 0) {
+				return extract.attachments[0].url;
 			}
 		}
 	}

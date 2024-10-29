@@ -1,15 +1,14 @@
 <script lang="ts">
 	import EntityLayout from './EntityLayout.svelte';
 	import { capitalize } from '$helpers/grammar';
-	import type { ISpace, IExtract } from '$types/Airtable';
+	import type { SpaceWithExtractsResult } from '$lib/queries';
 
 	interface SpaceItemProps {
-		space: ISpace;
-		extracts?: IExtract[];
+		space: NonNullable<SpaceWithExtractsResult>;
 	}
-	let { space, extracts }: SpaceItemProps = $props();
+	let { space }: SpaceItemProps = $props();
 
 	let title = $derived(capitalize(space.title || space.topic || 'Untagged'));
 </script>
 
-<EntityLayout {title} {extracts} />
+<EntityLayout {title} extracts={space.extracts} />

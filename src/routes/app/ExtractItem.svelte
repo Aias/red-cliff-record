@@ -1,33 +1,32 @@
 <script lang="ts">
 	import { setContext } from 'svelte';
-	import { makeHierarchy } from '$helpers/mapping';
 	import Extract from '$components/Extract.svelte';
 	import ExtractList from './ExtractList.svelte';
-	import type { IExtract } from '$types/Airtable';
+	import type { ExtractWithChildrenResult } from '$lib/queries';
 
 	interface ExtractItemProps {
-		selectedId: string;
-		extracts: IExtract[];
+		extract: NonNullable<ExtractWithChildrenResult>;
 	}
-	let { selectedId, extracts }: ExtractItemProps = $props();
+	let { extract }: ExtractItemProps = $props();
 
-	let { selected, children, connections } = $derived(makeHierarchy(extracts, selectedId));
+	let children = $derived(extract.children);
+	let connections = $derived(extract.connectedTo.map((c) => c.to));
 
 	$effect.pre(() => {
-		setContext('extract', selected);
+		setContext('extract', extract);
 	});
 </script>
 
 <article>
-	<Extract extract={selected} class="chromatic" variant="card" suppressBlockLink />
+	<Extract {extract} class="chromatic" variant="card" suppressBlockLink />
 
-	{#if children}
+	{#if children.length > 0}
 		{#each children as child (child.id)}
 			<Extract extract={child} suppressBlockLink />
 		{/each}
 	{/if}
 
-	{#if connections}
+	{#if connections.length > 0}
 		<div class="connections-separator" role="presentation">
 			<hr />
 			<small class="text-secondary text-mono">See ⮂ Also</small>

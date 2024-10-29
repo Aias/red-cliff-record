@@ -3,10 +3,18 @@
 	import EntityItem from './EntityItem.svelte';
 	import ExtractItem from './ExtractItem.svelte';
 	import { entityTypes } from '$helpers/params';
-	import { api } from '$lib/api';
-	import type { ICreator, IExtract, ISpace } from '$types/Airtable';
 	import { capitalize } from '$helpers/grammar';
 	import type { TrailSegment } from '$lib/trail.svelte';
+	import {
+		getCreatorWithExtracts,
+		getSpaceWithExtracts,
+		getExtractWithChildren
+	} from '$lib/queries';
+	import type {
+		CreatorWithExtractsResult,
+		SpaceWithExtractsResult,
+		ExtractWithChildrenResult
+	} from '$lib/queries';
 	import { error } from '@sveltejs/kit';
 
 	interface TrailSegmentProps {
@@ -16,33 +24,18 @@
 
 	let { entityType, entityId } = $derived(segment);
 
-	let creator = $state<ICreator>();
-	let space = $state<ISpace>();
-	let extracts = $state<IExtract[]>();
+	let creator = $state<CreatorWithExtractsResult>();
+	let space = $state<SpaceWithExtractsResult>();
+	let extract = $state<ExtractWithChildrenResult>();
 
 	async function fetchCreator(creatorId: string) {
-		const [creatorPromise, extractsPromise] = await Promise.all([
-			api.creators.get(creatorId),
-			api.creators.extracts(creatorId)
-		]);
-		creator = creatorPromise;
-		space = undefined;
-		extracts = extractsPromise;
+		creator = await getCreatorWithExtracts(creatorId);
 	}
 	async function fetchSpace(spaceId: string) {
-		const [spacePromise, extractsPromise] = await Promise.all([
-			api.spaces.get(spaceId),
-			api.spaces.extracts(spaceId)
-		]);
-		creator = undefined;
-		space = spacePromise;
-		extracts = extractsPromise;
+		space = await getSpaceWithExtracts(spaceId);
 	}
 	async function fetchExtracts(extractId: string) {
-		const extractsPromise = await api.extracts.related(extractId);
-		creator = undefined;
-		space = undefined;
-		extracts = extractsPromise;
+		extract = await getExtractWithChildren(extractId);
 	}
 
 	$effect.pre(() => {
@@ -67,14 +60,12 @@
 	});
 </script>
 
-{#if extracts}
-	{#if creator}
-		<EntityItem title={creator.name} {extracts} />
-	{:else if space}
-		<EntityItem title={capitalize(space.title || space.topic)} {extracts} />
-	{:else}
-		<ExtractItem {extracts} selectedId={entityId} />
-	{/if}
+{#if creator}
+	<EntityItem title={creator.name} extracts={creator.extracts} />
+{:else if space}
+	<EntityItem title={capitalize(space.title || space.topic)} extracts={space.extracts} />
+{:else if extract}
+	<ExtractItem {extract} />
 {:else}
 	<div class="loading-container">
 		<p><em>Loading...</em></p>

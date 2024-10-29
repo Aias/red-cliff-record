@@ -4,17 +4,17 @@
 	import Citation from './Citation.svelte';
 	import TopicList from './TopicList.svelte';
 	import RelationList from './RelationList.svelte';
-	import AirtableImage from './AirtableImage.svelte';
+	import Image from './Image.svelte';
 	import Link from './Link.svelte';
 	import { AirtableBaseId, ExtractView, Table } from '$types/Airtable';
-	import type { ExtractSearchResult } from '$lib/queries';
+	import type { ExtractLinkResult, ExtractSearchResult } from '$lib/queries';
 	import { classnames } from '$helpers/classnames';
 	import type { HTMLAttributes } from 'svelte/elements';
 	import CreatorList from './CreatorList.svelte';
 
 	interface ExtractProps<T extends keyof HTMLElementTagNameMap>
 		extends HTMLAttributes<HTMLElementTagNameMap[T]> {
-		extract: ExtractSearchResult;
+		extract: ExtractSearchResult | ExtractLinkResult;
 		element?: T;
 		suppressBlockLink?: boolean;
 		variant?: 'default' | 'card';
@@ -30,14 +30,19 @@
 
 	let id = $derived(extract.id);
 	let title = $derived(extract.title);
-	let extractContent = $derived(extract.extract);
+	let extractContent = $derived(extract.content);
 	let notes = $derived(extract.notes);
 	let images = $derived(extract.attachments);
 	let imageCaption = $derived(extract.attachments?.[0]?.caption);
 
 	let parent = $derived(extract.parent);
-	let children = $derived(extract.children);
-	let connections = $derived(extract.connectedTo.map(({ to }) => to));
+	let children = $derived(extract.children.map(({ id, title }) => ({ id, name: title })));
+	let connections = $derived(
+		extract.connectedTo.map(({ to }) => ({
+			id: to.id,
+			name: to.title
+		}))
+	);
 	let spaces = $derived(extract.spaces);
 
 	let hasRelations = $derived(children || connections || spaces);
@@ -58,9 +63,9 @@
 >
 	{#if parent}
 		<section class="extract-parent">
-			<strong class="parent-title"><Link toId={parent.id} inherit>{parent.name}</Link></strong>
-			{#if parentCreators}
-				<CreatorList class="parent-creators" creators={parentCreators} />
+			<strong class="parent-title"><Link toId={parent.id} inherit>{parent.title}</Link></strong>
+			{#if parent.creators.length > 0}
+				<CreatorList class="parent-creators" creators={parent.creators} />
 			{/if}
 		</section>
 	{/if}
@@ -82,7 +87,7 @@
 		<figure class="extract-main">
 			{#if images}
 				{#each images as image (image.id)}
-					<AirtableImage {image} />
+					<Image {image} />
 				{/each}
 				{#if imageCaption}
 					<div class="extract-image-caption content">
@@ -91,7 +96,7 @@
 				{/if}
 			{/if}
 			{#if extractContent}
-				<blockquote class="extract-text content" cite={extract.source}>
+				<blockquote class="extract-text content" cite={extract.sourceUrl}>
 					{@html markdown.parse(extractContent)}
 				</blockquote>
 			{/if}
@@ -99,10 +104,10 @@
 		</figure>
 		{#if hasRelations}
 			<nav class="relations">
-				{#if children}
+				{#if children.length > 0}
 					<RelationList items={children} symbol="↳" label="Children" />
 				{/if}
-				{#if connections}
+				{#if connections.length > 0}
 					<RelationList items={connections} symbol="⮂" label="Connections" />
 				{/if}
 				{#if spaces}

@@ -36,7 +36,12 @@ async function downloadAttachments() {
 	}
 }
 
-async function downloadAttachmentsForRecord(record: Airtable.Record<any>) {
+async function downloadAttachmentsForRecord(
+	record: Airtable.Record<{
+		images?: Attachment[];
+		title?: string;
+	}>
+) {
 	const images = record.get('images') as Attachment[] | undefined;
 	if (!images || images.length === 0) return;
 
@@ -62,6 +67,7 @@ async function downloadAttachment(image: Attachment) {
 		const finalFilepath = path.join(process.cwd(), '.temp', finalFilename);
 
 		const buffer = await response.arrayBuffer();
+		// @ts-ignore
 		await fs.writeFile(finalFilepath, Buffer.from(buffer));
 		console.log(`Downloaded: ${finalFilename}`);
 	} catch (error) {

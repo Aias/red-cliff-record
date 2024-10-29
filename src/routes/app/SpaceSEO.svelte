@@ -1,18 +1,17 @@
 <script lang="ts">
 	import { capitalize } from '$helpers/grammar';
-	import type { ISpace, IExtract } from '$types/Airtable';
 	import { findFirstImageUrl } from '$helpers/images';
+	import type { SpaceWithExtractsResult } from '$lib/queries';
 
 	interface SpaceSEOProps {
-		space: ISpace;
-		extracts?: IExtract[];
+		space: NonNullable<SpaceWithExtractsResult>;
 	}
-	let { space, extracts }: SpaceSEOProps = $props();
+	let { space }: SpaceSEOProps = $props();
 
 	let title = $derived(capitalize(space.title || space.topic || 'Untagged'));
 	let description = $derived(`Curated extracts about ${title}.`);
 
-	let firstImageUrl = $derived(findFirstImageUrl(extracts));
+	let firstImageUrl = $derived(findFirstImageUrl(space.extracts));
 </script>
 
 <svelte:head>
@@ -25,11 +24,8 @@
 	<meta property="og:type" content="article" />
 	<meta property="article:section" content={title} />
 	<meta property="article:tag" content={space.topic} />
-	<meta
-		property="og:article:published_time"
-		content={new Date(space.createdTime).toISOString()}
-	/>
-	<meta property="og:article:modified_time" content={new Date(space.lastUpdated).toISOString()} />
+	<meta property="og:article:published_time" content={space.createdAt.toISOString()} />
+	<meta property="og:article:modified_time" content={space.updatedAt.toISOString()} />
 	{#if firstImageUrl}
 		<meta property="og:image" content={firstImageUrl} />
 	{/if}

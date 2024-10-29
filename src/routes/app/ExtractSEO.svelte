@@ -1,25 +1,25 @@
 <script lang="ts">
-	import type { IExtract } from '$types/Airtable';
 	import { getArticle, combineAsList } from '$helpers/grammar';
+	import type { ExtractWithChildrenResult } from '$lib/queries';
 
 	interface ExtractSEOProps {
-		extract: IExtract;
+		extract: NonNullable<ExtractWithChildrenResult>;
 	}
 	let { extract }: ExtractSEOProps = $props();
 
 	let title = $derived(extract.title || 'Extract');
-	let creators = $derived(extract.creators || extract.parentCreators || []);
+	let creators = $derived(extract.creators || extract.parent?.creators || []);
 
 	let description = $derived.by(() => {
-		const type = extract.format || 'extract';
+		const type = extract.format?.name || 'extract';
 		const creatorNames = combineAsList(creators.map((c) => c.name));
-		const parent = extract.parent?.name || '';
+		const parent = extract.parent?.title || '';
 		return `${getArticle(type)} ${type.toLowerCase()} by ${creatorNames}${parent ? ` from ${parent}` : ''}.`;
 	});
 
 	let modified = $derived.by(() => {
-		const lastUpdated = new Date(extract.lastUpdated);
-		const publishedOn = new Date(extract.extractedOn);
+		const lastUpdated = extract.updatedAt;
+		const publishedOn = extract.publishedOn ?? lastUpdated;
 		return new Date(Math.max(lastUpdated.getTime(), publishedOn.getTime())).toISOString();
 	});
 </script>
@@ -32,16 +32,13 @@
 	<meta property="og:site_name" content="barnsworthburning" />
 	<meta property="og:url" content={`https://barnsworthburning.net/extracts/${extract.id}`} />
 	<meta property="og:type" content="article" />
-	{#each extract.creators || extract.parentCreators || [] as creator}
+	{#each extract.creators || extract.parent?.creators || [] as creator}
 		<meta name="author" content={creator.name} />
 		<meta property="og:article:author" content={creator.name} />
 	{/each}
-	<meta
-		property="og:article:published_time"
-		content={new Date(extract.extractedOn).toISOString()}
-	/>
+	<meta property="og:article:published_time" content={extract.createdAt.toISOString()} />
 	<meta property="og:article:modified_time" content={modified} />
-	{#each extract.images || [] as image}
-		<meta property="og:image" content={image.url} />
+	{#each extract.attachments || [] as attachment}
+		<meta property="og:image" content={attachment.url} />
 	{/each}
 </svelte:head>

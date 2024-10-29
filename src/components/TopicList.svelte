@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Link from './Link.svelte';
-	import type { ILinkedRecord } from '$types/Airtable';
+	import type { SpaceLinkResult } from '$lib/queries';
 
 	interface TopicListProps {
-		topics: ILinkedRecord[];
+		topics: SpaceLinkResult[];
 	}
 	let { topics }: TopicListProps = $props();
 </script>
@@ -11,7 +11,7 @@
 {#if topics}
 	<ul class="tag-list">
 		{#each topics as topic (topic.id)}
-			<li class="tag"><Link toType="space" toId={topic.id}>{topic.name}</Link></li>
+			<li class="tag"><Link toType="space" toId={topic.id}>{topic.topic}</Link></li>
 		{/each}
 	</ul>
 {/if}

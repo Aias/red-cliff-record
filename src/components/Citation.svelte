@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { getArticle } from '$helpers/grammar';
 	import CreatorList from './CreatorList.svelte';
-	import { type IExtract } from '$types/Airtable';
+	import type { ExtractLinkResult, ExtractSearchResult } from '$lib/queries';
 	import { classnames } from '$helpers/classnames';
 	import Link from './Link.svelte';
 
 	interface CitationProps {
-		extract: IExtract;
+		extract: ExtractSearchResult | ExtractLinkResult;
 		element?: string;
 		class?: string;
 	}
@@ -18,10 +18,12 @@
 		Extract: 'Extract'
 	};
 
-	let { format = formats.Extract, creators, source } = $derived(extract);
+	let { format: defaultFormat, creators, sourceUrl } = $derived(extract);
+
+	let format = $derived(defaultFormat ? defaultFormat.name : formats.Fragment);
 </script>
 
-{#if creators || source || format !== formats.Fragment}
+{#if creators.length > 0 || sourceUrl || format !== formats.Fragment}
 	<svelte:element this={element} class:citation={true} class={classnames(className, 'text-mono')}>
 		{#if format !== formats.Fragment}
 			<span class="article">{getArticle(format)}</span>
@@ -33,10 +35,10 @@
 		{#if creators && creators.length > 0}
 			<CreatorList {creators} />
 		{/if}
-		{#if source}
-			{@const sourceUrl = new URL(source)}
-			<Link href={source} class="source-link" target="_blank" rel="noopener">
-				{sourceUrl.hostname}
+		{#if sourceUrl}
+			{@const url = new URL(sourceUrl)}
+			<Link href={sourceUrl} class="source-link" target="_blank" rel="noopener">
+				{url.hostname}
 			</Link>
 		{/if}
 	</svelte:element>

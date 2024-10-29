@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import CreatorItem from '../../app/CreatorItem.svelte';
 	import CreatorSEO from '../../app/CreatorSEO.svelte';
 	import SpaceItem from '../../app/SpaceItem.svelte';
@@ -9,17 +8,16 @@
 
 	let { data } = $props();
 
-	let { creator, space, extracts = [] } = $derived(data);
-	let { id } = $derived($page.params);
+	let { creator, space, extract } = $derived(data);
 </script>
 
 {#if creator}
-	<CreatorItem {creator} {extracts} />
-	<CreatorSEO {creator} {extracts} />
+	<CreatorItem {creator} />
+	<CreatorSEO {creator} />
 {:else if space}
-	<SpaceItem {space} {extracts} />
-	<SpaceSEO {space} {extracts} />
-{:else}
-	<ExtractItem {extracts} selectedId={id} />
-	<ExtractSEO extract={extracts.find((e) => e.id === id) ?? extracts[0]} />
+	<SpaceItem {space} />
+	<SpaceSEO {space} />
+{:else if extract}
+	<ExtractItem {extract} />
+	<ExtractSEO {extract} />
 {/if}

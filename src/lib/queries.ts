@@ -1,17 +1,73 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from './server/prisma';
 
-export const extractInclude = {
-	format: true,
-	creators: true,
-	spaces: true,
-	attachments: true,
-	parent: true,
-	children: true,
-	connectedTo: {
-		include: { to: true }
+export const creatorLinkSelect = {
+	id: true,
+	name: true
+} as const;
+export type CreatorLinkResult = Prisma.CreatorGetPayload<{
+	select: typeof creatorLinkSelect;
+}>;
+
+export const spaceLinkSelect = {
+	id: true,
+	topic: true
+} as const;
+export type SpaceLinkResult = Prisma.SpaceGetPayload<{
+	select: typeof spaceLinkSelect;
+}>;
+
+export const extractLinkSelect = {
+	id: true,
+	title: true,
+	creators: {
+		select: creatorLinkSelect
+	},
+	spaces: {
+		select: spaceLinkSelect
 	}
-};
+} as const;
+
+export const extractPartialInclude = {
+	format: true,
+	creators: {
+		select: creatorLinkSelect
+	},
+	spaces: {
+		select: spaceLinkSelect
+	},
+	parent: {
+		select: extractLinkSelect
+	},
+	children: {
+		select: extractLinkSelect
+	},
+	connectedTo: {
+		include: {
+			to: {
+				select: extractLinkSelect
+			}
+		}
+	},
+	attachments: true
+} as const;
+
+export const extractInclude = {
+	...extractPartialInclude,
+	parent: {
+		include: extractPartialInclude
+	},
+	children: {
+		include: extractPartialInclude
+	},
+	connectedTo: {
+		include: {
+			to: {
+				include: extractPartialInclude
+			}
+		}
+	}
+} as const;
 
 export const creatorInclude = {
 	_count: {
@@ -25,7 +81,7 @@ export const creatorInclude = {
 			title: true
 		}
 	}
-};
+} as const;
 
 export const spaceInclude = {
 	_count: {
@@ -39,11 +95,58 @@ export const spaceInclude = {
 			title: true
 		}
 	}
-};
+} as const;
 
-export type ExtractSearchResult = Prisma.ExtractGetPayload<{ include: typeof extractInclude }>;
+export type ExtractLinkResult = Prisma.ExtractGetPayload<{
+	include: typeof extractPartialInclude;
+}>;
+export type ExtractSearchResult = Prisma.ExtractGetPayload<{
+	include: typeof extractInclude;
+}>;
 export type CreatorSearchResult = Prisma.CreatorGetPayload<{ include: typeof creatorInclude }>;
 export type SpaceSearchResult = Prisma.SpaceGetPayload<{ include: typeof spaceInclude }>;
+
+export const getCreatorCounts = () =>
+	prisma.creator.findMany({
+		select: {
+			id: true,
+			name: true,
+			_count: {
+				select: {
+					extracts: true
+				}
+			}
+		},
+		take: 100,
+		orderBy: {
+			extracts: {
+				_count: 'desc'
+			}
+		}
+	});
+
+export type CreatorCountsResult = Awaited<ReturnType<typeof getCreatorCounts>>;
+
+export const getSpacesCounts = () =>
+	prisma.space.findMany({
+		select: {
+			id: true,
+			topic: true,
+			_count: {
+				select: {
+					extracts: true
+				}
+			}
+		},
+		take: 100,
+		orderBy: {
+			extracts: {
+				_count: 'desc'
+			}
+		}
+	});
+
+export type SpaceCountsResult = Awaited<ReturnType<typeof getSpacesCounts>>;
 
 export const getCreatorsList = () =>
 	prisma.creator.findMany({
@@ -116,3 +219,35 @@ export const getExtractsList = () =>
 	});
 
 export type ExtractListResult = Awaited<ReturnType<typeof getExtractsList>>;
+
+export const getExtractWithChildren = (id: string) =>
+	prisma.extract.findUnique({
+		where: { id },
+		include: extractInclude
+	});
+
+export type ExtractWithChildrenResult = Awaited<ReturnType<typeof getExtractWithChildren>>;
+
+export const getCreatorWithExtracts = (id: string) =>
+	prisma.creator.findUnique({
+		where: { id },
+		include: {
+			extracts: {
+				include: extractInclude
+			}
+		}
+	});
+
+export type CreatorWithExtractsResult = Awaited<ReturnType<typeof getCreatorWithExtracts>>;
+
+export const getSpaceWithExtracts = (id: string) =>
+	prisma.space.findUnique({
+		where: { id },
+		include: {
+			extracts: {
+				include: extractInclude
+			}
+		}
+	});
+
+export type SpaceWithExtractsResult = Awaited<ReturnType<typeof getSpaceWithExtracts>>;

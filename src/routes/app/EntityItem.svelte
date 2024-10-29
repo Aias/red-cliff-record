@@ -1,10 +1,10 @@
 <script lang="ts">
 	import ExtractGallery from '$components/ExtractGallery.svelte';
-	import type { IExtract } from '$types/Airtable';
+	import type { ExtractSearchResult } from '$lib/queries';
 
 	interface EntityItemProps {
 		title?: string;
-		extracts?: IExtract[];
+		extracts?: ExtractSearchResult[];
 	}
 	let { title = 'Unknown', extracts }: EntityItemProps = $props();
 </script>

@@ -1,44 +1,9 @@
 import { getContentType } from '$helpers/content';
-import { prisma } from '$lib/server/prisma';
+import { getCreatorCounts, getSpacesCounts } from '$lib/queries';
 import { text } from '@sveltejs/kit';
 
 export async function GET({ url }) {
-	const [creators, spaces] = await Promise.all([
-		prisma.creator.findMany({
-			select: {
-				id: true,
-				name: true,
-				_count: {
-					select: {
-						extracts: true
-					}
-				}
-			},
-			take: 100,
-			orderBy: {
-				extracts: {
-					_count: 'desc'
-				}
-			}
-		}),
-		prisma.space.findMany({
-			select: {
-				id: true,
-				topic: true,
-				_count: {
-					select: {
-						extracts: true
-					}
-				}
-			},
-			take: 100,
-			orderBy: {
-				extracts: {
-					_count: 'desc'
-				}
-			}
-		})
-	]);
+	const [creators, spaces] = await Promise.all([getCreatorCounts(), getSpacesCounts()]);
 
 	const combinedList = [
 		...creators.map((creator) => ({

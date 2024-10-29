@@ -4,10 +4,10 @@
 	import { getArticle } from '$helpers/grammar.js';
 	import Link from '$components/Link.svelte';
 	import BlockLink from '$components/BlockLink.svelte';
-	import type { ExtractListResult } from '$lib/queries';
+	import type { ExtractLinkResult, ExtractListResult } from '$lib/queries';
 
 	interface ExtractListProps {
-		extracts: ExtractListResult;
+		extracts: ExtractListResult | ExtractLinkResult[];
 	}
 	let { extracts }: ExtractListProps = $props();
 </script>

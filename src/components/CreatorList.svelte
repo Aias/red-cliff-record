@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Link from './Link.svelte';
-	import type { ILinkedRecord } from '$types/Airtable';
 	import type { HTMLAttributes } from 'svelte/elements';
+	import type { CreatorLinkResult } from '$lib/queries';
 
 	interface CreatorListProps extends HTMLAttributes<HTMLSpanElement> {
-		creators: ILinkedRecord[];
+		creators: CreatorLinkResult[];
 	}
 
 	let { creators, ...restProps }: CreatorListProps = $props();
