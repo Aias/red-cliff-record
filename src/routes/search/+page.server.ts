@@ -17,16 +17,14 @@ export async function load({ url }) {
 	try {
 		const searchResults = await prisma.extract.findMany({
 			include: extractInclude,
-			where: {
-				OR: [
-					{ title: { contains: query } },
-					{ content: { contains: query } },
-					{ notes: { contains: query } },
-					{ sourceUrl: { contains: query } }
-				]
-			},
 			take: MAX_RECORDS,
-			orderBy: [{ michelinStars: 'desc' }, { updatedAt: 'desc' }]
+			orderBy: {
+				_relevance: {
+					fields: ['title', 'content', 'notes', 'sourceUrl'],
+					search: query,
+					sort: 'desc'
+				}
+			}
 		});
 
 		return {

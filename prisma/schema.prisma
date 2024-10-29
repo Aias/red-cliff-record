@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -11,23 +12,28 @@ model Extract {
   id            String            @id @default(cuid())
   title         String
   content       String?
+  fullText      String?
   notes         String?
   sourceUrl     String?
   michelinStars Int               @default(0)
   formatId      String?
   parentId      String?
   createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  updatedAt     DateTime          @default(now()) @updatedAt
   publishedOn   DateTime?
   childOrder    Int               @default(0)
+  score         Int               @default(0)
   attachments   Attachment[]
   format        ExtractFormat?    @relation(fields: [formatId], references: [id])
   parent        Extract?          @relation("ParentChild", fields: [parentId], references: [id])
   children      Extract[]         @relation("ParentChild")
+  childCount    Int               @default(0)
   connectedFrom ExtractRelation[] @relation("target")
   connectedTo   ExtractRelation[] @relation("source")
   creators      Creator[]         @relation("ExtractCreators")
+  creatorCount  Int               @default(0)
   spaces        Space[]           @relation("ExtractSpaces")
+  spaceCount    Int               @default(0)
 
   // Basic indexes
   @@index([createdAt])
@@ -38,44 +44,60 @@ model Extract {
   @@index([parentId, childOrder]) // For ordering children
 }
 
+enum RelationType {
+  GENERAL
+  REFERENCE
+  RESPONSE
+  REVIEW
+}
+
 model ExtractRelation {
+  type       RelationType @default(GENERAL)
   fromId     String
   toId       String
   annotation String?
-  from       Extract @relation("source", fields: [fromId], references: [id], onDelete: Cascade)
-  to         Extract @relation("target", fields: [toId], references: [id], onDelete: Cascade)
+  from       Extract      @relation("source", fields: [fromId], references: [id], onDelete: Cascade)
+  to         Extract      @relation("target", fields: [toId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @default(now()) @updatedAt
 
   @@id([fromId, toId])
   @@index([annotation])
 }
 
 model ExtractFormat {
-  id       String    @id @default(cuid())
-  name     String
-  extracts Extract[]
+  id           String    @id @default(cuid())
+  name         String
+  extractCount Int       @default(0)
+  extracts     Extract[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
 
   @@index([name])
 }
 
 model Attachment {
-  id        String  @id @default(cuid())
-  url       String  @default("")
+  id        String   @id @default(cuid())
+  url       String   @default("")
   caption   String?
   altText   String?
   extractId String
-  extension String  @default("")
-  extract   Extract @relation(fields: [extractId], references: [id])
+  extension String   @default("")
+  extract   Extract  @relation(fields: [extractId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([extension])
 }
 
 model Creator {
-  id        String    @id @default(cuid())
-  name      String
-  siteUrl   String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  extracts  Extract[] @relation("ExtractCreators")
+  id           String    @id @default(cuid())
+  name         String
+  siteUrl      String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+  extractCount Int       @default(0)
+  extracts     Extract[] @relation("ExtractCreators")
 
   @@index([name])
   @@index([createdAt])
@@ -83,14 +105,15 @@ model Creator {
 }
 
 model Space {
-  id          String    @id @default(cuid())
-  topic       String
-  title       String?
-  icon        String?
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  extracts    Extract[] @relation("ExtractSpaces")
+  id           String    @id @default(cuid())
+  topic        String
+  title        String?
+  icon         String?
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+  extractCount Int       @default(0)
+  extracts     Extract[] @relation("ExtractSpaces")
 
   @@index([topic])
   @@index([createdAt])
