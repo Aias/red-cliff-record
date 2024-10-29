@@ -2,14 +2,8 @@
 	import { setContext } from 'svelte';
 	import EntityItem from './EntityItem.svelte';
 	import ExtractItem from './ExtractItem.svelte';
-	import { entityTypes } from '$helpers/params';
 	import { capitalize } from '$helpers/grammar';
 	import type { TrailSegment } from '$lib/trail.svelte';
-	import {
-		getCreatorWithExtracts,
-		getSpaceWithExtracts,
-		getExtractWithChildren
-	} from '$lib/queries';
 	import type {
 		CreatorWithExtractsResult,
 		SpaceWithExtractsResult,
@@ -28,14 +22,30 @@
 	let space = $state<SpaceWithExtractsResult>();
 	let extract = $state<ExtractWithChildrenResult>();
 
-	async function fetchCreator(creatorId: string) {
-		creator = await getCreatorWithExtracts(creatorId);
-	}
-	async function fetchSpace(spaceId: string) {
-		space = await getSpaceWithExtracts(spaceId);
-	}
-	async function fetchExtracts(extractId: string) {
-		extract = await getExtractWithChildren(extractId);
+	const reviveDates = (obj: any): any => {
+		if (obj && typeof obj === 'object') {
+			if (obj.__isDate) {
+				return new Date(obj.value);
+			}
+			for (const key in obj) {
+				obj[key] = reviveDates(obj[key]);
+			}
+		}
+		return obj;
+	};
+
+	async function fetchEntity() {
+		try {
+			const response = await fetch(`/${entityType.urlParam}/${entityId}`);
+			if (!response.ok) error(500, 'Failed to fetch entity');
+
+			const data = reviveDates(await response.json());
+			if (data.creator) creator = data.creator;
+			if (data.space) space = data.space;
+			if (data.extract) extract = data.extract;
+		} catch (err) {
+			error(500, 'Failed to fetch entity');
+		}
 	}
 
 	$effect.pre(() => {
@@ -43,20 +53,7 @@
 	});
 
 	$effect(() => {
-		switch (entityType.key) {
-			case entityTypes.extract.key:
-				fetchExtracts(entityId);
-				break;
-			case entityTypes.creator.key:
-				fetchCreator(entityId);
-				break;
-			case entityTypes.space.key:
-				fetchSpace(entityId);
-				break;
-			default:
-				error(500, 'Unknown entity type');
-				break;
-		}
+		fetchEntity();
 	});
 </script>
 
