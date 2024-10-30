@@ -21,7 +21,7 @@ model Extract {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @default(now()) @updatedAt
   publishedOn   DateTime?
-  orderKey      String           @default("a0")
+  orderKey      String            @default("a0")
   score         Int               @default(0)
   attachments   Attachment[]
   format        ExtractFormat?    @relation(fields: [formatId], references: [id])
@@ -42,6 +42,7 @@ model Extract {
   // Composite indexes for common queries
   @@index([publishedOn, createdAt]) // For ordering and filtering
   @@index([parentId, orderKey]) // For ordering children
+  @@index([score])
 }
 
 enum RelationType {
@@ -94,6 +95,7 @@ model Creator {
   id           String    @id @default(cuid())
   name         String
   siteUrl      String?
+  score        Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now()) @updatedAt
   extractCount Int       @default(0)
@@ -102,6 +104,7 @@ model Creator {
   @@index([name])
   @@index([createdAt])
   @@index([updatedAt])
+  @@index([score])
 }
 
 model Space {
@@ -110,6 +113,7 @@ model Space {
   title        String?
   icon         String?
   description  String?
+  score        Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now()) @updatedAt
   extractCount Int       @default(0)
@@ -118,4 +122,5 @@ model Space {
   @@index([topic])
   @@index([createdAt])
   @@index([updatedAt])
+  @@index([score])
 }

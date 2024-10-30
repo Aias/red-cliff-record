@@ -5,7 +5,7 @@ import { extensions } from './helpers';
 
 const prisma = new PrismaClient();
 
-async function setAttachmentTypes() {
+export async function setAttachmentTypes() {
 	try {
 		const tempDir = path.join(process.cwd(), '.temp');
 		const files = await fs.readdir(tempDir);
@@ -60,5 +60,3 @@ async function setAttachmentTypes() {
 		await prisma.$disconnect();
 	}
 }
-
-setAttachmentTypes();

@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client';
 import Airtable, { type Attachment } from 'airtable';
 import dotenv from 'dotenv';
 import { generateOrderPrefix } from '../helpers/order';
+import { setAttachmentTypes } from './set-attachment-types';
+
 dotenv.config();
 
 const prisma = new PrismaClient();
@@ -13,7 +15,6 @@ Airtable.configure({
 const base = Airtable.base('appNAUPSEyCYlPtvG');
 
 const LARGE_BATCH_SIZE = 1000;
-const SMALL_BATCH_SIZE = 100;
 const MIGRATE_CREATORS = true;
 const MIGRATE_SPACES = true;
 const MIGRATE_EXTRACTS = true;
@@ -153,53 +154,7 @@ async function migrateExtracts() {
 			})()
 		]);
 
-		// Step 4: Update relations in small, parallelized batches
-		const formatMap = new Map((await prisma.extractFormat.findMany()).map((f) => [f.name, f.id]));
-
-		for (let i = 0; i < extracts.length; i += SMALL_BATCH_SIZE) {
-			const batch = extracts.slice(i, i + SMALL_BATCH_SIZE);
-			const updatePromises = batch.map(async (record) => {
-				const creators = record.get('creators') as string[] | undefined;
-				const spaces = record.get('spaces') as string[] | undefined;
-				const parent = record.get('parent') as string[] | undefined;
-				const updateData = {
-					where: { id: record.id },
-					data: {
-						formatId: record.get('format') ? formatMap.get(record.get('format') as string) : null,
-						creators: {
-							set: creators?.map((id) => ({ id })) || []
-						},
-						spaces: {
-							set: spaces?.map((id) => ({ id })) || []
-						},
-						parentId: parent?.[0] || null
-					}
-				};
-
-				await prisma.extract.update(updateData);
-				console.log(`Updated relations for ${record.get('title')}`);
-			});
-
-			await Promise.all(updatePromises);
-		}
-
-		// Step 5: Create ExtractRelation records
-		const relationData = extracts.flatMap((record) =>
-			((record.get('connections') as string[] | undefined) || []).map((connectionId) => ({
-				fromId: record.id,
-				toId: connectionId
-			}))
-		);
-
-		for (let i = 0; i < relationData.length; i += LARGE_BATCH_SIZE) {
-			const batch = relationData.slice(i, i + LARGE_BATCH_SIZE);
-			await prisma.extractRelation.createMany({
-				data: batch
-			});
-			console.log(`Processed ${i + batch.length} extract relations`);
-		}
-
-		// Step 6: Create Attachment records
+		// Step 3: Create Attachment records
 		console.log('Creating Attachment records...');
 		const attachmentData = extracts.flatMap((record) => {
 			const images = (record.get('images') as Attachment[] | undefined) || [];
@@ -220,6 +175,47 @@ async function migrateExtracts() {
 			console.log(`Processed ${i + batch.length} attachments`);
 		}
 
+		// Step 4: Update links sequentially
+		const formatMap = new Map((await prisma.extractFormat.findMany()).map((f) => [f.name, f.id]));
+
+		for (const record of extracts) {
+			const creators = record.get('creators') as string[] | undefined;
+			const spaces = record.get('spaces') as string[] | undefined;
+			const parent = record.get('parent') as string[] | undefined;
+			const updateData = {
+				where: { id: record.id },
+				data: {
+					formatId: record.get('format') ? formatMap.get(record.get('format') as string) : null,
+					creators: {
+						set: creators?.map((id) => ({ id })) || []
+					},
+					spaces: {
+						set: spaces?.map((id) => ({ id })) || []
+					},
+					parentId: parent?.[0] || null
+				}
+			};
+
+			await prisma.extract.update(updateData);
+			console.log(`Updated links for ${record.get('title')}`);
+		}
+
+		// Step 5: Create ExtractRelation records
+		const relationData = extracts.flatMap((record) =>
+			((record.get('connections') as string[] | undefined) || []).map((connectionId) => ({
+				fromId: record.id,
+				toId: connectionId
+			}))
+		);
+
+		for (let i = 0; i < relationData.length; i += LARGE_BATCH_SIZE) {
+			const batch = relationData.slice(i, i + LARGE_BATCH_SIZE);
+			await prisma.extractRelation.createMany({
+				data: batch
+			});
+			console.log(`Processed ${i + batch.length} extract relations`);
+		}
+
 		console.log('Extract migration completed successfully');
 	} catch (error) {
 		console.error('Error during migration:', error);
@@ -232,6 +228,7 @@ async function migrateAll() {
 	if (MIGRATE_CREATORS) await migrateCreators();
 	if (MIGRATE_SPACES) await migrateSpaces();
 	if (MIGRATE_EXTRACTS) await migrateExtracts();
+	await setAttachmentTypes();
 }
 
 migrateAll();

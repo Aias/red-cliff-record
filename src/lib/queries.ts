@@ -126,9 +126,7 @@ export const getCreatorCounts = () =>
 		},
 		take: 100,
 		orderBy: {
-			extracts: {
-				_count: 'desc'
-			}
+			score: 'desc'
 		}
 	});
 
@@ -147,9 +145,7 @@ export const getSpacesCounts = () =>
 		},
 		take: 100,
 		orderBy: {
-			extracts: {
-				_count: 'desc'
-			}
+			score: 'desc'
 		}
 	});
 
@@ -171,9 +167,7 @@ export const getCreatorsList = () =>
 			}
 		},
 		orderBy: {
-			extracts: {
-				_count: 'desc'
-			}
+			score: 'desc'
 		},
 		take: 100
 	});
@@ -194,7 +188,7 @@ export const getSpacesList = () =>
 			}
 		},
 		orderBy: {
-			extracts: { _count: 'desc' }
+			score: 'desc'
 		},
 		take: 100
 	});
