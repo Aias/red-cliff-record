@@ -20,6 +20,7 @@ export type SpaceLinkResult = Prisma.SpaceGetPayload<{
 export const extractLinkSelect = {
 	id: true,
 	title: true,
+	orderKey: true,
 	creators: {
 		select: creatorLinkSelect
 	},
@@ -40,6 +41,9 @@ export const extractPartialInclude = {
 		select: extractLinkSelect
 	},
 	children: {
+		orderBy: {
+			orderKey: 'asc'
+		},
 		select: extractLinkSelect
 	},
 	connectedTo: {
@@ -58,6 +62,9 @@ export const extractInclude = {
 		include: extractPartialInclude
 	},
 	children: {
+		orderBy: {
+			orderKey: 'asc'
+		},
 		include: extractPartialInclude
 	},
 	connectedTo: {

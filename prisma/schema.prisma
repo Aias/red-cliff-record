@@ -21,7 +21,7 @@ model Extract {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @default(now()) @updatedAt
   publishedOn   DateTime?
-  childOrder    Int               @default(0)
+  orderKey      String           @default("a0")
   score         Int               @default(0)
   attachments   Attachment[]
   format        ExtractFormat?    @relation(fields: [formatId], references: [id])
@@ -41,7 +41,7 @@ model Extract {
   @@index([publishedOn])
   // Composite indexes for common queries
   @@index([publishedOn, createdAt]) // For ordering and filtering
-  @@index([parentId, childOrder]) // For ordering children
+  @@index([parentId, orderKey]) // For ordering children
 }
 
 enum RelationType {

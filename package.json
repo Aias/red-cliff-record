@@ -34,7 +34,7 @@
 		"xml-formatter": "^3.6.3"
 	},
 	"devDependencies": {
-		"@aws-sdk/client-s3": "^3.679.0",
+		"@aws-sdk/client-s3": "^3.682.0",
 		"@radix-ui/colors": "^3.0.0",
 		"@sveltejs/adapter-cloudflare": "4.7.4",
 		"@sveltejs/kit": "^2.7.3",

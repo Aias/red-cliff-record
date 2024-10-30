@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import Airtable, { type Attachment } from 'airtable';
 import dotenv from 'dotenv';
-
+import { generateOrderPrefix } from '../helpers/order';
 dotenv.config();
 
 const prisma = new PrismaClient();
@@ -98,7 +98,7 @@ async function migrateExtracts() {
 			if (format) uniqueFormats.add(format);
 
 			const parentId = (record.get('parent') as string[] | undefined)?.[0];
-			let childOrder = 0;
+			let orderKey = 'a0'; // default value
 
 			if (parentId) {
 				const parentRecord = extractMap.get(parentId);
@@ -107,7 +107,7 @@ async function migrateExtracts() {
 					if (childrenArray) {
 						const childIndex = childrenArray.indexOf(record.id);
 						if (childIndex !== -1) {
-							childOrder = childIndex;
+							orderKey = generateOrderPrefix(childIndex) + '0';
 						}
 					}
 				}
@@ -123,7 +123,7 @@ async function migrateExtracts() {
 				createdAt: new Date(record.get('extractedOn') as string),
 				updatedAt: new Date(record.get('lastUpdated') as string),
 				publishedOn: record.get('published') ? new Date(record.get('publishedOn') as string) : null,
-				childOrder: childOrder
+				orderKey: orderKey
 			};
 		});
 
