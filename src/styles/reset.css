@@ -16,7 +16,7 @@ html {
 	font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji',
 		'Segoe UI Emoji';
 	font-size: 100%;
-	line-height: 1.5;
+	line-height: 1.65;
 	-webkit-text-size-adjust: 100%;
 	-moz-text-size-adjust: 100%;
 	text-size-adjust: 100%; /* MN: Prevent adjustments of font size after orientation changes in iOS. */
@@ -53,36 +53,31 @@ h3,
 h4,
 h5,
 h6 {
+	margin-block-start: 1em;
+	margin-block-end: 0.5em;
 	text-wrap: balance;
 	line-height: 1.25;
 }
 
-:not([class]) {
-	h1&,
-	h2&,
-	h3&,
-	h4&,
-	h5&,
-	h6& {
-		margin-block-start: 1em;
-		margin-block-end: 0.5em;
-	}
+h4,
+h5,
+h6 {
+	font-size: 1em; /* Discourage use of headings beyond h3 */
+}
 
-	p&,
-	ol&,
-	ul& {
-		margin-block: 0.5em;
-	}
+p {
+	margin-block: 0.5em;
+}
 
-	ol&,
-	ul& {
-		padding-inline-start: 1.75em;
-		list-style: revert;
-	}
+ol,
+ul {
+	margin-block: 0.75em;
+	padding-inline-start: 1.75em;
+	list-style: revert;
+}
 
-	li& {
-		margin-block: 0.5em;
-	}
+li {
+	margin-block: 0.25em;
 }
 
 a,
