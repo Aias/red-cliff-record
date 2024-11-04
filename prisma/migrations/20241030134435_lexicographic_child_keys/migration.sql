@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "Extract" ALTER COLUMN "orderKey" SET DEFAULT 'a0',
-ALTER COLUMN "orderKey" SET DATA TYPE TEXT;

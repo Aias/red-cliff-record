@@ -1,4 +1,4 @@
-import { setCookie, getCookie } from '$helpers/cookies';
+import { setCookie, getCookie } from '$lib/cookies';
 import {
 	paletteOptions,
 	Palette,

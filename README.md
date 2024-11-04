@@ -1,3 +1,3 @@
-# [barnsworthburning.net](https://barnsworthburning.net)
+# The Red Cliff Record
 
-a commonplace book.
+An index.

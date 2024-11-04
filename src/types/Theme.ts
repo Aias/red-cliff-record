@@ -31,6 +31,7 @@ export enum Palette {
 	Mint = 'mint',
 	Sky = 'sky'
 }
+
 export type Neutral =
 	| Palette.Gray
 	| Palette.Slate
@@ -105,6 +106,6 @@ export const DEFAULT_MODE = Mode.Auto;
 export const DEFAULT_CHROMA = Chroma.Neutral;
 export const DEFAULT_PALETTE = Palette.Indigo;
 
-export const MODE_COOKIE = 'barnsworthburning-mode';
-export const CHROMA_COOKIE = 'barnsworthburning-chroma';
-export const PALETTE_COOKIE = 'barnsworthburning-palette';
+export const MODE_COOKIE = 'mode';
+export const CHROMA_COOKIE = 'chroma';
+export const PALETTE_COOKIE = 'palette';

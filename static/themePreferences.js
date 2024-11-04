@@ -2,9 +2,9 @@
 // https://chriscoyier.net/2023/01/19/dark-mode-via-a-smallish-script-in-the-head-avoiding-fart/
 
 const COOKIES = {
-	MODE: 'barnsworthburning-mode',
-	CHROMA: 'barnsworthburning-chroma',
-	PALETTE: 'barnsworthburning-palette'
+	MODE: 'mode',
+	CHROMA: 'chroma',
+	PALETTE: 'palette'
 };
 
 const DEFAULTS = {

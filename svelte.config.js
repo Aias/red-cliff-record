@@ -8,7 +8,8 @@ const config = {
 		adapter: adapter(),
 		alias: {
 			$components: 'src/components',
-			$helpers: 'src/helpers',
+			$lib: 'src/lib',
+			$server: 'src/lib/server',
 			$styles: 'src/styles',
 			$types: 'src/types'
 		}

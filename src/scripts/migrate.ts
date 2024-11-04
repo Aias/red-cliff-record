@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import Airtable, { type Attachment } from 'airtable';
 import dotenv from 'dotenv';
-import { generateOrderPrefix } from '../helpers/order';
+import { generateOrderPrefix } from '../lib/order';
 import { setAttachmentTypes } from './set-attachment-types';
 
 dotenv.config();

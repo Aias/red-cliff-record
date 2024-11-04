@@ -1,4 +1,4 @@
-import type { Attachment, FieldSet, Record } from 'airtable';
+import type { FieldSet, Record } from 'airtable';
 
 // const AirtableBaseId = 'appHWZbECVKCSjquH' as const;
 export const AirtableBaseId = 'appNAUPSEyCYlPtvG' as const;
