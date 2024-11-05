@@ -1,12 +1,15 @@
 {
 	"compilerOptions": {
-		"checkJs": true,
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
-		"moduleResolution": "bundler",
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"strict": true,
 		"verbatimModuleSyntax": true
-	}
+	},
+	"include": ["**/*.ts"],
+	"exclude": ["node_modules"]
 }

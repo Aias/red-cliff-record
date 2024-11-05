@@ -9,6 +9,7 @@
 	"scripts": {
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
+		"generate": "prisma generate",
 		"migrate": "bun run src/scripts/migrate.ts"
 	},
 	"prisma": {

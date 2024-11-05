@@ -13,9 +13,6 @@ importers:
       '@rcr/database':
         specifier: workspace:*
         version: link:../database
-      airtable:
-        specifier: ^0.12.2
-        version: 0.12.2
       marked:
         specifier: ^14.1.3
         version: 14.1.3
