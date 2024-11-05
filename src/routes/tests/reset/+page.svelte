@@ -39,8 +39,8 @@
 		<!-- Media Testing -->
 		<section class="test-section">
 			<img
-				src="https://v5.airtableusercontent.com/v3/u/34/34/1730757600000/C7TCqQiN6YAk4foYAO1y8Q/gqLjyJPGO45I3DWO9utTHlNOhS8YAyl8KYMgBrJsTTq7OVBS_wITt55V-b3_Vf_nYW7c-iWZw6mRcDo4lS5THjGYwblZC1t-DQBjRb6skAG_VQe8RYpgfbSo6LGPpes8S3D_lAmvbbfOAIMq_S2qXA/6SJ4FCsiZtgSNURjDiktx_LhfUGVQtH9KdJCK_tlvw0"
-				alt="Hephaestus"
+				src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Everest_North_Face_toward_Base_Camp_Tibet_Luca_Galuzzi_2006.jpg/660px-Everest_North_Face_toward_Base_Camp_Tibet_Luca_Galuzzi_2006.jpg"
+				alt="Mount Everest"
 			/>
 			<video controls>
 				<source

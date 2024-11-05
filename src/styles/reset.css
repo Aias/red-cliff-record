@@ -20,6 +20,7 @@ html {
 	-webkit-text-size-adjust: 100%;
 	-moz-text-size-adjust: 100%;
 	text-size-adjust: 100%; /* MN: Prevent adjustments of font size after orientation changes in iOS. */
+	-webkit-font-smoothing: antialiased;
 	tab-size: 4; /* MN: Use a more readable tab size (opinionated). */
 	min-height: 100dvb;
 }
