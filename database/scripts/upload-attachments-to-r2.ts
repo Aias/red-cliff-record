@@ -4,12 +4,9 @@ import {
 	HeadObjectCommand,
 	S3ServiceException
 } from '@aws-sdk/client-s3';
-import dotenv from 'dotenv';
 import fs from 'fs/promises';
 import path from 'path';
-import { getContentTypeFromExtension } from './helpers';
-
-dotenv.config();
+import { getContentTypeFromExtension } from '../lib/extensions';
 
 const BATCH_SIZE = 100;
 

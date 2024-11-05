@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs/promises';
 import path from 'path';
-import { extensions } from './helpers';
+import { extensions } from '../lib/extensions';
 
 const prisma = new PrismaClient();
 

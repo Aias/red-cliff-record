@@ -1,0 +1,126 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Extract {
+  id            String            @id @default(cuid())
+  title         String
+  content       String?
+  fullText      String?
+  notes         String?
+  sourceUrl     String?
+  michelinStars Int               @default(0)
+  formatId      String?
+  parentId      String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @default(now()) @updatedAt
+  publishedOn   DateTime?
+  orderKey      String            @default("a0")
+  score         Int               @default(0)
+  attachments   Attachment[]
+  format        ExtractFormat?    @relation(fields: [formatId], references: [id])
+  parent        Extract?          @relation("ParentChild", fields: [parentId], references: [id])
+  children      Extract[]         @relation("ParentChild")
+  childCount    Int               @default(0)
+  connectedFrom ExtractRelation[] @relation("target")
+  connectedTo   ExtractRelation[] @relation("source")
+  creators      Creator[]         @relation("ExtractCreators")
+  creatorCount  Int               @default(0)
+  spaces        Space[]           @relation("ExtractSpaces")
+  spaceCount    Int               @default(0)
+
+  // Basic indexes
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([publishedOn])
+  // Composite indexes for common queries
+  @@index([publishedOn, createdAt]) // For ordering and filtering
+  @@index([parentId, orderKey]) // For ordering children
+  @@index([score])
+}
+
+enum RelationType {
+  GENERAL
+  REFERENCE
+  RESPONSE
+  REVIEW
+}
+
+model ExtractRelation {
+  type       RelationType @default(GENERAL)
+  fromId     String
+  toId       String
+  annotation String?
+  from       Extract      @relation("source", fields: [fromId], references: [id], onDelete: Cascade)
+  to         Extract      @relation("target", fields: [toId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @default(now()) @updatedAt
+
+  @@id([fromId, toId])
+  @@index([annotation])
+}
+
+model ExtractFormat {
+  id           String    @id @default(cuid())
+  name         String
+  extractCount Int       @default(0)
+  extracts     Extract[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+
+  @@index([name])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  url       String   @default("")
+  caption   String?
+  altText   String?
+  extractId String
+  extension String   @default("")
+  extract   Extract  @relation(fields: [extractId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([extension])
+}
+
+model Creator {
+  id           String    @id @default(cuid())
+  name         String
+  siteUrl      String?
+  score        Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+  extractCount Int       @default(0)
+  extracts     Extract[] @relation("ExtractCreators")
+
+  @@index([name])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([score])
+}
+
+model Space {
+  id           String    @id @default(cuid())
+  topic        String
+  title        String?
+  icon         String?
+  description  String?
+  score        Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+  extractCount Int       @default(0)
+  extracts     Extract[] @relation("ExtractSpaces")
+
+  @@index([topic])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([score])
+}

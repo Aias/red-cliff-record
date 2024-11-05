@@ -1,13 +1,10 @@
 import Airtable, { type Attachment } from 'airtable';
-import dotenv from 'dotenv';
 import fs from 'fs/promises';
 import path from 'path';
-import { getExtensionFromContentType } from './helpers';
-
-dotenv.config();
+import { getExtensionFromContentType } from '../lib/extensions';
 
 Airtable.configure({
-	apiKey: process.env.VITE_AIRTABLE_ACCESS_TOKEN
+	apiKey: process.env.AIRTABLE_ACCESS_TOKEN
 });
 
 const base = Airtable.base('appNAUPSEyCYlPtvG');

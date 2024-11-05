@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"checkJs": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"moduleResolution": "bundler",
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"verbatimModuleSyntax": true
+	}
+}

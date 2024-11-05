@@ -1,5 +1,9 @@
 <script lang="ts">
-	import type { Attachment } from '@prisma/client';
+	type Attachment = {
+		url: string;
+		altText?: string;
+		caption?: string;
+	};
 
 	interface ImageProps {
 		image: Attachment;

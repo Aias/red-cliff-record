@@ -1,15 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import Airtable, { type Attachment } from 'airtable';
-import dotenv from 'dotenv';
 import { generateOrderPrefix } from '../lib/order';
 import { setAttachmentTypes } from './set-attachment-types';
-
-dotenv.config();
 
 const prisma = new PrismaClient();
 
 Airtable.configure({
-	apiKey: process.env.VITE_AIRTABLE_ACCESS_TOKEN
+	apiKey: process.env.AIRTABLE_ACCESS_TOKEN
 });
 
 const base = Airtable.base('appNAUPSEyCYlPtvG');
