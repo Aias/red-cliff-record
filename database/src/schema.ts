@@ -5,10 +5,10 @@ import {
 	timestamp,
 	serial,
 	pgEnum,
-	real,
-	index
+	index,
+	pgMaterializedView
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { timestamps } from '../lib/schema-helpers';
 
 export enum IntegrationStatus {
@@ -73,27 +73,41 @@ export const integrationRuns = pgTable(
 	(table) => [index().on(table.integrationId)]
 );
 
+export enum Browser {
+	ARC = 'arc',
+	CHROME = 'chrome',
+	FIREFOX = 'firefox',
+	SAFARI = 'safari',
+	EDGE = 'edge'
+}
+
+export const browserEnum = pgEnum('browser', [
+	Browser.ARC,
+	Browser.CHROME,
+	Browser.FIREFOX,
+	Browser.SAFARI,
+	Browser.EDGE
+]);
+
 // Browsing history table
 export const browsingHistory = pgTable(
 	'browsing_history',
 	{
 		id: serial().primaryKey(),
-		date: timestamp().notNull(),
+		browser: browserEnum().notNull().default(Browser.ARC),
+		viewTime: timestamp().notNull(),
+		viewDuration: integer(),
+		durationSinceLastView: integer(),
 		url: text().notNull(),
 		pageTitle: text().notNull(),
-		visitCount: integer().default(1),
-		totalVisitDurationSeconds: integer(),
 		searchTerms: text(),
 		relatedSearches: text(),
-		responseCodes: text(),
-		firstVisitTime: timestamp(),
-		lastVisitTime: timestamp(),
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
 		...timestamps
 	},
-	(table) => [index().on(table.integrationRunId)]
+	(table) => [index().on(table.integrationRunId), index().on(table.viewTime), index().on(table.url)]
 );
 
 // Updated relations using the new syntax
