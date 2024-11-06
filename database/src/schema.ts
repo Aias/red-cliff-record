@@ -11,17 +11,48 @@ import {
 import { relations } from 'drizzle-orm';
 import { timestamps } from '../lib/schema-helpers';
 
+export enum IntegrationStatus {
+	SUCCESS = 'success',
+	FAIL = 'fail',
+	IN_PROGRESS = 'in_progress'
+}
+
 // Define the status enum for integration runs
-export const integrationStatusEnum = pgEnum('integration_status', ['success', 'fail']);
+export const integrationStatusEnum = pgEnum('integration_status', [
+	IntegrationStatus.SUCCESS,
+	IntegrationStatus.FAIL,
+	IntegrationStatus.IN_PROGRESS
+]);
+
+export enum IntegrationType {
+	BROWSER_HISTORY = 'browser_history',
+	AIRTABLE = 'airtable',
+	AI_CHAT = 'ai_chat',
+	RAINDROP = 'raindrop'
+}
+
+export const integrationTypeEnum = pgEnum('integration_type', [
+	IntegrationType.BROWSER_HISTORY,
+	IntegrationType.AIRTABLE,
+	IntegrationType.AI_CHAT,
+	IntegrationType.RAINDROP
+]);
 
 // Integrations table
 export const integrations = pgTable('integrations', {
 	id: serial().primaryKey(),
-	name: text().notNull(),
+	type: integrationTypeEnum().notNull(),
 	description: text(),
 	lastProcessed: timestamp(),
 	...timestamps
 });
+
+export enum RunType {
+	FULL = 'full',
+	INCREMENTAL = 'incremental'
+}
+
+export const runTypeEnum = pgEnum('run_type', [RunType.FULL, RunType.INCREMENTAL]);
 
 // Integration runs table
 export const integrationRuns = pgTable(
@@ -31,10 +62,11 @@ export const integrationRuns = pgTable(
 		integrationId: integer()
 			.references(() => integrations.id)
 			.notNull(),
-		status: integrationStatusEnum().notNull(),
+		type: runTypeEnum().notNull(),
+		status: integrationStatusEnum().notNull().default(IntegrationStatus.IN_PROGRESS),
 		message: text(),
-		runDuration: real(),
 		runStartTime: timestamp().notNull(),
+		runEndTime: timestamp(),
 		entriesCreated: integer().default(0),
 		...timestamps
 	},
@@ -48,7 +80,7 @@ export const browsingHistory = pgTable(
 		id: serial().primaryKey(),
 		date: timestamp().notNull(),
 		url: text().notNull(),
-		pageTitle: text(),
+		pageTitle: text().notNull(),
 		visitCount: integer().default(1),
 		totalVisitDurationSeconds: integer(),
 		searchTerms: text(),

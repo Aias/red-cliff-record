@@ -1,6 +1,6 @@
 {
-  "id": "c8d87ccf-11c6-4bf4-aa71-7faf851325d9",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "896e13b2-84c4-4474-8f65-19bf081c7c0e",
+  "prevId": "c8d87ccf-11c6-4bf4-aa71-7faf851325d9",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -152,6 +152,13 @@
         "integration_id": {
           "name": "integration_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "run_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -320,6 +327,14 @@
         "airtable",
         "ai_chat",
         "raindrop"
+      ]
+    },
+    "public.run_type": {
+      "name": "run_type",
+      "schema": "public",
+      "values": [
+        "full",
+        "incremental"
       ]
     }
   },

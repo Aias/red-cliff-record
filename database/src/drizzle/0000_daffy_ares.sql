@@ -1,4 +1,5 @@
 CREATE TYPE "public"."integration_status" AS ENUM('success', 'fail');--> statement-breakpoint
+CREATE TYPE "public"."integration_type" AS ENUM('browser_history', 'airtable', 'ai_chat', 'raindrop');--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "browsing_history" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"date" timestamp NOT NULL,
@@ -32,7 +33,7 @@ CREATE TABLE IF NOT EXISTS "integration_runs" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "integrations" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"name" text NOT NULL,
+	"type" "integration_type" NOT NULL,
 	"description" text,
 	"last_processed" timestamp,
 	"updated_at" timestamp,

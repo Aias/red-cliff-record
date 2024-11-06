@@ -1,6 +1,6 @@
 {
-  "id": "c8d87ccf-11c6-4bf4-aa71-7faf851325d9",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "f084f654-efc1-4def-8b22-219d375a2a7a",
+  "prevId": "a93e872b-3566-49d7-9d2c-dc2a32af364c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -30,7 +30,7 @@
           "name": "page_title",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "visit_count": {
           "name": "visit_count",
@@ -155,22 +155,24 @@
           "primaryKey": false,
           "notNull": true
         },
+        "type": {
+          "name": "type",
+          "type": "run_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
         "status": {
           "name": "status",
           "type": "integration_status",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'in_progress'"
         },
         "message": {
           "name": "message",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "run_duration": {
-          "name": "run_duration",
-          "type": "real",
           "primaryKey": false,
           "notNull": false
         },
@@ -179,6 +181,12 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
+        },
+        "run_end_time": {
+          "name": "run_end_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         },
         "entries_created": {
           "name": "entries_created",
@@ -309,7 +317,8 @@
       "schema": "public",
       "values": [
         "success",
-        "fail"
+        "fail",
+        "in_progress"
       ]
     },
     "public.integration_type": {
@@ -320,6 +329,14 @@
         "airtable",
         "ai_chat",
         "raindrop"
+      ]
+    },
+    "public.run_type": {
+      "name": "run_type",
+      "schema": "public",
+      "values": [
+        "full",
+        "incremental"
       ]
     }
   },
