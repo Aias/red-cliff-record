@@ -1,9 +1,8 @@
 import { join } from 'path';
 import { homedir } from 'os';
 
+const arcHistoryPath = 'Library/Application Support/Arc/User Data/Default/History';
+
 // Path to Arc's History database (Mac OS Only)
-export const dbPath = join(homedir(), 'Library/Application Support/Arc/User Data/Default/History');
-export const dbCopyPath = join(
-	homedir(),
-	'Library/Application Support/Arc/User Data/Default/History-copy'
-);
+export const arcDbPath = join(homedir(), arcHistoryPath);
+export const arcDbCopyPath = join(homedir(), `${arcHistoryPath}-copy`);

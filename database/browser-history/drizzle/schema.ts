@@ -268,7 +268,7 @@ export const clusterKeywords = sqliteTable(
 	},
 	(table) => {
 		return {
-			clusterIdIdx: index('cluster_keywords_cluster_id_idx').on(table.clusterId)
+			clusterIdIdx: index('cluster_keywords_cluster_id_index').on(table.clusterId)
 		};
 	}
 );

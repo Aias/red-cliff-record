@@ -1,11 +1,11 @@
-import 'dotenv/config';
 import { defineConfig } from 'drizzle-kit';
-import { dbCopyPath } from './browser-history/constants';
+import { arcDbCopyPath } from './browser-history/constants';
 
 export default defineConfig({
 	out: './browser-history/drizzle',
+	schema: './browser-history/drizzle/schema.ts',
 	dialect: 'sqlite',
 	dbCredentials: {
-		url: dbCopyPath
+		url: arcDbCopyPath
 	}
 });

@@ -1,9 +1,9 @@
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { Database } from 'bun:sqlite';
-import { dbPath, dbCopyPath } from './constants';
+import { arcDbPath, arcDbCopyPath } from './constants';
 import { copyFileSync } from 'fs';
 
-copyFileSync(dbPath, dbCopyPath);
+copyFileSync(arcDbPath, arcDbCopyPath);
 
-const sqlite = new Database(dbCopyPath, { readonly: true });
-export const db = drizzle(sqlite);
+const sqlite = new Database(arcDbCopyPath, { readonly: true });
+export const arcDb = drizzle(sqlite);
