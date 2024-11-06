@@ -43,6 +43,13 @@
       "when": 1730933234658,
       "tag": "0005_sticky_lizard",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1730935161399,
+      "tag": "0006_lean_spirit",
+      "breakpoints": true
     }
   ]
 }

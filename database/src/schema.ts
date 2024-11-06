@@ -6,7 +6,7 @@ import {
 	serial,
 	pgEnum,
 	index,
-	pgMaterializedView
+	boolean
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { timestamps } from '../lib/schema-helpers';
@@ -108,6 +108,32 @@ export const browsingHistory = pgTable(
 		...timestamps
 	},
 	(table) => [index().on(table.integrationRunId), index().on(table.viewTime), index().on(table.url)]
+);
+
+export const bookmarks = pgTable(
+	'bookmarks',
+	{
+		id: serial().primaryKey(),
+		url: text().notNull(),
+		title: text().notNull(),
+		content: text(),
+		notes: text(),
+		type: text(),
+		category: text(),
+		tags: text().array(),
+		starred: boolean().notNull().default(false),
+		imageUrl: text(),
+		integrationRunId: integer()
+			.references(() => integrationRuns.id)
+			.notNull(),
+		...timestamps
+	},
+	(table) => [
+		index().on(table.integrationRunId),
+		index().on(table.url),
+		index().on(table.starred),
+		index().on(table.createdAt)
+	]
 );
 
 // Updated relations using the new syntax
