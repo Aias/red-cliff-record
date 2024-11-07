@@ -11,12 +11,14 @@ async function fetchUserCommits() {
 		const { data: user } = await octokit.rest.users.getAuthenticated();
 		const username = user.login;
 
+		const PAGE_SIZE = 20;
+
 		// First get the list of commits
 		const searchResponse = await octokit.rest.search.commits({
 			q: `author:${username}`,
 			sort: 'author-date',
 			order: 'desc',
-			per_page: 3
+			per_page: PAGE_SIZE
 		});
 
 		// Get detailed information for each commit
@@ -31,18 +33,13 @@ async function fetchUserCommits() {
 					ref: item.sha
 				});
 
-				// Calculate total size of changes from the files array
-				const diffSize =
-					commitData.files?.reduce((acc, file) => {
-						return acc + (file.changes || 0);
-					}, 0) || 0;
-
 				return {
 					sha: commitData.sha,
 					message: commitData.commit.message,
 					repository: item.repository.full_name,
 					url: commitData.html_url,
 					committer: commitData.committer?.login,
+					commitDate: commitData.commit.committer?.date ?? commitData.commit.author?.date,
 					stats: commitData.stats,
 					files: commitData.files?.map(
 						({ filename, status, additions, deletions, changes, patch = '' }) => ({
@@ -60,6 +57,12 @@ async function fetchUserCommits() {
 				};
 			})
 		);
+
+		commits.sort((a, b) => {
+			const dateA = a.commitDate ?? '';
+			const dateB = b.commitDate ?? '';
+			return dateB.localeCompare(dateA);
+		});
 
 		const outputPath = path.join(__dirname, 'recent-user-commits.json');
 		await fs.writeFile(outputPath, JSON.stringify(commits, null, 2));
