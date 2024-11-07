@@ -6,7 +6,8 @@ import {
 	RunType,
 	IntegrationType,
 	IntegrationStatus,
-	Browser
+	Browser,
+	browsingHistoryDaily
 } from '../src/schema';
 import { eq, and, notLike, isNotNull, ne } from 'drizzle-orm';
 import { visits, urls, contentAnnotations, contextAnnotations } from './drizzle/schema';
@@ -140,6 +141,8 @@ const main = async () => {
 			);
 		}
 		console.log('History rows inserted.');
+
+		await db.refreshMaterializedView(browsingHistoryDaily);
 
 		await db
 			.update(integrationRuns)
