@@ -5,7 +5,6 @@ import {
 	integrationRuns,
 	RunType,
 	IntegrationType,
-	integrations,
 	IntegrationStatus,
 	Browser
 } from '../src/schema';
@@ -86,21 +85,11 @@ const collapseSequentialVisits = (rawHistory: typeof dailyVisitsQuery._.result) 
 };
 
 const main = async () => {
-	const integrationType = await db
-		.select()
-		.from(integrations)
-		.where(eq(integrations.type, IntegrationType.BROWSER_HISTORY));
-
-	if (integrationType.length === 0) {
-		console.error('Could not find corresponding integration type for browser history.');
-		return;
-	}
-
 	const run = await db
 		.insert(integrationRuns)
 		.values({
-			type: RunType.FULL,
-			integrationId: integrationType[0].id,
+			integrationType: IntegrationType.BROWSER_HISTORY,
+			runType: RunType.FULL,
 			runStartTime: new Date()
 		})
 		.returning();

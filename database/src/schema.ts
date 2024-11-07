@@ -6,7 +6,8 @@ import {
 	serial,
 	pgEnum,
 	index,
-	boolean
+	boolean,
+	pgMaterializedView
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { timestamps } from '../lib/schema-helpers';
@@ -28,24 +29,17 @@ export enum IntegrationType {
 	BROWSER_HISTORY = 'browser_history',
 	AIRTABLE = 'airtable',
 	AI_CHAT = 'ai_chat',
-	RAINDROP = 'raindrop'
+	RAINDROP = 'raindrop',
+	GITHUB = 'github'
 }
 
 export const integrationTypeEnum = pgEnum('integration_type', [
 	IntegrationType.BROWSER_HISTORY,
 	IntegrationType.AIRTABLE,
 	IntegrationType.AI_CHAT,
-	IntegrationType.RAINDROP
+	IntegrationType.RAINDROP,
+	IntegrationType.GITHUB
 ]);
-
-// Integrations table
-export const integrations = pgTable('integrations', {
-	id: serial().primaryKey(),
-	type: integrationTypeEnum().notNull(),
-	description: text(),
-	lastProcessed: timestamp(),
-	...timestamps
-});
 
 export enum RunType {
 	FULL = 'full',
@@ -59,10 +53,8 @@ export const integrationRuns = pgTable(
 	'integration_runs',
 	{
 		id: serial().primaryKey(),
-		integrationId: integer()
-			.references(() => integrations.id)
-			.notNull(),
-		type: runTypeEnum().notNull(),
+		integrationType: integrationTypeEnum().notNull(),
+		runType: runTypeEnum().notNull(),
 		status: integrationStatusEnum().notNull().default(IntegrationStatus.IN_PROGRESS),
 		message: text(),
 		runStartTime: timestamp().notNull(),
@@ -70,7 +62,7 @@ export const integrationRuns = pgTable(
 		entriesCreated: integer().default(0),
 		...timestamps
 	},
-	(table) => [index().on(table.integrationId)]
+	(table) => [index().on(table.integrationType)]
 );
 
 export enum Browser {
@@ -110,6 +102,23 @@ export const browsingHistory = pgTable(
 	(table) => [index().on(table.integrationRunId), index().on(table.viewTime), index().on(table.url)]
 );
 
+export const browsingHistoryDaily = pgMaterializedView('browsing_history_daily').as((qb) =>
+	qb
+		.select({
+			date: sql<Date>`DATE(${browsingHistory.viewTime})`.as('date'),
+			url: browsingHistory.url,
+			pageTitle: browsingHistory.pageTitle,
+			totalDuration: sql<number>`SUM(COALESCE(${browsingHistory.viewDuration}, 0))`.as(
+				'total_duration'
+			),
+			firstVisit: sql<Date>`MIN(${browsingHistory.viewTime})`.as('first_visit'),
+			lastVisit: sql<Date>`MAX(${browsingHistory.viewTime})`.as('last_visit'),
+			visitCount: sql<number>`COUNT(*)`.as('visit_count')
+		})
+		.from(browsingHistory)
+		.groupBy(sql`DATE(${browsingHistory.viewTime})`, browsingHistory.url, browsingHistory.pageTitle)
+);
+
 export const bookmarks = pgTable(
 	'bookmarks',
 	{
@@ -136,22 +145,20 @@ export const bookmarks = pgTable(
 	]
 );
 
-// Updated relations using the new syntax
-export const integrationsRelations = relations(integrations, ({ many }) => ({
-	runs: many(integrationRuns)
-}));
-
-export const integrationRunsRelations = relations(integrationRuns, ({ one, many }) => ({
-	integration: one(integrations, {
-		fields: [integrationRuns.integrationId],
-		references: [integrations.id]
-	}),
+export const integrationRunsRelations = relations(integrationRuns, ({ many }) => ({
 	browsingHistory: many(browsingHistory)
 }));
 
 export const browsingHistoryRelations = relations(browsingHistory, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [browsingHistory.integrationRunId],
+		references: [integrationRuns.id]
+	})
+}));
+
+export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
+	integrationRun: one(integrationRuns, {
+		fields: [bookmarks.integrationRunId],
 		references: [integrationRuns.id]
 	})
 }));

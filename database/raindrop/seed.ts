@@ -1,13 +1,12 @@
 import { db } from '../src/db';
 import {
-	integrations,
 	integrationRuns,
 	RunType,
 	IntegrationType,
 	IntegrationStatus,
 	bookmarks
 } from '../src/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 interface Raindrop {
 	_id: number;
@@ -180,21 +179,11 @@ async function getAllCollections() {
 }
 
 const main = async () => {
-	const integrationType = await db
-		.select()
-		.from(integrations)
-		.where(eq(integrations.type, IntegrationType.RAINDROP));
-
-	if (integrationType.length === 0) {
-		console.error('Could not find corresponding integration type for Raindrop bookmarks.');
-		return;
-	}
-
 	const run = await db
 		.insert(integrationRuns)
 		.values({
-			type: RunType.FULL,
-			integrationId: integrationType[0].id,
+			integrationType: IntegrationType.RAINDROP,
+			runType: RunType.FULL,
 			runStartTime: new Date()
 		})
 		.returning();
@@ -207,7 +196,17 @@ const main = async () => {
 
 	try {
 		console.log('Deleting existing bookmarks.');
-		await db.delete(bookmarks);
+		await db
+			.delete(bookmarks)
+			.where(
+				inArray(
+					bookmarks.integrationRunId,
+					db
+						.select({ id: integrationRuns.id })
+						.from(integrationRuns)
+						.where(eq(integrationRuns.integrationType, IntegrationType.RAINDROP))
+				)
+			);
 		console.log('Bookmarks deleted.');
 
 		// Get collections first
@@ -220,8 +219,8 @@ const main = async () => {
 		const bookmarkData = raindrops.map((raindrop) => ({
 			url: raindrop.link,
 			title: raindrop.title,
-			content: raindrop.excerpt,
-			notes: raindrop.note,
+			content: raindrop.excerpt?.trim() || null,
+			notes: raindrop.note?.trim() || null,
 			type: raindrop.type,
 			// Use collection title from our map, fallback to "Unsorted" for collection ID -1
 			category:
@@ -232,6 +231,7 @@ const main = async () => {
 			tags: raindrop.tags,
 			starred: raindrop.important,
 			imageUrl: raindrop.cover,
+			createdAt: new Date(raindrop.created),
 			integrationRunId: run[0].id
 		}));
 
