@@ -8,4 +8,4 @@ build
 .yarn
 .vscode
 .cursorignore
-.temp
+**/.temp/**

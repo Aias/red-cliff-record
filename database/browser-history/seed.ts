@@ -1,17 +1,10 @@
 import { arcDb } from './db';
 import { db } from '../src/db';
-import {
-	browsingHistory,
-	integrationRuns,
-	RunType,
-	IntegrationType,
-	IntegrationStatus,
-	Browser,
-	browsingHistoryDaily
-} from '../src/schema';
+import { browsingHistory, browsingHistoryDaily, Browser, IntegrationType } from '../src/schema';
 import { eq, and, notLike, isNotNull, ne } from 'drizzle-orm';
 import { visits, urls, contentAnnotations, contextAnnotations } from './drizzle/schema';
 import { sanitizeString } from '../lib/sanitize';
+import { runIntegration } from '../lib/integration';
 
 const dailyVisitsQuery = arcDb
 	.select({
@@ -85,84 +78,64 @@ const collapseSequentialVisits = (rawHistory: typeof dailyVisitsQuery._.result) 
 	return collapsed;
 };
 
+async function processBrowserHistory(integrationRunId: number): Promise<number> {
+	console.log('Cleaning up existing browser history...');
+	await db.delete(browsingHistory);
+	console.log('Cleanup complete');
+
+	console.log('Retrieving raw history...');
+	const rawHistory = await dailyVisitsQuery;
+	console.log(`Retrieved ${rawHistory.length} raw history entries`);
+
+	const collapsedHistory = collapseSequentialVisits(rawHistory);
+	console.log(`Collapsed into ${collapsedHistory.length} entries`);
+
+	// Calculate seconds between Chrome epoch and Unix epoch
+	const CHROME_EPOCH_TO_UNIX = Math.floor(Date.UTC(1970, 0, 1) - Date.UTC(1601, 0, 1)) / 1000;
+
+	const history = collapsedHistory.map((h) => ({
+		viewTime: h.viewTime
+			? new Date((Math.floor(Number(h.viewTime) / 1000000) - CHROME_EPOCH_TO_UNIX) * 1000)
+			: new Date(),
+		viewDuration: h.viewDuration ? Math.round(h.viewDuration / 1000000) : 0,
+		durationSinceLastView: h.durationSinceLastView
+			? Math.round(h.durationSinceLastView / 1000000)
+			: 0,
+		url: h.url as string,
+		pageTitle: h.pageTitle as string,
+		searchTerms: h.searchTerms ? sanitizeString(h.searchTerms) : null,
+		relatedSearches: h.relatedSearches ? sanitizeString(h.relatedSearches) : null,
+		integrationRunId,
+		browser: Browser.ARC
+	}));
+
+	console.log(`Inserting ${history.length} rows into browsing_history`);
+	const chunkSize = 100;
+	for (let i = 0; i < history.length; i += chunkSize) {
+		const chunk = history.slice(i, i + chunkSize);
+		await db.insert(browsingHistory).values(chunk);
+		console.log(`Inserted chunk ${i / chunkSize + 1} of ${Math.ceil(history.length / chunkSize)}`);
+	}
+	console.log('History rows inserted');
+
+	console.log('Refreshing materialized view...');
+	await db.refreshMaterializedView(browsingHistoryDaily);
+	console.log('Materialized view refreshed');
+
+	return history.length;
+}
+
 const main = async () => {
-	const run = await db
-		.insert(integrationRuns)
-		.values({
-			integrationType: IntegrationType.BROWSER_HISTORY,
-			runType: RunType.FULL,
-			runStartTime: new Date()
-		})
-		.returning();
-
-	if (run.length === 0) {
-		console.error('Could not create integration run.');
-		return;
-	}
-	console.log(`Created integration run with id ${run[0].id}`);
-
 	try {
-		console.log('Deleting existing browsing history.');
-		await db.delete(browsingHistory);
-		console.log('Browsing history deleted.');
-
-		const rawHistory = await dailyVisitsQuery;
-		console.log(`Retrieved ${rawHistory.length} raw history entries`);
-
-		const collapsedHistory = collapseSequentialVisits(rawHistory);
-		console.log(`Collapsed into ${collapsedHistory.length} entries`);
-
-		// Calculate seconds between Chrome epoch and Unix epoch
-		const CHROME_EPOCH_TO_UNIX = Math.floor(Date.UTC(1970, 0, 1) - Date.UTC(1601, 0, 1)) / 1000;
-
-		const history = collapsedHistory.map((h) => ({
-			viewTime: h.viewTime
-				? new Date((Math.floor(Number(h.viewTime) / 1000000) - CHROME_EPOCH_TO_UNIX) * 1000)
-				: new Date(),
-			viewDuration: h.viewDuration ? Math.round(h.viewDuration / 1000000) : 0,
-			durationSinceLastView: h.durationSinceLastView
-				? Math.round(h.durationSinceLastView / 1000000)
-				: 0,
-			url: h.url as string,
-			pageTitle: h.pageTitle as string,
-			searchTerms: h.searchTerms ? sanitizeString(h.searchTerms) : null,
-			relatedSearches: h.relatedSearches ? sanitizeString(h.relatedSearches) : null,
-			integrationRunId: run[0].id,
-			browser: Browser.ARC
-		}));
-
-		console.log(`Inserting ${history.length} rows into browsing_history`);
-		const chunkSize = 100;
-		for (let i = 0; i < history.length; i += chunkSize) {
-			const chunk = history.slice(i, i + chunkSize);
-			await db.insert(browsingHistory).values(chunk);
-			console.log(
-				`Inserted chunk ${i / chunkSize + 1} of ${Math.ceil(history.length / chunkSize)}`
-			);
-		}
-		console.log('History rows inserted.');
-
-		await db.refreshMaterializedView(browsingHistoryDaily);
-
-		await db
-			.update(integrationRuns)
-			.set({
-				status: IntegrationStatus.SUCCESS,
-				runEndTime: new Date(),
-				entriesCreated: history.length
-			})
-			.where(eq(integrationRuns.id, run[0].id));
-		console.log(`Updated integration run with id ${run[0].id}`);
+		await runIntegration(IntegrationType.BROWSER_HISTORY, processBrowserHistory);
 	} catch (err) {
-		console.error('Error inserting browsing history:', err);
-		await db
-			.update(integrationRuns)
-			.set({ status: IntegrationStatus.FAIL, runEndTime: new Date() })
-			.where(eq(integrationRuns.id, run[0].id));
-		console.error(`Updated integration run with id ${run[0].id} to failed`);
+		console.error('Error in main:', err);
+		process.exit(1);
 	}
-
-	console.log('Integration run updated.');
 };
 
-main();
+if (import.meta.url === import.meta.resolve('./seed.ts')) {
+	main();
+}
+
+export { main as seedBrowserHistory };

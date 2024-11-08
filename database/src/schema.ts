@@ -30,7 +30,8 @@ export enum IntegrationType {
 	AIRTABLE = 'airtable',
 	AI_CHAT = 'ai_chat',
 	RAINDROP = 'raindrop',
-	GITHUB = 'github'
+	GITHUB = 'github',
+	TWITTER = 'twitter'
 }
 
 export const integrationTypeEnum = pgEnum('integration_type', [
@@ -38,7 +39,8 @@ export const integrationTypeEnum = pgEnum('integration_type', [
 	IntegrationType.AIRTABLE,
 	IntegrationType.AI_CHAT,
 	IntegrationType.RAINDROP,
-	IntegrationType.GITHUB
+	IntegrationType.GITHUB,
+	IntegrationType.TWITTER
 ]);
 
 export enum RunType {
