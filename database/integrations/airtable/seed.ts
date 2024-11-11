@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import Airtable, { type Attachment } from 'airtable';
-import { generateOrderPrefix } from '../lib/order';
+import { generateOrderPrefix } from '../../lib/order';
 import { setAttachmentTypes } from './set-attachment-types';
 
 const prisma = new PrismaClient();

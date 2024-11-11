@@ -1,8 +1,10 @@
 import { Octokit } from '@octokit/rest';
-import { bookmarks, IntegrationType, integrationRuns } from '../src/schema';
-import { runIntegration } from '../lib/integration';
-import { db } from '../src/db';
+import { bookmarks, IntegrationType, integrationRuns } from '../../schema/main';
+import { runIntegration } from '../utils/run-integration';
+import { createPgConnection } from '../../connections';
 import { eq, inArray } from 'drizzle-orm';
+
+const db = createPgConnection();
 
 const REQUEST_ACCEPT_HEADER = 'application/vnd.github.star+json';
 

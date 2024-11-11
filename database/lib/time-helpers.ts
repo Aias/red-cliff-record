@@ -1,12 +1,3 @@
-import { join } from 'path';
-import { homedir } from 'os';
-
-const arcHistoryPath = 'Library/Application Support/Arc/User Data/Default/History';
-
-// Path to Arc's History database (Mac OS Only)
-export const arcDbPath = join(homedir(), arcHistoryPath);
-export const arcDbCopyPath = join(homedir(), `${arcHistoryPath}-copy`);
-
 // Calculate seconds between Chrome epoch and Unix epoch
 export const CHROME_EPOCH_TO_UNIX_SECONDS = Math.floor(Date.UTC(1970, 0, 1) - Date.UTC(1601, 0, 1)) / 1000;
 

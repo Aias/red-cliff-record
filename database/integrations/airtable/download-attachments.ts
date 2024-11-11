@@ -1,7 +1,7 @@
 import Airtable, { type Attachment } from 'airtable';
 import fs from 'fs/promises';
 import path from 'path';
-import { getExtensionFromContentType } from '../lib/extensions';
+import { getExtensionFromContentType } from '../../lib/extensions';
 
 Airtable.configure({
 	apiKey: process.env.AIRTABLE_ACCESS_TOKEN

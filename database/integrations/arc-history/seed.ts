@@ -1,12 +1,15 @@
-import { arcDb } from './db';
-import { db } from '../src/db';
-import { browsingHistory, browsingHistoryDaily, Browser, IntegrationType } from '../src/schema';
+import { createArcConnection, createPgConnection } from '../../connections';
+import { browsingHistory, browsingHistoryDaily, Browser, IntegrationType } from '../../schema/main';
 import { eq, and, notLike, isNotNull, ne } from 'drizzle-orm';
-import { visits, urls, contentAnnotations, contextAnnotations } from './drizzle/schema';
-import { sanitizeString } from '../lib/sanitize';
-import { runIntegration } from '../lib/integration';
-import { chromeEpochMicrosecondsToDatetime, datetimeToChromeEpochMicroseconds } from './constants';
+import { visits, urls, contentAnnotations, contextAnnotations } from '../../schema/arc';
+import { sanitizeString } from '../utils/sanitize';
+import { runIntegration } from '../utils/run-integration';
+import { chromeEpochMicrosecondsToDatetime, datetimeToChromeEpochMicroseconds } from '../../lib/time-helpers';
 import os from 'os';
+
+const arcDb = createArcConnection();
+const pgDb = createPgConnection();
+
 const dailyVisitsQuery = arcDb
 	.select({
 		viewTime: visits.visitTime,
@@ -82,7 +85,7 @@ const collapseSequentialVisits = (rawHistory: typeof dailyVisitsQuery._.result) 
 async function processArcBrowserHistory(integrationRunId: number): Promise<number> {
 	const hostname = os.hostname();
 	console.log(`Cleaning up existing Arc browser history for ${hostname}...`);
-	await db.delete(browsingHistory).where(and(eq(browsingHistory.browser, Browser.ARC), eq(browsingHistory.hostname, hostname)));
+	await pgDb.delete(browsingHistory).where(and(eq(browsingHistory.browser, Browser.ARC), eq(browsingHistory.hostname, hostname)));
 	console.log('Cleanup complete');
 
 	console.log('Retrieving raw history...');
@@ -114,13 +117,13 @@ async function processArcBrowserHistory(integrationRunId: number): Promise<numbe
 	const chunkSize = 100;
 	for (let i = 0; i < history.length; i += chunkSize) {
 		const chunk = history.slice(i, i + chunkSize);
-		await db.insert(browsingHistory).values(chunk);
+		await pgDb.insert(browsingHistory).values(chunk);
 		console.log(`Inserted chunk ${i / chunkSize + 1} of ${Math.ceil(history.length / chunkSize)}`);
 	}
 	console.log('History rows inserted');
 
 	console.log('Refreshing materialized view...');
-	await db.refreshMaterializedView(browsingHistoryDaily);
+	await pgDb.refreshMaterializedView(browsingHistoryDaily);
 	console.log('Materialized view refreshed');
 
 	return history.length;

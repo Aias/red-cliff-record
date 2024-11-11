@@ -8,11 +8,10 @@ import {
 	index,
 	boolean,
 	pgMaterializedView,
-	decimal,
 	bigint
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import { timestamps } from '../lib/schema-helpers';
+import { timestamps } from '../schema/common/timestamps';
 
 export enum IntegrationStatus {
 	SUCCESS = 'success',

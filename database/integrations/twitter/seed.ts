@@ -5,9 +5,11 @@ import {
 	IntegrationType,
 	IntegrationStatus,
 	RunType
-} from '../src/schema';
-import { db } from '../src/db';
+} from '../../schema/main';
 import { eq, inArray } from 'drizzle-orm';
+import { createPgConnection } from '../../connections';
+
+const db = createPgConnection();
 
 function getFirstImageUrl(tweet: Tweet): string | null {
 	// Check extended_entities first, then entities
