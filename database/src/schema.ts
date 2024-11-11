@@ -7,7 +7,9 @@ import {
 	pgEnum,
 	index,
 	boolean,
-	pgMaterializedView
+	pgMaterializedView,
+	decimal,
+	bigint
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { timestamps } from '../lib/schema-helpers';
@@ -88,8 +90,10 @@ export const browsingHistory = pgTable(
 	'browsing_history',
 	{
 		id: serial().primaryKey(),
-		browser: browserEnum().notNull().default(Browser.ARC),
 		viewTime: timestamp().notNull(),
+		browser: browserEnum().notNull().default(Browser.ARC),
+		hostname: text(),
+		viewEpochMicroseconds: bigint({ mode: 'bigint' }),
 		viewDuration: integer(),
 		durationSinceLastView: integer(),
 		url: text().notNull(),

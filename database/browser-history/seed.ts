@@ -5,7 +5,8 @@ import { eq, and, notLike, isNotNull, ne } from 'drizzle-orm';
 import { visits, urls, contentAnnotations, contextAnnotations } from './drizzle/schema';
 import { sanitizeString } from '../lib/sanitize';
 import { runIntegration } from '../lib/integration';
-
+import { chromeEpochMicrosecondsToDatetime, datetimeToChromeEpochMicroseconds } from './constants';
+import os from 'os';
 const dailyVisitsQuery = arcDb
 	.select({
 		viewTime: visits.visitTime,
@@ -78,9 +79,10 @@ const collapseSequentialVisits = (rawHistory: typeof dailyVisitsQuery._.result) 
 	return collapsed;
 };
 
-async function processBrowserHistory(integrationRunId: number): Promise<number> {
-	console.log('Cleaning up existing browser history...');
-	await db.delete(browsingHistory);
+async function processArcBrowserHistory(integrationRunId: number): Promise<number> {
+	const hostname = os.hostname();
+	console.log(`Cleaning up existing Arc browser history for ${hostname}...`);
+	await db.delete(browsingHistory).where(and(eq(browsingHistory.browser, Browser.ARC), eq(browsingHistory.hostname, hostname)));
 	console.log('Cleanup complete');
 
 	console.log('Retrieving raw history...');
@@ -90,13 +92,11 @@ async function processBrowserHistory(integrationRunId: number): Promise<number> 
 	const collapsedHistory = collapseSequentialVisits(rawHistory);
 	console.log(`Collapsed into ${collapsedHistory.length} entries`);
 
-	// Calculate seconds between Chrome epoch and Unix epoch
-	const CHROME_EPOCH_TO_UNIX = Math.floor(Date.UTC(1970, 0, 1) - Date.UTC(1601, 0, 1)) / 1000;
-
-	const history = collapsedHistory.map((h) => ({
+	const history: typeof browsingHistory.$inferInsert[] = collapsedHistory.map((h) => ({
 		viewTime: h.viewTime
-			? new Date((Math.floor(Number(h.viewTime) / 1000000) - CHROME_EPOCH_TO_UNIX) * 1000)
+			? chromeEpochMicrosecondsToDatetime(h.viewTime)
 			: new Date(),
+		viewEpochMicroseconds: h.viewTime ? BigInt(h.viewTime) : datetimeToChromeEpochMicroseconds(new Date()),
 		viewDuration: h.viewDuration ? Math.round(h.viewDuration / 1000000) : 0,
 		durationSinceLastView: h.durationSinceLastView
 			? Math.round(h.durationSinceLastView / 1000000)
@@ -106,7 +106,8 @@ async function processBrowserHistory(integrationRunId: number): Promise<number> 
 		searchTerms: h.searchTerms ? sanitizeString(h.searchTerms) : null,
 		relatedSearches: h.relatedSearches ? sanitizeString(h.relatedSearches) : null,
 		integrationRunId,
-		browser: Browser.ARC
+		browser: Browser.ARC,
+		hostname
 	}));
 
 	console.log(`Inserting ${history.length} rows into browsing_history`);
@@ -127,7 +128,7 @@ async function processBrowserHistory(integrationRunId: number): Promise<number> 
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.BROWSER_HISTORY, processBrowserHistory);
+		await runIntegration(IntegrationType.BROWSER_HISTORY, processArcBrowserHistory);
 	} catch (err) {
 		console.error('Error in main:', err);
 		process.exit(1);

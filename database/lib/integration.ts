@@ -1,21 +1,21 @@
 import { db } from '../src/db';
 import { integrationRuns, IntegrationType, IntegrationStatus, RunType } from '../src/schema';
-import { eq, inArray } from 'drizzle-orm';
-import { PgTable } from 'drizzle-orm/pg-core';
+import { eq } from 'drizzle-orm';
 
 type IntegrationFunction = (integrationRunId: number) => Promise<number>;
 
 export async function runIntegration(
 	integrationType: IntegrationType,
-	fn: IntegrationFunction
+	fn: IntegrationFunction,
+	runType: RunType = RunType.FULL
 ): Promise<void> {
-	console.log(`Starting ${integrationType} integration run...`);
+	console.log(`Starting ${integrationType} integration run for ${runType}...`);
 
 	const run = await db
 		.insert(integrationRuns)
 		.values({
 			integrationType,
-			runType: RunType.FULL,
+			runType,
 			runStartTime: new Date()
 		})
 		.returning();
