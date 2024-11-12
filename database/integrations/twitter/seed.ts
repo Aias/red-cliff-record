@@ -1,4 +1,3 @@
-import type { TwitterBookmarksArray, Tweet, TweetWithVisibilityResults, TweetTombstone } from './types';
 import {
 	bookmarks,
 	integrationRuns,
@@ -6,80 +5,11 @@ import {
 } from '../../schema/main';
 import { eq, inArray } from 'drizzle-orm';
 import { createPgConnection } from '../../connections';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 import { runIntegration } from '../utils/run-integration';
+import { isTweetWithVisibilityResults, formatTweetContent, getFirstSentence, getFirstImageUrl } from './helpers';
+import { loadBookmarksData } from './loaders';
 
 const db = createPgConnection();
-
-function getFirstImageUrl(tweet: Tweet): string | null {
-	const media = tweet.legacy.extended_entities?.media || tweet.legacy.entities.media;
-	if (!media?.length) return null;
-	return media[0].media_url_https;
-}
-
-function getFirstSentence(text: string): string {
-	if (text.includes('\n')) {
-		return text.split('\n')[0];
-	}
-	const match = text.match(/^[^.!?]+[.!?]/);
-	return match ? match[0] : text;
-}
-
-// Add type guard
-function isTweetWithVisibilityResults(tweet: Tweet | TweetWithVisibilityResults): tweet is TweetWithVisibilityResults {
-	return tweet.__typename === 'TweetWithVisibilityResults';
-}
-
-function isTweetTombstone(tweet: Tweet | TweetTombstone): tweet is TweetTombstone {
-	return tweet.__typename === 'TweetTombstone';
-}
-
-function formatTweetContent(tweet: Tweet): string {
-	let content = tweet.legacy.full_text;
-
-	if (tweet.quoted_status_result?.result) {
-			const quotedResult = tweet.quoted_status_result.result;
-			
-			// Handle tombstones first
-			if (isTweetTombstone(quotedResult)) {
-					content = `${content}\n\n> [${quotedResult.tombstone.text.text}]`;
-			} else {					
-					// Handle normal quoted tweets
-					if (quotedResult.__typename === "Tweet") {
-							const tweetResult = quotedResult as Tweet;
-							if (tweetResult.legacy?.full_text) {
-									const quotedAuthor = tweetResult.core?.user_results?.result?.legacy?.name || 'Unknown Author';
-									const quotedText = tweetResult.legacy.full_text;
-									content = `> "${quotedText}" — ${quotedAuthor}\n\n${content}`;
-							}
-					} else {
-							const tweetResult = quotedResult as Tweet;
-							console.log('Quoted tweet has incomplete data:', {
-									tweetId: tweet.rest_id,
-									quotedTweetId: tweetResult.rest_id,
-									quotedTweetType: tweetResult.__typename,
-									hasLegacy: 'legacy' in tweetResult && !!tweetResult.legacy,
-									hasFullText: 'legacy' in tweetResult && !!tweetResult.legacy?.full_text,
-									quotedTweet: tweetResult
-							});
-					}
-			}
-	}
-
-	return content;
-}
-
-async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
-	const defaultPath = resolve(process.cwd(), '.temp/bookmark-responses.json');
-	try {
-		const data = readFileSync(defaultPath, 'utf-8');
-		return JSON.parse(data);
-	} catch (err) {
-		console.error('Error loading Twitter bookmarks data:', err);
-		throw err;
-	}
-}
 
 async function processTwitterBookmarks(integrationRunId: number): Promise<number> {
 	const data = await loadBookmarksData();
@@ -124,12 +54,12 @@ async function processTwitterBookmarks(integrationRunId: number): Promise<number
 			}
 
 			const tweetContent = formatTweetContent(tweet);
-			
-			// Use tweet's creation date
+
+			const url = `https://twitter.com/i/web/status/${tweet.rest_id}`;
 			const bookmarkedAt = new Date(tweet.legacy.created_at);
 
 			bookmarksToInsert.push({
-				url: `https://twitter.com/i/web/status/${tweet.rest_id}`,
+				url,
 				title: getFirstSentence(tweet.legacy.full_text),
 				creator: `${tweet.core.user_results.result.legacy.name} (@${tweet.core.user_results.result.legacy.screen_name})`,
 				content: tweetContent,

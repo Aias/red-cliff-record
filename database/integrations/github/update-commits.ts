@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { createPgConnection } from '../../connections';
-import { IntegrationType, commits, commitChanges, CommitChangeStatus } from '../../schema/main';
+import { IntegrationType, commits, commitChanges, CommitChangeStatus, RunType } from '../../schema/main';
 import { runIntegration } from '../utils/run-integration';
 import { desc, sql } from 'drizzle-orm';
 
@@ -161,7 +161,7 @@ async function fetchIncrementalCommits(integrationRunId: number): Promise<number
 
 const main = async () => {
     try {
-        await runIntegration(IntegrationType.GITHUB, fetchIncrementalCommits);
+        await runIntegration(IntegrationType.GITHUB, fetchIncrementalCommits, RunType.INCREMENTAL);
     } catch (err) {
         console.error('Error in main:', err);
         process.exit(1);

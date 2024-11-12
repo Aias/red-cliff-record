@@ -8,7 +8,8 @@ import {
 	index,
 	boolean,
 	pgMaterializedView,
-	bigint
+	bigint,
+	unique
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { timestamps } from './common/timestamps';
@@ -148,7 +149,8 @@ export const bookmarks = pgTable(
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.url),
-		index().on(table.createdAt)
+		index().on(table.createdAt),
+		unique().on(table.url, table.bookmarkedAt)
 	]
 );
 

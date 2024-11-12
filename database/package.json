@@ -16,7 +16,9 @@
 		"seed:code": "bun run integrations/github/seed-commits.ts",
 		"seed:raindrop": "bun run integrations/raindrop/seed.ts",
 		"seed:twitter": "bun run integrations/twitter/seed.ts",
-		"update:code": "bun run integrations/github/update-commits.ts"
+		"update:code": "bun run integrations/github/update-commits.ts",
+		"update:raindrop": "bun run integrations/raindrop/update.ts",
+		"update:twitter": "bun run integrations/twitter/update.ts"
 	},
 	"dependencies": {
 		"@octokit/rest": "^21.0.2",
