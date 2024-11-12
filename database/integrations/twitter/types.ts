@@ -27,15 +27,20 @@ export interface TwitterBookmark {
 			itemType: string;
 			__typename: string;
 			tweet_results: {
-				result: Tweet;
+				result: Tweet | TweetWithVisibilityResults;
 			};
 			tweetDisplayType: string;
 		};
 	};
 }
 
+export interface TweetWithVisibilityResults {
+	__typename: 'TweetWithVisibilityResults';
+	tweet: Tweet;
+}
+
 export interface Tweet {
-	__typename: string;
+	__typename: 'Tweet';
 	rest_id: string;
 	core: {
 		user_results: {
@@ -55,7 +60,7 @@ export interface Tweet {
 		};
 	};
 	quoted_status_result?: {
-		result: Tweet;
+		result: Tweet | TweetTombstone;
 	};
 }
 
@@ -313,6 +318,28 @@ export interface NoteTweetEntities {
 	symbols: [];
 	urls: Url[];
 	user_mentions: UserMention[];
+}
+
+export interface TweetTombstone {
+	__typename: "TweetTombstone";
+	tombstone: {
+		__typename: "TextTombstone";
+		text: {
+			rtl: boolean;
+			text: string;
+			entities: TombstoneEntity[];
+		};
+	};
+}
+
+export interface TombstoneEntity {
+	fromIndex: number;
+	toIndex: number;
+	ref: {
+		type: string;
+		url: string;
+		urlType: string;
+	};
 }
 
 export type TwitterBookmarksArray = TwitterBookmarkResponse[];

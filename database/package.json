@@ -10,10 +10,10 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"generate": "prisma generate",
-		"migrate": "bun run src/airtable/migrate.ts"
-	},
-	"prisma": {
-		"seed": "bun run src/airtable/migrate.ts"
+		"seed:arc": "bun run integrations/arc-history/seed.ts",
+		"seed:github": "bun run integrations/github/seed-stars.ts",
+		"seed:raindrop": "bun run integrations/raindrop/seed.ts",
+		"seed:twitter": "bun run integrations/twitter/seed.ts"
 	},
 	"dependencies": {
 		"@octokit/rest": "^21.0.2",
@@ -23,7 +23,7 @@
 		"pg": "^8.13.1"
 	},
 	"devDependencies": {
-		"@aws-sdk/client-s3": "^3.688.0",
+		"@aws-sdk/client-s3": "^3.689.0",
 		"@types/bun": "^1.1.13",
 		"@types/eslint": "9.6.1",
 		"@types/pg": "^8.11.10",
