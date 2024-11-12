@@ -9,7 +9,9 @@ import {
 	boolean,
 	pgMaterializedView,
 	bigint,
-	unique
+	unique,
+	primaryKey,
+	foreignKey
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { timestamps } from './common/timestamps';
@@ -169,7 +171,6 @@ export const commits = pgTable('commits', {
 	...timestamps
 });
 
-
 // "added" | "removed" | "modified" | "renamed" | "copied" | "changed" | "unchanged"
 export enum CommitChangeStatus {
 	ADDED = 'added',
@@ -238,4 +239,174 @@ export const commitChangesRelations = relations(commitChanges, ({ one }) => ({
 	})
 }));
 
+export const airtableExtracts = pgTable('airtable_extracts', {
+	id: text().primaryKey(),
+	title: text().notNull(),
+	format: text().notNull().default('Fragment'),
+	source: text(),
+	michelinStars: integer(),
+	content: text(),
+	notes: text(),
+	attachmentCaption: text(),
+	parentId: text(),
+	lexicographicalOrder: text().notNull().default('a0'),
+	integrationRunId: integer()
+		.references(() => integrationRuns.id)
+		.notNull(),
+	publishedAt: timestamp(),
+	...timestamps
+},
+	(table) => [foreignKey({
+			columns: [table.parentId],
+			foreignColumns: [table.id]
+		})]
+);
 
+export const airtableExtractsRelations = relations(airtableExtracts, ({ many, one }) => ({
+	attachments: many(airtableAttachments),
+	parent: one(airtableExtracts, {
+		fields: [airtableExtracts.parentId],
+		references: [airtableExtracts.id]
+	}),
+	integrationRun: one(integrationRuns, {
+		fields: [airtableExtracts.integrationRunId],
+		references: [integrationRuns.id]
+	})
+}));
+
+export const airtableAttachments = pgTable('airtable_attachments', {
+	id: text().primaryKey(),
+	url: text().notNull(),
+	filename: text().notNull(),
+	size: integer(),
+	type: text(),
+	width: integer(),
+	height: integer(),
+	extractId: text()
+		.references(() => airtableExtracts.id)
+		.notNull(),
+	...timestamps
+});
+
+export const airtableAttachmentsRelations = relations(airtableAttachments, ({ one }) => ({
+	extract: one(airtableExtracts, {
+		fields: [airtableAttachments.extractId],
+		references: [airtableExtracts.id]
+	})
+}));
+
+export const airtableCreators = pgTable('airtable_creators', {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	type: text().notNull().default('Individual'),
+	primaryProject: text(),
+	website: text(),
+	professions: text().array(),
+	organizations: text().array(),
+	nationalities: text().array(),
+	integrationRunId: integer()
+		.references(() => integrationRuns.id)
+		.notNull(),
+	...timestamps
+});
+
+export const airtableCreatorsRelations = relations(airtableCreators, ({ one }) => ({
+	integrationRun: one(integrationRuns, {
+		fields: [airtableCreators.integrationRunId],
+		references: [integrationRuns.id]
+	})
+}));
+
+export const airtableSpaces = pgTable('airtable_spaces', {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	fullName: text(),
+	icon: text(),
+	description: text(),
+	integrationRunId: integer()
+		.references(() => integrationRuns.id)
+		.notNull(),
+	...timestamps
+});
+
+export const airtableSpacesRelations = relations(airtableSpaces, ({ one }) => ({
+	integrationRun: one(integrationRuns, {
+		fields: [airtableSpaces.integrationRunId],
+		references: [integrationRuns.id]
+	})
+}));
+
+export const airtableExtractCreators = pgTable('airtable_extract_creators', {
+	extractId: text()
+		.references(() => airtableExtracts.id)
+		.notNull(),
+	creatorId: text()
+		.references(() => airtableCreators.id)
+		.notNull(),
+	...timestamps
+},
+	(table) => [
+		primaryKey({ columns: [table.extractId, table.creatorId] })
+	]
+);
+
+export const airtableExtractCreatorsRelations = relations(airtableExtractCreators, ({ one }) => ({
+	extract: one(airtableExtracts, {
+		fields: [airtableExtractCreators.extractId],
+		references: [airtableExtracts.id]
+	}),
+	creator: one(airtableCreators, {
+		fields: [airtableExtractCreators.creatorId],
+		references: [airtableCreators.id]
+	})
+}));
+
+export const airtableExtractSpaces = pgTable('airtable_extract_spaces', {
+	extractId: text()
+		.references(() => airtableExtracts.id)
+		.notNull(),
+	spaceId: text()
+		.references(() => airtableSpaces.id)
+		.notNull(),
+	...timestamps
+},
+	(table) => [
+		primaryKey({ columns: [table.extractId, table.spaceId] })
+	]
+);
+
+export const airtableExtractSpacesRelations = relations(airtableExtractSpaces, ({ one }) => ({
+	extract: one(airtableExtracts, {
+		fields: [airtableExtractSpaces.extractId],
+		references: [airtableExtracts.id]
+	}),
+	space: one(airtableSpaces, {
+		fields: [airtableExtractSpaces.spaceId],
+		references: [airtableSpaces.id]
+	})
+}));
+
+export const airtableExtractConnections = pgTable('airtable_extract_connections', {
+	fromExtractId: text()
+		.references(() => airtableExtracts.id)
+		.notNull(),
+	toExtractId: text()
+		.references(() => airtableExtracts.id)
+		.notNull(),
+	...timestamps
+},
+	(table) => [
+		primaryKey({ columns: [table.fromExtractId, table.toExtractId] })
+	]
+);
+
+export const airtableExtractConnectionsRelations = relations(airtableExtractConnections, ({ one }) => ({
+	fromExtract: one(airtableExtracts, {
+		fields: [airtableExtractConnections.fromExtractId],
+		references: [airtableExtracts.id]
+	}),
+	toExtract: one(airtableExtracts, {
+		fields: [airtableExtractConnections.toExtractId],
+		references: [airtableExtracts.id]
+	})
+}));
