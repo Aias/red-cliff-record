@@ -1,6 +1,6 @@
 import { createPgConnection } from '../../connections';
-import { IntegrationType, bookmarks, RunType } from '../../schema/main';
-import { desc } from 'drizzle-orm';
+import { IntegrationType, bookmarks, RunType, integrationRuns } from '../../schema/main';
+import { desc, eq } from 'drizzle-orm';
 import { runIntegration } from '../utils/run-integration';
 import type { Raindrop, RaindropResponse } from './types';
 import { getAllCollections } from './loaders';
@@ -13,8 +13,10 @@ async function fetchIncrementalRaindrops(integrationRunId: number): Promise<numb
     // Get the most recent bookmark date from the database
     const latestBookmark = await db.select({ bookmarkedAt: bookmarks.bookmarkedAt })
         .from(bookmarks)
-        .orderBy(desc(bookmarks.bookmarkedAt))
-        .limit(1);
+				.leftJoin(integrationRuns, eq(bookmarks.integrationRunId, integrationRuns.id))
+				.where(eq(integrationRuns.integrationType, IntegrationType.RAINDROP))
+				.orderBy(desc(bookmarks.bookmarkedAt))
+				.limit(1);
 
     const lastKnownDate = latestBookmark[0]?.bookmarkedAt;
     console.log(`Last known bookmark date: ${lastKnownDate?.toISOString() ?? 'none'}`);

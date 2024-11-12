@@ -3,6 +3,7 @@ import { bookmarks, IntegrationType, integrationRuns } from '../../schema/main';
 import { runIntegration } from '../utils/run-integration';
 import { createPgConnection } from '../../connections';
 import { eq, inArray } from 'drizzle-orm';
+import type { StarredRepo } from './types';
 
 const db = createPgConnection();
 
@@ -43,26 +44,27 @@ async function processGithubStars(integrationRunId: number): Promise<number> {
 			}
 		});
 
-		if (response.data.length === 0) break;
+		const data = response.data as unknown as StarredRepo[];
+		if (data.length === 0) break;
 
-		console.log(`Processing ${response.data.length} stars from page ${page}...`);
-		const chunk: typeof bookmarks.$inferInsert[] = response.data.map(({ starred_at, repo }: Record<string, any>) => ({
-			url: repo.html_url,
-			title: repo.name,
-			creator: repo.owner.login,
-			content: repo.description?.trim() || null,
-			bookmarkedAt: new Date(starred_at),
+		console.log(`Processing ${data.length} stars from page ${page}...`);
+		const chunk: typeof bookmarks.$inferInsert[] = data.map((star) => ({
+			url: star.repo.html_url,
+			title: star.repo.name,
+			creator: star.repo.owner.login,
+			content: star.repo.description?.trim() || null,
+			bookmarkedAt: new Date(star.starred_at),
 			type: 'repository',
 			category: 'Code',
-			tags: repo.topics,
-			imageUrl: repo?.owner?.avatar_url,
+			tags: star.repo.topics,
+			imageUrl: star.repo.owner.avatar_url,
 			integrationRunId
 		}));
 
 		console.log(`Inserting ${chunk.length} stars into database...`);
 		await db.insert(bookmarks).values(chunk);
-		stars.push(...chunk);
-		page++;
+			stars.push(...chunk);
+			page++;
 	}
 
 	console.log(`Finished processing ${stars.length} total starred repositories`);
