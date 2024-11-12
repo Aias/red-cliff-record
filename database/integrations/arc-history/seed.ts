@@ -1,30 +1,23 @@
 import { createArcConnection, createPgConnection } from '../../connections';
 import { browsingHistory, browsingHistoryDaily, Browser, IntegrationType } from '../../schema/main';
-import { eq, and, notLike, isNotNull, ne } from 'drizzle-orm';
-import { visits, urls, contentAnnotations, contextAnnotations } from '../../schema/arc';
+import { eq, and, isNotNull, ne, notLike } from 'drizzle-orm';
 import { sanitizeString } from '../utils/sanitize';
 import { runIntegration } from '../utils/run-integration';
 import { chromeEpochMicrosecondsToDatetime, datetimeToChromeEpochMicroseconds } from '../../lib/time-helpers';
 import os from 'os';
+import { dailyVisitsQuery, collapseSequentialVisits } from './helpers';
+import { urls } from '../../schema/arc';
 
-const arcDb = createArcConnection();
 const pgDb = createPgConnection();
 
-const dailyVisitsQuery = arcDb
-	.select({
-		viewTime: visits.visitTime,
-		viewDuration: visits.visitDuration,
-		durationSinceLastView: contextAnnotations.durationSinceLastVisit,
-		url: urls.url,
-		pageTitle: urls.title,
-		searchTerms: contentAnnotations.searchTerms,
-		relatedSearches: contentAnnotations.relatedSearches
-	})
-	.from(visits)
-	.fullJoin(urls, eq(visits.url, urls.id))
-	.leftJoin(contentAnnotations, eq(visits.id, contentAnnotations.visitId))
-	.leftJoin(contextAnnotations, eq(visits.id, contextAnnotations.visitId))
-	.where(
+async function processArcBrowserHistory(integrationRunId: number): Promise<number> {
+	const hostname = os.hostname();
+	console.log(`Cleaning up existing Arc browser history for ${hostname}...`);
+	await pgDb.delete(browsingHistory).where(and(eq(browsingHistory.browser, Browser.ARC), eq(browsingHistory.hostname, hostname)));
+	console.log('Cleanup complete');
+
+	console.log('Retrieving raw history...');
+	const rawHistory = await dailyVisitsQuery.where(
 		and(
 			notLike(urls.url, 'chrome-extension://%'),
 			notLike(urls.url, 'chrome://%'),
@@ -35,61 +28,6 @@ const dailyVisitsQuery = arcDb
 			ne(urls.url, '')
 		)
 	);
-
-const collapseSequentialVisits = (rawHistory: typeof dailyVisitsQuery._.result) => {
-	const collapsed: typeof rawHistory = [];
-	let current: (typeof rawHistory)[0] | null = null;
-
-	for (const visit of rawHistory) {
-		if (!current) {
-			current = { ...visit };
-			continue;
-		}
-
-		// If this is a sequential visit to the same URL
-		if (
-			current.url === visit.url &&
-			current.pageTitle &&
-			visit.pageTitle &&
-			current.pageTitle === visit.pageTitle
-		) {
-			// Only add positive durations
-			if (visit.viewDuration && visit.viewDuration > 0) {
-				current.viewDuration = (current.viewDuration || 0) + visit.viewDuration;
-			}
-			// Keep the earliest viewTime
-			current.viewTime =
-				!current.viewTime || !visit.viewTime || current.viewTime < visit.viewTime
-					? current.viewTime
-					: visit.viewTime;
-			// Keep the maximum durationSinceLastView
-			current.durationSinceLastView = Math.max(
-				current.durationSinceLastView || 0,
-				visit.durationSinceLastView || 0
-			);
-		} else {
-			// Different URL or title, push the current group and start a new one
-			collapsed.push(current);
-			current = { ...visit };
-		}
-	}
-
-	// Don't forget to push the last group
-	if (current) {
-		collapsed.push(current);
-	}
-
-	return collapsed;
-};
-
-async function processArcBrowserHistory(integrationRunId: number): Promise<number> {
-	const hostname = os.hostname();
-	console.log(`Cleaning up existing Arc browser history for ${hostname}...`);
-	await pgDb.delete(browsingHistory).where(and(eq(browsingHistory.browser, Browser.ARC), eq(browsingHistory.hostname, hostname)));
-	console.log('Cleanup complete');
-
-	console.log('Retrieving raw history...');
-	const rawHistory = await dailyVisitsQuery;
 	console.log(`Retrieved ${rawHistory.length} raw history entries`);
 
 	const collapsedHistory = collapseSequentialVisits(rawHistory);
