@@ -13,6 +13,7 @@
 		"seed:bookmarks": "pnpm run seed:github && pnpm run seed:raindrop && pnpm run seed:twitter",
 		"seed:arc": "bun run integrations/arc-history/seed.ts",
 		"seed:github": "bun run integrations/github/seed-stars.ts",
+		"seed:code": "bun run integrations/github/seed-commits.ts",
 		"seed:raindrop": "bun run integrations/raindrop/seed.ts",
 		"seed:twitter": "bun run integrations/twitter/seed.ts"
 	},

@@ -11,7 +11,8 @@ import {
 	bigint
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import { timestamps } from '../schema/common/timestamps';
+import { timestamps } from './common/timestamps';
+import { stats } from './common/stats';
 
 export enum IntegrationStatus {
 	SUCCESS = 'success',
@@ -151,8 +152,59 @@ export const bookmarks = pgTable(
 	]
 );
 
+export const commits = pgTable('commits', {
+	id: serial().primaryKey(),
+	sha: text().notNull(),
+	message: text().notNull(),
+	repository: text().notNull(),
+	url: text().notNull(),
+	committer: text(),
+	commitDate: timestamp().notNull(),
+	integrationRunId: integer()
+		.references(() => integrationRuns.id)
+		.notNull(),
+	...stats,
+	...timestamps
+});
+
+
+// "added" | "removed" | "modified" | "renamed" | "copied" | "changed" | "unchanged"
+export enum CommitChangeStatus {
+	ADDED = 'added',
+	MODIFIED = 'modified',
+	REMOVED = 'removed',
+	RENAMED = 'renamed',
+	COPIED = 'copied',
+	CHANGED = 'changed',
+	UNCHANGED = 'unchanged'
+}
+
+export const commitChangeStatusEnum = pgEnum('commit_change_status', [
+	CommitChangeStatus.ADDED,
+	CommitChangeStatus.MODIFIED,
+	CommitChangeStatus.REMOVED,
+	CommitChangeStatus.RENAMED,
+	CommitChangeStatus.COPIED,
+	CommitChangeStatus.CHANGED,
+	CommitChangeStatus.UNCHANGED
+]);
+
+export const commitChanges = pgTable('commit_changes', {
+	id: serial().primaryKey(),
+	filename: text().notNull(),
+	status: commitChangeStatusEnum().notNull(),
+	patch: text().notNull(),
+	commitId: integer()
+		.references(() => commits.id)
+		.notNull(),
+	...stats,
+	...timestamps
+});
+
 export const integrationRunsRelations = relations(integrationRuns, ({ many }) => ({
-	browsingHistory: many(browsingHistory)
+	browsingHistory: many(browsingHistory),
+	bookmarks: many(bookmarks),
+	commits: many(commits)
 }));
 
 export const browsingHistoryRelations = relations(browsingHistory, ({ one }) => ({
@@ -168,3 +220,20 @@ export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
 		references: [integrationRuns.id]
 	})
 }));
+
+export const commitsRelations = relations(commits, ({ many, one }) => ({
+	commitChanges: many(commitChanges),
+	integrationRun: one(integrationRuns, {
+		fields: [commits.integrationRunId],
+		references: [integrationRuns.id]
+	})
+}));
+
+export const commitChangesRelations = relations(commitChanges, ({ one }) => ({
+	commit: one(commits, {
+		fields: [commitChanges.commitId],
+		references: [commits.id]
+	})
+}));
+
+

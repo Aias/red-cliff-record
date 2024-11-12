@@ -33,14 +33,8 @@ function captureBookmarkRequests() {
 	console.log('Bookmark XHR interceptor installed. Access responses via window.bookmarkResponses');
 }
 
-// Save the function to window so you can easily rerun it after refresh
-window.captureBookmarkRequests = captureBookmarkRequests;
-
-// Run it immediately
-captureBookmarkRequests();
-
-//
-
+// Run this in console to save to JSON file
+// downloadBookmarkResponses();
 function downloadBookmarkResponses() {
 	const data = JSON.stringify(window.bookmarkResponses, null, 2);
 	const blob = new Blob([data], { type: 'application/json' });
@@ -54,5 +48,8 @@ function downloadBookmarkResponses() {
 	URL.revokeObjectURL(url);
 }
 
-// Run this in console to save to JSON file
-// downloadBookmarkResponses();
+// Save the function to window so you can easily rerun it after refresh
+window.captureBookmarkRequests = captureBookmarkRequests;
+
+// Run capture script immediately
+captureBookmarkRequests();
