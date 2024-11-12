@@ -130,22 +130,23 @@ export const bookmarks = pgTable(
 		id: serial().primaryKey(),
 		url: text().notNull(),
 		title: text().notNull(),
+		creator: text(),
 		content: text(),
 		notes: text(),
 		type: text(),
 		category: text(),
 		tags: text().array(),
-		starred: boolean().notNull().default(false),
+		important: boolean().notNull().default(false),
 		imageUrl: text(),
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
+		bookmarkedAt: timestamp().defaultNow().notNull(),
 		...timestamps
 	},
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.url),
-		index().on(table.starred),
 		index().on(table.createdAt)
 	]
 );

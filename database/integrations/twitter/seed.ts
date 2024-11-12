@@ -83,7 +83,7 @@ async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 
 async function processTwitterBookmarks(integrationRunId: number): Promise<number> {
 	const data = await loadBookmarksData();
-	const bookmarksToInsert = [];
+	const bookmarksToInsert: typeof bookmarks.$inferInsert[] = [];
 
 	// Delete existing Twitter bookmarks
 	console.log('Deleting existing Twitter bookmarks.');
@@ -130,16 +130,16 @@ async function processTwitterBookmarks(integrationRunId: number): Promise<number
 
 			bookmarksToInsert.push({
 				url: `https://twitter.com/i/web/status/${tweet.rest_id}`,
-				title: `@${tweet.core.user_results.result.legacy.screen_name}: ${getFirstSentence(tweet.legacy.full_text)}`,
+				title: getFirstSentence(tweet.legacy.full_text),
+				creator: `${tweet.core.user_results.result.legacy.name} (@${tweet.core.user_results.result.legacy.screen_name})`,
 				content: tweetContent,
 				notes: null,
+				bookmarkedAt,
 				type: 'tweet',
-				category: 'tweet',
+				category: 'Microblog',
 				tags: [],
-				starred: false,
 				imageUrl: getFirstImageUrl(tweet),
 				integrationRunId,
-				createdAt: bookmarkedAt
 			});
 		}
 	}

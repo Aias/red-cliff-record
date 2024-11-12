@@ -46,11 +46,12 @@ async function processGithubStars(integrationRunId: number): Promise<number> {
 		if (response.data.length === 0) break;
 
 		console.log(`Processing ${response.data.length} stars from page ${page}...`);
-		const chunk = response.data.map(({ starred_at, repo }: Record<string, any>) => ({
+		const chunk: typeof bookmarks.$inferInsert[] = response.data.map(({ starred_at, repo }: Record<string, any>) => ({
 			url: repo.html_url,
-			title: repo.full_name,
+			title: repo.name,
+			creator: repo.owner.login,
 			content: repo.description?.trim() || null,
-			createdAt: new Date(starred_at),
+			bookmarkedAt: new Date(starred_at),
 			type: 'repository',
 			category: 'Code',
 			tags: repo.topics,

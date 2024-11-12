@@ -104,7 +104,7 @@ async function processRaindrops(integrationRunId: number): Promise<number> {
 	const raindrops = await getAllRaindrops();
 	console.log(`Retrieved ${raindrops.length} raindrops`);
 
-	const bookmarkData = raindrops.map((raindrop) => ({
+	const bookmarkData: typeof bookmarks.$inferInsert[] = raindrops.map((raindrop) => ({
 		url: raindrop.link,
 		title: raindrop.title,
 		content: raindrop.excerpt?.trim() || null,
@@ -116,9 +116,9 @@ async function processRaindrops(integrationRunId: number): Promise<number> {
 				: collectionsMap.get(raindrop.collectionId) ||
 					`Unknown Collection ${raindrop.collectionId}`,
 		tags: raindrop.tags,
-		starred: raindrop.important,
+		important: raindrop.important,
 		imageUrl: raindrop.cover,
-		createdAt: new Date(raindrop.created),
+		bookmarkedAt: new Date(raindrop.created),
 		integrationRunId
 	}));
 

@@ -10,6 +10,7 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"generate": "prisma generate",
+		"seed:bookmarks": "pnpm run seed:github && pnpm run seed:raindrop && pnpm run seed:twitter",
 		"seed:arc": "bun run integrations/arc-history/seed.ts",
 		"seed:github": "bun run integrations/github/seed-stars.ts",
 		"seed:raindrop": "bun run integrations/raindrop/seed.ts",
