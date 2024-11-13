@@ -9,8 +9,11 @@
 	"scripts": {
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"generate": "prisma generate",
+		"migrate": "drizzle-kit migrate",
+		"generate": "drizzle-kit generate",
+		"studio": "drizzle-kit studio",
 		"seed:bookmarks": "pnpm run seed:stars && pnpm run seed:raindrop && pnpm run seed:twitter",
+		"seed:airtable": "bun run integrations/airtable/seed.ts",
 		"seed:arc": "bun run integrations/arc-history/seed.ts",
 		"seed:stars": "bun run integrations/github/seed-stars.ts",
 		"seed:commits": "bun run integrations/github/seed-commits.ts",
@@ -24,7 +27,6 @@
 	},
 	"dependencies": {
 		"@octokit/rest": "^21.0.2",
-		"@prisma/client": "^5.22.0",
 		"airtable": "^0.12.2",
 		"drizzle-orm": "^0.36.1",
 		"pg": "^8.13.1"
@@ -40,7 +42,6 @@
 		"eslint": "^9.14.0",
 		"eslint-config-prettier": "^9.1.0",
 		"prettier": "^3.3.3",
-		"prisma": "^5.22.0",
 		"typescript": "^5.6.3"
 	}
 }

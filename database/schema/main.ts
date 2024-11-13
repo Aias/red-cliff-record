@@ -263,11 +263,19 @@ export const airtableExtracts = pgTable('airtable_extracts', {
 );
 
 export const airtableExtractsRelations = relations(airtableExtracts, ({ many, one }) => ({
-	attachments: many(airtableAttachments),
+	children: many(airtableExtracts, {
+		relationName: 'parentChild'
+	}),
 	parent: one(airtableExtracts, {
 		fields: [airtableExtracts.parentId],
-		references: [airtableExtracts.id]
+		references: [airtableExtracts.id],
+		relationName: 'parentChild'
 	}),
+	extractCreators: many(airtableExtractCreators, { relationName: 'extractToCreator' }),
+	extractSpaces: many(airtableExtractSpaces, { relationName: 'extractToSpace' }),
+	outgoingConnections: many(airtableExtractConnections, { relationName: 'fromExtract' }),
+	incomingConnections: many(airtableExtractConnections, { relationName: 'toExtract' }),
+	attachments: many(airtableAttachments),
 	integrationRun: one(integrationRuns, {
 		fields: [airtableExtracts.integrationRunId],
 		references: [integrationRuns.id]
@@ -353,11 +361,13 @@ export const airtableExtractCreators = pgTable('airtable_extract_creators', {
 export const airtableExtractCreatorsRelations = relations(airtableExtractCreators, ({ one }) => ({
 	extract: one(airtableExtracts, {
 		fields: [airtableExtractCreators.extractId],
-		references: [airtableExtracts.id]
+		references: [airtableExtracts.id],
+		relationName: 'extractToCreator'
 	}),
 	creator: one(airtableCreators, {
 		fields: [airtableExtractCreators.creatorId],
-		references: [airtableCreators.id]
+		references: [airtableCreators.id],
+		relationName: 'creatorToExtract'
 	})
 }));
 
@@ -378,11 +388,13 @@ export const airtableExtractSpaces = pgTable('airtable_extract_spaces', {
 export const airtableExtractSpacesRelations = relations(airtableExtractSpaces, ({ one }) => ({
 	extract: one(airtableExtracts, {
 		fields: [airtableExtractSpaces.extractId],
-		references: [airtableExtracts.id]
+		references: [airtableExtracts.id],
+		relationName: 'extractToSpace'
 	}),
 	space: one(airtableSpaces, {
 		fields: [airtableExtractSpaces.spaceId],
-		references: [airtableSpaces.id]
+		references: [airtableSpaces.id],
+		relationName: 'spaceToExtract'
 	})
 }));
 
@@ -402,10 +414,12 @@ export const airtableExtractConnections = pgTable('airtable_extract_connections'
 
 export const airtableExtractConnectionsRelations = relations(airtableExtractConnections, ({ one }) => ({
 	fromExtract: one(airtableExtracts, {
+		relationName: 'fromExtract',
 		fields: [airtableExtractConnections.fromExtractId],
 		references: [airtableExtracts.id]
 	}),
 	toExtract: one(airtableExtracts, {
+		relationName: 'toExtract',
 		fields: [airtableExtractConnections.toExtractId],
 		references: [airtableExtracts.id]
 	})

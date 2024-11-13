@@ -2,12 +2,8 @@ import Airtable, { type Attachment } from 'airtable';
 import fs from 'fs/promises';
 import path from 'path';
 import { getExtensionFromContentType } from '../../lib/extensions';
+import { base } from './queries';
 
-Airtable.configure({
-	apiKey: process.env.AIRTABLE_ACCESS_TOKEN
-});
-
-const base = Airtable.base('appNAUPSEyCYlPtvG');
 const BATCH_SIZE = 100;
 
 async function downloadAttachments() {

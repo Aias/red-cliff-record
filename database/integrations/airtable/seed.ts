@@ -1,231 +1,233 @@
-import { PrismaClient } from '@prisma/client';
-import Airtable, { type Attachment } from 'airtable';
-import { generateOrderPrefix } from '../../lib/order';
-import { setAttachmentTypes } from './set-attachment-types';
+import { base } from './queries';
+import { createPgConnection } from '../../connections';
+import type { ExtractFieldSet, CreatorFieldSet, SpaceFieldSet } from './types';
+import { 
+  airtableExtracts,
+  airtableAttachments,
+  airtableCreators,
+  airtableSpaces,
+  airtableExtractCreators,
+  airtableExtractSpaces,
+  airtableExtractConnections,
+  IntegrationType
+} from '../../schema/main';
+import { eq } from 'drizzle-orm';
+import { runIntegration } from '../utils/run-integration';
 
-const prisma = new PrismaClient();
+const CHUNK_SIZE = 100;
+const db = createPgConnection();
 
-Airtable.configure({
-	apiKey: process.env.AIRTABLE_ACCESS_TOKEN
-});
-
-const base = Airtable.base('appNAUPSEyCYlPtvG');
-
-const LARGE_BATCH_SIZE = 1000;
-const MIGRATE_CREATORS = true;
-const MIGRATE_SPACES = true;
-const MIGRATE_EXTRACTS = true;
-
-async function migrateCreators() {
-	try {
-		await prisma.creator.deleteMany({});
-		console.log('Creator table cleared');
-
-		const creators = await base('creators').select().all();
-		const creatorData = creators.map((record) => ({
-			id: record.id,
-			name: record.get('name') as string,
-			siteUrl: record.get('site') as string,
-			createdAt: new Date(record.get('createdTime') as string),
-			updatedAt: new Date(record.get('lastUpdated') as string)
-		}));
-
-		// Create creators
-		for (let i = 0; i < creatorData.length; i += LARGE_BATCH_SIZE) {
-			const batch = creatorData.slice(i, i + LARGE_BATCH_SIZE);
-			await prisma.creator.createMany({
-				data: batch
-			});
-			console.log(`Processed ${i + batch.length} creators`);
-		}
-
-		console.log('Creators migrated successfully');
-	} catch (error) {
-		console.error('Error migrating creators:', error);
-	}
+async function cleanupExistingRecords() {
+  console.log('Cleaning up existing Airtable records...');
+  
+  // Delete in correct order to maintain referential integrity
+  await db.delete(airtableExtractConnections);
+  await db.delete(airtableExtractSpaces);
+  await db.delete(airtableExtractCreators);
+  await db.delete(airtableAttachments);
+  await db.delete(airtableExtracts);
+  await db.delete(airtableSpaces);
+  await db.delete(airtableCreators);
+  
+  console.log('Cleanup complete');
 }
 
-async function migrateSpaces() {
-	try {
-		await prisma.space.deleteMany({});
-		console.log('Space table cleared');
-
-		const spaces = await base('spaces').select().all();
-		const spaceData = spaces.map((record) => ({
-			id: record.id,
-			topic: record.get('topic') as string,
-			title: record.get('title') as string,
-			icon: record.get('icon') as string,
-			description: record.get('description') as string,
-			createdAt: new Date(record.get('createdTime') as string),
-			updatedAt: new Date(record.get('lastUpdated') as string)
-		}));
-
-		// Create spaces
-		for (let i = 0; i < spaceData.length; i += LARGE_BATCH_SIZE) {
-			const batch = spaceData.slice(i, i + LARGE_BATCH_SIZE);
-			await prisma.space.createMany({
-				data: batch
-			});
-			console.log(`Processed ${i + batch.length} spaces`);
-		}
-
-		console.log('Spaces migrated successfully');
-	} catch (error) {
-		console.error('Error migrating spaces:', error);
-	}
+async function seedCreators(integrationRunId: number) {
+  console.log('Seeding creators...');
+  const records = await base('Creators').select().all();
+  
+  for (let i = 0; i < records.length; i += CHUNK_SIZE) {
+    const chunk = records.slice(i, i + CHUNK_SIZE);
+    const creatorsToInsert: typeof airtableCreators.$inferInsert[] = chunk.map(record => {
+      const fields = record.fields as CreatorFieldSet;
+      return {
+        id: record.id,
+        name: fields.name,
+        type: fields.type,
+        primaryProject: fields.primaryProject,
+        website: fields.site,
+        professions: fields.professions,
+        organizations: fields.organizations,
+        nationalities: fields.nationality,
+				createdAt: new Date(fields.createdTime),
+				updatedAt: new Date(fields.lastUpdated),
+        integrationRunId
+      };
+    });
+    
+    await db.insert(airtableCreators).values(creatorsToInsert);
+    console.log(`Inserted creators chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(records.length / CHUNK_SIZE)}`);
+  }
 }
 
-async function migrateExtracts() {
-	try {
-		await prisma.extractRelation.deleteMany({});
-		await prisma.extractFormat.deleteMany({});
-		await prisma.attachment.deleteMany({});
-		await prisma.extract.deleteMany({});
-		console.log('Extract-related tables cleared');
-
-		const extracts = await base('extracts').select().all();
-		const uniqueFormats = new Set<string>();
-
-		// Create a map of extracts for quick lookup
-		const extractMap = new Map(extracts.map((record) => [record.id, record]));
-
-		// Step 1: Prepare non-relational data
-		const extractData = extracts.map((record) => {
-			const format = record.get('format') as string;
-			if (format) uniqueFormats.add(format);
-
-			const parentId = (record.get('parent') as string[] | undefined)?.[0];
-			let orderKey = 'a0'; // default value
-
-			if (parentId) {
-				const parentRecord = extractMap.get(parentId);
-				if (parentRecord) {
-					const childrenArray = parentRecord.get('children') as string[] | undefined;
-					if (childrenArray) {
-						const childIndex = childrenArray.indexOf(record.id);
-						if (childIndex !== -1) {
-							orderKey = generateOrderPrefix(childIndex) + '0';
-						}
-					}
-				}
-			}
-
-			return {
-				id: record.id,
-				title: record.get('title') as string,
-				content: record.get('extract') as string,
-				notes: record.get('notes') as string,
-				sourceUrl: record.get('source') as string,
-				michelinStars: record.get('michelinStars') as number,
-				createdAt: new Date(record.get('extractedOn') as string),
-				updatedAt: new Date(record.get('lastUpdated') as string),
-				publishedOn: record.get('published') ? new Date(record.get('publishedOn') as string) : null,
-				orderKey: orderKey
-			};
-		});
-
-		// Step 2: Create ExtractFormat records in batches
-		const formatData = Array.from(uniqueFormats).map((format) => ({ name: format }));
-
-		await Promise.all([
-			// Create ExtractFormat records
-			(async () => {
-				for (let i = 0; i < formatData.length; i += LARGE_BATCH_SIZE) {
-					const batch = formatData.slice(i, i + LARGE_BATCH_SIZE);
-					await prisma.extractFormat.createMany({
-						data: batch
-					});
-					console.log(`Processed ${i + batch.length} extract formats`);
-				}
-			})(),
-			// Create Extract records
-			(async () => {
-				for (let i = 0; i < extractData.length; i += LARGE_BATCH_SIZE) {
-					const batch = extractData.slice(i, i + LARGE_BATCH_SIZE);
-					await prisma.extract.createMany({
-						data: batch
-					});
-					console.log(`Processed ${i + batch.length} extracts`);
-				}
-			})()
-		]);
-
-		// Step 3: Create Attachment records
-		console.log('Creating Attachment records...');
-		const attachmentData = extracts.flatMap((record) => {
-			const images = (record.get('images') as Attachment[] | undefined) || [];
-			const imageCaption = record.get('imageCaption') as string | undefined;
-
-			return images?.map((image) => ({
-				id: image.id,
-				caption: imageCaption,
-				extractId: record.id
-			}));
-		});
-
-		for (let i = 0; i < attachmentData.length; i += LARGE_BATCH_SIZE) {
-			const batch = attachmentData.slice(i, i + LARGE_BATCH_SIZE);
-			await prisma.attachment.createMany({
-				data: batch
-			});
-			console.log(`Processed ${i + batch.length} attachments`);
-		}
-
-		// Step 4: Update links sequentially
-		const formatMap = new Map((await prisma.extractFormat.findMany()).map((f) => [f.name, f.id]));
-
-		for (const record of extracts) {
-			const creators = record.get('creators') as string[] | undefined;
-			const spaces = record.get('spaces') as string[] | undefined;
-			const parent = record.get('parent') as string[] | undefined;
-			const updateData = {
-				where: { id: record.id },
-				data: {
-					formatId: record.get('format') ? formatMap.get(record.get('format') as string) : null,
-					creators: {
-						set: creators?.map((id) => ({ id })) || []
-					},
-					spaces: {
-						set: spaces?.map((id) => ({ id })) || []
-					},
-					parentId: parent?.[0] || null
-				}
-			};
-
-			await prisma.extract.update(updateData);
-			console.log(`Updated links for ${record.get('title')}`);
-		}
-
-		// Step 5: Create ExtractRelation records
-		const relationData = extracts.flatMap((record) =>
-			((record.get('connections') as string[] | undefined) || []).map((connectionId) => ({
-				fromId: record.id,
-				toId: connectionId
-			}))
-		);
-
-		for (let i = 0; i < relationData.length; i += LARGE_BATCH_SIZE) {
-			const batch = relationData.slice(i, i + LARGE_BATCH_SIZE);
-			await prisma.extractRelation.createMany({
-				data: batch
-			});
-			console.log(`Processed ${i + batch.length} extract relations`);
-		}
-
-		console.log('Extract migration completed successfully');
-	} catch (error) {
-		console.error('Error during migration:', error);
-	} finally {
-		await prisma.$disconnect();
-	}
+async function seedSpaces(integrationRunId: number) {
+  console.log('Seeding spaces...');
+  const records = await base('Spaces').select().all();
+  
+  for (let i = 0; i < records.length; i += CHUNK_SIZE) {
+    const chunk = records.slice(i, i + CHUNK_SIZE);
+    const spacesToInsert: typeof airtableSpaces.$inferInsert[] = chunk.map(record => {
+      const fields = record.fields as SpaceFieldSet;
+      return {
+        id: record.id,
+        name: fields.topic,
+        fullName: fields.title,
+        icon: fields.icon,
+        description: fields.description,
+				createdAt: new Date(fields.createdTime),
+				updatedAt: new Date(fields.lastUpdated),
+        integrationRunId
+      };
+    });
+    
+    await db.insert(airtableSpaces).values(spacesToInsert);
+    console.log(`Inserted spaces chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(records.length / CHUNK_SIZE)}`);
+  }
 }
 
-async function migrateAll() {
-	if (MIGRATE_CREATORS) await migrateCreators();
-	if (MIGRATE_SPACES) await migrateSpaces();
-	if (MIGRATE_EXTRACTS) await migrateExtracts();
-	await setAttachmentTypes();
+async function seedExtracts(integrationRunId: number) {
+  console.log('Seeding extracts...');
+  const records = await base('Extracts').select().all();
+  
+  // First pass: Create all extracts without parent references
+  for (let i = 0; i < records.length; i += CHUNK_SIZE) {
+    const chunk = records.slice(i, i + CHUNK_SIZE);
+    const extractsToInsert: typeof airtableExtracts.$inferInsert[] = chunk.map(record => {
+      const fields = record.fields as ExtractFieldSet;
+      return {
+        id: record.id,
+        title: fields.title,
+        format: fields.format,
+        source: fields.source,
+        michelinStars: fields.michelinStars,
+        content: fields.extract,
+        notes: fields.notes,
+        attachmentCaption: fields.imageCaption,
+        parentId: null,
+        lexicographicalOrder: 'a0',
+				createdAt: new Date(fields.extractedOn),
+				updatedAt: new Date(fields.lastUpdated),
+        publishedAt: fields.publishedOn ? new Date(fields.publishedOn) : null,
+        integrationRunId
+      };
+    });
+    
+    await db.insert(airtableExtracts).values(extractsToInsert);
+    console.log(`Inserted extracts chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(records.length / CHUNK_SIZE)}`);
+  }
+
+  // Second pass: Update parent references
+  for (const record of records) {
+    const fields = record.fields as ExtractFieldSet;
+    if (fields.parentId?.[0]) {
+      await db
+        .update(airtableExtracts)
+        .set({ parentId: fields.parentId[0] })
+        .where(eq(airtableExtracts.id, record.id));
+    }
+  }
 }
 
-migrateAll();
+async function seedAttachments() {
+  console.log('Seeding attachments...');
+  const records = await base('Extracts').select().all();
+  
+  for (const record of records) {
+    const fields = record.fields as ExtractFieldSet;
+    const attachments = fields.images;
+    if (!attachments) continue;
+
+    for (let i = 0; i < attachments.length; i += CHUNK_SIZE) {
+      const chunk = attachments.slice(i, i + CHUNK_SIZE);
+      const attachmentsToInsert: typeof airtableAttachments.$inferInsert[] = chunk.map(attachment => ({
+        id: attachment.id,
+        url: attachment.url,
+        filename: attachment.filename,
+        size: attachment.size,
+				width: (attachment as unknown as { width: number }).width,
+				height: (attachment as unknown as { height: number }).height,
+        type: attachment.type,
+        extractId: record.id
+      }));
+      
+      await db.insert(airtableAttachments).values(attachmentsToInsert);
+    }
+  }
+}
+
+async function seedRelations() {
+  console.log('Seeding relations...');
+  const records = await base('Extracts').select().all();
+  
+  for (const record of records) {
+    const fields = record.fields as ExtractFieldSet;
+    
+    // Insert creator relations
+    if (fields.creatorIds?.length) {
+      for (let i = 0; i < fields.creatorIds.length; i += CHUNK_SIZE) {
+        const chunk = fields.creatorIds.slice(i, i + CHUNK_SIZE);
+        const relations: typeof airtableExtractCreators.$inferInsert[] = chunk.map(creatorId => ({
+          extractId: record.id,
+          creatorId
+        }));
+        await db.insert(airtableExtractCreators).values(relations);
+      }
+    }
+
+    // Insert space relations
+    if (fields.spaceIds?.length) {
+      for (let i = 0; i < fields.spaceIds.length; i += CHUNK_SIZE) {
+        const chunk = fields.spaceIds.slice(i, i + CHUNK_SIZE);
+        const relations: typeof airtableExtractSpaces.$inferInsert[] = chunk.map(spaceId => ({
+          extractId: record.id,
+          spaceId
+        }));
+        await db.insert(airtableExtractSpaces).values(relations);
+      }
+    }
+
+    // Insert connections
+    if (fields.connectionIds?.length) {
+      for (let i = 0; i < fields.connectionIds.length; i += CHUNK_SIZE) {
+        const chunk = fields.connectionIds.slice(i, i + CHUNK_SIZE);
+        const relations: typeof airtableExtractConnections.$inferInsert[] = chunk.map(toExtractId => ({
+          fromExtractId: record.id,
+          toExtractId
+        }));
+        await db.insert(airtableExtractConnections).values(relations);
+      }
+    }
+  }
+}
+
+async function processAirtableData(integrationRunId: number): Promise<number> {
+  await cleanupExistingRecords();
+  
+  await seedCreators(integrationRunId);
+  await seedSpaces(integrationRunId);
+  await seedExtracts(integrationRunId);
+  await seedAttachments();
+  await seedRelations();
+  
+  // Use $count utility instead of raw SQL
+  const count = await db.$count(airtableExtracts, 
+    eq(airtableExtracts.integrationRunId, integrationRunId)
+  );
+    
+  return count;
+}
+
+const main = async () => {
+  try {
+    await runIntegration(IntegrationType.AIRTABLE, processAirtableData);
+  } catch (err) {
+    console.error('Error in main:', err);
+    process.exit(1);
+  }
+};
+
+if (import.meta.url === import.meta.resolve('./seed.ts')) {
+  main();
+}
+
+export { main as seedAirtableData };
