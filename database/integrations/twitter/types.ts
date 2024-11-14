@@ -17,6 +17,28 @@ export interface Instruction {
 	entries: TwitterBookmark[];
 }
 
+export interface QuotedTweetWithVisibilityResults {
+	__typename: 'TweetWithVisibilityResults';
+	tweet: Tweet;
+	limitedActionResults: {
+		limited_actions: Array<{
+			action: string;
+			prompt: {
+				__typename: string;
+				cta_type: string;
+				headline: {
+					text: string;
+					entities: any[];
+				};
+				subtext: {
+					text: string;
+					entities: any[];
+				};
+			};
+		}>;
+	};
+}
+
 export interface TwitterBookmark {
 	entryId: string;
 	sortIndex: string;
@@ -60,7 +82,12 @@ export interface Tweet {
 		};
 	};
 	quoted_status_result?: {
-		result: Tweet | TweetTombstone;
+		result:
+			| Tweet
+			| TweetTombstone
+			| {
+					quotedTweet: QuotedTweetWithVisibilityResults;
+			  };
 	};
 }
 
@@ -321,9 +348,9 @@ export interface NoteTweetEntities {
 }
 
 export interface TweetTombstone {
-	__typename: "TweetTombstone";
+	__typename: 'TweetTombstone';
 	tombstone: {
-		__typename: "TextTombstone";
+		__typename: 'TextTombstone';
 		text: {
 			rtl: boolean;
 			text: string;
