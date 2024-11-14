@@ -1,7 +1,7 @@
-import { createPgConnection } from '../../connections';
-import { IntegrationType, bookmarks, integrationRuns } from '../../schema/main';
+import { createPgConnection } from '@schema/connections';
+import { IntegrationType, bookmarks, integrationRuns } from '@schema/main';
 import { eq, inArray } from 'drizzle-orm';
-import { runIntegration } from '../utils/run-integration';
+import { runIntegration } from '@utils/run-integration';
 import type { Raindrop, RaindropResponse } from './types';
 import { getAllCollections } from './loaders';
 
@@ -67,7 +67,7 @@ async function processRaindrops(integrationRunId: number): Promise<number> {
 	const raindrops = await getAllRaindrops();
 	console.log(`Retrieved ${raindrops.length} raindrops`);
 
-	const bookmarkData: typeof bookmarks.$inferInsert[] = raindrops.map((raindrop) => ({
+	const bookmarkData: (typeof bookmarks.$inferInsert)[] = raindrops.map((raindrop) => ({
 		url: raindrop.link,
 		title: raindrop.title,
 		content: raindrop.excerpt?.trim() || null,

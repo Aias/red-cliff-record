@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/rest';
-import { bookmarks, IntegrationType, integrationRuns } from '../../schema/main';
-import { runIntegration } from '../utils/run-integration';
-import { createPgConnection } from '../../connections';
+import { bookmarks, IntegrationType, integrationRuns } from '@schema/main';
+import { runIntegration } from '@utils/run-integration';
+import { createPgConnection } from '@schema/connections';
 import { eq, inArray } from 'drizzle-orm';
 import type { StarredRepo } from './types';
 
@@ -48,7 +48,7 @@ async function processGithubStars(integrationRunId: number): Promise<number> {
 		if (data.length === 0) break;
 
 		console.log(`Processing ${data.length} stars from page ${page}...`);
-		const chunk: typeof bookmarks.$inferInsert[] = data.map((star) => ({
+		const chunk: (typeof bookmarks.$inferInsert)[] = data.map((star) => ({
 			url: star.repo.html_url,
 			title: star.repo.name,
 			creator: star.repo.owner.login,
@@ -63,8 +63,8 @@ async function processGithubStars(integrationRunId: number): Promise<number> {
 
 		console.log(`Inserting ${chunk.length} stars into database...`);
 		await db.insert(bookmarks).values(chunk);
-			stars.push(...chunk);
-			page++;
+		stars.push(...chunk);
+		page++;
 	}
 
 	console.log(`Finished processing ${stars.length} total starred repositories`);

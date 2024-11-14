@@ -14,7 +14,7 @@ export const createPgConnection = () => {
 
 // SQLite connection for Arc browser
 export const createArcConnection = () => {
-  copyFileSync(arcDbPath, arcDbCopyPath);
-  const sqlite = new Database(arcDbCopyPath, { readonly: true });
-  return drizzleSqlite(sqlite);
+	copyFileSync(arcDbPath, arcDbCopyPath);
+	const sqlite = new Database(arcDbCopyPath, { readonly: true });
+	return drizzleSqlite(sqlite);
 };

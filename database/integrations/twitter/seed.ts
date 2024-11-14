@@ -1,19 +1,20 @@
-import {
-	bookmarks,
-	integrationRuns,
-	IntegrationType
-} from '../../schema/main';
+import { bookmarks, integrationRuns, IntegrationType } from '@schema/main';
 import { eq, inArray } from 'drizzle-orm';
-import { createPgConnection } from '../../connections';
-import { runIntegration } from '../utils/run-integration';
-import { isTweetWithVisibilityResults, formatTweetContent, getFirstSentence, getFirstImageUrl } from './helpers';
+import { createPgConnection } from '@schema/connections';
+import { runIntegration } from '@utils/run-integration';
+import {
+	isTweetWithVisibilityResults,
+	formatTweetContent,
+	getFirstSentence,
+	getFirstImageUrl
+} from './helpers';
 import { loadBookmarksData } from './loaders';
 
 const db = createPgConnection();
 
 async function processTwitterBookmarks(integrationRunId: number): Promise<number> {
 	const data = await loadBookmarksData();
-	const bookmarksToInsert: typeof bookmarks.$inferInsert[] = [];
+	const bookmarksToInsert: (typeof bookmarks.$inferInsert)[] = [];
 
 	// Delete existing Twitter bookmarks
 	console.log('Deleting existing Twitter bookmarks.');
@@ -31,9 +32,9 @@ async function processTwitterBookmarks(integrationRunId: number): Promise<number
 	console.log('Twitter bookmarks deleted.');
 
 	for (const bookmarkResponse of data) {
-		const entries = bookmarkResponse.response.data.bookmark_timeline_v2.timeline.instructions.flatMap(
-			(instruction) => instruction.entries
-			).filter(entry => entry.content.entryType === "TimelineTimelineItem");
+		const entries = bookmarkResponse.response.data.bookmark_timeline_v2.timeline.instructions
+			.flatMap((instruction) => instruction.entries)
+			.filter((entry) => entry.content.entryType === 'TimelineTimelineItem');
 
 		for (const entry of entries) {
 			if (!entry?.content?.itemContent?.tweet_results?.result) {
@@ -42,7 +43,7 @@ async function processTwitterBookmarks(integrationRunId: number): Promise<number
 			}
 
 			let tweet = entry.content.itemContent.tweet_results.result;
-			
+
 			// Handle TweetWithVisibilityResults type
 			if (isTweetWithVisibilityResults(tweet)) {
 				tweet = tweet.tweet;
@@ -69,7 +70,7 @@ async function processTwitterBookmarks(integrationRunId: number): Promise<number
 				category: 'Microblog',
 				tags: [],
 				imageUrl: getFirstImageUrl(tweet),
-				integrationRunId,
+				integrationRunId
 			});
 		}
 	}

@@ -8,7 +8,15 @@
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"strict": true,
-		"verbatimModuleSyntax": true
+		"verbatimModuleSyntax": true,
+		"baseUrl": ".",
+		"paths": {
+			"@integrations/*": ["integrations/*"],
+			"@lib/*": ["lib/*"],
+			"@schema/*": ["schema/*"],
+			"@scripts/*": ["scripts/*"],
+			"@utils/*": ["integrations/utils/*"]
+		}
 	},
 	"include": ["**/*.ts"],
 	"exclude": ["node_modules"]

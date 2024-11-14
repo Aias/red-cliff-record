@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-s3';
 import fs from 'fs/promises';
 import path from 'path';
-import { getContentTypeFromExtension } from '../../lib/extensions';
+import { getContentTypeFromExtension } from '@lib/extensions';
 
 const BATCH_SIZE = 100;
 

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import { visits, contextAnnotations, urls, contentAnnotations } from '../../schema/arc';
-import { createArcConnection } from '../../connections';
+import { visits, contextAnnotations, urls, contentAnnotations } from '@schema/arc';
+import { createArcConnection } from '@schema/connections';
 
 const arcDb = createArcConnection();
 
@@ -17,7 +17,7 @@ export const dailyVisitsQuery = arcDb
 	.from(visits)
 	.fullJoin(urls, eq(visits.url, urls.id))
 	.leftJoin(contentAnnotations, eq(visits.id, contentAnnotations.visitId))
-	.leftJoin(contextAnnotations, eq(visits.id, contextAnnotations.visitId))
+	.leftJoin(contextAnnotations, eq(visits.id, contextAnnotations.visitId));
 
 export const collapseSequentialVisits = (rawHistory: typeof dailyVisitsQuery._.result) => {
 	const collapsed: typeof rawHistory = [];
@@ -30,10 +30,12 @@ export const collapseSequentialVisits = (rawHistory: typeof dailyVisitsQuery._.r
 		}
 
 		// If this is a sequential visit to the same URL
-		if (current.url === visit.url &&
+		if (
+			current.url === visit.url &&
 			current.pageTitle &&
 			visit.pageTitle &&
-			current.pageTitle === visit.pageTitle) {
+			current.pageTitle === visit.pageTitle
+		) {
 			// Only add positive durations
 			if (visit.viewDuration && visit.viewDuration > 0) {
 				current.viewDuration = (current.viewDuration || 0) + visit.viewDuration;

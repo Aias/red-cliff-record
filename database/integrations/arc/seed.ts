@@ -1,19 +1,24 @@
-import { createArcConnection, createPgConnection } from '../../connections';
-import { browsingHistory, browsingHistoryDaily, Browser, IntegrationType } from '../../schema/main';
+import { createPgConnection } from '@schema/connections';
+import { browsingHistory, browsingHistoryDaily, Browser, IntegrationType } from '@schema/main';
 import { eq, and, isNotNull, ne, notLike } from 'drizzle-orm';
-import { sanitizeString } from '../utils/sanitize';
-import { runIntegration } from '../utils/run-integration';
-import { chromeEpochMicrosecondsToDatetime, datetimeToChromeEpochMicroseconds } from '../../lib/time-helpers';
+import { sanitizeString } from '@utils/sanitize';
+import { runIntegration } from '@utils/run-integration';
+import {
+	chromeEpochMicrosecondsToDatetime,
+	datetimeToChromeEpochMicroseconds
+} from '@lib/time-helpers';
 import os from 'os';
 import { dailyVisitsQuery, collapseSequentialVisits } from './helpers';
-import { urls } from '../../schema/arc';
+import { urls } from '@schema/arc';
 
 const pgDb = createPgConnection();
 
 async function processArcBrowserHistory(integrationRunId: number): Promise<number> {
 	const hostname = os.hostname();
 	console.log(`Cleaning up existing Arc browser history for ${hostname}...`);
-	await pgDb.delete(browsingHistory).where(and(eq(browsingHistory.browser, Browser.ARC), eq(browsingHistory.hostname, hostname)));
+	await pgDb
+		.delete(browsingHistory)
+		.where(and(eq(browsingHistory.browser, Browser.ARC), eq(browsingHistory.hostname, hostname)));
 	console.log('Cleanup complete');
 
 	console.log('Retrieving raw history...');
@@ -33,11 +38,11 @@ async function processArcBrowserHistory(integrationRunId: number): Promise<numbe
 	const collapsedHistory = collapseSequentialVisits(rawHistory);
 	console.log(`Collapsed into ${collapsedHistory.length} entries`);
 
-	const history: typeof browsingHistory.$inferInsert[] = collapsedHistory.map((h) => ({
-		viewTime: h.viewTime
-			? chromeEpochMicrosecondsToDatetime(h.viewTime)
-			: new Date(),
-		viewEpochMicroseconds: h.viewTime ? BigInt(h.viewTime) : datetimeToChromeEpochMicroseconds(new Date()),
+	const history: (typeof browsingHistory.$inferInsert)[] = collapsedHistory.map((h) => ({
+		viewTime: h.viewTime ? chromeEpochMicrosecondsToDatetime(h.viewTime) : new Date(),
+		viewEpochMicroseconds: h.viewTime
+			? BigInt(h.viewTime)
+			: datetimeToChromeEpochMicroseconds(new Date()),
 		viewDuration: h.viewDuration ? Math.round(h.viewDuration / 1000000) : 0,
 		durationSinceLastView: h.durationSinceLastView
 			? Math.round(h.durationSinceLastView / 1000000)

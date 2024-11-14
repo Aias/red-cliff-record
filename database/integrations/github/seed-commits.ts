@@ -1,16 +1,16 @@
 import { Octokit } from '@octokit/rest';
-import { createPgConnection } from '../../connections';
-import { IntegrationType, commits, commitChanges, CommitChangeStatus } from '../../schema/main';
-import { runIntegration } from '../utils/run-integration';
+import { createPgConnection } from '@schema/connections';
+import { IntegrationType, commits, commitChanges, CommitChangeStatus } from '@schema/main';
+import { runIntegration } from '@utils/run-integration';
 
 const db = createPgConnection();
 
 async function fetchUserCommits(integrationRunId: number): Promise<number> {
 	console.log(`Removing commits and alll history.`);
-  await db.delete(commitChanges);
-  await db.delete(commits);
-  console.log('Cleanup complete');
-	
+	await db.delete(commitChanges);
+	await db.delete(commits);
+	console.log('Cleanup complete');
+
 	const MAX_SEARCH_RESULTS = 1000;
 	const PAGE_SIZE = 50;
 	let page = 1;
@@ -80,22 +80,25 @@ async function fetchUserCommits(integrationRunId: number): Promise<number> {
 
 				// Insert commits into the database
 				for (const commit of commitsData) {
-					const commitId = await db.insert(commits).values({
-						sha: commit.sha,
-						message: commit.message,
-						repository: commit.repository,
-						url: commit.url,
-						committer: commit.committer,
-						commitDate: commit.commitDate,
-						integrationRunId,
-						additions: commit.stats?.additions ?? 0,
-						deletions: commit.stats?.deletions ?? 0,
-						changes: commit.stats?.total ?? 0
-					}).returning();
+					const commitId = await db
+						.insert(commits)
+						.values({
+							sha: commit.sha,
+							message: commit.message,
+							repository: commit.repository,
+							url: commit.url,
+							committer: commit.committer,
+							commitDate: commit.commitDate,
+							integrationRunId,
+							additions: commit.stats?.additions ?? 0,
+							deletions: commit.stats?.deletions ?? 0,
+							changes: commit.stats?.total ?? 0
+						})
+						.returning();
 
 					// Insert commit changes into the database
 					if (commit.files) {
-						const commitChangesData = commit.files.map(file => ({
+						const commitChangesData = commit.files.map((file) => ({
 							filename: file.filename,
 							status: file.status as CommitChangeStatus,
 							patch: file.patch,
@@ -118,7 +121,7 @@ async function fetchUserCommits(integrationRunId: number): Promise<number> {
 				const err = error as { status: number; message: string }; // Type assertion
 				if (err.status === 403 && err.message.includes('secondary rate limit')) {
 					console.warn('Secondary rate limit hit, retrying after delay...');
-					await new Promise(resolve => setTimeout(resolve, 60000)); // Wait for 1 minute
+					await new Promise((resolve) => setTimeout(resolve, 60000)); // Wait for 1 minute
 				} else {
 					throw error;
 				}
