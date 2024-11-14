@@ -1,14 +1,9 @@
 import { timestamps } from '@schema/common/timestamps';
 import { relations } from 'drizzle-orm';
 import { serial, text, timestamp, integer, index, pgSchema } from 'drizzle-orm/pg-core';
-import {
-	browsingHistory,
-	bookmarks,
-	commits,
-	airtableCreators,
-	airtableExtracts,
-	airtableSpaces
-} from '.';
+import { browsingHistory, bookmarks } from '.';
+import { commits } from './github';
+import { creators, extracts, spaces } from './airtable';
 
 export const integrationSchema = pgSchema('integrations');
 
@@ -71,7 +66,7 @@ export const integrationRunsRelations = relations(integrationRuns, ({ many }) =>
 	browsingHistory: many(browsingHistory),
 	bookmarks: many(bookmarks),
 	commits: many(commits),
-	airtableExtracts: many(airtableExtracts),
-	airtableCreators: many(airtableCreators),
-	airtableSpaces: many(airtableSpaces)
+	airtableExtracts: many(extracts),
+	airtableCreators: many(creators),
+	airtableSpaces: many(spaces)
 }));

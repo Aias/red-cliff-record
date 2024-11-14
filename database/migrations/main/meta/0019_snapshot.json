@@ -1,0 +1,1342 @@
+{
+  "id": "cafd6827-f672-4e13-8b2a-2b88544a702a",
+  "prevId": "473cf62d-34f5-4873-82f0-e267d412809c",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "airtable.airtable_attachments": {
+      "name": "airtable_attachments",
+      "schema": "airtable",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "width": {
+          "name": "width",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "height": {
+          "name": "height",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extract_id": {
+          "name": "extract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "airtable_attachments_extract_id_airtable_extracts_id_fk": {
+          "name": "airtable_attachments_extract_id_airtable_extracts_id_fk",
+          "tableFrom": "airtable_attachments",
+          "tableTo": "airtable_extracts",
+          "schemaTo": "airtable",
+          "columnsFrom": [
+            "extract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "airtable.airtable_creators": {
+      "name": "airtable_creators",
+      "schema": "airtable",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Individual'"
+        },
+        "primary_project": {
+          "name": "primary_project",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "professions": {
+          "name": "professions",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "organizations": {
+          "name": "organizations",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nationalities": {
+          "name": "nationalities",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "integration_run_id": {
+          "name": "integration_run_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "airtable_creators_integration_run_id_integration_runs_id_fk": {
+          "name": "airtable_creators_integration_run_id_integration_runs_id_fk",
+          "tableFrom": "airtable_creators",
+          "tableTo": "integration_runs",
+          "schemaTo": "integrations",
+          "columnsFrom": [
+            "integration_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "airtable.airtable_extract_connections": {
+      "name": "airtable_extract_connections",
+      "schema": "airtable",
+      "columns": {
+        "from_extract_id": {
+          "name": "from_extract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_extract_id": {
+          "name": "to_extract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "airtable_extract_connections_from_extract_id_airtable_extracts_id_fk": {
+          "name": "airtable_extract_connections_from_extract_id_airtable_extracts_id_fk",
+          "tableFrom": "airtable_extract_connections",
+          "tableTo": "airtable_extracts",
+          "schemaTo": "airtable",
+          "columnsFrom": [
+            "from_extract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "airtable_extract_connections_to_extract_id_airtable_extracts_id_fk": {
+          "name": "airtable_extract_connections_to_extract_id_airtable_extracts_id_fk",
+          "tableFrom": "airtable_extract_connections",
+          "tableTo": "airtable_extracts",
+          "schemaTo": "airtable",
+          "columnsFrom": [
+            "to_extract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "airtable_extract_connections_from_extract_id_to_extract_id_pk": {
+          "name": "airtable_extract_connections_from_extract_id_to_extract_id_pk",
+          "columns": [
+            "from_extract_id",
+            "to_extract_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "airtable.airtable_extract_creators": {
+      "name": "airtable_extract_creators",
+      "schema": "airtable",
+      "columns": {
+        "extract_id": {
+          "name": "extract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creator_id": {
+          "name": "creator_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "airtable_extract_creators_extract_id_airtable_extracts_id_fk": {
+          "name": "airtable_extract_creators_extract_id_airtable_extracts_id_fk",
+          "tableFrom": "airtable_extract_creators",
+          "tableTo": "airtable_extracts",
+          "schemaTo": "airtable",
+          "columnsFrom": [
+            "extract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "airtable_extract_creators_creator_id_airtable_creators_id_fk": {
+          "name": "airtable_extract_creators_creator_id_airtable_creators_id_fk",
+          "tableFrom": "airtable_extract_creators",
+          "tableTo": "airtable_creators",
+          "schemaTo": "airtable",
+          "columnsFrom": [
+            "creator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "airtable_extract_creators_extract_id_creator_id_pk": {
+          "name": "airtable_extract_creators_extract_id_creator_id_pk",
+          "columns": [
+            "extract_id",
+            "creator_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "airtable.airtable_extract_spaces": {
+      "name": "airtable_extract_spaces",
+      "schema": "airtable",
+      "columns": {
+        "extract_id": {
+          "name": "extract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "space_id": {
+          "name": "space_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "airtable_extract_spaces_extract_id_airtable_extracts_id_fk": {
+          "name": "airtable_extract_spaces_extract_id_airtable_extracts_id_fk",
+          "tableFrom": "airtable_extract_spaces",
+          "tableTo": "airtable_extracts",
+          "schemaTo": "airtable",
+          "columnsFrom": [
+            "extract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "airtable_extract_spaces_space_id_airtable_spaces_id_fk": {
+          "name": "airtable_extract_spaces_space_id_airtable_spaces_id_fk",
+          "tableFrom": "airtable_extract_spaces",
+          "tableTo": "airtable_spaces",
+          "schemaTo": "airtable",
+          "columnsFrom": [
+            "space_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "airtable_extract_spaces_extract_id_space_id_pk": {
+          "name": "airtable_extract_spaces_extract_id_space_id_pk",
+          "columns": [
+            "extract_id",
+            "space_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "airtable.airtable_extracts": {
+      "name": "airtable_extracts",
+      "schema": "airtable",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "format": {
+          "name": "format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Fragment'"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "michelin_stars": {
+          "name": "michelin_stars",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attachment_caption": {
+          "name": "attachment_caption",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lexicographical_order": {
+          "name": "lexicographical_order",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'a0'"
+        },
+        "integration_run_id": {
+          "name": "integration_run_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "airtable_extracts_integration_run_id_integration_runs_id_fk": {
+          "name": "airtable_extracts_integration_run_id_integration_runs_id_fk",
+          "tableFrom": "airtable_extracts",
+          "tableTo": "integration_runs",
+          "schemaTo": "integrations",
+          "columnsFrom": [
+            "integration_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "airtable_extracts_parent_id_airtable_extracts_id_fk": {
+          "name": "airtable_extracts_parent_id_airtable_extracts_id_fk",
+          "tableFrom": "airtable_extracts",
+          "tableTo": "airtable_extracts",
+          "schemaTo": "airtable",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "airtable.airtable_spaces": {
+      "name": "airtable_spaces",
+      "schema": "airtable",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "icon": {
+          "name": "icon",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "integration_run_id": {
+          "name": "integration_run_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "airtable_spaces_integration_run_id_integration_runs_id_fk": {
+          "name": "airtable_spaces_integration_run_id_integration_runs_id_fk",
+          "tableFrom": "airtable_spaces",
+          "tableTo": "integration_runs",
+          "schemaTo": "integrations",
+          "columnsFrom": [
+            "integration_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bookmarks": {
+      "name": "bookmarks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creator": {
+          "name": "creator",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "important": {
+          "name": "important",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "integration_run_id": {
+          "name": "integration_run_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bookmarked_at": {
+          "name": "bookmarked_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bookmarks_integration_run_id_index": {
+          "name": "bookmarks_integration_run_id_index",
+          "columns": [
+            {
+              "expression": "integration_run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bookmarks_url_index": {
+          "name": "bookmarks_url_index",
+          "columns": [
+            {
+              "expression": "url",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bookmarks_created_at_index": {
+          "name": "bookmarks_created_at_index",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bookmarks_integration_run_id_integration_runs_id_fk": {
+          "name": "bookmarks_integration_run_id_integration_runs_id_fk",
+          "tableFrom": "bookmarks",
+          "tableTo": "integration_runs",
+          "schemaTo": "integrations",
+          "columnsFrom": [
+            "integration_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "bookmarks_url_bookmarkedAt_unique": {
+          "name": "bookmarks_url_bookmarkedAt_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "url",
+            "bookmarked_at"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.browsing_history": {
+      "name": "browsing_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "view_time": {
+          "name": "view_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "browser": {
+          "name": "browser",
+          "type": "browser",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'arc'"
+        },
+        "hostname": {
+          "name": "hostname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "view_epoch_microseconds": {
+          "name": "view_epoch_microseconds",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "view_duration": {
+          "name": "view_duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duration_since_last_view": {
+          "name": "duration_since_last_view",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "page_title": {
+          "name": "page_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "search_terms": {
+          "name": "search_terms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "related_searches": {
+          "name": "related_searches",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "integration_run_id": {
+          "name": "integration_run_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "browsing_history_integration_run_id_index": {
+          "name": "browsing_history_integration_run_id_index",
+          "columns": [
+            {
+              "expression": "integration_run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "browsing_history_view_time_index": {
+          "name": "browsing_history_view_time_index",
+          "columns": [
+            {
+              "expression": "view_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "browsing_history_url_index": {
+          "name": "browsing_history_url_index",
+          "columns": [
+            {
+              "expression": "url",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "browsing_history_integration_run_id_integration_runs_id_fk": {
+          "name": "browsing_history_integration_run_id_integration_runs_id_fk",
+          "tableFrom": "browsing_history",
+          "tableTo": "integration_runs",
+          "schemaTo": "integrations",
+          "columnsFrom": [
+            "integration_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.commit_changes": {
+      "name": "commit_changes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "commit_change_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "patch": {
+          "name": "patch",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commit_id": {
+          "name": "commit_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changes": {
+          "name": "changes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "additions": {
+          "name": "additions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deletions": {
+          "name": "deletions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "commit_changes_commit_id_commits_id_fk": {
+          "name": "commit_changes_commit_id_commits_id_fk",
+          "tableFrom": "commit_changes",
+          "tableTo": "commits",
+          "columnsFrom": [
+            "commit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.commits": {
+      "name": "commits",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "sha": {
+          "name": "sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "repository": {
+          "name": "repository",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "committer": {
+          "name": "committer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "commit_date": {
+          "name": "commit_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "integration_run_id": {
+          "name": "integration_run_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changes": {
+          "name": "changes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "additions": {
+          "name": "additions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deletions": {
+          "name": "deletions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "commits_integration_run_id_integration_runs_id_fk": {
+          "name": "commits_integration_run_id_integration_runs_id_fk",
+          "tableFrom": "commits",
+          "tableTo": "integration_runs",
+          "schemaTo": "integrations",
+          "columnsFrom": [
+            "integration_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "integrations.integration_runs": {
+      "name": "integration_runs",
+      "schema": "integrations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "integration_type": {
+          "name": "integration_type",
+          "type": "integration_type",
+          "typeSchema": "integrations",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "run_type": {
+          "name": "run_type",
+          "type": "run_type",
+          "typeSchema": "integrations",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "integration_status",
+          "typeSchema": "integrations",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'in_progress'"
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "run_start_time": {
+          "name": "run_start_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "run_end_time": {
+          "name": "run_end_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entries_created": {
+          "name": "entries_created",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "integration_runs_integration_type_index": {
+          "name": "integration_runs_integration_type_index",
+          "columns": [
+            {
+              "expression": "integration_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.browser": {
+      "name": "browser",
+      "schema": "public",
+      "values": [
+        "arc",
+        "chrome",
+        "firefox",
+        "safari",
+        "edge"
+      ]
+    },
+    "public.commit_change_status": {
+      "name": "commit_change_status",
+      "schema": "public",
+      "values": [
+        "added",
+        "modified",
+        "removed",
+        "renamed",
+        "copied",
+        "changed",
+        "unchanged"
+      ]
+    },
+    "integrations.integration_status": {
+      "name": "integration_status",
+      "schema": "integrations",
+      "values": [
+        "success",
+        "fail",
+        "in_progress"
+      ]
+    },
+    "integrations.integration_type": {
+      "name": "integration_type",
+      "schema": "integrations",
+      "values": [
+        "browser_history",
+        "airtable",
+        "ai_chat",
+        "raindrop",
+        "github",
+        "twitter"
+      ]
+    },
+    "integrations.run_type": {
+      "name": "run_type",
+      "schema": "integrations",
+      "values": [
+        "full",
+        "incremental"
+      ]
+    }
+  },
+  "schemas": {
+    "airtable": "airtable",
+    "integrations": "integrations"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {
+    "public.browsing_history_daily": {
+      "columns": {
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pageTitle": {
+          "name": "pageTitle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "definition": "select DATE(\"viewTime\") as \"date\", \"url\", \"pageTitle\", SUM(COALESCE(\"viewDuration\", 0)) as \"total_duration\", MIN(\"viewTime\") as \"first_visit\", MAX(\"viewTime\") as \"last_visit\", COUNT(*) as \"visit_count\" from \"browsing_history\" group by DATE(\"browsing_history\".\"view_time\"), \"browsing_history\".\"url\", \"browsing_history\".\"page_title\"",
+      "name": "browsing_history_daily",
+      "schema": "public",
+      "isExisting": false,
+      "materialized": true
+    }
+  },
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

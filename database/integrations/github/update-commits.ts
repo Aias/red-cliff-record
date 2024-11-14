@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { createPgConnection } from '@schema/connections';
-import { commits, commitChanges, CommitChangeStatus } from '@schema/main';
+import { commits, commitChanges, CommitChangeStatus } from '@schema/main/github';
 import { IntegrationType, RunType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { desc, sql } from 'drizzle-orm';
@@ -127,15 +127,17 @@ async function fetchIncrementalCommits(integrationRunId: number): Promise<number
 
 						// Insert commit changes into the database
 						if (commit.files) {
-							const commitChangesData = commit.files.map((file) => ({
-								filename: file.filename,
-								status: file.status as CommitChangeStatus,
-								patch: file.patch,
-								commitId: commitId[0].id,
-								additions: file.additions,
-								deletions: file.deletions,
-								changes: file.changes
-							}));
+							const commitChangesData: (typeof commitChanges.$inferInsert)[] = commit.files.map(
+								(file) => ({
+									filename: file.filename,
+									status: file.status as CommitChangeStatus,
+									patch: file.patch,
+									commitId: commitId[0].id,
+									additions: file.additions,
+									deletions: file.deletions,
+									changes: file.changes
+								})
+							);
 
 							await db.insert(commitChanges).values(commitChangesData);
 						}

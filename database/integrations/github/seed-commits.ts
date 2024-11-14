@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { createPgConnection } from '@schema/connections';
-import { commits, commitChanges, CommitChangeStatus } from '@schema/main';
+import { commits, commitChanges, CommitChangeStatus } from '@schema/main/github';
 import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 
