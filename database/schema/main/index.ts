@@ -16,61 +16,7 @@ import {
 import { relations, sql } from 'drizzle-orm';
 import { timestamps } from '../common/timestamps';
 import { stats } from '../common/stats';
-
-export enum IntegrationStatus {
-	SUCCESS = 'success',
-	FAIL = 'fail',
-	IN_PROGRESS = 'in_progress'
-}
-
-// Define the status enum for integration runs
-export const integrationStatusEnum = pgEnum('integration_status', [
-	IntegrationStatus.SUCCESS,
-	IntegrationStatus.FAIL,
-	IntegrationStatus.IN_PROGRESS
-]);
-
-export enum IntegrationType {
-	BROWSER_HISTORY = 'browser_history',
-	AIRTABLE = 'airtable',
-	AI_CHAT = 'ai_chat',
-	RAINDROP = 'raindrop',
-	GITHUB = 'github',
-	TWITTER = 'twitter'
-}
-
-export const integrationTypeEnum = pgEnum('integration_type', [
-	IntegrationType.BROWSER_HISTORY,
-	IntegrationType.AIRTABLE,
-	IntegrationType.AI_CHAT,
-	IntegrationType.RAINDROP,
-	IntegrationType.GITHUB,
-	IntegrationType.TWITTER
-]);
-
-export enum RunType {
-	FULL = 'full',
-	INCREMENTAL = 'incremental'
-}
-
-export const runTypeEnum = pgEnum('run_type', [RunType.FULL, RunType.INCREMENTAL]);
-
-// Integration runs table
-export const integrationRuns = pgTable(
-	'integration_runs',
-	{
-		id: serial().primaryKey(),
-		integrationType: integrationTypeEnum().notNull(),
-		runType: runTypeEnum().notNull(),
-		status: integrationStatusEnum().notNull().default(IntegrationStatus.IN_PROGRESS),
-		message: text(),
-		runStartTime: timestamp().notNull(),
-		runEndTime: timestamp(),
-		entriesCreated: integer().default(0),
-		...timestamps
-	},
-	(table) => [index().on(table.integrationType)]
-);
+import { integrationRuns } from './integrations';
 
 export enum Browser {
 	ARC = 'arc',
@@ -203,12 +149,6 @@ export const commitChanges = pgTable('commit_changes', {
 	...stats,
 	...timestamps
 });
-
-export const integrationRunsRelations = relations(integrationRuns, ({ many }) => ({
-	browsingHistory: many(browsingHistory),
-	bookmarks: many(bookmarks),
-	commits: many(commits)
-}));
 
 export const browsingHistoryRelations = relations(browsingHistory, ({ one }) => ({
 	integrationRun: one(integrationRuns, {

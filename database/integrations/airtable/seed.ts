@@ -8,9 +8,9 @@ import {
 	airtableSpaces,
 	airtableExtractCreators,
 	airtableExtractSpaces,
-	airtableExtractConnections,
-	IntegrationType
+	airtableExtractConnections
 } from '@schema/main';
+import { IntegrationType } from '@schema/main/integrations';
 import { eq } from 'drizzle-orm';
 import { runIntegration } from '@utils/run-integration';
 

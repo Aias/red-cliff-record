@@ -1,5 +1,6 @@
 import { createPgConnection } from '@schema/connections';
-import { IntegrationType, bookmarks, RunType, integrationRuns } from '@schema/main';
+import { bookmarks } from '@schema/main';
+import { IntegrationType, RunType, integrationRuns } from '@schema/main/integrations';
 import { desc, eq } from 'drizzle-orm';
 import { runIntegration } from '@utils/run-integration';
 import type { Raindrop, RaindropResponse } from './types';

@@ -1,5 +1,6 @@
 import { createPgConnection } from '@schema/connections';
-import { browsingHistory, browsingHistoryDaily, Browser, IntegrationType } from '@schema/main';
+import { browsingHistory, browsingHistoryDaily, Browser } from '@schema/main';
+import { IntegrationType } from '@schema/main/integrations';
 import { eq, and, isNotNull, ne, notLike } from 'drizzle-orm';
 import { sanitizeString } from '@utils/sanitize';
 import { runIntegration } from '@utils/run-integration';

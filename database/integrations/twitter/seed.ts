@@ -1,4 +1,5 @@
-import { bookmarks, integrationRuns, IntegrationType } from '@schema/main';
+import { bookmarks } from '@schema/main';
+import { integrationRuns, IntegrationType } from '@schema/main/integrations';
 import { eq, inArray } from 'drizzle-orm';
 import { createPgConnection } from '@schema/connections';
 import { runIntegration } from '@utils/run-integration';

@@ -1,4 +1,5 @@
-import { bookmarks, IntegrationType, RunType } from '@schema/main';
+import { bookmarks } from '@schema/main';
+import { IntegrationType, RunType } from '@schema/main/integrations';
 import { like } from 'drizzle-orm';
 import { createPgConnection } from '@schema/connections';
 import { runIntegration } from '@utils/run-integration';

@@ -1,6 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import { createPgConnection } from '@schema/connections';
-import { IntegrationType, commits, commitChanges, CommitChangeStatus, RunType } from '@schema/main';
+import { commits, commitChanges, CommitChangeStatus } from '@schema/main';
+import { IntegrationType, RunType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { desc, sql } from 'drizzle-orm';
 

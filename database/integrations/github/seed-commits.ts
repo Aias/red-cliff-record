@@ -1,6 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import { createPgConnection } from '@schema/connections';
-import { IntegrationType, commits, commitChanges, CommitChangeStatus } from '@schema/main';
+import { commits, commitChanges, CommitChangeStatus } from '@schema/main';
+import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 
 const db = createPgConnection();

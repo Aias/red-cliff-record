@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
-import { bookmarks, integrationRuns, IntegrationType, RunType } from '@schema/main';
+import { bookmarks } from '@schema/main';
+import { integrationRuns, IntegrationType, RunType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { createPgConnection } from '@schema/connections';
 import { desc, like, eq } from 'drizzle-orm';
