@@ -113,6 +113,7 @@ async function fetchIncrementalRaindrops(integrationRunId: number): Promise<numb
 const main = async () => {
 	try {
 		await runIntegration(IntegrationType.RAINDROP, fetchIncrementalRaindrops, RunType.INCREMENTAL);
+		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
 		process.exit(1);

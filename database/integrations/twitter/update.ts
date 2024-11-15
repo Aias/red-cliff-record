@@ -97,6 +97,7 @@ async function processTwitterBookmarks(integrationRunId: number): Promise<number
 const main = async () => {
 	try {
 		await runIntegration(IntegrationType.TWITTER, processTwitterBookmarks, RunType.INCREMENTAL);
+		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
 		process.exit(1);

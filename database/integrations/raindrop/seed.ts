@@ -103,6 +103,7 @@ async function processRaindrops(integrationRunId: number): Promise<number> {
 const main = async () => {
 	try {
 		await runIntegration(IntegrationType.RAINDROP, processRaindrops);
+		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
 		process.exit(1);

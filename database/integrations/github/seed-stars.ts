@@ -75,6 +75,7 @@ async function processGithubStars(integrationRunId: number): Promise<number> {
 const main = async () => {
 	try {
 		await runIntegration(IntegrationType.GITHUB, processGithubStars);
+		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
 		process.exit(1);

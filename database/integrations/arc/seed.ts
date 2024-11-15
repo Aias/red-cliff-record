@@ -76,6 +76,7 @@ async function processArcBrowserHistory(integrationRunId: number): Promise<numbe
 const main = async () => {
 	try {
 		await runIntegration(IntegrationType.BROWSER_HISTORY, processArcBrowserHistory);
+		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
 		process.exit(1);

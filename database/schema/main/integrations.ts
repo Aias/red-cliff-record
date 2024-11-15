@@ -21,20 +21,22 @@ export const integrationStatusEnum = integrationSchema.enum('integration_status'
 ]);
 
 export enum IntegrationType {
-	BROWSER_HISTORY = 'browser_history',
-	AIRTABLE = 'airtable',
 	AI_CHAT = 'ai_chat',
-	RAINDROP = 'raindrop',
+	AIRTABLE = 'airtable',
+	BROWSER_HISTORY = 'browser_history',
 	GITHUB = 'github',
+	RAINDROP = 'raindrop',
+	READWISE = 'readwise',
 	TWITTER = 'twitter'
 }
 
 export const integrationTypeEnum = integrationSchema.enum('integration_type', [
-	IntegrationType.BROWSER_HISTORY,
-	IntegrationType.AIRTABLE,
 	IntegrationType.AI_CHAT,
-	IntegrationType.RAINDROP,
+	IntegrationType.AIRTABLE,
+	IntegrationType.BROWSER_HISTORY,
 	IntegrationType.GITHUB,
+	IntegrationType.RAINDROP,
+	IntegrationType.READWISE,
 	IntegrationType.TWITTER
 ]);
 
@@ -65,7 +67,7 @@ export const integrationRuns = integrationSchema.table(
 export const integrationRunsRelations = relations(integrationRuns, ({ many }) => ({
 	browsingHistory: many(browsingHistory),
 	bookmarks: many(bookmarks),
-	commits: many(commits),
+	githubCommits: many(commits),
 	airtableExtracts: many(extracts),
 	airtableCreators: many(creators),
 	airtableSpaces: many(spaces)
