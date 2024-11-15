@@ -9,9 +9,7 @@ export interface ReadwiseTag {
 export interface ReadwiseArticle {
 	id: string;
 	url: string;
-	source_url: string;
 	title: string;
-	content: string | null;
 	author: string;
 	source: string;
 	category: ReadwiseCategory;
@@ -21,10 +19,12 @@ export interface ReadwiseArticle {
 	word_count: number;
 	created_at: string;
 	updated_at: string;
-	notes: string;
 	published_date: number | null; // Unix timestamp
 	summary: string;
 	image_url: string;
+	content: string | null;
+	source_url: string;
+	notes: string;
 	parent_id: string | null;
 	reading_progress: number;
 	first_opened_at: string | null;

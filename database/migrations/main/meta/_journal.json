@@ -169,6 +169,13 @@
       "when": 1731637660179,
       "tag": "0023_unusual_ben_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1731681111740,
+      "tag": "0024_burly_boomer",
+      "breakpoints": true
     }
   ]
 }

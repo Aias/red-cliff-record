@@ -63,6 +63,7 @@ export const documents = readwiseSchema.table(
 		title: text(),
 		author: text(),
 		source: text(),
+		content: text(),
 		category: readwiseCategoryEnum(),
 		location: readwiseLocationEnum(),
 		tags: text().array(),

@@ -58,7 +58,6 @@ const mapReadwiseArticleToDocument = (
 ): typeof documents.$inferInsert => ({
 	id: article.id,
 	url: article.url,
-	sourceUrl: article.source_url,
 	title: cleanString(article.title),
 	author: cleanString(article.author),
 	source: article.source,
@@ -67,12 +66,14 @@ const mapReadwiseArticleToDocument = (
 	tags: Object.keys(article.tags || {}),
 	siteName: article.site_name,
 	wordCount: article.word_count,
-	notes: cleanString(article.notes),
 	publishedDate: article.published_date
 		? new Date(article.published_date).toISOString().split('T')[0]
 		: null,
 	summary: cleanString(article.summary),
 	imageUrl: article.image_url,
+	content: article.content,
+	sourceUrl: article.source_url,
+	notes: cleanString(article.notes),
 	parentId: article.parent_id,
 	readingProgress: article.reading_progress.toString(),
 	firstOpenedAt: article.first_opened_at ? new Date(article.first_opened_at) : null,
@@ -83,6 +84,37 @@ const mapReadwiseArticleToDocument = (
 	updatedAt: new Date(article.updated_at),
 	integrationRunId
 });
+
+function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle[] {
+	// Create a map of id to document for quick lookup
+	const idToDocument = new Map(documents.map((doc) => [doc.id, doc]));
+
+	// Helper function to get full ancestry chain
+	function getAncestryChain(doc: ReadwiseArticle): string[] {
+		const chain: string[] = [];
+		let current = doc;
+		while (current.parent_id) {
+			const parent = idToDocument.get(current.parent_id);
+			if (!parent) break; // Handle case where parent is not in our dataset
+			chain.push(current.parent_id);
+			current = parent;
+		}
+		return chain;
+	}
+
+	return [...documents].sort((a, b) => {
+		const aAncestry = getAncestryChain(a);
+		const bAncestry = getAncestryChain(b);
+
+		// First sort by ancestry chain length
+		if (aAncestry.length !== bAncestry.length) {
+			return aAncestry.length - bAncestry.length;
+		}
+
+		// If same hierarchy level, sort by creation date
+		return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+	});
+}
 
 async function processReadwiseDocuments(integrationRunId: number): Promise<number> {
 	const lastUpdateTime = await getMostRecentUpdateTime(db);
@@ -106,16 +138,12 @@ async function processReadwiseDocuments(integrationRunId: number): Promise<numbe
 
 	console.log(`Retrieved ${allDocuments.length} documents to process`);
 
-	// Sort documents so parents come before children
-	allDocuments.sort((a, b) => {
-		if (!a.parent_id && b.parent_id) return -1;
-		if (a.parent_id && !b.parent_id) return 1;
-		return 0;
-	});
+	// Replace the existing sort with our new hierarchical sort
+	const sortedDocuments = sortDocumentsByHierarchy(allDocuments);
 
 	let successCount = 0;
 
-	for (const doc of allDocuments) {
+	for (const doc of sortedDocuments) {
 		try {
 			const mappedDoc = mapReadwiseArticleToDocument(doc, integrationRunId);
 
@@ -127,7 +155,7 @@ async function processReadwiseDocuments(integrationRunId: number): Promise<numbe
 			successCount++;
 		} catch (error) {
 			console.error('Error processing document:', {
-				id: doc.id,
+				document: doc,
 				error: error instanceof Error ? error.message : String(error)
 			});
 		}
@@ -151,4 +179,4 @@ if (import.meta.url === import.meta.resolve('./update.ts')) {
 	main();
 }
 
-export { main as seedReadwiseDocuments };
+export { main as updateReadwiseDocuments };

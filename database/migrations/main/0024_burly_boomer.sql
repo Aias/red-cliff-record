@@ -1,0 +1,1 @@
+ALTER TABLE "readwise"."documents" ADD COLUMN "content" text;
