@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { visits, contextAnnotations, urls, contentAnnotations } from '@schema/arc';
 import { createArcConnection } from '@schema/connections';
 
@@ -15,6 +15,7 @@ export const dailyVisitsQuery = arcDb
 		relatedSearches: contentAnnotations.relatedSearches
 	})
 	.from(visits)
+	.orderBy(asc(visits.visitTime), asc(visits.url))
 	.fullJoin(urls, eq(visits.url, urls.id))
 	.leftJoin(contentAnnotations, eq(visits.id, contentAnnotations.visitId))
 	.leftJoin(contextAnnotations, eq(visits.id, contextAnnotations.visitId));

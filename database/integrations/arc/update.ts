@@ -1,5 +1,5 @@
 import { createPgConnection } from '@schema/connections';
-import { browsingHistory, browsingHistoryDaily, Browser } from '@schema/main';
+import { browsingHistory, browsingHistoryDaily, Browser } from '@schema/main/arc';
 import { IntegrationType, RunType } from '@schema/main/integrations';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
 import { sanitizeString } from '@utils/sanitize';

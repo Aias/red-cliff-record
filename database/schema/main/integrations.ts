@@ -1,7 +1,8 @@
 import { timestamps } from '@schema/common/timestamps';
 import { relations } from 'drizzle-orm';
 import { serial, text, timestamp, integer, index, pgSchema } from 'drizzle-orm/pg-core';
-import { browsingHistory, bookmarks } from '.';
+import { bookmarks } from '.';
+import { browsingHistory } from './arc';
 import { commits } from './github';
 import { creators, extracts, spaces } from './airtable';
 
