@@ -5,7 +5,6 @@ import { runIntegration } from '@utils/run-integration';
 import { createPgConnection } from '@schema/connections';
 import { desc, like, eq } from 'drizzle-orm';
 import type { StarredRepo } from './types';
-
 const db = createPgConnection();
 
 const REQUEST_ACCEPT_HEADER = 'application/vnd.github.star+json';
@@ -15,19 +14,21 @@ async function syncStars(integrationRunId: number): Promise<number> {
 
 	// Get the most recent bookmark date from the database
 	const latestStarredRepo = await db
-		.select({ bookmarkedAt: starsTable.bookmarkedAt })
+		.select({ starredAt: starsTable.starredAt })
 		.from(starsTable)
 		.leftJoin(integrationRuns, eq(starsTable.integrationRunId, integrationRuns.id))
 		.where(eq(integrationRuns.integrationType, IntegrationType.GITHUB))
-		.orderBy(desc(starsTable.bookmarkedAt))
+		.orderBy(desc(starsTable.starredAt))
 		.limit(1);
 
-	const lastKnownDate = latestStarredRepo[0]?.bookmarkedAt;
+	const lastKnownDate = latestStarredRepo[0]?.starredAt;
 	console.log(`Date of last starred repository: ${lastKnownDate?.toISOString() ?? 'none'}`);
 
 	const octokit = new Octokit({
 		auth: process.env.GITHUB_TOKEN
 	});
+
+	const rawData: any = [];
 
 	const starsToInsert: (typeof starsTable.$inferInsert)[] = [];
 	let page = 1;
@@ -43,6 +44,8 @@ async function syncStars(integrationRunId: number): Promise<number> {
 				accept: REQUEST_ACCEPT_HEADER
 			}
 		});
+
+		rawData.push(response.data);
 
 		const data = response.data as unknown as StarredRepo[];
 		if (data.length === 0) break;
@@ -63,7 +66,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 			const existingBookmark = await db
 				.select({ id: starsTable.id })
 				.from(starsTable)
-				.where(like(starsTable.url, star.repo.html_url))
+				.where(like(starsTable.repoUrl, star.repo.html_url))
 				.limit(1);
 
 			if (existingBookmark.length > 0) {
@@ -71,16 +74,20 @@ async function syncStars(integrationRunId: number): Promise<number> {
 				continue;
 			}
 
+			const { starred_at, repo } = star;
+
 			starsToInsert.push({
-				url: star.repo.html_url,
-				title: star.repo.name,
-				creator: star.repo.owner.login,
-				content: star.repo.description?.trim() || null,
-				bookmarkedAt: new Date(star.starred_at),
-				type: 'repository',
-				category: 'Code',
-				tags: star.repo.topics,
-				imageUrl: star.repo.owner.avatar_url,
+				id: repo.id,
+				repoUrl: repo.html_url,
+				homepageUrl: repo.homepage,
+				name: repo.name,
+				fullName: repo.full_name,
+				ownerLogin: repo.owner.login,
+				licenseName: repo.license?.name,
+				description: repo.description,
+				language: repo.language,
+				topics: repo.topics,
+				starredAt: new Date(starred_at),
 				integrationRunId
 			});
 		}

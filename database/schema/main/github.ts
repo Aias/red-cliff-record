@@ -80,29 +80,23 @@ export const commitChangesRelations = relations(commitChanges, ({ one }) => ({
 export const stars = githubSchema.table(
 	'stars',
 	{
-		id: serial().primaryKey(),
-		url: text().notNull(),
-		title: text().notNull(),
-		creator: text(),
-		content: text(),
-		notes: text(),
-		type: text(),
-		category: text(),
-		tags: text().array(),
-		important: boolean().notNull().default(false),
-		imageUrl: text(),
+		id: integer().primaryKey(),
+		repoUrl: text().notNull(),
+		homepageUrl: text(),
+		name: text(),
+		fullName: text(),
+		ownerLogin: text(),
+		licenseName: text(),
+		description: text(),
+		language: text(),
+		starredAt: timestamp({ withTimezone: true }).notNull(),
+		topics: text().array(),
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
-		bookmarkedAt: timestamp().defaultNow().notNull(),
 		...timestamps
 	},
-	(table) => [
-		index().on(table.integrationRunId),
-		index().on(table.url),
-		index().on(table.createdAt),
-		unique().on(table.url, table.bookmarkedAt)
-	]
+	(table) => [index().on(table.integrationRunId), index().on(table.starredAt)]
 );
 
 export const starsRelations = relations(stars, ({ one }) => ({

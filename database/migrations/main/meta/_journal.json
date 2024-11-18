@@ -225,6 +225,13 @@
       "when": 1731961836069,
       "tag": "0031_chunky_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1731968318313,
+      "tag": "0032_tan_silhouette",
+      "breakpoints": true
     }
   ]
 }
