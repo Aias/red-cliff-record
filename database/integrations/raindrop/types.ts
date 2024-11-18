@@ -23,7 +23,18 @@ export interface Raindrop {
 		$id: number;
 		oid: number;
 	};
-	highlights: any[];
+	file?: {
+		name: string;
+		size: number;
+		type: string;
+	};
+	highlights: Array<{
+		_id: string;
+		text: string;
+		color: string;
+		note?: string;
+		created: string;
+	}>;
 	important: boolean;
 	removed: boolean;
 	creatorRef: {
@@ -39,25 +50,23 @@ export interface Raindrop {
 		size: number;
 		created: string;
 	};
-	collectionId: number;
 }
+
 export interface RaindropResponse {
 	items: Raindrop[];
 	count: number;
 	result: boolean;
 }
+
 interface RaindropCollection {
 	_id: number;
 	access: {
 		level: number;
 		draggable: boolean;
 	};
-	collaborators: {
-		$id: string;
-	};
 	color?: string;
 	count: number;
-	cover?: string[];
+	cover: string[];
 	created: string;
 	expanded: boolean;
 	lastUpdate: string;
@@ -72,6 +81,7 @@ interface RaindropCollection {
 	};
 	view: string;
 }
+
 export interface CollectionsResponse {
 	items: RaindropCollection[];
 	result: boolean;

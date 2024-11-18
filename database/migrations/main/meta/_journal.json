@@ -204,6 +204,20 @@
       "when": 1731955801200,
       "tag": "0028_lush_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1731959943732,
+      "tag": "0029_slimy_lady_bullseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1731960613486,
+      "tag": "0030_easy_salo",
+      "breakpoints": true
     }
   ]
 }
