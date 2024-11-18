@@ -14,7 +14,7 @@ import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';
 
 const pgDb = createPgConnection();
 
-async function processArcBrowserHistoryIncremental(integrationRunId: number): Promise<number> {
+async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 	const hostname = os.hostname();
 	console.log('Starting Arc browser history incremental update...');
 
@@ -91,11 +91,7 @@ async function processArcBrowserHistoryIncremental(integrationRunId: number): Pr
 
 const main = async () => {
 	try {
-		await runIntegration(
-			IntegrationType.BROWSER_HISTORY,
-			processArcBrowserHistoryIncremental,
-			RunType.INCREMENTAL
-		);
+		await runIntegration(IntegrationType.BROWSER_HISTORY, syncBrowserHistory, RunType.INCREMENTAL);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
@@ -103,8 +99,8 @@ const main = async () => {
 	}
 };
 
-if (import.meta.url === import.meta.resolve('./update.ts')) {
+if (import.meta.url === import.meta.resolve('./sync.ts')) {
 	main();
 }
 
-export { main as updateBrowserHistory };
+export { main as syncArcBrowserHistory };

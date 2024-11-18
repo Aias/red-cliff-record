@@ -10,7 +10,7 @@ import {
 	extractSpaces,
 	extractConnections
 } from '@schema/main/airtable';
-import { IntegrationType } from '@schema/main/integrations';
+import { IntegrationType, RunType } from '@schema/main/integrations';
 import { eq } from 'drizzle-orm';
 import { runIntegration } from '@utils/run-integration';
 
@@ -206,7 +206,7 @@ async function seedRelations() {
 	}
 }
 
-async function processAirtableData(integrationRunId: number): Promise<number> {
+async function syncAirtableData(integrationRunId: number): Promise<number> {
 	await cleanupExistingRecords();
 
 	await seedCreators(integrationRunId);
@@ -223,7 +223,7 @@ async function processAirtableData(integrationRunId: number): Promise<number> {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.AIRTABLE, processAirtableData);
+		await runIntegration(IntegrationType.AIRTABLE, syncAirtableData, RunType.INCREMENTAL);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
@@ -231,8 +231,8 @@ const main = async () => {
 	}
 };
 
-if (import.meta.url === import.meta.resolve('./seed.ts')) {
+if (import.meta.url === import.meta.resolve('./sync.ts')) {
 	main();
 }
 
-export { main as seedAirtableData };
+export { main as syncAirtableData };

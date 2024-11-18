@@ -12,18 +12,11 @@
 		"migrate": "drizzle-kit migrate",
 		"generate": "drizzle-kit generate",
 		"studio": "drizzle-kit studio",
-		"seed:airtable": "bun run integrations/airtable/seed.ts",
-		"seed:arc": "bun run integrations/arc/seed.ts",
-		"seed:stars": "bun run integrations/github/seed-stars.ts",
-		"seed:commits": "bun run integrations/github/seed-commits.ts",
-		"seed:raindrop": "bun run integrations/raindrop/seed.ts",
-		"update:all": "bun run update:arc && bun run update:commits && bun run update:stars && bun run update:raindrop && bun run update:readwise && bun run update:twitter",
-		"update:arc": "bun run integrations/arc/update.ts",
-		"update:commits": "bun run integrations/github/update-commits.ts",
-		"update:stars": "bun run integrations/github/update-stars.ts",
-		"update:raindrop": "bun run integrations/raindrop/update.ts",
-		"update:readwise": "bun run integrations/readwise/update.ts",
-		"update:twitter": "bun run integrations/twitter/update.ts"
+		"sync:all": "bun run sync:arc && bun run sync:raindrop && bun run sync:readwise && bun run sync:twitter",
+		"sync:arc": "bun run integrations/arc/sync.ts",
+		"sync:raindrop": "bun run integrations/raindrop/sync.ts",
+		"sync:readwise": "bun run integrations/readwise/sync.ts",
+		"sync:twitter": "bun run integrations/twitter/sync.ts"
 	},
 	"dependencies": {
 		"@octokit/rest": "^21.0.2",

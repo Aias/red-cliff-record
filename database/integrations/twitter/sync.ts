@@ -30,7 +30,7 @@ type ProcessedMedia = ReturnType<typeof processMedia>;
 
 const filteredTypes = ['TimelineTimelineCursor', 'TweetTombstone'];
 
-async function processTwitterBookmarks(integrationRunId: number): Promise<number> {
+async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 	const bookmarkResponses = await loadBookmarksData();
 	const tweets: TweetData[] = [];
 
@@ -157,7 +157,7 @@ async function processTwitterBookmarks(integrationRunId: number): Promise<number
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.TWITTER, processTwitterBookmarks, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.TWITTER, syncTwitterBookmarks, RunType.INCREMENTAL);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
@@ -165,8 +165,8 @@ const main = async () => {
 	}
 };
 
-if (import.meta.url === import.meta.resolve('./update.ts')) {
+if (import.meta.url === import.meta.resolve('./sync.ts')) {
 	main();
 }
 
-export { main as updateTwitterBookmarks };
+export { main as syncTwitterBookmarks };

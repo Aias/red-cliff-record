@@ -116,7 +116,7 @@ function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle
 	});
 }
 
-async function processReadwiseDocuments(integrationRunId: number): Promise<number> {
+async function syncReadwiseDocuments(integrationRunId: number): Promise<number> {
 	const lastUpdateTime = await getMostRecentUpdateTime(db);
 
 	const allDocuments: ReadwiseArticle[] = [];
@@ -167,7 +167,7 @@ async function processReadwiseDocuments(integrationRunId: number): Promise<numbe
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.READWISE, processReadwiseDocuments, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.READWISE, syncReadwiseDocuments, RunType.INCREMENTAL);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
@@ -175,8 +175,8 @@ const main = async () => {
 	}
 };
 
-if (import.meta.url === import.meta.resolve('./update.ts')) {
+if (import.meta.url === import.meta.resolve('./sync.ts')) {
 	main();
 }
 
-export { main as updateReadwiseDocuments };
+export { main as syncReadwiseDocuments };
