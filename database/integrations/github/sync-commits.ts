@@ -7,7 +7,7 @@ import { desc, sql } from 'drizzle-orm';
 
 const db = createPgConnection();
 
-async function fetchIncrementalCommits(integrationRunId: number): Promise<number> {
+async function syncCommits(integrationRunId: number): Promise<number> {
 	// Get the most recent commit date from the database
 	const latestCommit = await db
 		.select({ commitDate: commits.commitDate })
@@ -170,7 +170,7 @@ async function fetchIncrementalCommits(integrationRunId: number): Promise<number
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.GITHUB, fetchIncrementalCommits, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.GITHUB, syncCommits, RunType.INCREMENTAL);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
@@ -178,7 +178,7 @@ const main = async () => {
 	}
 };
 
-if (import.meta.url === import.meta.resolve('./update-commits.ts')) {
+if (import.meta.url === import.meta.resolve('./sync-commits.ts')) {
 	main();
 }
 

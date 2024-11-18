@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { bookmarks } from '@schema/main';
+import { stars as starsTable } from '@schema/main/github';
 import { integrationRuns, IntegrationType, RunType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { createPgConnection } from '@schema/connections';
@@ -10,26 +10,26 @@ const db = createPgConnection();
 
 const REQUEST_ACCEPT_HEADER = 'application/vnd.github.star+json';
 
-async function processGithubStarsIncremental(integrationRunId: number): Promise<number> {
+async function syncStars(integrationRunId: number): Promise<number> {
 	console.log('Starting GitHub stars incremental update...');
 
 	// Get the most recent bookmark date from the database
-	const latestBookmark = await db
-		.select({ bookmarkedAt: bookmarks.bookmarkedAt })
-		.from(bookmarks)
-		.leftJoin(integrationRuns, eq(bookmarks.integrationRunId, integrationRuns.id))
+	const latestStarredRepo = await db
+		.select({ bookmarkedAt: starsTable.bookmarkedAt })
+		.from(starsTable)
+		.leftJoin(integrationRuns, eq(starsTable.integrationRunId, integrationRuns.id))
 		.where(eq(integrationRuns.integrationType, IntegrationType.GITHUB))
-		.orderBy(desc(bookmarks.bookmarkedAt))
+		.orderBy(desc(starsTable.bookmarkedAt))
 		.limit(1);
 
-	const lastKnownDate = latestBookmark[0]?.bookmarkedAt;
-	console.log(`Last known bookmark date: ${lastKnownDate?.toISOString() ?? 'none'}`);
+	const lastKnownDate = latestStarredRepo[0]?.bookmarkedAt;
+	console.log(`Date of last starred repository: ${lastKnownDate?.toISOString() ?? 'none'}`);
 
 	const octokit = new Octokit({
 		auth: process.env.GITHUB_TOKEN
 	});
 
-	const starsToInsert: (typeof bookmarks.$inferInsert)[] = [];
+	const starsToInsert: (typeof starsTable.$inferInsert)[] = [];
 	let page = 1;
 	let hasMore = true;
 	let skippedCount = 0;
@@ -61,9 +61,9 @@ async function processGithubStarsIncremental(integrationRunId: number): Promise<
 
 			// Check if this star already exists in the database
 			const existingBookmark = await db
-				.select({ id: bookmarks.id })
-				.from(bookmarks)
-				.where(like(bookmarks.url, star.repo.html_url))
+				.select({ id: starsTable.id })
+				.from(starsTable)
+				.where(like(starsTable.url, star.repo.html_url))
 				.limit(1);
 
 			if (existingBookmark.length > 0) {
@@ -100,7 +100,7 @@ async function processGithubStarsIncremental(integrationRunId: number): Promise<
 		const chunkSize = 100;
 		for (let i = 0; i < starsToInsert.length; i += chunkSize) {
 			const chunk = starsToInsert.slice(i, i + chunkSize);
-			await db.insert(bookmarks).values(chunk);
+			await db.insert(starsTable).values(chunk);
 			console.log(
 				`Inserted chunk ${i / chunkSize + 1} of ${Math.ceil(starsToInsert.length / chunkSize)}`
 			);
@@ -115,11 +115,7 @@ async function processGithubStarsIncremental(integrationRunId: number): Promise<
 
 const main = async () => {
 	try {
-		await runIntegration(
-			IntegrationType.GITHUB,
-			processGithubStarsIncremental,
-			RunType.INCREMENTAL
-		);
+		await runIntegration(IntegrationType.GITHUB, syncStars, RunType.INCREMENTAL);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
@@ -127,7 +123,7 @@ const main = async () => {
 	}
 };
 
-if (import.meta.url === import.meta.resolve('./update-stars.ts')) {
+if (import.meta.url === import.meta.resolve('./sync-stars.ts')) {
 	main();
 }
 
