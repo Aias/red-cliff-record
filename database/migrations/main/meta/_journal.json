@@ -176,6 +176,27 @@
       "when": 1731681111740,
       "tag": "0024_burly_boomer",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1731685114028,
+      "tag": "0025_glamorous_hitman",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1731945383088,
+      "tag": "0026_supreme_nehzno",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1731946429040,
+      "tag": "0027_marvelous_sister_grimm",
+      "breakpoints": true
     }
   ]
 }

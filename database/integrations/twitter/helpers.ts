@@ -1,78 +1,59 @@
-import type {
-	Tweet,
-	TweetWithVisibilityResults,
-	TweetTombstone,
-	QuotedTweetWithVisibilityResults
-} from './types';
+import type { Media, TweetData, User } from './types';
 
-export function getFirstImageUrl(tweet: Tweet): string | null {
-	const media = tweet.legacy.extended_entities?.media || tweet.legacy.entities.media;
-	if (!media?.length) return null;
-	return media[0].media_url_https;
-}
-export function getFirstSentence(text: string): string {
-	if (text.includes('\n')) {
-		return text.split('\n')[0];
-	}
-	const match = text.match(/^[^.!?]+[.!?]/);
-	return match ? match[0] : text;
-}
-// Add type guard
-export function isTweetWithVisibilityResults(
-	tweet: Tweet | TweetWithVisibilityResults
-): tweet is TweetWithVisibilityResults {
-	return tweet.__typename === 'TweetWithVisibilityResults';
-}
+export const processUser = (user: User) => {
+	const { rest_id, legacy } = user;
+	const {
+		created_at,
+		description,
+		location,
+		entities,
+		name,
+		profile_banner_url,
+		profile_image_url_https,
+		screen_name,
+		url
+	} = legacy;
 
-function isTweetTombstone(tweet: any): tweet is TweetTombstone {
-	return tweet.__typename === 'TweetTombstone';
-}
+	const userExternalLink = entities?.url?.urls?.[0];
 
-function isQuotedTweetWithVisibility(
-	result: any
-): result is { quotedTweet: QuotedTweetWithVisibilityResults } {
-	return (
-		result &&
-		'quotedTweet' in result &&
-		result.quotedTweet.__typename === 'TweetWithVisibilityResults'
-	);
-}
+	return {
+		id: rest_id,
+		description,
+		displayName: name,
+		username: screen_name,
+		location,
+		profileImageUrl: profile_image_url_https,
+		profileBannerUrl: profile_banner_url,
+		twitterUrl: url,
+		userExternalLink,
+		createdAt: created_at
+	};
+};
 
-export function formatTweetContent(tweet: Tweet): string {
-	let content = tweet.legacy.full_text;
+export const processTweet = (tweet: TweetData) => {
+	const { rest_id, legacy, note_tweet, isQuoted, quotedTweetId } = tweet;
+	const { created_at, full_text, user_id_str } = legacy;
 
-	if (tweet.quoted_status_result?.result) {
-		const quotedResult = tweet.quoted_status_result.result;
+	return {
+		id: rest_id,
+		userId: user_id_str,
+		text: note_tweet ? note_tweet.note_tweet_results.result.text : full_text,
+		quotedTweetId: isQuoted ? undefined : quotedTweetId,
+		createdAt: created_at
+	};
+};
 
-		// Handle tombstones first
-		if (isTweetTombstone(quotedResult)) {
-			content = `${content}\n\n> [${quotedResult.tombstone.text.text}]`;
-		} else if (isQuotedTweetWithVisibility(quotedResult)) {
-			// Handle the new quoted tweet structure with visibility results
-			const quotedTweet = quotedResult.quotedTweet.tweet;
-			if (quotedTweet.legacy?.full_text) {
-				const quotedAuthor =
-					quotedTweet.core?.user_results?.result?.legacy?.name || 'Unknown Author';
-				const quotedText = quotedTweet.legacy.full_text;
-				content = `${content}\n\n> "${quotedText}" — ${quotedAuthor}`;
-			}
-		} else if ('legacy' in quotedResult && quotedResult.legacy?.full_text) {
-			// Handle normal quoted tweets
-			const quotedAuthor =
-				quotedResult.core?.user_results?.result?.legacy?.name || 'Unknown Author';
-			const quotedText = quotedResult.legacy.full_text;
-			content = `${content}\n\n> "${quotedText}" — ${quotedAuthor}`;
-		} else {
-			console.log('Quoted tweet has incomplete data:', {
-				tweetId: tweet.rest_id,
-				quotedTweetId: quotedResult.rest_id,
-				quotedTweetType: quotedResult.__typename,
-				hasLegacy: 'legacy' in quotedResult && !!quotedResult.legacy,
-				hasFullText: 'legacy' in quotedResult && !!quotedResult.legacy?.full_text,
-				quotedTweet: quotedResult
-			});
-		}
-	}
+export const processMedia = (media: Media, tweet: TweetData) => {
+	const { display_url, expanded_url, id_str, type, url, media_key, media_url_https } = media;
 
-	return content;
-}
+	return {
+		id: id_str,
+		mediaUrl: media_url_https,
+		displayUrl: display_url,
+		expandedUrl: expanded_url,
+		type,
+		shortUrl: url,
+		mediaKey: media_key,
+		tweetId: tweet.rest_id
+	};
+};

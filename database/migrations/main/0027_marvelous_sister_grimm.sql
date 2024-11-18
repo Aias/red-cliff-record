@@ -1,0 +1,1 @@
+ALTER TABLE "twitter"."users" ADD COLUMN "location" text;
