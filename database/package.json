@@ -6,6 +6,8 @@
 		"bun": "^1.1.35"
 	},
 	"scripts": {
+		"backup": "bash scripts/backup.sh",
+		"restore": "bash scripts/restore.sh",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"migrate": "drizzle-kit migrate",

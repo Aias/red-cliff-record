@@ -19,6 +19,11 @@ export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 		const data = readFileSync(defaultPath, 'utf-8');
 		return JSON.parse(data);
 	} catch (err) {
+		if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+			console.log('No Twitter bookmarks file found. Skipping Twitter bookmark sync.');
+			return [];
+		}
+		// If it's any other error (like JSON parsing), we should still throw
 		console.error('Error loading Twitter bookmarks data:', err);
 		throw err;
 	}

@@ -239,6 +239,13 @@
       "when": 1731983190579,
       "tag": "0033_married_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1732052580861,
+      "tag": "0034_typical_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }

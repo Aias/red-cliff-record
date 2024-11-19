@@ -40,7 +40,13 @@ export const browsingHistory = arcSchema.table(
 			.notNull(),
 		...timestamps
 	},
-	(table) => [index().on(table.integrationRunId), index().on(table.viewTime), index().on(table.url)]
+	(table) => [
+		index().on(table.integrationRunId),
+		index().on(table.viewTime),
+		index().on(table.url),
+		index().on(table.viewEpochMicroseconds),
+		index().on(table.hostname)
+	]
 );
 
 export const browsingHistoryRelations = relations(browsingHistory, ({ one }) => ({

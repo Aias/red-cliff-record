@@ -22,7 +22,13 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 	const latestVisit = await pgDb
 		.select({ viewEpochMicroseconds: browsingHistory.viewEpochMicroseconds })
 		.from(browsingHistory)
-		.where(and(eq(browsingHistory.browser, Browser.ARC), eq(browsingHistory.hostname, hostname)))
+		.where(
+			and(
+				eq(browsingHistory.browser, Browser.ARC),
+				eq(browsingHistory.hostname, hostname),
+				isNotNull(browsingHistory.viewEpochMicroseconds)
+			)
+		)
 		.orderBy(desc(browsingHistory.viewEpochMicroseconds))
 		.limit(1);
 
