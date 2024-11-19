@@ -65,7 +65,7 @@ export const collections = raindropSchema.table(
 
 export const collectionsRelations = relations(collections, ({ one, many }) => ({
 	raindrops: many(raindrops),
-	children: many(collections, { relationName: 'childCollections' }),
+	children: many(collections, { relationName: 'parentCollection' }),
 	parent: one(collections, {
 		fields: [collections.parentId],
 		references: [collections.id],
