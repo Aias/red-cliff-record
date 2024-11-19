@@ -8,7 +8,6 @@ import { desc, sql } from 'drizzle-orm';
 const db = createPgConnection();
 
 async function syncCommits(integrationRunId: number): Promise<number> {
-	// Get the most recent commit date from the database
 	const latestCommit = await db
 		.select({ commitDate: commits.commitDate })
 		.from(commits)
