@@ -5,14 +5,20 @@
 set -e
 
 # Configuration
+BACKUP_DIR="$HOME/Documents/Data/Backups"
+DATABASE_NAME="redcliffrecord"
 DB_NAME="redcliffrecord"
-DUMP_FILE=".temp/backup.dump"
 
-# Check if dump file exists
+# Find the most recent backup file
+DUMP_FILE=$(ls "$BACKUP_DIR"/"$DATABASE_NAME"-backup-*.dump | sort -r | head -n1)
+
+# Check if backup file exists
 if [ ! -f "$DUMP_FILE" ]; then
-    echo "Dump file not found: $DUMP_FILE"
+    echo "No backup files found in: $BACKUP_DIR"
     exit 1
 fi
+
+echo "Using backup file: $DUMP_FILE"
 
 # Drop database if exists and create a fresh one
 dropdb -U postgres --if-exists "$DB_NAME"
