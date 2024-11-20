@@ -14,6 +14,9 @@ if [ ! -f "$DUMP_FILE" ]; then
     exit 1
 fi
 
-# Restore using postgres database as initial connection
-# Since backup includes -C flag, we connect to postgres database
-pg_restore -U postgres -d postgres -c -v --if-exists "$DUMP_FILE"
+# Drop database if exists and create a fresh one
+dropdb -U postgres --if-exists "$DB_NAME"
+createdb -U postgres "$DB_NAME"
+
+# Restore to the fresh database
+pg_restore -U postgres -d "$DB_NAME" -c -v --if-exists "$DUMP_FILE"
