@@ -75,10 +75,18 @@ export const documents = readwiseSchema.table(
 		imageUrl: text(),
 		parentId: text(),
 		readingProgress: numeric(),
-		firstOpenedAt: timestamp(),
-		lastOpenedAt: timestamp(),
-		savedAt: timestamp().notNull(),
-		lastMovedAt: timestamp().notNull(),
+		firstOpenedAt: timestamp({
+			withTimezone: true
+		}),
+		lastOpenedAt: timestamp({
+			withTimezone: true
+		}),
+		savedAt: timestamp({
+			withTimezone: true
+		}).notNull(),
+		lastMovedAt: timestamp({
+			withTimezone: true
+		}).notNull(),
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),

@@ -25,7 +25,9 @@ export const browsingHistory = arcSchema.table(
 	'browsing_history',
 	{
 		id: serial().primaryKey(),
-		viewTime: timestamp().notNull(),
+		viewTime: timestamp({
+			withTimezone: true
+		}).notNull(),
 		browser: browserEnum().notNull().default(Browser.ARC),
 		hostname: text(),
 		viewEpochMicroseconds: bigint({ mode: 'bigint' }),
@@ -59,7 +61,9 @@ export const browsingHistoryRelations = relations(browsingHistory, ({ one }) => 
 export const browsingHistoryDaily = arcSchema.materializedView('browsing_history_daily').as((qb) =>
 	qb
 		.select({
-			date: sql<Date>`DATE(${browsingHistory.viewTime})`.as('date'),
+			date: sql<Date>`DATE(${browsingHistory.viewTime} AT TIME ZONE CURRENT_SETTING('timezone'))`.as(
+				'date'
+			),
 			url: browsingHistory.url,
 			pageTitle: browsingHistory.pageTitle,
 			totalDuration: sql<number>`SUM(COALESCE(${browsingHistory.viewDuration}, 0))`.as(
@@ -70,5 +74,9 @@ export const browsingHistoryDaily = arcSchema.materializedView('browsing_history
 			visitCount: sql<number>`COUNT(*)`.as('visit_count')
 		})
 		.from(browsingHistory)
-		.groupBy(sql`DATE(${browsingHistory.viewTime})`, browsingHistory.url, browsingHistory.pageTitle)
+		.groupBy(
+			sql<Date>`DATE(${browsingHistory.viewTime} AT TIME ZONE CURRENT_SETTING('timezone'))`,
+			browsingHistory.url,
+			browsingHistory.pageTitle
+		)
 );

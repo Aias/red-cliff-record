@@ -57,8 +57,12 @@ export const integrationRuns = integrationSchema.table(
 		runType: runTypeEnum().notNull(),
 		status: integrationStatusEnum().notNull().default(IntegrationStatus.IN_PROGRESS),
 		message: text(),
-		runStartTime: timestamp().notNull(),
-		runEndTime: timestamp(),
+		runStartTime: timestamp({
+			withTimezone: true
+		}).notNull(),
+		runEndTime: timestamp({
+			withTimezone: true
+		}),
 		entriesCreated: integer().default(0),
 		...timestamps
 	},

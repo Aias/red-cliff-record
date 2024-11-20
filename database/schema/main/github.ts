@@ -22,7 +22,9 @@ export const commits = githubSchema.table('commits', {
 	repository: text().notNull(),
 	url: text().notNull(),
 	committer: text(),
-	commitDate: timestamp().notNull(),
+	commitDate: timestamp({
+		withTimezone: true
+	}).notNull(),
 	integrationRunId: integer()
 		.references(() => integrationRuns.id)
 		.notNull(),

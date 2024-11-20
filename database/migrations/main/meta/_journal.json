@@ -246,6 +246,20 @@
       "when": 1732052580861,
       "tag": "0034_typical_scarlet_witch",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1732113884964,
+      "tag": "0035_woozy_the_renegades",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1732114766714,
+      "tag": "0036_curious_carlie_cooper",
+      "breakpoints": true
     }
   ]
 }

@@ -21,7 +21,9 @@ export const extracts = airtableSchema.table(
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
-		publishedAt: timestamp(),
+		publishedAt: timestamp({
+			withTimezone: true
+		}),
 		...timestamps
 	},
 	(table) => [
