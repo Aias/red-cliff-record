@@ -1,0 +1,1 @@
+ALTER TABLE "twitter"."tweets" RENAME COLUMN "bookmarked_at" TO "posted_at";

@@ -119,7 +119,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				text: tweet.text,
 				quotedTweetId: tweet.quotedTweetId,
 				integrationRunId: integrationRunId,
-				bookmarkedAt: new Date(tweet.createdAt)
+				postedAt: new Date(tweet.createdAt)
 			})
 			.onConflictDoNothing({ target: tweetsTable.id });
 	}
@@ -135,7 +135,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				text: tweet.text,
 				quotedTweetId: tweet.quotedTweetId,
 				integrationRunId: integrationRunId,
-				bookmarkedAt: new Date(tweet.createdAt)
+				postedAt: new Date(tweet.createdAt)
 			})
 			.onConflictDoNothing({ target: tweetsTable.id });
 	}

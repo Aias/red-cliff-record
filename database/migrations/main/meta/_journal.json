@@ -274,6 +274,13 @@
       "when": 1732118121246,
       "tag": "0038_early_scarlet_witch",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1732118489243,
+      "tag": "0039_empty_fat_cobra",
+      "breakpoints": true
     }
   ]
 }

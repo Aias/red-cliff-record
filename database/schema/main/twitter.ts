@@ -17,7 +17,7 @@ export const tweets = twitterSchema.table(
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
-		bookmarkedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+		postedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
 		...timestamps
 	},
 	(table) => [
