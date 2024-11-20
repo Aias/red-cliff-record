@@ -260,6 +260,20 @@
       "when": 1732114766714,
       "tag": "0036_curious_carlie_cooper",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1732118067908,
+      "tag": "0037_loving_legion",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1732118121246,
+      "tag": "0038_early_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }

@@ -91,8 +91,10 @@ export const stars = githubSchema.table(
 		licenseName: text(),
 		description: text(),
 		language: text(),
-		starredAt: timestamp({ withTimezone: true }).notNull(),
 		topics: text().array(),
+		starredAt: timestamp({
+			withTimezone: true
+		}).notNull(),
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
