@@ -281,6 +281,20 @@
       "when": 1732118489243,
       "tag": "0039_empty_fat_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1732209202343,
+      "tag": "0040_talented_spirit",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1732209725324,
+      "tag": "0041_robust_living_tribunal",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import { stars } from './github';
 import { browsingHistory } from './arc';
 import { commits } from './github';
 import { creators, extracts, spaces } from './airtable';
+import { photographs } from './adobe';
 
 export const integrationSchema = pgSchema('integrations');
 
@@ -26,6 +27,7 @@ export enum IntegrationType {
 	AIRTABLE = 'airtable',
 	BROWSER_HISTORY = 'browser_history',
 	GITHUB = 'github',
+	LIGHTROOM = 'lightroom',
 	RAINDROP = 'raindrop',
 	READWISE = 'readwise',
 	TWITTER = 'twitter'
@@ -36,6 +38,7 @@ export const integrationTypeEnum = integrationSchema.enum('integration_type', [
 	IntegrationType.AIRTABLE,
 	IntegrationType.BROWSER_HISTORY,
 	IntegrationType.GITHUB,
+	IntegrationType.LIGHTROOM,
 	IntegrationType.RAINDROP,
 	IntegrationType.READWISE,
 	IntegrationType.TWITTER
@@ -75,5 +78,6 @@ export const integrationRunsRelations = relations(integrationRuns, ({ many }) =>
 	githubCommits: many(commits),
 	airtableExtracts: many(extracts),
 	airtableCreators: many(creators),
-	airtableSpaces: many(spaces)
+	airtableSpaces: many(spaces),
+	adobePhotographs: many(photographs)
 }));
