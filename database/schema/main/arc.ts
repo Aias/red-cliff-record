@@ -2,24 +2,13 @@ import { timestamps } from '@schema/common/timestamps';
 import { relations, sql } from 'drizzle-orm';
 import { pgSchema, serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from './integrations';
+import { z } from 'zod';
 
 export const arcSchema = pgSchema('arc');
 
-export enum Browser {
-	ARC = 'arc',
-	CHROME = 'chrome',
-	FIREFOX = 'firefox',
-	SAFARI = 'safari',
-	EDGE = 'edge'
-}
+export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
 
-export const browserEnum = arcSchema.enum('browser', [
-	Browser.ARC,
-	Browser.CHROME,
-	Browser.FIREFOX,
-	Browser.SAFARI,
-	Browser.EDGE
-]);
+export const browserEnum = arcSchema.enum('browser', Browser.options);
 
 export const browsingHistory = arcSchema.table(
 	'browsing_history',
@@ -28,7 +17,7 @@ export const browsingHistory = arcSchema.table(
 		viewTime: timestamp({
 			withTimezone: true
 		}).notNull(),
-		browser: browserEnum().notNull().default(Browser.ARC),
+		browser: browserEnum().notNull().default(Browser.enum.arc),
 		hostname: text(),
 		viewEpochMicroseconds: bigint({ mode: 'bigint' }),
 		viewDuration: integer(),

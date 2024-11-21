@@ -3,7 +3,7 @@ import {
 	media as mediaTable,
 	users as usersTable
 } from '@schema/main/twitter';
-import { IntegrationType, RunType } from '@schema/main/integrations';
+import { IntegrationType } from '@schema/main/integrations';
 import { createPgConnection } from '@schema/connections';
 import { runIntegration } from '@utils/run-integration';
 import { resolve } from 'path';
@@ -162,7 +162,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.TWITTER, syncTwitterBookmarks, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.enum.twitter, syncTwitterBookmarks);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

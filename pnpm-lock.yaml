@@ -92,6 +92,9 @@ importers:
       pg:
         specifier: ^8.13.1
         version: 8.13.1
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
     devDependencies:
       '@aws-sdk/client-s3':
         specifier: ^3.697.0

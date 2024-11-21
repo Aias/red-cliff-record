@@ -309,6 +309,13 @@
       "when": 1732212055952,
       "tag": "0043_illegal_spirit",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1732224057626,
+      "tag": "0044_light_pretty_boy",
+      "breakpoints": true
     }
   ]
 }

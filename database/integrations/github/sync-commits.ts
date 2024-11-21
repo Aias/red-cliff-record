@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import { createPgConnection } from '@schema/connections';
 import { commits, commitChanges, CommitChangeStatus } from '@schema/main/github';
-import { IntegrationType, RunType } from '@schema/main/integrations';
+import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { desc, sql } from 'drizzle-orm';
 
@@ -129,7 +129,7 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 							const commitChangesData: (typeof commitChanges.$inferInsert)[] = commit.files.map(
 								(file) => ({
 									filename: file.filename,
-									status: file.status as CommitChangeStatus,
+									status: CommitChangeStatus.parse(file.status),
 									patch: file.patch,
 									commitId: commitId[0].id,
 									additions: file.additions,
@@ -169,7 +169,7 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.GITHUB, syncCommits, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.enum.github, syncCommits);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

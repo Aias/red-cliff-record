@@ -11,48 +11,27 @@ import {
 import { relations } from 'drizzle-orm';
 import { timestamps } from '../common/timestamps';
 import { integrationRuns } from './integrations';
+import { z } from 'zod';
 
 export const readwiseSchema = pgSchema('readwise');
 
-export enum ReadwiseLocation {
-	NEW = 'new',
-	LATER = 'later',
-	SHORTLIST = 'shortlist',
-	ARCHIVE = 'archive',
-	FEED = 'feed'
-}
+export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);
 
-export const readwiseLocationEnum = readwiseSchema.enum('location', [
-	ReadwiseLocation.NEW,
-	ReadwiseLocation.LATER,
-	ReadwiseLocation.SHORTLIST,
-	ReadwiseLocation.ARCHIVE,
-	ReadwiseLocation.FEED
+export const readwiseLocationEnum = readwiseSchema.enum('location', ReadwiseLocation.options);
+
+export const ReadwiseCategory = z.enum([
+	'article',
+	'email',
+	'rss',
+	'highlight',
+	'note',
+	'pdf',
+	'epub',
+	'tweet',
+	'video'
 ]);
 
-export enum ReadwiseCategory {
-	ARTICLE = 'article',
-	EMAIL = 'email',
-	RSS = 'rss',
-	HIGHLIGHT = 'highlight',
-	NOTE = 'note',
-	PDF = 'pdf',
-	EPUB = 'epub',
-	TWEET = 'tweet',
-	VIDEO = 'video'
-}
-
-export const readwiseCategoryEnum = readwiseSchema.enum('category', [
-	ReadwiseCategory.ARTICLE,
-	ReadwiseCategory.EMAIL,
-	ReadwiseCategory.RSS,
-	ReadwiseCategory.HIGHLIGHT,
-	ReadwiseCategory.NOTE,
-	ReadwiseCategory.PDF,
-	ReadwiseCategory.EPUB,
-	ReadwiseCategory.TWEET,
-	ReadwiseCategory.VIDEO
-]);
+export const readwiseCategoryEnum = readwiseSchema.enum('category', ReadwiseCategory.options);
 
 export const documents = readwiseSchema.table(
 	'documents',

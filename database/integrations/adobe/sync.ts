@@ -1,6 +1,6 @@
 import { createPgConnection } from '@schema/connections';
 import { photographs } from '@schema/main/adobe';
-import { IntegrationType, RunType } from '@schema/main/integrations';
+import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import type { LightroomJsonResponse } from './types';
 
@@ -94,7 +94,7 @@ async function syncLightroomImages(integrationRunId: number) {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.LIGHTROOM, syncLightroomImages, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.enum.lightroom, syncLightroomImages);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

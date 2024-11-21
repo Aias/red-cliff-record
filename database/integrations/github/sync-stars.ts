@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { stars as starsTable } from '@schema/main/github';
-import { integrationRuns, IntegrationType, RunType } from '@schema/main/integrations';
+import { integrationRuns, IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { createPgConnection } from '@schema/connections';
 import { desc, like, eq } from 'drizzle-orm';
@@ -17,7 +17,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 		.select({ starredAt: starsTable.starredAt })
 		.from(starsTable)
 		.leftJoin(integrationRuns, eq(starsTable.integrationRunId, integrationRuns.id))
-		.where(eq(integrationRuns.integrationType, IntegrationType.GITHUB))
+		.where(eq(integrationRuns.integrationType, IntegrationType.enum.github))
 		.orderBy(desc(starsTable.starredAt))
 		.limit(1);
 
@@ -122,7 +122,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.GITHUB, syncStars, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.enum.github, syncStars);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

@@ -1,4 +1,5 @@
 import { ReadwiseCategory, ReadwiseLocation } from '@schema/main/readwise';
+import { z } from 'zod';
 
 export interface ReadwiseTag {
 	name: string;
@@ -12,8 +13,8 @@ export interface ReadwiseArticle {
 	title: string;
 	author: string;
 	source: string;
-	category: ReadwiseCategory;
-	location: ReadwiseLocation;
+	category: z.infer<typeof ReadwiseCategory>;
+	location: z.infer<typeof ReadwiseLocation>;
 	tags: Record<string, ReadwiseTag>;
 	site_name: string | null;
 	word_count: number;

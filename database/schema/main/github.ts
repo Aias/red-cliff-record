@@ -1,17 +1,9 @@
 import { stats } from '@schema/common/stats';
 import { timestamps } from '@schema/common/timestamps';
 import { relations } from 'drizzle-orm';
-import {
-	pgSchema,
-	serial,
-	text,
-	timestamp,
-	integer,
-	boolean,
-	index,
-	unique
-} from 'drizzle-orm/pg-core';
+import { pgSchema, serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from './integrations';
+import { z } from 'zod';
 
 export const githubSchema = pgSchema('github');
 
@@ -40,25 +32,20 @@ export const commitsRelations = relations(commits, ({ many, one }) => ({
 	})
 }));
 
-export enum CommitChangeStatus {
-	ADDED = 'added',
-	MODIFIED = 'modified',
-	REMOVED = 'removed',
-	RENAMED = 'renamed',
-	COPIED = 'copied',
-	CHANGED = 'changed',
-	UNCHANGED = 'unchanged'
-}
-
-export const commitChangeStatusEnum = githubSchema.enum('commit_change_status', [
-	CommitChangeStatus.ADDED,
-	CommitChangeStatus.MODIFIED,
-	CommitChangeStatus.REMOVED,
-	CommitChangeStatus.RENAMED,
-	CommitChangeStatus.COPIED,
-	CommitChangeStatus.CHANGED,
-	CommitChangeStatus.UNCHANGED
+export const CommitChangeStatus = z.enum([
+	'added',
+	'modified',
+	'removed',
+	'renamed',
+	'copied',
+	'changed',
+	'unchanged'
 ]);
+
+export const commitChangeStatusEnum = githubSchema.enum(
+	'commit_change_status',
+	CommitChangeStatus.options
+);
 
 export const commitChanges = githubSchema.table('commit_changes', {
 	id: serial().primaryKey(),

@@ -1,6 +1,6 @@
 import { createPgConnection } from '@schema/connections';
 import { raindrops, collections } from '@schema/main/raindrop';
-import { integrationRuns, IntegrationType, RunType } from '@schema/main/integrations';
+import { integrationRuns, IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import type { CollectionsResponse, Raindrop, RaindropResponse } from './types';
 import { eq, desc } from 'drizzle-orm';
@@ -82,7 +82,7 @@ async function syncRaindrops(integrationRunId: number) {
 		.select({ createdAt: raindrops.createdAt })
 		.from(raindrops)
 		.leftJoin(integrationRuns, eq(raindrops.integrationRunId, integrationRuns.id))
-		.where(eq(integrationRuns.integrationType, IntegrationType.RAINDROP))
+		.where(eq(integrationRuns.integrationType, IntegrationType.enum.raindrop))
 		.orderBy(desc(raindrops.createdAt))
 		.limit(1);
 
@@ -183,8 +183,8 @@ async function syncRaindrops(integrationRunId: number) {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.RAINDROP, syncCollections, RunType.INCREMENTAL);
-		await runIntegration(IntegrationType.RAINDROP, syncRaindrops, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.enum.raindrop, syncCollections);
+		await runIntegration(IntegrationType.enum.raindrop, syncRaindrops);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

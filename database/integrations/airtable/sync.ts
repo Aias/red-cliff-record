@@ -10,7 +10,7 @@ import {
 	extractSpaces,
 	extractConnections
 } from '@schema/main/airtable';
-import { IntegrationType, RunType } from '@schema/main/integrations';
+import { IntegrationType } from '@schema/main/integrations';
 import { eq } from 'drizzle-orm';
 import { runIntegration } from '@utils/run-integration';
 
@@ -223,7 +223,7 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.AIRTABLE, syncAirtableData, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.enum.airtable, syncAirtableData);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

@@ -6,50 +6,36 @@ import { browsingHistory } from './arc';
 import { commits } from './github';
 import { creators, extracts, spaces } from './airtable';
 import { photographs } from './adobe';
+import { z } from 'zod';
 
 export const integrationSchema = pgSchema('integrations');
 
-export enum IntegrationStatus {
-	SUCCESS = 'success',
-	FAIL = 'fail',
-	IN_PROGRESS = 'in_progress'
-}
-// Define the status enum for integration runs
+export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
 
-export const integrationStatusEnum = integrationSchema.enum('integration_status', [
-	IntegrationStatus.SUCCESS,
-	IntegrationStatus.FAIL,
-	IntegrationStatus.IN_PROGRESS
+export const integrationStatusEnum = integrationSchema.enum(
+	'integration_status',
+	IntegrationStatus.options
+);
+
+export const IntegrationType = z.enum([
+	'ai_chat',
+	'airtable',
+	'browser_history',
+	'github',
+	'lightroom',
+	'raindrop',
+	'readwise',
+	'twitter'
 ]);
 
-export enum IntegrationType {
-	AI_CHAT = 'ai_chat',
-	AIRTABLE = 'airtable',
-	BROWSER_HISTORY = 'browser_history',
-	GITHUB = 'github',
-	LIGHTROOM = 'lightroom',
-	RAINDROP = 'raindrop',
-	READWISE = 'readwise',
-	TWITTER = 'twitter'
-}
+export const integrationTypeEnum = integrationSchema.enum(
+	'integration_type',
+	IntegrationType.options
+);
 
-export const integrationTypeEnum = integrationSchema.enum('integration_type', [
-	IntegrationType.AI_CHAT,
-	IntegrationType.AIRTABLE,
-	IntegrationType.BROWSER_HISTORY,
-	IntegrationType.GITHUB,
-	IntegrationType.LIGHTROOM,
-	IntegrationType.RAINDROP,
-	IntegrationType.READWISE,
-	IntegrationType.TWITTER
-]);
+export const RunType = z.enum(['seed', 'sync']);
 
-export enum RunType {
-	FULL = 'full',
-	INCREMENTAL = 'incremental'
-}
-
-export const runTypeEnum = integrationSchema.enum('run_type', [RunType.FULL, RunType.INCREMENTAL]);
+export const runTypeEnum = integrationSchema.enum('run_type', RunType.options);
 // Integration runs table
 
 export const integrationRuns = integrationSchema.table(
@@ -57,8 +43,8 @@ export const integrationRuns = integrationSchema.table(
 	{
 		id: serial().primaryKey(),
 		integrationType: integrationTypeEnum().notNull(),
-		runType: runTypeEnum().notNull(),
-		status: integrationStatusEnum().notNull().default(IntegrationStatus.IN_PROGRESS),
+		runType: runTypeEnum().notNull().default(RunType.enum.sync),
+		status: integrationStatusEnum().notNull().default(IntegrationStatus.enum.in_progress),
 		message: text(),
 		runStartTime: timestamp({
 			withTimezone: true

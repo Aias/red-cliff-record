@@ -1,6 +1,6 @@
 import { createPgConnection } from '@schema/connections';
 import { documents } from '@schema/main/readwise';
-import { IntegrationType, RunType } from '@schema/main/integrations';
+import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import type { ReadwiseArticle, ReadwiseArticlesResponse } from './types';
 import { desc } from 'drizzle-orm';
@@ -167,7 +167,7 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.READWISE, syncReadwiseDocuments, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.enum.readwise, syncReadwiseDocuments);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

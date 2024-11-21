@@ -1,6 +1,6 @@
 import { createPgConnection } from '@schema/connections';
 import { browsingHistory, browsingHistoryDaily, Browser } from '@schema/main/arc';
-import { IntegrationType, RunType } from '@schema/main/integrations';
+import { IntegrationType } from '@schema/main/integrations';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
 import { sanitizeString } from '@utils/sanitize';
 import { runIntegration } from '@utils/run-integration';
@@ -24,7 +24,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		.from(browsingHistory)
 		.where(
 			and(
-				eq(browsingHistory.browser, Browser.ARC),
+				eq(browsingHistory.browser, Browser.enum.arc),
 				eq(browsingHistory.hostname, hostname),
 				isNotNull(browsingHistory.viewEpochMicroseconds)
 			)
@@ -69,7 +69,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		searchTerms: h.searchTerms ? sanitizeString(h.searchTerms) : null,
 		relatedSearches: h.relatedSearches ? sanitizeString(h.relatedSearches) : null,
 		integrationRunId,
-		browser: Browser.ARC,
+		browser: Browser.enum.arc,
 		hostname
 	}));
 
@@ -97,7 +97,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.BROWSER_HISTORY, syncBrowserHistory, RunType.INCREMENTAL);
+		await runIntegration(IntegrationType.enum.browser_history, syncBrowserHistory);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);
