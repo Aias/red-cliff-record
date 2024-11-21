@@ -9,7 +9,8 @@ export const photographs = adobeSchema.table(
 	'photographs',
 	{
 		id: text('id').primaryKey(),
-		url: text().notNull(),
+		url2048: text().notNull(),
+		links: json().notNull(),
 		fileName: text().notNull(),
 		contentType: text().notNull(),
 		sourceDevice: text(),
@@ -24,6 +25,7 @@ export const photographs = adobeSchema.table(
 		aesthetics: json(),
 		exif: json(),
 		location: json(),
+		rating: integer(),
 		autoTags: text().array(),
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)

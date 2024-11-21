@@ -1,0 +1,1 @@
+ALTER TABLE "adobe"."photographs" ADD COLUMN "rating" integer;

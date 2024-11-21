@@ -34,16 +34,28 @@ async function syncLightroomImages(integrationRunId: number) {
 	for (const resource of jsonData.resources) {
 		const asset = resource.asset;
 		const payload = asset.payload;
-		const { importSource, autoTags, develop, xmp, location, aesthetics, captureDate, userUpdated } =
-			payload;
-		const renditionUrl = `${baseUrl}${asset.links['/rels/rendition_type/2048'].href}`;
+		const {
+			importSource,
+			autoTags,
+			develop,
+			changedOnDevice,
+			xmp,
+			location,
+			ratings,
+			aesthetics,
+			captureDate,
+			userUpdated
+		} = payload;
+		const url2048 = `${baseUrl}${asset.links['/rels/rendition_type/2048'].href}`;
+		const rating = ratings[Object.keys(ratings)[0]].rating;
 
 		const imageToInsert: typeof photographs.$inferInsert = {
 			id: asset.id,
-			url: renditionUrl,
+			url2048,
+			links: asset.links,
 			fileName: importSource.fileName,
 			contentType: importSource.contentType,
-			sourceDevice: develop.device,
+			sourceDevice: develop.device ?? changedOnDevice ?? importSource.importedOnDevice,
 			cameraMake: xmp.tiff.Make,
 			cameraModel: xmp.tiff.Model,
 			cameraLens: xmp.aux.Lens,
@@ -55,6 +67,7 @@ async function syncLightroomImages(integrationRunId: number) {
 			aesthetics: aesthetics,
 			exif: xmp.exif,
 			location: location,
+			rating: rating,
 			autoTags: Object.keys(autoTags.tags),
 			integrationRunId: integrationRunId
 		};
