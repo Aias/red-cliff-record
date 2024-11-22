@@ -15,7 +15,7 @@
 		"migrate": "drizzle-kit migrate",
 		"generate": "drizzle-kit generate",
 		"studio": "drizzle-kit studio",
-		"sync:all": "bun run sync:arc && bun run sync:adobe && bun run sync:raindrop && bun run sync:readwise && bun run sync:github && bun run sync:twitter",
+		"sync:all": "bun run sync:arc && bun run sync:adobe && bun run sync:raindrop && bun run sync:readwise && bun run sync:github",
 		"sync:adobe": "bun run integrations/adobe/sync.ts",
 		"sync:arc": "bun run integrations/arc/sync.ts",
 		"sync:github": "bun run sync:github-commits && bun run sync:github-stars",
@@ -33,7 +33,7 @@
 		"zod": "^3.23.8"
 	},
 	"devDependencies": {
-		"@aws-sdk/client-s3": "^3.698.0",
+		"@aws-sdk/client-s3": "^3.699.0",
 		"@types/bun": "^1.1.13",
 		"@types/eslint": "9.6.1",
 		"@types/pg": "^8.11.10",
@@ -43,6 +43,6 @@
 		"eslint": "^9.15.0",
 		"eslint-config-prettier": "^9.1.0",
 		"prettier": "^3.3.3",
-		"typescript": "^5.6.3"
+		"typescript": "^5.7.2"
 	}
 }

@@ -36,12 +36,19 @@ function captureBookmarkRequests() {
 // Run this in console to save to JSON file
 // downloadBookmarkResponses();
 function downloadBookmarkResponses() {
+	// Create timestamp in YYYY-MM-DD-HH-MM-SS format
+	const now = new Date();
+	const timestamp = now
+		.toISOString()
+		.replace(/[T:]/g, '-') // Replace T and : with -
+		.replace(/\..+/, ''); // Remove milliseconds and timezone
+
 	const data = JSON.stringify(window.bookmarkResponses, null, 2);
 	const blob = new Blob([data], { type: 'application/json' });
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement('a');
 	a.href = url;
-	a.download = 'bookmark-responses.json';
+	a.download = `bookmarks-${timestamp}.json`;
 	document.body.appendChild(a);
 	a.click();
 	document.body.removeChild(a);

@@ -5,7 +5,7 @@
 set -e
 
 # Configuration
-BACKUP_DIR="$HOME/Documents/Data/Backups"
+BACKUP_DIR="$HOME/Documents/Red Cliff Record/Backups"
 DATABASE_NAME="redcliffrecord"
 DB_NAME="redcliffrecord"
 

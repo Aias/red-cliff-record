@@ -7,20 +7,36 @@ import { IntegrationType } from '@schema/main/integrations';
 import { createPgConnection } from '@schema/connections';
 import { runIntegration } from '@utils/run-integration';
 import { resolve } from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
+import { homedir } from 'os';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
 import { processUser, processTweet, processMedia } from './helpers';
 
 const db = createPgConnection();
 
 export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
-	const defaultPath = resolve(process.cwd(), '.temp/bookmark-responses.json');
+	const twitterDataDir = resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');
+
 	try {
-		const data = readFileSync(defaultPath, 'utf-8');
+		// Get all json files and sort in reverse order (newest first)
+		const files = readdirSync(twitterDataDir)
+			.filter((file) => file.startsWith('bookmarks-') && file.endsWith('.json'))
+			.sort()
+			.reverse();
+
+		if (files.length === 0) {
+			console.log('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');
+			return [];
+		}
+
+		const mostRecentFile = resolve(twitterDataDir, files[0]);
+		console.log(`Using Twitter bookmarks file: ${mostRecentFile}`);
+
+		const data = readFileSync(mostRecentFile, 'utf-8');
 		return JSON.parse(data);
 	} catch (err) {
 		if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
-			console.log('No Twitter bookmarks file found. Skipping Twitter bookmark sync.');
+			console.log(`Twitter data directory not found at: ${twitterDataDir}`);
 			return [];
 		}
 		// If it's any other error (like JSON parsing), we should still throw
