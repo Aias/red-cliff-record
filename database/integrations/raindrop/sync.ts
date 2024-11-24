@@ -2,7 +2,8 @@ import { createPgConnection } from '@schema/connections';
 import { raindrops, collections } from '@schema/main/raindrop';
 import { integrationRuns, IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
-import type { CollectionsResponse, Raindrop, RaindropResponse } from './types';
+import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
+import type { Raindrop } from './types';
 import { eq, desc } from 'drizzle-orm';
 
 const db = createPgConnection();
@@ -21,7 +22,8 @@ async function syncCollections(integrationRunId: number) {
 		throw new Error(`Root collections API request failed with status ${rootResponse.status}`);
 	}
 
-	const rootData = (await rootResponse.json()) as CollectionsResponse;
+	const rootData = await rootResponse.json();
+	const rootParsed = CollectionsResponseSchema.parse(rootData);
 
 	console.log('👶 Fetching child collections...');
 	const childrenResponse = await fetch('https://api.raindrop.io/rest/v1/collections/childrens', {
@@ -34,13 +36,13 @@ async function syncCollections(integrationRunId: number) {
 		throw new Error(`Child collections API request failed with status ${childrenResponse.status}`);
 	}
 
-	const childrenData = (await childrenResponse.json()) as CollectionsResponse;
+	const childrenData = await childrenResponse.json();
+	const childrenParsed = CollectionsResponseSchema.parse(childrenData);
 
-	const allCollections = [...rootData.items, ...childrenData.items];
+	const allCollections = [...rootParsed.items, ...childrenParsed.items];
 	console.log(`✅ Retrieved ${allCollections.length} total collections`);
-
+	console.log('Inserting collections to database.');
 	for (const collection of allCollections) {
-		console.log('Inserting collections to database.');
 		try {
 			const collectionToInsert: typeof collections.$inferInsert = {
 				id: collection._id,
@@ -49,8 +51,8 @@ async function syncCollections(integrationRunId: number) {
 				colorHex: collection.color,
 				coverUrl: collection.cover[0],
 				raindropCount: collection.count,
-				createdAt: new Date(collection.created),
-				updatedAt: new Date(collection.lastUpdate),
+				createdAt: collection.created,
+				updatedAt: collection.lastUpdate,
 				integrationRunId: integrationRunId
 			};
 
@@ -109,27 +111,28 @@ async function syncRaindrops(integrationRunId: number) {
 			throw new Error(`API request failed with status ${response.status}`);
 		}
 
-		const data = (await response.json()) as RaindropResponse;
+		const data = await response.json();
+		const parsedData = RaindropResponseSchema.parse(data);
 
 		// Check if we've reached raindrops older than our last known date
-		const reachedExisting = data.items.some(
+		const reachedExisting = parsedData.items.some(
 			(item) => lastKnownDate && new Date(item.created) <= lastKnownDate
 		);
 
 		if (reachedExisting) {
 			// Filter out any items that are older than our last known date
-			const newItems = data.items.filter(
+			const newItems = parsedData.items.filter(
 				(item) => !lastKnownDate || new Date(item.created) > lastKnownDate
 			);
 			newRaindrops = [...newRaindrops, ...newItems];
 			hasMore = false;
 		} else {
-			newRaindrops = [...newRaindrops, ...data.items];
-			hasMore = data.items.length === 50;
+			newRaindrops = [...newRaindrops, ...parsedData.items];
+			hasMore = parsedData.items.length === 50;
 		}
 
-		totalFetched += data.items.length;
-		console.log(`✅ Processed ${data.items.length} raindrops (total: ${totalFetched})`);
+		totalFetched += parsedData.items.length;
+		console.log(`✅ Processed ${parsedData.items.length} raindrops (total: ${totalFetched})`);
 		page++;
 	}
 
@@ -140,16 +143,16 @@ async function syncRaindrops(integrationRunId: number) {
 		id: raindrop._id,
 		linkUrl: raindrop.link,
 		title: raindrop.title,
-		excerpt: raindrop.excerpt?.trim() || null,
-		note: raindrop.note?.trim() || null,
+		excerpt: raindrop.excerpt,
+		note: raindrop.note,
 		type: raindrop.type,
 		coverImageUrl: raindrop.cover,
 		tags: raindrop.tags,
 		important: raindrop.important,
 		domain: raindrop.domain,
-		collectionId: raindrop.collection?.$id > 0 ? raindrop.collection?.$id : null,
-		createdAt: new Date(raindrop.created),
-		updatedAt: new Date(raindrop.lastUpdate),
+		collectionId: raindrop.collection.$id > 0 ? raindrop.collection.$id : null,
+		createdAt: raindrop.created,
+		updatedAt: raindrop.lastUpdate,
 		integrationRunId
 	}));
 

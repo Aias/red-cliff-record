@@ -1,12 +1,6 @@
 import { ReadwiseCategory, ReadwiseLocation } from '@schema/main/readwise';
 import { z } from 'zod';
-
-const emptyStringToNull = <T extends z.ZodType>(schema: T) =>
-	z
-		.string()
-		.nullable()
-		.transform((str) => (str === '' ? null : str))
-		.pipe(schema);
+import { emptyStringToNull } from '@lib/schema-helpers';
 
 const ReadwiseTagSchema = z.object({
 	name: z.string(),
