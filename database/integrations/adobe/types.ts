@@ -1,166 +1,198 @@
-export interface LightroomAssetLinks {
-	self: { href: string };
-	'/rels/comments': { href: string; count: number };
-	'/rels/favorites': { href: string; count: number };
-	'/rels/rendition_type/2048': { href: string };
-	'/rels/rendition_type/1280': { href: string };
-	'/rels/rendition_type/640': { href: string };
-	'/rels/rendition_type/thumbnail2x': { href: string };
-	'/rels/rendition_generate/fullsize': { href: string; templated: boolean };
-	'/rels/profiles/camera': { filename: string; href: string };
-}
+import { z } from 'zod';
 
-export interface LightroomAssetDevelop {
-	croppedWidth: number;
-	croppedHeight: number;
-	fromDefaults: boolean;
-	userOrientation: number;
-	profiles: { camera: { filename: string; href: string } };
-	crsHDREditMode: boolean;
-	device: string;
-	processingModel: string;
-	crsVersion: string;
-	xmpCameraRaw: { sha256: string };
-	userUpdated: string;
-	masks?: { [key: string]: { digest: string } };
-}
+const LightroomAssetLinksSchema = z.object({
+	self: z.object({ href: z.string() }),
+	'/rels/comments': z.object({ href: z.string(), count: z.number() }),
+	'/rels/favorites': z.object({ href: z.string(), count: z.number() }),
+	'/rels/rendition_type/2048': z.object({ href: z.string() }),
+	'/rels/rendition_type/1280': z.object({ href: z.string() }),
+	'/rels/rendition_type/640': z.object({ href: z.string() }),
+	'/rels/rendition_type/thumbnail2x': z.object({ href: z.string() }),
+	'/rels/rendition_generate/fullsize': z.object({ href: z.string(), templated: z.boolean() }),
+	'/rels/profiles/camera': z.object({ filename: z.string(), href: z.string() }).optional()
+});
 
-export interface LightroomAssetExif {
-	ApertureValue: [number, number];
-	FNumber: [number, number];
-	MaxApertureValue: [number, number];
-	FocalLength: [number, number];
-	LightSource: string;
-	DateTimeOriginal: string;
-	FlashRedEyeMode: boolean;
-	ExposureTime: [number, number];
-	FlashFired: boolean;
-	MeteringMode: string;
-	FocalLengthIn35mmFilm: number;
-	FlashReturn: string;
-	ISOSpeedRatings: number;
-	ShutterSpeedValue: [number, number];
-	ExposureProgram: string;
-	FlashMode: string;
-	FlashFunction: boolean;
-	ExposureBiasValue: [number, number];
-}
+const LightroomAssetDevelopSchema = z.object({
+	croppedWidth: z.number(),
+	croppedHeight: z.number(),
+	fromDefaults: z.boolean().optional(),
+	userOrientation: z.number().optional(),
+	profiles: z
+		.object({
+			camera: z.object({ filename: z.string(), href: z.string() })
+		})
+		.optional(),
+	crsHDREditMode: z.boolean().optional(),
+	device: z.string().optional(),
+	processingModel: z.string().optional(),
+	crsVersion: z.string().optional(),
+	xmpCameraRaw: z.union([z.object({ sha256: z.string() }), z.string()]).optional(),
+	userUpdated: z.string().optional()
+});
 
-export interface LightroomAssetXmp {
-	dng: { IsAppleProRAW: boolean };
-	tiff: { Orientation: string; Make: string; Model: string };
-	exif: LightroomAssetExif;
-	aux: {
-		SerialNumber: string;
-		Lens: string;
-		EnhanceDetailsVersion?: string;
-		EnhanceDetailsAlreadyApplied?: boolean;
-	};
-	xmp: { CreatorTool: string; CreateDate: string; ModifyDate: string };
-	photoshop: { DateCreated: string };
-}
+const LightroomAssetExifSchema = z.object({
+	ApertureValue: z.tuple([z.number(), z.number()]),
+	FNumber: z.tuple([z.number(), z.number()]),
+	MaxApertureValue: z.tuple([z.number(), z.number()]).optional(),
+	FocalLength: z.tuple([z.number(), z.number()]),
+	LightSource: z.string().optional(),
+	DateTimeOriginal: z.coerce.date(),
+	ExposureBiasValue: z.tuple([z.number(), z.number()]),
+	ExposureTime: z.tuple([z.number(), z.number()]),
+	MeteringMode: z.string(),
+	FocalLengthIn35mmFilm: z.number().optional(),
+	ISOSpeedRatings: z.number(),
+	ShutterSpeedValue: z.tuple([z.number(), z.number()]),
+	ExposureProgram: z.string(),
+	FlashFired: z.boolean(),
+	FlashFunction: z.boolean().optional(),
+	FlashRedEyeMode: z.boolean().optional(),
+	FlashReturn: z.string().optional(),
+	FlashMode: z.string().optional()
+});
 
-export interface LightroomAssetPayloadImportSource {
-	originalHeight: number;
-	importedOnDevice: string;
-	importTimestamp: string;
-	contentType: string;
-	fileName: string;
-	fileSize: number;
-	originalWidth: number;
-	sha256: string;
-	originalDigest: string;
-	importedBy: string;
-	localAssetId?: string;
-	uniqueDeviceId?: string;
-}
+const LightroomAssetXmpSchema = z.object({
+	dng: z.object({ IsAppleProRAW: z.boolean() }).optional(),
+	tiff: z.object({
+		Orientation: z.string(),
+		Make: z.string(),
+		Model: z.string()
+	}),
+	exif: LightroomAssetExifSchema,
+	aux: z.object({
+		SerialNumber: z.string().optional(),
+		Lens: z.string().optional(),
+		EnhanceDetailsVersion: z.string().optional(),
+		EnhanceDetailsAlreadyApplied: z.boolean().optional()
+	}),
+	xmp: z.object({
+		CreatorTool: z.string().optional(),
+		CreateDate: z.string(),
+		ModifyDate: z.string()
+	}),
+	photoshop: z.object({ DateCreated: z.string() })
+});
 
-export interface LightroomAssetPayload {
-	develop: LightroomAssetDevelop;
-	userUpdated: string;
-	xmp: LightroomAssetXmp;
-	ratings: { [key: string]: { rating: number; date?: string } };
-	captureDate: string;
-	location: {
-		longitude: number;
-		latitude: number;
-		altitude: number;
-		city: string;
-		country: string;
-		isoCountryCode: string;
-		state: string;
-		sublocation?: string[];
-	};
-	importSource: LightroomAssetPayloadImportSource;
-	userCreated: string;
-	changedAtTime: string;
-	changedOnDevice: string;
-	reviews: { [key: string]: { date: string; flag: string } };
-	aesthetics: {
-		application: string;
-		balancing: number;
-		content: number;
-		created: string;
-		dof: number;
-		emphasis: number;
-		harmony: number;
-		lighting: number;
-		repetition: number;
-		rot: number;
-		score: number;
-		symmetry: number;
-		version: number;
-		vivid: number;
-	};
-	autoTags: {
-		tags: { [key: string]: number };
-		application: string;
-		version: number;
-		created: string;
-	};
-	order: string;
-	aux?: { [key: string]: { digest: string; fileSize: number; sha256: string; type: string } };
-}
+const AestheticsSchema = z.object({
+	application: z.string(),
+	balancing: z.number(),
+	content: z.number(),
+	created: z.coerce.date(),
+	dof: z.number(),
+	emphasis: z.number(),
+	harmony: z.number(),
+	lighting: z.number(),
+	repetition: z.number(),
+	rot: z.number(),
+	score: z.number(),
+	symmetry: z.number(),
+	version: z.number(),
+	vivid: z.number()
+});
 
-export interface LightroomAsset {
-	id: string;
-	type: string;
-	subtype: string;
-	created: string;
-	updated: string;
-	revision_ids: string[];
-	links: LightroomAssetLinks;
-	payload: LightroomAssetPayload;
-}
+const AutoTagsSchema = z.object({
+	tags: z.record(z.number().min(0).max(100)),
+	application: z.string(),
+	version: z.number(),
+	created: z.coerce.date()
+});
 
-export interface LightroomAlbumLinks {
-	self: { href: string };
-}
+const LightroomAssetPayloadImportSourceSchema = z.object({
+	importedOnDevice: z.string(),
+	importTimestamp: z.coerce.date(),
+	contentType: z.string(),
+	fileName: z.string(),
+	fileSize: z.number().int().positive(),
+	originalHeight: z.number().int().positive(),
+	originalWidth: z.number().int().positive(),
+	sha256: z.string(),
+	originalDigest: z.string().optional(),
+	importedBy: z.string(),
+	localAssetId: z.string().optional(),
+	uniqueDeviceId: z.string().optional()
+});
 
-export interface LightroomAlbum {
-	id: string;
-	links: LightroomAlbumLinks;
-}
+const LightroomAssetPayloadSchema = z.object({
+	develop: LightroomAssetDevelopSchema,
+	userUpdated: z.coerce.date(),
+	captureDate: z.coerce.date(),
+	userCreated: z.coerce.date(),
+	changedAtTime: z.coerce.date().optional(),
+	xmp: LightroomAssetXmpSchema,
+	ratings: z
+		.record(
+			z.object({
+				rating: z.number(),
+				date: z.string().optional()
+			})
+		)
+		.optional(),
+	location: z
+		.object({
+			longitude: z.number(),
+			latitude: z.number(),
+			altitude: z.number(),
+			city: z.string().optional(),
+			country: z.string(),
+			isoCountryCode: z.string(),
+			state: z.string(),
+			sublocation: z.array(z.string()).optional()
+		})
+		.optional(),
+	importSource: LightroomAssetPayloadImportSourceSchema,
+	changedOnDevice: z.string().optional(),
+	order: z.string().optional(),
+	aux: z
+		.record(
+			z.object({
+				digest: z.string(),
+				fileSize: z.number(),
+				sha256: z.string(),
+				type: z.string()
+			})
+		)
+		.optional(),
+	aesthetics: AestheticsSchema,
+	autoTags: AutoTagsSchema
+});
 
-export interface LightroomResourcePayload {
-	order: string;
-	userCreated: string;
-	userUpdated: string;
-}
+export const LightroomAssetSchema = z.object({
+	id: z.string(),
+	type: z.string(),
+	subtype: z.string(),
+	created: z.coerce.date(),
+	updated: z.coerce.date(),
+	revision_ids: z.array(z.string()).optional(),
+	links: LightroomAssetLinksSchema,
+	payload: LightroomAssetPayloadSchema
+});
 
-export interface LightroomResource {
-	id: string;
-	type: string;
-	created: string;
-	updated: string;
-	revision_ids: string[];
-	links: { self: { href: string } };
-	asset: LightroomAsset;
-	payload: LightroomResourcePayload;
-}
+export const LightroomResourceSchema = z.object({
+	id: z.string(),
+	type: z.string(),
+	created: z.string(),
+	updated: z.string(),
+	revision_ids: z.array(z.string()),
+	links: z.object({
+		self: z.object({ href: z.string() })
+	}),
+	asset: LightroomAssetSchema,
+	payload: z.object({
+		order: z.string().optional(),
+		userCreated: z.coerce.date(),
+		userUpdated: z.coerce.date()
+	})
+});
 
-export interface LightroomJsonResponse {
-	base: string;
-	album: LightroomAlbum;
-	resources: LightroomResource[];
-}
+export const LightroomJsonResponseSchema = z.object({
+	base: z.string(),
+	album: z.object({
+		id: z.string(),
+		links: z.object({
+			self: z.object({ href: z.string() })
+		})
+	}),
+	resources: z.array(LightroomResourceSchema)
+});
+
+export type LightroomJsonResponse = z.infer<typeof LightroomJsonResponseSchema>;

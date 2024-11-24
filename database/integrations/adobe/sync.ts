@@ -2,7 +2,7 @@ import { createPgConnection } from '@schema/connections';
 import { photographs } from '@schema/main/adobe';
 import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
-import type { LightroomJsonResponse } from './types';
+import { LightroomJsonResponseSchema } from './types';
 
 const db = createPgConnection();
 
@@ -22,9 +22,9 @@ async function syncLightroomImages(integrationRunId: number) {
 	}
 
 	const textData = await response.text();
-	const jsonData = JSON.parse(
-		textData.replace(/^while\s*\(1\)\s*{\s*}\s*/, '')
-	) as LightroomJsonResponse;
+	const jsonData = LightroomJsonResponseSchema.parse(
+		JSON.parse(textData.replace(/^while\s*\(1\)\s*{\s*}\s*/, ''))
+	);
 
 	console.log(`✅ Retrieved ${jsonData.resources.length} resources from Lightroom`);
 
@@ -47,7 +47,7 @@ async function syncLightroomImages(integrationRunId: number) {
 			userUpdated
 		} = payload;
 		const url2048 = `${baseUrl}${asset.links['/rels/rendition_type/2048'].href}`;
-		const rating = ratings[Object.keys(ratings)[0]].rating;
+		const rating = ratings?.[Object.keys(ratings)[0]]?.rating ?? 0;
 
 		const imageToInsert: typeof photographs.$inferInsert = {
 			id: asset.id,
@@ -59,8 +59,8 @@ async function syncLightroomImages(integrationRunId: number) {
 			cameraMake: xmp.tiff.Make,
 			cameraModel: xmp.tiff.Model,
 			cameraLens: xmp.aux.Lens,
-			captureDate: new Date(captureDate),
-			userUpdatedDate: new Date(userUpdated),
+			captureDate: captureDate,
+			userUpdatedDate: userUpdated,
 			fileSize: importSource.fileSize,
 			croppedWidth: develop.croppedWidth,
 			croppedHeight: develop.croppedHeight,
