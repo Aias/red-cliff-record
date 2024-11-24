@@ -4,7 +4,7 @@ import { integrationRuns, IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { createPgConnection } from '@schema/connections';
 import { desc, like, eq } from 'drizzle-orm';
-import type { StarredRepo } from './types';
+import { GithubStarredReposResponseSchema } from './types';
 const db = createPgConnection();
 
 const REQUEST_ACCEPT_HEADER = 'application/vnd.github.star+json';
@@ -28,8 +28,6 @@ async function syncStars(integrationRunId: number): Promise<number> {
 		auth: process.env.GITHUB_TOKEN
 	});
 
-	const rawData: any = [];
-
 	const starsToInsert: (typeof starsTable.$inferInsert)[] = [];
 	let page = 1;
 	let hasMore = true;
@@ -45,19 +43,20 @@ async function syncStars(integrationRunId: number): Promise<number> {
 			}
 		});
 
-		rawData.push(response.data);
+		const parsedResponse = GithubStarredReposResponseSchema.parse(response);
 
-		const data = response.data as unknown as StarredRepo[];
-		if (data.length === 0) break;
+		const starredRepos = parsedResponse.data;
+		if (starredRepos.length === 0) break;
 
 		// Check if we've reached stars older than our last known date
-		const reachedExisting = data.some(
-			(star) => lastKnownDate && new Date(star.starred_at) <= lastKnownDate
+		const reachedExisting = starredRepos.some(
+			({ starred_at }) => lastKnownDate && starred_at <= lastKnownDate
 		);
 
-		for (const star of data) {
+		for (const star of starredRepos) {
+			const { starred_at, repo } = star;
 			// Skip if this star is older than our last known date
-			if (lastKnownDate && new Date(star.starred_at) <= lastKnownDate) {
+			if (lastKnownDate && starred_at <= lastKnownDate) {
 				skippedCount++;
 				continue;
 			}
@@ -74,8 +73,6 @@ async function syncStars(integrationRunId: number): Promise<number> {
 				continue;
 			}
 
-			const { starred_at, repo } = star;
-
 			starsToInsert.push({
 				id: repo.id,
 				repoUrl: repo.html_url,
@@ -87,7 +84,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 				description: repo.description,
 				language: repo.language,
 				topics: repo.topics,
-				starredAt: new Date(starred_at),
+				starredAt: starred_at,
 				integrationRunId
 			});
 		}

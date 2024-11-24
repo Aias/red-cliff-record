@@ -1,82 +1,57 @@
-export interface StarredRepo {
-	starred_at: string;
-	repo: Repository;
-}
+import { z } from 'zod';
+import { emptyStringToNull } from '@lib/schema-helpers';
 
-interface Repository {
-	id: number;
-	node_id: string;
-	name: string;
-	full_name: string;
-	private: boolean;
-	owner: Owner;
-	html_url: string;
-	description: string | null;
-	fork: boolean;
-	url: string;
-	homepage: string | null;
-	size: number;
-	stargazers_count: number;
-	watchers_count: number;
-	language: string | null;
-	has_issues: boolean;
-	has_projects: boolean;
-	has_downloads: boolean;
-	has_wiki: boolean;
-	has_pages: boolean;
-	has_discussions: boolean;
-	forks_count: number;
-	mirror_url: string | null;
-	archived: boolean;
-	disabled: boolean;
-	open_issues_count: number;
-	license: License | null;
-	allow_forking: boolean;
-	is_template: boolean;
-	web_commit_signoff_required: boolean;
-	topics: string[];
-	visibility: 'public' | 'private';
-	forks: number;
-	open_issues: number;
-	watchers: number;
-	default_branch: string;
-	permissions: Permissions;
-}
+const GithubLicenseSchema = z.object({
+	key: z.string(),
+	name: z.string(),
+	spdx_id: z.string(),
+	url: z.string().url().nullable(),
+	node_id: z.string()
+});
 
-interface Owner {
-	login: string;
-	id: number;
-	node_id: string;
-	avatar_url: string;
-	gravatar_id: string;
-	url: string;
-	html_url: string;
-	followers_url: string;
-	following_url: string;
-	gists_url: string;
-	starred_url: string;
-	subscriptions_url: string;
-	organizations_url: string;
-	repos_url: string;
-	events_url: string;
-	received_events_url: string;
-	type: 'User' | 'Organization';
-	user_view_type: string;
-	site_admin: boolean;
-}
+const GithubOwnerSchema = z.object({
+	id: z.number().int().positive(),
+	login: z.string(),
+	node_id: z.string(),
+	avatar_url: z.string().url(),
+	html_url: z.string().url(),
+	type: z.enum(['User', 'Organization'])
+});
 
-interface License {
-	key: string;
-	name: string;
-	spdx_id: string;
-	url: string;
-	node_id: string;
-}
+const GithubRepositoryDetailsSchema = z.object({
+	id: z.number().int().positive(),
+	html_url: z.string().url(),
+	homepage: emptyStringToNull(
+		z
+			.string()
+			.transform((str) => {
+				if (!str.startsWith('http://') && !str.startsWith('https://')) {
+					return `https://${str}`;
+				}
+				return str;
+			})
+			.pipe(z.string().url())
+	),
+	created_at: z.coerce.date(),
+	updated_at: z.coerce.date(),
+	pushed_at: z.coerce.date(),
+	name: z.string(),
+	full_name: z.string(),
+	description: emptyStringToNull(z.string()),
+	language: z.string().nullable(),
+	topics: z.array(z.string()),
+	private: z.boolean(),
+	owner: GithubOwnerSchema,
+	license: GithubLicenseSchema.nullable()
+});
 
-interface Permissions {
-	admin: boolean;
-	maintain: boolean;
-	push: boolean;
-	triage: boolean;
-	pull: boolean;
-}
+const GithubStarredRepoSchema = z.object({
+	starred_at: z.coerce.date(),
+	repo: GithubRepositoryDetailsSchema
+});
+
+export const GithubStarredReposResponseSchema = z.object({
+	data: z.array(GithubStarredRepoSchema)
+});
+
+export type StarredRepo = z.infer<typeof GithubStarredRepoSchema>;
