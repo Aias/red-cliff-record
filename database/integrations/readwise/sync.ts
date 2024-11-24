@@ -66,7 +66,7 @@ const mapReadwiseArticleToDocument = (
 	source: article.source,
 	category: article.category,
 	location: article.location,
-	tags: Object.keys(article.tags),
+	tags: article.tags ? Object.keys(article.tags) : null,
 	siteName: article.site_name,
 	wordCount: article.word_count,
 	publishedDate: article.published_date ? article.published_date.toISOString().split('T')[0] : null,

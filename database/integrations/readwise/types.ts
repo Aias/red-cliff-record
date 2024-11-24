@@ -22,7 +22,7 @@ export const ReadwiseArticleSchema = z.object({
 	source: z.string().nullable(),
 	category: ReadwiseCategory,
 	location: ReadwiseLocation.nullable(),
-	tags: z.record(ReadwiseTagSchema).default({}),
+	tags: z.record(ReadwiseTagSchema).nullable(),
 	site_name: z.string().nullable(),
 	word_count: z.number().int().nullable(),
 	summary: z.string().nullable(),
