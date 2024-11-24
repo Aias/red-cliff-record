@@ -2,6 +2,7 @@ import { createPgConnection } from '@schema/connections';
 import { documents } from '@schema/main/readwise';
 import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
+import { ReadwiseArticlesResponseSchema } from './types';
 import type { ReadwiseArticle, ReadwiseArticlesResponse } from './types';
 import { desc } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
@@ -47,7 +48,8 @@ async function fetchReadwiseDocuments(
 		throw new Error(`Failed to fetch Readwise documents: ${response.statusText}`);
 	}
 
-	return response.json();
+	const data = await response.json();
+	return ReadwiseArticlesResponseSchema.parse(data);
 }
 
 const cleanString = (str: string | null) => str?.replace(/\u00fe\u00ff/g, '').trim() || null;
@@ -57,31 +59,29 @@ const mapReadwiseArticleToDocument = (
 	integrationRunId: number
 ): typeof documents.$inferInsert => ({
 	id: article.id,
+	parentId: article.parent_id,
 	url: article.url,
 	title: cleanString(article.title),
 	author: cleanString(article.author),
 	source: article.source,
 	category: article.category,
 	location: article.location,
-	tags: Object.keys(article.tags || {}),
+	tags: Object.keys(article.tags),
 	siteName: article.site_name,
 	wordCount: article.word_count,
-	publishedDate: article.published_date
-		? new Date(article.published_date).toISOString().split('T')[0]
-		: null,
+	publishedDate: article.published_date ? article.published_date.toISOString().split('T')[0] : null,
 	summary: cleanString(article.summary),
-	imageUrl: article.image_url,
-	content: article.content,
-	sourceUrl: article.source_url,
+	content: cleanString(article.content),
 	notes: cleanString(article.notes),
-	parentId: article.parent_id,
+	imageUrl: article.image_url,
+	sourceUrl: article.source_url,
 	readingProgress: article.reading_progress.toString(),
-	firstOpenedAt: article.first_opened_at ? new Date(article.first_opened_at) : null,
-	lastOpenedAt: article.last_opened_at ? new Date(article.last_opened_at) : null,
-	savedAt: new Date(article.saved_at),
-	lastMovedAt: new Date(article.last_moved_at),
-	createdAt: new Date(article.created_at),
-	updatedAt: new Date(article.updated_at),
+	firstOpenedAt: article.first_opened_at,
+	lastOpenedAt: article.last_opened_at,
+	savedAt: article.saved_at,
+	lastMovedAt: article.last_moved_at,
+	createdAt: article.created_at,
+	updatedAt: article.updated_at,
 	integrationRunId
 });
 
