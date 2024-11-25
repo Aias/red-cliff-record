@@ -22,7 +22,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 		.limit(1);
 
 	const lastKnownDate = latestStarredRepo[0]?.starredAt;
-	console.log(`Date of last starred repository: ${lastKnownDate?.toISOString() ?? 'none'}`);
+	console.log(`Date of last starred repository: ${lastKnownDate?.toISOString() ?? 'Never'}`);
 
 	const octokit = new Octokit({
 		auth: process.env.GITHUB_TOKEN
