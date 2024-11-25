@@ -91,21 +91,6 @@ DAILY SUMMARY PROMPT:
 
 I'm going to copy a number of different data sources gathered throughout my day. I'd like you to summarize my day in a linear fashion based on the following focus areas and guidelines.
 
-## Data Format
-
-The data will be provided within <DAILY_DATA> tags and will contain multiple sections corresponding to each data source. Each section will be clearly labeled and contain structured data in a consistent format.
-
-Please provide a chronological summary that captures the key activities and learnings from the day, organizing them according to the focus areas above while maintaining readability and narrative flow.
-
-## Data Sources
-
-The following data sources are included, in descending order of importance.
-- **Github**: Starred repositories, commits, and files changed along with the first 1000 characters of each change
-- Raindrop: Bookmarked links with tags and categories
-- Readwise: Longer form reading and highlights from those articles
-- Arc: Browser history summarized by URL and time spent at each unique one throughout the course of the day
-- Twitter: Recent bookmarks. These may have been posted in the past but bookmarked today
-
 ## Primary Focus
 
 ### 1. Technical Work & Engineering
@@ -159,6 +144,23 @@ Pay close attention to specific tools and technologies, such as frameworks, inte
 - Entertainment.
 - General news.
 
+## Data Format
+
+The data will be provided after these instructions in the form of a delimited SQL query result with headers the following headers in this order: timestamp, activity_time, title, url, main_content, creator, tags. The main_content field can be quite long and contain its own delimiters and line breaks and data formatting, so pay close attention to context to determine where the next daily history item begins.
+
+Please provide a chronological summary that captures the key activities and learnings from the day, organizing them according to the focus areas above while maintaining readability and narrative flow.
+
+## Data Sources
+
+The following data sources are included, in descending order of importance.
+- **Github**: Starred repositories, commits, and files changed along with the first 1000 characters of each change
+- Raindrop: Bookmarked links with tags and categories
+- Readwise: Longer form reading and highlights from those articles
+- Arc: Browser history summarized by URL and time spent at each unique one throughout the course of the day
+- Twitter: Recent bookmarks. These may have been posted in the past but bookmarked today
+
+If additional context is needed to supplement the provided data, feel free to search the web.
+
 ## Stylistic Instructions
 
 - Typographically, write in short sentences arranged into brief paragraphs, interspersed with bulleted or numbered lists when appropriate.
@@ -166,10 +168,15 @@ Pay close attention to specific tools and technologies, such as frameworks, inte
 - Do not use headings, but you may use bold or italics to call attention to certain sections or especially relevant information.
 - Write in a generic tense, avoiding both usage of "you" or "I", for example, rather than "I wrote code for a new module" or "You wrote code for a new module", simply say "Wrote code for a new module."
 - If any links, articles, documents, or repos are mentioned, link to them using a [markdown-formatted link](https://example.com) and cite the author if possible. Reference them inline where they are discussed/summarized, not in a separate section at the end.
+- Output only the summary, no preamble, postscript, or meta-commentary. Assume the output will be used as-is.
 
 ## Final Notes
 
 The goal is to create a kind of "learning log" that a professional might publish, focusing on work, creativity, tools, technologies, and industry developments.
 
 Finally, aim to be comprehensive, somewhere between 750 and 1000 words, but don’t force it if there isn’t enough content to be relevant.
+
+---
+
+<START_DAILY_DATA>
  */
