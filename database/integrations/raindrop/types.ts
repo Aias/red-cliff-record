@@ -73,7 +73,7 @@ export const RaindropSchema = z.object({
 	collection: RaindropCollectionRefSchema,
 	file: RaindropFileSchema.optional(),
 	highlights: z.array(RaindropHighlightSchema),
-	important: z.boolean(),
+	important: z.coerce.boolean(),
 	removed: z.boolean(),
 	creatorRef: RaindropCreatorSchema,
 	sort: z.number().int().positive(),
