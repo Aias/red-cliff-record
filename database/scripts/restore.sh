@@ -20,6 +20,13 @@ fi
 
 echo "Using backup file: $DUMP_FILE"
 
+# Close existing connections
+psql -U postgres -d postgres -c "
+SELECT pg_terminate_backend(pg_stat_activity.pid)
+FROM pg_stat_activity
+WHERE pg_stat_activity.datname = '$DB_NAME'
+AND pid <> pg_backend_pid();"
+
 # Drop database if exists and create a fresh one
 dropdb -U postgres --if-exists "$DB_NAME"
 createdb -U postgres "$DB_NAME"
