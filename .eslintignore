@@ -3,9 +3,7 @@ node_modules
 /build
 /.svelte-kit
 /package
-.env
-.env.*
-!.env.example
+**/*.gen.ts
 
 # Ignore files for PNPM, NPM and YARN
 pnpm-lock.yaml

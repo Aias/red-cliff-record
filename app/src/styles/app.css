@@ -1,9 +1,0 @@
-@layer theme, reset, components, app, utilities;
-
-@import './reset.css' layer(reset);
-@import './theme.css' layer(theme);
-/* @import './components.css' layer(components); */
-@import './utilities.css' layer(utilities);
-
-@layer app {
-}
