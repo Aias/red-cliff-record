@@ -1,7 +1,7 @@
 import {
 	tweets as tweetsTable,
 	media as mediaTable,
-	users as usersTable
+	users as usersTable,
 } from '@schema/main/twitter';
 import { IntegrationType } from '@schema/main/integrations';
 import { createPgConnection } from '@schema/connections';
@@ -119,7 +119,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				url: user.twitterUrl,
 				externalUrl: user.userExternalLink?.expanded_url,
 				profileImageUrl: user.profileImageUrl,
-				profileBannerUrl: user.profileBannerUrl
+				profileBannerUrl: user.profileBannerUrl,
 			})
 			.onConflictDoNothing({ target: usersTable.id });
 	}
@@ -135,7 +135,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				text: tweet.text,
 				quotedTweetId: tweet.quotedTweetId,
 				integrationRunId: integrationRunId,
-				postedAt: new Date(tweet.createdAt)
+				postedAt: new Date(tweet.createdAt),
 			})
 			.onConflictDoNothing({ target: tweetsTable.id });
 	}
@@ -151,7 +151,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				text: tweet.text,
 				quotedTweetId: tweet.quotedTweetId,
 				integrationRunId: integrationRunId,
-				postedAt: new Date(tweet.createdAt)
+				postedAt: new Date(tweet.createdAt),
 			})
 			.onConflictDoNothing({ target: tweetsTable.id });
 	}
@@ -166,7 +166,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				type: mediaItem.type,
 				url: mediaItem.shortUrl,
 				mediaUrl: mediaItem.mediaUrl,
-				tweetId: mediaItem.tweetId
+				tweetId: mediaItem.tweetId,
 			})
 			.onConflictDoNothing({ target: mediaTable.id });
 	}

@@ -4,7 +4,7 @@ export const extensions: { [key: string]: string } = {
 	'.png': 'image/png',
 	'.gif': 'image/gif',
 	'.webp': 'image/webp',
-	'.svg': 'image/svg+xml'
+	'.svg': 'image/svg+xml',
 };
 
 export const getContentTypeFromExtension = (extension: string): string => {

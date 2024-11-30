@@ -6,7 +6,7 @@ import { sanitizeString } from '@utils/sanitize';
 import { runIntegration } from '@utils/run-integration';
 import {
 	chromeEpochMicrosecondsToDatetime,
-	datetimeToChromeEpochMicroseconds
+	datetimeToChromeEpochMicroseconds,
 } from '@lib/time-helpers';
 import os from 'os';
 import { visits, urls } from '@schema/arc';
@@ -70,7 +70,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		relatedSearches: h.relatedSearches ? sanitizeString(h.relatedSearches) : null,
 		integrationRunId,
 		browser: Browser.enum.arc,
-		hostname
+		hostname,
 	}));
 
 	if (history.length > 0) {

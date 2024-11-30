@@ -18,14 +18,14 @@ export const tweets = twitterSchema.table(
 			.references(() => integrationRuns.id)
 			.notNull(),
 		postedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [
 		index().on(table.integrationRunId),
 		foreignKey({
 			columns: [table.quotedTweetId],
-			foreignColumns: [table.id]
-		})
+			foreignColumns: [table.id],
+		}),
 	]
 );
 
@@ -33,17 +33,17 @@ export const tweetsRelations = relations(tweets, ({ one, many }) => ({
 	media: many(media),
 	user: one(users, {
 		fields: [tweets.userId],
-		references: [users.id]
+		references: [users.id],
 	}),
 	quotedTweet: one(tweets, {
 		fields: [tweets.quotedTweetId],
 		references: [tweets.id],
-		relationName: 'quotedTweet'
+		relationName: 'quotedTweet',
 	}),
 	integrationRun: one(integrationRuns, {
 		fields: [tweets.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));
 
 export const media = twitterSchema.table('media', {
@@ -54,14 +54,14 @@ export const media = twitterSchema.table('media', {
 	tweetId: text()
 		.references(() => tweets.id)
 		.notNull(),
-	...timestamps
+	...timestamps,
 });
 
 export const mediaRelations = relations(media, ({ one }) => ({
 	tweet: one(tweets, {
 		fields: [media.tweetId],
-		references: [tweets.id]
-	})
+		references: [tweets.id],
+	}),
 }));
 
 export const users = twitterSchema.table('users', {
@@ -74,9 +74,9 @@ export const users = twitterSchema.table('users', {
 	externalUrl: text(),
 	profileImageUrl: text(),
 	profileBannerUrl: text(),
-	...timestamps
+	...timestamps,
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
-	tweets: many(tweets)
+	tweets: many(tweets),
 }));

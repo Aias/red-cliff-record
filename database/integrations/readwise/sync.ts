@@ -40,8 +40,8 @@ async function fetchReadwiseDocuments(
 	const response = await fetch(`https://readwise.io/api/v3/list/?${params.toString()}`, {
 		headers: {
 			Authorization: `Token ${process.env.READWISE_TOKEN}`,
-			'Content-Type': 'application/json'
-		}
+			'Content-Type': 'application/json',
+		},
 	});
 
 	if (!response.ok) {
@@ -82,7 +82,7 @@ const mapReadwiseArticleToDocument = (
 	lastMovedAt: article.last_moved_at,
 	createdAt: article.created_at,
 	updatedAt: article.updated_at,
-	integrationRunId
+	integrationRunId,
 });
 
 function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle[] {
@@ -149,14 +149,14 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 
 			await db.insert(documents).values(mappedDoc).onConflictDoUpdate({
 				target: documents.id,
-				set: mappedDoc
+				set: mappedDoc,
 			});
 
 			successCount++;
 		} catch (error) {
 			console.error('Error processing document:', {
 				document: doc,
-				error: error instanceof Error ? error.message : String(error)
+				error: error instanceof Error ? error.message : String(error),
 			});
 		}
 	}

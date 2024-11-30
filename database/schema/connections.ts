@@ -8,7 +8,7 @@ import { arcDbCopyPath, arcDbPath } from './constants';
 export const createPgConnection = () => {
 	return drizzle({
 		connection: process.env.DATABASE_URL!,
-		casing: 'snake_case'
+		casing: 'snake_case',
 	});
 };
 

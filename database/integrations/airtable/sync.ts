@@ -8,7 +8,7 @@ import {
 	spaces,
 	extractCreators,
 	extractSpaces,
-	extractConnections
+	extractConnections,
 } from '@schema/main/airtable';
 import { IntegrationType } from '@schema/main/integrations';
 import { eq } from 'drizzle-orm';
@@ -51,7 +51,7 @@ async function seedCreators(integrationRunId: number) {
 				nationalities: fields.nationality,
 				createdAt: new Date(fields.createdTime),
 				updatedAt: new Date(fields.lastUpdated),
-				integrationRunId
+				integrationRunId,
 			};
 		});
 
@@ -78,7 +78,7 @@ async function seedSpaces(integrationRunId: number) {
 				description: fields.description,
 				createdAt: new Date(fields.createdTime),
 				updatedAt: new Date(fields.lastUpdated),
-				integrationRunId
+				integrationRunId,
 			};
 		});
 
@@ -112,7 +112,7 @@ async function seedExtracts(integrationRunId: number) {
 				createdAt: new Date(fields.extractedOn),
 				updatedAt: new Date(fields.lastUpdated),
 				publishedAt: fields.publishedOn ? new Date(fields.publishedOn) : null,
-				integrationRunId
+				integrationRunId,
 			};
 		});
 
@@ -153,7 +153,7 @@ async function seedAttachments() {
 				width: (attachment as unknown as { width: number }).width,
 				height: (attachment as unknown as { height: number }).height,
 				type: attachment.type,
-				extractId: record.id
+				extractId: record.id,
 			}));
 
 			await db.insert(attachments).values(attachmentsToInsert);
@@ -174,7 +174,7 @@ async function seedRelations() {
 				const chunk = fields.creatorIds.slice(i, i + CHUNK_SIZE);
 				const relations: (typeof extractCreators.$inferInsert)[] = chunk.map((creatorId) => ({
 					extractId: record.id,
-					creatorId
+					creatorId,
 				}));
 				await db.insert(extractCreators).values(relations);
 			}
@@ -186,7 +186,7 @@ async function seedRelations() {
 				const chunk = fields.spaceIds.slice(i, i + CHUNK_SIZE);
 				const relations: (typeof extractSpaces.$inferInsert)[] = chunk.map((spaceId) => ({
 					extractId: record.id,
-					spaceId
+					spaceId,
 				}));
 				await db.insert(extractSpaces).values(relations);
 			}
@@ -198,7 +198,7 @@ async function seedRelations() {
 				const chunk = fields.connectionIds.slice(i, i + CHUNK_SIZE);
 				const relations: (typeof extractConnections.$inferInsert)[] = chunk.map((toExtractId) => ({
 					fromExtractId: record.id,
-					toExtractId
+					toExtractId,
 				}));
 				await db.insert(extractConnections).values(relations);
 			}

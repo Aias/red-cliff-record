@@ -11,9 +11,11 @@
 		"url": "https://nicktrombley.design"
 	},
 	"scripts": {
+		"build": "pnpm --filter app build",
 		"check": "pnpm --filter app check:watch",
 		"dev": "pnpm --filter app dev",
-		"build": "pnpm --filter app build",
+		"format": "prettier --write .",
+		"lint": "prettier --check . && eslint .",
 		"generate": "pnpm --filter database generate",
 		"migrate": "pnpm --filter database migrate"
 	},

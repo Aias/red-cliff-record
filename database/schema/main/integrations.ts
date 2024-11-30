@@ -25,7 +25,7 @@ export const IntegrationType = z.enum([
 	'lightroom',
 	'raindrop',
 	'readwise',
-	'twitter'
+	'twitter',
 ]);
 
 export const integrationTypeEnum = integrationSchema.enum(
@@ -47,13 +47,13 @@ export const integrationRuns = integrationSchema.table(
 		status: integrationStatusEnum().notNull().default(IntegrationStatus.enum.in_progress),
 		message: text(),
 		runStartTime: timestamp({
-			withTimezone: true
+			withTimezone: true,
 		}).notNull(),
 		runEndTime: timestamp({
-			withTimezone: true
+			withTimezone: true,
 		}),
 		entriesCreated: integer().default(0),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [index().on(table.integrationType)]
 );
@@ -65,5 +65,5 @@ export const integrationRunsRelations = relations(integrationRuns, ({ many }) =>
 	airtableExtracts: many(extracts),
 	airtableCreators: many(creators),
 	airtableSpaces: many(spaces),
-	adobePhotographs: many(photographs)
+	adobePhotographs: many(photographs),
 }));

@@ -2,7 +2,7 @@ import {
 	S3Client,
 	PutObjectCommand,
 	HeadObjectCommand,
-	S3ServiceException
+	S3ServiceException,
 } from '@aws-sdk/client-s3';
 import fs from 'fs/promises';
 import path from 'path';
@@ -15,8 +15,8 @@ const s3Client = new S3Client({
 	endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
 	credentials: {
 		accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-		secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!
-	}
+		secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+	},
 });
 
 async function uploadAttachments() {
@@ -47,7 +47,7 @@ async function uploadAttachment(tempDir: string, filename: string) {
 			await s3Client.send(
 				new HeadObjectCommand({
 					Bucket: process.env.R2_BUCKET_NAME,
-					Key: filename
+					Key: filename,
 				})
 			);
 			console.log(`File ${filename} already exists. Skipping.`);
@@ -67,7 +67,7 @@ async function uploadAttachment(tempDir: string, filename: string) {
 			Bucket: process.env.R2_BUCKET_NAME,
 			Key: filename,
 			Body: fileContent,
-			ContentType: contentType
+			ContentType: contentType,
 		});
 
 		await s3Client.send(command);

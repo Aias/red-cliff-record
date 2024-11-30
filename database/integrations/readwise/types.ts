@@ -5,7 +5,7 @@ import { emptyStringToNull } from '@lib/schema-helpers';
 const ReadwiseTagSchema = z.object({
 	name: z.string(),
 	type: z.string(),
-	created: z.number()
+	created: z.number(),
 });
 
 export const ReadwiseArticleSchema = z.object({
@@ -32,13 +32,13 @@ export const ReadwiseArticleSchema = z.object({
 	last_moved_at: z.coerce.date(),
 	published_date: z.coerce.date().nullable(),
 	first_opened_at: z.coerce.date().nullable(),
-	last_opened_at: z.coerce.date().nullable()
+	last_opened_at: z.coerce.date().nullable(),
 });
 
 export const ReadwiseArticlesResponseSchema = z.object({
 	results: z.array(ReadwiseArticleSchema),
 	nextPageCursor: z.string().nullable(),
-	count: z.number()
+	count: z.number(),
 });
 
 export type ReadwiseArticle = z.infer<typeof ReadwiseArticleSchema>;

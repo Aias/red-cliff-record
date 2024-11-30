@@ -14,8 +14,8 @@ async function syncCollections(integrationRunId: number) {
 	console.log('📚 Fetching root collections...');
 	const rootResponse = await fetch('https://api.raindrop.io/rest/v1/collections', {
 		headers: {
-			Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`
-		}
+			Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`,
+		},
 	});
 
 	if (!rootResponse.ok) {
@@ -28,8 +28,8 @@ async function syncCollections(integrationRunId: number) {
 	console.log('👶 Fetching child collections...');
 	const childrenResponse = await fetch('https://api.raindrop.io/rest/v1/collections/childrens', {
 		headers: {
-			Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`
-		}
+			Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`,
+		},
 	});
 
 	if (!childrenResponse.ok) {
@@ -53,19 +53,19 @@ async function syncCollections(integrationRunId: number) {
 				raindropCount: collection.count,
 				createdAt: collection.created,
 				updatedAt: collection.lastUpdate,
-				integrationRunId: integrationRunId
+				integrationRunId: integrationRunId,
 			};
 
 			await db.insert(collections).values(collectionToInsert).onConflictDoUpdate({
 				target: collections.id,
-				set: collectionToInsert
+				set: collectionToInsert,
 			});
 
 			successCount++;
 		} catch (error) {
 			console.error('Error processing collection:', {
 				collection,
-				error: error instanceof Error ? error.message : String(error)
+				error: error instanceof Error ? error.message : String(error),
 			});
 		}
 	}
@@ -102,8 +102,8 @@ async function syncRaindrops(integrationRunId: number) {
 			`https://api.raindrop.io/rest/v1/raindrops/0?perpage=50&page=${page}`,
 			{
 				headers: {
-					Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`
-				}
+					Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`,
+				},
 			}
 		);
 
@@ -153,7 +153,7 @@ async function syncRaindrops(integrationRunId: number) {
 		collectionId: raindrop.collection.$id > 0 ? raindrop.collection.$id : null,
 		createdAt: raindrop.created,
 		updatedAt: raindrop.lastUpdate,
-		integrationRunId
+		integrationRunId,
 	}));
 
 	// Insert raindrops one by one
@@ -163,7 +163,7 @@ async function syncRaindrops(integrationRunId: number) {
 		try {
 			await db.insert(raindrops).values(raindrop).onConflictDoUpdate({
 				target: raindrops.id,
-				set: raindrop
+				set: raindrop,
 			});
 			successCount++;
 			if (successCount % 10 === 0) {
@@ -172,7 +172,7 @@ async function syncRaindrops(integrationRunId: number) {
 		} catch (error) {
 			console.error('Error processing raindrop:', {
 				raindrop,
-				error: error instanceof Error ? error.message : String(error)
+				error: error instanceof Error ? error.message : String(error),
 			});
 		}
 	}

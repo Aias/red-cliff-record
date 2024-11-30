@@ -11,7 +11,7 @@ async function downloadAttachments() {
 		const extractsWithAttachments = await base('extracts')
 			.select({
 				fields: ['title', 'images'],
-				filterByFormula: 'LEN(images) > 0'
+				filterByFormula: 'LEN(images) > 0',
 			})
 			.all();
 

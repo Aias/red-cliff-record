@@ -15,7 +15,7 @@ export const browsingHistory = arcSchema.table(
 	{
 		id: serial().primaryKey(),
 		viewTime: timestamp({
-			withTimezone: true
+			withTimezone: true,
 		}).notNull(),
 		browser: browserEnum().notNull().default(Browser.enum.arc),
 		hostname: text(),
@@ -29,22 +29,22 @@ export const browsingHistory = arcSchema.table(
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.viewTime),
 		index().on(table.url),
 		index().on(table.viewEpochMicroseconds),
-		index().on(table.hostname)
+		index().on(table.hostname),
 	]
 );
 
 export const browsingHistoryRelations = relations(browsingHistory, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [browsingHistory.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));
 
 export const browsingHistoryDaily = arcSchema.materializedView('browsing_history_daily').as((qb) =>
@@ -60,7 +60,7 @@ export const browsingHistoryDaily = arcSchema.materializedView('browsing_history
 			),
 			firstVisit: sql<Date>`MIN(${browsingHistory.viewTime})`.as('first_visit'),
 			lastVisit: sql<Date>`MAX(${browsingHistory.viewTime})`.as('last_visit'),
-			visitCount: sql<number>`COUNT(*)`.as('visit_count')
+			visitCount: sql<number>`COUNT(*)`.as('visit_count'),
 		})
 		.from(browsingHistory)
 		.groupBy(

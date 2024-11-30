@@ -15,7 +15,7 @@ function captureBookmarkRequests() {
 						responses.push({
 							url: url,
 							timestamp: new Date().toISOString(),
-							response: response
+							response: response,
 						});
 						console.log('Captured Bookmark request:', url);
 					} catch (e) {

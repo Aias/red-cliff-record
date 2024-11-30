@@ -12,7 +12,7 @@ export const dailyVisitsQuery = arcDb
 		url: urls.url,
 		pageTitle: urls.title,
 		searchTerms: contentAnnotations.searchTerms,
-		relatedSearches: contentAnnotations.relatedSearches
+		relatedSearches: contentAnnotations.relatedSearches,
 	})
 	.from(visits)
 	.orderBy(asc(visits.visitTime), asc(visits.url))

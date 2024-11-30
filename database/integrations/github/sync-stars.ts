@@ -25,7 +25,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 	console.log(`Date of last starred repository: ${lastKnownDate?.toISOString() ?? 'Never'}`);
 
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN
+		auth: process.env.GITHUB_TOKEN,
 	});
 
 	const starsToInsert: (typeof starsTable.$inferInsert)[] = [];
@@ -39,8 +39,8 @@ async function syncStars(integrationRunId: number): Promise<number> {
 			per_page: 100,
 			page: page,
 			headers: {
-				accept: REQUEST_ACCEPT_HEADER
-			}
+				accept: REQUEST_ACCEPT_HEADER,
+			},
 		});
 
 		const parsedResponse = GithubStarredReposResponseSchema.parse(response);
@@ -85,7 +85,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 				language: repo.language,
 				topics: repo.topics,
 				starredAt: starred_at,
-				integrationRunId
+				integrationRunId,
 			});
 		}
 

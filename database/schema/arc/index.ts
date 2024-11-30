@@ -5,13 +5,13 @@ import {
 	integer,
 	text,
 	blob,
-	primaryKey
+	primaryKey,
 } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 export const meta = sqliteTable('meta', {
 	key: numeric().primaryKey().notNull(),
-	value: numeric()
+	value: numeric(),
 });
 
 export const urls = sqliteTable(
@@ -23,11 +23,11 @@ export const urls = sqliteTable(
 		visitCount: integer('visit_count').default(0).notNull(),
 		typedCount: integer('typed_count').default(0).notNull(),
 		lastVisitTime: integer('last_visit_time').notNull(),
-		hidden: integer().default(0).notNull()
+		hidden: integer().default(0).notNull(),
 	},
 	(table) => {
 		return {
-			urlIdx: index('urls_url_index').on(table.url)
+			urlIdx: index('urls_url_index').on(table.url),
 		};
 	}
 );
@@ -58,21 +58,21 @@ export const visits = sqliteTable(
 			.default(sql`(FALSE)`)
 			.notNull(),
 		visitedLinkId: integer('visited_link_id').default(0).notNull(),
-		appId: text('app_id')
+		appId: text('app_id'),
 	},
 	(table) => {
 		return {
 			originatorIdIdx: index('visits_originator_id_index').on(table.originatorVisitId),
 			timeIdx: index('visits_time_index').on(table.visitTime),
 			fromIdx: index('visits_from_index').on(table.fromVisit),
-			urlIdx: index('visits_url_index').on(table.url)
+			urlIdx: index('visits_url_index').on(table.url),
 		};
 	}
 );
 
 export const visitSource = sqliteTable('visit_source', {
 	id: integer().primaryKey(),
-	source: integer().notNull()
+	source: integer().notNull(),
 });
 
 export const keywordSearchTerms = sqliteTable(
@@ -81,13 +81,13 @@ export const keywordSearchTerms = sqliteTable(
 		keywordId: integer('keyword_id').notNull(),
 		urlId: integer('url_id').notNull(),
 		term: numeric().notNull(),
-		normalizedTerm: numeric('normalized_term').notNull()
+		normalizedTerm: numeric('normalized_term').notNull(),
 	},
 	(table) => {
 		return {
 			index3: index('keyword_search_terms_index3').on(table.term),
 			index2: index('keyword_search_terms_index2').on(table.urlId),
-			index1: index('keyword_search_terms_index1').on(table.keywordId, table.normalizedTerm)
+			index1: index('keyword_search_terms_index1').on(table.keywordId, table.normalizedTerm),
 		};
 	}
 );
@@ -120,7 +120,7 @@ export const downloads = sqliteTable('downloads', {
 	etag: text().notNull(),
 	lastModified: text('last_modified').notNull(),
 	mimeType: text('mime_type', { length: 255 }).notNull(),
-	originalMimeType: text('original_mime_type', { length: 255 }).notNull()
+	originalMimeType: text('original_mime_type', { length: 255 }).notNull(),
 });
 
 export const downloadsUrlChains = sqliteTable(
@@ -128,14 +128,14 @@ export const downloadsUrlChains = sqliteTable(
 	{
 		id: integer().notNull(),
 		chainIndex: integer('chain_index').notNull(),
-		url: numeric().notNull()
+		url: numeric().notNull(),
 	},
 	(table) => {
 		return {
 			pk0: primaryKey({
 				columns: [table.id, table.chainIndex],
-				name: 'downloads_url_chains_id_chain_index_pk'
-			})
+				name: 'downloads_url_chains_id_chain_index_pk',
+			}),
 		};
 	}
 );
@@ -146,14 +146,14 @@ export const downloadsSlices = sqliteTable(
 		downloadId: integer('download_id').notNull(),
 		offset: integer().notNull(),
 		receivedBytes: integer('received_bytes').notNull(),
-		finished: integer().default(0).notNull()
+		finished: integer().default(0).notNull(),
 	},
 	(table) => {
 		return {
 			pk0: primaryKey({
 				columns: [table.downloadId, table.offset],
-				name: 'downloads_slices_download_id_offset_pk'
-			})
+				name: 'downloads_slices_download_id_offset_pk',
+			}),
 		};
 	}
 );
@@ -163,12 +163,12 @@ export const segments = sqliteTable(
 	{
 		id: integer().primaryKey(),
 		name: text(),
-		urlId: integer('url_id')
+		urlId: integer('url_id'),
 	},
 	(table) => {
 		return {
 			urlId: index('segments_url_id').on(table.urlId),
-			name: index('segments_name').on(table.name)
+			name: index('segments_name').on(table.name),
 		};
 	}
 );
@@ -179,7 +179,7 @@ export const segmentUsage = sqliteTable(
 		id: integer().primaryKey(),
 		segmentId: integer('segment_id').notNull(),
 		timeSlot: integer('time_slot').notNull(),
-		visitCount: integer('visit_count').default(0).notNull()
+		visitCount: integer('visit_count').default(0).notNull(),
 	},
 	(table) => {
 		return {
@@ -187,7 +187,7 @@ export const segmentUsage = sqliteTable(
 			timeSlotSegmentId: index('segment_usage_time_slot_segment_id').on(
 				table.timeSlot,
 				table.segmentId
-			)
+			),
 		};
 	}
 );
@@ -206,7 +206,7 @@ export const contentAnnotations = sqliteTable('content_annotations', {
 	alternativeTitle: text('alternative_title'),
 	pageLanguage: text('page_language'),
 	passwordState: integer('password_state').default(0).notNull(),
-	hasUrlKeyedImage: numeric('has_url_keyed_image').notNull()
+	hasUrlKeyedImage: numeric('has_url_keyed_image').notNull(),
 });
 
 export const contextAnnotations = sqliteTable('context_annotations', {
@@ -221,7 +221,7 @@ export const contextAnnotations = sqliteTable('context_annotations', {
 	taskId: integer('task_id').default(-1).notNull(),
 	rootTaskId: integer('root_task_id').default(-1).notNull(),
 	parentTaskId: integer('parent_task_id').default(-1).notNull(),
-	responseCode: integer('response_code').default(0).notNull()
+	responseCode: integer('response_code').default(0).notNull(),
 });
 
 export const clusters = sqliteTable('clusters', {
@@ -231,7 +231,7 @@ export const clusters = sqliteTable('clusters', {
 	rawLabel: text('raw_label').notNull(),
 	triggerabilityCalculated: numeric('triggerability_calculated').notNull(),
 	originatorCacheGuid: text('originator_cache_guid').notNull(),
-	originatorClusterId: integer('originator_cluster_id').notNull()
+	originatorClusterId: integer('originator_cluster_id').notNull(),
 });
 
 export const clustersAndVisits = sqliteTable(
@@ -244,15 +244,15 @@ export const clustersAndVisits = sqliteTable(
 		urlForDeduping: numeric('url_for_deduping').notNull(),
 		normalizedUrl: numeric('normalized_url').notNull(),
 		urlForDisplay: numeric('url_for_display').notNull(),
-		interactionState: integer('interaction_state').default(0).notNull()
+		interactionState: integer('interaction_state').default(0).notNull(),
 	},
 	(table) => {
 		return {
 			clustersForVisit: index('clusters_for_visit').on(table.visitId),
 			pk0: primaryKey({
 				columns: [table.clusterId, table.visitId],
-				name: 'clusters_and_visits_cluster_id_visit_id_pk'
-			})
+				name: 'clusters_and_visits_cluster_id_visit_id_pk',
+			}),
 		};
 	}
 );
@@ -264,11 +264,11 @@ export const clusterKeywords = sqliteTable(
 		keyword: text().notNull(),
 		type: integer().notNull(),
 		score: numeric().notNull(),
-		collections: text().notNull()
+		collections: text().notNull(),
 	},
 	(table) => {
 		return {
-			clusterIdIdx: index('cluster_keywords_cluster_id_index').on(table.clusterId)
+			clusterIdIdx: index('cluster_keywords_cluster_id_index').on(table.clusterId),
 		};
 	}
 );
@@ -277,14 +277,14 @@ export const clusterVisitDuplicates = sqliteTable(
 	'cluster_visit_duplicates',
 	{
 		visitId: integer('visit_id').notNull(),
-		duplicateVisitId: integer('duplicate_visit_id').notNull()
+		duplicateVisitId: integer('duplicate_visit_id').notNull(),
 	},
 	(table) => {
 		return {
 			pk0: primaryKey({
 				columns: [table.visitId, table.duplicateVisitId],
-				name: 'cluster_visit_duplicates_visit_id_duplicate_visit_id_pk'
-			})
+				name: 'cluster_visit_duplicates_visit_id_duplicate_visit_id_pk',
+			}),
 		};
 	}
 );
@@ -296,16 +296,16 @@ export const visitedLinks = sqliteTable(
 		linkUrlId: integer('link_url_id').notNull(),
 		topLevelUrl: numeric('top_level_url').notNull(),
 		frameUrl: numeric('frame_url').notNull(),
-		visitCount: integer('visit_count').default(0).notNull()
+		visitCount: integer('visit_count').default(0).notNull(),
 	},
 	(table) => {
 		return {
-			index: index('visited_links_index').on(table.linkUrlId, table.topLevelUrl, table.frameUrl)
+			index: index('visited_links_index').on(table.linkUrlId, table.topLevelUrl, table.frameUrl),
 		};
 	}
 );
 
 export const historySyncMetadata = sqliteTable('history_sync_metadata', {
 	storageKey: integer('storage_key').primaryKey().notNull(),
-	value: blob()
+	value: blob(),
 });

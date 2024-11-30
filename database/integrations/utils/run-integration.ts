@@ -3,7 +3,7 @@ import {
 	integrationRuns,
 	IntegrationType,
 	IntegrationStatus,
-	RunType
+	RunType,
 } from '@schema/main/integrations';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -24,7 +24,7 @@ export async function runIntegration(
 		.values({
 			integrationType,
 			runType,
-			runStartTime: new Date()
+			runStartTime: new Date(),
 		})
 		.returning();
 
@@ -45,7 +45,7 @@ export async function runIntegration(
 			.set({
 				status: IntegrationStatus.enum.success,
 				runEndTime: new Date(),
-				entriesCreated
+				entriesCreated,
 			})
 			.where(eq(integrationRuns.id, run[0].id));
 		console.log('Integration run completed successfully');
@@ -56,7 +56,7 @@ export async function runIntegration(
 			.set({
 				status: IntegrationStatus.enum.fail,
 				runEndTime: new Date(),
-				message: err instanceof Error ? err.message : String(err)
+				message: err instanceof Error ? err.message : String(err),
 			})
 			.where(eq(integrationRuns.id, run[0].id));
 		throw err;

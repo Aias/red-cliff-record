@@ -6,7 +6,7 @@ import {
 	integer,
 	numeric,
 	foreignKey,
-	date
+	date,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { timestamps } from '../common/timestamps';
@@ -28,7 +28,7 @@ export const ReadwiseCategory = z.enum([
 	'pdf',
 	'epub',
 	'tweet',
-	'video'
+	'video',
 ]);
 
 export const readwiseCategoryEnum = readwiseSchema.enum('category', ReadwiseCategory.options);
@@ -55,21 +55,21 @@ export const documents = readwiseSchema.table(
 		parentId: text(),
 		readingProgress: numeric(),
 		firstOpenedAt: timestamp({
-			withTimezone: true
+			withTimezone: true,
 		}),
 		lastOpenedAt: timestamp({
-			withTimezone: true
+			withTimezone: true,
 		}),
 		savedAt: timestamp({
-			withTimezone: true
+			withTimezone: true,
 		}).notNull(),
 		lastMovedAt: timestamp({
-			withTimezone: true
+			withTimezone: true,
 		}).notNull(),
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [
 		index().on(table.integrationRunId),
@@ -78,8 +78,8 @@ export const documents = readwiseSchema.table(
 		index().on(table.parentId),
 		foreignKey({
 			columns: [table.parentId],
-			foreignColumns: [table.id]
-		})
+			foreignColumns: [table.id],
+		}),
 	]
 );
 
@@ -87,13 +87,13 @@ export const documentsRelations = relations(documents, ({ one, many }) => ({
 	parent: one(documents, {
 		fields: [documents.parentId],
 		references: [documents.id],
-		relationName: 'parentChild'
+		relationName: 'parentChild',
 	}),
 	children: many(documents, {
-		relationName: 'parentChild'
+		relationName: 'parentChild',
 	}),
 	integrationRun: one(integrationRuns, {
 		fields: [documents.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));

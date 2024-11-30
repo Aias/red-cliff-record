@@ -15,21 +15,21 @@ export const commits = githubSchema.table('commits', {
 	url: text().notNull(),
 	committer: text(),
 	commitDate: timestamp({
-		withTimezone: true
+		withTimezone: true,
 	}).notNull(),
 	integrationRunId: integer()
 		.references(() => integrationRuns.id)
 		.notNull(),
 	...stats,
-	...timestamps
+	...timestamps,
 });
 
 export const commitsRelations = relations(commits, ({ many, one }) => ({
 	commitChanges: many(commitChanges),
 	integrationRun: one(integrationRuns, {
 		fields: [commits.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));
 
 export const CommitChangeStatus = z.enum([
@@ -39,7 +39,7 @@ export const CommitChangeStatus = z.enum([
 	'renamed',
 	'copied',
 	'changed',
-	'unchanged'
+	'unchanged',
 ]);
 
 export const commitChangeStatusEnum = githubSchema.enum(
@@ -56,14 +56,14 @@ export const commitChanges = githubSchema.table('commit_changes', {
 		.references(() => commits.id)
 		.notNull(),
 	...stats,
-	...timestamps
+	...timestamps,
 });
 
 export const commitChangesRelations = relations(commitChanges, ({ one }) => ({
 	commit: one(commits, {
 		fields: [commitChanges.commitId],
-		references: [commits.id]
-	})
+		references: [commits.id],
+	}),
 }));
 
 export const stars = githubSchema.table(
@@ -80,12 +80,12 @@ export const stars = githubSchema.table(
 		language: text(),
 		topics: text().array(),
 		starredAt: timestamp({
-			withTimezone: true
+			withTimezone: true,
 		}).notNull(),
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [index().on(table.integrationRunId), index().on(table.starredAt)]
 );
@@ -93,6 +93,6 @@ export const stars = githubSchema.table(
 export const starsRelations = relations(stars, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [stars.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));

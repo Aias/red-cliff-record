@@ -11,7 +11,7 @@ export const processUser = (user: User) => {
 		profile_banner_url,
 		profile_image_url_https,
 		screen_name,
-		url
+		url,
 	} = legacy;
 
 	const userExternalLink = entities?.url?.urls?.[0];
@@ -26,7 +26,7 @@ export const processUser = (user: User) => {
 		profileBannerUrl: profile_banner_url,
 		twitterUrl: url,
 		userExternalLink,
-		createdAt: created_at
+		createdAt: created_at,
 	};
 };
 
@@ -39,7 +39,7 @@ export const processTweet = (tweet: TweetData) => {
 		userId: user_id_str,
 		text: note_tweet ? note_tweet.note_tweet_results.result.text : full_text,
 		quotedTweetId: isQuoted ? undefined : quotedTweetId,
-		createdAt: created_at
+		createdAt: created_at,
 	};
 };
 
@@ -54,6 +54,6 @@ export const processMedia = (media: Media, tweet: TweetData) => {
 		type,
 		shortUrl: url,
 		mediaKey: media_key,
-		tweetId: tweet.rest_id
+		tweetId: tweet.rest_id,
 	};
 };

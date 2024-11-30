@@ -30,7 +30,7 @@ export const photographs = adobeSchema.table(
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [index().on(table.integrationRunId), index().on(table.captureDate)]
 );
@@ -38,6 +38,6 @@ export const photographs = adobeSchema.table(
 export const adobeLightroomImagesRelations = relations(photographs, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [photographs.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));

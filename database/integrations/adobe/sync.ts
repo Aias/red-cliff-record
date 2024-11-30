@@ -13,8 +13,8 @@ async function syncLightroomImages(integrationRunId: number) {
 	console.log('📷 Fetching Lightroom album data...');
 	const response = await fetch(ALBUM_URL, {
 		headers: {
-			Authorization: `Bearer ${process.env.ADOBE_API_TOKEN}`
-		}
+			Authorization: `Bearer ${process.env.ADOBE_API_TOKEN}`,
+		},
 	});
 
 	if (!response.ok) {
@@ -44,7 +44,7 @@ async function syncLightroomImages(integrationRunId: number) {
 			ratings,
 			aesthetics,
 			captureDate,
-			userUpdated
+			userUpdated,
 		} = payload;
 		const url2048 = `${baseUrl}${asset.links['/rels/rendition_type/2048'].href}`;
 		const rating = ratings?.[Object.keys(ratings)[0]]?.rating ?? 0;
@@ -69,19 +69,19 @@ async function syncLightroomImages(integrationRunId: number) {
 			location: location,
 			rating: rating,
 			autoTags: Object.keys(autoTags.tags),
-			integrationRunId: integrationRunId
+			integrationRunId: integrationRunId,
 		};
 
 		try {
 			await db.insert(photographs).values(imageToInsert).onConflictDoUpdate({
 				target: photographs.id,
-				set: imageToInsert
+				set: imageToInsert,
 			});
 			successCount++;
 		} catch (error) {
 			console.error('Error processing image:', {
 				image: imageToInsert,
-				error: error instanceof Error ? error.message : String(error)
+				error: error instanceof Error ? error.message : String(error),
 			});
 		}
 	}

@@ -25,7 +25,7 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 	let reachedExistingCommit = false;
 
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN
+		auth: process.env.GITHUB_TOKEN,
 	});
 
 	try {
@@ -44,7 +44,7 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 					sort: 'author-date',
 					order: 'desc',
 					per_page: PAGE_SIZE,
-					page
+					page,
 				});
 
 				const commitsData = await Promise.all(
@@ -61,7 +61,7 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 						const { data: commitData } = await octokit.rest.repos.getCommit({
 							owner,
 							repo,
-							ref: item.sha
+							ref: item.sha,
 						});
 
 						return {
@@ -82,9 +82,9 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 									patch:
 										patch.length > 1000
 											? `${patch.slice(0, 1000)}...<additional changes truncated>`
-											: patch
+											: patch,
 								})
-							)
+							),
 						};
 					})
 				);
@@ -120,7 +120,7 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 								integrationRunId,
 								additions: commit.stats?.additions ?? 0,
 								deletions: commit.stats?.deletions ?? 0,
-								changes: commit.stats?.total ?? 0
+								changes: commit.stats?.total ?? 0,
 							})
 							.returning();
 
@@ -134,7 +134,7 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 									commitId: commitId[0].id,
 									additions: file.additions,
 									deletions: file.deletions,
-									changes: file.changes
+									changes: file.changes,
 								})
 							);
 

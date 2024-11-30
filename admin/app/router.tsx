@@ -3,7 +3,7 @@ import { routeTree } from './routeTree.gen';
 
 export function createRouter() {
 	const router = createTanStackRouter({
-		routeTree
+		routeTree,
 	});
 
 	return router;

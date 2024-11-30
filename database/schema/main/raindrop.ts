@@ -22,25 +22,25 @@ export const raindrops = raindropSchema.table(
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.linkUrl),
 		index().on(table.createdAt),
-		unique().on(table.linkUrl, table.createdAt)
+		unique().on(table.linkUrl, table.createdAt),
 	]
 );
 
 export const raindropsRelations = relations(raindrops, ({ one }) => ({
 	collection: one(collections, {
 		fields: [raindrops.collectionId],
-		references: [collections.id]
+		references: [collections.id],
 	}),
 	integrationRun: one(integrationRuns, {
 		fields: [raindrops.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));
 
 export const collections = raindropSchema.table(
@@ -55,11 +55,11 @@ export const collections = raindropSchema.table(
 		integrationRunId: integer()
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [
 		index().on(table.parentId),
-		foreignKey({ columns: [table.parentId], foreignColumns: [table.id] })
+		foreignKey({ columns: [table.parentId], foreignColumns: [table.id] }),
 	]
 );
 
@@ -69,10 +69,10 @@ export const collectionsRelations = relations(collections, ({ one, many }) => ({
 	parent: one(collections, {
 		fields: [collections.parentId],
 		references: [collections.id],
-		relationName: 'parentCollection'
+		relationName: 'parentCollection',
 	}),
 	integrationRun: one(integrationRuns, {
 		fields: [collections.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));

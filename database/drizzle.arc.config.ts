@@ -6,6 +6,6 @@ export default defineConfig({
 	schema: './schema/arc',
 	dialect: 'sqlite',
 	dbCredentials: {
-		url: arcDbCopyPath
-	}
+		url: arcDbCopyPath,
+	},
 });

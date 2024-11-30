@@ -10,8 +10,6 @@
 		"restore": "bash scripts/restore.sh",
 		"check": "bun run tsc --noEmit",
 		"check:watch": "bun run tsc --noEmit --watch",
-		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write .",
 		"migrate": "drizzle-kit migrate",
 		"generate": "drizzle-kit generate",
 		"studio": "drizzle-kit studio",

@@ -22,26 +22,26 @@ export const extracts = airtableSchema.table(
 			.references(() => integrationRuns.id)
 			.notNull(),
 		publishedAt: timestamp({
-			withTimezone: true
+			withTimezone: true,
 		}),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [
 		foreignKey({
 			columns: [table.parentId],
-			foreignColumns: [table.id]
-		})
+			foreignColumns: [table.id],
+		}),
 	]
 );
 
 export const extractsRelations = relations(extracts, ({ many, one }) => ({
 	children: many(extracts, {
-		relationName: 'parentChild'
+		relationName: 'parentChild',
 	}),
 	parent: one(extracts, {
 		fields: [extracts.parentId],
 		references: [extracts.id],
-		relationName: 'parentChild'
+		relationName: 'parentChild',
 	}),
 	extractCreators: many(extractCreators, { relationName: 'extractToCreator' }),
 	extractSpaces: many(extractSpaces, { relationName: 'extractToSpace' }),
@@ -50,8 +50,8 @@ export const extractsRelations = relations(extracts, ({ many, one }) => ({
 	attachments: many(attachments),
 	integrationRun: one(integrationRuns, {
 		fields: [extracts.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));
 
 export const attachments = airtableSchema.table('attachments', {
@@ -65,14 +65,14 @@ export const attachments = airtableSchema.table('attachments', {
 	extractId: text()
 		.references(() => extracts.id)
 		.notNull(),
-	...timestamps
+	...timestamps,
 });
 
 export const attachmentsRelations = relations(attachments, ({ one }) => ({
 	extract: one(extracts, {
 		fields: [attachments.extractId],
-		references: [extracts.id]
-	})
+		references: [extracts.id],
+	}),
 }));
 
 export const creators = airtableSchema.table('creators', {
@@ -87,14 +87,14 @@ export const creators = airtableSchema.table('creators', {
 	integrationRunId: integer()
 		.references(() => integrationRuns.id)
 		.notNull(),
-	...timestamps
+	...timestamps,
 });
 
 export const creatorsRelations = relations(creators, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [creators.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));
 
 export const spaces = airtableSchema.table('spaces', {
@@ -106,14 +106,14 @@ export const spaces = airtableSchema.table('spaces', {
 	integrationRunId: integer()
 		.references(() => integrationRuns.id)
 		.notNull(),
-	...timestamps
+	...timestamps,
 });
 
 export const spacesRelations = relations(spaces, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [spaces.integrationRunId],
-		references: [integrationRuns.id]
-	})
+		references: [integrationRuns.id],
+	}),
 }));
 
 export const extractCreators = airtableSchema.table(
@@ -125,7 +125,7 @@ export const extractCreators = airtableSchema.table(
 		creatorId: text()
 			.references(() => creators.id)
 			.notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [primaryKey({ columns: [table.extractId, table.creatorId] })]
 );
@@ -134,13 +134,13 @@ export const extractCreatorsRelations = relations(extractCreators, ({ one }) => 
 	extract: one(extracts, {
 		fields: [extractCreators.extractId],
 		references: [extracts.id],
-		relationName: 'extractToCreator'
+		relationName: 'extractToCreator',
 	}),
 	creator: one(creators, {
 		fields: [extractCreators.creatorId],
 		references: [creators.id],
-		relationName: 'creatorToExtract'
-	})
+		relationName: 'creatorToExtract',
+	}),
 }));
 
 export const extractSpaces = airtableSchema.table(
@@ -152,7 +152,7 @@ export const extractSpaces = airtableSchema.table(
 		spaceId: text()
 			.references(() => spaces.id)
 			.notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [primaryKey({ columns: [table.extractId, table.spaceId] })]
 );
@@ -161,13 +161,13 @@ export const extractSpacesRelations = relations(extractSpaces, ({ one }) => ({
 	extract: one(extracts, {
 		fields: [extractSpaces.extractId],
 		references: [extracts.id],
-		relationName: 'extractToSpace'
+		relationName: 'extractToSpace',
 	}),
 	space: one(spaces, {
 		fields: [extractSpaces.spaceId],
 		references: [spaces.id],
-		relationName: 'spaceToExtract'
-	})
+		relationName: 'spaceToExtract',
+	}),
 }));
 
 export const extractConnections = airtableSchema.table(
@@ -179,7 +179,7 @@ export const extractConnections = airtableSchema.table(
 		toExtractId: text()
 			.references(() => extracts.id)
 			.notNull(),
-		...timestamps
+		...timestamps,
 	},
 	(table) => [primaryKey({ columns: [table.fromExtractId, table.toExtractId] })]
 );
@@ -188,11 +188,11 @@ export const extractConnectionsRelations = relations(extractConnections, ({ one 
 	fromExtract: one(extracts, {
 		relationName: 'fromExtract',
 		fields: [extractConnections.fromExtractId],
-		references: [extracts.id]
+		references: [extracts.id],
 	}),
 	toExtract: one(extracts, {
 		relationName: 'toExtract',
 		fields: [extractConnections.toExtractId],
-		references: [extracts.id]
-	})
+		references: [extracts.id],
+	}),
 }));

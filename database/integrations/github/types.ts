@@ -6,7 +6,7 @@ const GithubLicenseSchema = z.object({
 	name: z.string(),
 	spdx_id: z.string(),
 	url: z.string().url().nullable(),
-	node_id: z.string()
+	node_id: z.string(),
 });
 
 const GithubOwnerSchema = z.object({
@@ -15,7 +15,7 @@ const GithubOwnerSchema = z.object({
 	node_id: z.string(),
 	avatar_url: z.string().url(),
 	html_url: z.string().url(),
-	type: z.enum(['User', 'Organization'])
+	type: z.enum(['User', 'Organization']),
 });
 
 const GithubRepositoryDetailsSchema = z.object({
@@ -42,16 +42,16 @@ const GithubRepositoryDetailsSchema = z.object({
 	topics: z.array(z.string()),
 	private: z.boolean(),
 	owner: GithubOwnerSchema,
-	license: GithubLicenseSchema.nullable()
+	license: GithubLicenseSchema.nullable(),
 });
 
 const GithubStarredRepoSchema = z.object({
 	starred_at: z.coerce.date(),
-	repo: GithubRepositoryDetailsSchema
+	repo: GithubRepositoryDetailsSchema,
 });
 
 export const GithubStarredReposResponseSchema = z.object({
-	data: z.array(GithubStarredRepoSchema)
+	data: z.array(GithubStarredRepoSchema),
 });
 
 export type StarredRepo = z.infer<typeof GithubStarredRepoSchema>;

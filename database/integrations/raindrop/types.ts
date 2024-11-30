@@ -3,24 +3,24 @@ import { emptyStringToNull } from '@lib/schema-helpers';
 
 const RaindropRefSchema = z.object({
 	$ref: z.string(),
-	$id: z.number().int()
+	$id: z.number().int(),
 });
 
 const RaindropMediaSchema = z.object({
 	link: z.string().url(),
-	type: z.string()
+	type: z.string(),
 });
 
 const RaindropCollectionRefSchema = z.object({
 	$ref: z.string(),
 	$id: z.number().int(),
-	oid: z.number().int()
+	oid: z.number().int(),
 });
 
 const RaindropFileSchema = z.object({
 	name: z.string(),
 	size: z.number(),
-	type: z.string()
+	type: z.string(),
 });
 
 const RaindropHighlightSchema = z.object({
@@ -29,30 +29,30 @@ const RaindropHighlightSchema = z.object({
 	note: emptyStringToNull(z.string()),
 	created: z.coerce.date(),
 	lastUpdate: z.coerce.date(),
-	creatorRef: z.number().int().positive()
+	creatorRef: z.number().int().positive(),
 });
 
 const RaindropCreatorSchema = z.object({
 	_id: z.number().int().positive(),
 	avatar: z.string().url(),
 	name: z.string(),
-	email: emptyStringToNull(z.string().email())
+	email: emptyStringToNull(z.string().email()),
 });
 
 const RaindropCacheSchema = z.discriminatedUnion('status', [
 	z.object({
 		status: z.literal('ready'),
 		size: z.number().int().positive(),
-		created: z.coerce.date()
+		created: z.coerce.date(),
 	}),
 	z.object({
-		status: z.enum(['failed', 'invalid-origin'])
+		status: z.enum(['failed', 'invalid-origin']),
 	}),
 	z.object({
 		status: z.literal('retry'),
 		retries: z.number().int().positive(),
-		retryAfter: z.coerce.date()
-	})
+		retryAfter: z.coerce.date(),
+	}),
 ]);
 
 export const RaindropSchema = z.object({
@@ -78,20 +78,20 @@ export const RaindropSchema = z.object({
 	creatorRef: RaindropCreatorSchema,
 	sort: z.number().int().positive(),
 	broken: z.boolean(),
-	cache: RaindropCacheSchema.optional()
+	cache: RaindropCacheSchema.optional(),
 });
 
 export const RaindropResponseSchema = z.object({
 	items: z.array(RaindropSchema),
 	count: z.number().int().positive(),
-	result: z.boolean()
+	result: z.boolean(),
 });
 
 const RaindropCollectionAccessSchema = z.object({
 	for: z.number().int(),
 	level: z.number().int(),
 	root: z.boolean(),
-	draggable: z.boolean()
+	draggable: z.boolean(),
 });
 
 export const RaindropCollectionSchema = z.object({
@@ -110,12 +110,12 @@ export const RaindropCollectionSchema = z.object({
 	sort: z.number().int(),
 	title: z.string(),
 	user: RaindropRefSchema,
-	view: z.string()
+	view: z.string(),
 });
 
 export const CollectionsResponseSchema = z.object({
 	items: z.array(RaindropCollectionSchema),
-	result: z.boolean()
+	result: z.boolean(),
 });
 
 export type Raindrop = z.infer<typeof RaindropSchema>;

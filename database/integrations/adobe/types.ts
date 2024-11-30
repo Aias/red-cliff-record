@@ -9,7 +9,7 @@ const LightroomAssetLinksSchema = z.object({
 	'/rels/rendition_type/640': z.object({ href: z.string() }),
 	'/rels/rendition_type/thumbnail2x': z.object({ href: z.string() }),
 	'/rels/rendition_generate/fullsize': z.object({ href: z.string(), templated: z.boolean() }),
-	'/rels/profiles/camera': z.object({ filename: z.string(), href: z.string() }).optional()
+	'/rels/profiles/camera': z.object({ filename: z.string(), href: z.string() }).optional(),
 });
 
 const LightroomAssetDevelopSchema = z.object({
@@ -19,7 +19,7 @@ const LightroomAssetDevelopSchema = z.object({
 	userOrientation: z.number().optional(),
 	profiles: z
 		.object({
-			camera: z.object({ filename: z.string(), href: z.string() })
+			camera: z.object({ filename: z.string(), href: z.string() }),
 		})
 		.optional(),
 	crsHDREditMode: z.boolean().optional(),
@@ -27,7 +27,7 @@ const LightroomAssetDevelopSchema = z.object({
 	processingModel: z.string().optional(),
 	crsVersion: z.string().optional(),
 	xmpCameraRaw: z.union([z.object({ sha256: z.string() }), z.string()]).optional(),
-	userUpdated: z.string().optional()
+	userUpdated: z.string().optional(),
 });
 
 const LightroomAssetExifSchema = z.object({
@@ -48,7 +48,7 @@ const LightroomAssetExifSchema = z.object({
 	FlashFunction: z.boolean().optional(),
 	FlashRedEyeMode: z.boolean().optional(),
 	FlashReturn: z.string().optional(),
-	FlashMode: z.string().optional()
+	FlashMode: z.string().optional(),
 });
 
 const LightroomAssetXmpSchema = z.object({
@@ -56,21 +56,21 @@ const LightroomAssetXmpSchema = z.object({
 	tiff: z.object({
 		Orientation: z.string(),
 		Make: z.string(),
-		Model: z.string()
+		Model: z.string(),
 	}),
 	exif: LightroomAssetExifSchema,
 	aux: z.object({
 		SerialNumber: z.string().optional(),
 		Lens: z.string().optional(),
 		EnhanceDetailsVersion: z.string().optional(),
-		EnhanceDetailsAlreadyApplied: z.boolean().optional()
+		EnhanceDetailsAlreadyApplied: z.boolean().optional(),
 	}),
 	xmp: z.object({
 		CreatorTool: z.string().optional(),
 		CreateDate: z.string(),
-		ModifyDate: z.string()
+		ModifyDate: z.string(),
 	}),
-	photoshop: z.object({ DateCreated: z.string() })
+	photoshop: z.object({ DateCreated: z.string() }),
 });
 
 const AestheticsSchema = z.object({
@@ -87,14 +87,14 @@ const AestheticsSchema = z.object({
 	score: z.number(),
 	symmetry: z.number(),
 	version: z.number(),
-	vivid: z.number()
+	vivid: z.number(),
 });
 
 const AutoTagsSchema = z.object({
 	tags: z.record(z.number().min(0).max(100)),
 	application: z.string(),
 	version: z.number(),
-	created: z.coerce.date()
+	created: z.coerce.date(),
 });
 
 const LightroomAssetPayloadImportSourceSchema = z.object({
@@ -109,7 +109,7 @@ const LightroomAssetPayloadImportSourceSchema = z.object({
 	originalDigest: z.string().optional(),
 	importedBy: z.string(),
 	localAssetId: z.string().optional(),
-	uniqueDeviceId: z.string().optional()
+	uniqueDeviceId: z.string().optional(),
 });
 
 const LightroomAssetPayloadSchema = z.object({
@@ -123,7 +123,7 @@ const LightroomAssetPayloadSchema = z.object({
 		.record(
 			z.object({
 				rating: z.number(),
-				date: z.string().optional()
+				date: z.string().optional(),
 			})
 		)
 		.optional(),
@@ -136,7 +136,7 @@ const LightroomAssetPayloadSchema = z.object({
 			country: z.string(),
 			isoCountryCode: z.string(),
 			state: z.string(),
-			sublocation: z.array(z.string()).optional()
+			sublocation: z.array(z.string()).optional(),
 		})
 		.optional(),
 	importSource: LightroomAssetPayloadImportSourceSchema,
@@ -148,12 +148,12 @@ const LightroomAssetPayloadSchema = z.object({
 				digest: z.string(),
 				fileSize: z.number(),
 				sha256: z.string(),
-				type: z.string()
+				type: z.string(),
 			})
 		)
 		.optional(),
 	aesthetics: AestheticsSchema,
-	autoTags: AutoTagsSchema
+	autoTags: AutoTagsSchema,
 });
 
 export const LightroomAssetSchema = z.object({
@@ -164,7 +164,7 @@ export const LightroomAssetSchema = z.object({
 	updated: z.coerce.date(),
 	revision_ids: z.array(z.string()).optional(),
 	links: LightroomAssetLinksSchema,
-	payload: LightroomAssetPayloadSchema
+	payload: LightroomAssetPayloadSchema,
 });
 
 export const LightroomResourceSchema = z.object({
@@ -174,14 +174,14 @@ export const LightroomResourceSchema = z.object({
 	updated: z.string(),
 	revision_ids: z.array(z.string()),
 	links: z.object({
-		self: z.object({ href: z.string() })
+		self: z.object({ href: z.string() }),
 	}),
 	asset: LightroomAssetSchema,
 	payload: z.object({
 		order: z.string().optional(),
 		userCreated: z.coerce.date(),
-		userUpdated: z.coerce.date()
-	})
+		userUpdated: z.coerce.date(),
+	}),
 });
 
 export const LightroomJsonResponseSchema = z.object({
@@ -189,10 +189,10 @@ export const LightroomJsonResponseSchema = z.object({
 	album: z.object({
 		id: z.string(),
 		links: z.object({
-			self: z.object({ href: z.string() })
-		})
+			self: z.object({ href: z.string() }),
+		}),
 	}),
-	resources: z.array(LightroomResourceSchema)
+	resources: z.array(LightroomResourceSchema),
 });
 
 export type LightroomJsonResponse = z.infer<typeof LightroomJsonResponseSchema>;
