@@ -10,8 +10,8 @@ const arcHistoryPath = 'Library/Application Support/Arc/User Data/Default/Histor
 export const arcDbPath = join(homedir(), arcHistoryPath);
 export const arcDbCopyPath = join(homedir(), `${arcHistoryPath}-copy`);
 
-export default function createArcConnection() {
+export const createArcConnection = () => {
 	copyFileSync(arcDbPath, arcDbCopyPath);
 	const sqlite = new Database(arcDbCopyPath, { readonly: true });
 	return drizzle(sqlite);
-}
+};

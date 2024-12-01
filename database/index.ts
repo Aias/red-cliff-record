@@ -1,4 +1,4 @@
-export { createPgConnection as createConnection } from './schema/connections';
+export { createPgConnection as createConnection } from './schema/connections/pgConnection';
 
 export * from './schema/main/adobe';
 export * from './schema/main/airtable';

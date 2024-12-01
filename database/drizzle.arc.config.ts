@@ -1,5 +1,5 @@
 import { defineConfig } from 'drizzle-kit';
-import { arcDbCopyPath } from './schema/constants';
+import { arcDbCopyPath } from './schema/connections';
 
 export default defineConfig({
 	out: './migrations/arc',
