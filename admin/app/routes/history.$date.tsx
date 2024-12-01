@@ -11,9 +11,9 @@ const fetchHistoryForDate = createServerFn({ method: 'GET' })
 			.select()
 			.from(browsingHistoryDaily)
 			.where(eq(sql`DATE(${browsingHistoryDaily.date})`, date))
-			.orderBy(browsingHistoryDaily.totalDuration);
+			.orderBy(browsingHistoryDaily.url);
 
-		return { history };
+		return { response: history };
 	});
 
 export const Route = createFileRoute('/history/$date')({
@@ -22,7 +22,12 @@ export const Route = createFileRoute('/history/$date')({
 });
 
 function DailyActivityPage() {
-	const { history } = Route.useLoaderData();
+	const { response } = Route.useLoaderData();
+	const history = response.map((entry) => ({
+		...entry,
+		durationMinutes: entry.totalDuration / 60,
+		url: new URL(entry.url),
+	}));
 
 	return (
 		<div className="container mx-auto p-4">
@@ -40,25 +45,27 @@ function DailyActivityPage() {
 						</tr>
 					</thead>
 					<tbody>
-						{history.map((entry) => (
-							<tr key={entry.url} className="border-t border-gray-300">
-								<td className="px-4 py-2">
-									<a
-										href={entry.url}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="text-blue-600 hover:underline"
-									>
-										{new URL(entry.url).href}
-									</a>
-								</td>
-								<td className="px-4 py-2">{entry.pageTitle}</td>
-								<td className="px-4 py-2 text-right">{Math.round(entry.totalDuration / 60)}</td>
-								<td className="px-4 py-2 text-right">{entry.visitCount}</td>
-								<td className="px-4 py-2">{new Date(entry.firstVisit).toLocaleTimeString()}</td>
-								<td className="px-4 py-2">{new Date(entry.lastVisit).toLocaleTimeString()}</td>
-							</tr>
-						))}
+						{history.map(
+							({ pageTitle, durationMinutes, url, visitCount, firstVisit, lastVisit }) => (
+								<tr key={`${url.href}-${pageTitle}`} className="border-t border-gray-300">
+									<td className="px-4 py-2">
+										<a
+											href={url.href}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-blue-600 hover:underline"
+										>
+											{`${url.hostname}${url.pathname}${url.hash}`}
+										</a>
+									</td>
+									<td className="px-4 py-2">{pageTitle}</td>
+									<td className="px-4 py-2 text-right">{Math.round(durationMinutes / 60)}</td>
+									<td className="px-4 py-2 text-right">{visitCount}</td>
+									<td className="px-4 py-2">{new Date(firstVisit).toLocaleTimeString()}</td>
+									<td className="px-4 py-2">{new Date(lastVisit).toLocaleTimeString()}</td>
+								</tr>
+							)
+						)}
 					</tbody>
 				</table>
 			</div>
