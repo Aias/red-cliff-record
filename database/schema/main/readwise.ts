@@ -9,7 +9,7 @@ import {
 	date,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { timestamps } from '../common/timestamps';
+import { timestamps } from './common';
 import { integrationRuns } from './integrations';
 import { z } from 'zod';
 

@@ -1,4 +1,4 @@
-import { timestamps } from '@schema/common/timestamps';
+import { timestamps } from './common';
 import { relations } from 'drizzle-orm';
 import { pgSchema, text, timestamp, integer, json, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from './integrations';

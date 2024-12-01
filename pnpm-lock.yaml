@@ -7,6 +7,13 @@ settings:
 importers:
 
   .:
+    dependencies:
+      drizzle-orm:
+        specifier: ^0.36.4
+        version: 0.36.4(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.12)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1)
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
     devDependencies:
       '@types/eslint':
         specifier: 9.6.1
@@ -32,6 +39,9 @@ importers:
 
   admin:
     dependencies:
+      '@rcr/database':
+        specifier: workspace:*
+        version: link:../database
       '@tanstack/react-router':
         specifier: ^1.85.0
         version: 1.85.0(@tanstack/router-generator@1.84.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -66,15 +76,9 @@ importers:
       airtable:
         specifier: ^0.12.2
         version: 0.12.2
-      drizzle-orm:
-        specifier: ^0.36.4
-        version: 0.36.4(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.12)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1)
       pg:
         specifier: ^8.13.1
         version: 8.13.1
-      zod:
-        specifier: ^3.23.8
-        version: 3.23.8
     devDependencies:
       '@aws-sdk/client-s3':
         specifier: ^3.701.0

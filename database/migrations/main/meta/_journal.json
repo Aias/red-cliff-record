@@ -316,6 +316,13 @@
       "when": 1732224057626,
       "tag": "0044_light_pretty_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1733066885379,
+      "tag": "0045_organic_salo",
+      "breakpoints": true
     }
   ]
 }

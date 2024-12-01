@@ -1,9 +1,14 @@
-import { stats } from '@schema/common/stats';
-import { timestamps } from '@schema/common/timestamps';
+import { timestamps } from './common';
 import { relations } from 'drizzle-orm';
 import { pgSchema, serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from './integrations';
 import { z } from 'zod';
+
+export const stats = {
+	changes: integer(),
+	additions: integer(),
+	deletions: integer(),
+};
 
 export const githubSchema = pgSchema('github');
 

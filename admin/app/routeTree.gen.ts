@@ -12,12 +12,19 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
+import { Route as HistoryDateImport } from './routes/history.$date'
 
 // Create/Update Routes
 
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const HistoryDateRoute = HistoryDateImport.update({
+  id: '/history/$date',
+  path: '/history/$date',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -32,6 +39,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/history/$date': {
+      id: '/history/$date'
+      path: '/history/$date'
+      fullPath: '/history/$date'
+      preLoaderRoute: typeof HistoryDateImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -39,32 +53,37 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/history/$date': typeof HistoryDateRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/history/$date': typeof HistoryDateRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/history/$date': typeof HistoryDateRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/history/$date'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/history/$date'
+  id: '__root__' | '/' | '/history/$date'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HistoryDateRoute: typeof HistoryDateRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HistoryDateRoute: HistoryDateRoute,
 }
 
 export const routeTree = rootRoute
@@ -77,11 +96,15 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/"
+        "/",
+        "/history/$date"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/history/$date": {
+      "filePath": "history.$date.tsx"
     }
   }
 }

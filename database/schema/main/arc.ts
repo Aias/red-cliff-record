@@ -1,4 +1,4 @@
-import { timestamps } from '@schema/common/timestamps';
+import { timestamps } from './common';
 import { relations, sql } from 'drizzle-orm';
 import { pgSchema, serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from './integrations';
@@ -53,8 +53,8 @@ export const browsingHistoryDaily = arcSchema.materializedView('browsing_history
 			date: sql<Date>`DATE(${browsingHistory.viewTime} AT TIME ZONE CURRENT_SETTING('timezone'))`.as(
 				'date'
 			),
-			url: browsingHistory.url,
-			pageTitle: browsingHistory.pageTitle,
+			url: sql<string>`${browsingHistory.url}`.as('url'),
+			pageTitle: sql<string>`${browsingHistory.pageTitle}`.as('page_title'),
 			totalDuration: sql<number>`SUM(COALESCE(${browsingHistory.viewDuration}, 0))`.as(
 				'total_duration'
 			),

@@ -1,7 +1,7 @@
 import { pgSchema, text, timestamp, integer, index, unique, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { integrationRuns } from './integrations';
-import { timestamps } from '@schema/common/timestamps';
+import { timestamps } from './common';
 
 export const twitterSchema = pgSchema('twitter');
 

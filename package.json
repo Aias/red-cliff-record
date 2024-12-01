@@ -10,14 +10,14 @@
 		"email": "trombley.nick@gmail.com",
 		"url": "https://nicktrombley.design"
 	},
+	"type": "module",
 	"scripts": {
-		"build": "pnpm --filter app build",
-		"check": "pnpm --filter app check:watch",
-		"dev": "pnpm --filter app dev",
 		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint .",
-		"generate": "pnpm --filter database generate",
-		"migrate": "pnpm --filter database migrate"
+		"lint": "prettier --check . && eslint ."
+	},
+	"dependencies": {
+		"drizzle-orm": "^0.36.4",
+		"zod": "^3.23.8"
 	},
 	"devDependencies": {
 		"@types/eslint": "9.6.1",

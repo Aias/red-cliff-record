@@ -1,6 +1,6 @@
 import { pgSchema, integer, text, index, boolean, unique, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { timestamps } from '../common/timestamps';
+import { timestamps } from './common';
 import { integrationRuns } from './integrations';
 
 export const raindropSchema = pgSchema('raindrop');
