@@ -2,6 +2,7 @@ import { createConnection, browsingHistoryDaily } from '@rcr/database';
 import { eq, sql } from 'drizzle-orm';
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
+import { Container, Heading, Table, Link as RadixLink } from '@radix-ui/themes';
 
 const fetchHistoryForDate = createServerFn({ method: 'GET' })
 	.validator((data: string) => data)
@@ -23,6 +24,7 @@ export const Route = createFileRoute('/history/$date')({
 
 function DailyActivityPage() {
 	const { response } = Route.useLoaderData();
+	const { date } = Route.useParams();
 	const history = response.map((entry) => ({
 		...entry,
 		durationMinutes: entry.totalDuration / 60,
@@ -30,45 +32,48 @@ function DailyActivityPage() {
 	}));
 
 	return (
-		<div className="container mx-auto p-4">
-			<h1 className="text-2xl font-bold mb-4">Browser History</h1>
-			<div className="overflow-x-auto">
-				<table className="min-w-full bg-white border border-gray-300">
-					<thead>
-						<tr className="bg-gray-100">
-							<th className="px-4 py-2 text-left">URL</th>
-							<th className="px-4 py-2 text-left">Page Title</th>
-							<th className="px-4 py-2 text-right">Time on Page (mins)</th>
-							<th className="px-4 py-2 text-right">Visit Count</th>
-							<th className="px-4 py-2 text-left">First Visit</th>
-							<th className="px-4 py-2 text-left">Last Visit</th>
-						</tr>
-					</thead>
-					<tbody>
-						{history.map(
-							({ pageTitle, durationMinutes, url, visitCount, firstVisit, lastVisit }) => (
-								<tr key={`${url.href}-${pageTitle}`} className="border-t border-gray-300">
-									<td className="px-4 py-2">
-										<a
-											href={url.href}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-blue-600 hover:underline"
-										>
-											{`${url.hostname}${url.pathname}`}
-										</a>
-									</td>
-									<td className="px-4 py-2">{pageTitle}</td>
-									<td className="px-4 py-2 text-right">{Math.round(durationMinutes / 60)}</td>
-									<td className="px-4 py-2 text-right">{visitCount}</td>
-									<td className="px-4 py-2">{new Date(firstVisit).toLocaleTimeString()}</td>
-									<td className="px-4 py-2">{new Date(lastVisit).toLocaleTimeString()}</td>
-								</tr>
-							)
-						)}
-					</tbody>
-				</table>
-			</div>
-		</div>
+		<Container p="4">
+			<Heading size="7" mb="4" as="h1">
+				{new Date(date).toLocaleDateString('en-US', {
+					weekday: 'long',
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric',
+				})}
+			</Heading>
+			<Heading size="5" mb="4" as="h2">
+				Browser History
+			</Heading>
+			<Table.Root variant="surface">
+				<Table.Header>
+					<Table.Row>
+						<Table.ColumnHeaderCell>URL</Table.ColumnHeaderCell>
+						<Table.ColumnHeaderCell>Page Title</Table.ColumnHeaderCell>
+						<Table.ColumnHeaderCell align="right">Time on Page (mins)</Table.ColumnHeaderCell>
+						<Table.ColumnHeaderCell align="right">Visit Count</Table.ColumnHeaderCell>
+						<Table.ColumnHeaderCell>First Visit</Table.ColumnHeaderCell>
+						<Table.ColumnHeaderCell>Last Visit</Table.ColumnHeaderCell>
+					</Table.Row>
+				</Table.Header>
+				<Table.Body>
+					{history.map(({ pageTitle, durationMinutes, url, visitCount, firstVisit, lastVisit }) => (
+						<Table.Row key={`${url.href}-${pageTitle}`}>
+							<Table.Cell maxWidth="400px">
+								<RadixLink asChild>
+									<a href={url.href} target="_blank" rel="noopener noreferrer">
+										{`${url.hostname}${url.pathname}`}
+									</a>
+								</RadixLink>
+							</Table.Cell>
+							<Table.Cell>{pageTitle}</Table.Cell>
+							<Table.Cell align="right">{Math.round(durationMinutes / 60)}</Table.Cell>
+							<Table.Cell align="right">{visitCount}</Table.Cell>
+							<Table.Cell>{new Date(firstVisit).toLocaleTimeString()}</Table.Cell>
+							<Table.Cell>{new Date(lastVisit).toLocaleTimeString()}</Table.Cell>
+						</Table.Row>
+					))}
+				</Table.Body>
+			</Table.Root>
+		</Container>
 	);
 }

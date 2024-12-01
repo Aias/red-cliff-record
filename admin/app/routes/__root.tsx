@@ -1,9 +1,11 @@
 import { Outlet, ScrollRestoration, createRootRoute } from '@tanstack/react-router';
 import { Meta, Scripts } from '@tanstack/start';
 import type { ReactNode } from 'react';
-import '@radix-ui/themes/styles.css';
 import { Theme } from '@radix-ui/themes';
 import { ThemeProvider } from 'next-themes';
+
+import '@radix-ui/themes/styles.css';
+import '../styles/app.css';
 
 export const Route = createRootRoute({
 	head: () => ({
