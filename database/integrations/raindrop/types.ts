@@ -105,7 +105,7 @@ export const RaindropCollectionSchema = z.object({
 	expanded: z.boolean(),
 	lastAction: z.coerce.date(),
 	lastUpdate: z.coerce.date(),
-	parent: RaindropRefSchema.optional(),
+	parent: RaindropRefSchema.optional().nullable(),
 	public: z.boolean(),
 	sort: z.number().int(),
 	title: z.string(),

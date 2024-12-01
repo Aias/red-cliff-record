@@ -81,14 +81,14 @@ async function syncRaindrops(integrationRunId: number) {
 
 	// Get the most recent raindrop date from the database
 	const latestRaindrop = await db
-		.select({ createdAt: raindrops.createdAt })
+		.select({ updatedAt: raindrops.updatedAt })
 		.from(raindrops)
 		.leftJoin(integrationRuns, eq(raindrops.integrationRunId, integrationRuns.id))
 		.where(eq(integrationRuns.integrationType, IntegrationType.enum.raindrop))
-		.orderBy(desc(raindrops.createdAt))
+		.orderBy(desc(raindrops.updatedAt))
 		.limit(1);
 
-	const lastKnownDate = latestRaindrop[0]?.createdAt;
+	const lastKnownDate = latestRaindrop[0]?.updatedAt;
 	console.log(`Last known raindrop date: ${lastKnownDate?.toISOString() ?? 'none'}`);
 
 	let newRaindrops: Raindrop[] = [];
@@ -116,13 +116,13 @@ async function syncRaindrops(integrationRunId: number) {
 
 		// Check if we've reached raindrops older than our last known date
 		const reachedExisting = parsedData.items.some(
-			(item) => lastKnownDate && new Date(item.created) <= lastKnownDate
+			(item) => lastKnownDate && new Date(item.lastUpdate) <= lastKnownDate
 		);
 
 		if (reachedExisting) {
 			// Filter out any items that are older than our last known date
 			const newItems = parsedData.items.filter(
-				(item) => !lastKnownDate || new Date(item.created) > lastKnownDate
+				(item) => !lastKnownDate || new Date(item.lastUpdate) > lastKnownDate
 			);
 			newRaindrops = [...newRaindrops, ...newItems];
 			hasMore = false;
