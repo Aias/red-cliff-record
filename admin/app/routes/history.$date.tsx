@@ -55,7 +55,7 @@ function DailyActivityPage() {
 											rel="noopener noreferrer"
 											className="text-blue-600 hover:underline"
 										>
-											{`${url.hostname}${url.pathname}${url.hash}`}
+											{`${url.hostname}${url.pathname}`}
 										</a>
 									</td>
 									<td className="px-4 py-2">{pageTitle}</td>
