@@ -40,6 +40,11 @@ export const browsingHistory = arcSchema.table(
 	]
 );
 
+export const browsingHistoryOmitList = arcSchema.table('browsing_history_omit_list', {
+	pattern: text().primaryKey().notNull(),
+	...timestamps,
+});
+
 export const browsingHistoryRelations = relations(browsingHistory, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [browsingHistory.integrationRunId],
@@ -55,6 +60,7 @@ export const browsingHistoryDaily = arcSchema.materializedView('browsing_history
 			),
 			url: sql<string>`${browsingHistory.url}`.as('url'),
 			pageTitle: sql<string>`${browsingHistory.pageTitle}`.as('page_title'),
+			hostname: sql<string>`${browsingHistory.hostname}`.as('hostname'),
 			totalDuration: sql<number>`SUM(COALESCE(${browsingHistory.viewDuration}, 0))`.as(
 				'total_duration'
 			),
@@ -66,6 +72,7 @@ export const browsingHistoryDaily = arcSchema.materializedView('browsing_history
 		.groupBy(
 			sql<Date>`DATE(${browsingHistory.viewTime} AT TIME ZONE CURRENT_SETTING('timezone'))`,
 			browsingHistory.url,
-			browsingHistory.pageTitle
+			browsingHistory.pageTitle,
+			browsingHistory.hostname
 		)
 );
