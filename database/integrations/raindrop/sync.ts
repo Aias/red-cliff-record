@@ -5,6 +5,9 @@ import { runIntegration } from '@utils/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
 import { eq, desc } from 'drizzle-orm';
+import { loadEnv } from '@rcr/lib/env';
+
+loadEnv();
 
 const db = createPgConnection();
 

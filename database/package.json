@@ -25,6 +25,7 @@
 	},
 	"dependencies": {
 		"@octokit/rest": "^21.0.2",
+		"@rcr/lib": "workspace:*",
 		"airtable": "^0.12.2",
 		"pg": "^8.13.1"
 	},

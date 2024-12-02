@@ -1,7 +1,7 @@
 import Airtable, { type Attachment } from 'airtable';
 import fs from 'fs/promises';
 import path from 'path';
-import { getExtensionFromContentType } from '@lib/extensions';
+import { getExtensionFromContentType } from '@rcr/lib/extensions';
 import { base } from './queries';
 
 const BATCH_SIZE = 100;

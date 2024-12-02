@@ -45,6 +45,9 @@ importers:
       '@rcr/database':
         specifier: workspace:*
         version: link:../database
+      '@rcr/lib':
+        specifier: workspace:*
+        version: link:../lib
       '@tanstack/react-router':
         specifier: ^1.85.0
         version: 1.85.0(@tanstack/router-generator@1.84.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -79,6 +82,9 @@ importers:
       '@octokit/rest':
         specifier: ^21.0.2
         version: 21.0.2
+      '@rcr/lib':
+        specifier: workspace:*
+        version: link:../lib
       airtable:
         specifier: ^0.12.2
         version: 0.12.2
@@ -98,6 +104,12 @@ importers:
       drizzle-kit:
         specifier: ^0.28.1
         version: 0.28.1
+
+  lib:
+    dependencies:
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
 
 packages:
 

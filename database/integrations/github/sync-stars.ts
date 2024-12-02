@@ -5,6 +5,10 @@ import { runIntegration } from '@utils/run-integration';
 import { createPgConnection } from '@schema/connections';
 import { desc, like, eq } from 'drizzle-orm';
 import { GithubStarredReposResponseSchema } from './types';
+import { loadEnv } from '@rcr/lib/env';
+
+loadEnv();
+
 const db = createPgConnection();
 
 const REQUEST_ACCEPT_HEADER = 'application/vnd.github.star+json';

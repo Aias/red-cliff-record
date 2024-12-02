@@ -3,6 +3,9 @@ import { photographs } from '@schema/main/adobe';
 import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { LightroomJsonResponseSchema } from './types';
+import { loadEnv } from '@rcr/lib/env';
+
+loadEnv();
 
 const db = createPgConnection();
 

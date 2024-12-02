@@ -7,7 +7,7 @@ import { runIntegration } from '@utils/run-integration';
 import {
 	chromeEpochMicrosecondsToDatetime,
 	datetimeToChromeEpochMicroseconds,
-} from '@lib/time-helpers';
+} from '@rcr/lib/time-helpers';
 import os from 'os';
 import { visits, urls } from '@schema/arc';
 import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';

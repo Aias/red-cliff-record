@@ -1,0 +1,9 @@
+{
+	"name": "@rcr/lib",
+	"version": "1.0.0",
+	"description": "Helpers and utilities for Red Cliff Record projects.",
+	"type": "module",
+	"dependencies": {
+		"dotenv": "^16.4.5"
+	}
+}

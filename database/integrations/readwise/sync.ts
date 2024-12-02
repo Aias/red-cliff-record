@@ -6,6 +6,9 @@ import { ReadwiseArticlesResponseSchema } from './types';
 import type { ReadwiseArticle, ReadwiseArticlesResponse } from './types';
 import { desc } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { loadEnv } from '@rcr/lib/env';
+
+loadEnv();
 
 const db = createPgConnection();
 

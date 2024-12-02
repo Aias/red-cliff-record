@@ -12,7 +12,6 @@
 		"baseUrl": ".",
 		"paths": {
 			"@integrations/*": ["integrations/*"],
-			"@lib/*": ["lib/*"],
 			"@schema/*": ["schema/*"],
 			"@scripts/*": ["scripts/*"],
 			"@utils/*": ["integrations/utils/*"]

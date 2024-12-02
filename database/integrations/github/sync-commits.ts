@@ -4,6 +4,9 @@ import { commits, commitChanges, CommitChangeStatus } from '@schema/main/github'
 import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { desc, sql } from 'drizzle-orm';
+import { loadEnv } from '@rcr/lib/env';
+
+loadEnv();
 
 const db = createPgConnection();
 
