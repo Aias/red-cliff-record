@@ -1,8 +1,9 @@
-import { createConnection, browsingHistoryDaily } from '@rcr/database';
-import { eq, sql } from 'drizzle-orm';
-import { createFileRoute } from '@tanstack/react-router';
+import { createConnection, browsingHistoryDaily, browsingHistoryOmitList } from '@rcr/database';
+import { eq, sql, not, exists } from 'drizzle-orm';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
-import { Container, Heading, Table, Text, Link as RadixLink } from '@radix-ui/themes';
+import { Container, Heading, Table, Text, Link as RadixLink, Button, Flex } from '@radix-ui/themes';
+import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
 const fetchHistoryForDate = createServerFn({ method: 'GET' })
 	.validator((data: string) => data)
@@ -11,7 +12,12 @@ const fetchHistoryForDate = createServerFn({ method: 'GET' })
 		const history = await db
 			.select()
 			.from(browsingHistoryDaily)
-			.where(eq(sql`DATE(${browsingHistoryDaily.date})`, date))
+			.where(
+				sql`DATE(${browsingHistoryDaily.date}) = ${date} AND NOT EXISTS (
+					SELECT 1 FROM ${browsingHistoryOmitList}
+					WHERE ${browsingHistoryDaily.url} LIKE CONCAT('%', ${browsingHistoryOmitList.pattern}, '%')
+				)`
+			)
 			.orderBy(browsingHistoryDaily.firstVisit);
 
 		return { response: history };
@@ -22,6 +28,14 @@ export const Route = createFileRoute('/history/$date')({
 	component: DailyActivityPage,
 });
 
+const formatNumber = (num: number) => new Intl.NumberFormat().format(Math.round(num));
+const formatTime = (date: Date | string) =>
+	new Date(date).toLocaleTimeString(undefined, {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: true,
+	});
+
 function DailyActivityPage() {
 	const { response } = Route.useLoaderData();
 	const { date } = Route.useParams();
@@ -31,17 +45,40 @@ function DailyActivityPage() {
 	}));
 
 	const localDate = new Date(`${date}T00:00`);
+	const prevDate = new Date(localDate);
+	prevDate.setDate(prevDate.getDate() - 1);
+	const nextDate = new Date(localDate);
+	nextDate.setDate(nextDate.getDate() + 1);
+
+	const formatDateParam = (date: Date) => date.toISOString().split('T')[0];
 
 	return (
 		<Container p="4">
-			<Heading size="7" mb="4" as="h1">
-				{localDate.toLocaleDateString('en-US', {
-					weekday: 'long',
-					year: 'numeric',
-					month: 'long',
-					day: 'numeric',
-				})}
-			</Heading>
+			<Flex justify="between" align="center" mb="4">
+				<Heading size="7" as="h1">
+					{localDate.toLocaleDateString('en-US', {
+						weekday: 'long',
+						year: 'numeric',
+						month: 'long',
+						day: 'numeric',
+					})}
+				</Heading>
+				<Flex gap="2">
+					<Link to="/history/$date" params={{ date: formatDateParam(prevDate) }}>
+						<Button variant="soft">
+							<ChevronLeftIcon />
+							Previous Day
+						</Button>
+					</Link>
+					<Link to="/history/$date" params={{ date: formatDateParam(nextDate) }}>
+						<Button variant="soft">
+							Next Day
+							<ChevronRightIcon />
+						</Button>
+					</Link>
+				</Flex>
+			</Flex>
+
 			<Heading size="5" mb="4" as="h2">
 				Browser History
 			</Heading>
@@ -74,12 +111,10 @@ function DailyActivityPage() {
 									</RadixLink>
 								</Table.Cell>
 								<Table.Cell>{pageTitle}</Table.Cell>
-								<Table.Cell align="right">{Math.round(totalDuration)}</Table.Cell>
-								<Table.Cell align="right">{visitCount}</Table.Cell>
-								<Table.Cell minWidth="100px">
-									{new Date(firstVisit).toLocaleTimeString()}
-								</Table.Cell>
-								<Table.Cell minWidth="100px">{new Date(lastVisit).toLocaleTimeString()}</Table.Cell>
+								<Table.Cell align="right">{formatNumber(totalDuration)}</Table.Cell>
+								<Table.Cell align="right">{formatNumber(visitCount)}</Table.Cell>
+								<Table.Cell minWidth="100px">{formatTime(firstVisit)}</Table.Cell>
+								<Table.Cell minWidth="100px">{formatTime(lastVisit)}</Table.Cell>
 							</Table.Row>
 						)
 					)}
