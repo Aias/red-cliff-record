@@ -11,10 +11,17 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as OmitListImport } from './routes/omit-list'
 import { Route as IndexImport } from './routes/index'
 import { Route as HistoryDateImport } from './routes/history.$date'
 
 // Create/Update Routes
+
+const OmitListRoute = OmitListImport.update({
+  id: '/omit-list',
+  path: '/omit-list',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -39,6 +46,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/omit-list': {
+      id: '/omit-list'
+      path: '/omit-list'
+      fullPath: '/omit-list'
+      preLoaderRoute: typeof OmitListImport
+      parentRoute: typeof rootRoute
+    }
     '/history/$date': {
       id: '/history/$date'
       path: '/history/$date'
@@ -53,36 +67,41 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/omit-list': typeof OmitListRoute
   '/history/$date': typeof HistoryDateRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/omit-list': typeof OmitListRoute
   '/history/$date': typeof HistoryDateRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/omit-list': typeof OmitListRoute
   '/history/$date': typeof HistoryDateRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/history/$date'
+  fullPaths: '/' | '/omit-list' | '/history/$date'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/history/$date'
-  id: '__root__' | '/' | '/history/$date'
+  to: '/' | '/omit-list' | '/history/$date'
+  id: '__root__' | '/' | '/omit-list' | '/history/$date'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OmitListRoute: typeof OmitListRoute
   HistoryDateRoute: typeof HistoryDateRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OmitListRoute: OmitListRoute,
   HistoryDateRoute: HistoryDateRoute,
 }
 
@@ -97,11 +116,15 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/omit-list",
         "/history/$date"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/omit-list": {
+      "filePath": "omit-list.tsx"
     },
     "/history/$date": {
       "filePath": "history.$date.tsx"

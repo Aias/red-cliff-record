@@ -1,46 +1,26 @@
-import * as fs from 'node:fs';
-import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { createServerFn } from '@tanstack/start';
-
-const filePath = 'count.txt';
-
-async function readCount() {
-	return parseInt(await fs.promises.readFile(filePath, 'utf-8').catch(() => '0'));
-}
-
-const getCount = createServerFn({
-	method: 'GET',
-}).handler(() => {
-	return readCount();
-});
-
-const updateCount = createServerFn({ method: 'POST' })
-	.validator((d: number) => d)
-	.handler(async ({ data }) => {
-		const count = await readCount();
-		const newCount = count + data;
-		await fs.promises.writeFile(filePath, `${newCount}`);
-		return newCount;
-	});
+import { createFileRoute } from '@tanstack/react-router';
+import { Container, Card, Heading, Link } from '@radix-ui/themes';
 
 export const Route = createFileRoute('/')({
 	component: Home,
-	loader: async () => await getCount(),
 });
 
 function Home() {
-	const router = useRouter();
-	const count = Route.useLoaderData();
-
 	return (
-		<button
-			type="button"
-			onClick={async () => {
-				await updateCount({ data: 1 });
-				router.invalidate();
-			}}
-		>
-			Add 1 to {count}?
-		</button>
+		<Container size="1" p="4">
+			<Card style={{ maxWidth: '400px', margin: '48px auto' }}>
+				<Heading size="6" mb="4" align="center">
+					Red Cliff Record Admin
+				</Heading>
+				<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+					<Link asChild>
+						<a href={`/history/${new Date().toISOString().split('T')[0]}`}>Daily History</a>
+					</Link>
+					<Link asChild>
+						<a href="/omit-list">Omit List</a>
+					</Link>
+				</div>
+			</Card>
+		</Container>
 	);
 }
