@@ -313,3 +313,69 @@ export type IndexEntry = typeof indexEntries.$inferSelect;
 export type NewIndexEntry = typeof indexEntries.$inferInsert;
 export type IndexRelation = typeof indexRelations.$inferSelect;
 export type NewIndexRelation = typeof indexRelations.$inferInsert;
+
+/* ==============================
+   MEDIA
+   ============================== */
+
+// Enums
+export const MediaType = z.enum(['image', 'video', 'audio', 'pdf']);
+export type MediaType = z.infer<typeof MediaType>;
+export const mediaTypeEnum = pgEnum('media_type', MediaType.options);
+
+export const DocumentFormat = z.enum(['html', 'markdown', 'plaintext']);
+export type DocumentFormat = z.infer<typeof DocumentFormat>;
+export const documentFormatEnum = pgEnum('document_format', DocumentFormat.options);
+
+// Tables
+export const media = pgTable(
+	'media',
+	{
+		id: serial('id').primaryKey(),
+		type: mediaTypeEnum('type').notNull(),
+		urlId: integer('url_id')
+			.references(() => urls.id)
+			.notNull(),
+		title: text('title'),
+		altText: text('alt_text'),
+		caption: text('caption'),
+		metadata: json('metadata'),
+		...timestamps,
+	},
+	(table) => [index('media_type_idx').on(table.type), index('media_url_idx').on(table.urlId)]
+);
+
+export const documents = pgTable(
+	'documents',
+	{
+		id: serial('id').primaryKey(),
+		urlId: integer('url_id').references(() => urls.id),
+		title: text('title').notNull(),
+		format: documentFormatEnum('format').notNull(),
+		content: text('content').notNull(),
+		metadata: json('metadata'),
+		...timestamps,
+	},
+	(table) => [index('document_format_idx').on(table.format)]
+);
+
+// Relations
+export const mediaRelations = relations(media, ({ one }) => ({
+	url: one(urls, {
+		fields: [media.urlId],
+		references: [urls.id],
+	}),
+}));
+
+export const documentsRelations = relations(documents, ({ one }) => ({
+	url: one(urls, {
+		fields: [documents.urlId],
+		references: [urls.id],
+	}),
+}));
+
+// Type exports
+export type Media = typeof media.$inferSelect;
+export type NewMedia = typeof media.$inferInsert;
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;
