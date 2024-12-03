@@ -330,6 +330,13 @@
       "when": 1733074026444,
       "tag": "0046_rapid_callisto",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1733248244000,
+      "tag": "0047_aspiring_doorman",
+      "breakpoints": true
     }
   ]
 }
