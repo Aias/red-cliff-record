@@ -46,11 +46,11 @@ export const CommitChangeStatus = z.enum([
 	'changed',
 	'unchanged',
 ]);
+export type CommitChangeStatus = z.infer<typeof CommitChangeStatus>;
 export const commitChangeStatusEnum = githubSchema.enum(
 	'commit_change_status',
 	CommitChangeStatus.options
 );
-export type CommitChangeStatus = z.infer<typeof CommitChangeStatus>;
 
 export const commitChanges = githubSchema.table('commit_changes', {
 	id: serial().primaryKey(),

@@ -7,8 +7,8 @@ import { z } from 'zod';
 export const arcSchema = pgSchema('arc');
 
 export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
-export const browserEnum = arcSchema.enum('browser', Browser.options);
 export type Browser = z.infer<typeof Browser>;
+export const browserEnum = arcSchema.enum('browser', Browser.options);
 
 export const browsingHistory = arcSchema.table(
 	'browsing_history',
