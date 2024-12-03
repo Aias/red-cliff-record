@@ -1,5 +1,10 @@
 import { createPgConnection } from '@schema/connections';
-import { browsingHistory, browsingHistoryDaily, Browser } from '@schema/main/arc';
+import {
+	browsingHistory,
+	browsingHistoryDaily,
+	Browser,
+	type NewBrowsingHistory,
+} from '@schema/main/arc';
 import { IntegrationType } from '@schema/main/integrations';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
 import { sanitizeString } from '@utils/sanitize';
@@ -55,7 +60,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 	const collapsedHistory = collapseSequentialVisits(rawHistory);
 	console.log(`Collapsed into ${collapsedHistory.length} entries`);
 
-	const history: (typeof browsingHistory.$inferInsert)[] = collapsedHistory.map((h) => ({
+	const history: NewBrowsingHistory[] = collapsedHistory.map((h) => ({
 		viewTime: h.viewTime ? chromeEpochMicrosecondsToDatetime(h.viewTime) : new Date(),
 		viewEpochMicroseconds: h.viewTime
 			? BigInt(h.viewTime)

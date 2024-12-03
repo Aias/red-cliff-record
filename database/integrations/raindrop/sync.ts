@@ -1,5 +1,10 @@
 import { createPgConnection } from '@schema/connections';
-import { raindrops, collections } from '@schema/main/raindrop';
+import {
+	raindrops,
+	collections,
+	type NewRaindrop,
+	type NewCollection,
+} from '@schema/main/raindrop';
 import { integrationRuns, IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
@@ -47,7 +52,7 @@ async function syncCollections(integrationRunId: number) {
 	console.log('Inserting collections to database.');
 	for (const collection of allCollections) {
 		try {
-			const collectionToInsert: typeof collections.$inferInsert = {
+			const collectionToInsert: NewCollection = {
 				id: collection._id,
 				title: collection.title,
 				parentId: collection.parent?.$id,
@@ -142,7 +147,7 @@ async function syncRaindrops(integrationRunId: number) {
 	console.log(`🎉 Found ${newRaindrops.length} new raindrops to process`);
 
 	// Convert raindrops to bookmark format
-	const raindropsToInsert: (typeof raindrops.$inferInsert)[] = newRaindrops.map((raindrop) => ({
+	const raindropsToInsert: NewRaindrop[] = newRaindrops.map((raindrop) => ({
 		id: raindrop._id,
 		linkUrl: raindrop.link,
 		title: raindrop.title,

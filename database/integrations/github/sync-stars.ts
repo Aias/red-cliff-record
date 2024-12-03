@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { stars as starsTable } from '@schema/main/github';
+import type { NewStar } from '@schema/main/github';
 import { integrationRuns, IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { createPgConnection } from '@schema/connections';
@@ -32,7 +33,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 		auth: process.env.GITHUB_TOKEN,
 	});
 
-	const starsToInsert: (typeof starsTable.$inferInsert)[] = [];
+	const starsToInsert: NewStar[] = [];
 	let page = 1;
 	let hasMore = true;
 	let skippedCount = 0;

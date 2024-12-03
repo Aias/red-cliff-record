@@ -196,3 +196,18 @@ export const extractConnectionsRelations = relations(extractConnections, ({ one 
 		references: [extracts.id],
 	}),
 }));
+
+export type Extract = typeof extracts.$inferSelect;
+export type NewExtract = typeof extracts.$inferInsert;
+export type ExtractConnection = typeof extractConnections.$inferSelect;
+export type NewExtractConnection = typeof extractConnections.$inferInsert;
+export type Creator = typeof creators.$inferSelect;
+export type NewCreator = typeof creators.$inferInsert;
+export type ExtractCreator = typeof extractCreators.$inferSelect;
+export type NewExtractCreator = typeof extractCreators.$inferInsert;
+export type Space = typeof spaces.$inferSelect;
+export type NewSpace = typeof spaces.$inferInsert;
+export type ExtractSpace = typeof extractSpaces.$inferSelect;
+export type NewExtractSpace = typeof extractSpaces.$inferInsert;
+export type Attachment = typeof attachments.$inferSelect;
+export type NewAttachment = typeof attachments.$inferInsert;

@@ -1,5 +1,6 @@
 import { createPgConnection } from '@schema/connections';
 import { photographs } from '@schema/main/adobe';
+import type { NewPhotograph } from '@schema/main/adobe';
 import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { LightroomJsonResponseSchema } from './types';
@@ -52,7 +53,7 @@ async function syncLightroomImages(integrationRunId: number) {
 		const url2048 = `${baseUrl}${asset.links['/rels/rendition_type/2048'].href}`;
 		const rating = ratings?.[Object.keys(ratings)[0]]?.rating ?? 0;
 
-		const imageToInsert: typeof photographs.$inferInsert = {
+		const imageToInsert: NewPhotograph = {
 			id: asset.id,
 			url2048,
 			links: asset.links,

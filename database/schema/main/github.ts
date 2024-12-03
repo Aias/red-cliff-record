@@ -46,11 +46,11 @@ export const CommitChangeStatus = z.enum([
 	'changed',
 	'unchanged',
 ]);
-
 export const commitChangeStatusEnum = githubSchema.enum(
 	'commit_change_status',
 	CommitChangeStatus.options
 );
+export type CommitChangeStatus = z.infer<typeof CommitChangeStatus>;
 
 export const commitChanges = githubSchema.table('commit_changes', {
 	id: serial().primaryKey(),
@@ -101,3 +101,10 @@ export const starsRelations = relations(stars, ({ one }) => ({
 		references: [integrationRuns.id],
 	}),
 }));
+
+export type Star = typeof stars.$inferSelect;
+export type NewStar = typeof stars.$inferInsert;
+export type Commit = typeof commits.$inferSelect;
+export type NewCommit = typeof commits.$inferInsert;
+export type CommitChange = typeof commitChanges.$inferSelect;
+export type NewCommitChange = typeof commitChanges.$inferInsert;

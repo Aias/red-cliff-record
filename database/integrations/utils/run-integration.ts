@@ -6,16 +6,15 @@ import {
 	RunType,
 } from '@schema/main/integrations';
 import { eq } from 'drizzle-orm';
-import { z } from 'zod';
 
 const db = createPgConnection();
 
 type IntegrationFunction = (integrationRunId: number) => Promise<number>;
 
 export async function runIntegration(
-	integrationType: z.infer<typeof IntegrationType>,
+	integrationType: IntegrationType,
 	fn: IntegrationFunction,
-	runType: z.infer<typeof RunType> = RunType.enum.sync
+	runType: RunType = RunType.enum.sync
 ): Promise<void> {
 	console.log(`Starting ${integrationType} integration run for ${runType}...`);
 

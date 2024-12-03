@@ -7,8 +7,8 @@ import { z } from 'zod';
 export const arcSchema = pgSchema('arc');
 
 export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
-
 export const browserEnum = arcSchema.enum('browser', Browser.options);
+export type Browser = z.infer<typeof Browser>;
 
 export const browsingHistory = arcSchema.table(
 	'browsing_history',
@@ -76,3 +76,8 @@ export const browsingHistoryDaily = arcSchema.materializedView('browsing_history
 			browsingHistory.hostname
 		)
 );
+
+export type BrowsingHistory = typeof browsingHistory.$inferSelect;
+export type NewBrowsingHistory = typeof browsingHistory.$inferInsert;
+export type BrowsingHistoryOmitList = typeof browsingHistoryOmitList.$inferSelect;
+export type NewBrowsingHistoryOmitList = typeof browsingHistoryOmitList.$inferInsert;

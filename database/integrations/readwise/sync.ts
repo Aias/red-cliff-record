@@ -1,5 +1,5 @@
 import { createPgConnection } from '@schema/connections';
-import { documents } from '@schema/main/readwise';
+import { documents, type NewDocument } from '@schema/main/readwise';
 import { IntegrationType } from '@schema/main/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { ReadwiseArticlesResponseSchema } from './types';
@@ -60,7 +60,7 @@ const cleanString = (str: string | null) => str?.replace(/\u00fe\u00ff/g, '').tr
 const mapReadwiseArticleToDocument = (
 	article: ReadwiseArticle,
 	integrationRunId: number
-): typeof documents.$inferInsert => ({
+): NewDocument => ({
 	id: article.id,
 	parentId: article.parent_id,
 	url: article.url,

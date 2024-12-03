@@ -11,11 +11,11 @@ import { z } from 'zod';
 export const integrationSchema = pgSchema('integrations');
 
 export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
-
 export const integrationStatusEnum = integrationSchema.enum(
 	'integration_status',
 	IntegrationStatus.options
 );
+export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
 
 export const IntegrationType = z.enum([
 	'ai_chat',
@@ -27,16 +27,15 @@ export const IntegrationType = z.enum([
 	'readwise',
 	'twitter',
 ]);
-
 export const integrationTypeEnum = integrationSchema.enum(
 	'integration_type',
 	IntegrationType.options
 );
+export type IntegrationType = z.infer<typeof IntegrationType>;
 
 export const RunType = z.enum(['seed', 'sync']);
-
 export const runTypeEnum = integrationSchema.enum('run_type', RunType.options);
-// Integration runs table
+export type RunType = z.infer<typeof RunType>;
 
 export const integrationRuns = integrationSchema.table(
 	'integration_runs',

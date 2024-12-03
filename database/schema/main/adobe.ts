@@ -41,3 +41,6 @@ export const adobeLightroomImagesRelations = relations(photographs, ({ one }) =>
 		references: [integrationRuns.id],
 	}),
 }));
+
+export type Photograph = typeof photographs.$inferSelect;
+export type NewPhotograph = typeof photographs.$inferInsert;

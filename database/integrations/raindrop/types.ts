@@ -77,7 +77,7 @@ export const RaindropSchema = z.object({
 	removed: z.boolean(),
 	creatorRef: RaindropCreatorSchema,
 	sort: z.number().int().positive(),
-	broken: z.boolean(),
+	broken: z.boolean().optional(),
 	cache: RaindropCacheSchema.optional(),
 });
 

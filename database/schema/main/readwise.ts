@@ -16,8 +16,8 @@ import { z } from 'zod';
 export const readwiseSchema = pgSchema('readwise');
 
 export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);
-
 export const readwiseLocationEnum = readwiseSchema.enum('location', ReadwiseLocation.options);
+export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;
 
 export const ReadwiseCategory = z.enum([
 	'article',
@@ -30,8 +30,8 @@ export const ReadwiseCategory = z.enum([
 	'tweet',
 	'video',
 ]);
-
 export const readwiseCategoryEnum = readwiseSchema.enum('category', ReadwiseCategory.options);
+export type ReadwiseCategory = z.infer<typeof ReadwiseCategory>;
 
 export const documents = readwiseSchema.table(
 	'documents',
@@ -97,3 +97,6 @@ export const documentsRelations = relations(documents, ({ one, many }) => ({
 		references: [integrationRuns.id],
 	}),
 }));
+
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;

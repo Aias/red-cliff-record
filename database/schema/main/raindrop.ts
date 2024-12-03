@@ -76,3 +76,8 @@ export const collectionsRelations = relations(collections, ({ one, many }) => ({
 		references: [integrationRuns.id],
 	}),
 }));
+
+export type Raindrop = typeof raindrops.$inferSelect;
+export type NewRaindrop = typeof raindrops.$inferInsert;
+export type Collection = typeof collections.$inferSelect;
+export type NewCollection = typeof collections.$inferInsert;
