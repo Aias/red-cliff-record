@@ -16,7 +16,8 @@
 		"lint": "prettier --check . && eslint ."
 	},
 	"dependencies": {
-		"drizzle-orm": "^0.36.4",
+		"drizzle-orm": "^0.37.0",
+		"openai": "^4.75.0",
 		"zod": "^3.23.8"
 	},
 	"devDependencies": {
