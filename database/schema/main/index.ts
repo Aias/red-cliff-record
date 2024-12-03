@@ -95,21 +95,30 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
 	primaryTimepoint: one(timepoints, {
 		fields: [events.timepoint],
 		references: [timepoints.id],
+		relationName: 'primaryTimepoint',
 	}),
 	secondaryTimepoint: one(timepoints, {
 		fields: [events.secondaryTimepoint],
 		references: [timepoints.id],
+		relationName: 'secondaryTimepoint',
 	}),
 	parent: one(events, {
 		fields: [events.parentEventId],
 		references: [events.id],
+		relationName: 'parentChild',
 	}),
-	children: many(events),
+	children: many(events, {
+		relationName: 'parentChild',
+	}),
 }));
 
 export const timepointsRelations = relations(timepoints, ({ many }) => ({
-	primaryEvents: many(events, { relationName: 'primaryTimepoint' }),
-	secondaryEvents: many(events, { relationName: 'secondaryTimepoint' }),
+	primaryEvents: many(events, {
+		relationName: 'primaryTimepoint',
+	}),
+	secondaryEvents: many(events, {
+		relationName: 'secondaryTimepoint',
+	}),
 }));
 
 // You can also export the full table types
