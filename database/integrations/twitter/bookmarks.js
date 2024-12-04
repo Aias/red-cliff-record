@@ -18,8 +18,8 @@ function captureBookmarkRequests() {
 							response: response,
 						});
 						console.log('Captured Bookmark request:', url);
-					} catch (e) {
-						console.log('Failed to parse response as JSON for:', url);
+					} catch (error) {
+						console.log('Failed to parse response as JSON for:', url, error);
 					}
 				});
 			}
@@ -57,6 +57,7 @@ function downloadBookmarkResponses() {
 
 // Save the function to window so you can easily rerun it after refresh
 window.captureBookmarkRequests = captureBookmarkRequests;
+window.downloadBookmarkResponses = downloadBookmarkResponses;
 
 // Run capture script immediately
 captureBookmarkRequests();

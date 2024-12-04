@@ -11,7 +11,7 @@ import {
 	SortingState,
 } from '@tanstack/react-table';
 import { useState, useRef } from 'react';
-import { eq, sql, ilike, count } from 'drizzle-orm';
+import { eq, ilike, count } from 'drizzle-orm';
 
 type OmitPattern = {
 	pattern: string;
@@ -83,8 +83,6 @@ function EditableCell({
 	onSave,
 }: {
 	value: string;
-	row: any;
-	column: any;
 	onSave: (oldValue: string, newValue: string) => void;
 }) {
 	const [isEditing, setIsEditing] = useState(false);
@@ -154,13 +152,8 @@ function OmitListPage() {
 		{
 			accessorKey: 'pattern',
 			header: 'Pattern',
-			cell: ({ getValue, row, column }) => (
-				<EditableCell
-					value={getValue() as string}
-					row={row}
-					column={column}
-					onSave={handleUpdatePattern}
-				/>
+			cell: ({ getValue }) => (
+				<EditableCell value={getValue() as string} onSave={handleUpdatePattern} />
 			),
 		},
 		{

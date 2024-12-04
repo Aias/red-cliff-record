@@ -39,12 +39,18 @@ importers:
       eslint-config-prettier:
         specifier: ^9.1.0
         version: 9.1.0(eslint@9.16.0(jiti@2.4.1))
+      globals:
+        specifier: ^15.13.0
+        version: 15.13.0
       prettier:
         specifier: ^3.4.2
         version: 3.4.2
       typescript:
         specifier: ^5.7.2
         version: 5.7.2
+      typescript-eslint:
+        specifier: ^8.17.0
+        version: 8.17.0(eslint@9.16.0(jiti@2.4.1))(typescript@5.7.2)
 
   admin:
     dependencies:
@@ -80,7 +86,7 @@ importers:
         version: 18.3.1(react@18.3.1)
       vinxi:
         specifier: ^0.4.3
-        version: 0.5.0(@libsql/client@0.14.0)(@types/node@22.10.1)(better-sqlite3@11.5.0)(drizzle-orm@0.37.0(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.13)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1))(ioredis@5.4.1)(jiti@2.4.1)(terser@5.36.0)(tsx@4.19.2)(typescript@5.7.2)
+        version: 0.4.3(@libsql/client@0.14.0)(@types/node@22.10.1)(better-sqlite3@11.5.0)(drizzle-orm@0.37.0(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.13)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1))(ioredis@5.4.1)(terser@5.36.0)(typescript@5.7.2)
     devDependencies:
       '@types/react':
         specifier: ^18.3.12
@@ -3695,6 +3701,10 @@ packages:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
 
+  globals@15.13.0:
+    resolution: {integrity: sha512-49TewVEz0UxZjr1WYYsWpPrhyC/B/pA8Bq0fUmet2n+eR7yn0IvNzNaoBwnK6mdkzcN+se7Ez9zUgULTz2QH4g==}
+    engines: {node: '>=18'}
+
   globby@14.0.2:
     resolution: {integrity: sha512-s3Fq41ZVh7vbbe2PN3nrW7yC7U7MFVc5c98/iTl9c2GawNMKx/J648KQRW6WKkuU8GIbbh2IXfIRQjOZnXcTnw==}
     engines: {node: '>=18'}
@@ -4813,6 +4823,16 @@ packages:
     resolution: {integrity: sha512-G6zXWS1dLj6eagy6sVhOMQiLtJdxQBHIA9Z6HFUNLOlr6MFOgzV8wvmidtPONfPtEUv0uZsy77XJNzTAfwPDaA==}
     engines: {node: '>=16'}
 
+  typescript-eslint@8.17.0:
+    resolution: {integrity: sha512-409VXvFd/f1br1DCbuKNFqQpXICoTB+V51afcwG1pn1a3Cp92MqAUges3YjwEdQ0cMUoCIodjVDAYzyD8h3SYA==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    peerDependencies:
+      eslint: ^8.57.0 || ^9.0.0
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   typescript@5.7.2:
     resolution: {integrity: sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg==}
     engines: {node: '>=14.17'}
@@ -4964,10 +4984,6 @@ packages:
 
   vinxi@0.4.3:
     resolution: {integrity: sha512-RgJz7RWftML5h/qfPsp3QKVc2FSlvV4+HevpE0yEY2j+PS/I2ULjoSsZDXaR8Ks2WYuFFDzQr8yrox7v8aqkng==}
-    hasBin: true
-
-  vinxi@0.5.0:
-    resolution: {integrity: sha512-uR6GuA3ik0pDoeFjBEowzvfm0SlpTQkVl3Tk95dklfW4crC76eOwEnOXow8tIevyHtRv9aJI3SmyePJrs9INXQ==}
     hasBin: true
 
   vite@5.4.11:
@@ -9039,6 +9055,8 @@ snapshots:
 
   globals@14.0.0: {}
 
+  globals@15.13.0: {}
+
   globby@14.0.2:
     dependencies:
       '@sindresorhus/merge-streams': 2.3.0
@@ -10263,6 +10281,17 @@ snapshots:
 
   type-fest@4.30.0: {}
 
+  typescript-eslint@8.17.0(eslint@9.16.0(jiti@2.4.1))(typescript@5.7.2):
+    dependencies:
+      '@typescript-eslint/eslint-plugin': 8.17.0(@typescript-eslint/parser@8.17.0(eslint@9.16.0(jiti@2.4.1))(typescript@5.7.2))(eslint@9.16.0(jiti@2.4.1))(typescript@5.7.2)
+      '@typescript-eslint/parser': 8.17.0(eslint@9.16.0(jiti@2.4.1))(typescript@5.7.2)
+      '@typescript-eslint/utils': 8.17.0(eslint@9.16.0(jiti@2.4.1))(typescript@5.7.2)
+      eslint: 9.16.0(jiti@2.4.1)
+    optionalDependencies:
+      typescript: 5.7.2
+    transitivePeerDependencies:
+      - supports-color
+
   typescript@5.7.2: {}
 
   ufo@1.5.4: {}
@@ -10470,78 +10499,6 @@ snapshots:
       - typescript
       - uWebSockets.js
       - xml2js
-
-  vinxi@0.5.0(@libsql/client@0.14.0)(@types/node@22.10.1)(better-sqlite3@11.5.0)(drizzle-orm@0.37.0(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.13)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1))(ioredis@5.4.1)(jiti@2.4.1)(terser@5.36.0)(tsx@4.19.2)(typescript@5.7.2):
-    dependencies:
-      '@babel/core': 7.26.0
-      '@babel/plugin-syntax-jsx': 7.25.9(@babel/core@7.26.0)
-      '@babel/plugin-syntax-typescript': 7.25.9(@babel/core@7.26.0)
-      '@types/micromatch': 4.0.9
-      '@vinxi/listhen': 1.5.6
-      boxen: 7.1.1
-      chokidar: 3.6.0
-      citty: 0.1.6
-      consola: 3.2.3
-      crossws: 0.3.1
-      dax-sh: 0.39.2
-      defu: 6.1.4
-      es-module-lexer: 1.5.4
-      esbuild: 0.20.2
-      fast-glob: 3.3.2
-      get-port-please: 3.1.2
-      h3: 1.13.0
-      hookable: 5.5.3
-      http-proxy: 1.18.1
-      micromatch: 4.0.8
-      nitropack: 2.10.4(@libsql/client@0.14.0)(better-sqlite3@11.5.0)(drizzle-orm@0.37.0(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.13)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1))(typescript@5.7.2)
-      node-fetch-native: 1.6.4
-      path-to-regexp: 6.3.0
-      pathe: 1.1.2
-      radix3: 1.1.2
-      resolve: 1.22.8
-      serve-placeholder: 2.0.2
-      serve-static: 1.16.2
-      ufo: 1.5.4
-      unctx: 2.3.1
-      unenv: 1.10.0
-      unstorage: 1.13.1(ioredis@5.4.1)
-      vite: 6.0.2(@types/node@22.10.1)(jiti@2.4.1)(terser@5.36.0)(tsx@4.19.2)
-      zod: 3.23.8
-    transitivePeerDependencies:
-      - '@azure/app-configuration'
-      - '@azure/cosmos'
-      - '@azure/data-tables'
-      - '@azure/identity'
-      - '@azure/keyvault-secrets'
-      - '@azure/storage-blob'
-      - '@capacitor/preferences'
-      - '@electric-sql/pglite'
-      - '@libsql/client'
-      - '@netlify/blobs'
-      - '@planetscale/database'
-      - '@types/node'
-      - '@upstash/redis'
-      - '@vercel/kv'
-      - better-sqlite3
-      - debug
-      - drizzle-orm
-      - encoding
-      - idb-keyval
-      - ioredis
-      - jiti
-      - less
-      - lightningcss
-      - mysql2
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - tsx
-      - typescript
-      - xml2js
-      - yaml
 
   vite@5.4.11(@types/node@22.10.1)(terser@5.36.0):
     dependencies:

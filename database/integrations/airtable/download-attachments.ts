@@ -60,8 +60,7 @@ async function downloadAttachment(image: Attachment) {
 		const finalFilepath = path.join(process.cwd(), '.temp', finalFilename);
 
 		const buffer = await response.arrayBuffer();
-		// @ts-ignore
-		await fs.writeFile(finalFilepath, Buffer.from(buffer));
+		await fs.writeFile(finalFilepath, new Uint8Array(buffer));
 		console.log(`Downloaded: ${finalFilename}`);
 	} catch (error) {
 		console.error(`Error downloading ${filename}:`, error);
