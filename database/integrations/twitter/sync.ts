@@ -1,7 +1,7 @@
 import {
 	tweets as tweetsTable,
-	media as mediaTable,
-	users as usersTable,
+	twitterMedia as mediaTable,
+	twitterUsers as usersTable,
 } from '@schema/main/twitter';
 import { IntegrationType } from '@schema/main/integrations';
 import { createPgConnection } from '@schema/connections';

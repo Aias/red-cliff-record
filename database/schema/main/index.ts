@@ -14,7 +14,6 @@ import {
 	index,
 	geometry,
 	customType,
-	type PgDatabase,
 } from 'drizzle-orm/pg-core';
 import { relations, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -164,7 +163,6 @@ export const pages = pgTable(
 		lastCrawlDate: timestamp('last_crawl_date', { withTimezone: true }),
 		lastSuccessfulCrawlDate: timestamp('last_successful_crawl_date', { withTimezone: true }),
 		lastHttpStatus: integer('last_http_status'),
-		isInternal: boolean('is_internal').notNull().default(false),
 		metadata: json('metadata'), // headers, meta tags, etc
 		...timestamps,
 	},
@@ -264,7 +262,6 @@ export const media = pgTable(
 		mimeType: text('mime_type').notNull(),
 		title: text('title'),
 		altText: text('alt_text'),
-		caption: text('caption'),
 		fileSize: integer('file_size'),
 		sourcePageId: integer('source_page_id').references(() => pages.id),
 		metadata: json('metadata'),
@@ -283,7 +280,7 @@ export const pageRelations = relations(pages, ({ many }) => ({
 	contents: many(pageContents),
 	outgoingLinks: many(pageLinks, { relationName: 'source' }),
 	incomingLinks: many(pageLinks, { relationName: 'target' }),
-	media: many(media, { relationName: 'sourcePage' }),
+	media: many(media, { relationName: 'pageMedia' }),
 }));
 
 export const pageContentsRelations = relations(pageContents, ({ one }) => ({
@@ -307,10 +304,10 @@ export const pageLinksRelations = relations(pageLinks, ({ one }) => ({
 }));
 
 export const mediaRelations = relations(media, ({ one }) => ({
-	sourcePage: one(pages, {
+	page: one(pages, {
 		fields: [media.sourcePageId],
 		references: [pages.id],
-		relationName: 'sourcePage',
+		relationName: 'pageMedia',
 	}),
 }));
 
@@ -330,7 +327,7 @@ export type NewMedia = typeof media.$inferInsert;
 
 export const IndexMainType = z.enum([
 	'entity', // who/what created something
-	'subject', // what something is about
+	'category ', // what something is about
 	'format', // what something is
 ]);
 export type IndexMainType = z.infer<typeof IndexMainType>;
@@ -563,3 +560,273 @@ export const locationRelations = relations(locations, ({ one, many }) => ({
 // Type exports
 export type Location = typeof locations.$inferSelect;
 export type NewLocation = typeof locations.$inferInsert;
+
+/* ==============================
+   RECORDS
+   ============================== */
+
+// Enums
+export const RecordType = z.enum([
+	'resource', // reference material, tools, techniques
+	'bookmark', // interesting but not reference material
+	'object', // physical or digital object
+	'document', // text-heavy content
+	'abstraction', // concept or idea
+	'extracted', // quote or excerpt
+]);
+export type RecordType = z.infer<typeof RecordType>;
+export const recordTypeEnum = pgEnum('record_type', RecordType.options);
+
+export const CreatorRoleType = z.enum([
+	'creator', // primary creator
+	'author', // specifically wrote/authored
+	'editor', // edited/curated
+	'contributor', // helped create/contributed to
+	'via', // found through/attributed to
+	'participant', // involved in
+	'interviewer', // conducted interview
+	'interviewee', // was interviewed
+	'subject', // topic is about this person
+	'mentioned', // referenced in content
+]);
+export type CreatorRoleType = z.infer<typeof CreatorRoleType>;
+export const creatorRoleTypeEnum = pgEnum('creator_role_type', CreatorRoleType.options);
+
+export const RecordRelationType = z.enum([
+	// Hierarchical
+	'primary_source',
+	'quoted_from',
+	'copied_from',
+	'derived_from',
+	'part_of',
+	// Non-hierarchical
+	'references',
+	'similar_to',
+	'responds_to',
+	'contradicts',
+	'supports',
+]);
+export type RecordRelationType = z.infer<typeof RecordRelationType>;
+export const recordRelationTypeEnum = pgEnum('record_relation_type', RecordRelationType.options);
+
+export const CategorizationType = z.enum([
+	'about', // meta-level subject matter
+	'file_under', // organizational category
+]);
+export type CategorizationType = z.infer<typeof CategorizationType>;
+export const categorizationTypeEnum = pgEnum('categorization_type', CategorizationType.options);
+
+// Main records table
+export const records = pgTable(
+	'records',
+	{
+		id: serial('id').primaryKey(),
+		title: text('title'),
+		content: text('content'),
+		type: recordTypeEnum('type').notNull(),
+		formatId: integer('format_id').references(() => indexEntries.id),
+		private: boolean('private').notNull().default(false),
+		flags: flagEnum('flags').array(),
+		...timestamps,
+	},
+	(table) => [
+		index('record_type_idx').on(table.type),
+		index('record_format_idx').on(table.formatId),
+	]
+);
+
+// Combined hierarchy/relations table
+export const recordRelations = pgTable(
+	'record_relations',
+	{
+		id: serial('id').primaryKey(),
+		sourceId: integer('source_id')
+			.references(() => records.id)
+			.notNull(),
+		targetId: integer('target_id')
+			.references(() => records.id)
+			.notNull(),
+		type: recordRelationTypeEnum('type').notNull(),
+		order: text('order').notNull().default('a0'),
+		notes: text('notes'),
+		...timestamps,
+	},
+	(table) => [
+		index('record_relation_source_idx').on(table.sourceId),
+		index('record_relation_target_idx').on(table.targetId),
+		unique('record_relation_unique_idx').on(table.sourceId, table.targetId, table.type),
+	]
+);
+
+// Creator relationships
+export const recordCreators = pgTable(
+	'record_creators',
+	{
+		id: serial('id').primaryKey(),
+		recordId: integer('record_id')
+			.references(() => records.id)
+			.notNull(),
+		entityId: integer('entity_id')
+			.references(() => indexEntries.id)
+			.notNull(),
+		role: creatorRoleTypeEnum('role').notNull(),
+		order: text('order').notNull().default('a0'),
+		notes: text('notes'),
+		...timestamps,
+	},
+	(table) => [
+		index('record_creator_record_idx').on(table.recordId),
+		index('record_creator_entity_idx').on(table.entityId),
+		unique('record_creator_unique_idx').on(table.recordId, table.entityId, table.role),
+	]
+);
+
+// Categorization
+export const recordCategories = pgTable(
+	'record_categories',
+	{
+		id: serial('id').primaryKey(),
+		recordId: integer('record_id')
+			.references(() => records.id)
+			.notNull(),
+		categoryId: integer('category_id')
+			.references(() => indexEntries.id)
+			.notNull(),
+		type: categorizationTypeEnum('type').notNull(),
+		primary: boolean('primary').notNull().default(false),
+		...timestamps,
+	},
+	(table) => [
+		index('record_category_record_idx').on(table.recordId),
+		index('record_category_category_idx').on(table.categoryId),
+		unique('record_category_unique_idx').on(table.recordId, table.categoryId, table.type),
+	]
+);
+
+// Media links with captions
+export const recordMedia = pgTable(
+	'record_media',
+	{
+		id: serial('id').primaryKey(),
+		recordId: integer('record_id')
+			.references(() => records.id)
+			.notNull(),
+		mediaId: integer('media_id')
+			.references(() => media.id)
+			.notNull(),
+		caption: text('caption'),
+		order: text('order').notNull().default('a0'),
+		...timestamps,
+	},
+	(table) => [
+		index('record_media_record_idx').on(table.recordId),
+		index('record_media_media_idx').on(table.mediaId),
+		unique('record_media_unique_idx').on(table.recordId, table.mediaId),
+	]
+);
+
+// Page links
+export const recordPages = pgTable(
+	'record_pages',
+	{
+		id: serial('id').primaryKey(),
+		recordId: integer('record_id')
+			.references(() => records.id)
+			.notNull(),
+		pageId: integer('page_id')
+			.references(() => pages.id)
+			.notNull(),
+		order: text('order').notNull().default('a0'),
+		...timestamps,
+	},
+	(table) => [
+		index('record_page_record_idx').on(table.recordId),
+		index('record_page_page_idx').on(table.pageId),
+		unique('record_page_unique_idx').on(table.recordId, table.pageId),
+	]
+);
+
+// Relations
+export const recordsRelations = relations(records, ({ one, many }) => ({
+	format: one(indexEntries, {
+		fields: [records.formatId],
+		references: [indexEntries.id],
+	}),
+	creators: many(recordCreators),
+	categories: many(recordCategories),
+	media: many(recordMedia),
+	pages: many(recordPages),
+	outgoingRelations: many(recordRelations, { relationName: 'source' }),
+	incomingRelations: many(recordRelations, { relationName: 'target' }),
+}));
+
+export const recordRelationsRelations = relations(recordRelations, ({ one }) => ({
+	source: one(records, {
+		fields: [recordRelations.sourceId],
+		references: [records.id],
+		relationName: 'source',
+	}),
+	target: one(records, {
+		fields: [recordRelations.targetId],
+		references: [records.id],
+		relationName: 'target',
+	}),
+}));
+
+export const recordCreatorsRelations = relations(recordCreators, ({ one }) => ({
+	record: one(records, {
+		fields: [recordCreators.recordId],
+		references: [records.id],
+	}),
+	entity: one(indexEntries, {
+		fields: [recordCreators.entityId],
+		references: [indexEntries.id],
+	}),
+}));
+
+export const recordCategoriesRelations = relations(recordCategories, ({ one }) => ({
+	record: one(records, {
+		fields: [recordCategories.recordId],
+		references: [records.id],
+	}),
+	category: one(indexEntries, {
+		fields: [recordCategories.categoryId],
+		references: [indexEntries.id],
+	}),
+}));
+
+export const recordMediaRelations = relations(recordMedia, ({ one }) => ({
+	record: one(records, {
+		fields: [recordMedia.recordId],
+		references: [records.id],
+	}),
+	media: one(media, {
+		fields: [recordMedia.mediaId],
+		references: [media.id],
+	}),
+}));
+
+export const recordPagesRelations = relations(recordPages, ({ one }) => ({
+	record: one(records, {
+		fields: [recordPages.recordId],
+		references: [records.id],
+	}),
+	page: one(pages, {
+		fields: [recordPages.pageId],
+		references: [pages.id],
+	}),
+}));
+
+// Type exports
+export type Record = typeof records.$inferSelect;
+export type NewRecord = typeof records.$inferInsert;
+export type RecordRelation = typeof recordRelations.$inferSelect;
+export type NewRecordRelation = typeof recordRelations.$inferInsert;
+export type RecordCreator = typeof recordCreators.$inferSelect;
+export type NewRecordCreator = typeof recordCreators.$inferInsert;
+export type RecordCategory = typeof recordCategories.$inferSelect;
+export type NewRecordCategory = typeof recordCategories.$inferInsert;
+export type RecordMedia = typeof recordMedia.$inferSelect;
+export type NewRecordMedia = typeof recordMedia.$inferInsert;
+export type RecordPage = typeof recordPages.$inferSelect;
+export type NewRecordPage = typeof recordPages.$inferInsert;

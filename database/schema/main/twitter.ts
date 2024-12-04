@@ -10,7 +10,7 @@ export const tweets = twitterSchema.table(
 	{
 		id: text().primaryKey(),
 		userId: text()
-			.references(() => users.id)
+			.references(() => twitterUsers.id)
 			.notNull(),
 		text: text(),
 		quotedTweetId: text(),
@@ -30,10 +30,10 @@ export const tweets = twitterSchema.table(
 );
 
 export const tweetsRelations = relations(tweets, ({ one, many }) => ({
-	media: many(media),
-	user: one(users, {
+	media: many(twitterMedia, { relationName: 'tweetMedia' }),
+	user: one(twitterUsers, {
 		fields: [tweets.userId],
-		references: [users.id],
+		references: [twitterUsers.id],
 	}),
 	quotedTweet: one(tweets, {
 		fields: [tweets.quotedTweetId],
@@ -46,7 +46,7 @@ export const tweetsRelations = relations(tweets, ({ one, many }) => ({
 	}),
 }));
 
-export const media = twitterSchema.table('media', {
+export const twitterMedia = twitterSchema.table('twitter_media', {
 	id: text().primaryKey(),
 	type: text(),
 	url: text(),
@@ -57,14 +57,15 @@ export const media = twitterSchema.table('media', {
 	...timestamps,
 });
 
-export const mediaRelations = relations(media, ({ one }) => ({
+export const twitterMediaRelations = relations(twitterMedia, ({ one }) => ({
 	tweet: one(tweets, {
-		fields: [media.tweetId],
+		fields: [twitterMedia.tweetId],
 		references: [tweets.id],
+		relationName: 'tweetMedia',
 	}),
 }));
 
-export const users = twitterSchema.table('users', {
+export const twitterUsers = twitterSchema.table('twitter_users', {
 	id: text().primaryKey(),
 	username: text(),
 	displayName: text(),
@@ -77,6 +78,6 @@ export const users = twitterSchema.table('users', {
 	...timestamps,
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const twitterUsersRelations = relations(twitterUsers, ({ many }) => ({
 	tweets: many(tweets),
 }));
