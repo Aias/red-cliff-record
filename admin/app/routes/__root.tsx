@@ -26,10 +26,15 @@ export const Route = createRootRoute({
 	notFoundComponent: () => <div>404: Page Not Found</div>,
 });
 
+// TODO: Something funky going on with the theme and flashes of unstyled content / suspense errors.
 function RootComponent() {
 	return (
 		<RootDocument>
-			<Outlet />
+			<ThemeProvider attribute="class" enableSystem>
+				<Theme accentColor="grass" radius="small" scaling="90%">
+					<Outlet />
+				</Theme>
+			</ThemeProvider>
 		</RootDocument>
 	);
 }
@@ -42,11 +47,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 				<Meta />
 			</head>
 			<body>
-				<ThemeProvider attribute="class" enableSystem>
-					<Theme accentColor="grass" radius="small" scaling="90%">
-						{children}
-					</Theme>
-				</ThemeProvider>
+				{children}
 				<ScrollRestoration />
 				<Scripts />
 			</body>
