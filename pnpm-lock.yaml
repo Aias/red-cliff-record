@@ -11,6 +11,9 @@ importers:
       drizzle-orm:
         specifier: ^0.37.0
         version: 0.37.0(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.12)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1)
+      mime-types:
+        specifier: ^2.1.35
+        version: 2.1.35
       openai:
         specifier: ^4.75.0
         version: 4.75.0(zod@3.23.8)
@@ -21,6 +24,9 @@ importers:
       '@types/eslint':
         specifier: 9.6.1
         version: 9.6.1
+      '@types/mime-types':
+        specifier: ^2.1.4
+        version: 2.1.4
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.17.0
         version: 8.17.0(@typescript-eslint/parser@8.17.0(eslint@9.16.0(jiti@2.4.1))(typescript@5.7.2))(eslint@9.16.0(jiti@2.4.1))(typescript@5.7.2)
@@ -34,8 +40,8 @@ importers:
         specifier: ^9.1.0
         version: 9.1.0(eslint@9.16.0(jiti@2.4.1))
       prettier:
-        specifier: ^3.4.1
-        version: 3.4.1
+        specifier: ^3.4.2
+        version: 3.4.2
       typescript:
         specifier: ^5.7.2
         version: 5.7.2
@@ -62,7 +68,7 @@ importers:
         version: 8.20.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/start':
         specifier: ^1.85.4
-        version: 1.85.5(@libsql/client@0.14.0)(@types/node@22.10.1)(better-sqlite3@11.5.0)(drizzle-orm@0.37.0(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.12)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1))(ioredis@5.4.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(terser@5.36.0)(typescript@5.7.2)(vite@6.0.2(@types/node@22.10.1)(jiti@2.4.1)(terser@5.36.0)(tsx@4.19.2))
+        version: 1.85.7(@libsql/client@0.14.0)(@types/node@22.10.1)(better-sqlite3@11.5.0)(drizzle-orm@0.37.0(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.12)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1))(ioredis@5.4.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(terser@5.36.0)(typescript@5.7.2)(vite@6.0.2(@types/node@22.10.1)(jiti@2.4.1)(terser@5.36.0)(tsx@4.19.2))
       next-themes:
         specifier: ^0.4.3
         version: 0.4.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -103,7 +109,7 @@ importers:
     devDependencies:
       '@aws-sdk/client-s3':
         specifier: ^3.701.0
-        version: 3.703.0
+        version: 3.705.0
       '@types/bun':
         specifier: ^1.1.14
         version: 1.1.14
@@ -149,8 +155,8 @@ packages:
   '@aws-crypto/util@5.2.0':
     resolution: {integrity: sha512-4RkU9EsI6ZpBve5fseQlGNUWKMa1RLPQ1dnjnQoe07ldfIzcsGb5hC5W0Dm7u423KWzawlrpbjXBrXCEv9zazQ==}
 
-  '@aws-sdk/client-s3@3.703.0':
-    resolution: {integrity: sha512-4TSrIamzASTeRPKXrTLcEwo+viPTuOSGcbXh4HC1R0m/rXwK0BHJ4btJ0Q34nZNF+WzvM+FiemXVjNc8qTAxog==}
+  '@aws-sdk/client-s3@3.705.0':
+    resolution: {integrity: sha512-Fm0Cbc4zr0yG0DnNycz7ywlL5tQFdLSb7xCIPfzrxJb3YQiTXWxH5eu61SSsP/Z6RBNRolmRPvst/iNgX0fWvA==}
     engines: {node: '>=16.0.0'}
 
   '@aws-sdk/client-sso-oidc@3.699.0':
@@ -2603,8 +2609,8 @@ packages:
     resolution: {integrity: sha512-/hHPYW3JShufTKW9mZcTgnGWclKfsbd7GbOgbVZgVwyKg3qNwYnc8pUMC8ycBsacG/ClDBTornEOPYygtbcnWg==}
     engines: {node: '>=12'}
 
-  '@tanstack/start@1.85.5':
-    resolution: {integrity: sha512-1i9Po3HoSeDf7cfJk4m2ODdE8uLscmjsVcvZpdxWMMaLR5Mso0mHc6hUqlJKjNRQp2TKNM1v7gZdTkiTjkGJEg==}
+  '@tanstack/start@1.85.7':
+    resolution: {integrity: sha512-kH6tEvnnodTrv2IeKZMjQXyCoBQRofLfZEBq8KWMjQlz7aGpuV0JN3ZKcwrtcZjYm/gv+TULwm+qdRKMUcfq2w==}
     engines: {node: '>=12'}
     peerDependencies:
       react: '>=18.0.0 || >=19.0.0'
@@ -2659,6 +2665,9 @@ packages:
 
   '@types/micromatch@4.0.9':
     resolution: {integrity: sha512-7V+8ncr22h4UoYRLnLXSpTxjQrNUXtWHGeMPRJt1nULXI57G9bIcpyrHlmrQ7QK24EyyuXvYcSSWAM8GA9nqCg==}
+
+  '@types/mime-types@2.1.4':
+    resolution: {integrity: sha512-lfU4b34HOri+kAY5UheuFMWPDOI+OPceBSHZKp69gEyTL/mmJ4cnU6Y/rlme3UL3GyOn6Y42hyIEw0/q8sWx5w==}
 
   '@types/node-fetch@2.6.12':
     resolution: {integrity: sha512-8nneRWKCg3rMtF69nLQJnOYUcbafYeFSjqkw3jCRLsqkWFlHaoQrr5mXmofFGOx3DKn7UfmBMyov8ySvLRVldA==}
@@ -4385,8 +4394,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  prettier@3.4.1:
-    resolution: {integrity: sha512-G+YdqtITVZmOJje6QkXQWzl3fSfMxFwm1tjTyo9exhkmWSqC4Yhd1+lug++IlR2mvRVAxEDDWYkQdeSztajqgg==}
+  prettier@3.4.2:
+    resolution: {integrity: sha512-e9MewbtFo+Fevyuxn/4rrcDAaq0IYxPGLvObpQjiZBMAzB9IGmzlnG9RZy3FFas+eBMu2vA0CszMeduow5dIuQ==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -5176,7 +5185,7 @@ snapshots:
       '@smithy/util-utf8': 2.3.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.703.0':
+  '@aws-sdk/client-s3@3.705.0':
     dependencies:
       '@aws-crypto/sha1-browser': 5.2.0
       '@aws-crypto/sha256-browser': 5.2.0
@@ -7712,7 +7721,7 @@ snapshots:
   '@tanstack/router-generator@1.85.3':
     dependencies:
       '@tanstack/virtual-file-routes': 1.81.9
-      prettier: 3.4.1
+      prettier: 3.4.2
       tsx: 4.19.2
       zod: 3.23.8
 
@@ -7762,7 +7771,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@tanstack/start@1.85.5(@libsql/client@0.14.0)(@types/node@22.10.1)(better-sqlite3@11.5.0)(drizzle-orm@0.37.0(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.12)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1))(ioredis@5.4.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(terser@5.36.0)(typescript@5.7.2)(vite@6.0.2(@types/node@22.10.1)(jiti@2.4.1)(terser@5.36.0)(tsx@4.19.2))':
+  '@tanstack/start@1.85.7(@libsql/client@0.14.0)(@types/node@22.10.1)(better-sqlite3@11.5.0)(drizzle-orm@0.37.0(@cloudflare/workers-types@4.20241022.0)(@libsql/client@0.14.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.11)(@types/pg@8.11.10)(@types/react@18.3.12)(better-sqlite3@11.5.0)(bun-types@1.1.37)(pg@8.13.1)(prisma@5.22.0)(react@18.3.1))(ioredis@5.4.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(terser@5.36.0)(typescript@5.7.2)(vite@6.0.2(@types/node@22.10.1)(jiti@2.4.1)(terser@5.36.0)(tsx@4.19.2))':
     dependencies:
       '@tanstack/react-cross-context': 1.85.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/react-router': 1.85.5(@tanstack/router-generator@1.85.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -7875,6 +7884,8 @@ snapshots:
   '@types/micromatch@4.0.9':
     dependencies:
       '@types/braces': 3.0.4
+
+  '@types/mime-types@2.1.4': {}
 
   '@types/node-fetch@2.6.12':
     dependencies:
@@ -9801,7 +9812,7 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier@3.4.1: {}
+  prettier@3.4.2: {}
 
   pretty-bytes@6.1.1: {}
 

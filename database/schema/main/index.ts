@@ -1,7 +1,7 @@
 import {
 	pgTable,
 	serial,
-	varchar,
+	text,
 	date,
 	time,
 	timestamp,
@@ -11,13 +11,13 @@ import {
 	json,
 	unique,
 	boolean,
-	text,
 	index,
 	geometry,
 	customType,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import mime from 'mime-types';
 import { timestamps } from './common';
 
 /* ==============================
@@ -77,7 +77,7 @@ export const events = pgTable(
 	'events',
 	{
 		id: serial('id').primaryKey(),
-		name: varchar('name').notNull(),
+		name: text('name').notNull(),
 		type: eventTypeEnum('type').notNull().default(EventType.enum.event),
 		timepoint: integer('timepoint')
 			.references(() => timepoints.id)
@@ -132,46 +132,65 @@ export const timepointsRelations = relations(timepoints, ({ many }) => ({
 	}),
 }));
 
-// You can also export the full table types
+// Type exports
 export type Timepoint = typeof timepoints.$inferSelect;
 export type NewTimepoint = typeof timepoints.$inferInsert;
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 
 /* ==============================
-   URLS
+   PAGES, LINKS, AND CONTENT
    ============================== */
 
-// Enum for reference types
-export const URLType = z.enum([
+export const PageType = z.enum([
 	'primary', // primary/starting points
 	'crawled', // discovered through crawling
 ]);
-export type URLType = z.infer<typeof URLType>;
-export const urlTypeEnum = pgEnum('url_type', URLType.options);
+export type PageType = z.infer<typeof PageType>;
+export const pageTypeEnum = pgEnum('page_type', PageType.options);
 
-// Main web references table
-export const urls = pgTable(
-	'urls',
+// Main pages table
+export const pages = pgTable(
+	'pages',
 	{
 		id: serial('id').primaryKey(),
-		url: varchar('url').notNull(),
-		title: varchar('title'),
-		type: urlTypeEnum('type').notNull().default(URLType.enum.primary),
+		url: text('url').notNull(),
+		domain: text('domain').generatedAlwaysAs(
+			(): SQL => sql`LOWER(regexp_replace(${pages.url}, '^https?://([^/]+).*$', '\\1'))`
+		),
+		title: text('title'),
+		type: pageTypeEnum('type').notNull().default(PageType.enum.primary),
 		lastCrawlDate: timestamp('last_crawl_date', { withTimezone: true }),
+		lastSuccessfulCrawlDate: timestamp('last_successful_crawl_date', { withTimezone: true }),
 		lastHttpStatus: integer('last_http_status'),
-		contentType: varchar('content_type'),
 		isInternal: boolean('is_internal').notNull().default(false),
+		metadata: json('metadata'), // headers, meta tags, etc
 		...timestamps,
 	},
 	(table) => [
-		unique('url_idx').on(table.url),
+		unique('page_url_idx').on(table.url),
+		index('page_domain_idx').on(table.domain),
 		index('crawl_status_idx').on(table.lastCrawlDate, table.lastHttpStatus),
-		index('content_type_idx').on(table.contentType),
 	]
 );
 
-// Metadata schema
+// Page content versions
+export const pageContents = pgTable(
+	'page_contents',
+	{
+		id: serial('id').primaryKey(),
+		pageId: integer('page_id')
+			.references(() => pages.id)
+			.notNull(),
+		contentHtml: text('content_html').notNull(),
+		contentMarkdown: text('content_markdown'),
+		crawlDate: timestamp('crawl_date', { withTimezone: true }).notNull(),
+		...timestamps,
+	},
+	(table) => [index('page_content_idx').on(table.pageId, table.crawlDate)]
+);
+
+// Link metadata schema
 export const LinkMetadataSchema = z
 	.object({
 		linkText: z.string().optional(),
@@ -180,43 +199,131 @@ export const LinkMetadataSchema = z
 	.strict();
 export type LinkMetadata = z.infer<typeof LinkMetadataSchema>;
 
-// Relationship table for URL connections
-export const urlLinks = pgTable('url_links', {
-	id: serial('id').primaryKey(),
-	sourceId: integer('source_id')
-		.references(() => urls.id)
-		.notNull(),
-	targetId: integer('target_id')
-		.references(() => urls.id)
-		.notNull(),
-	metadata: json('metadata').$type<LinkMetadata>(),
-	...timestamps,
-});
+// Relationship table for page connections
+export const pageLinks = pgTable(
+	'page_links',
+	{
+		id: serial('id').primaryKey(),
+		sourceId: integer('source_id')
+			.references(() => pages.id)
+			.notNull(),
+		targetId: integer('target_id')
+			.references(() => pages.id)
+			.notNull(),
+		metadata: json('metadata').$type<LinkMetadata>(),
+		...timestamps,
+	},
+	(table) => [
+		index('page_links_source_idx').on(table.sourceId),
+		index('page_links_target_idx').on(table.targetId),
+	]
+);
 
 // Relations
-export const urlRelations = relations(urls, ({ many }) => ({
-	outgoingLinks: many(urlLinks, { relationName: 'source' }),
-	incomingLinks: many(urlLinks, { relationName: 'target' }),
+export const pageRelations = relations(pages, ({ many }) => ({
+	contents: many(pageContents),
+	outgoingLinks: many(pageLinks, { relationName: 'source' }),
+	incomingLinks: many(pageLinks, { relationName: 'target' }),
+	media: many(media, { relationName: 'sourcePage' }),
 }));
 
-export const urlLinksRelations = relations(urlLinks, ({ one }) => ({
-	source: one(urls, {
-		fields: [urlLinks.sourceId],
-		references: [urls.id],
+export const pageContentsRelations = relations(pageContents, ({ one }) => ({
+	page: one(pages, {
+		fields: [pageContents.pageId],
+		references: [pages.id],
+	}),
+}));
+
+export const pageLinksRelations = relations(pageLinks, ({ one }) => ({
+	source: one(pages, {
+		fields: [pageLinks.sourceId],
+		references: [pages.id],
 		relationName: 'source',
 	}),
-	target: one(urls, {
-		fields: [urlLinks.targetId],
-		references: [urls.id],
+	target: one(pages, {
+		fields: [pageLinks.targetId],
+		references: [pages.id],
 		relationName: 'target',
 	}),
 }));
 
 // Type exports
-export type Url = typeof urls.$inferSelect;
-export type NewUrl = typeof urls.$inferInsert;
-export type UrlLink = typeof urlLinks.$inferSelect;
-export type NewUrlLink = typeof urlLinks.$inferInsert;
+export type Page = typeof pages.$inferSelect;
+export type NewPage = typeof pages.$inferInsert;
+export type PageContent = typeof pageContents.$inferSelect;
+export type NewPageContent = typeof pageContents.$inferInsert;
+export type PageLink = typeof pageLinks.$inferSelect;
+export type NewPageLink = typeof pageLinks.$inferInsert;
+
+/* ==============================
+   MEDIA
+   ============================== */
+
+export const MediaFormat = z.enum([
+	'image', // images (jpg, png, etc)
+	'video', // video files
+	'audio', // audio files
+	'text', // plain text, markdown
+	'application', // binary data, PDFs, etc
+	'unknown', // unknown format
+]);
+export type MediaFormat = z.infer<typeof MediaFormat>;
+export const mediaFormatEnum = pgEnum('media_format', MediaFormat.options);
+
+// Helper function for determining format from mime type
+export const getMediaFormat = (contentTypeOrExtension: string): MediaFormat => {
+	const type = mime.lookup(contentTypeOrExtension);
+	switch (type) {
+		case 'image':
+			return MediaFormat.enum.image;
+		case 'video':
+			return MediaFormat.enum.video;
+		case 'audio':
+			return MediaFormat.enum.audio;
+		case 'text':
+			return MediaFormat.enum.text;
+		case 'application':
+			return MediaFormat.enum.application;
+		default:
+			return MediaFormat.enum.unknown;
+	}
+};
+
+export const media = pgTable(
+	'media',
+	{
+		id: serial('id').primaryKey(),
+		url: text('url').notNull(),
+		format: mediaFormatEnum('format').notNull(),
+		mimeType: text('mime_type').notNull(),
+		title: text('title'),
+		altText: text('alt_text'),
+		caption: text('caption'),
+		fileSize: integer('file_size'),
+		sourcePageId: integer('source_page_id').references(() => pages.id),
+		metadata: json('metadata'),
+		...timestamps,
+	},
+	(table) => [
+		unique('media_url_idx').on(table.url),
+		index('media_format_idx').on(table.format),
+		index('media_mime_type_idx').on(table.mimeType),
+		index('media_source_idx').on(table.sourcePageId),
+	]
+);
+
+// Relations
+export const mediaRelations = relations(media, ({ one }) => ({
+	sourcePage: one(pages, {
+		fields: [media.sourcePageId],
+		references: [pages.id],
+		relationName: 'sourcePage',
+	}),
+}));
+
+// Type exports
+export type Media = typeof media.$inferSelect;
+export type NewMedia = typeof media.$inferInsert;
 
 /* ==============================
    INDEX
@@ -248,7 +355,7 @@ export const indexEntries = pgTable(
 		private: boolean('private').notNull().default(false),
 		mainType: indexMainTypeEnum('main_type').notNull(),
 		subType: text('sub_type'),
-		canonicalUrlId: integer('canonical_url_id').references(() => urls.id),
+		canonicalPageId: integer('canonical_page_id').references(() => pages.id),
 		aliasOf: integer('alias_of'),
 		...timestamps,
 	},
@@ -277,9 +384,9 @@ export const indexRelations = pgTable('index_relations', {
 
 // Relations
 export const indexEntriesRelations = relations(indexEntries, ({ one, many }) => ({
-	canonicalUrl: one(urls, {
-		fields: [indexEntries.canonicalUrlId],
-		references: [urls.id],
+	canonicalPage: one(pages, {
+		fields: [indexEntries.canonicalPageId],
+		references: [pages.id],
 	}),
 	alias: one(indexEntries, {
 		fields: [indexEntries.aliasOf],
@@ -317,72 +424,6 @@ export type IndexRelation = typeof indexRelations.$inferSelect;
 export type NewIndexRelation = typeof indexRelations.$inferInsert;
 
 /* ==============================
-   MEDIA
-   ============================== */
-
-// Enums
-export const MediaType = z.enum(['image', 'video', 'audio', 'pdf']);
-export type MediaType = z.infer<typeof MediaType>;
-export const mediaTypeEnum = pgEnum('media_type', MediaType.options);
-
-export const DocumentFormat = z.enum(['html', 'markdown', 'plaintext']);
-export type DocumentFormat = z.infer<typeof DocumentFormat>;
-export const documentFormatEnum = pgEnum('document_format', DocumentFormat.options);
-
-// Tables
-export const media = pgTable(
-	'media',
-	{
-		id: serial('id').primaryKey(),
-		type: mediaTypeEnum('type').notNull(),
-		urlId: integer('url_id')
-			.references(() => urls.id)
-			.notNull(),
-		title: text('title'),
-		altText: text('alt_text'),
-		caption: text('caption'),
-		metadata: json('metadata'),
-		...timestamps,
-	},
-	(table) => [index('media_type_idx').on(table.type), index('media_url_idx').on(table.urlId)]
-);
-
-export const documents = pgTable(
-	'documents',
-	{
-		id: serial('id').primaryKey(),
-		urlId: integer('url_id').references(() => urls.id),
-		title: text('title').notNull(),
-		format: documentFormatEnum('format').notNull(),
-		content: text('content').notNull(),
-		metadata: json('metadata'),
-		...timestamps,
-	},
-	(table) => [index('document_format_idx').on(table.format)]
-);
-
-// Relations
-export const mediaRelations = relations(media, ({ one }) => ({
-	url: one(urls, {
-		fields: [media.urlId],
-		references: [urls.id],
-	}),
-}));
-
-export const documentsRelations = relations(documents, ({ one }) => ({
-	url: one(urls, {
-		fields: [documents.urlId],
-		references: [urls.id],
-	}),
-}));
-
-// Type exports
-export type Media = typeof media.$inferSelect;
-export type NewMedia = typeof media.$inferInsert;
-export type Document = typeof documents.$inferSelect;
-export type NewDocument = typeof documents.$inferInsert;
-
-/* ==============================
    LOCATIONS
    ============================== */
 
@@ -402,7 +443,8 @@ export const locations = pgTable(
 		coordinates: geometry('coordinates', { srid: 4326, type: 'point', mode: 'xy' }).notNull(),
 		boundingBox: multipolygon('bounding_box'),
 		sourceData: json('source_data'),
-		mapUrlId: integer('map_url_id').references(() => urls.id),
+		mapPageId: integer('map_page_id').references(() => pageLinks.id),
+		mapImageId: integer('map_image_id').references(() => media.id),
 		address: text('address'),
 		timezone: text('timezone'),
 		population: integer('population'),
@@ -434,9 +476,13 @@ export const locations = pgTable(
 
 // Relations
 export const locationRelations = relations(locations, ({ one, many }) => ({
-	mapUrl: one(urls, {
-		fields: [locations.mapUrlId],
-		references: [urls.id],
+	mapPage: one(pageLinks, {
+		fields: [locations.mapPageId],
+		references: [pageLinks.id],
+	}),
+	mapImage: one(media, {
+		fields: [locations.mapImageId],
+		references: [media.id],
 	}),
 	parent: one(locations, {
 		fields: [locations.parentLocationId],
