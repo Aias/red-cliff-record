@@ -14,6 +14,7 @@ import {
 	index,
 	geometry,
 	customType,
+	type PgDatabase,
 } from 'drizzle-orm/pg-core';
 import { relations, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -431,6 +432,59 @@ export type IndexEntry = typeof indexEntries.$inferSelect;
 export type NewIndexEntry = typeof indexEntries.$inferInsert;
 export type IndexRelation = typeof indexRelations.$inferSelect;
 export type NewIndexRelation = typeof indexRelations.$inferInsert;
+
+/* ==============================
+   FLAGS
+   ============================== */
+
+export const FLAGS = {
+	important: {
+		name: 'Important',
+		emoji: '⭐',
+		description: 'Important content',
+	},
+	favorite: {
+		name: 'Favorite',
+		emoji: '💖',
+		description: 'Favorite content',
+	},
+	draft: {
+		name: 'Draft',
+		emoji: '📝',
+		description: 'Work in progress',
+	},
+	follow_up: {
+		name: 'Follow-up',
+		emoji: '🚩',
+		description: 'Needs further action',
+	},
+	review: {
+		name: 'Review',
+		emoji: '⏲️',
+		description: 'Marked for later review',
+	},
+	outdated: {
+		name: 'Outdated',
+		emoji: '📅',
+		description: 'Content needs updating',
+	},
+} as const;
+
+// Generate Zod enum from FLAGS keys
+export const Flag = z.enum(
+	Object.keys(FLAGS) as [keyof typeof FLAGS, ...Array<keyof typeof FLAGS>]
+);
+export type Flag = z.infer<typeof Flag>;
+export const flagEnum = pgEnum('flag', Flag.options);
+
+// Type safety
+export type FlagData = typeof FLAGS;
+export type FlagKey = keyof FlagData;
+
+// Helper functions
+export const getFlagName = (flag: Flag): string => FLAGS[flag].name;
+export const getFlagEmoji = (flag: Flag): string => FLAGS[flag].emoji;
+export const getFlagDescription = (flag: Flag): string => FLAGS[flag].description;
 
 /* ==============================
    LOCATIONS

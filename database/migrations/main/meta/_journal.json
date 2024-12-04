@@ -386,6 +386,13 @@
       "when": 1733323511788,
       "tag": "0054_lethal_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1733325497585,
+      "tag": "0055_chemical_energizer",
+      "breakpoints": true
     }
   ]
 }
