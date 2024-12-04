@@ -13,6 +13,8 @@ import {
 	boolean,
 	text,
 	index,
+	geometry,
+	customType,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { z } from 'zod';
@@ -379,3 +381,73 @@ export type Media = typeof media.$inferSelect;
 export type NewMedia = typeof media.$inferInsert;
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
+
+/* ==============================
+   LOCATIONS
+   ============================== */
+
+const multipolygon = customType<{ data: string }>({
+	dataType() {
+		return 'geometry(MultiPolygon, 4326)';
+	},
+});
+
+export const locations = pgTable(
+	'locations',
+	{
+		id: serial('id').primaryKey(),
+		name: text('name').notNull(),
+		locationType: text('location_type').notNull().default('Place'),
+		description: text('description'),
+		coordinates: geometry('coordinates', { srid: 4326, type: 'point', mode: 'xy' }).notNull(),
+		boundingBox: multipolygon('bounding_box'),
+		sourceData: json('source_data'),
+		mapUrlId: integer('map_url_id').references(() => urls.id),
+		address: text('address'),
+		timezone: text('timezone'),
+		population: integer('population'),
+		elevation: integer('elevation'),
+		parentLocationId: integer('parent_location_id'),
+		...timestamps,
+	},
+	(table) => [
+		// Spatial index on geometry
+		index('location_coordinates_idx').using('gist', table.coordinates),
+		// Spatial index on bounding box
+		index('location_bounding_box_idx').using('gist', table.boundingBox),
+		// Index for type lookups
+		index('location_type_idx').on(table.locationType),
+		// Parent-child lookups
+		index('location_parent_idx').on(table.parentLocationId),
+		// Self-referential foreign key
+		foreignKey({
+			columns: [table.parentLocationId],
+			foreignColumns: [table.id],
+		}),
+		unique('location_name_type_parent_idx').on(
+			table.name,
+			table.locationType,
+			table.parentLocationId
+		),
+	]
+);
+
+// Relations
+export const locationRelations = relations(locations, ({ one, many }) => ({
+	mapUrl: one(urls, {
+		fields: [locations.mapUrlId],
+		references: [urls.id],
+	}),
+	parent: one(locations, {
+		fields: [locations.parentLocationId],
+		references: [locations.id],
+		relationName: 'parentChild',
+	}),
+	children: many(locations, {
+		relationName: 'parentChild',
+	}),
+}));
+
+// Type exports
+export type Location = typeof locations.$inferSelect;
+export type NewLocation = typeof locations.$inferInsert;
