@@ -27,7 +27,6 @@ import { timestamps } from '../common';
 // Zod enums
 export const TimepointType = z.enum([
 	'instant',
-	'second',
 	'minute',
 	'hour',
 	'day',
@@ -35,108 +34,70 @@ export const TimepointType = z.enum([
 	'month',
 	'quarter',
 	'year',
-	'custom',
+	'decade',
+	'century',
 ]);
 export type TimepointType = z.infer<typeof TimepointType>;
-
-export const EventType = z.enum([
-	'project',
-	'milestone',
-	'holiday',
-	'meeting',
-	'deadline',
-	'reminder',
-	'recurring',
-	'event',
-]);
-export type EventType = z.infer<typeof EventType>;
-
-export const CertaintyType = z.enum(['fixed', 'estimated', 'target', 'tentative', 'milestone']);
-export type CertaintyType = z.infer<typeof CertaintyType>;
 
 // Drizzle enums
 export const timepointTypeEnum = pgEnum('timepoint_type', TimepointType.options);
 
-export const eventTypeEnum = pgEnum('event_type', EventType.options);
-
-export const certaintyTypeEnum = pgEnum('certainty_type', CertaintyType.options);
-
 // Tables
-export const timepoints = pgTable('timepoints', {
-	id: serial('id').primaryKey(),
-	type: timepointTypeEnum('type').notNull(),
-	startDate: date('start_date').notNull(),
-	startTime: time('start_time').notNull(),
-	startInstant: timestamp('start_instant', { withTimezone: true }).notNull(),
-	endDate: date('end_date').notNull(),
-	endTime: time('end_time').notNull(),
-	endInstant: timestamp('end_instant', { withTimezone: true }).notNull(),
-});
-
-export const events = pgTable(
-	'events',
+export const timepoints = pgTable(
+	'timepoints',
 	{
 		id: serial('id').primaryKey(),
-		name: text('name').notNull(),
-		type: eventTypeEnum('type').notNull().default(EventType.enum.event),
-		timepoint: integer('timepoint')
-			.references(() => timepoints.id)
-			.notNull(),
-		timepointCertainty: certaintyTypeEnum('timepoint_certainty')
-			.notNull()
-			.default(CertaintyType.enum.fixed),
-		secondaryTimepoint: integer('secondary_timepoint').references(() => timepoints.id),
-		secondaryTimepointCertainty: certaintyTypeEnum('secondary_timepoint_certainty'),
-		parentEventId: integer('parent_event_id'),
+		startDate: date('start_date').notNull(),
+		startTime: time('start_time'),
+		startInstant: timestamp('start_instant', { withTimezone: true }).notNull(),
+		startGranularity: timepointTypeEnum('start_granularity').notNull(),
+		endDate: date('end_date'),
+		endTime: time('end_time'),
+		endInstant: timestamp('end_instant', { withTimezone: true }),
+		endGranularity: timepointTypeEnum('end_granularity'),
 		...timestamps,
 	},
 	(table) => [
-		foreignKey({
-			columns: [table.parentEventId],
-			foreignColumns: [table.id],
-		}),
-		index('event_type_idx').on(table.type),
-		index('event_timepoint_idx').on(table.timepoint),
-		index('event_parent_idx').on(table.parentEventId),
+		index('timepoint_start_date_idx').on(table.startDate),
+		index('timepoint_start_instant_idx').on(table.startInstant),
+		index('timepoint_start_granularity_idx').on(table.startGranularity),
+		index('timepoint_end_date_idx').on(table.endDate),
+		index('timepoint_end_instant_idx').on(table.endInstant),
+		index('timepoint_end_granularity_idx').on(table.endGranularity),
+	]
+);
+
+// New junction table for record-timepoint relationships
+export const recordTimepoints = pgTable(
+	'record_timepoints',
+	{
+		id: serial('id').primaryKey(),
+		recordId: integer('record_id')
+			.references(() => records.id)
+			.notNull(),
+		timepointId: integer('timepoint_id')
+			.references(() => timepoints.id)
+			.notNull(),
+		label: text('label'),
+		order: text('order').notNull().default('a0'),
+		...timestamps,
+	},
+	(table) => [
+		index('record_timepoint_record_idx').on(table.recordId),
+		index('record_timepoint_timepoint_idx').on(table.timepointId),
 	]
 );
 
 // Relations
-export const eventsRelations = relations(events, ({ one, many }) => ({
-	primaryTimepoint: one(timepoints, {
-		fields: [events.timepoint],
-		references: [timepoints.id],
-		relationName: 'primaryTimepoint',
-	}),
-	secondaryTimepoint: one(timepoints, {
-		fields: [events.secondaryTimepoint],
-		references: [timepoints.id],
-		relationName: 'secondaryTimepoint',
-	}),
-	parent: one(events, {
-		fields: [events.parentEventId],
-		references: [events.id],
-		relationName: 'parentChild',
-	}),
-	children: many(events, {
-		relationName: 'parentChild',
-	}),
-}));
-
 export const timepointsRelations = relations(timepoints, ({ many }) => ({
-	primaryEvents: many(events, {
-		relationName: 'primaryTimepoint',
-	}),
-	secondaryEvents: many(events, {
-		relationName: 'secondaryTimepoint',
-	}),
+	timepoints: many(recordTimepoints),
 }));
 
 // Type exports
 export type Timepoint = typeof timepoints.$inferSelect;
 export type NewTimepoint = typeof timepoints.$inferInsert;
-export type Event = typeof events.$inferSelect;
-export type NewEvent = typeof events.$inferInsert;
+export type RecordTimepoint = typeof recordTimepoints.$inferSelect;
+export type NewRecordTimepoint = typeof recordTimepoints.$inferInsert;
 
 /* ==============================
    PAGES, LINKS, CONTENT, & MEDIA
@@ -573,6 +534,7 @@ export const RecordType = z.enum([
 	'document', // text-heavy content
 	'abstraction', // concept or idea
 	'extracted', // quote or excerpt
+	'event', // point in time or occurrence of an event
 ]);
 export type RecordType = z.infer<typeof RecordType>;
 export const recordTypeEnum = pgEnum('record_type', RecordType.options);
@@ -627,11 +589,13 @@ export const records = pgTable(
 		formatId: integer('format_id').references(() => indexEntries.id),
 		private: boolean('private').notNull().default(false),
 		flags: flagEnum('flags').array(),
+		locationId: integer('location_id').references(() => locations.id),
 		...timestamps,
 	},
 	(table) => [
 		index('record_type_idx').on(table.type),
 		index('record_format_idx').on(table.formatId),
+		index('record_location_idx').on(table.locationId),
 	]
 );
 
@@ -752,6 +716,11 @@ export const recordsRelations = relations(records, ({ one, many }) => ({
 		fields: [records.formatId],
 		references: [indexEntries.id],
 	}),
+	location: one(locations, {
+		fields: [records.locationId],
+		references: [locations.id],
+	}),
+	timepoints: many(recordTimepoints),
 	creators: many(recordCreators),
 	categories: many(recordCategories),
 	media: many(recordMedia),
@@ -760,60 +729,14 @@ export const recordsRelations = relations(records, ({ one, many }) => ({
 	incomingRelations: many(recordRelations, { relationName: 'target' }),
 }));
 
-export const recordRelationsRelations = relations(recordRelations, ({ one }) => ({
-	source: one(records, {
-		fields: [recordRelations.sourceId],
-		references: [records.id],
-		relationName: 'source',
-	}),
-	target: one(records, {
-		fields: [recordRelations.targetId],
-		references: [records.id],
-		relationName: 'target',
-	}),
-}));
-
-export const recordCreatorsRelations = relations(recordCreators, ({ one }) => ({
+export const recordTimepointsRelations = relations(recordTimepoints, ({ one }) => ({
 	record: one(records, {
-		fields: [recordCreators.recordId],
+		fields: [recordTimepoints.recordId],
 		references: [records.id],
 	}),
-	entity: one(indexEntries, {
-		fields: [recordCreators.entityId],
-		references: [indexEntries.id],
-	}),
-}));
-
-export const recordCategoriesRelations = relations(recordCategories, ({ one }) => ({
-	record: one(records, {
-		fields: [recordCategories.recordId],
-		references: [records.id],
-	}),
-	category: one(indexEntries, {
-		fields: [recordCategories.categoryId],
-		references: [indexEntries.id],
-	}),
-}));
-
-export const recordMediaRelations = relations(recordMedia, ({ one }) => ({
-	record: one(records, {
-		fields: [recordMedia.recordId],
-		references: [records.id],
-	}),
-	media: one(media, {
-		fields: [recordMedia.mediaId],
-		references: [media.id],
-	}),
-}));
-
-export const recordPagesRelations = relations(recordPages, ({ one }) => ({
-	record: one(records, {
-		fields: [recordPages.recordId],
-		references: [records.id],
-	}),
-	page: one(pages, {
-		fields: [recordPages.pageId],
-		references: [pages.id],
+	timepoint: one(timepoints, {
+		fields: [recordTimepoints.timepointId],
+		references: [timepoints.id],
 	}),
 }));
 

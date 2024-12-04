@@ -442,6 +442,13 @@
       "when": 1733348342977,
       "tag": "0062_elite_marvel_apes",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1733351671285,
+      "tag": "0063_remarkable_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }
