@@ -1,9 +1,9 @@
 import {
-	tweets as tweetsTable,
+	twitterTweets as tweetsTable,
 	twitterMedia as mediaTable,
 	twitterUsers as usersTable,
-} from '@schema/main/twitter';
-import { IntegrationType } from '@schema/main/integrations';
+} from '@schema/integrations/twitter';
+import { IntegrationType } from '@schema/integrations/integrations';
 import { createPgConnection } from '@schema/connections';
 import { runIntegration } from '@utils/run-integration';
 import { resolve } from 'path';

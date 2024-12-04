@@ -1,4 +1,4 @@
-import { ReadwiseCategory, ReadwiseLocation } from '@schema/main/readwise';
+import { ReadwiseCategory, ReadwiseLocation } from '@schema/integrations/readwise';
 import { z } from 'zod';
 import { emptyStringToNull } from '../utils/schema-helpers';
 

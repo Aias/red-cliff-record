@@ -421,6 +421,27 @@
       "when": 1733331756286,
       "tag": "0059_gigantic_rocket_raccoon",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1733346721005,
+      "tag": "0060_boring_scalphunter",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1733348270972,
+      "tag": "0061_lively_wallflower",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1733348342977,
+      "tag": "0062_elite_marvel_apes",
+      "breakpoints": true
     }
   ]
 }

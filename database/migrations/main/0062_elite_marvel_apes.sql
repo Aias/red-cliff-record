@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "arc_browsing_history_url_idx" ON "integrations"."arc_browsing_history" USING btree (md5 ("url"));

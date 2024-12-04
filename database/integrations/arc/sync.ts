@@ -1,11 +1,11 @@
 import { createPgConnection } from '@schema/connections';
 import {
-	browsingHistory,
-	browsingHistoryDaily,
+	arcBrowsingHistory,
+	arcBrowsingHistoryDaily,
 	Browser,
-	type NewBrowsingHistory,
-} from '@schema/main/arc';
-import { IntegrationType } from '@schema/main/integrations';
+	type NewArcBrowsingHistory,
+} from '@schema/integrations/arc';
+import { IntegrationType } from '@schema/integrations/integrations';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
 import { sanitizeString } from '@utils/sanitize';
 import { runIntegration } from '@utils/run-integration';
@@ -25,16 +25,16 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 
 	// Get the most recent viewEpochMicroseconds from the database
 	const latestVisit = await pgDb
-		.select({ viewEpochMicroseconds: browsingHistory.viewEpochMicroseconds })
-		.from(browsingHistory)
+		.select({ viewEpochMicroseconds: arcBrowsingHistory.viewEpochMicroseconds })
+		.from(arcBrowsingHistory)
 		.where(
 			and(
-				eq(browsingHistory.browser, Browser.enum.arc),
-				eq(browsingHistory.hostname, hostname),
-				isNotNull(browsingHistory.viewEpochMicroseconds)
+				eq(arcBrowsingHistory.browser, Browser.enum.arc),
+				eq(arcBrowsingHistory.hostname, hostname),
+				isNotNull(arcBrowsingHistory.viewEpochMicroseconds)
 			)
 		)
-		.orderBy(desc(browsingHistory.viewEpochMicroseconds))
+		.orderBy(desc(arcBrowsingHistory.viewEpochMicroseconds))
 		.limit(1);
 
 	const lastKnownTime = latestVisit[0]?.viewEpochMicroseconds;
@@ -60,7 +60,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 	const collapsedHistory = collapseSequentialVisits(rawHistory);
 	console.log(`Collapsed into ${collapsedHistory.length} entries`);
 
-	const history: NewBrowsingHistory[] = collapsedHistory.map((h) => ({
+	const history: NewArcBrowsingHistory[] = collapsedHistory.map((h) => ({
 		viewTime: h.viewTime ? chromeEpochMicrosecondsToDatetime(h.viewTime) : new Date(),
 		viewEpochMicroseconds: h.viewTime
 			? BigInt(h.viewTime)
@@ -83,7 +83,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		const chunkSize = 100;
 		for (let i = 0; i < history.length; i += chunkSize) {
 			const chunk = history.slice(i, i + chunkSize);
-			await pgDb.insert(browsingHistory).values(chunk);
+			await pgDb.insert(arcBrowsingHistory).values(chunk);
 			console.log(
 				`Inserted chunk ${i / chunkSize + 1} of ${Math.ceil(history.length / chunkSize)}`
 			);
@@ -91,7 +91,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		console.log('New history entries inserted');
 
 		console.log('Refreshing materialized view...');
-		await pgDb.refreshMaterializedView(browsingHistoryDaily);
+		await pgDb.refreshMaterializedView(arcBrowsingHistoryDaily);
 		console.log('Materialized view refreshed');
 	} else {
 		console.log('No new history entries to insert');

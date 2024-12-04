@@ -4,7 +4,7 @@ import {
 	IntegrationType,
 	IntegrationStatus,
 	RunType,
-} from '@schema/main/integrations';
+} from '@schema/integrations/integrations';
 import { eq } from 'drizzle-orm';
 
 const db = createPgConnection();

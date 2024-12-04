@@ -1,8 +1,12 @@
 import { Octokit } from '@octokit/rest';
 import { createPgConnection } from '@schema/connections';
-import { commits, commitChanges, CommitChangeStatus } from '@schema/main/github';
-import type { NewCommitChange } from '@schema/main/github';
-import { IntegrationType } from '@schema/main/integrations';
+import {
+	githubCommits,
+	githubCommitChanges,
+	GithubCommitChangeStatus,
+} from '@schema/integrations/github';
+import type { NewGithubCommitChange } from '@schema/integrations/github';
+import { IntegrationType } from '@schema/integrations/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { desc, sql } from 'drizzle-orm';
 import { loadEnv } from '@rcr/lib/env';
@@ -13,9 +17,9 @@ const db = createPgConnection();
 
 async function syncCommits(integrationRunId: number): Promise<number> {
 	const latestCommit = await db
-		.select({ commitDate: commits.commitDate })
-		.from(commits)
-		.orderBy(desc(commits.commitDate))
+		.select({ commitDate: githubCommits.commitDate })
+		.from(githubCommits)
+		.orderBy(desc(githubCommits.commitDate))
 		.limit(1);
 
 	const lastKnownDate = latestCommit[0]?.commitDate;
@@ -106,14 +110,14 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 				for (const commit of validCommits) {
 					// Check if commit already exists
 					const existingCommit = await db
-						.select({ id: commits.id })
-						.from(commits)
-						.where(sql`${commits.sha} = ${commit.sha}`)
+						.select({ id: githubCommits.id })
+						.from(githubCommits)
+						.where(sql`${githubCommits.sha} = ${commit.sha}`)
 						.limit(1);
 
 					if (existingCommit.length === 0) {
 						const commitId = await db
-							.insert(commits)
+							.insert(githubCommits)
 							.values({
 								sha: commit.sha,
 								message: commit.message,
@@ -130,9 +134,9 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 
 						// Insert commit changes into the database
 						if (commit.files) {
-							const commitChangesData: NewCommitChange[] = commit.files.map((file) => ({
+							const commitChangesData: NewGithubCommitChange[] = commit.files.map((file) => ({
 								filename: file.filename,
-								status: CommitChangeStatus.parse(file.status),
+								status: GithubCommitChangeStatus.parse(file.status),
 								patch: file.patch,
 								commitId: commitId[0].id,
 								additions: file.additions,
@@ -140,7 +144,7 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 								changes: file.changes,
 							}));
 
-							await db.insert(commitChanges).values(commitChangesData);
+							await db.insert(githubCommitChanges).values(commitChangesData);
 						}
 
 						commitCount++;

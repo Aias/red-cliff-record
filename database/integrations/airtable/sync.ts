@@ -2,24 +2,24 @@ import { base } from './queries';
 import { createPgConnection } from '@schema/connections';
 import type { ExtractFieldSet, CreatorFieldSet, SpaceFieldSet } from './types';
 import {
-	extracts,
-	attachments,
-	creators,
-	spaces,
-	extractCreators,
-	extractSpaces,
-	extractConnections,
-} from '@schema/main/airtable';
+	airtableExtracts,
+	airtableAttachments,
+	airtableCreators,
+	airtableSpaces,
+	airtableExtractCreators,
+	airtableExtractSpaces,
+	airtableExtractConnections,
+} from '@schema/integrations/airtable';
 import type {
-	NewCreator,
-	NewSpace,
-	NewExtract,
-	NewAttachment,
-	NewExtractCreator,
-	NewExtractSpace,
-	NewExtractConnection,
-} from '@schema/main/airtable';
-import { IntegrationType } from '@schema/main/integrations';
+	NewAirtableCreator,
+	NewAirtableSpace,
+	NewAirtableExtract,
+	NewAirtableAttachment,
+	NewAirtableExtractCreator,
+	NewAirtableExtractSpace,
+	NewAirtableExtractConnection,
+} from '@schema/integrations/airtable';
+import { IntegrationType } from '@schema/integrations/integrations';
 import { eq } from 'drizzle-orm';
 import { runIntegration } from '@utils/run-integration';
 
@@ -30,13 +30,13 @@ async function cleanupExistingRecords() {
 	console.log('Cleaning up existing Airtable records...');
 
 	// Delete in correct order to maintain referential integrity
-	await db.delete(extractConnections);
-	await db.delete(extractSpaces);
-	await db.delete(extractCreators);
-	await db.delete(attachments);
-	await db.delete(extracts);
-	await db.delete(spaces);
-	await db.delete(creators);
+	await db.delete(airtableExtractConnections);
+	await db.delete(airtableExtractSpaces);
+	await db.delete(airtableExtractCreators);
+	await db.delete(airtableAttachments);
+	await db.delete(airtableExtracts);
+	await db.delete(airtableSpaces);
+	await db.delete(airtableCreators);
 
 	console.log('Cleanup complete');
 }
@@ -47,7 +47,7 @@ async function seedCreators(integrationRunId: number) {
 
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
-		const creatorsToInsert: NewCreator[] = chunk.map((record) => {
+		const creatorsToInsert: NewAirtableCreator[] = chunk.map((record) => {
 			const fields = record.fields as CreatorFieldSet;
 			return {
 				id: record.id,
@@ -64,7 +64,7 @@ async function seedCreators(integrationRunId: number) {
 			};
 		});
 
-		await db.insert(creators).values(creatorsToInsert);
+		await db.insert(airtableCreators).values(creatorsToInsert);
 		console.log(
 			`Inserted creators chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(records.length / CHUNK_SIZE)}`
 		);
@@ -77,7 +77,7 @@ async function seedSpaces(integrationRunId: number) {
 
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
-		const spacesToInsert: NewSpace[] = chunk.map((record) => {
+		const spacesToInsert: NewAirtableSpace[] = chunk.map((record) => {
 			const fields = record.fields as SpaceFieldSet;
 			return {
 				id: record.id,
@@ -91,7 +91,7 @@ async function seedSpaces(integrationRunId: number) {
 			};
 		});
 
-		await db.insert(spaces).values(spacesToInsert);
+		await db.insert(airtableSpaces).values(spacesToInsert);
 		console.log(
 			`Inserted spaces chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(records.length / CHUNK_SIZE)}`
 		);
@@ -105,7 +105,7 @@ async function seedExtracts(integrationRunId: number) {
 	// First pass: Create all extracts without parent references
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
-		const extractsToInsert: NewExtract[] = chunk.map((record) => {
+		const extractsToInsert: NewAirtableExtract[] = chunk.map((record) => {
 			const fields = record.fields as ExtractFieldSet;
 			return {
 				id: record.id,
@@ -125,7 +125,7 @@ async function seedExtracts(integrationRunId: number) {
 			};
 		});
 
-		await db.insert(extracts).values(extractsToInsert);
+		await db.insert(airtableExtracts).values(extractsToInsert);
 		console.log(
 			`Inserted extracts chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(records.length / CHUNK_SIZE)}`
 		);
@@ -136,9 +136,9 @@ async function seedExtracts(integrationRunId: number) {
 		const fields = record.fields as ExtractFieldSet;
 		if (fields.parentId?.[0]) {
 			await db
-				.update(extracts)
+				.update(airtableExtracts)
 				.set({ parentId: fields.parentId[0] })
-				.where(eq(extracts.id, record.id));
+				.where(eq(airtableExtracts.id, record.id));
 		}
 	}
 }
@@ -154,7 +154,7 @@ async function seedAttachments() {
 
 		for (let i = 0; i < images.length; i += CHUNK_SIZE) {
 			const chunk = images.slice(i, i + CHUNK_SIZE);
-			const attachmentsToInsert: NewAttachment[] = chunk.map((attachment) => ({
+			const attachmentsToInsert: NewAirtableAttachment[] = chunk.map((attachment) => ({
 				id: attachment.id,
 				url: attachment.url,
 				filename: attachment.filename,
@@ -165,7 +165,7 @@ async function seedAttachments() {
 				extractId: record.id,
 			}));
 
-			await db.insert(attachments).values(attachmentsToInsert);
+			await db.insert(airtableAttachments).values(attachmentsToInsert);
 		}
 	}
 }
@@ -181,11 +181,11 @@ async function seedRelations() {
 		if (fields.creatorIds?.length) {
 			for (let i = 0; i < fields.creatorIds.length; i += CHUNK_SIZE) {
 				const chunk = fields.creatorIds.slice(i, i + CHUNK_SIZE);
-				const relations: NewExtractCreator[] = chunk.map((creatorId) => ({
+				const relations: NewAirtableExtractCreator[] = chunk.map((creatorId) => ({
 					extractId: record.id,
 					creatorId,
 				}));
-				await db.insert(extractCreators).values(relations);
+				await db.insert(airtableExtractCreators).values(relations);
 			}
 		}
 
@@ -193,11 +193,11 @@ async function seedRelations() {
 		if (fields.spaceIds?.length) {
 			for (let i = 0; i < fields.spaceIds.length; i += CHUNK_SIZE) {
 				const chunk = fields.spaceIds.slice(i, i + CHUNK_SIZE);
-				const relations: NewExtractSpace[] = chunk.map((spaceId) => ({
+				const relations: NewAirtableExtractSpace[] = chunk.map((spaceId) => ({
 					extractId: record.id,
 					spaceId,
 				}));
-				await db.insert(extractSpaces).values(relations);
+				await db.insert(airtableExtractSpaces).values(relations);
 			}
 		}
 
@@ -205,11 +205,11 @@ async function seedRelations() {
 		if (fields.connectionIds?.length) {
 			for (let i = 0; i < fields.connectionIds.length; i += CHUNK_SIZE) {
 				const chunk = fields.connectionIds.slice(i, i + CHUNK_SIZE);
-				const relations: NewExtractConnection[] = chunk.map((toExtractId) => ({
+				const relations: NewAirtableExtractConnection[] = chunk.map((toExtractId) => ({
 					fromExtractId: record.id,
 					toExtractId,
 				}));
-				await db.insert(extractConnections).values(relations);
+				await db.insert(airtableExtractConnections).values(relations);
 			}
 		}
 	}
@@ -224,7 +224,10 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 	await seedAttachments();
 	await seedRelations();
 
-	const count = await db.$count(extracts, eq(extracts.integrationRunId, integrationRunId));
+	const count = await db.$count(
+		airtableExtracts,
+		eq(airtableExtracts.integrationRunId, integrationRunId)
+	);
 
 	return count;
 }

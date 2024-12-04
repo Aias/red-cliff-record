@@ -1,11 +1,11 @@
 import { createPgConnection } from '@schema/connections';
 import {
-	raindrops,
-	collections,
-	type NewRaindrop,
-	type NewCollection,
-} from '@schema/main/raindrop';
-import { integrationRuns, IntegrationType } from '@schema/main/integrations';
+	raindropRaindrops,
+	raindropCollections,
+	type NewRaindropRaindrop,
+	type NewRaindropCollection,
+} from '@schema/integrations/raindrop';
+import { integrationRuns, IntegrationType } from '@schema/integrations/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
@@ -52,7 +52,7 @@ async function syncCollections(integrationRunId: number) {
 	console.log('Inserting collections to database.');
 	for (const collection of allCollections) {
 		try {
-			const collectionToInsert: NewCollection = {
+			const collectionToInsert: NewRaindropCollection = {
 				id: collection._id,
 				title: collection.title,
 				parentId: collection.parent?.$id,
@@ -64,8 +64,8 @@ async function syncCollections(integrationRunId: number) {
 				integrationRunId: integrationRunId,
 			};
 
-			await db.insert(collections).values(collectionToInsert).onConflictDoUpdate({
-				target: collections.id,
+			await db.insert(raindropCollections).values(collectionToInsert).onConflictDoUpdate({
+				target: raindropCollections.id,
 				set: collectionToInsert,
 			});
 
@@ -89,11 +89,11 @@ async function syncRaindrops(integrationRunId: number) {
 
 	// Get the most recent raindrop date from the database
 	const latestRaindrop = await db
-		.select({ updatedAt: raindrops.updatedAt })
-		.from(raindrops)
-		.leftJoin(integrationRuns, eq(raindrops.integrationRunId, integrationRuns.id))
+		.select({ updatedAt: raindropRaindrops.updatedAt })
+		.from(raindropRaindrops)
+		.leftJoin(integrationRuns, eq(raindropRaindrops.integrationRunId, integrationRuns.id))
 		.where(eq(integrationRuns.integrationType, IntegrationType.enum.raindrop))
-		.orderBy(desc(raindrops.updatedAt))
+		.orderBy(desc(raindropRaindrops.updatedAt))
 		.limit(1);
 
 	const lastKnownDate = latestRaindrop[0]?.updatedAt;
@@ -147,7 +147,7 @@ async function syncRaindrops(integrationRunId: number) {
 	console.log(`🎉 Found ${newRaindrops.length} new raindrops to process`);
 
 	// Convert raindrops to bookmark format
-	const raindropsToInsert: NewRaindrop[] = newRaindrops.map((raindrop) => ({
+	const raindropsToInsert: NewRaindropRaindrop[] = newRaindrops.map((raindrop) => ({
 		id: raindrop._id,
 		linkUrl: raindrop.link,
 		title: raindrop.title,
@@ -169,8 +169,8 @@ async function syncRaindrops(integrationRunId: number) {
 	let successCount = 0;
 	for (const raindrop of raindropsToInsert) {
 		try {
-			await db.insert(raindrops).values(raindrop).onConflictDoUpdate({
-				target: raindrops.id,
+			await db.insert(raindropRaindrops).values(raindrop).onConflictDoUpdate({
+				target: raindropRaindrops.id,
 				set: raindrop,
 			});
 			successCount++;

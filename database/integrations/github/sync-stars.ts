@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/rest';
-import { stars as starsTable } from '@schema/main/github';
-import type { NewStar } from '@schema/main/github';
-import { integrationRuns, IntegrationType } from '@schema/main/integrations';
+import { githubStars as starsTable } from '@schema/integrations/github';
+import type { NewGithubStar } from '@schema/integrations/github';
+import { integrationRuns, IntegrationType } from '@schema/integrations/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { createPgConnection } from '@schema/connections';
 import { desc, like, eq } from 'drizzle-orm';
@@ -33,7 +33,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 		auth: process.env.GITHUB_TOKEN,
 	});
 
-	const starsToInsert: NewStar[] = [];
+	const starsToInsert: NewGithubStar[] = [];
 	let page = 1;
 	let hasMore = true;
 	let skippedCount = 0;

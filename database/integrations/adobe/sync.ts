@@ -1,7 +1,7 @@
 import { createPgConnection } from '@schema/connections';
-import { photographs } from '@schema/main/adobe';
-import type { NewPhotograph } from '@schema/main/adobe';
-import { IntegrationType } from '@schema/main/integrations';
+import { adobeLightroomImages } from '@schema/integrations/adobe';
+import type { NewAdobeLightroomImage } from '@schema/integrations/adobe';
+import { IntegrationType } from '@schema/integrations/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { LightroomJsonResponseSchema } from './types';
 import { loadEnv } from '@rcr/lib/env';
@@ -53,7 +53,7 @@ async function syncLightroomImages(integrationRunId: number) {
 		const url2048 = `${baseUrl}${asset.links['/rels/rendition_type/2048'].href}`;
 		const rating = ratings?.[Object.keys(ratings)[0]]?.rating ?? 0;
 
-		const imageToInsert: NewPhotograph = {
+		const imageToInsert: NewAdobeLightroomImage = {
 			id: asset.id,
 			url2048,
 			links: asset.links,
@@ -77,8 +77,8 @@ async function syncLightroomImages(integrationRunId: number) {
 		};
 
 		try {
-			await db.insert(photographs).values(imageToInsert).onConflictDoUpdate({
-				target: photographs.id,
+			await db.insert(adobeLightroomImages).values(imageToInsert).onConflictDoUpdate({
+				target: adobeLightroomImages.id,
 				set: imageToInsert,
 			});
 			successCount++;

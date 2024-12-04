@@ -18,7 +18,7 @@ import {
 import { relations, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import mime from 'mime-types';
-import { timestamps } from './common';
+import { timestamps } from '../common';
 
 /* ==============================
    TIMEPOINTS AND EVENTS

@@ -1,4 +1,4 @@
-import { createConnection, browsingHistoryOmitList, browsingHistory } from '@rcr/database';
+import { createConnection, arcBrowsingHistoryOmitList, arcBrowsingHistory } from '@rcr/database';
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
 import { Container, Heading, Table, Button, TextField } from '@radix-ui/themes';
@@ -24,17 +24,17 @@ const fetchOmitList = createServerFn({ method: 'GET' }).handler(async () => {
 	const db = createConnection();
 	const patterns = await db
 		.select({
-			pattern: browsingHistoryOmitList.pattern,
-			createdAt: browsingHistoryOmitList.createdAt,
-			updatedAt: browsingHistoryOmitList.updatedAt,
-			matchCount: count(browsingHistory.id),
+			pattern: arcBrowsingHistoryOmitList.pattern,
+			createdAt: arcBrowsingHistoryOmitList.createdAt,
+			updatedAt: arcBrowsingHistoryOmitList.updatedAt,
+			matchCount: count(arcBrowsingHistory.id),
 		})
-		.from(browsingHistoryOmitList)
-		.leftJoin(browsingHistory, ilike(browsingHistory.url, browsingHistoryOmitList.pattern))
+		.from(arcBrowsingHistoryOmitList)
+		.leftJoin(arcBrowsingHistory, ilike(arcBrowsingHistory.url, arcBrowsingHistoryOmitList.pattern))
 		.groupBy(
-			browsingHistoryOmitList.pattern,
-			browsingHistoryOmitList.createdAt,
-			browsingHistoryOmitList.updatedAt
+			arcBrowsingHistoryOmitList.pattern,
+			arcBrowsingHistoryOmitList.createdAt,
+			arcBrowsingHistoryOmitList.updatedAt
 		);
 	return { response: patterns };
 });
@@ -43,7 +43,7 @@ const addPattern = createServerFn({ method: 'POST' })
 	.validator((data: { pattern: string }) => data)
 	.handler(async ({ data }) => {
 		const db = createConnection();
-		await db.insert(browsingHistoryOmitList).values({
+		await db.insert(arcBrowsingHistoryOmitList).values({
 			pattern: data.pattern,
 		});
 		return { success: true };
@@ -54,12 +54,12 @@ const updatePattern = createServerFn({ method: 'POST' })
 	.handler(async ({ data }) => {
 		const db = createConnection();
 		await db
-			.update(browsingHistoryOmitList)
+			.update(arcBrowsingHistoryOmitList)
 			.set({
 				pattern: data.newPattern,
 				updatedAt: new Date(),
 			})
-			.where(eq(browsingHistoryOmitList.pattern, data.oldPattern));
+			.where(eq(arcBrowsingHistoryOmitList.pattern, data.oldPattern));
 		return { success: true };
 	});
 
@@ -68,8 +68,8 @@ const deletePattern = createServerFn({ method: 'POST' })
 	.handler(async ({ data }) => {
 		const db = createConnection();
 		await db
-			.delete(browsingHistoryOmitList)
-			.where(eq(browsingHistoryOmitList.pattern, data.pattern));
+			.delete(arcBrowsingHistoryOmitList)
+			.where(eq(arcBrowsingHistoryOmitList.pattern, data.pattern));
 		return { success: true };
 	});
 
@@ -80,8 +80,6 @@ export const Route = createFileRoute('/omit-list')({
 
 function EditableCell({
 	value: initialValue,
-	row,
-	column,
 	onSave,
 }: {
 	value: string;

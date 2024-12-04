@@ -1,5 +1,9 @@
-import { createConnection, browsingHistoryDaily, browsingHistoryOmitList } from '@rcr/database';
-import { eq, sql, not, exists } from 'drizzle-orm';
+import {
+	createConnection,
+	arcBrowsingHistoryDaily,
+	arcBrowsingHistoryOmitList,
+} from '@rcr/database';
+import { sql } from 'drizzle-orm';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
 import { Container, Heading, Table, Text, Link as RadixLink, Button, Flex } from '@radix-ui/themes';
@@ -11,14 +15,14 @@ const fetchHistoryForDate = createServerFn({ method: 'GET' })
 		const db = createConnection();
 		const history = await db
 			.select()
-			.from(browsingHistoryDaily)
+			.from(arcBrowsingHistoryDaily)
 			.where(
-				sql`DATE(${browsingHistoryDaily.date}) = ${date} AND NOT EXISTS (
-					SELECT 1 FROM ${browsingHistoryOmitList}
-					WHERE ${browsingHistoryDaily.url} LIKE CONCAT('%', ${browsingHistoryOmitList.pattern}, '%')
+				sql`DATE(${arcBrowsingHistoryDaily.date}) = ${date} AND NOT EXISTS (
+					SELECT 1 FROM ${arcBrowsingHistoryOmitList}
+					WHERE ${arcBrowsingHistoryDaily.url} LIKE CONCAT('%', ${arcBrowsingHistoryOmitList.pattern}, '%')
 				)`
 			)
-			.orderBy(browsingHistoryDaily.firstVisit);
+			.orderBy(arcBrowsingHistoryDaily.firstVisit);
 
 		return { response: history };
 	});

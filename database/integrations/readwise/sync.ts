@@ -1,6 +1,6 @@
 import { createPgConnection } from '@schema/connections';
-import { documents, type NewDocument } from '@schema/main/readwise';
-import { IntegrationType } from '@schema/main/integrations';
+import { readwiseDocuments, type NewReadwiseDocument } from '@schema/integrations/readwise';
+import { IntegrationType } from '@schema/integrations/integrations';
 import { runIntegration } from '@utils/run-integration';
 import { ReadwiseArticlesResponseSchema } from './types';
 import type { ReadwiseArticle, ReadwiseArticlesResponse } from './types';
@@ -14,9 +14,9 @@ const db = createPgConnection();
 
 async function getMostRecentUpdateTime(db: NodePgDatabase) {
 	const mostRecent = await db
-		.select({ updatedAt: documents.updatedAt })
-		.from(documents)
-		.orderBy(desc(documents.updatedAt))
+		.select({ updatedAt: readwiseDocuments.updatedAt })
+		.from(readwiseDocuments)
+		.orderBy(desc(readwiseDocuments.updatedAt))
 		.limit(1);
 
 	if (mostRecent.length > 0) {
@@ -60,7 +60,7 @@ const cleanString = (str: string | null) => str?.replace(/\u00fe\u00ff/g, '').tr
 const mapReadwiseArticleToDocument = (
 	article: ReadwiseArticle,
 	integrationRunId: number
-): NewDocument => ({
+): NewReadwiseDocument => ({
 	id: article.id,
 	parentId: article.parent_id,
 	url: article.url,
@@ -150,8 +150,8 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 		try {
 			const mappedDoc = mapReadwiseArticleToDocument(doc, integrationRunId);
 
-			await db.insert(documents).values(mappedDoc).onConflictDoUpdate({
-				target: documents.id,
+			await db.insert(readwiseDocuments).values(mappedDoc).onConflictDoUpdate({
+				target: readwiseDocuments.id,
 				set: mappedDoc,
 			});
 
