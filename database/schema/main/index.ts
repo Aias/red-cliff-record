@@ -139,7 +139,7 @@ export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 
 /* ==============================
-   PAGES, LINKS, AND CONTENT
+   PAGES, LINKS, CONTENT, & MEDIA
    ============================== */
 
 export const PageType = z.enum([
@@ -214,50 +214,11 @@ export const pageLinks = pgTable(
 		...timestamps,
 	},
 	(table) => [
+		unique('page_link_unique_idx').on(table.sourceId, table.targetId),
 		index('page_links_source_idx').on(table.sourceId),
 		index('page_links_target_idx').on(table.targetId),
 	]
 );
-
-// Relations
-export const pageRelations = relations(pages, ({ many }) => ({
-	contents: many(pageContents),
-	outgoingLinks: many(pageLinks, { relationName: 'source' }),
-	incomingLinks: many(pageLinks, { relationName: 'target' }),
-	media: many(media, { relationName: 'sourcePage' }),
-}));
-
-export const pageContentsRelations = relations(pageContents, ({ one }) => ({
-	page: one(pages, {
-		fields: [pageContents.pageId],
-		references: [pages.id],
-	}),
-}));
-
-export const pageLinksRelations = relations(pageLinks, ({ one }) => ({
-	source: one(pages, {
-		fields: [pageLinks.sourceId],
-		references: [pages.id],
-		relationName: 'source',
-	}),
-	target: one(pages, {
-		fields: [pageLinks.targetId],
-		references: [pages.id],
-		relationName: 'target',
-	}),
-}));
-
-// Type exports
-export type Page = typeof pages.$inferSelect;
-export type NewPage = typeof pages.$inferInsert;
-export type PageContent = typeof pageContents.$inferSelect;
-export type NewPageContent = typeof pageContents.$inferInsert;
-export type PageLink = typeof pageLinks.$inferSelect;
-export type NewPageLink = typeof pageLinks.$inferInsert;
-
-/* ==============================
-   MEDIA
-   ============================== */
 
 export const MediaFormat = z.enum([
 	'image', // images (jpg, png, etc)
@@ -272,7 +233,11 @@ export const mediaFormatEnum = pgEnum('media_format', MediaFormat.options);
 
 // Helper function for determining format from mime type
 export const getMediaFormat = (contentTypeOrExtension: string): MediaFormat => {
-	const type = mime.lookup(contentTypeOrExtension);
+	const fullMimeType = mime.lookup(contentTypeOrExtension);
+	if (!fullMimeType) {
+		return MediaFormat.enum.unknown;
+	}
+	const type = fullMimeType.split('/')[0];
 	switch (type) {
 		case 'image':
 			return MediaFormat.enum.image;
@@ -313,6 +278,33 @@ export const media = pgTable(
 );
 
 // Relations
+export const pageRelations = relations(pages, ({ many }) => ({
+	contents: many(pageContents),
+	outgoingLinks: many(pageLinks, { relationName: 'source' }),
+	incomingLinks: many(pageLinks, { relationName: 'target' }),
+	media: many(media, { relationName: 'sourcePage' }),
+}));
+
+export const pageContentsRelations = relations(pageContents, ({ one }) => ({
+	page: one(pages, {
+		fields: [pageContents.pageId],
+		references: [pages.id],
+	}),
+}));
+
+export const pageLinksRelations = relations(pageLinks, ({ one }) => ({
+	source: one(pages, {
+		fields: [pageLinks.sourceId],
+		references: [pages.id],
+		relationName: 'source',
+	}),
+	target: one(pages, {
+		fields: [pageLinks.targetId],
+		references: [pages.id],
+		relationName: 'target',
+	}),
+}));
+
 export const mediaRelations = relations(media, ({ one }) => ({
 	sourcePage: one(pages, {
 		fields: [media.sourcePageId],
@@ -322,6 +314,12 @@ export const mediaRelations = relations(media, ({ one }) => ({
 }));
 
 // Type exports
+export type Page = typeof pages.$inferSelect;
+export type NewPage = typeof pages.$inferInsert;
+export type PageContent = typeof pageContents.$inferSelect;
+export type NewPageContent = typeof pageContents.$inferInsert;
+export type PageLink = typeof pageLinks.$inferSelect;
+export type NewPageLink = typeof pageLinks.$inferInsert;
 export type Media = typeof media.$inferSelect;
 export type NewMedia = typeof media.$inferInsert;
 
@@ -356,6 +354,7 @@ export const indexEntries = pgTable(
 		mainType: indexMainTypeEnum('main_type').notNull(),
 		subType: text('sub_type'),
 		canonicalPageId: integer('canonical_page_id').references(() => pages.id),
+		canonicalMediaId: integer('canonical_media_id').references(() => media.id),
 		aliasOf: integer('alias_of'),
 		...timestamps,
 	},
@@ -366,27 +365,37 @@ export const indexEntries = pgTable(
 		}),
 		unique('index_entry_idx').on(table.name, table.sense, table.mainType),
 		index('type_subtype_idx').on(table.mainType, table.subType),
+		index('canonical_page_idx').on(table.canonicalPageId),
+		index('canonical_media_idx').on(table.canonicalMediaId),
 	]
 );
 
 // See-also relationships
-export const indexRelations = pgTable('index_relations', {
-	id: serial('id').primaryKey(),
-	sourceId: integer('source_id')
-		.references(() => indexEntries.id)
-		.notNull(),
-	targetId: integer('target_id')
-		.references(() => indexEntries.id)
-		.notNull(),
-	type: indexRelationTypeEnum('type').notNull().default('related_to'),
-	...timestamps,
-});
+export const indexRelations = pgTable(
+	'index_relations',
+	{
+		id: serial('id').primaryKey(),
+		sourceId: integer('source_id')
+			.references(() => indexEntries.id)
+			.notNull(),
+		targetId: integer('target_id')
+			.references(() => indexEntries.id)
+			.notNull(),
+		type: indexRelationTypeEnum('type').notNull().default('related_to'),
+		...timestamps,
+	},
+	(table) => [unique('index_relation_unique_idx').on(table.sourceId, table.targetId, table.type)]
+);
 
 // Relations
 export const indexEntriesRelations = relations(indexEntries, ({ one, many }) => ({
 	canonicalPage: one(pages, {
 		fields: [indexEntries.canonicalPageId],
 		references: [pages.id],
+	}),
+	canonicalMedia: one(media, {
+		fields: [indexEntries.canonicalMediaId],
+		references: [media.id],
 	}),
 	alias: one(indexEntries, {
 		fields: [indexEntries.aliasOf],
@@ -442,8 +451,9 @@ export const locations = pgTable(
 		description: text('description'),
 		coordinates: geometry('coordinates', { srid: 4326, type: 'point', mode: 'xy' }).notNull(),
 		boundingBox: multipolygon('bounding_box'),
+		sourcePlatform: text('source_platform'),
 		sourceData: json('source_data'),
-		mapPageId: integer('map_page_id').references(() => pageLinks.id),
+		mapPageId: integer('map_page_id').references(() => pages.id),
 		mapImageId: integer('map_image_id').references(() => media.id),
 		address: text('address'),
 		timezone: text('timezone'),
@@ -453,6 +463,8 @@ export const locations = pgTable(
 		...timestamps,
 	},
 	(table) => [
+		index('location_map_page_idx').on(table.mapPageId),
+		index('location_map_image_idx').on(table.mapImageId),
 		// Spatial index on geometry
 		index('location_coordinates_idx').using('gist', table.coordinates),
 		// Spatial index on bounding box
@@ -476,9 +488,9 @@ export const locations = pgTable(
 
 // Relations
 export const locationRelations = relations(locations, ({ one, many }) => ({
-	mapPage: one(pageLinks, {
+	mapPage: one(pages, {
 		fields: [locations.mapPageId],
-		references: [pageLinks.id],
+		references: [pages.id],
 	}),
 	mapImage: one(media, {
 		fields: [locations.mapImageId],
