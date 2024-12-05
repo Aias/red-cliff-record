@@ -7,7 +7,7 @@ import { githubCommits } from '../github/schema';
 import { airtableCreators, airtableExtracts, airtableSpaces } from '../airtable/schema';
 import { adobeLightroomImages } from '../adobe/schema';
 import { z } from 'zod';
-import { integrationSchema } from '@schema/common/schemas';
+import { integrationSchema } from '../../common/schemas';
 
 export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
 export type IntegrationStatus = z.infer<typeof IntegrationStatus>;

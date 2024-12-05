@@ -2,7 +2,7 @@ import { timestamps } from '../../common';
 import { relations } from 'drizzle-orm';
 import { text, timestamp, integer, json, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../operations/schema';
-import { integrationSchema } from '@schema/common/schemas';
+import { integrationSchema } from '../../common/schemas';
 
 export const adobeLightroomImages = integrationSchema.table(
 	'adobe_lightroom_images',

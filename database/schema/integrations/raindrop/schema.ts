@@ -2,7 +2,7 @@ import { integer, text, index, boolean, unique, foreignKey } from 'drizzle-orm/p
 import { relations } from 'drizzle-orm';
 import { timestamps } from '../../common';
 import { integrationRuns } from '../operations/schema';
-import { integrationSchema } from '@schema/common/schemas';
+import { integrationSchema } from '../../common/schemas';
 
 export const raindropRaindrops = integrationSchema.table(
 	'raindrop_raindrops',
