@@ -795,7 +795,7 @@ You can easily extend the enums by adding new values to the Zod definitions, but
 
 Nick Trombley: here's what I ended up with:
 
-```
+```typescript
 import {
 	pgTable,
 	serial,
@@ -1593,7 +1593,7 @@ I would like to be able to differentiate those two concepts though, and am open 
 Columns should include at least:
 
 - Name
-- Sense (to differentiate rows with the same name, e.g. "Space (Astronomy) vs. Space (Emptiness)"
+- Sense (to differentiate rows with the same name, e.g. "Space (Astronomy) vs. Space (Emptiness)")
 - Short Name
 - Alias of (reference back to table's ID)
 - See also (not the same thing as alias, but related index entries. Will probably need a separate table to capture these linkages since it's a many-many relationship)
@@ -2080,7 +2080,7 @@ Would you like me to add those constraints or discuss any modifications to the s
 
 Nick Trombley: Here's the new file just for reference. You may notice I removed the different subtype columns in favor of a single free text column with an index that can aid in autocomplete.
 
-```ts
+```typescript
 import {
 	pgTable,
 	serial,
@@ -3189,83 +3189,70 @@ Nick Trombley: put it all together as a single code block please
 
 ---
 
-Raycast AI: ```typescript
-import {
-pgTable,
-serial,
-text,
-integer,
-pgEnum,
-json,
-index
-} from 'drizzle-orm/pg-core';
+Raycast AI:
+
+```typescript
+import { pgTable, serial, text, integer, pgEnum, json, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { z } from 'zod';
 import { timestamps } from './common';
 import { urls } from './urls';
 
 // Enums
-export const MediaType = z.enum([
-'image',
-'video',
-'audio',
-'pdf'
-]);
+export const MediaType = z.enum(['image', 'video', 'audio', 'pdf']);
 export type MediaType = z.infer<typeof MediaType>;
 export const mediaTypeEnum = pgEnum('media_type', MediaType.options);
 
-export const DocumentFormat = z.enum([
-'html',
-'markdown',
-'plaintext'
-]);
+export const DocumentFormat = z.enum(['html', 'markdown', 'plaintext']);
 export type DocumentFormat = z.infer<typeof DocumentFormat>;
 export const documentFormatEnum = pgEnum('document_format', DocumentFormat.options);
 
 // Tables
-export const media = pgTable('media', {
-id: serial('id').primaryKey(),
-type: mediaTypeEnum('type').notNull(),
-urlId: integer('url_id')
-.references(() => urls.id)
-.notNull(),
-title: text('title'),
-altText: text('alt_text'),
-caption: text('caption'),
-dimensions: json('dimensions'),
-exif: json('exif'),
-metadata: json('metadata'),
-...timestamps,
-}, (table) => [
-index('media_type_idx').on(table.type),
-index('media_url_idx').on(table.urlId),
-]);
+export const media = pgTable(
+	'media',
+	{
+		id: serial('id').primaryKey(),
+		type: mediaTypeEnum('type').notNull(),
+		urlId: integer('url_id')
+			.references(() => urls.id)
+			.notNull(),
+		title: text('title'),
+		altText: text('alt_text'),
+		caption: text('caption'),
+		dimensions: json('dimensions'),
+		exif: json('exif'),
+		metadata: json('metadata'),
+		...timestamps,
+	},
+	(table) => [index('media_type_idx').on(table.type), index('media_url_idx').on(table.urlId)]
+);
 
-export const documents = pgTable('documents', {
-id: serial('id').primaryKey(),
-urlId: integer('url_id')
-.references(() => urls.id),
-format: documentFormatEnum('format').notNull(),
-content: text('content').notNull(),
-metadata: json('metadata'),
-...timestamps,
-}, (table) => [
-index('document_format_idx').on(table.format),
-]);
+export const documents = pgTable(
+	'documents',
+	{
+		id: serial('id').primaryKey(),
+		urlId: integer('url_id').references(() => urls.id),
+		format: documentFormatEnum('format').notNull(),
+		content: text('content').notNull(),
+		metadata: json('metadata'),
+		...timestamps,
+	},
+	(table) => [index('document_format_idx').on(table.format)]
+);
 
 // Relations
 export const mediaRelations = relations(media, ({ one }) => ({
-url: one(urls, {
-fields: [media.urlId],
-references: [urls.id],
-}),
+	url: one(urls, {
+		fields: [media.urlId],
+		references: [urls.id],
+	}),
 }));
 
 export const documentsRelations = relations(documents, ({ one }) => ({
-url: one(urls, {
-fields: [documents.urlId],
-references: [urls.id],
-}),
+	url: one(urls, {
+		fields: [documents.urlId],
+		references: [urls.id],
+	}),
 }));
 
 // Type exports
@@ -3273,8 +3260,7 @@ export type Media = typeof media.$inferSelect;
 export type NewMedia = typeof media.$inferInsert;
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
-
-````
+```
 
 ---
 
@@ -3285,90 +3271,79 @@ Nick Trombley: how might I add full-text search to some of these columns?
 Raycast AI: PostgreSQL provides powerful full-text search capabilities through its `tsvector` type and related functions. For Drizzle, we can add generated columns that create search vectors and indexes on them. Here's how we might modify the tables:
 
 ```typescript
-import {
-  pgTable,
-  serial,
-  text,
-  integer,
-  pgEnum,
-  json,
-  index,
-  sql
-} from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, pgEnum, json, index, sql } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { z } from 'zod';
 import { timestamps } from './common';
 import { urls } from './urls';
 
 // Enums
-export const MediaType = z.enum([
-  'image',
-  'video',
-  'audio',
-  'pdf'
-]);
+export const MediaType = z.enum(['image', 'video', 'audio', 'pdf']);
 export type MediaType = z.infer<typeof MediaType>;
 export const mediaTypeEnum = pgEnum('media_type', MediaType.options);
 
-export const DocumentFormat = z.enum([
-  'html',
-  'markdown',
-  'plaintext'
-]);
+export const DocumentFormat = z.enum(['html', 'markdown', 'plaintext']);
 export type DocumentFormat = z.infer<typeof DocumentFormat>;
 export const documentFormatEnum = pgEnum('document_format', DocumentFormat.options);
 
 // Tables
-export const media = pgTable('media', {
-  id: serial('id').primaryKey(),
-  type: mediaTypeEnum('type').notNull(),
-  urlId: integer('url_id')
-    .references(() => urls.id)
-    .notNull(),
-  title: text('title'),
-  altText: text('alt_text'),
-  caption: text('caption'),
-  dimensions: json('dimensions'),
-  exif: json('exif'),
-  metadata: json('metadata'),
-  // Generated column for full-text search
-  searchVector: sql<string>`
+export const media = pgTable(
+	'media',
+	{
+		id: serial('id').primaryKey(),
+		type: mediaTypeEnum('type').notNull(),
+		urlId: integer('url_id')
+			.references(() => urls.id)
+			.notNull(),
+		title: text('title'),
+		altText: text('alt_text'),
+		caption: text('caption'),
+		dimensions: json('dimensions'),
+		exif: json('exif'),
+		metadata: json('metadata'),
+		// Generated column for full-text search
+		searchVector: sql<string>`
     to_tsvector('english',
       coalesce(${text('title')}, '') || ' ' ||
       coalesce(${text('alt_text')}, '') || ' ' ||
       coalesce(${text('caption')}, '')
     )
   `.type('tsvector'),
-  ...timestamps,
-}, (table) => [
-  index('media_type_idx').on(table.type),
-  index('media_url_idx').on(table.urlId),
-  // GiST index for full-text search
-  index('media_search_idx').on(sql`${table.searchVector} using gist`),
-]);
+		...timestamps,
+	},
+	(table) => [
+		index('media_type_idx').on(table.type),
+		index('media_url_idx').on(table.urlId),
+		// GiST index for full-text search
+		index('media_search_idx').on(sql`${table.searchVector} using gist`),
+	]
+);
 
-export const documents = pgTable('documents', {
-  id: serial('id').primaryKey(),
-  urlId: integer('url_id')
-    .references(() => urls.id),
-  format: documentFormatEnum('format').notNull(),
-  content: text('content').notNull(),
-  metadata: json('metadata'),
-  // Generated column for full-text search
-  searchVector: sql<string>`
+export const documents = pgTable(
+	'documents',
+	{
+		id: serial('id').primaryKey(),
+		urlId: integer('url_id').references(() => urls.id),
+		format: documentFormatEnum('format').notNull(),
+		content: text('content').notNull(),
+		metadata: json('metadata'),
+		// Generated column for full-text search
+		searchVector: sql<string>`
     to_tsvector('english',
       coalesce(${text('content')}, '')
     )
   `.type('tsvector'),
-  ...timestamps,
-}, (table) => [
-  index('document_format_idx').on(table.format),
-  // GiST index for full-text search
-  index('document_search_idx').on(sql`${table.searchVector} using gist`),
-]);
+		...timestamps,
+	},
+	(table) => [
+		index('document_format_idx').on(table.format),
+		// GiST index for full-text search
+		index('document_search_idx').on(sql`${table.searchVector} using gist`),
+	]
+);
 
 // Relations remain the same...
-````
+```
 
 To use this in queries:
 
@@ -3527,7 +3502,7 @@ Would you like to explore adding vector embeddings to your schema? It could be p
 
 Nick Trombley: oh, I forgot to mention that the documents table will be used to store crawled versions of webpages from primary sources in the URLs table
 
-```
+```typescript
 import {
 	pgTable,
 	serial,
@@ -5214,129 +5189,1164 @@ Nick Trombley: if I'm inserting a row into the table from google or openstreetma
 
 ---
 
-Raycast AI: Both Google Maps and OpenStreetMap use WGS84 (SRID 4326) coordinates by default, so you can use their coordinates directly. Here's how insertions might look:
+Raycast AI: Looking at the changes from our previous discussion, here are the major updates:
+
+1. **Schema Organization**
+
+- Added clear section separators with comments
+- More consistent naming across tables and relations
+- Better organization of related tables together
+
+2. **Pages & Media** (formerly URLs)
+
+- Renamed `urls` to `pages` and expanded its functionality
+- Added `pageContents` table to store versions of page content
+- Changed `urlLinks` to `pageLinks`
+- Enhanced media table with more fields (width, height, fileSize, etc.)
+- Added version tracking for media (`versionOfMediaId`)
+- Added `MediaFormat` enum and mime type handling
+
+3. **Timepoints**
+
+- Simplified from separate start/end types to granularity
+- Added `recordTimepoints` junction table
+- Added ordering capability with `order` field
+- More comprehensive timestamps and indexing
+
+4. **Index System**
+
+- Renamed some types (e.g., 'subject' to 'category')
+- Added canonical media reference alongside page reference
+- Enhanced indexing and relations
+
+5. **New Features**
+
+- Added `FLAGS` system with emoji support
+- Added comprehensive `records` system with:
+  - Multiple types of relations (`RecordRelationType`)
+  - Creator roles (`CreatorRoleType`)
+  - Categorization system
+  - Media and page links
+  - Timepoint associations
+  - Location references
+
+6. **Locations**
+
+- Added source tracking (`sourcePlatform`, `sourceData`)
+- Added map references to both pages and media
+- Maintained spatial functionality with PostGIS
+
+7. **General Improvements**
+
+- More consistent use of indexes
+- Better unique constraints
+- More comprehensive relation definitions
+- Added ordering capabilities (`order` field) in junction tables
+- Better type exports
+
+The biggest addition seems to be the comprehensive records system, which appears to be a central part of organizing and relating different types of content together.
+
+Would you like me to dive deeper into any particular aspect of these changes?
+
+---
+
+Nick Trombley:
 
 ```typescript
-// From Google Maps Place API response
-const googlePlace = {
-	name: 'Golden Gate Bridge',
-	geometry: {
-		location: {
-			lat: 37.8199,
-			lng: -122.4783,
-		},
-		viewport: {
-			// This is the bounding box from Google
-			northeast: { lat: 37.8213, lng: -122.4746 },
-			southwest: { lat: 37.8185, lng: -122.482 },
-		},
-	},
+import {
+pgTable,
+serial,
+text,
+date,
+time,
+timestamp,
+integer,
+pgEnum,
+foreignKey,
+json,
+unique,
+boolean,
+index,
+geometry,
+customType,
+} from 'drizzle-orm/pg-core';
+import { relations, SQL, sql } from 'drizzle-orm';
+import { z } from 'zod';
+import mime from 'mime-types';
+import { timestamps } from '../common';
+
+/_ ==============================
+TIMEPOINTS AND EVENTS
+============================== _/
+
+// Zod enums
+export const TimepointType = z.enum([
+'instant',
+'minute',
+'hour',
+'day',
+'week',
+'month',
+'quarter',
+'year',
+'decade',
+'century',
+]);
+export type TimepointType = z.infer<typeof TimepointType>;
+
+// Drizzle enums
+export const timepointTypeEnum = pgEnum('timepoint_type', TimepointType.options);
+
+// Tables
+export const timepoints = pgTable(
+'timepoints',
+{
+id: serial('id').primaryKey(),
+startDate: date('start_date').notNull(),
+startTime: time('start_time'),
+startInstant: timestamp('start_instant', { withTimezone: true }).notNull(),
+startGranularity: timepointTypeEnum('start_granularity').notNull(),
+endDate: date('end_date'),
+endTime: time('end_time'),
+endInstant: timestamp('end_instant', { withTimezone: true }),
+endGranularity: timepointTypeEnum('end_granularity'),
+...timestamps,
+},
+(table) => [
+index('timepoint_start_date_idx').on(table.startDate),
+index('timepoint_start_instant_idx').on(table.startInstant),
+index('timepoint_start_granularity_idx').on(table.startGranularity),
+index('timepoint_end_date_idx').on(table.endDate),
+index('timepoint_end_instant_idx').on(table.endInstant),
+index('timepoint_end_granularity_idx').on(table.endGranularity),
+]
+);
+
+// New junction table for record-timepoint relationships
+export const recordTimepoints = pgTable(
+'record_timepoints',
+{
+id: serial('id').primaryKey(),
+recordId: integer('record_id')
+.references(() => records.id)
+.notNull(),
+timepointId: integer('timepoint_id')
+.references(() => timepoints.id)
+.notNull(),
+label: text('label'),
+order: text('order').notNull().default('a0'),
+...timestamps,
+},
+(table) => [
+index('record_timepoint_record_idx').on(table.recordId),
+index('record_timepoint_timepoint_idx').on(table.timepointId),
+]
+);
+
+// Relations
+export const timepointsRelations = relations(timepoints, ({ many }) => ({
+timepoints: many(recordTimepoints),
+}));
+
+// Type exports
+export type Timepoint = typeof timepoints.$inferSelect;
+export type NewTimepoint = typeof timepoints.$inferInsert;
+export type RecordTimepoint = typeof recordTimepoints.$inferSelect;
+export type NewRecordTimepoint = typeof recordTimepoints.$inferInsert;
+
+/_ ==============================
+PAGES, LINKS, CONTENT, & MEDIA
+============================== _/
+
+export const PageType = z.enum([
+'primary', // primary/starting points
+'crawled', // discovered through crawling
+]);
+export type PageType = z.infer<typeof PageType>;
+export const pageTypeEnum = pgEnum('page_type', PageType.options);
+
+// Main pages table
+export const pages = pgTable(
+'pages',
+{
+id: serial('id').primaryKey(),
+url: text('url').notNull(),
+domain: text('domain').generatedAlwaysAs(
+(): SQL => sql`LOWER(regexp_replace(${pages.url}, '^https?://([^/]+).*$', '\\1'))`
+),
+title: text('title'),
+type: pageTypeEnum('type').notNull().default(PageType.enum.primary),
+lastCrawlDate: timestamp('last_crawl_date', { withTimezone: true }),
+lastSuccessfulCrawlDate: timestamp('last_successful_crawl_date', { withTimezone: true }),
+lastHttpStatus: integer('last_http_status'),
+metadata: json('metadata'), // headers, meta tags, etc
+...timestamps,
+},
+(table) => [
+unique('page_url_idx').on(table.url),
+index('page_domain_idx').on(table.domain),
+index('crawl_status_idx').on(table.lastCrawlDate, table.lastHttpStatus),
+]
+);
+
+// Page content versions
+export const pageContents = pgTable(
+'page_contents',
+{
+id: serial('id').primaryKey(),
+pageId: integer('page_id')
+.references(() => pages.id)
+.notNull(),
+contentHtml: text('content_html').notNull(),
+contentMarkdown: text('content_markdown'),
+crawlDate: timestamp('crawl_date', { withTimezone: true }).notNull(),
+...timestamps,
+},
+(table) => [index('page_content_idx').on(table.pageId, table.crawlDate)]
+);
+
+// Link metadata schema
+export const LinkMetadataSchema = z
+.object({
+linkText: z.string().optional(),
+attributes: z.record(z.string()).optional(),
+})
+.strict();
+export type LinkMetadata = z.infer<typeof LinkMetadataSchema>;
+
+// Relationship table for page connections
+export const pageLinks = pgTable(
+'page_links',
+{
+id: serial('id').primaryKey(),
+sourceId: integer('source_id')
+.references(() => pages.id)
+.notNull(),
+targetId: integer('target_id')
+.references(() => pages.id)
+.notNull(),
+metadata: json('metadata').$type<LinkMetadata>(),
+...timestamps,
+},
+(table) => [
+unique('page_link_unique_idx').on(table.sourceId, table.targetId),
+index('page_links_source_idx').on(table.sourceId),
+index('page_links_target_idx').on(table.targetId),
+]
+);
+
+export const MediaFormat = z.enum([
+'image', // images (jpg, png, etc)
+'video', // video files
+'audio', // audio files
+'text', // plain text, markdown
+'application', // binary data, PDFs, etc
+'unknown', // unknown format
+]);
+export type MediaFormat = z.infer<typeof MediaFormat>;
+export const mediaFormatEnum = pgEnum('media_format', MediaFormat.options);
+
+// Helper function for determining format from mime type
+export const getMediaFormat = (contentTypeOrExtension: string): MediaFormat => {
+const fullMimeType = mime.lookup(contentTypeOrExtension);
+if (!fullMimeType) {
+return MediaFormat.enum.unknown;
+}
+const type = fullMimeType.split('/')[0];
+switch (type) {
+case 'image':
+return MediaFormat.enum.image;
+case 'video':
+return MediaFormat.enum.video;
+case 'audio':
+return MediaFormat.enum.audio;
+case 'text':
+return MediaFormat.enum.text;
+case 'application':
+return MediaFormat.enum.application;
+default:
+return MediaFormat.enum.unknown;
+}
 };
 
-await db.insert(locations).values({
-	name: googlePlace.name,
-	locationType: 'landmark',
-	// Point geometry
-	coordinates: sql`ST_SetSRID(ST_MakePoint(${googlePlace.geometry.location.lng}, ${googlePlace.geometry.location.lat}), 4326)`,
-	// Bounding box as a polygon
-	boundingBox: createBoundingBox([
-		[
-			[
-				// Convert viewport to polygon coordinates
-				[googlePlace.geometry.viewport.southwest.lng, googlePlace.geometry.viewport.southwest.lat],
-				[googlePlace.geometry.viewport.southwest.lng, googlePlace.geometry.viewport.northeast.lat],
-				[googlePlace.geometry.viewport.northeast.lng, googlePlace.geometry.viewport.northeast.lat],
-				[googlePlace.geometry.viewport.northeast.lng, googlePlace.geometry.viewport.southwest.lat],
-				[googlePlace.geometry.viewport.southwest.lng, googlePlace.geometry.viewport.southwest.lat],
-			],
-		],
-	]),
-	sourceData: googlePlace, // Store the original response
-	createdAt: new Date(),
-	updatedAt: new Date(),
+export const media = pgTable(
+'media',
+{
+id: serial('id').primaryKey(),
+url: text('url').notNull(),
+format: mediaFormatEnum('format').notNull(),
+mimeType: text('mime_type').notNull(),
+title: text('title'),
+altText: text('alt_text'),
+fileSize: integer('file_size'),
+width: integer('width'),
+height: integer('height'),
+versionOfMediaId: integer('version_of_media_id'),
+sourcePageId: integer('source_page_id').references(() => pages.id),
+metadata: json('metadata'),
+...timestamps,
+},
+(table) => [
+foreignKey({
+columns: [table.versionOfMediaId],
+foreignColumns: [table.id],
+}),
+unique('media_url_idx').on(table.url),
+index('media_format_idx').on(table.format),
+index('media_mime_type_idx').on(table.mimeType),
+index('media_source_idx').on(table.sourcePageId),
+index('media_version_idx').on(table.versionOfMediaId),
+]
+);
+
+// Relations
+export const pageRelations = relations(pages, ({ many }) => ({
+contents: many(pageContents),
+outgoingLinks: many(pageLinks, { relationName: 'source' }),
+incomingLinks: many(pageLinks, { relationName: 'target' }),
+media: many(media, { relationName: 'pageMedia' }),
+}));
+
+export const pageContentsRelations = relations(pageContents, ({ one }) => ({
+page: one(pages, {
+fields: [pageContents.pageId],
+references: [pages.id],
+}),
+}));
+
+export const pageLinksRelations = relations(pageLinks, ({ one }) => ({
+source: one(pages, {
+fields: [pageLinks.sourceId],
+references: [pages.id],
+relationName: 'source',
+}),
+target: one(pages, {
+fields: [pageLinks.targetId],
+references: [pages.id],
+relationName: 'target',
+}),
+}));
+
+export const mediaRelations = relations(media, ({ one, many }) => ({
+page: one(pages, {
+fields: [media.sourcePageId],
+references: [pages.id],
+relationName: 'pageMedia',
+}),
+versionOf: one(media, {
+fields: [media.versionOfMediaId],
+references: [media.id],
+relationName: 'versionOf',
+}),
+versions: many(media, {
+relationName: 'versionOf',
+}),
+}));
+
+// Type exports
+export type Page = typeof pages.$inferSelect;
+export type NewPage = typeof pages.$inferInsert;
+export type PageContent = typeof pageContents.$inferSelect;
+export type NewPageContent = typeof pageContents.$inferInsert;
+export type PageLink = typeof pageLinks.$inferSelect;
+export type NewPageLink = typeof pageLinks.$inferInsert;
+export type Media = typeof media.$inferSelect;
+export type NewMedia = typeof media.$inferInsert;
+
+/_ ==============================
+INDEX
+============================== _/
+
+export const IndexMainType = z.enum([
+'entity', // who/what created something
+'category ', // what something is about
+'format', // what something is
+]);
+export type IndexMainType = z.infer<typeof IndexMainType>;
+
+export const IndexRelationType = z.enum(['related_to', 'opposite_of', 'part_of']);
+export type IndexRelationType = z.infer<typeof IndexRelationType>;
+
+// Drizzle enums
+export const indexMainTypeEnum = pgEnum('index_main_type', IndexMainType.options);
+export const indexRelationTypeEnum = pgEnum('index_relation_type', IndexRelationType.options);
+
+// Main index table
+export const indexEntries = pgTable(
+'index_entries',
+{
+id: serial('id').primaryKey(),
+name: text('name').notNull(),
+shortName: text('short_name'),
+sense: text('sense'),
+notes: text('notes'),
+private: boolean('private').notNull().default(false),
+mainType: indexMainTypeEnum('main_type').notNull(),
+subType: text('sub_type'),
+canonicalPageId: integer('canonical_page_id').references(() => pages.id),
+canonicalMediaId: integer('canonical_media_id').references(() => media.id),
+aliasOf: integer('alias_of'),
+...timestamps,
+},
+(table) => [
+foreignKey({
+columns: [table.aliasOf],
+foreignColumns: [table.id],
+}),
+unique('index_entry_idx').on(table.name, table.sense, table.mainType),
+index('type_subtype_idx').on(table.mainType, table.subType),
+index('canonical_page_idx').on(table.canonicalPageId),
+index('canonical_media_idx').on(table.canonicalMediaId),
+]
+);
+
+// See-also relationships
+export const indexRelations = pgTable(
+'index_relations',
+{
+id: serial('id').primaryKey(),
+sourceId: integer('source_id')
+.references(() => indexEntries.id)
+.notNull(),
+targetId: integer('target_id')
+.references(() => indexEntries.id)
+.notNull(),
+type: indexRelationTypeEnum('type').notNull().default('related_to'),
+...timestamps,
+},
+(table) => [unique('index_relation_unique_idx').on(table.sourceId, table.targetId, table.type)]
+);
+
+// Relations
+export const indexEntriesRelations = relations(indexEntries, ({ one, many }) => ({
+canonicalPage: one(pages, {
+fields: [indexEntries.canonicalPageId],
+references: [pages.id],
+}),
+canonicalMedia: one(media, {
+fields: [indexEntries.canonicalMediaId],
+references: [media.id],
+}),
+alias: one(indexEntries, {
+fields: [indexEntries.aliasOf],
+references: [indexEntries.id],
+relationName: 'aliasRelation',
+}),
+aliases: many(indexEntries, {
+relationName: 'aliasRelation',
+}),
+outgoingRelations: many(indexRelations, {
+relationName: 'source',
+}),
+incomingRelations: many(indexRelations, {
+relationName: 'target',
+}),
+}));
+
+export const indexRelationsRelations = relations(indexRelations, ({ one }) => ({
+source: one(indexEntries, {
+fields: [indexRelations.sourceId],
+references: [indexEntries.id],
+relationName: 'source',
+}),
+target: one(indexEntries, {
+fields: [indexRelations.targetId],
+references: [indexEntries.id],
+relationName: 'target',
+}),
+}));
+
+// Type exports
+export type IndexEntry = typeof indexEntries.$inferSelect;
+export type NewIndexEntry = typeof indexEntries.$inferInsert;
+export type IndexRelation = typeof indexRelations.$inferSelect;
+export type NewIndexRelation = typeof indexRelations.$inferInsert;
+
+/_ ==============================
+FLAGS
+============================== _/
+
+export const FLAGS = {
+important: {
+name: 'Important',
+emoji: '⭐',
+description: 'Important content',
+},
+favorite: {
+name: 'Favorite',
+emoji: '💖',
+description: 'Favorite content',
+},
+draft: {
+name: 'Draft',
+emoji: '📝',
+description: 'Work in progress',
+},
+follow_up: {
+name: 'Follow-up',
+emoji: '🚩',
+description: 'Needs further action',
+},
+review: {
+name: 'Review',
+emoji: '⏲️',
+description: 'Marked for later review',
+},
+outdated: {
+name: 'Outdated',
+emoji: '📅',
+description: 'Content needs updating',
+},
+} as const;
+
+// Generate Zod enum from FLAGS keys
+export const Flag = z.enum(
+Object.keys(FLAGS) as [keyof typeof FLAGS, ...Array<keyof typeof FLAGS>]
+);
+export type Flag = z.infer<typeof Flag>;
+export const flagEnum = pgEnum('flag', Flag.options);
+
+// Type safety
+export type FlagData = typeof FLAGS;
+export type FlagKey = keyof FlagData;
+
+// Helper functions
+export const getFlagName = (flag: Flag): string => FLAGS[flag].name;
+export const getFlagEmoji = (flag: Flag): string => FLAGS[flag].emoji;
+export const getFlagDescription = (flag: Flag): string => FLAGS[flag].description;
+
+/_ ==============================
+LOCATIONS
+============================== _/
+
+const multipolygon = customType<{ data: string }>({
+dataType() {
+return 'geometry(MultiPolygon, 4326)';
+},
 });
 
-// From OpenStreetMap API response
-const osmFeature = {
-	type: 'Feature',
-	id: 'way/876543210',
-	properties: {
-		name: 'Alcatraz Island',
-		'addr:city': 'San Francisco',
-	},
-	geometry: {
-		type: 'Point',
-		coordinates: [-122.4229, 37.8267], // OSM uses [longitude, latitude]
-	},
-	bbox: [-122.4239, 37.8261, -122.4219, 37.8273], // [west, south, east, north]
-};
+export const locations = pgTable(
+'locations',
+{
+id: serial('id').primaryKey(),
+name: text('name').notNull(),
+locationType: text('location_type').notNull().default('Place'),
+description: text('description'),
+coordinates: geometry('coordinates', { srid: 4326, type: 'point', mode: 'xy' }).notNull(),
+boundingBox: multipolygon('bounding_box'),
+sourcePlatform: text('source_platform'),
+sourceData: json('source_data'),
+mapPageId: integer('map_page_id').references(() => pages.id),
+mapImageId: integer('map_image_id').references(() => media.id),
+address: text('address'),
+timezone: text('timezone'),
+population: integer('population'),
+elevation: integer('elevation'),
+parentLocationId: integer('parent_location_id'),
+...timestamps,
+},
+(table) => [
+index('location_map_page_idx').on(table.mapPageId),
+index('location_map_image_idx').on(table.mapImageId),
+// Spatial index on geometry
+index('location_coordinates_idx').using('gist', table.coordinates),
+// Spatial index on bounding box
+index('location_bounding_box_idx').using('gist', table.boundingBox),
+// Index for type lookups
+index('location_type_idx').on(table.locationType),
+// Parent-child lookups
+index('location_parent_idx').on(table.parentLocationId),
+// Self-referential foreign key
+foreignKey({
+columns: [table.parentLocationId],
+foreignColumns: [table.id],
+}),
+unique('location_name_type_parent_idx').on(
+table.name,
+table.locationType,
+table.parentLocationId
+),
+]
+);
 
-await db.insert(locations).values({
-	name: osmFeature.properties.name,
-	locationType: 'island',
-	// Point geometry (OSM already uses [lng, lat] order)
-	coordinates: sql`ST_SetSRID(ST_MakePoint(${osmFeature.geometry.coordinates[0]}, ${osmFeature.geometry.coordinates[1]}), 4326)`,
-	// Bounding box as a polygon
-	boundingBox: createBoundingBox([
-		[
-			[
-				// Convert bbox to polygon coordinates
-				[osmFeature.bbox[0], osmFeature.bbox[1]], // southwest
-				[osmFeature.bbox[0], osmFeature.bbox[3]], // northwest
-				[osmFeature.bbox[2], osmFeature.bbox[3]], // northeast
-				[osmFeature.bbox[2], osmFeature.bbox[1]], // southeast
-				[osmFeature.bbox[0], osmFeature.bbox[1]], // close the polygon
-			],
-		],
-	]),
-	address: osmFeature.properties['addr:city'],
-	sourceData: osmFeature,
-	createdAt: new Date(),
-	updatedAt: new Date(),
-});
+// Relations
+export const locationRelations = relations(locations, ({ one, many }) => ({
+mapPage: one(pages, {
+fields: [locations.mapPageId],
+references: [pages.id],
+}),
+mapImage: one(media, {
+fields: [locations.mapImageId],
+references: [media.id],
+}),
+parent: one(locations, {
+fields: [locations.parentLocationId],
+references: [locations.id],
+relationName: 'parentChild',
+}),
+children: many(locations, {
+relationName: 'parentChild',
+}),
+}));
+
+// Type exports
+export type Location = typeof locations.$inferSelect;
+export type NewLocation = typeof locations.$inferInsert;
+
+/_ ==============================
+RECORDS
+============================== _/
+
+// Enums
+export const RecordType = z.enum([
+'resource', // reference material, tools, techniques
+'bookmark', // interesting but not reference material
+'object', // physical or digital object
+'document', // text-heavy content
+'abstraction', // concept or idea
+'extracted', // quote or excerpt
+'event', // point in time or occurrence of an event
+]);
+export type RecordType = z.infer<typeof RecordType>;
+export const recordTypeEnum = pgEnum('record_type', RecordType.options);
+
+export const CreatorRoleType = z.enum([
+'creator', // primary creator
+'author', // specifically wrote/authored
+'editor', // edited/curated
+'contributor', // helped create/contributed to
+'via', // found through/attributed to
+'participant', // involved in
+'interviewer', // conducted interview
+'interviewee', // was interviewed
+'subject', // topic is about this person
+'mentioned', // referenced in content
+]);
+export type CreatorRoleType = z.infer<typeof CreatorRoleType>;
+export const creatorRoleTypeEnum = pgEnum('creator_role_type', CreatorRoleType.options);
+
+export const RecordRelationType = z.enum([
+// Hierarchical
+'primary_source',
+'quoted_from',
+'copied_from',
+'derived_from',
+'part_of',
+// Non-hierarchical
+'references',
+'similar_to',
+'responds_to',
+'contradicts',
+'supports',
+]);
+export type RecordRelationType = z.infer<typeof RecordRelationType>;
+export const recordRelationTypeEnum = pgEnum('record_relation_type', RecordRelationType.options);
+
+export const CategorizationType = z.enum([
+'about', // meta-level subject matter
+'file_under', // organizational category
+]);
+export type CategorizationType = z.infer<typeof CategorizationType>;
+export const categorizationTypeEnum = pgEnum('categorization_type', CategorizationType.options);
+
+// Main records table
+export const records = pgTable(
+'records',
+{
+id: serial('id').primaryKey(),
+title: text('title'),
+content: text('content'),
+type: recordTypeEnum('type').notNull(),
+formatId: integer('format_id').references(() => indexEntries.id),
+private: boolean('private').notNull().default(false),
+flags: flagEnum('flags').array(),
+locationId: integer('location_id').references(() => locations.id),
+...timestamps,
+},
+(table) => [
+index('record_type_idx').on(table.type),
+index('record_format_idx').on(table.formatId),
+index('record_location_idx').on(table.locationId),
+]
+);
+
+// Combined hierarchy/relations table
+export const recordRelations = pgTable(
+'record_relations',
+{
+id: serial('id').primaryKey(),
+sourceId: integer('source_id')
+.references(() => records.id)
+.notNull(),
+targetId: integer('target_id')
+.references(() => records.id)
+.notNull(),
+type: recordRelationTypeEnum('type').notNull(),
+order: text('order').notNull().default('a0'),
+notes: text('notes'),
+...timestamps,
+},
+(table) => [
+index('record_relation_source_idx').on(table.sourceId),
+index('record_relation_target_idx').on(table.targetId),
+unique('record_relation_unique_idx').on(table.sourceId, table.targetId, table.type),
+]
+);
+
+// Creator relationships
+export const recordCreators = pgTable(
+'record_creators',
+{
+id: serial('id').primaryKey(),
+recordId: integer('record_id')
+.references(() => records.id)
+.notNull(),
+entityId: integer('entity_id')
+.references(() => indexEntries.id)
+.notNull(),
+role: creatorRoleTypeEnum('role').notNull(),
+order: text('order').notNull().default('a0'),
+notes: text('notes'),
+...timestamps,
+},
+(table) => [
+index('record_creator_record_idx').on(table.recordId),
+index('record_creator_entity_idx').on(table.entityId),
+unique('record_creator_unique_idx').on(table.recordId, table.entityId, table.role),
+]
+);
+
+// Categorization
+export const recordCategories = pgTable(
+'record_categories',
+{
+id: serial('id').primaryKey(),
+recordId: integer('record_id')
+.references(() => records.id)
+.notNull(),
+categoryId: integer('category_id')
+.references(() => indexEntries.id)
+.notNull(),
+type: categorizationTypeEnum('type').notNull(),
+primary: boolean('primary').notNull().default(false),
+...timestamps,
+},
+(table) => [
+index('record_category_record_idx').on(table.recordId),
+index('record_category_category_idx').on(table.categoryId),
+unique('record_category_unique_idx').on(table.recordId, table.categoryId, table.type),
+]
+);
+
+export const recordCategoriesRelations = relations(recordCategories, ({ one }) => ({
+record: one(records, {
+fields: [recordCategories.recordId],
+references: [records.id],
+}),
+category: one(indexEntries, {
+fields: [recordCategories.categoryId],
+references: [indexEntries.id],
+}),
+}));
+
+// Media links with captions
+export const recordMedia = pgTable(
+'record_media',
+{
+id: serial('id').primaryKey(),
+recordId: integer('record_id')
+.references(() => records.id)
+.notNull(),
+mediaId: integer('media_id')
+.references(() => media.id)
+.notNull(),
+caption: text('caption'),
+order: text('order').notNull().default('a0'),
+...timestamps,
+},
+(table) => [
+index('record_media_record_idx').on(table.recordId),
+index('record_media_media_idx').on(table.mediaId),
+unique('record_media_unique_idx').on(table.recordId, table.mediaId),
+]
+);
+
+// Page links
+export const recordPages = pgTable(
+'record_pages',
+{
+id: serial('id').primaryKey(),
+recordId: integer('record_id')
+.references(() => records.id)
+.notNull(),
+pageId: integer('page_id')
+.references(() => pages.id)
+.notNull(),
+order: text('order').notNull().default('a0'),
+...timestamps,
+},
+(table) => [
+index('record_page_record_idx').on(table.recordId),
+index('record_page_page_idx').on(table.pageId),
+unique('record_page_unique_idx').on(table.recordId, table.pageId),
+]
+);
+
+// Relations
+export const recordsRelations = relations(records, ({ one, many }) => ({
+format: one(indexEntries, {
+fields: [records.formatId],
+references: [indexEntries.id],
+}),
+location: one(locations, {
+fields: [records.locationId],
+references: [locations.id],
+}),
+timepoints: many(recordTimepoints),
+creators: many(recordCreators),
+categories: many(recordCategories),
+media: many(recordMedia),
+pages: many(recordPages),
+outgoingRelations: many(recordRelations, { relationName: 'source' }),
+incomingRelations: many(recordRelations, { relationName: 'target' }),
+}));
+
+export const recordTimepointsRelations = relations(recordTimepoints, ({ one }) => ({
+record: one(records, {
+fields: [recordTimepoints.recordId],
+references: [records.id],
+}),
+timepoint: one(timepoints, {
+fields: [recordTimepoints.timepointId],
+references: [timepoints.id],
+}),
+}));
+
+// Type exports
+export type Record = typeof records.$inferSelect;
+export type NewRecord = typeof records.$inferInsert;
+export type RecordRelation = typeof recordRelations.$inferSelect;
+export type NewRecordRelation = typeof recordRelations.$inferInsert;
+export type RecordCreator = typeof recordCreators.$inferSelect;
+export type NewRecordCreator = typeof recordCreators.$inferInsert;
+export type RecordCategory = typeof recordCategories.$inferSelect;
+export type NewRecordCategory = typeof recordCategories.$inferInsert;
+export type RecordMedia = typeof recordMedia.$inferSelect;
+export type NewRecordMedia = typeof recordMedia.$inferInsert;
+export type RecordPage = typeof recordPages.$inferSelect;
+export type NewRecordPage = typeof recordPages.$inferInsert;
+
+export const recordCreatorsRelations = relations(recordCreators, ({ one }) => ({
+record: one(records, {
+fields: [recordCreators.recordId],
+references: [records.id],
+}),
+entity: one(indexEntries, {
+fields: [recordCreators.entityId],
+references: [indexEntries.id],
+}),
+}));
+
+export const recordRelationsRelations = relations(recordRelations, ({ one }) => ({
+source: one(records, {
+fields: [recordRelations.sourceId],
+references: [records.id],
+relationName: 'source',
+}),
+target: one(records, {
+fields: [recordRelations.targetId],
+references: [records.id],
+relationName: 'target',
+}),
+}));
+
+export const recordMediaRelations = relations(recordMedia, ({ one }) => ({
+record: one(records, {
+fields: [recordMedia.recordId],
+references: [records.id],
+}),
+media: one(media, {
+fields: [recordMedia.mediaId],
+references: [media.id],
+}),
+}));
+
+export const recordPagesRelations = relations(recordPages, ({ one }) => ({
+record: one(records, {
+fields: [recordPages.recordId],
+references: [records.id],
+}),
+page: one(pages, {
+fields: [recordPages.pageId],
+references: [pages.id],
+}),
+}));
 ```
 
-Key points:
+Here is my full schema so far. Can you give a detailed summary of changes since the last time we talked about it? I can provide any additional context if necessary
 
-1. Both services use WGS84 coordinates (SRID 4326)
-2. Google uses `{lat, lng}` objects while OSM uses `[longitude, latitude]` arrays
-3. Both provide bounding box information but in different formats
-4. Original response data can be stored in `sourceData` for reference
-5. PostGIS expects longitude before latitude in `ST_MakePoint`
+---
 
-You might want to create helper functions to standardize these insertions:
+Raycast AI: Looking at the changes from our previous discussion about the locations table, here are the major updates:
 
-```typescript
-type GoogleBounds = {
-	northeast: { lat: number; lng: number };
-	southwest: { lat: number; lng: number };
-};
+1. **Pages & Media** (formerly URLs)
 
-const boundsToPolygon = (bounds: GoogleBounds) => {
-	return createBoundingBox([
-		[
-			[
-				[bounds.southwest.lng, bounds.southwest.lat],
-				[bounds.southwest.lng, bounds.northeast.lat],
-				[bounds.northeast.lng, bounds.northeast.lat],
-				[bounds.northeast.lng, bounds.southwest.lat],
-				[bounds.southwest.lng, bounds.southwest.lat],
-			],
-		],
-	]);
-};
+- Renamed `urls` to `pages` and expanded its functionality
+- Added `pageContents` table to store versions of page content
+- Changed `urlLinks` to `pageLinks`
+- Enhanced media table with more fields (width, height, fileSize, etc.)
+- Added version tracking for media (`versionOfMediaId`)
+- Added `MediaFormat` enum and mime type handling
 
-const bboxToPolygon = (bbox: [number, number, number, number]) => {
-	return createBoundingBox([
-		[
-			[
-				[bbox[0], bbox[1]],
-				[bbox[0], bbox[3]],
-				[bbox[2], bbox[3]],
-				[bbox[2], bbox[1]],
-				[bbox[0], bbox[1]],
-			],
-		],
-	]);
-};
-```
+2. **Timepoints**
+
+- Simplified from separate start/end types to granularity
+- Added `recordTimepoints` junction table
+- Added ordering capability with `order` field
+- More comprehensive timestamps and indexing
+
+3. **Index System**
+
+- Renamed some types (e.g., 'subject' to 'category')
+- Added canonical media reference alongside page reference
+- Enhanced indexing and relations
+
+4. **New Features**
+
+- Added `FLAGS` system with emoji support
+- Added comprehensive `records` system with:
+  - Multiple types of relations (`RecordRelationType`)
+  - Creator roles (`CreatorRoleType`)
+  - Categorization system
+  - Media and page links
+  - Timepoint associations
+  - Location references
+
+5. **Locations**
+
+- Added source tracking (`sourcePlatform`, `sourceData`)
+- Added map references to both pages and media
+- Maintained spatial functionality with PostGIS
+
+6. **General Improvements**
+
+- More consistent use of indexes
+- Better unique constraints
+- More comprehensive relation definitions
+- Added ordering capabilities (`order` field) in junction tables
+- Better type exports
+
+The biggest addition seems to be the comprehensive records system, which appears to be a central part of organizing and relating different types of content together.
+
+Would you like me to dive deeper into any particular aspect of these changes?
+
+---
+
+Nick Trombley: do you have any questions about why some of these changes may have been made?
+
+---
+
+Raycast AI: Yes, I have several questions about the design decisions:
+
+1. **Records System**
+
+- What drove the decision to create a central `records` table? It seems to be a hub for connecting many different types of content (pages, media, locations, timepoints).
+- The `RecordType` enum has interesting values like 'abstraction' and 'extracted' - what kinds of use cases are these meant to support?
+- Why the distinction between `CreatorRoleType` and the entity/subject relationship in the index system?
+
+2. **Ordering System**
+
+- I notice many junction tables have an `order` field defaulting to 'a0'. Is this for lexicographical sorting? Why text instead of integer?
+
+3. **Flags**
+
+- The FLAGS constant uses emojis - is this primarily for UI purposes, or do they serve another function?
+- Why make this a constant object rather than an enum like the other types?
+
+4. **Media Versioning**
+
+- What's the use case for `versionOfMediaId` in the media table? Is this for tracking different sizes/formats of the same image?
+
+5. **Domain Generation**
+
+- The `domain` field in pages is generated using regex - what's the purpose of storing this separately from the URL?
+
+6. **Categorization Types**
+
+- Could you explain the distinction between 'about' and 'file_under' in `CategorizationType`? They seem to serve different organizational purposes.
+
+Would you like to elaborate on any of these aspects?
+
+---
+
+Nick Trombley: 1. Records has been the main driver of the system that we've been building to the whole time. You're right that it is the connecting point for almost all other content in the system, and is the store of things that get filed within the index. If the index is like folders in a drawer, then the records are the pages in those folders, except that since we're not limited to physical media, a page can be in multiple places at once and filed in a number of different semantic ways according to our needs, such as by category, by time, by person, by location, etc.
+
+The record type is mostly to distinguish between top-level functional usage of records. For example, a resource is something I'd like to remember for future reference like a guide to a new CSS technique. A bookmark is like a cool website I found. A document could be a book or a pdf. 'extracted' is content coming from something else. etc.
+
+2. The ordering system is in fact for lexicographic sorting. I prefer that to sorting by integer because it's easier to move records around without needing to make updates to every other record in the series.
+
+3. Flags are primarily for UI purposes, and we are defining them as an object rather than a table because they will have functionally fixed purposes and won't be user-expandable. We could make it a table but the table would never change, so we can reduce the number of queries by just using the object directly.
+
+4. You've got the use case correct. A version of media would be for storing different sizes, like a thumbnail or a smaller size or a different format of a source image.
+
+5. This is mostly for easier querying or the ability to group on domains
+
+6. About means that something is, at a meta-level, referring to or 'about' a specific concept. For example, a book about the idea of or the practice of design. Vs. 'file under' meaning something is relevant to that concept but it's not about that concept. Another example might be with bicycles: 'about' might be a blog on how to fix your bicycle, and 'file under' might be a link to a page of a bicycle I'm interested in buying.
+
+Does this help clarify?
+
+---
+
+Raycast AI: Yes, this helps tremendously! Let me reflect back my understanding:
+
+1. **Records System**
+   Now I see it's the core entity that everything else supports, rather than the other way around. The type system makes more sense when thinking about it as different kinds of reference material - distinguishing between "I want to remember this for reference" (resource) vs "this is interesting" (bookmark) vs "this is source material" (document) etc. It's almost like a personal knowledge management system.
+
+2. **Ordering**
+   The lexicographic approach is clever - with integers you'd need to update potentially many rows just to insert something between '1' and '2', whereas with strings like 'a0' you can always insert 'a1', 'a2' etc. Similar to how old BASIC programs used line numbers like 10, 20, 30 to allow for later insertions.
+
+3. **Flags**
+   This makes perfect sense - they're application-level constants that serve specific UI/UX purposes. Making them a table would just add database overhead for no benefit since they're not going to change.
+
+4. **Media Versions**
+   So this allows tracking that "image_thumb.jpg" and "image_large.jpg" are really the same content, just in different formats/sizes.
+
+5. **Domain**
+   The generated column saves having to do this parsing in application code and makes domain-based queries more efficient.
+
+6. **Categorization**
+   The about/file_under distinction is about the relationship between the content and the concept - whether something is discussing the concept itself (about) or is just relevant to that concept (file_under). This allows for more nuanced organization.
+
+This feels like a system designed for personal knowledge management with a focus on being able to find things again through multiple different "paths" - by topic, by time, by person, by place, etc. Is that accurate?
+
+---
+
+Nick Trombley: That's exactly correct. This is meant to be a richly interlinked, flexible system for personal knowledge management, which is as efficient as possible for storing information (it has a number of integrations to automatically bring in data from external sources like browser history, twitter, readwise, airtable, raindrop, github, and adobe, with the potential for more in the future). It will contain both an administrative front end for curation, organization, and management, as well as a browsing/user-facing front end for exploration, search, etc.
+
+---
+
+Raycast AI: Ah, now the whole architecture makes even more sense! Let me connect some more dots:
+
+1. The `pages` and `pageContents` split allows for:
+
+   - Tracking changes to content over time
+   - Handling different versions/snapshots from crawls
+   - Converting between formats (HTML → Markdown)
+   - Efficient storage of history from integrations
+
+2. The `sourcePlatform` and `sourceData` fields appearing in various tables support the integration system - storing both where data came from and preserving the original response data.
+
+3. The index system is particularly clever because it:
+
+   - Handles both people (entities) and concepts (categories)
+   - Allows for disambiguation (sense field)
+   - Supports aliases and relationships
+   - Links to canonical sources (both pages and media)
+
+4. The timepoints system is flexible enough to handle:
+
+   - Precise timestamps from integrations
+   - Fuzzy historical dates
+   - Ranges and periods
+   - Different levels of granularity
+
+5. The `order` fields throughout support:
+   - Manual curation/organization
+   - Preserving original ordering from sources
+   - Easy reorganization without heavy updates
+
+Would you like me to analyze any particular part of how this might perform with large amounts of integration data, or discuss any potential optimizations for specific query patterns we might expect?
+
+---
+
+Nick Trombley: Actually I'd like to put a checkpoint here and wrap up our discussion for now. Can you give a length and detailed summary of our conversation about this schema, the purpose of the application, the design decisions and changes that went into it, and suggestions for next steps?
+
+---
+
+Raycast AI: Here's a comprehensive summary of our discussion:
+
+**Purpose of the Application**
+This is a personal knowledge management system designed to:
+
+1. Efficiently store and organize information from multiple sources
+2. Support automatic data ingestion through various integrations (browser history, Twitter, Readwise, Airtable, Raindrop, GitHub, Adobe)
+3. Provide both administrative and user-facing interfaces for different interaction patterns
+4. Allow flexible, multi-faceted organization and retrieval of information
+
+**Core Components and Design Decisions**
+
+1. **Records System (Central Hub)**
+
+- Acts as the primary organizing unit for all content
+- Different types (resource, bookmark, document, etc.) reflect different use cases
+- Connects to all other major components (media, pages, locations, timepoints)
+- Supports rich categorization and relationships
+
+2. **Index System (Organization)**
+
+- Functions like a virtual filing system
+- Three main types: entity (who), category (what about), format (what is)
+- Supports disambiguation through "sense" field
+- Allows for aliases and "see also" relationships
+- Links to canonical sources via pages and media
+
+3. **Pages and Media (Content)**
+
+- Evolved from simple URL storage to comprehensive content management
+- Supports versioning and content history
+- Handles different formats and representations
+- Stores original source data and metadata
+- Tracks relationships between different versions
+
+4. **Locations (Spatial Data)**
+
+- Uses PostGIS for spatial functionality
+- Stores both point coordinates and boundary areas
+- Supports hierarchical relationships
+- Includes source tracking for integration data
+- Links to maps and visual representations
+
+5. **Timepoints (Temporal Data)**
+
+- Flexible granularity (instant to century)
+- Handles both specific points and ranges
+- Supports different levels of precision
+- Connected to records through junction table
+
+6. **Smart Design Choices**
+
+- Lexicographic ordering (a0, a1, etc.) for easy reordering
+- Flags as application constants rather than database entries
+- Generated columns for common computations (like domain from URL)
+- Comprehensive indexing strategy
+- Careful use of junction tables for many-to-many relationships
+
+**Notable Changes During Development**
+
+1. URLs evolved into a more comprehensive pages system
+2. Added version tracking for both pages and media
+3. Simplified timepoint structure while increasing flexibility
+4. Enhanced the index system with better categorization
+5. Added the FLAGS system for UI features
+6. Developed the records system as the central organizing component
+
+**Technical Implementation Details**
+
+- Built using Drizzle ORM with PostgreSQL
+- Uses PostGIS for spatial data
+- Implements custom types where needed
+- Comprehensive type safety through TypeScript
+- Zod schemas for validation
+- Careful attention to indexing and performance
+
+**Next Steps Suggestions**
+
+1. Implementation of integration systems
+2. Development of efficient query patterns for common operations
+3. Design of the administrative interface
+4. Creation of the user-facing browsing experience
+5. Performance testing with large datasets
+6. Development of search and discovery features
+7. Implementation of the curation and organization tools
+
+Would you like me to expand on any of these areas or discuss specific next steps in more detail?
