@@ -9,7 +9,7 @@ import {
 	airtableExtractCreators,
 	airtableExtractSpaces,
 	airtableExtractConnections,
-} from '@schema/integrations/airtable';
+} from '../airtable/schema';
 import type {
 	NewAirtableCreator,
 	NewAirtableSpace,
@@ -18,10 +18,10 @@ import type {
 	NewAirtableExtractCreator,
 	NewAirtableExtractSpace,
 	NewAirtableExtractConnection,
-} from '@schema/integrations/airtable';
-import { IntegrationType } from '@schema/integrations/integrations';
+} from '../airtable/schema';
+import { IntegrationType } from '../operations/schema';
 import { eq } from 'drizzle-orm';
-import { runIntegration } from '@utils/run-integration';
+import { runIntegration } from '../../utils/run-integration';
 
 const CHUNK_SIZE = 100;
 const db = createPgConnection();

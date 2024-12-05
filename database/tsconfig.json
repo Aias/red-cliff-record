@@ -14,7 +14,7 @@
 			"@integrations/*": ["integrations/*"],
 			"@schema/*": ["schema/*"],
 			"@scripts/*": ["scripts/*"],
-			"@utils/*": ["integrations/utils/*"]
+			"@utils/*": ["schema/utils/*"]
 		}
 	},
 	"include": ["**/*.ts"],

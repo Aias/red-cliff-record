@@ -1,8 +1,8 @@
 import { createPgConnection } from '@schema/connections';
-import { adobeLightroomImages } from '@schema/integrations/adobe';
-import type { NewAdobeLightroomImage } from '@schema/integrations/adobe';
-import { IntegrationType } from '@schema/integrations/integrations';
-import { runIntegration } from '@utils/run-integration';
+import { adobeLightroomImages } from '../adobe/schema';
+import type { NewAdobeLightroomImage } from '../adobe/schema';
+import { IntegrationType } from '../operations/schema';
+import { runIntegration } from '@schema/utils/run-integration';
 import { LightroomJsonResponseSchema } from './types';
 import { loadEnv } from '@rcr/lib/env';
 

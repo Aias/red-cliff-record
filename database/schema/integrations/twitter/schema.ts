@@ -1,8 +1,8 @@
 import { text, timestamp, integer, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { integrationRuns } from './integrations';
-import { integrationSchema } from './schema';
-import { timestamps } from '../common';
+import { integrationRuns } from '../operations/schema';
+import { integrationSchema } from '@schema/common/schemas';
+import { timestamps } from '../../common';
 
 export const twitterTweets = integrationSchema.table(
 	'twitter_tweets',

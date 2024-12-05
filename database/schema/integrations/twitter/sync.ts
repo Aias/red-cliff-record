@@ -2,10 +2,10 @@ import {
 	twitterTweets as tweetsTable,
 	twitterMedia as mediaTable,
 	twitterUsers as usersTable,
-} from '@schema/integrations/twitter';
-import { IntegrationType } from '@schema/integrations/integrations';
-import { createPgConnection } from '@schema/connections';
-import { runIntegration } from '@utils/run-integration';
+} from './schema';
+import { IntegrationType } from '../operations/schema';
+import { createPgConnection } from '../../connections';
+import { runIntegration } from '../../utils/run-integration';
 import { resolve } from 'path';
 import { readFileSync, readdirSync } from 'fs';
 import { homedir } from 'os';

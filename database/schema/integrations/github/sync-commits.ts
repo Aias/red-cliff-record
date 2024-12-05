@@ -1,13 +1,9 @@
 import { Octokit } from '@octokit/rest';
 import { createPgConnection } from '@schema/connections';
-import {
-	githubCommits,
-	githubCommitChanges,
-	GithubCommitChangeStatus,
-} from '@schema/integrations/github';
-import type { NewGithubCommitChange } from '@schema/integrations/github';
-import { IntegrationType } from '@schema/integrations/integrations';
-import { runIntegration } from '@utils/run-integration';
+import { githubCommits, githubCommitChanges, GithubCommitChangeStatus } from '../github/schema';
+import type { NewGithubCommitChange } from '../github/schema';
+import { IntegrationType } from '../operations/schema';
+import { runIntegration } from '@schema/utils/run-integration';
 import { desc, sql } from 'drizzle-orm';
 import { loadEnv } from '@rcr/lib/env';
 

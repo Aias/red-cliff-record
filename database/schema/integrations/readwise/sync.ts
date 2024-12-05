@@ -1,7 +1,7 @@
-import { createPgConnection } from '@schema/connections';
-import { readwiseDocuments, type NewReadwiseDocument } from '@schema/integrations/readwise';
-import { IntegrationType } from '@schema/integrations/integrations';
-import { runIntegration } from '@utils/run-integration';
+import { createPgConnection } from '../../connections';
+import { readwiseDocuments, type NewReadwiseDocument } from '../readwise/schema';
+import { IntegrationType } from '../operations/schema';
+import { runIntegration } from '../../utils/run-integration';
 import { ReadwiseArticlesResponseSchema } from './types';
 import type { ReadwiseArticle, ReadwiseArticlesResponse } from './types';
 import { desc } from 'drizzle-orm';

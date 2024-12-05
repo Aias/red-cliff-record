@@ -4,11 +4,11 @@ import {
 	arcBrowsingHistoryDaily,
 	Browser,
 	type NewArcBrowsingHistory,
-} from '@schema/integrations/arc';
-import { IntegrationType } from '@schema/integrations/integrations';
+} from '../arc/schema';
+import { IntegrationType } from '../operations/schema';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
-import { sanitizeString } from '@utils/sanitize';
-import { runIntegration } from '@utils/run-integration';
+import { sanitizeString } from '@schema/utils/sanitize';
+import { runIntegration } from '@schema/utils/run-integration';
 import {
 	chromeEpochMicrosecondsToDatetime,
 	datetimeToChromeEpochMicroseconds,

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emptyStringToNull } from '../utils/schema-helpers';
+import { emptyStringToNull } from '../../utils/schema-helpers';
 
 const GithubLicenseSchema = z.object({
 	key: z.string(),

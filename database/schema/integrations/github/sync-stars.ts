@@ -1,9 +1,9 @@
 import { Octokit } from '@octokit/rest';
-import { githubStars as starsTable } from '@schema/integrations/github';
-import type { NewGithubStar } from '@schema/integrations/github';
-import { integrationRuns, IntegrationType } from '@schema/integrations/integrations';
-import { runIntegration } from '@utils/run-integration';
-import { createPgConnection } from '@schema/connections';
+import { githubStars as starsTable } from '../github/schema';
+import type { NewGithubStar } from '../github/schema';
+import { integrationRuns, IntegrationType } from '../operations/schema';
+import { runIntegration } from '../../utils/run-integration';
+import { createPgConnection } from '../../connections';
 import { desc, like, eq } from 'drizzle-orm';
 import { GithubStarredReposResponseSchema } from './types';
 import { loadEnv } from '@rcr/lib/env';

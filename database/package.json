@@ -14,14 +14,14 @@
 		"generate": "drizzle-kit generate",
 		"studio": "drizzle-kit studio",
 		"sync:all": "bun run sync:arc && bun run sync:adobe && bun run sync:raindrop && bun run sync:readwise && bun run sync:github",
-		"sync:adobe": "bun run integrations/adobe/sync.ts",
-		"sync:arc": "bun run integrations/arc/sync.ts",
+		"sync:adobe": "bun run schema/integrations/adobe/sync.ts",
+		"sync:arc": "bun run schema/integrations/arc/sync.ts",
 		"sync:github": "bun run sync:github-commits && bun run sync:github-stars",
-		"sync:github-commits": "bun run integrations/github/sync-commits.ts",
-		"sync:github-stars": "bun run integrations/github/sync-stars.ts",
-		"sync:raindrop": "bun run integrations/raindrop/sync.ts",
-		"sync:readwise": "bun run integrations/readwise/sync.ts",
-		"sync:twitter": "bun run integrations/twitter/sync.ts"
+		"sync:github-commits": "bun run schema/integrations/github/sync-commits.ts",
+		"sync:github-stars": "bun run schema/integrations/github/sync-stars.ts",
+		"sync:raindrop": "bun run schema/integrations/raindrop/sync.ts",
+		"sync:readwise": "bun run schema/integrations/readwise/sync.ts",
+		"sync:twitter": "bun run schema/integrations/twitter/sync.ts"
 	},
 	"dependencies": {
 		"@octokit/rest": "^21.0.2",

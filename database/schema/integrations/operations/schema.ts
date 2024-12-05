@@ -1,13 +1,13 @@
-import { timestamps } from '../common';
+import { timestamps } from '../../common';
 import { relations } from 'drizzle-orm';
 import { serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
-import { githubStars } from './github';
-import { arcBrowsingHistory } from './arc';
-import { githubCommits } from './github';
-import { airtableCreators, airtableExtracts, airtableSpaces } from './airtable';
-import { adobeLightroomImages } from './adobe';
+import { githubStars } from '../github/schema';
+import { arcBrowsingHistory } from '../arc/schema';
+import { githubCommits } from '../github/schema';
+import { airtableCreators, airtableExtracts, airtableSpaces } from '../airtable/schema';
+import { adobeLightroomImages } from '../adobe/schema';
 import { z } from 'zod';
-import { integrationSchema } from './schema';
+import { integrationSchema } from '@schema/common/schemas';
 
 export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
 export type IntegrationStatus = z.infer<typeof IntegrationStatus>;

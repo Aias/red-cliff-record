@@ -1,6 +1,6 @@
-import { ReadwiseCategory, ReadwiseLocation } from '@schema/integrations/readwise';
+import { ReadwiseCategory, ReadwiseLocation } from './schema';
 import { z } from 'zod';
-import { emptyStringToNull } from '../utils/schema-helpers';
+import { emptyStringToNull } from '../../utils/schema-helpers';
 
 const ReadwiseTagSchema = z.object({
 	name: z.string(),

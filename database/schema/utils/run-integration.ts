@@ -1,10 +1,10 @@
-import { createPgConnection } from '@schema/connections';
+import { createPgConnection } from '../connections';
 import {
 	integrationRuns,
 	IntegrationType,
 	IntegrationStatus,
 	RunType,
-} from '@schema/integrations/integrations';
+} from '../integrations/operations/schema';
 import { eq } from 'drizzle-orm';
 
 const db = createPgConnection();

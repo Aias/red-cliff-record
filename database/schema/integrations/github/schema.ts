@@ -1,8 +1,8 @@
-import { timestamps } from '../common';
+import { timestamps } from '../../common';
 import { relations } from 'drizzle-orm';
 import { serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
-import { integrationRuns } from './integrations';
-import { integrationSchema } from './schema';
+import { integrationRuns } from '../operations/schema';
+import { integrationSchema } from '@schema/common/schemas';
 import { z } from 'zod';
 
 export const githubStats = {
