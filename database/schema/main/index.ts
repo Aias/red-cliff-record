@@ -224,15 +224,23 @@ export const media = pgTable(
 		title: text('title'),
 		altText: text('alt_text'),
 		fileSize: integer('file_size'),
+		width: integer('width'),
+		height: integer('height'),
+		versionOfMediaId: integer('version_of_media_id'),
 		sourcePageId: integer('source_page_id').references(() => pages.id),
 		metadata: json('metadata'),
 		...timestamps,
 	},
 	(table) => [
+		foreignKey({
+			columns: [table.versionOfMediaId],
+			foreignColumns: [table.id],
+		}),
 		unique('media_url_idx').on(table.url),
 		index('media_format_idx').on(table.format),
 		index('media_mime_type_idx').on(table.mimeType),
 		index('media_source_idx').on(table.sourcePageId),
+		index('media_version_idx').on(table.versionOfMediaId),
 	]
 );
 
@@ -264,11 +272,19 @@ export const pageLinksRelations = relations(pageLinks, ({ one }) => ({
 	}),
 }));
 
-export const mediaRelations = relations(media, ({ one }) => ({
+export const mediaRelations = relations(media, ({ one, many }) => ({
 	page: one(pages, {
 		fields: [media.sourcePageId],
 		references: [pages.id],
 		relationName: 'pageMedia',
+	}),
+	versionOf: one(media, {
+		fields: [media.versionOfMediaId],
+		references: [media.id],
+		relationName: 'versionOf',
+	}),
+	versions: many(media, {
+		relationName: 'versionOf',
 	}),
 }));
 
@@ -667,6 +683,17 @@ export const recordCategories = pgTable(
 	]
 );
 
+export const recordCategoriesRelations = relations(recordCategories, ({ one }) => ({
+	record: one(records, {
+		fields: [recordCategories.recordId],
+		references: [records.id],
+	}),
+	category: one(indexEntries, {
+		fields: [recordCategories.categoryId],
+		references: [indexEntries.id],
+	}),
+}));
+
 // Media links with captions
 export const recordMedia = pgTable(
 	'record_media',
@@ -753,3 +780,49 @@ export type RecordMedia = typeof recordMedia.$inferSelect;
 export type NewRecordMedia = typeof recordMedia.$inferInsert;
 export type RecordPage = typeof recordPages.$inferSelect;
 export type NewRecordPage = typeof recordPages.$inferInsert;
+
+export const recordCreatorsRelations = relations(recordCreators, ({ one }) => ({
+	record: one(records, {
+		fields: [recordCreators.recordId],
+		references: [records.id],
+	}),
+	entity: one(indexEntries, {
+		fields: [recordCreators.entityId],
+		references: [indexEntries.id],
+	}),
+}));
+
+export const recordRelationsRelations = relations(recordRelations, ({ one }) => ({
+	source: one(records, {
+		fields: [recordRelations.sourceId],
+		references: [records.id],
+		relationName: 'source',
+	}),
+	target: one(records, {
+		fields: [recordRelations.targetId],
+		references: [records.id],
+		relationName: 'target',
+	}),
+}));
+
+export const recordMediaRelations = relations(recordMedia, ({ one }) => ({
+	record: one(records, {
+		fields: [recordMedia.recordId],
+		references: [records.id],
+	}),
+	media: one(media, {
+		fields: [recordMedia.mediaId],
+		references: [media.id],
+	}),
+}));
+
+export const recordPagesRelations = relations(recordPages, ({ one }) => ({
+	record: one(records, {
+		fields: [recordPages.recordId],
+		references: [records.id],
+	}),
+	page: one(pages, {
+		fields: [recordPages.pageId],
+		references: [pages.id],
+	}),
+}));
