@@ -11,6 +11,7 @@ import { NotFound } from '../components/NotFound';
 
 export const Route = createRootRoute({
 	head: () => ({
+		title: 'Red Cliff Record | Admin',
 		meta: [
 			{
 				charSet: 'utf-8',
@@ -18,9 +19,6 @@ export const Route = createRootRoute({
 			{
 				name: 'viewport',
 				content: 'width=device-width, initial-scale=1',
-			},
-			{
-				title: 'Red Cliff Record | Admin',
 			},
 		],
 	}),
