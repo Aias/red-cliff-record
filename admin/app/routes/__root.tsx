@@ -6,6 +6,8 @@ import { ThemeProvider } from 'next-themes';
 
 import '@radix-ui/themes/styles.css';
 import '../styles/app.css';
+import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
+import { NotFound } from '../components/NotFound';
 
 export const Route = createRootRoute({
 	head: () => ({
@@ -23,7 +25,14 @@ export const Route = createRootRoute({
 		],
 	}),
 	component: RootComponent,
-	notFoundComponent: () => <div>404: Page Not Found</div>,
+	errorComponent: (props) => {
+		return (
+			<RootDocument>
+				<DefaultCatchBoundary {...props} />
+			</RootDocument>
+		);
+	},
+	notFoundComponent: () => <NotFound />,
 });
 
 // TODO: Something funky going on with the theme and flashes of unstyled content / suspense errors.
@@ -42,7 +51,7 @@ function RootComponent() {
 // TODO: Fix this warning rather than cover it up. See: https://github.com/pacocoursey/next-themes/issues/169
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html suppressHydrationWarning>
 			<head>
 				<Meta />
 			</head>

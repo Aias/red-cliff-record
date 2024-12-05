@@ -38,8 +38,9 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		.limit(1);
 
 	const lastKnownTime = latestVisit[0]?.viewEpochMicroseconds;
+	const date = lastKnownTime ? chromeEpochMicrosecondsToDatetime(lastKnownTime) : null;
 	console.log(
-		`Last known visit time: ${lastKnownTime ? new Date(Number(lastKnownTime) / 1000).toISOString() : 'none'}`
+		`Last known visit time: ${date ? `${date.toLocaleString()} (${date.toISOString()})` : 'none'}`
 	);
 
 	console.log('Retrieving new history entries...');

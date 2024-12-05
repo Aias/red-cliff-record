@@ -15,8 +15,8 @@ importers:
         specifier: ^2.1.35
         version: 2.1.35
       openai:
-        specifier: ^4.75.0
-        version: 4.75.0(zod@3.23.8)
+        specifier: ^4.76.0
+        version: 4.76.0(zod@3.23.8)
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -4224,8 +4224,8 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
-  openai@4.75.0:
-    resolution: {integrity: sha512-8cWaK3td0qLspaflKWD6AvpQnl0gynWFbHg7sMAgiu//F20I4GJlCCpllDrECO6WFSuY8HXJj8gji3urw2BGGg==}
+  openai@4.76.0:
+    resolution: {integrity: sha512-QBGIetjX1C9xDp5XGa/3mPnfKI9BgAe2xHQX6PmO98wuW9qQaurBaumcYptQWc9LHZZq7cH/Y1Rjnsr6uUDdVw==}
     hasBin: true
     peerDependencies:
       zod: ^3.23.8
@@ -9661,7 +9661,7 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@4.75.0(zod@3.23.8):
+  openai@4.76.0(zod@3.23.8):
     dependencies:
       '@types/node': 18.19.67
       '@types/node-fetch': 2.6.12

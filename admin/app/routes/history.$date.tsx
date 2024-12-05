@@ -24,11 +24,11 @@ const fetchHistoryForDate = createServerFn({ method: 'GET' })
 			)
 			.orderBy(arcBrowsingHistoryDaily.firstVisit);
 
-		return { response: history };
+		return history;
 	});
 
 export const Route = createFileRoute('/history/$date')({
-	loader: async ({ params: { date } }) => fetchHistoryForDate({ data: date }),
+	loader: ({ params: { date } }) => fetchHistoryForDate({ data: date }),
 	component: DailyActivityPage,
 });
 
@@ -41,7 +41,7 @@ const formatTime = (date: Date | string) =>
 	});
 
 function DailyActivityPage() {
-	const { response } = Route.useLoaderData();
+	const response = Route.useLoaderData();
 	const { date } = Route.useParams();
 	const history = response.map((entry) => ({
 		...entry,
