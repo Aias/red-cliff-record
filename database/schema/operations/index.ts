@@ -1,17 +1,22 @@
-import { timestamps } from '../../common';
 import { relations } from 'drizzle-orm';
-import { serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
-import { githubStars } from '../github/schema';
-import { arcBrowsingHistory } from '../arc/schema';
-import { githubCommits } from '../github/schema';
-import { airtableCreators, airtableExtracts, airtableSpaces } from '../airtable/schema';
-import { adobeLightroomImages } from '../adobe/schema';
+import { pgSchema, serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
+import { githubStars } from '../integrations/github/schema';
+import { arcBrowsingHistory } from '../integrations/arc/schema';
+import { githubCommits } from '../integrations/github/schema';
+import {
+	airtableCreators,
+	airtableExtracts,
+	airtableSpaces,
+} from '../integrations/airtable/schema';
+import { adobeLightroomImages } from '../integrations/adobe/schema';
 import { z } from 'zod';
-import { integrationSchema } from '../../common/schemas';
+import { timestamps } from './common';
+
+export const operationsSchema = pgSchema('operations');
 
 export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
 export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
-export const integrationStatusEnum = integrationSchema.enum(
+export const integrationStatusEnum = operationsSchema.enum(
 	'integration_status',
 	IntegrationStatus.options
 );
@@ -29,16 +34,16 @@ export const IntegrationType = z.enum([
 	'twitter',
 ]);
 export type IntegrationType = z.infer<typeof IntegrationType>;
-export const integrationTypeEnum = integrationSchema.enum(
+export const integrationTypeEnum = operationsSchema.enum(
 	'integration_type',
 	IntegrationType.options
 );
 
 export const RunType = z.enum(['seed', 'sync']);
 export type RunType = z.infer<typeof RunType>;
-export const runTypeEnum = integrationSchema.enum('run_type', RunType.options);
+export const runTypeEnum = operationsSchema.enum('run_type', RunType.options);
 
-export const integrationRuns = integrationSchema.table(
+export const integrationRuns = operationsSchema.table(
 	'integration_runs',
 	{
 		id: serial('id').primaryKey(),

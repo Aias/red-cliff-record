@@ -1,8 +1,8 @@
-import { timestamps } from '../../common';
+import { timestamps } from '@schema/operations/common';
 import { relations, sql } from 'drizzle-orm';
 import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
-import { integrationRuns } from '../operations/schema';
-import { integrationSchema } from '../../common/schemas';
+import { integrationRuns } from '../../operations';
+import { integrationSchema } from '..';
 import { z } from 'zod';
 
 export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);

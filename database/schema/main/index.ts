@@ -18,8 +18,8 @@ import {
 import { relations, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import mime from 'mime-types';
-import { timestamps } from '../common';
-import { IntegrationType, integrationTypeEnum } from '../integrations/operations/schema';
+import { timestamps } from '@schema/operations/common';
+import { IntegrationType, integrationTypeEnum } from '../operations';
 
 /* ==============================
    TIMEPOINTS AND EVENTS
@@ -599,6 +599,7 @@ export const records = pgTable(
 		formatId: integer('format_id').references(() => indexEntries.id),
 		private: boolean('private').notNull().default(false),
 		flags: flagEnum('flags').array(),
+		needsCuration: boolean('needs_curation').notNull().default(true),
 		locationId: integer('location_id').references(() => locations.id),
 		...timestamps,
 	},

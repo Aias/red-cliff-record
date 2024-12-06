@@ -1,8 +1,8 @@
 import { index, text, timestamp, integer, numeric, foreignKey, date } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { timestamps } from '../../common';
-import { integrationRuns } from '../operations/schema';
-import { integrationSchema } from '../../common/schemas';
+import { timestamps } from '@schema/operations/common';
+import { integrationRuns } from '../../operations';
+import { integrationSchema } from '..';
 import { z } from 'zod';
 
 export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);

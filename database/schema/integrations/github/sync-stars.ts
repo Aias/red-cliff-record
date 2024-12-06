@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import { githubStars as starsTable } from '../github/schema';
 import type { NewGithubStar } from '../github/schema';
-import { integrationRuns, IntegrationType } from '../operations/schema';
+import { integrationRuns, IntegrationType } from '../../operations';
 import { runIntegration } from '../../utils/run-integration';
 import { createPgConnection } from '../../connections';
 import { desc, like, eq } from 'drizzle-orm';

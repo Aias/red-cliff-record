@@ -1,6 +1,6 @@
 import { createPgConnection } from '../../connections';
 import { readwiseDocuments, type NewReadwiseDocument } from '../readwise/schema';
-import { IntegrationType } from '../operations/schema';
+import { IntegrationType } from '../../operations';
 import { runIntegration } from '../../utils/run-integration';
 import { ReadwiseArticlesResponseSchema } from './types';
 import type { ReadwiseArticle, ReadwiseArticlesResponse } from './types';

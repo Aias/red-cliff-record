@@ -5,7 +5,7 @@ import {
 	Browser,
 	type NewArcBrowsingHistory,
 } from '../arc/schema';
-import { IntegrationType } from '../operations/schema';
+import { IntegrationType } from '../../operations';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
 import { sanitizeString } from '@schema/utils/sanitize';
 import { runIntegration } from '@schema/utils/run-integration';
