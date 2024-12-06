@@ -3,6 +3,7 @@ import { Meta, Scripts } from '@tanstack/start';
 import type { ReactNode } from 'react';
 import { Theme } from '@radix-ui/themes';
 import { ThemeProvider } from 'next-themes';
+import { grass } from '@radix-ui/colors';
 
 import radixStyles from '@radix-ui/themes/styles.css?url';
 import appStyles from '../styles/app.css?url';
@@ -29,6 +30,25 @@ export const Route = createRootRoute({
 		links: [
 			{ rel: 'stylesheet', href: radixStyles },
 			{ rel: 'stylesheet', href: appStyles },
+			{
+				rel: 'apple-touch-icon',
+				sizes: '180x180',
+				href: '/apple-touch-icon.png',
+			},
+			{
+				rel: 'icon',
+				type: 'image/png',
+				sizes: '32x32',
+				href: '/favicon-32x32.png',
+			},
+			{
+				rel: 'icon',
+				type: 'image/png',
+				sizes: '16x16',
+				href: '/favicon-16x16.png',
+			},
+			{ rel: 'manifest', href: '/site.webmanifest', color: grass.grass9 },
+			{ rel: 'icon', href: '/favicon.ico' },
 		],
 	}),
 	component: RootComponent,
