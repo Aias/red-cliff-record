@@ -16,11 +16,55 @@ import {
 import os from 'os';
 import { visits, urls } from '@schema/arc';
 import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';
+import readline from 'readline';
 
 const pgDb = createPgConnection();
 
+// Helper function to create readline interface
+const createPrompt = () => {
+	return readline.createInterface({
+		input: process.stdin,
+		output: process.stdout,
+	});
+};
+
+// Helper function to ask for confirmation
+const askForConfirmation = async (message: string): Promise<boolean> => {
+	const rl = createPrompt();
+
+	return new Promise((resolve) => {
+		rl.question(`${message} (y/N) `, (answer) => {
+			rl.close();
+			resolve(answer.toLowerCase() === 'y');
+		});
+	});
+};
+
 async function syncBrowserHistory(integrationRunId: number): Promise<number> {
-	const hostname = os.hostname();
+	const currentHostname = os.hostname();
+
+	// Get all unique hostnames from the database
+	const uniqueHostnames = await pgDb
+		.select({ hostname: arcBrowsingHistory.hostname })
+		.from(arcBrowsingHistory)
+		.where(eq(arcBrowsingHistory.browser, Browser.enum.arc))
+		.groupBy(arcBrowsingHistory.hostname);
+
+	const knownHostnames = new Set(uniqueHostnames.map((h) => h.hostname));
+
+	// If current hostname is not in the database, ask for confirmation
+	if (!knownHostnames.has(currentHostname)) {
+		console.log('Known hostnames:', Array.from(knownHostnames).join(', '));
+		const shouldProceed = await askForConfirmation(
+			`Current hostname "${currentHostname}" has not been seen before. Proceed with sync?`
+		);
+
+		if (!shouldProceed) {
+			console.log('Sync cancelled by user');
+			return 0;
+		}
+	}
+
 	console.log('Starting Arc browser history incremental update...');
 
 	// Get the most recent viewEpochMicroseconds from the database
@@ -30,7 +74,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		.where(
 			and(
 				eq(arcBrowsingHistory.browser, Browser.enum.arc),
-				eq(arcBrowsingHistory.hostname, hostname),
+				eq(arcBrowsingHistory.hostname, currentHostname),
 				isNotNull(arcBrowsingHistory.viewEpochMicroseconds)
 			)
 		)
@@ -76,7 +120,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		relatedSearches: h.relatedSearches ? sanitizeString(h.relatedSearches) : null,
 		integrationRunId,
 		browser: Browser.enum.arc,
-		hostname,
+		hostname: currentHostname,
 	}));
 
 	if (history.length > 0) {
