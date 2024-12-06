@@ -4,22 +4,31 @@ import type { ReactNode } from 'react';
 import { Theme } from '@radix-ui/themes';
 import { ThemeProvider } from 'next-themes';
 
-import '@radix-ui/themes/styles.css';
-import '../styles/app.css';
+import radixStyles from '@radix-ui/themes/styles.css?url';
+import appStyles from '../styles/app.css?url';
+
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
 import { NotFound } from '../components/NotFound';
+import { seo, SITE_NAME } from '../lib/seo';
 
 export const Route = createRootRoute({
 	head: () => ({
-		title: 'Red Cliff Record | Admin',
 		meta: [
 			{
 				charSet: 'utf-8',
 			},
 			{
 				name: 'viewport',
-				content: 'width=device-width, initial-scale=1',
+				content: 'width=device-width, initial-scale=1, user-scalable=no',
 			},
+			...seo({
+				title: `${SITE_NAME} | Admin`,
+				description: `Admin dashboard for ${SITE_NAME}`,
+			}),
+		],
+		links: [
+			{ rel: 'stylesheet', href: radixStyles },
+			{ rel: 'stylesheet', href: appStyles },
 		],
 	}),
 	component: RootComponent,
@@ -33,7 +42,7 @@ export const Route = createRootRoute({
 	notFoundComponent: () => <NotFound />,
 });
 
-// TODO: Something funky going on with the theme and flashes of unstyled content / suspense errors.
+// TODO: Something funky going on with suspense/hydration errors on initial load.
 function RootComponent() {
 	return (
 		<RootDocument>
