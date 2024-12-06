@@ -9,3 +9,5 @@ build
 .vscode
 .cursorignore
 **/.temp/**
+**/.output/**
+**/.vinxi/**
