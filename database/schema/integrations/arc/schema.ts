@@ -1,4 +1,4 @@
-import { timestamps } from '@schema/operations/common';
+import { databaseTimestamps } from '@schema/operations/common';
 import { relations, sql } from 'drizzle-orm';
 import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';
@@ -22,13 +22,13 @@ export const arcBrowsingHistory = integrationSchema.table(
 		viewDuration: integer('view_duration'),
 		durationSinceLastView: integer('duration_since_last_view'),
 		url: text('url').notNull(),
-		pageTitle: text('page_title').notNull(),
+		pageTitle: text('page_title'),
 		searchTerms: text('search_terms'),
 		relatedSearches: text('related_searches'),
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index().on(table.integrationRunId),
@@ -43,7 +43,7 @@ export const arcBrowsingHistoryOmitList = integrationSchema.table(
 	'arc_browsing_history_omit_list',
 	{
 		pattern: text('pattern').primaryKey().notNull(),
-		...timestamps,
+		...databaseTimestamps,
 	}
 );
 

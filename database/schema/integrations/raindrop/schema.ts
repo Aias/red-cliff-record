@@ -1,6 +1,6 @@
 import { integer, text, index, boolean, unique, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { timestamps } from '@schema/operations/common';
+import { contentTimestamps, databaseTimestamps } from '@schema/operations/common';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '..';
 
@@ -21,7 +21,8 @@ export const raindropRaindrops = integrationSchema.table(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps,
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index().on(table.integrationRunId),
@@ -54,7 +55,8 @@ export const raindropCollections = integrationSchema.table(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps,
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index().on(table.parentId),

@@ -1,4 +1,4 @@
-import { timestamps } from '@schema/operations/common';
+import { contentTimestamps, databaseTimestamps } from '@schema/operations/common';
 import { relations } from 'drizzle-orm';
 import { text, timestamp, integer, json, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';
@@ -29,7 +29,8 @@ export const adobeLightroomImages = integrationSchema.table(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps,
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
 	(table) => [index().on(table.integrationRunId), index().on(table.captureDate)]
 );

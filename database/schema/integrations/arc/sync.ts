@@ -7,15 +7,12 @@ import {
 } from '../arc/schema';
 import { IntegrationType } from '../../operations';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
-import { sanitizeString } from '@schema/utils/sanitize';
 import { runIntegration } from '@schema/utils/run-integration';
-import {
-	chromeEpochMicrosecondsToDatetime,
-	datetimeToChromeEpochMicroseconds,
-} from '@rcr/lib/time-helpers';
+import { chromeEpochMicrosecondsToDatetime } from '@rcr/lib/time-helpers';
 import os from 'os';
 import { visits, urls } from '@schema/arc';
 import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';
+import { DailyVisitsQueryResultSchema } from './types';
 import readline from 'readline';
 
 const pgDb = createPgConnection();
@@ -102,25 +99,25 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 	);
 	console.log(`Retrieved ${rawHistory.length} new history entries`);
 
-	const collapsedHistory = collapseSequentialVisits(rawHistory);
+	const dailyHistory = DailyVisitsQueryResultSchema.parse(rawHistory);
+
+	const collapsedHistory = collapseSequentialVisits(dailyHistory);
 	console.log(`Collapsed into ${collapsedHistory.length} entries`);
 
 	const history: NewArcBrowsingHistory[] = collapsedHistory.map((h) => ({
-		viewTime: h.viewTime ? chromeEpochMicrosecondsToDatetime(h.viewTime) : new Date(),
-		viewEpochMicroseconds: h.viewTime
-			? BigInt(h.viewTime)
-			: datetimeToChromeEpochMicroseconds(new Date()),
+		browser: Browser.enum.arc,
+		hostname: currentHostname,
+		viewTime: chromeEpochMicrosecondsToDatetime(h.viewTime),
+		viewEpochMicroseconds: BigInt(h.viewTime),
 		viewDuration: h.viewDuration ? Math.round(h.viewDuration / 1000000) : 0,
 		durationSinceLastView: h.durationSinceLastView
 			? Math.round(h.durationSinceLastView / 1000000)
 			: 0,
-		url: h.url as string,
-		pageTitle: h.pageTitle as string,
-		searchTerms: h.searchTerms ? sanitizeString(h.searchTerms) : null,
-		relatedSearches: h.relatedSearches ? sanitizeString(h.relatedSearches) : null,
+		url: h.url,
+		pageTitle: h.pageTitle,
+		searchTerms: h.searchTerms,
+		relatedSearches: h.relatedSearches,
 		integrationRunId,
-		browser: Browser.enum.arc,
-		hostname: currentHostname,
 	}));
 
 	if (history.length > 0) {

@@ -1,8 +1,8 @@
-import { text, timestamp, integer, index, foreignKey } from 'drizzle-orm/pg-core';
+import { text, integer, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '..';
-import { timestamps } from '@schema/operations/common';
+import { contentTimestamps, databaseTimestamps } from '@schema/operations/common';
 
 export const twitterTweets = integrationSchema.table(
 	'twitter_tweets',
@@ -16,8 +16,8 @@ export const twitterTweets = integrationSchema.table(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		postedAt: timestamp('posted_at', { withTimezone: true }).defaultNow().notNull(),
-		...timestamps,
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index().on(table.integrationRunId),
@@ -53,7 +53,8 @@ export const twitterMedia = integrationSchema.table('twitter_media', {
 	tweetId: text('tweet_id')
 		.references(() => twitterTweets.id)
 		.notNull(),
-	...timestamps,
+	...contentTimestamps,
+	...databaseTimestamps,
 });
 
 export const twitterMediaRelations = relations(twitterMedia, ({ one }) => ({
@@ -74,7 +75,8 @@ export const twitterUsers = integrationSchema.table('twitter_users', {
 	externalUrl: text('external_url'),
 	profileImageUrl: text('profile_image_url'),
 	profileBannerUrl: text('profile_banner_url'),
-	...timestamps,
+	...contentTimestamps,
+	...databaseTimestamps,
 });
 
 export const twitterUsersRelations = relations(twitterUsers, ({ many }) => ({

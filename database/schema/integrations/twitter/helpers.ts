@@ -26,7 +26,7 @@ export const processUser = (user: User) => {
 		profileBannerUrl: profile_banner_url,
 		twitterUrl: url,
 		userExternalLink,
-		createdAt: created_at,
+		createdAt: new Date(created_at),
 	};
 };
 
@@ -39,7 +39,7 @@ export const processTweet = (tweet: TweetData) => {
 		userId: user_id_str,
 		text: note_tweet ? note_tweet.note_tweet_results.result.text : full_text,
 		quotedTweetId: isQuoted ? undefined : quotedTweetId,
-		createdAt: created_at,
+		createdAt: new Date(created_at),
 	};
 };
 

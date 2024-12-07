@@ -1,85 +1,100 @@
-import type { Attachment, FieldSet } from 'airtable';
+import { z } from 'zod';
 
-export interface ExtractFieldSet extends FieldSet {
-	id: string;
-	title: string;
-	format: string; // Single-select comes back as string
-	michelinStars?: number;
-	source?: string;
-	creators?: string[]; // Array of Creator record IDs
-	extract?: string;
-	parent?: string[]; // Array of Extract record IDs
-	children?: string[]; // Array of Extract record IDs
-	spaces?: string[]; // Array of Space record IDs
-	connections?: string[]; // Array of Extract record IDs
-	images?: Attachment[];
-	imageCaption?: string;
-	notes?: string;
-	extractedOn: string; // ISO date string
-	lastUpdated: string; // ISO date string
-	published: boolean;
-	publishedOn?: string; // ISO date string
-	numChildren: number;
-	numFragments: number;
-	spaceTopics?: string[];
-	connectionTitles?: string[];
-	childTitles?: string[];
-	creatorNames?: string[];
-	parentTitle?: string[];
-	parentCreatorNames?: string[];
-	parentCreatorIds?: string[];
-	parentId?: string[];
-	creatorIds?: string[];
-	spaceIds?: string[];
-	connectionIds?: string[];
-	childIds?: string[];
-	creatorsLookup?: string;
-	spacesLookup?: string;
-	search: string;
-	extractsLookup: string;
-	slug: string;
-	score: number;
-	hasImages: number;
-}
+// Convert Airtable Attachment type to Zod schema
+const AirtableAttachmentSchema = z.object({
+	id: z.string(),
+	url: z.string().url(),
+	filename: z.string(),
+	size: z.number().int().min(0),
+	type: z.string(),
+	width: z.number().int().min(0).optional(),
+	height: z.number().int().min(0).optional(),
+});
 
-export interface CreatorFieldSet extends FieldSet {
-	id: string;
-	name: string;
-	type?: string; // Single-select comes back as string
-	primaryProject?: string;
-	site?: string;
-	professions?: string[]; // Multi-select comes back as string[]
-	organizations?: string[];
-	nationality?: string[];
-	extracts?: string[]; // Array of Extract record IDs
-	numExtracts: number;
-	createdTime: string; // ISO date string
-	numWorks: number;
-	extractTitles?: string[];
-	numFragments: number;
-	lastUpdated: string; // ISO date string
-	extractIds?: string[];
-	totalStars: number;
-	slug: string;
-	relevance: number;
-	starred: boolean;
-	extractScore: number;
-}
+export const ExtractFieldSetSchema = z.object({
+	id: z.string(),
+	title: z.string(),
+	format: z.string(),
+	michelinStars: z.number().int().min(0).max(3).default(0),
+	source: z.string().url().optional(),
+	creators: z.array(z.string()).optional(),
+	extract: z.string().optional(),
+	parent: z.array(z.string()).optional(),
+	children: z.array(z.string()).optional(),
+	spaces: z.array(z.string()).optional(),
+	connections: z.array(z.string()).optional(),
+	images: z.array(AirtableAttachmentSchema).optional(),
+	imageCaption: z.string().optional(),
+	notes: z.string().optional(),
+	extractedOn: z.coerce.date(),
+	lastUpdated: z.coerce.date(),
+	published: z.boolean(),
+	publishedOn: z.coerce.date().optional(),
+	numChildren: z.number().int().min(0),
+	numFragments: z.number().int().min(0),
+	spaceTopics: z.array(z.string()).optional(),
+	connectionTitles: z.array(z.string()).optional(),
+	childTitles: z.array(z.string()).optional(),
+	creatorNames: z.array(z.string()).optional(),
+	parentTitle: z.array(z.string()).optional(),
+	parentCreatorNames: z.array(z.string()).optional(),
+	parentCreatorIds: z.array(z.string()).optional(),
+	parentId: z.array(z.string()).optional(),
+	creatorIds: z.array(z.string()).optional(),
+	spaceIds: z.array(z.string()).optional(),
+	connectionIds: z.array(z.string()).optional(),
+	childIds: z.array(z.string()).optional(),
+	creatorsLookup: z.string().optional(),
+	spacesLookup: z.string().optional(),
+	search: z.string(),
+	extractsLookup: z.string(),
+	slug: z.string(),
+	score: z.number().int().min(0),
+	hasImages: z.coerce.boolean(),
+});
 
-export interface SpaceFieldSet extends FieldSet {
-	id: string;
-	topic: string;
-	icon?: string;
-	title?: string;
-	description?: string;
-	extracts?: string[]; // Array of Extract record IDs
-	numExtracts: number;
-	lastUpdated: string; // ISO date string
-	extractIds?: string[];
-	extractTitles?: string[];
-	createdTime: string; // ISO date string
-	totalStars: number;
-	slug: string;
-	extractScore: number;
-	relevance: number;
-}
+export const CreatorFieldSetSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	type: z.string().optional(),
+	primaryProject: z.string().optional(),
+	site: z.string().url().optional(),
+	professions: z.array(z.string()).optional(),
+	organizations: z.array(z.string()).optional(),
+	nationality: z.array(z.string()).optional(),
+	extracts: z.array(z.string()).optional(),
+	numExtracts: z.number().int().min(0),
+	numWorks: z.number().int().min(0),
+	extractTitles: z.array(z.string()).optional(),
+	numFragments: z.number().int().min(0),
+	extractIds: z.array(z.string()).optional(),
+	totalStars: z.number().int().min(0),
+	slug: z.string(),
+	relevance: z.number().int().min(0),
+	starred: z.coerce.boolean(),
+	extractScore: z.number().int().min(0),
+	createdTime: z.coerce.date(),
+	lastUpdated: z.coerce.date(),
+});
+
+export const SpaceFieldSetSchema = z.object({
+	id: z.string(),
+	topic: z.string(),
+	icon: z.string().optional(),
+	title: z.string().optional(),
+	description: z.string().optional(),
+	extracts: z.array(z.string()).optional(),
+	numExtracts: z.number().int().min(0),
+	extractIds: z.array(z.string()).optional(),
+	extractTitles: z.array(z.string()).optional(),
+	totalStars: z.number().int().min(0),
+	slug: z.string(),
+	extractScore: z.number().int().min(0),
+	relevance: z.number().int().min(0),
+	createdTime: z.coerce.date(),
+	lastUpdated: z.coerce.date(),
+});
+
+export type ExtractFieldSet = z.infer<typeof ExtractFieldSetSchema>;
+export type CreatorFieldSet = z.infer<typeof CreatorFieldSetSchema>;
+export type SpaceFieldSet = z.infer<typeof SpaceFieldSetSchema>;

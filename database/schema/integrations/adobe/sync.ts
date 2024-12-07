@@ -37,7 +37,7 @@ async function syncLightroomImages(integrationRunId: number) {
 	let successCount = 0;
 	for (const resource of jsonData.resources) {
 		const asset = resource.asset;
-		const payload = asset.payload;
+		const { payload, created, updated } = asset;
 		const {
 			importSource,
 			autoTags,
@@ -73,14 +73,19 @@ async function syncLightroomImages(integrationRunId: number) {
 			location: location,
 			rating: rating,
 			autoTags: Object.keys(autoTags.tags),
+			contentCreatedAt: created,
+			contentUpdatedAt: updated,
 			integrationRunId: integrationRunId,
 		};
 
 		try {
-			await db.insert(adobeLightroomImages).values(imageToInsert).onConflictDoUpdate({
-				target: adobeLightroomImages.id,
-				set: imageToInsert,
-			});
+			await db
+				.insert(adobeLightroomImages)
+				.values(imageToInsert)
+				.onConflictDoUpdate({
+					target: adobeLightroomImages.id,
+					set: { ...imageToInsert, updatedAt: new Date() },
+				});
 			successCount++;
 		} catch (error) {
 			console.error('Error processing image:', {

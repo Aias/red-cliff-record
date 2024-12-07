@@ -59,15 +59,18 @@ async function syncCollections(integrationRunId: number) {
 				colorHex: collection.color,
 				coverUrl: collection.cover[0],
 				raindropCount: collection.count,
-				createdAt: collection.created,
-				updatedAt: collection.lastUpdate,
+				contentCreatedAt: collection.created,
+				contentUpdatedAt: collection.lastUpdate,
 				integrationRunId: integrationRunId,
 			};
 
-			await db.insert(raindropCollections).values(collectionToInsert).onConflictDoUpdate({
-				target: raindropCollections.id,
-				set: collectionToInsert,
-			});
+			await db
+				.insert(raindropCollections)
+				.values(collectionToInsert)
+				.onConflictDoUpdate({
+					target: raindropCollections.id,
+					set: { ...collectionToInsert, updatedAt: new Date() },
+				});
 
 			successCount++;
 		} catch (error) {
@@ -89,25 +92,26 @@ async function syncRaindrops(integrationRunId: number) {
 
 	// Get the most recent raindrop date from the database
 	const latestRaindrop = await db
-		.select({ updatedAt: raindropRaindrops.updatedAt })
+		.select({ contentUpdatedAt: raindropRaindrops.contentUpdatedAt })
 		.from(raindropRaindrops)
 		.leftJoin(integrationRuns, eq(raindropRaindrops.integrationRunId, integrationRuns.id))
 		.where(eq(integrationRuns.integrationType, IntegrationType.enum.raindrop))
-		.orderBy(desc(raindropRaindrops.updatedAt))
+		.orderBy(desc(raindropRaindrops.contentUpdatedAt))
 		.limit(1);
 
-	const lastKnownDate = latestRaindrop[0]?.updatedAt;
+	const lastKnownDate = latestRaindrop[0]?.contentUpdatedAt;
 	console.log(`Last known raindrop date: ${lastKnownDate?.toISOString() ?? 'none'}`);
 
 	let newRaindrops: Raindrop[] = [];
 	let page = 0;
 	let hasMore = true;
 	let totalFetched = 0;
+	const PAGE_SIZE = 50;
 
 	while (hasMore) {
 		console.log(`📥 Fetching page ${page + 1}...`);
 		const response = await fetch(
-			`https://api.raindrop.io/rest/v1/raindrops/0?perpage=50&page=${page}`,
+			`https://api.raindrop.io/rest/v1/raindrops/0?perpage=${PAGE_SIZE}&page=${page}`,
 			{
 				headers: {
 					Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`,
@@ -124,19 +128,19 @@ async function syncRaindrops(integrationRunId: number) {
 
 		// Check if we've reached raindrops older than our last known date
 		const reachedExisting = parsedData.items.some(
-			(item) => lastKnownDate && new Date(item.lastUpdate) <= lastKnownDate
+			({ lastUpdate }) => lastKnownDate && lastUpdate <= lastKnownDate
 		);
 
 		if (reachedExisting) {
 			// Filter out any items that are older than our last known date
 			const newItems = parsedData.items.filter(
-				(item) => !lastKnownDate || new Date(item.lastUpdate) > lastKnownDate
+				({ lastUpdate }) => !lastKnownDate || lastUpdate > lastKnownDate
 			);
 			newRaindrops = [...newRaindrops, ...newItems];
 			hasMore = false;
 		} else {
 			newRaindrops = [...newRaindrops, ...parsedData.items];
-			hasMore = parsedData.items.length === 50;
+			hasMore = parsedData.items.length === PAGE_SIZE;
 		}
 
 		totalFetched += parsedData.items.length;
@@ -159,8 +163,8 @@ async function syncRaindrops(integrationRunId: number) {
 		important: raindrop.important,
 		domain: raindrop.domain,
 		collectionId: raindrop.collection.$id > 0 ? raindrop.collection.$id : null,
-		createdAt: raindrop.created,
-		updatedAt: raindrop.lastUpdate,
+		contentCreatedAt: raindrop.created,
+		contentUpdatedAt: raindrop.lastUpdate,
 		integrationRunId,
 	}));
 
@@ -169,10 +173,13 @@ async function syncRaindrops(integrationRunId: number) {
 	let successCount = 0;
 	for (const raindrop of raindropsToInsert) {
 		try {
-			await db.insert(raindropRaindrops).values(raindrop).onConflictDoUpdate({
-				target: raindropRaindrops.id,
-				set: raindrop,
-			});
+			await db
+				.insert(raindropRaindrops)
+				.values(raindrop)
+				.onConflictDoUpdate({
+					target: raindropRaindrops.id,
+					set: { ...raindrop, updatedAt: new Date() },
+				});
 			successCount++;
 			if (successCount % 10 === 0) {
 				console.log(`Processed ${successCount} of ${raindropsToInsert.length} raindrops`);

@@ -14,13 +14,13 @@ const db = createPgConnection();
 
 async function getMostRecentUpdateTime(db: NodePgDatabase) {
 	const mostRecent = await db
-		.select({ updatedAt: readwiseDocuments.updatedAt })
+		.select({ contentUpdatedAt: readwiseDocuments.contentUpdatedAt })
 		.from(readwiseDocuments)
-		.orderBy(desc(readwiseDocuments.updatedAt))
+		.orderBy(desc(readwiseDocuments.contentUpdatedAt))
 		.limit(1);
 
 	if (mostRecent.length > 0) {
-		return mostRecent[0].updatedAt;
+		return mostRecent[0].contentUpdatedAt;
 	}
 
 	console.log('No existing documents found');
@@ -55,8 +55,6 @@ async function fetchReadwiseDocuments(
 	return ReadwiseArticlesResponseSchema.parse(data);
 }
 
-const cleanString = (str: string | null) => str?.replace(/\u00fe\u00ff/g, '').trim() || null;
-
 const mapReadwiseArticleToDocument = (
 	article: ReadwiseArticle,
 	integrationRunId: number
@@ -64,18 +62,17 @@ const mapReadwiseArticleToDocument = (
 	id: article.id,
 	parentId: article.parent_id,
 	url: article.url,
-	title: cleanString(article.title),
-	author: cleanString(article.author),
+	title: article.title,
+	author: article.author,
 	source: article.source,
 	category: article.category,
 	location: article.location,
 	tags: article.tags ? Object.keys(article.tags) : null,
 	siteName: article.site_name,
 	wordCount: article.word_count,
-	publishedDate: article.published_date ? article.published_date.toISOString().split('T')[0] : null,
-	summary: cleanString(article.summary),
-	content: cleanString(article.content),
-	notes: cleanString(article.notes),
+	summary: article.summary,
+	content: article.content,
+	notes: article.notes,
 	imageUrl: article.image_url,
 	sourceUrl: article.source_url,
 	readingProgress: article.reading_progress.toString(),
@@ -83,8 +80,9 @@ const mapReadwiseArticleToDocument = (
 	lastOpenedAt: article.last_opened_at,
 	savedAt: article.saved_at,
 	lastMovedAt: article.last_moved_at,
-	createdAt: article.created_at,
-	updatedAt: article.updated_at,
+	publishedDate: article.published_date ? article.published_date.toISOString().split('T')[0] : null,
+	contentCreatedAt: article.created_at,
+	contentUpdatedAt: article.updated_at,
 	integrationRunId,
 });
 
@@ -150,10 +148,13 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 		try {
 			const mappedDoc = mapReadwiseArticleToDocument(doc, integrationRunId);
 
-			await db.insert(readwiseDocuments).values(mappedDoc).onConflictDoUpdate({
-				target: readwiseDocuments.id,
-				set: mappedDoc,
-			});
+			await db
+				.insert(readwiseDocuments)
+				.values(mappedDoc)
+				.onConflictDoUpdate({
+					target: readwiseDocuments.id,
+					set: { ...mappedDoc, updatedAt: new Date() },
+				});
 
 			successCount++;
 		} catch (error) {

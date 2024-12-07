@@ -18,7 +18,7 @@ import {
 import { relations, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import mime from 'mime-types';
-import { timestamps } from '@schema/operations/common';
+import { databaseTimestamps } from '@schema/operations/common';
 import { IntegrationType, integrationTypeEnum } from '../operations';
 
 /* ==============================
@@ -56,7 +56,7 @@ export const timepoints = pgTable(
 		endTime: time('end_time'),
 		endInstant: timestamp('end_instant', { withTimezone: true }),
 		endGranularity: timepointTypeEnum('end_granularity'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index('timepoint_start_date_idx').on(table.startDate),
@@ -81,7 +81,7 @@ export const recordTimepoints = pgTable(
 			.notNull(),
 		label: text('label'),
 		order: text('order').notNull().default('a0'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index('record_timepoint_record_idx').on(table.recordId),
@@ -119,7 +119,7 @@ export const sources = pgTable(
 		lastCrawlDate: timestamp('last_crawl_date', { withTimezone: true }),
 		lastSuccessfulCrawlDate: timestamp('last_successful_crawl_date', { withTimezone: true }),
 		lastHttpStatus: integer('last_http_status'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		unique('source_url_idx').on(table.url),
@@ -139,7 +139,7 @@ export const sourceContents = pgTable(
 		contentHtml: text('content_html').notNull(),
 		contentMarkdown: text('content_markdown'),
 		metadata: json('metadata'), // headers, meta tags, etc
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [index('source_content_source_idx').on(table.sourceId)]
 );
@@ -165,7 +165,7 @@ export const sourceConnections = pgTable(
 			.references(() => sources.id)
 			.notNull(),
 		metadata: json('metadata').$type<LinkMetadata>(),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		unique('source_connection_unique_idx').on(table.fromSourceId, table.toSourceId),
@@ -223,7 +223,7 @@ export const media = pgTable(
 		versionOfMediaId: integer('version_of_media_id'),
 		sourcePageId: integer('source_page_id').references(() => sources.id),
 		metadata: json('metadata'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		foreignKey({
@@ -325,7 +325,7 @@ export const indexEntries = pgTable(
 		canonicalPageId: integer('canonical_page_id').references(() => sources.id),
 		canonicalMediaId: integer('canonical_media_id').references(() => media.id),
 		aliasOf: integer('alias_of'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		foreignKey({
@@ -351,7 +351,7 @@ export const indexRelations = pgTable(
 			.references(() => indexEntries.id)
 			.notNull(),
 		type: indexRelationTypeEnum('type').notNull().default('related_to'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [unique('index_relation_unique_idx').on(table.sourceId, table.targetId, table.type)]
 );
@@ -482,7 +482,7 @@ export const locations = pgTable(
 		population: integer('population'),
 		elevation: integer('elevation'),
 		parentLocationId: integer('parent_location_id'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index('location_map_page_idx').on(table.mapPageId),
@@ -601,7 +601,7 @@ export const records = pgTable(
 		flags: flagEnum('flags').array(),
 		needsCuration: boolean('needs_curation').notNull().default(true),
 		locationId: integer('location_id').references(() => locations.id),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index('record_type_idx').on(table.type),
@@ -624,7 +624,7 @@ export const recordRelations = pgTable(
 		type: recordRelationTypeEnum('type').notNull(),
 		order: text('order').notNull().default('a0'),
 		notes: text('notes'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index('record_relation_source_idx').on(table.sourceId),
@@ -647,7 +647,7 @@ export const recordCreators = pgTable(
 		role: creatorRoleTypeEnum('role').notNull(),
 		order: text('order').notNull().default('a0'),
 		notes: text('notes'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index('record_creator_record_idx').on(table.recordId),
@@ -669,7 +669,7 @@ export const recordCategories = pgTable(
 			.notNull(),
 		type: categorizationTypeEnum('type').notNull(),
 		primary: boolean('primary').notNull().default(false),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index('record_category_record_idx').on(table.recordId),
@@ -702,7 +702,7 @@ export const recordMedia = pgTable(
 			.notNull(),
 		caption: text('caption'),
 		order: text('order').notNull().default('a0'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index('record_media_record_idx').on(table.recordId),
@@ -723,7 +723,7 @@ export const recordSources = pgTable(
 			.references(() => sources.id)
 			.notNull(),
 		order: text('order').notNull().default('a0'),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index('record_source_record_idx').on(table.recordId),

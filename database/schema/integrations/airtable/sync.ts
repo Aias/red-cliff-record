@@ -1,6 +1,6 @@
 import { base } from './queries';
 import { createPgConnection } from '@schema/connections';
-import type { ExtractFieldSet, CreatorFieldSet, SpaceFieldSet } from './types';
+import { ExtractFieldSetSchema, CreatorFieldSetSchema, SpaceFieldSetSchema } from './types';
 import {
 	airtableExtracts,
 	airtableAttachments,
@@ -48,7 +48,7 @@ async function seedCreators(integrationRunId: number) {
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
 		const creatorsToInsert: NewAirtableCreator[] = chunk.map((record) => {
-			const fields = record.fields as CreatorFieldSet;
+			const fields = CreatorFieldSetSchema.parse(record.fields);
 			return {
 				id: record.id,
 				name: fields.name,
@@ -58,8 +58,8 @@ async function seedCreators(integrationRunId: number) {
 				professions: fields.professions,
 				organizations: fields.organizations,
 				nationalities: fields.nationality,
-				createdAt: new Date(fields.createdTime),
-				updatedAt: new Date(fields.lastUpdated),
+				contentCreatedAt: fields.createdTime,
+				contentUpdatedAt: fields.lastUpdated,
 				integrationRunId,
 			};
 		});
@@ -78,15 +78,15 @@ async function seedSpaces(integrationRunId: number) {
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
 		const spacesToInsert: NewAirtableSpace[] = chunk.map((record) => {
-			const fields = record.fields as SpaceFieldSet;
+			const fields = SpaceFieldSetSchema.parse(record.fields);
 			return {
 				id: record.id,
 				name: fields.topic,
 				fullName: fields.title,
 				icon: fields.icon,
 				description: fields.description,
-				createdAt: new Date(fields.createdTime),
-				updatedAt: new Date(fields.lastUpdated),
+				contentCreatedAt: fields.createdTime,
+				contentUpdatedAt: fields.lastUpdated,
 				integrationRunId,
 			};
 		});
@@ -102,11 +102,10 @@ async function seedExtracts(integrationRunId: number) {
 	console.log('Seeding extracts...');
 	const records = await base('Extracts').select().all();
 
-	// First pass: Create all extracts without parent references
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
 		const extractsToInsert: NewAirtableExtract[] = chunk.map((record) => {
-			const fields = record.fields as ExtractFieldSet;
+			const fields = ExtractFieldSetSchema.parse(record.fields);
 			return {
 				id: record.id,
 				title: fields.title,
@@ -118,9 +117,9 @@ async function seedExtracts(integrationRunId: number) {
 				attachmentCaption: fields.imageCaption,
 				parentId: null,
 				lexicographicalOrder: 'a0',
-				createdAt: new Date(fields.extractedOn),
-				updatedAt: new Date(fields.lastUpdated),
-				publishedAt: fields.publishedOn ? new Date(fields.publishedOn) : null,
+				publishedAt: fields.publishedOn,
+				contentCreatedAt: fields.extractedOn,
+				contentUpdatedAt: fields.lastUpdated,
 				integrationRunId,
 			};
 		});
@@ -133,7 +132,7 @@ async function seedExtracts(integrationRunId: number) {
 
 	// Second pass: Update parent references
 	for (const record of records) {
-		const fields = record.fields as ExtractFieldSet;
+		const fields = ExtractFieldSetSchema.parse(record.fields);
 		if (fields.parentId?.[0]) {
 			await db
 				.update(airtableExtracts)
@@ -148,7 +147,7 @@ async function seedAttachments() {
 	const records = await base('Extracts').select().all();
 
 	for (const record of records) {
-		const fields = record.fields as ExtractFieldSet;
+		const fields = ExtractFieldSetSchema.parse(record.fields);
 		const images = fields.images;
 		if (!images) continue;
 
@@ -159,8 +158,8 @@ async function seedAttachments() {
 				url: attachment.url,
 				filename: attachment.filename,
 				size: attachment.size,
-				width: (attachment as unknown as { width: number }).width,
-				height: (attachment as unknown as { height: number }).height,
+				width: attachment.width,
+				height: attachment.height,
 				type: attachment.type,
 				extractId: record.id,
 			}));
@@ -175,7 +174,7 @@ async function seedRelations() {
 	const records = await base('Extracts').select().all();
 
 	for (const record of records) {
-		const fields = record.fields as ExtractFieldSet;
+		const fields = ExtractFieldSetSchema.parse(record.fields);
 
 		// Insert creator relations
 		if (fields.creatorIds?.length) {

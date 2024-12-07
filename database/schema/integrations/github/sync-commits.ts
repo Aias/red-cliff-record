@@ -32,6 +32,12 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 		auth: process.env.GITHUB_TOKEN,
 	});
 
+	const DEFAULT_STATS = {
+		additions: 0,
+		deletions: 0,
+		total: 0,
+	};
+
 	try {
 		const { data: user } = await octokit.rest.users.getAuthenticated();
 		const username = user.login;
@@ -75,7 +81,7 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 							url: commitData.html_url,
 							committer: commitData.committer?.login,
 							commitDate,
-							stats: commitData.stats,
+							stats: commitData.stats ?? DEFAULT_STATS,
 							files: commitData.files?.map(
 								({ filename, status, additions, deletions, changes, patch = '' }) => ({
 									filename,
@@ -112,21 +118,23 @@ async function syncCommits(integrationRunId: number): Promise<number> {
 						.limit(1);
 
 					if (existingCommit.length === 0) {
+						const { sha, message, repository, url, committer, commitDate, stats } = commit;
 						const commitId = await db
 							.insert(githubCommits)
 							.values({
-								sha: commit.sha,
-								message: commit.message,
-								repository: commit.repository,
-								url: commit.url,
-								committer: commit.committer,
-								commitDate: commit.commitDate,
+								sha: sha,
+								message: message,
+								repository: repository,
+								url: url,
+								committer: committer,
+								commitDate: commitDate,
+								additions: stats.additions ?? 0,
+								deletions: stats.deletions ?? 0,
+								changes: stats.total ?? 0,
+								contentCreatedAt: commitDate,
 								integrationRunId,
-								additions: commit.stats?.additions ?? 0,
-								deletions: commit.stats?.deletions ?? 0,
-								changes: commit.stats?.total ?? 0,
 							})
-							.returning();
+							.returning({ id: githubCommits.id });
 
 						// Insert commit changes into the database
 						if (commit.files) {

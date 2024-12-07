@@ -1,6 +1,6 @@
 import { index, text, timestamp, integer, numeric, foreignKey, date } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { timestamps } from '@schema/operations/common';
+import { contentTimestamps, databaseTimestamps } from '@schema/operations/common';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '..';
 import { z } from 'zod';
@@ -45,11 +45,11 @@ export const readwiseDocuments = integrationSchema.table(
 		siteName: text('site_name'),
 		wordCount: integer('word_count'),
 		notes: text('notes'),
-		publishedDate: date('published_date'),
 		summary: text('summary'),
 		imageUrl: text('image_url'),
 		parentId: text('parent_id'),
 		readingProgress: numeric('reading_progress'),
+		publishedDate: date('published_date'),
 		firstOpenedAt: timestamp('first_opened_at', {
 			withTimezone: true,
 		}),
@@ -65,7 +65,8 @@ export const readwiseDocuments = integrationSchema.table(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps,
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		index().on(table.integrationRunId),

@@ -1,4 +1,4 @@
-import { timestamps } from '@schema/operations/common';
+import { contentTimestamps, databaseTimestamps } from '@schema/operations/common';
 import { relations } from 'drizzle-orm';
 import { text, integer, timestamp, foreignKey, primaryKey } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';
@@ -23,7 +23,8 @@ export const airtableExtracts = integrationSchema.table(
 		publishedAt: timestamp('published_at', {
 			withTimezone: true,
 		}),
-		...timestamps,
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		foreignKey({
@@ -64,7 +65,8 @@ export const airtableAttachments = integrationSchema.table('airtable_attachments
 	extractId: text('extract_id')
 		.references(() => airtableExtracts.id)
 		.notNull(),
-	...timestamps,
+	...contentTimestamps,
+	...databaseTimestamps,
 });
 
 export const airtableAttachmentsRelations = relations(airtableAttachments, ({ one }) => ({
@@ -86,7 +88,8 @@ export const airtableCreators = integrationSchema.table('airtable_creators', {
 	integrationRunId: integer('integration_run_id')
 		.references(() => integrationRuns.id)
 		.notNull(),
-	...timestamps,
+	...contentTimestamps,
+	...databaseTimestamps,
 });
 
 export const airtableCreatorsRelations = relations(airtableCreators, ({ one }) => ({
@@ -105,7 +108,8 @@ export const airtableSpaces = integrationSchema.table('airtable_spaces', {
 	integrationRunId: integer('integration_run_id')
 		.references(() => integrationRuns.id)
 		.notNull(),
-	...timestamps,
+	...contentTimestamps,
+	...databaseTimestamps,
 });
 
 export const airtableSpacesRelations = relations(airtableSpaces, ({ one }) => ({
@@ -124,7 +128,7 @@ export const airtableExtractCreators = integrationSchema.table(
 		creatorId: text('creator_id')
 			.references(() => airtableCreators.id)
 			.notNull(),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [primaryKey({ columns: [table.extractId, table.creatorId] })]
 );
@@ -151,7 +155,7 @@ export const airtableExtractSpaces = integrationSchema.table(
 		spaceId: text('space_id')
 			.references(() => airtableSpaces.id)
 			.notNull(),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [primaryKey({ columns: [table.extractId, table.spaceId] })]
 );
@@ -178,7 +182,7 @@ export const airtableExtractConnections = integrationSchema.table(
 		toExtractId: text('to_extract_id')
 			.references(() => airtableExtracts.id)
 			.notNull(),
-		...timestamps,
+		...databaseTimestamps,
 	},
 	(table) => [primaryKey({ columns: [table.fromExtractId, table.toExtractId] })]
 );

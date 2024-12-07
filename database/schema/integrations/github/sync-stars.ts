@@ -90,6 +90,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 				language: repo.language,
 				topics: repo.topics,
 				starredAt: starred_at,
+				contentCreatedAt: starred_at,
 				integrationRunId,
 			});
 		}

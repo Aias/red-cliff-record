@@ -1,4 +1,4 @@
-import { timestamps } from '@schema/operations/common';
+import { contentTimestamps, databaseTimestamps } from '@schema/operations/common';
 import { relations } from 'drizzle-orm';
 import { serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';
@@ -25,7 +25,8 @@ export const githubCommits = integrationSchema.table('github_commits', {
 		.references(() => integrationRuns.id)
 		.notNull(),
 	...githubStats,
-	...timestamps,
+	...contentTimestamps,
+	...databaseTimestamps,
 });
 
 export const githubCommitsRelations = relations(githubCommits, ({ many, one }) => ({
@@ -60,7 +61,7 @@ export const githubCommitChanges = integrationSchema.table('github_commit_change
 		.references(() => githubCommits.id)
 		.notNull(),
 	...githubStats,
-	...timestamps,
+	...databaseTimestamps,
 });
 
 export const githubCommitChangesRelations = relations(githubCommitChanges, ({ one }) => ({
@@ -89,7 +90,8 @@ export const githubStars = integrationSchema.table(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...timestamps,
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
 	(table) => [index().on(table.integrationRunId), index().on(table.starredAt)]
 );
