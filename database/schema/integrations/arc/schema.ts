@@ -33,7 +33,7 @@ export const arcBrowsingHistory = integrationSchema.table(
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.viewTime),
-		index('arc_browsing_history_url_idx').on(sql`md5(${table.url})`),
+		index('arc_browsing_history_url_idx').on(table.url),
 		index().on(table.viewEpochMicroseconds),
 		index().on(table.hostname),
 	]

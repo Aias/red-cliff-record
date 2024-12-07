@@ -512,6 +512,13 @@
       "when": 1733599330648,
       "tag": "0072_overrated_red_ghost",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1733600313034,
+      "tag": "0073_wandering_tenebrous",
+      "breakpoints": true
     }
   ]
 }
