@@ -88,16 +88,13 @@ export const githubStars = integrationSchema.table(
 		description: text('description'),
 		language: text('language'),
 		topics: text('topics').array(),
-		starredAt: timestamp('starred_at', {
-			withTimezone: true,
-		}).notNull(),
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.integrationRunId), index().on(table.starredAt)]
+	(table) => [index().on(table.integrationRunId), index().on(table.contentCreatedAt)]
 );
 
 export const githubStarsRelations = relations(githubStars, ({ one }) => ({

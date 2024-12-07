@@ -19,14 +19,14 @@ async function syncStars(integrationRunId: number): Promise<number> {
 
 	// Get the most recent bookmark date from the database
 	const latestStarredRepo = await db
-		.select({ starredAt: starsTable.starredAt })
+		.select({ contentCreatedAt: starsTable.contentCreatedAt })
 		.from(starsTable)
 		.leftJoin(integrationRuns, eq(starsTable.integrationRunId, integrationRuns.id))
 		.where(eq(integrationRuns.integrationType, IntegrationType.enum.github))
-		.orderBy(desc(starsTable.starredAt))
+		.orderBy(desc(starsTable.contentCreatedAt))
 		.limit(1);
 
-	const lastKnownDate = latestStarredRepo[0]?.starredAt;
+	const lastKnownDate = latestStarredRepo[0]?.contentCreatedAt;
 	console.log(`Date of last starred repository: ${lastKnownDate?.toISOString() ?? 'Never'}`);
 
 	const octokit = new Octokit({
@@ -89,7 +89,6 @@ async function syncStars(integrationRunId: number): Promise<number> {
 				description: repo.description,
 				language: repo.language,
 				topics: repo.topics.length > 0 ? repo.topics : null,
-				starredAt: starred_at,
 				contentCreatedAt: starred_at,
 				integrationRunId,
 			});
