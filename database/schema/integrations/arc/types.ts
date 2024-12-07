@@ -4,7 +4,7 @@ import { emptyStringToNull } from '../../utils/schema-helpers';
 export const DailyVisitsQueryRowSchema = z.object({
 	viewTime: z.number().int().nonnegative(),
 	viewDuration: z.number().int().default(0),
-	durationSinceLastView: z.number().int().default(0),
+	durationSinceLastView: z.number().int().nullable().default(0),
 	url: z.string(),
 	pageTitle: emptyStringToNull(z.string()),
 	searchTerms: emptyStringToNull(z.string()),

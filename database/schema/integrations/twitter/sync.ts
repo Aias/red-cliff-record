@@ -120,7 +120,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				externalUrl: user.userExternalLink?.expanded_url,
 				profileImageUrl: user.profileImageUrl,
 				profileBannerUrl: user.profileBannerUrl,
-				createdAt: user.createdAt,
+				contentCreatedAt: user.createdAt,
 			})
 			.onConflictDoNothing({ target: usersTable.id });
 	}
@@ -136,7 +136,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				text: tweet.text,
 				quotedTweetId: tweet.quotedTweetId,
 				integrationRunId: integrationRunId,
-				createdAt: tweet.createdAt,
+				contentCreatedAt: tweet.createdAt,
 			})
 			.onConflictDoNothing({ target: tweetsTable.id });
 	}
@@ -152,7 +152,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				text: tweet.text,
 				quotedTweetId: tweet.quotedTweetId,
 				integrationRunId: integrationRunId,
-				createdAt: tweet.createdAt,
+				contentCreatedAt: tweet.createdAt,
 			})
 			.onConflictDoNothing({ target: tweetsTable.id });
 	}
