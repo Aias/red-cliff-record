@@ -1,9 +1,9 @@
 import { Octokit } from '@octokit/rest';
-import { createPgConnection } from '@schema/connections';
+import { createPgConnection } from '../../connections';
 import { githubCommits, githubCommitChanges, GithubCommitChangeStatus } from '../github/schema';
 import type { NewGithubCommitChange } from '../github/schema';
 import { IntegrationType } from '../../operations';
-import { runIntegration } from '@schema/utils/run-integration';
+import { runIntegration } from '../../utils/run-integration';
 import { desc, sql } from 'drizzle-orm';
 import { loadEnv } from '@rcr/lib/env';
 

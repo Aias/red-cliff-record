@@ -2,7 +2,7 @@ import { text, integer, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '..';
-import { contentTimestamps, databaseTimestamps } from '@schema/operations/common';
+import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 
 export const twitterTweets = integrationSchema.table(
 	'twitter_tweets',

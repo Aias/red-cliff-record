@@ -9,13 +9,7 @@
 		"skipLibCheck": true,
 		"strict": true,
 		"verbatimModuleSyntax": true,
-		"baseUrl": ".",
-		"paths": {
-			"@integrations/*": ["integrations/*"],
-			"@schema/*": ["schema/*"],
-			"@scripts/*": ["scripts/*"],
-			"@utils/*": ["schema/utils/*"]
-		}
+		"baseUrl": "."
 	},
 	"include": ["**/*.ts"],
 	"exclude": ["node_modules"]

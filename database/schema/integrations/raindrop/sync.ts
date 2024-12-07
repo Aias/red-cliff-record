@@ -1,4 +1,4 @@
-import { createPgConnection } from '@schema/connections';
+import { createPgConnection } from '../../connections';
 import {
 	raindropRaindrops,
 	raindropCollections,

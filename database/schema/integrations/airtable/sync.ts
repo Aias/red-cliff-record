@@ -1,5 +1,5 @@
 import { base } from './queries';
-import { createPgConnection } from '@schema/connections';
+import { createPgConnection } from '../../connections';
 import { ExtractFieldSetSchema, CreatorFieldSetSchema, SpaceFieldSetSchema } from './types';
 import {
 	airtableExtracts,

@@ -4,6 +4,6 @@
 	"description": "Helpers and utilities for Red Cliff Record projects.",
 	"type": "module",
 	"dependencies": {
-		"dotenv": "^16.4.5"
+		"dotenv": "^16.4.7"
 	}
 }

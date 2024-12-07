@@ -2,7 +2,7 @@ import {
 	contentTimestamps,
 	databaseTimestamps,
 	databaseTimestampsNonUpdatable,
-} from '@schema/operations/common';
+} from '../../operations/common';
 import { relations } from 'drizzle-orm';
 import { serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';

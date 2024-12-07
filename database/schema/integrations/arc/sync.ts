@@ -1,4 +1,4 @@
-import { createPgConnection } from '@schema/connections';
+import { createPgConnection } from '../../connections';
 import {
 	arcBrowsingHistory,
 	arcBrowsingHistoryDaily,
@@ -7,10 +7,10 @@ import {
 } from '../arc/schema';
 import { IntegrationType } from '../../operations';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
-import { runIntegration } from '@schema/utils/run-integration';
+import { runIntegration } from '../../utils/run-integration';
 import { chromeEpochMicrosecondsToDatetime } from '@rcr/lib/time-helpers';
 import os from 'os';
-import { visits, urls } from '@schema/arc';
+import { visits, urls } from '../../arc';
 import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';
 import { DailyVisitsQueryResultSchema } from './types';
 import readline from 'readline';

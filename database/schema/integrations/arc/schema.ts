@@ -1,4 +1,4 @@
-import { databaseTimestamps, databaseTimestampsNonUpdatable } from '@schema/operations/common';
+import { databaseTimestamps, databaseTimestampsNonUpdatable } from '../../operations/common';
 import { relations, sql } from 'drizzle-orm';
 import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';

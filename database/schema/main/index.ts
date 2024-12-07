@@ -18,7 +18,7 @@ import {
 import { relations, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import mime from 'mime-types';
-import { databaseTimestamps } from '@schema/operations/common';
+import { databaseTimestamps } from '../operations/common';
 import { IntegrationType, integrationTypeEnum } from '../operations';
 
 /* ==============================
