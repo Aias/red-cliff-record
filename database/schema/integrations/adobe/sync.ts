@@ -59,7 +59,7 @@ async function syncLightroomImages(integrationRunId: number) {
 			links: asset.links,
 			fileName: importSource.fileName,
 			contentType: importSource.contentType,
-			sourceDevice: develop.device ?? changedOnDevice ?? importSource.importedOnDevice,
+			sourceDevice: changedOnDevice ?? importSource.importedOnDevice ?? develop.device,
 			cameraMake: xmp.tiff.Make,
 			cameraModel: xmp.tiff.Model,
 			cameraLens: xmp.aux.Lens,

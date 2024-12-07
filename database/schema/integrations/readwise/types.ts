@@ -19,7 +19,13 @@ export const ReadwiseArticleSchema = z.object({
 	notes: z.string().nullable(),
 	category: ReadwiseCategory,
 	location: ReadwiseLocation.nullable(),
-	tags: z.record(ReadwiseTagSchema).nullable(),
+	tags: z
+		.record(ReadwiseTagSchema)
+		.nullable()
+		.transform((val) => {
+			const keys = Object.keys(val ?? {});
+			return keys.length > 0 ? keys : null;
+		}),
 	word_count: z.number().int().nullable(),
 	url: z.string().url(), // Internal Readwise URL
 	source_url: emptyStringToNull(z.string().url().nullable()),

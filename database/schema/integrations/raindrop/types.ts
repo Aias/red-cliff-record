@@ -46,7 +46,7 @@ const RaindropCacheSchema = z.discriminatedUnion('status', [
 		created: z.coerce.date(),
 	}),
 	z.object({
-		status: z.enum(['failed', 'invalid-origin']),
+		status: z.enum(['failed', 'invalid-origin', 'invalid-timeout']),
 	}),
 	z.object({
 		status: z.literal('retry'),

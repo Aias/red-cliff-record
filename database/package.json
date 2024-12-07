@@ -15,6 +15,7 @@
 		"studio": "drizzle-kit studio",
 		"sync:all": "bun run sync:arc && bun run sync:adobe && bun run sync:raindrop && bun run sync:readwise && bun run sync:github",
 		"sync:adobe": "bun run schema/integrations/adobe/sync.ts",
+		"sync:airtable": "bun run schema/integrations/airtable/sync.ts",
 		"sync:arc": "bun run schema/integrations/arc/sync.ts",
 		"sync:github": "bun run sync:github-commits && bun run sync:github-stars",
 		"sync:github-commits": "bun run schema/integrations/github/sync-commits.ts",

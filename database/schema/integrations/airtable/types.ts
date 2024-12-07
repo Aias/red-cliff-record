@@ -5,7 +5,7 @@ const AirtableAttachmentSchema = z.object({
 	id: z.string(),
 	url: z.string().url(),
 	filename: z.string(),
-	size: z.number().int().min(0),
+	size: z.number().int().min(0).optional(),
 	type: z.string(),
 	width: z.number().int().min(0).optional(),
 	height: z.number().int().min(0).optional(),
@@ -28,7 +28,7 @@ export const ExtractFieldSetSchema = z.object({
 	notes: z.string().optional(),
 	extractedOn: z.coerce.date(),
 	lastUpdated: z.coerce.date(),
-	published: z.boolean(),
+	published: z.coerce.boolean(),
 	publishedOn: z.coerce.date().optional(),
 	numChildren: z.number().int().min(0),
 	numFragments: z.number().int().min(0),
@@ -49,9 +49,17 @@ export const ExtractFieldSetSchema = z.object({
 	search: z.string(),
 	extractsLookup: z.string(),
 	slug: z.string(),
-	score: z.number().int().min(0),
+	score: z.number().min(0),
 	hasImages: z.coerce.boolean(),
 });
+
+const relevanceCalculation = z
+	.union([z.number(), z.object({ specialValue: z.string() })])
+	.transform((val) => {
+		if (typeof val === 'number') return val;
+		return 0;
+	})
+	.default(0);
 
 export const CreatorFieldSetSchema = z.object({
 	id: z.string(),
@@ -70,9 +78,9 @@ export const CreatorFieldSetSchema = z.object({
 	extractIds: z.array(z.string()).optional(),
 	totalStars: z.number().int().min(0),
 	slug: z.string(),
-	relevance: z.number().int().min(0),
+	relevance: relevanceCalculation,
 	starred: z.coerce.boolean(),
-	extractScore: z.number().int().min(0),
+	extractScore: z.number().min(0),
 	createdTime: z.coerce.date(),
 	lastUpdated: z.coerce.date(),
 });
@@ -87,10 +95,10 @@ export const SpaceFieldSetSchema = z.object({
 	numExtracts: z.number().int().min(0),
 	extractIds: z.array(z.string()).optional(),
 	extractTitles: z.array(z.string()).optional(),
-	totalStars: z.number().int().min(0),
+	totalStars: z.number().int().min(0).default(0),
 	slug: z.string(),
-	extractScore: z.number().int().min(0),
-	relevance: z.number().int().min(0),
+	extractScore: z.number().min(0),
+	relevance: relevanceCalculation,
 	createdTime: z.coerce.date(),
 	lastUpdated: z.coerce.date(),
 });

@@ -1,4 +1,4 @@
-import { databaseTimestamps } from '@schema/operations/common';
+import { databaseTimestamps, databaseTimestampsNonUpdatable } from '@schema/operations/common';
 import { relations, sql } from 'drizzle-orm';
 import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';
@@ -28,7 +28,7 @@ export const arcBrowsingHistory = integrationSchema.table(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...databaseTimestamps,
+		...databaseTimestampsNonUpdatable,
 	},
 	(table) => [
 		index().on(table.integrationRunId),

@@ -48,6 +48,14 @@ async function fetchReadwiseDocuments(
 	});
 
 	if (!response.ok) {
+		if (response.status === 429) {
+			// Get retry delay from header, default to 60 seconds if not provided
+			const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
+			console.warn(`Rate limit hit, waiting ${retryAfter} seconds before retrying...`);
+			await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+			// Retry the request
+			return fetchReadwiseDocuments(pageCursor, updatedAfter);
+		}
 		throw new Error(`Failed to fetch Readwise documents: ${response.statusText}`);
 	}
 
@@ -67,7 +75,7 @@ const mapReadwiseArticleToDocument = (
 	source: article.source,
 	category: article.category,
 	location: article.location,
-	tags: article.tags ? Object.keys(article.tags) : null,
+	tags: article.tags,
 	siteName: article.site_name,
 	wordCount: article.word_count,
 	summary: article.summary,

@@ -88,7 +88,7 @@ async function syncStars(integrationRunId: number): Promise<number> {
 				licenseName: repo.license?.name,
 				description: repo.description,
 				language: repo.language,
-				topics: repo.topics,
+				topics: repo.topics.length > 0 ? repo.topics : null,
 				starredAt: starred_at,
 				contentCreatedAt: starred_at,
 				integrationRunId,

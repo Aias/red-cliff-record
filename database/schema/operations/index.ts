@@ -10,7 +10,7 @@ import {
 } from '../integrations/airtable/schema';
 import { adobeLightroomImages } from '../integrations/adobe/schema';
 import { z } from 'zod';
-import { databaseTimestamps } from './common';
+import { databaseTimestampsNonUpdatable } from './common';
 
 export const operationsSchema = pgSchema('operations');
 
@@ -58,7 +58,7 @@ export const integrationRuns = operationsSchema.table(
 			withTimezone: true,
 		}),
 		entriesCreated: integer('entries_created').default(0),
-		...databaseTimestamps,
+		...databaseTimestampsNonUpdatable,
 	},
 	(table) => [index().on(table.integrationType)]
 );

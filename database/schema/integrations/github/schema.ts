@@ -1,4 +1,8 @@
-import { contentTimestamps, databaseTimestamps } from '@schema/operations/common';
+import {
+	contentTimestamps,
+	databaseTimestamps,
+	databaseTimestampsNonUpdatable,
+} from '@schema/operations/common';
 import { relations } from 'drizzle-orm';
 import { serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';
@@ -26,7 +30,7 @@ export const githubCommits = integrationSchema.table('github_commits', {
 		.notNull(),
 	...githubStats,
 	...contentTimestamps,
-	...databaseTimestamps,
+	...databaseTimestampsNonUpdatable,
 });
 
 export const githubCommitsRelations = relations(githubCommits, ({ many, one }) => ({
@@ -61,7 +65,7 @@ export const githubCommitChanges = integrationSchema.table('github_commit_change
 		.references(() => githubCommits.id)
 		.notNull(),
 	...githubStats,
-	...databaseTimestamps,
+	...databaseTimestampsNonUpdatable,
 });
 
 export const githubCommitChangesRelations = relations(githubCommitChanges, ({ one }) => ({

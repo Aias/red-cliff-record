@@ -159,7 +159,7 @@ async function syncRaindrops(integrationRunId: number) {
 		note: raindrop.note,
 		type: raindrop.type,
 		coverImageUrl: raindrop.cover,
-		tags: raindrop.tags,
+		tags: raindrop.tags.length > 0 ? raindrop.tags : null,
 		important: raindrop.important,
 		domain: raindrop.domain,
 		collectionId: raindrop.collection.$id > 0 ? raindrop.collection.$id : null,

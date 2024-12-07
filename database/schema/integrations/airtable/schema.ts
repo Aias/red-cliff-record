@@ -65,7 +65,6 @@ export const airtableAttachments = integrationSchema.table('airtable_attachments
 	extractId: text('extract_id')
 		.references(() => airtableExtracts.id)
 		.notNull(),
-	...contentTimestamps,
 	...databaseTimestamps,
 });
 
