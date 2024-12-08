@@ -17,14 +17,13 @@
 		"sync:adobe": "bun run schema/integrations/adobe/sync.ts",
 		"sync:airtable": "bun run schema/integrations/airtable/sync.ts",
 		"sync:arc": "bun run schema/integrations/arc/sync.ts",
-		"sync:github": "bun run sync:github-commits && bun run sync:github-stars",
-		"sync:github-commits": "bun run schema/integrations/github/sync-commits.ts",
-		"sync:github-stars": "bun run schema/integrations/github/sync-stars.ts",
+		"sync:github": "bun run schema/integrations/github/sync.ts",
 		"sync:raindrop": "bun run schema/integrations/raindrop/sync.ts",
 		"sync:readwise": "bun run schema/integrations/readwise/sync.ts",
 		"sync:twitter": "bun run schema/integrations/twitter/sync.ts"
 	},
 	"dependencies": {
+		"@octokit/request-error": "^6.1.5",
 		"@octokit/rest": "^21.0.2",
 		"@rcr/lib": "workspace:*",
 		"airtable": "^0.12.2",

@@ -526,6 +526,27 @@
       "when": 1733600803126,
       "tag": "0074_solid_green_goblin",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1733682512060,
+      "tag": "0075_spicy_skreet",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1733683671854,
+      "tag": "0076_tricky_gorilla_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1733689709244,
+      "tag": "0077_amusing_reavers",
+      "breakpoints": true
     }
   ]
 }

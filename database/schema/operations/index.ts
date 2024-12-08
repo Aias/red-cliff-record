@@ -1,14 +1,16 @@
 import { relations } from 'drizzle-orm';
 import { pgSchema, serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
-import { githubStars } from '../integrations/github/schema';
 import { arcBrowsingHistory } from '../integrations/arc/schema';
-import { githubCommits } from '../integrations/github/schema';
+import { githubCommits, githubRepositories } from '../integrations/github/schema';
 import {
 	airtableCreators,
 	airtableExtracts,
 	airtableSpaces,
 } from '../integrations/airtable/schema';
 import { adobeLightroomImages } from '../integrations/adobe/schema';
+import { raindropCollections, raindropRaindrops } from '../integrations/raindrop/schema';
+import { readwiseDocuments } from '../integrations/readwise/schema';
+import { twitterTweets, twitterUsers } from '../integrations/twitter/schema';
 import { z } from 'zod';
 import { databaseTimestampsNonUpdatable } from './common';
 
@@ -64,11 +66,16 @@ export const integrationRuns = operationsSchema.table(
 );
 
 export const integrationRunsRelations = relations(integrationRuns, ({ many }) => ({
-	browsingHistory: many(arcBrowsingHistory),
-	githubStars: many(githubStars),
-	githubCommits: many(githubCommits),
+	adobeLightroomImages: many(adobeLightroomImages),
 	airtableExtracts: many(airtableExtracts),
 	airtableCreators: many(airtableCreators),
 	airtableSpaces: many(airtableSpaces),
-	adobeLightroomImages: many(adobeLightroomImages),
+	arcBrowsingHistory: many(arcBrowsingHistory),
+	githubCommits: many(githubCommits),
+	githubRepositories: many(githubRepositories),
+	raindropCollections: many(raindropCollections),
+	raindropRaindrops: many(raindropRaindrops),
+	readwiseDocuments: many(readwiseDocuments),
+	tweets: many(twitterTweets),
+	twitterUsers: many(twitterUsers),
 }));

@@ -121,6 +121,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				profileImageUrl: user.profileImageUrl,
 				profileBannerUrl: user.profileBannerUrl,
 				contentCreatedAt: user.createdAt,
+				integrationRunId: integrationRunId,
 			})
 			.onConflictDoNothing({ target: usersTable.id });
 	}

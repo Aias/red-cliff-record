@@ -1,6 +1,16 @@
 import { z } from 'zod';
 import { emptyStringToNull } from '../../utils/schema-helpers';
 
+export const GithubEventSchema = z.object({
+	id: z.string(),
+	type: z.string(),
+	actor: z.any(),
+	repo: z.any(),
+	payload: z.any(),
+	public: z.boolean(),
+	created_at: z.coerce.date(),
+});
+
 const GithubLicenseSchema = z.object({
 	key: z.string(),
 	name: z.string(),
@@ -20,7 +30,11 @@ const GithubOwnerSchema = z.object({
 
 const GithubRepositoryDetailsSchema = z.object({
 	id: z.number().int().positive(),
+	node_id: z.string(),
 	html_url: z.string().url(),
+	name: z.string(),
+	full_name: z.string(),
+	description: emptyStringToNull(z.string()),
 	homepage: emptyStringToNull(
 		z
 			.string()
@@ -35,9 +49,6 @@ const GithubRepositoryDetailsSchema = z.object({
 	created_at: z.coerce.date(),
 	updated_at: z.coerce.date(),
 	pushed_at: z.coerce.date(),
-	name: z.string(),
-	full_name: z.string(),
-	description: emptyStringToNull(z.string()),
 	language: z.string().nullable(),
 	topics: z.array(z.string()),
 	private: z.boolean(),

@@ -103,6 +103,9 @@ importers:
 
   database:
     dependencies:
+      '@octokit/request-error':
+        specifier: ^6.1.5
+        version: 6.1.5
       '@octokit/rest':
         specifier: ^21.0.2
         version: 21.0.2

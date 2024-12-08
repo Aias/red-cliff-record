@@ -75,12 +75,19 @@ export const twitterUsers = integrationSchema.table('twitter_users', {
 	externalUrl: text('external_url'),
 	profileImageUrl: text('profile_image_url'),
 	profileBannerUrl: text('profile_banner_url'),
+	integrationRunId: integer('integration_run_id')
+		.references(() => integrationRuns.id)
+		.notNull(),
 	...contentTimestamps,
 	...databaseTimestamps,
 });
 
-export const twitterUsersRelations = relations(twitterUsers, ({ many }) => ({
+export const twitterUsersRelations = relations(twitterUsers, ({ many, one }) => ({
 	tweets: many(twitterTweets),
+	integrationRun: one(integrationRuns, {
+		fields: [twitterUsers.integrationRunId],
+		references: [integrationRuns.id],
+	}),
 }));
 
 export type TwitterTweet = typeof twitterTweets.$inferSelect;
