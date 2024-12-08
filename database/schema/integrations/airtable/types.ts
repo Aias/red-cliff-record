@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Convert Airtable Attachment type to Zod schema
-const AirtableAttachmentSchema = z.object({
+export const AirtableAttachmentSchema = z.object({
 	id: z.string(),
 	url: z.string().url(),
 	filename: z.string(),

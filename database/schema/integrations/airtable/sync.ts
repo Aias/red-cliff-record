@@ -1,5 +1,4 @@
-import { base } from './queries';
-import { createPgConnection } from '../../connections';
+import { createPgConnection, airtableBase } from '../../connections';
 import { ExtractFieldSetSchema, CreatorFieldSetSchema, SpaceFieldSetSchema } from './types';
 import {
 	airtableExtracts,
@@ -43,7 +42,7 @@ async function cleanupExistingRecords() {
 
 async function seedCreators(integrationRunId: number) {
 	console.log('Seeding creators...');
-	const records = await base('Creators').select().all();
+	const records = await airtableBase('Creators').select().all();
 
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
@@ -73,7 +72,7 @@ async function seedCreators(integrationRunId: number) {
 
 async function seedSpaces(integrationRunId: number) {
 	console.log('Seeding spaces...');
-	const records = await base('Spaces').select().all();
+	const records = await airtableBase('Spaces').select().all();
 
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
@@ -100,7 +99,7 @@ async function seedSpaces(integrationRunId: number) {
 
 async function seedExtracts(integrationRunId: number) {
 	console.log('Seeding extracts...');
-	const records = await base('Extracts').select().all();
+	const records = await airtableBase('Extracts').select().all();
 
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
@@ -144,7 +143,7 @@ async function seedExtracts(integrationRunId: number) {
 
 async function seedAttachments() {
 	console.log('Seeding attachments...');
-	const records = await base('Extracts').select().all();
+	const records = await airtableBase('Extracts').select().all();
 
 	for (const record of records) {
 		const fields = ExtractFieldSetSchema.parse(record.fields);
@@ -171,7 +170,7 @@ async function seedAttachments() {
 
 async function seedRelations() {
 	console.log('Seeding relations...');
-	const records = await base('Extracts').select().all();
+	const records = await airtableBase('Extracts').select().all();
 
 	for (const record of records) {
 		const fields = ExtractFieldSetSchema.parse(record.fields);
