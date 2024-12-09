@@ -1,10 +1,13 @@
 import { z } from 'zod';
 import { emptyStringToNull } from '../../utils/schema-helpers';
 
-export function sanitizeString(str: string | null): string | null {
+const sanitizeString = (str: string | null): string | null => {
 	if (!str) return null;
 	return str.replace(/\0/g, '').trim();
-}
+};
+
+export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
+export type Browser = z.infer<typeof Browser>;
 
 export const DailyVisitsQueryRowSchema = z.object({
 	viewTime: z.number().int().nonnegative(),

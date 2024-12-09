@@ -8,8 +8,8 @@
 	"scripts": {
 		"backup": "bash scripts/backup.sh",
 		"restore": "bash scripts/restore.sh",
-		"check": "bun run tsc --noEmit",
-		"check:watch": "bun run tsc --noEmit --watch",
+		"check": "tsc --noEmit",
+		"check:watch": "tsc --noEmit --watch",
 		"migrate": "drizzle-kit migrate",
 		"generate": "drizzle-kit generate",
 		"studio": "drizzle-kit studio",
@@ -34,6 +34,6 @@
 		"@octokit/types": "^13.6.2",
 		"@types/bun": "^1.1.14",
 		"@types/pg": "^8.11.10",
-		"drizzle-kit": "^0.29.1"
+		"drizzle-kit": "^0.30.0"
 	}
 }

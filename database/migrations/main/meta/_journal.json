@@ -575,6 +575,13 @@
       "when": 1733760994706,
       "tag": "0081_lethal_gwen_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1733773923300,
+      "tag": "0082_steep_thunderbolts",
+      "breakpoints": true
     }
   ]
 }

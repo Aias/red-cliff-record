@@ -1,29 +1,15 @@
 import { index, text, timestamp, integer, numeric, foreignKey, date } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
-import { integrationRuns } from '../../operations';
+import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
-import { z } from 'zod';
+import { ReadwiseLocation, ReadwiseCategory } from './types';
 
-export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);
-export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;
 export const readwiseLocationEnum = integrationSchema.enum(
 	'readwise_location',
 	ReadwiseLocation.options
 );
 
-export const ReadwiseCategory = z.enum([
-	'article',
-	'email',
-	'rss',
-	'highlight',
-	'note',
-	'pdf',
-	'epub',
-	'tweet',
-	'video',
-]);
-export type ReadwiseCategory = z.infer<typeof ReadwiseCategory>;
 export const readwiseCategoryEnum = integrationSchema.enum(
 	'readwise_category',
 	ReadwiseCategory.options

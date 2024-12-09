@@ -5,6 +5,7 @@ import { createConnection } from '@rcr/database';
 import { githubCommits } from '@rcr/database/schema/integrations/github/schema';
 import { desc } from 'drizzle-orm';
 import { Link } from '../components/Link';
+
 const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
 	const db = createConnection();
 	const commits = await db.query.githubCommits.findMany({

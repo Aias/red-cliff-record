@@ -16,29 +16,26 @@ import {
 	customType,
 } from 'drizzle-orm/pg-core';
 import { relations, SQL, sql } from 'drizzle-orm';
-import { z } from 'zod';
-import mime from 'mime-types';
+
 import { databaseTimestamps } from '../operations/common';
-import { IntegrationType, integrationTypeEnum } from '../operations';
+import { integrationTypeEnum } from '../operations/schema';
+import { IntegrationType } from '../operations/types';
+import {
+	CategorizationType,
+	CreatorRoleType,
+	Flag,
+	IndexMainType,
+	IndexRelationType,
+	MediaFormat,
+	RecordRelationType,
+	RecordType,
+	TimepointType,
+	type LinkMetadata,
+} from './types';
 
 /* ==============================
    TIMEPOINTS AND EVENTS
    ============================== */
-
-// Zod enums
-export const TimepointType = z.enum([
-	'instant',
-	'minute',
-	'hour',
-	'day',
-	'week',
-	'month',
-	'quarter',
-	'year',
-	'decade',
-	'century',
-]);
-export type TimepointType = z.infer<typeof TimepointType>;
 
 // Drizzle enums
 export const timepointTypeEnum = pgEnum('timepoint_type', TimepointType.options);
@@ -144,15 +141,6 @@ export const sourceContents = pgTable(
 	(table) => [index('source_content_source_idx').on(table.sourceId)]
 );
 
-// Link metadata schema
-export const LinkMetadataSchema = z
-	.object({
-		linkText: z.string().optional(),
-		attributes: z.record(z.string()).optional(),
-	})
-	.strict();
-export type LinkMetadata = z.infer<typeof LinkMetadataSchema>;
-
 // Relationship table for source connections
 export const sourceConnections = pgTable(
 	'source_connections',
@@ -174,39 +162,7 @@ export const sourceConnections = pgTable(
 	]
 );
 
-export const MediaFormat = z.enum([
-	'image', // images (jpg, png, etc)
-	'video', // video files
-	'audio', // audio files
-	'text', // plain text, markdown
-	'application', // binary data, PDFs, etc
-	'unknown', // unknown format
-]);
-export type MediaFormat = z.infer<typeof MediaFormat>;
 export const mediaFormatEnum = pgEnum('media_format', MediaFormat.options);
-
-// Helper function for determining format from mime type
-export const getMediaFormat = (contentTypeOrExtension: string): MediaFormat => {
-	const fullMimeType = mime.lookup(contentTypeOrExtension);
-	if (!fullMimeType) {
-		return MediaFormat.enum.unknown;
-	}
-	const type = fullMimeType.split('/')[0];
-	switch (type) {
-		case 'image':
-			return MediaFormat.enum.image;
-		case 'video':
-			return MediaFormat.enum.video;
-		case 'audio':
-			return MediaFormat.enum.audio;
-		case 'text':
-			return MediaFormat.enum.text;
-		case 'application':
-			return MediaFormat.enum.application;
-		default:
-			return MediaFormat.enum.unknown;
-	}
-};
 
 export const media = pgTable(
 	'media',
@@ -296,17 +252,6 @@ export type NewMedia = typeof media.$inferInsert;
    INDEX
    ============================== */
 
-export const IndexMainType = z.enum([
-	'entity', // who/what created something
-	'category ', // what something is about
-	'format', // what something is
-]);
-export type IndexMainType = z.infer<typeof IndexMainType>;
-
-export const IndexRelationType = z.enum(['related_to', 'opposite_of', 'part_of']);
-export type IndexRelationType = z.infer<typeof IndexRelationType>;
-
-// Drizzle enums
 export const indexMainTypeEnum = pgEnum('index_main_type', IndexMainType.options);
 export const indexRelationTypeEnum = pgEnum('index_relation_type', IndexRelationType.options);
 
@@ -402,59 +347,6 @@ export type IndexRelation = typeof indexRelations.$inferSelect;
 export type NewIndexRelation = typeof indexRelations.$inferInsert;
 
 /* ==============================
-   FLAGS
-   ============================== */
-
-export const FLAGS = {
-	important: {
-		name: 'Important',
-		emoji: '⭐',
-		description: 'Important content',
-	},
-	favorite: {
-		name: 'Favorite',
-		emoji: '💖',
-		description: 'Favorite content',
-	},
-	draft: {
-		name: 'Draft',
-		emoji: '📝',
-		description: 'Work in progress',
-	},
-	follow_up: {
-		name: 'Follow-up',
-		emoji: '🚩',
-		description: 'Needs further action',
-	},
-	review: {
-		name: 'Review',
-		emoji: '⏲️',
-		description: 'Marked for later review',
-	},
-	outdated: {
-		name: 'Outdated',
-		emoji: '📅',
-		description: 'Content needs updating',
-	},
-} as const;
-
-// Generate Zod enum from FLAGS keys
-export const Flag = z.enum(
-	Object.keys(FLAGS) as [keyof typeof FLAGS, ...Array<keyof typeof FLAGS>]
-);
-export type Flag = z.infer<typeof Flag>;
-export const flagEnum = pgEnum('flag', Flag.options);
-
-// Type safety
-export type FlagData = typeof FLAGS;
-export type FlagKey = keyof FlagData;
-
-// Helper functions
-export const getFlagName = (flag: Flag): string => FLAGS[flag].name;
-export const getFlagEmoji = (flag: Flag): string => FLAGS[flag].emoji;
-export const getFlagDescription = (flag: Flag): string => FLAGS[flag].description;
-
-/* ==============================
    LOCATIONS
    ============================== */
 
@@ -537,56 +429,11 @@ export type NewLocation = typeof locations.$inferInsert;
    ============================== */
 
 // Enums
-export const RecordType = z.enum([
-	'resource', // reference material, tools, techniques
-	'bookmark', // interesting but not reference material
-	'object', // physical or digital object
-	'document', // text-heavy content
-	'abstraction', // concept or idea
-	'extracted', // quote or excerpt
-	'event', // point in time or occurrence of an event
-]);
-export type RecordType = z.infer<typeof RecordType>;
 export const recordTypeEnum = pgEnum('record_type', RecordType.options);
-
-export const CreatorRoleType = z.enum([
-	'creator', // primary creator
-	'author', // specifically wrote/authored
-	'editor', // edited/curated
-	'contributor', // helped create/contributed to
-	'via', // found through/attributed to
-	'participant', // involved in
-	'interviewer', // conducted interview
-	'interviewee', // was interviewed
-	'subject', // topic is about this person
-	'mentioned', // referenced in content
-]);
-export type CreatorRoleType = z.infer<typeof CreatorRoleType>;
 export const creatorRoleTypeEnum = pgEnum('creator_role_type', CreatorRoleType.options);
-
-export const RecordRelationType = z.enum([
-	// Hierarchical
-	'primary_source',
-	'quoted_from',
-	'copied_from',
-	'derived_from',
-	'part_of',
-	// Non-hierarchical
-	'references',
-	'similar_to',
-	'responds_to',
-	'contradicts',
-	'supports',
-]);
-export type RecordRelationType = z.infer<typeof RecordRelationType>;
 export const recordRelationTypeEnum = pgEnum('record_relation_type', RecordRelationType.options);
-
-export const CategorizationType = z.enum([
-	'about', // meta-level subject matter
-	'file_under', // organizational category
-]);
-export type CategorizationType = z.infer<typeof CategorizationType>;
 export const categorizationTypeEnum = pgEnum('categorization_type', CategorizationType.options);
+export const flagEnum = pgEnum('flag', Flag.options);
 
 // Main records table
 export const records = pgTable(
@@ -762,20 +609,6 @@ export const recordTimepointsRelations = relations(recordTimepoints, ({ one }) =
 	}),
 }));
 
-// Type exports
-export type Record = typeof records.$inferSelect;
-export type NewRecord = typeof records.$inferInsert;
-export type RecordRelation = typeof recordRelations.$inferSelect;
-export type NewRecordRelation = typeof recordRelations.$inferInsert;
-export type RecordCreator = typeof recordCreators.$inferSelect;
-export type NewRecordCreator = typeof recordCreators.$inferInsert;
-export type RecordCategory = typeof recordCategories.$inferSelect;
-export type NewRecordCategory = typeof recordCategories.$inferInsert;
-export type RecordMedia = typeof recordMedia.$inferSelect;
-export type NewRecordMedia = typeof recordMedia.$inferInsert;
-export type RecordSource = typeof recordSources.$inferSelect;
-export type NewRecordSource = typeof recordSources.$inferInsert;
-
 export const recordCreatorsRelations = relations(recordCreators, ({ one }) => ({
 	record: one(records, {
 		fields: [recordCreators.recordId],
@@ -821,3 +654,16 @@ export const recordPagesRelations = relations(recordSources, ({ one }) => ({
 		references: [sources.id],
 	}),
 }));
+
+export type Record = typeof records.$inferSelect;
+export type NewRecord = typeof records.$inferInsert;
+export type RecordRelation = typeof recordRelations.$inferSelect;
+export type NewRecordRelation = typeof recordRelations.$inferInsert;
+export type RecordCreator = typeof recordCreators.$inferSelect;
+export type NewRecordCreator = typeof recordCreators.$inferInsert;
+export type RecordCategory = typeof recordCategories.$inferSelect;
+export type NewRecordCategory = typeof recordCategories.$inferInsert;
+export type RecordMedia = typeof recordMedia.$inferSelect;
+export type NewRecordMedia = typeof recordMedia.$inferInsert;
+export type RecordSource = typeof recordSources.$inferSelect;
+export type NewRecordSource = typeof recordSources.$inferInsert;

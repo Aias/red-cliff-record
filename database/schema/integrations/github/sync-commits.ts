@@ -47,6 +47,8 @@ async function ensureRepositoryExists(
 		ownerId: repoData.owner.id,
 		private: repoData.private,
 		htmlUrl: repoData.html_url,
+		homepageUrl: repoData.homepage,
+		licenseName: repoData.license?.name,
 		description: repoData.description,
 		language: repoData.language,
 		topics: repoData.topics,
@@ -101,7 +103,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 			console.log(`Fetching page ${page}...`);
 			const response = await octokit.rest.search.commits({
 				q: mostRecentCommitDate
-					? `author:@me author-date:>${mostRecentCommitDate.toISOString().split('T')[0]}`
+					? `author:@me author-date:>=${mostRecentCommitDate.toISOString().split('T')[0]}`
 					: 'author:@me',
 				sort: 'author-date',
 				order: 'asc',

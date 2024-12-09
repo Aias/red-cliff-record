@@ -1,12 +1,10 @@
 import { databaseTimestamps, databaseTimestampsNonUpdatable } from '../../operations/common';
 import { relations, sql } from 'drizzle-orm';
 import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
-import { integrationRuns } from '../../operations';
+import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
-import { z } from 'zod';
+import { Browser } from './types';
 
-export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
-export type Browser = z.infer<typeof Browser>;
 export const browserEnum = integrationSchema.enum('browser', Browser.options);
 
 export const arcBrowsingHistory = integrationSchema.table(

@@ -6,15 +6,25 @@ import { createConnection } from '@rcr/database';
 import { githubCommits } from '@rcr/database/schema/integrations/github/schema';
 import { useState } from 'react';
 import { assistant } from '../lib/assistants';
+
 import OpenAI from 'openai';
+
+type CommitChange = {
+	filename: string;
+	status: string;
+	changes: number | null;
+	deletions: number | null;
+	additions: number | null;
+	patch: string;
+};
 
 type CommitInput = {
 	message: string;
 	sha: string;
-	changes: number;
-	additions: number;
-	deletions: number;
-	commitChanges: Array<{ id: string; filename: string }>;
+	changes: number | null;
+	additions: number | null;
+	deletions: number | null;
+	commitChanges: CommitChange[];
 };
 
 type RepositoryInput = {
@@ -108,7 +118,14 @@ function CommitView() {
 						changes: commit.changes,
 						additions: commit.additions,
 						deletions: commit.deletions,
-						commitChanges: commit.commitChanges,
+						commitChanges: commit.commitChanges.map((change) => ({
+							filename: change.filename,
+							status: change.status,
+							changes: change.changes,
+							deletions: change.deletions,
+							additions: change.additions,
+							patch: change.patch,
+						})),
 					},
 					repository: {
 						fullName: commit.repository.fullName,

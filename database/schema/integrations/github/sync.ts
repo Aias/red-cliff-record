@@ -1,4 +1,4 @@
-import { IntegrationType } from '../../operations';
+import { IntegrationType } from '../../operations/types';
 import { runIntegration } from '../../utils/run-integration';
 import { syncGitHubStars } from './sync-stars';
 import { syncGitHubCommits } from './sync-commits';

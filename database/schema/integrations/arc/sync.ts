@@ -2,10 +2,10 @@ import { createPgConnection } from '../../connections';
 import {
 	arcBrowsingHistory,
 	arcBrowsingHistoryDaily,
-	Browser,
 	type NewArcBrowsingHistory,
 } from '../arc/schema';
-import { IntegrationType } from '../../operations';
+import { Browser } from './types';
+import { IntegrationType } from '../../operations/types';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
 import { runIntegration } from '../../utils/run-integration';
 import { chromeEpochMicrosecondsToDatetime } from '@rcr/lib/time-helpers';

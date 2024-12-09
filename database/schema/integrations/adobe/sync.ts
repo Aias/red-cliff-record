@@ -1,7 +1,7 @@
 import { createPgConnection } from '../../connections';
 import { adobeLightroomImages } from '../adobe/schema';
 import type { NewAdobeLightroomImage } from '../adobe/schema';
-import { IntegrationType } from '../../operations';
+import { IntegrationType } from '../../operations/types';
 import { runIntegration } from '../../utils/run-integration';
 import { LightroomJsonResponseSchema } from './types';
 import { loadEnv } from '@rcr/lib/env';

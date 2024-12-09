@@ -1,6 +1,6 @@
 import { text, integer, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { integrationRuns } from '../../operations';
+import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 

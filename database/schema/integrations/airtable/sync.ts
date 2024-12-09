@@ -18,7 +18,7 @@ import type {
 	NewAirtableExtractSpace,
 	NewAirtableExtractConnection,
 } from '../airtable/schema';
-import { IntegrationType } from '../../operations';
+import { IntegrationType } from '../../operations/types';
 import { eq } from 'drizzle-orm';
 import { runIntegration } from '../../utils/run-integration';
 

@@ -1,6 +1,17 @@
 import { z } from 'zod';
 import { emptyStringToNull } from '../../utils/schema-helpers';
 
+export const GithubCommitChangeStatus = z.enum([
+	'added',
+	'modified',
+	'removed',
+	'renamed',
+	'copied',
+	'changed',
+	'unchanged',
+]);
+export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatus>;
+
 export const GithubEventSchema = z.object({
 	id: z.string(),
 	type: z.string(),

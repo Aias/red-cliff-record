@@ -11,38 +11,21 @@ import { adobeLightroomImages } from '../integrations/adobe/schema';
 import { raindropCollections, raindropRaindrops } from '../integrations/raindrop/schema';
 import { readwiseDocuments } from '../integrations/readwise/schema';
 import { twitterTweets, twitterUsers } from '../integrations/twitter/schema';
-import { z } from 'zod';
 import { databaseTimestampsNonUpdatable } from './common';
+import { IntegrationStatus, IntegrationType, RunType } from './types';
 
 export const operationsSchema = pgSchema('operations');
 
-export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
-export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
 export const integrationStatusEnum = operationsSchema.enum(
 	'integration_status',
 	IntegrationStatus.options
 );
 
-export const IntegrationType = z.enum([
-	'ai_chat',
-	'airtable',
-	'browser_history',
-	'crawler',
-	'github',
-	'lightroom',
-	'manual',
-	'raindrop',
-	'readwise',
-	'twitter',
-]);
-export type IntegrationType = z.infer<typeof IntegrationType>;
 export const integrationTypeEnum = operationsSchema.enum(
 	'integration_type',
 	IntegrationType.options
 );
 
-export const RunType = z.enum(['seed', 'sync']);
-export type RunType = z.infer<typeof RunType>;
 export const runTypeEnum = operationsSchema.enum('run_type', RunType.options);
 
 export const integrationRuns = operationsSchema.table(

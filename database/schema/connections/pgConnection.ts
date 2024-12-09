@@ -1,6 +1,9 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { loadEnv } from '@rcr/lib/env';
-import * as github from '../integrations/github/schema';
+
+import * as integrationsSchema from '../integrations/schema';
+import * as mainSchema from '../main/schema';
+import * as operationsSchema from '../operations/schema';
 
 loadEnv();
 loadEnv();
@@ -11,7 +14,9 @@ export const createPgConnection = () => {
 		connection: process.env.DATABASE_URL!,
 		casing: 'snake_case',
 		schema: {
-			...github,
+			...integrationsSchema,
+			...mainSchema,
+			...operationsSchema,
 		},
 	});
 };

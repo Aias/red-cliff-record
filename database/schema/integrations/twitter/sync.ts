@@ -3,7 +3,7 @@ import {
 	twitterMedia as mediaTable,
 	twitterUsers as usersTable,
 } from './schema';
-import { IntegrationType } from '../../operations';
+import { IntegrationType } from '../../operations/types';
 import { createPgConnection } from '../../connections';
 import { runIntegration } from '../../utils/run-integration';
 import { resolve } from 'path';

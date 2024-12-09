@@ -5,30 +5,16 @@ import {
 	databaseTimestampsNonUpdatable,
 } from '../../operations/common';
 import { relations } from 'drizzle-orm';
-import { serial, text, integer, index, boolean, json, timestamp } from 'drizzle-orm/pg-core';
-import { integrationRuns } from '../../operations';
+import { serial, text, integer, index, boolean, timestamp } from 'drizzle-orm/pg-core';
+import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
-import { z } from 'zod';
+import { GithubCommitChangeStatus } from './types';
 
-export const githubStats = {
+const githubStats = {
 	changes: integer('changes'),
 	additions: integer('additions'),
 	deletions: integer('deletions'),
 };
-
-export const githubEvents = integrationSchema.table('github_events', {
-	id: text('id').primaryKey(),
-	type: text('type').notNull(),
-	actor: json('actor'),
-	repo: json('repo'),
-	payload: json('payload'),
-	public: boolean('public').notNull().default(false),
-	integrationRunId: integer('integration_run_id')
-		.references(() => integrationRuns.id)
-		.notNull(),
-	...contentTimestampsNonUpdatable,
-	...databaseTimestampsNonUpdatable,
-});
 
 export const githubUsers = integrationSchema.table(
 	'github_users',
@@ -111,16 +97,6 @@ export const githubCommits = integrationSchema.table(
 	(table) => [index().on(table.repositoryId), index().on(table.sha)]
 );
 
-export const GithubCommitChangeStatus = z.enum([
-	'added',
-	'modified',
-	'removed',
-	'renamed',
-	'copied',
-	'changed',
-	'unchanged',
-]);
-export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatus>;
 export const githubCommitChangeStatusEnum = integrationSchema.enum(
 	'github_commit_change_status',
 	GithubCommitChangeStatus.options
@@ -141,13 +117,6 @@ export const githubCommitChanges = integrationSchema.table(
 	},
 	(table) => [index().on(table.commitId), index().on(table.filename)]
 );
-
-export const githubEventsRelations = relations(githubEvents, ({ one }) => ({
-	integrationRun: one(integrationRuns, {
-		fields: [githubEvents.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-}));
 
 export const githubUsersRelations = relations(githubUsers, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
@@ -186,8 +155,6 @@ export const githubCommitChangesRelations = relations(githubCommitChanges, ({ on
 	}),
 }));
 
-export type GithubEvent = typeof githubEvents.$inferSelect;
-export type NewGithubEvent = typeof githubEvents.$inferInsert;
 export type GithubUser = typeof githubUsers.$inferSelect;
 export type NewGithubUser = typeof githubUsers.$inferInsert;
 export type GithubRepository = typeof githubRepositories.$inferSelect;

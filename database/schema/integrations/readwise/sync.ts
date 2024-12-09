@@ -1,18 +1,17 @@
-import { createPgConnection } from '../../connections';
+import { createPgConnection, type PgConnection } from '../../connections';
 import { readwiseDocuments, type NewReadwiseDocument } from '../readwise/schema';
-import { IntegrationType } from '../../operations';
+import { IntegrationType } from '../../operations/types';
 import { runIntegration } from '../../utils/run-integration';
 import { ReadwiseArticlesResponseSchema } from './types';
 import type { ReadwiseArticle, ReadwiseArticlesResponse } from './types';
 import { desc } from 'drizzle-orm';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { loadEnv } from '@rcr/lib/env';
 
 loadEnv();
 
 const db = createPgConnection();
 
-async function getMostRecentUpdateTime(db: NodePgDatabase) {
+async function getMostRecentUpdateTime(db: PgConnection) {
 	const mostRecent = await db
 		.select({ contentUpdatedAt: readwiseDocuments.contentUpdatedAt })
 		.from(readwiseDocuments)

@@ -5,7 +5,8 @@ import {
 	type NewRaindropRaindrop,
 	type NewRaindropCollection,
 } from '../raindrop/schema';
-import { integrationRuns, IntegrationType } from '../../operations';
+import { integrationRuns } from '../../operations/schema';
+import { IntegrationType } from '../../operations/types';
 import { runIntegration } from '../../utils/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
