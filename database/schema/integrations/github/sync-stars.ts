@@ -1,7 +1,7 @@
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { loadEnv } from '@rcr/lib/env';
-import { desc } from 'drizzle-orm';
+import { desc, isNotNull } from 'drizzle-orm';
 import { createPgConnection } from 'schema/connections';
 import { githubRepositories, type NewGithubRepository } from './schema';
 import { GithubStarredReposResponseSchema } from './types';
@@ -18,6 +18,7 @@ async function getMostRecentStarredAt(): Promise<Date | null> {
 		.select({ starredAt: githubRepositories.starredAt })
 		.from(githubRepositories)
 		.orderBy(desc(githubRepositories.starredAt))
+		.where(isNotNull(githubRepositories.starredAt))
 		.limit(1);
 
 	return result?.starredAt ?? null;
