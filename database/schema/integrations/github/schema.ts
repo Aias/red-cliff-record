@@ -30,29 +30,33 @@ export const githubEvents = integrationSchema.table('github_events', {
 	...databaseTimestampsNonUpdatable,
 });
 
-export const githubUsers = integrationSchema.table('github_users', {
-	id: integer('id').primaryKey(),
-	login: text('login').notNull(),
-	nodeId: text('node_id').notNull().unique(),
-	avatarUrl: text('avatar_url'),
-	htmlUrl: text('html_url').notNull(),
-	type: text('type').notNull(),
-	partial: boolean('partial').notNull(),
-	name: text('name'),
-	company: text('company'),
-	blog: text('blog'),
-	location: text('location'),
-	email: text('email'),
-	bio: text('bio'),
-	twitterUsername: text('twitter_username'),
-	followers: integer('followers'),
-	following: integer('following'),
-	integrationRunId: integer('integration_run_id')
-		.references(() => integrationRuns.id)
-		.notNull(),
-	...contentTimestamps,
-	...databaseTimestamps,
-});
+export const githubUsers = integrationSchema.table(
+	'github_users',
+	{
+		id: integer('id').primaryKey(),
+		login: text('login').notNull(),
+		nodeId: text('node_id').notNull().unique(),
+		avatarUrl: text('avatar_url'),
+		htmlUrl: text('html_url').notNull(),
+		type: text('type').notNull(),
+		partial: boolean('partial').notNull(),
+		name: text('name'),
+		company: text('company'),
+		blog: text('blog'),
+		location: text('location'),
+		email: text('email'),
+		bio: text('bio'),
+		twitterUsername: text('twitter_username'),
+		followers: integer('followers'),
+		following: integer('following'),
+		integrationRunId: integer('integration_run_id')
+			.references(() => integrationRuns.id)
+			.notNull(),
+		...contentTimestamps,
+		...databaseTimestamps,
+	},
+	(table) => [index().on(table.login)]
+);
 
 export const githubRepositories = integrationSchema.table(
 	'github_repositories',
@@ -79,29 +83,33 @@ export const githubRepositories = integrationSchema.table(
 		...contentTimestamps,
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.ownerId)]
+	(table) => [index().on(table.ownerId), index().on(table.nodeId)]
 );
 
-export const githubCommits = integrationSchema.table('github_commits', {
-	nodeId: text('node_id').primaryKey(),
-	sha: text('sha').notNull().unique(),
-	message: text('message').notNull(),
-	repositoryId: integer('repository_id')
-		.references(() => githubRepositories.id)
-		.notNull(),
-	htmlUrl: text('html_url').notNull(),
-	// committerId: integer('committer_id')
-	// 	.references(() => githubUsers.id)
-	// 	.notNull(),
-	// authorId: integer('author_id').references(() => githubUsers.id),
-	integrationRunId: integer('integration_run_id')
-		.references(() => integrationRuns.id)
-		.notNull(),
-	...githubStats,
-	committedAt: timestamp('committed_at', { withTimezone: true }),
-	...contentTimestampsNonUpdatable,
-	...databaseTimestampsNonUpdatable,
-});
+export const githubCommits = integrationSchema.table(
+	'github_commits',
+	{
+		nodeId: text('node_id').primaryKey(),
+		sha: text('sha').notNull().unique(),
+		message: text('message').notNull(),
+		repositoryId: integer('repository_id')
+			.references(() => githubRepositories.id)
+			.notNull(),
+		htmlUrl: text('html_url').notNull(),
+		// committerId: integer('committer_id')
+		// 	.references(() => githubUsers.id)
+		// 	.notNull(),
+		// authorId: integer('author_id').references(() => githubUsers.id),
+		integrationRunId: integer('integration_run_id')
+			.references(() => integrationRuns.id)
+			.notNull(),
+		...githubStats,
+		committedAt: timestamp('committed_at', { withTimezone: true }),
+		...contentTimestampsNonUpdatable,
+		...databaseTimestampsNonUpdatable,
+	},
+	(table) => [index().on(table.repositoryId), index().on(table.sha)]
+);
 
 export const GithubCommitChangeStatus = z.enum([
 	'added',
@@ -118,17 +126,21 @@ export const githubCommitChangeStatusEnum = integrationSchema.enum(
 	GithubCommitChangeStatus.options
 );
 
-export const githubCommitChanges = integrationSchema.table('github_commit_changes', {
-	id: serial('id').primaryKey(),
-	filename: text('filename').notNull(),
-	status: githubCommitChangeStatusEnum('status').notNull(),
-	patch: text('patch').notNull(),
-	commitId: text('commit_id')
-		.references(() => githubCommits.nodeId)
-		.notNull(),
-	...githubStats,
-	...databaseTimestampsNonUpdatable,
-});
+export const githubCommitChanges = integrationSchema.table(
+	'github_commit_changes',
+	{
+		id: serial('id').primaryKey(),
+		filename: text('filename').notNull(),
+		status: githubCommitChangeStatusEnum('status').notNull(),
+		patch: text('patch').notNull(),
+		commitId: text('commit_id')
+			.references(() => githubCommits.nodeId)
+			.notNull(),
+		...githubStats,
+		...databaseTimestampsNonUpdatable,
+	},
+	(table) => [index().on(table.commitId), index().on(table.filename)]
+);
 
 export const githubEventsRelations = relations(githubEvents, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
