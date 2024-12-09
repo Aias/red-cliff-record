@@ -12,14 +12,18 @@ loadEnv();
 const db = createPgConnection();
 
 async function getMostRecentUpdateTime(db: PgConnection) {
-	const mostRecent = await db
-		.select({ contentUpdatedAt: readwiseDocuments.contentUpdatedAt })
-		.from(readwiseDocuments)
-		.orderBy(desc(readwiseDocuments.contentUpdatedAt))
-		.limit(1);
+	const mostRecent = await db.query.readwiseDocuments.findFirst({
+		columns: {
+			contentUpdatedAt: true,
+		},
+		orderBy: desc(readwiseDocuments.contentUpdatedAt),
+	});
 
-	if (mostRecent.length > 0) {
-		return mostRecent[0].contentUpdatedAt;
+	if (mostRecent) {
+		console.log(
+			`Last known readwise date: ${mostRecent.contentUpdatedAt?.toLocaleString() ?? 'none'}`
+		);
+		return mostRecent.contentUpdatedAt;
 	}
 
 	console.log('No existing documents found');

@@ -41,8 +41,10 @@ export async function updatePartialUsers(): Promise<number> {
 
 	console.log('Fetching full user information for partial users...');
 
-	// Get all partial users
-	const partialUsers = await db.select().from(githubUsers).where(eq(githubUsers.partial, true));
+	// Update this select statement to use Drizzle query syntax
+	const partialUsers = await db.query.githubUsers.findMany({
+		where: eq(githubUsers.partial, true),
+	});
 
 	console.log(`Found ${partialUsers.length} partial users to update`);
 	let updatedCount = 0;

@@ -42,7 +42,9 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 
 	// Get all unique hostnames from the database
 	const uniqueHostnames = await pgDb
-		.select({ hostname: arcBrowsingHistory.hostname })
+		.select({
+			hostname: arcBrowsingHistory.hostname,
+		})
 		.from(arcBrowsingHistory)
 		.where(eq(arcBrowsingHistory.browser, Browser.enum.arc))
 		.groupBy(arcBrowsingHistory.hostname);
@@ -65,20 +67,19 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 	console.log('Starting Arc browser history incremental update...');
 
 	// Get the most recent viewEpochMicroseconds from the database
-	const latestVisit = await pgDb
-		.select({ viewEpochMicroseconds: arcBrowsingHistory.viewEpochMicroseconds })
-		.from(arcBrowsingHistory)
-		.where(
-			and(
-				eq(arcBrowsingHistory.browser, Browser.enum.arc),
-				eq(arcBrowsingHistory.hostname, currentHostname),
-				isNotNull(arcBrowsingHistory.viewEpochMicroseconds)
-			)
-		)
-		.orderBy(desc(arcBrowsingHistory.viewEpochMicroseconds))
-		.limit(1);
+	const latestVisit = await pgDb.query.arcBrowsingHistory.findFirst({
+		columns: {
+			viewEpochMicroseconds: true,
+		},
+		where: and(
+			eq(arcBrowsingHistory.browser, Browser.enum.arc),
+			eq(arcBrowsingHistory.hostname, currentHostname),
+			isNotNull(arcBrowsingHistory.viewEpochMicroseconds)
+		),
+		orderBy: desc(arcBrowsingHistory.viewEpochMicroseconds),
+	});
 
-	const lastKnownTime = latestVisit[0]?.viewEpochMicroseconds;
+	const lastKnownTime = latestVisit?.viewEpochMicroseconds;
 	const date = lastKnownTime ? chromeEpochMicrosecondsToDatetime(lastKnownTime) : null;
 	console.log(
 		`Last known visit time: ${date ? `${date.toLocaleString()} (${date.toISOString()})` : 'none'}`

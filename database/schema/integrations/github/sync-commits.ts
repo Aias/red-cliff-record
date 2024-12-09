@@ -22,11 +22,12 @@ const db = createPgConnection();
 const MAX_PATCH_LENGTH = 2048;
 
 async function getMostRecentCommitDate(): Promise<Date | null> {
-	const [result] = await db
-		.select({ contentCreatedAt: githubCommits.contentCreatedAt })
-		.from(githubCommits)
-		.orderBy(desc(githubCommits.contentCreatedAt))
-		.limit(1);
+	const result = await db.query.githubCommits.findFirst({
+		columns: {
+			contentCreatedAt: true,
+		},
+		orderBy: desc(githubCommits.contentCreatedAt),
+	});
 
 	return result?.contentCreatedAt ?? null;
 }
@@ -58,11 +59,12 @@ async function ensureRepositoryExists(
 	};
 
 	// First try to get existing repository to preserve starredAt
-	const [existingRepo] = await db
-		.select({ starredAt: githubRepositories.starredAt })
-		.from(githubRepositories)
-		.where(eq(githubRepositories.id, repoData.id))
-		.limit(1);
+	const existingRepo = await db.query.githubRepositories.findFirst({
+		columns: {
+			starredAt: true,
+		},
+		where: eq(githubRepositories.id, repoData.id),
+	});
 
 	await db
 		.insert(githubRepositories)
@@ -88,7 +90,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 	const mostRecentCommitDate = await getMostRecentCommitDate();
 	if (mostRecentCommitDate) {
-		console.log(`Most recent commit in database: ${mostRecentCommitDate.toISOString()}`);
+		console.log(`Most recent commit in database: ${mostRecentCommitDate.toLocaleString()}`);
 	} else {
 		console.log('No existing commits in database');
 	}
@@ -139,14 +141,13 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 				}
 
 				// First check if commit exists by SHA
-				const [existingCommit] = await db
-					.select({
-						nodeId: githubCommits.nodeId,
-						sha: githubCommits.sha,
-					})
-					.from(githubCommits)
-					.where(eq(githubCommits.sha, item.sha))
-					.limit(1);
+				const existingCommit = await db.query.githubCommits.findFirst({
+					columns: {
+						nodeId: true,
+						sha: true,
+					},
+					where: eq(githubCommits.sha, item.sha),
+				});
 
 				if (existingCommit) {
 					console.log(`Skipping existing commit ${item.sha}`);

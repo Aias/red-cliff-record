@@ -3,6 +3,7 @@ import { Database } from 'bun:sqlite';
 import { copyFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import * as schema from '../arc';
 
 const arcHistoryPath = 'Library/Application Support/Arc/User Data/Default/History';
 
@@ -13,5 +14,5 @@ export const arcDbCopyPath = join(homedir(), `${arcHistoryPath}-copy`);
 export const createArcConnection = () => {
 	copyFileSync(arcDbPath, arcDbCopyPath);
 	const sqlite = new Database(arcDbCopyPath, { readonly: true });
-	return drizzle(sqlite);
+	return drizzle(sqlite, { schema });
 };

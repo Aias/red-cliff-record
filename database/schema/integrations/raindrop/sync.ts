@@ -5,12 +5,11 @@ import {
 	type NewRaindropRaindrop,
 	type NewRaindropCollection,
 } from '../raindrop/schema';
-import { integrationRuns } from '../../operations/schema';
 import { IntegrationType } from '../../operations/types';
 import { runIntegration } from '../../utils/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
-import { eq, desc } from 'drizzle-orm';
+import { desc } from 'drizzle-orm';
 import { loadEnv } from '@rcr/lib/env';
 
 loadEnv();
@@ -92,16 +91,15 @@ async function syncRaindrops(integrationRunId: number) {
 	console.log('Starting Raindrop sync...');
 
 	// Get the most recent raindrop date from the database
-	const latestRaindrop = await db
-		.select({ contentUpdatedAt: raindropRaindrops.contentUpdatedAt })
-		.from(raindropRaindrops)
-		.leftJoin(integrationRuns, eq(raindropRaindrops.integrationRunId, integrationRuns.id))
-		.where(eq(integrationRuns.integrationType, IntegrationType.enum.raindrop))
-		.orderBy(desc(raindropRaindrops.contentUpdatedAt))
-		.limit(1);
+	const latestRaindrop = await db.query.raindropRaindrops.findFirst({
+		columns: {
+			contentUpdatedAt: true,
+		},
+		orderBy: desc(raindropRaindrops.contentUpdatedAt),
+	});
 
-	const lastKnownDate = latestRaindrop[0]?.contentUpdatedAt;
-	console.log(`Last known raindrop date: ${lastKnownDate?.toISOString() ?? 'none'}`);
+	const lastKnownDate = latestRaindrop?.contentUpdatedAt;
+	console.log(`Last known raindrop date: ${lastKnownDate?.toLocaleString() ?? 'none'}`);
 
 	let newRaindrops: Raindrop[] = [];
 	let page = 0;

@@ -14,12 +14,13 @@ export const db = createPgConnection();
 const PAGE_SIZE = 50;
 
 async function getMostRecentStarredAt(): Promise<Date | null> {
-	const [result] = await db
-		.select({ starredAt: githubRepositories.starredAt })
-		.from(githubRepositories)
-		.orderBy(desc(githubRepositories.starredAt))
-		.where(isNotNull(githubRepositories.starredAt))
-		.limit(1);
+	const result = await db.query.githubRepositories.findFirst({
+		columns: {
+			starredAt: true,
+		},
+		where: isNotNull(githubRepositories.starredAt),
+		orderBy: desc(githubRepositories.starredAt),
+	});
 
 	return result?.starredAt ?? null;
 }
@@ -33,7 +34,7 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 
 	const mostRecentStarredAt = await getMostRecentStarredAt();
 	if (mostRecentStarredAt) {
-		console.log(`Most recent star in database: ${mostRecentStarredAt.toISOString()}`);
+		console.log(`Most recent star in database: ${mostRecentStarredAt.toLocaleString()}`);
 	} else {
 		console.log('No existing stars in database');
 	}
@@ -69,7 +70,7 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 				);
 				if (oldestStarOnPage <= mostRecentStarredAt) {
 					console.log(
-						`Reached stars older than ${mostRecentStarredAt.toISOString()}, stopping pagination`
+						`Reached stars older than ${mostRecentStarredAt.toLocaleString()}, stopping pagination`
 					);
 					hasMore = false;
 				}
