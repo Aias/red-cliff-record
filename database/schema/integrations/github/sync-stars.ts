@@ -1,93 +1,17 @@
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { loadEnv } from '@rcr/lib/env';
-import { eq, desc } from 'drizzle-orm';
+import { desc } from 'drizzle-orm';
 import { createPgConnection } from 'schema/connections';
-import {
-	githubUsers,
-	githubRepositories,
-	type NewGithubUser,
-	type NewGithubRepository,
-} from './schema';
+import { githubRepositories, type NewGithubRepository } from './schema';
 import { GithubStarredReposResponseSchema } from './types';
 import { logRateLimitInfo } from './helpers';
+import { ensureGithubUserExists } from './sync-users';
 
 loadEnv();
-const db = createPgConnection();
+export const db = createPgConnection();
 
 const PAGE_SIZE = 50;
-
-async function updatePartialUsers(octokit: Octokit): Promise<number> {
-	console.log('Fetching full user information for partial users...');
-
-	// Get all partial users
-	const partialUsers = await db.select().from(githubUsers).where(eq(githubUsers.partial, true));
-
-	console.log(`Found ${partialUsers.length} partial users to update`);
-	let updatedCount = 0;
-
-	for (const user of partialUsers) {
-		try {
-			console.log(`Fetching full information for user ${user.login}...`);
-			const response = await octokit.rest.users.getByUsername({
-				username: user.login,
-				headers: {
-					'X-GitHub-Api-Version': '2022-11-28',
-				},
-			});
-
-			logRateLimitInfo(response);
-
-			const userData = response.data;
-
-			// Update user with full information
-			await db
-				.update(githubUsers)
-				.set({
-					name: userData.name,
-					company: userData.company,
-					blog: userData.blog,
-					location: userData.location,
-					email: userData.email,
-					bio: userData.bio,
-					twitterUsername: userData.twitter_username,
-					followers: userData.followers,
-					following: userData.following,
-					contentCreatedAt: new Date(userData.created_at),
-					contentUpdatedAt: new Date(userData.updated_at),
-					partial: false,
-				})
-				.where(eq(githubUsers.id, user.id));
-
-			updatedCount++;
-			console.log(`Updated user ${user.login}`);
-
-			// Add delay between requests
-			// await new Promise((resolve) => setTimeout(resolve, 1000));
-		} catch (error) {
-			if (error instanceof RequestError) {
-				console.error(`Error fetching user ${user.login}:`, {
-					status: error.status,
-					message: error.message,
-				});
-				if (error.response) {
-					logRateLimitInfo(error.response);
-				}
-				// If we hit rate limits, throw to stop the process
-				if (error.status === 403 || error.status === 429) {
-					throw error;
-				}
-				// For other errors, continue with next user
-				console.log(`Skipping user ${user.login} due to error`);
-				continue;
-			}
-			throw error;
-		}
-	}
-
-	console.log(`Successfully updated ${updatedCount} users with full information`);
-	return updatedCount;
-}
 
 async function getMostRecentStarredAt(): Promise<Date | null> {
 	const [result] = await db
@@ -99,7 +23,11 @@ async function getMostRecentStarredAt(): Promise<Date | null> {
 	return result?.starredAt ?? null;
 }
 
-async function syncStarredRepos(octokit: Octokit, integrationRunId: number): Promise<number> {
+export async function syncGitHubStars(integrationRunId: number): Promise<number> {
+	const octokit = new Octokit({
+		auth: process.env.GITHUB_TOKEN,
+	});
+
 	console.log('Fetching GitHub starred repos...');
 
 	const mostRecentStarredAt = await getMostRecentStarredAt();
@@ -153,19 +81,8 @@ async function syncStarredRepos(octokit: Octokit, integrationRunId: number): Pro
 					continue;
 				}
 
-				// First insert/get the owner
-				const owner: NewGithubUser = {
-					id: repo.owner.id,
-					login: repo.owner.login,
-					nodeId: repo.owner.node_id,
-					htmlUrl: repo.owner.html_url,
-					avatarUrl: repo.owner.avatar_url,
-					type: repo.owner.type,
-					partial: true,
-					integrationRunId,
-				};
-
-				await db.insert(githubUsers).values(owner).onConflictDoNothing();
+				// First ensure the owner exists using shared helper
+				await ensureGithubUserExists(db, repo.owner, integrationRunId);
 
 				// Then insert the repository
 				const newRepo: NewGithubRepository = {
@@ -216,18 +133,5 @@ async function syncStarredRepos(octokit: Octokit, integrationRunId: number): Pro
 	}
 
 	console.log(`Successfully synced ${totalStars} new starred repositories`);
-	return totalStars;
-}
-export async function syncGitHubStars(integrationRunId: number): Promise<number> {
-	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN,
-	});
-
-	// First sync all starred repos
-	const totalStars = await syncStarredRepos(octokit, integrationRunId);
-
-	// Then update partial users
-	await updatePartialUsers(octokit);
-
 	return totalStars;
 }

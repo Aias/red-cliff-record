@@ -90,15 +90,16 @@ export const githubCommits = integrationSchema.table('github_commits', {
 		.references(() => githubRepositories.id)
 		.notNull(),
 	htmlUrl: text('html_url').notNull(),
-	committerId: integer('committer_id')
-		.references(() => githubUsers.id)
-		.notNull(),
-	authorId: integer('author_id').references(() => githubUsers.id),
+	// committerId: integer('committer_id')
+	// 	.references(() => githubUsers.id)
+	// 	.notNull(),
+	// authorId: integer('author_id').references(() => githubUsers.id),
 	integrationRunId: integer('integration_run_id')
 		.references(() => integrationRuns.id)
 		.notNull(),
 	...githubStats,
-	...contentTimestamps,
+	committedAt: timestamp('committed_at', { withTimezone: true }),
+	...contentTimestampsNonUpdatable,
 	...databaseTimestampsNonUpdatable,
 });
 
@@ -159,14 +160,6 @@ export const githubCommitsRelations = relations(githubCommits, ({ many, one }) =
 	repository: one(githubRepositories, {
 		fields: [githubCommits.repositoryId],
 		references: [githubRepositories.id],
-	}),
-	committer: one(githubUsers, {
-		fields: [githubCommits.committerId],
-		references: [githubUsers.id],
-	}),
-	author: one(githubUsers, {
-		fields: [githubCommits.authorId],
-		references: [githubUsers.id],
 	}),
 	integrationRun: one(integrationRuns, {
 		fields: [githubCommits.integrationRunId],

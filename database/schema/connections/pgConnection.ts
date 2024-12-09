@@ -10,3 +10,5 @@ export const createPgConnection = () => {
 		casing: 'snake_case',
 	});
 };
+
+export type PgConnection = ReturnType<typeof createPgConnection>;
