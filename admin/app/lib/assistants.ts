@@ -27,9 +27,9 @@ You will be given the following as input:
 
 <style-rules>
 
-- Use markdown formatting for the commit summary.
-- For tools and technologies, use the common name of the tool, technology, package, or framework, with correct capitalization and spacing.
+- For the *commit summary*, use markdown formatting, but do not use headings. Stick to ordered / unordered lists, paragraphs, and inline formatting syntax. Avoid code blocks.
 - If only one or two files have changed, list the specific files in the commit summary. If more than two files have changed, do not attempt to list them all.
+- For *tools and technologies*, use the common name of the tool, technology, package, or framework, with correct capitalization and spacing. List up to 10 in order of relevance.
 - If the commit is a refactoring, focus on the intent of the refactoring and the functional relevance of the changes.
 - If the commit is a bug fix, focus on the intent of the fix and the functional relevance of the changes.
 - If the commit is a new feature, focus on the intent of the feature and the functional relevance of the changes.

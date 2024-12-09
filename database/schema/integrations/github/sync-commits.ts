@@ -120,7 +120,23 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 				break;
 			}
 
+			let processedAnyNewCommits = false;
 			for (const item of response.data.items) {
+				// First check if commit exists by SHA
+				const existingCommit = await db.query.githubCommits.findFirst({
+					columns: {
+						nodeId: true,
+						sha: true,
+					},
+					where: eq(githubCommits.sha, item.sha),
+				});
+
+				if (existingCommit) {
+					console.log(`Skipping existing commit ${item.sha}`);
+					continue;
+				}
+
+				processedAnyNewCommits = true;
 				// First get the full repository data
 				const repoResponse = await octokit.rest.repos.get({
 					owner: item.repository.owner.login,
@@ -138,20 +154,6 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 						console.log(`Skipping commit ${item.sha} as it predates fork creation`);
 						continue;
 					}
-				}
-
-				// First check if commit exists by SHA
-				const existingCommit = await db.query.githubCommits.findFirst({
-					columns: {
-						nodeId: true,
-						sha: true,
-					},
-					where: eq(githubCommits.sha, item.sha),
-				});
-
-				if (existingCommit) {
-					console.log(`Skipping existing commit ${item.sha}`);
-					continue; // Skip both commit and changes insertion
 				}
 
 				// Get detailed commit info including file changes
@@ -203,11 +205,18 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 				totalCommits++;
 			}
 
+			// If we didn't process any new commits on this page, we can stop
+			if (!processedAnyNewCommits) {
+				console.log('No new commits found on this page, stopping pagination');
+				hasMore = false;
+				break;
+			}
+
 			console.log(`Processed new commits from page ${page}`);
+			page++;
 
 			// Add a small delay between requests
 			await new Promise((resolve) => setTimeout(resolve, 1000));
-			page++;
 		} catch (error) {
 			if (error instanceof RequestError) {
 				console.error('GitHub API Error:', {
