@@ -14,7 +14,7 @@ function Home() {
 				</Heading>
 				<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 					<Link asChild>
-						<a href={`/history/${new Date().toISOString().split('T')[0]}`}>Daily History</a>
+						<a href={`/history/${new Date().toLocaleDateString('en-CA')}`}>Daily History</a>
 					</Link>
 					<Link asChild>
 						<a href="/omit-list">Omit List</a>
