@@ -8,7 +8,7 @@ import { relations } from 'drizzle-orm';
 import { serial, text, integer, index, boolean, timestamp } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
-import { GithubCommitChangeStatus } from './types';
+import { GithubCommitChangeStatus, GithubCommitType } from './types';
 
 const githubStats = {
 	changes: integer('changes'),
@@ -72,6 +72,11 @@ export const githubRepositories = integrationSchema.table(
 	(table) => [index().on(table.ownerId), index().on(table.nodeId)]
 );
 
+export const githubCommitTypesEnum = integrationSchema.enum(
+	'github_commit_types',
+	GithubCommitType.options
+);
+
 export const githubCommits = integrationSchema.table(
 	'github_commits',
 	{
@@ -82,10 +87,9 @@ export const githubCommits = integrationSchema.table(
 			.references(() => githubRepositories.id)
 			.notNull(),
 		htmlUrl: text('html_url').notNull(),
-		// committerId: integer('committer_id')
-		// 	.references(() => githubUsers.id)
-		// 	.notNull(),
-		// authorId: integer('author_id').references(() => githubUsers.id),
+		commitType: githubCommitTypesEnum('commit_type'),
+		summary: text('summary'),
+		technologies: text('technologies').array(),
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),

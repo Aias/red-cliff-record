@@ -582,6 +582,13 @@
       "when": 1733773923300,
       "tag": "0082_steep_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1733843597597,
+      "tag": "0083_gifted_meltdown",
+      "breakpoints": true
     }
   ]
 }

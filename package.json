@@ -19,7 +19,7 @@
 		"drizzle-orm": "^0.38.0",
 		"mime-types": "^2.1.35",
 		"openai": "^4.76.0",
-		"zod": "^3.23.8"
+		"zod": "^3.24.0"
 	},
 	"devDependencies": {
 		"@types/eslint": "9.6.1",

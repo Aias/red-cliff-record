@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { loadEnv } from '@rcr/lib/env';
+import { GithubCommitType } from '@rcr/database/schema/integrations/github/types';
 
 loadEnv();
 const openai = new OpenAI();
@@ -27,7 +28,7 @@ You will be given the following as input:
 
 <style-rules>
 
-- For the *commit summary*, use markdown formatting, but do not use headings. Stick to ordered / unordered lists, paragraphs, and inline formatting syntax. Avoid code blocks.
+- For the *commit summary*, use markdown formatting, but do not use headings. Primarily use paragraphs, but ordered / unordered lists, and inline formatting syntax are allowed where appropriate. Avoid code blocks.
 - If only one or two files have changed, list the specific files in the commit summary. If more than two files have changed, do not attempt to list them all.
 - For *tools and technologies*, use the common name of the tool, technology, package, or framework, with correct capitalization and spacing. List up to 10 in order of relevance.
 - If the commit is a refactoring, focus on the intent of the refactoring and the functional relevance of the changes.
@@ -44,7 +45,8 @@ const commitSummarizerSchema = {
 		properties: {
 			primary_purpose: {
 				type: 'string',
-				description: 'One or two words that describe the primary purpose of the commit.',
+				enum: GithubCommitType.options,
+				description: 'The primary purpose of the commit based on conventional commit types.',
 			},
 			summary: {
 				type: 'string',

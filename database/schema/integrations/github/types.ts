@@ -1,6 +1,19 @@
 import { z } from 'zod';
 import { emptyStringToNull } from '../../utils/schema-helpers';
 
+export const GithubCommitType = z.enum([
+	'feature',
+	'enhancement',
+	'bugfix',
+	'refactor',
+	'documentation',
+	'style',
+	'chore',
+	'test',
+	'build',
+]);
+export type GithubCommitType = z.infer<typeof GithubCommitType>;
+
 export const GithubCommitChangeStatus = z.enum([
 	'added',
 	'modified',
