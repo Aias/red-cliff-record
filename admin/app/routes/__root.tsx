@@ -2,7 +2,6 @@ import { Outlet, ScrollRestoration, createRootRoute } from '@tanstack/react-rout
 import { Meta, Scripts } from '@tanstack/start';
 import type { ReactNode } from 'react';
 import { Theme } from '@radix-ui/themes';
-import { ThemeProvider } from 'next-themes';
 import { grass } from '@radix-ui/colors';
 
 import radixStyles from '@radix-ui/themes/styles.css?url';
@@ -66,11 +65,9 @@ export const Route = createRootRoute({
 function RootComponent() {
 	return (
 		<RootDocument>
-			<ThemeProvider attribute="class" enableSystem>
-				<Theme accentColor="grass" radius="small" scaling="90%">
-					<Outlet />
-				</Theme>
-			</ThemeProvider>
+			<Theme accentColor="grass" radius="small" scaling="90%" appearance="dark">
+				<Outlet />
+			</Theme>
 		</RootDocument>
 	);
 }
@@ -78,7 +75,7 @@ function RootComponent() {
 // TODO: Fix this warning rather than cover it up. See: https://github.com/pacocoursey/next-themes/issues/169
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 	return (
-		<html suppressHydrationWarning>
+		<html>
 			<head>
 				<Meta />
 			</head>

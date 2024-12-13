@@ -1,11 +1,15 @@
 import OpenAI from 'openai';
 import { loadEnv } from '@rcr/lib/env';
 import { GithubCommitType } from '@rcr/database/schema/integrations/github/types';
+import { z } from 'zod';
 
 loadEnv();
-const openai = new OpenAI();
 
-const commitSummarizerInstructions = `
+export const openai = new OpenAI({
+	apiKey: process.env.OPENAI_API_KEY,
+});
+
+export const commitSummarizerInstructions = `
 <assistant-notes>
 
 You are an expert programmer who cares deeply about communicating the intent and content of your new and changed code. Your job is to evaluate a Github commit and create documentation consisting of three main parts:
@@ -38,7 +42,13 @@ You will be given the following as input:
 
 </style-rules>`;
 
-const commitSummarizerSchema = {
+export const CommitSummarySchema = z.object({
+	primary_purpose: z.enum(GithubCommitType.options),
+	summary: z.string(),
+	technologies: z.array(z.string()),
+});
+
+export const commitSummarizerSchema = {
 	name: 'markdown_summary',
 	schema: {
 		type: 'object',

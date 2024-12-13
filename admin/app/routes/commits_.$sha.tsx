@@ -1,13 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Container, Card, Heading, Text, Box, Button, Code } from '@radix-ui/themes';
+import { Container, Card, Heading, Text, Box, Button, Code, Flex } from '@radix-ui/themes';
 import { eq } from 'drizzle-orm';
 import { createServerFn } from '@tanstack/start';
 import { createConnection } from '@rcr/database';
 import { githubCommits } from '@rcr/database/schema/integrations/github/schema';
 import { useState } from 'react';
-import { assistant } from '../lib/assistants';
-
-import OpenAI from 'openai';
+import {
+	commitSummarizerSchema,
+	commitSummarizerInstructions,
+	CommitSummarySchema,
+} from '../lib/assistants';
+import { z } from 'zod';
+import { openai } from '../lib/assistants';
+import { CodeBlock } from '../components/CodeBlock';
 
 type CommitChange = {
 	filename: string;
@@ -45,6 +50,16 @@ const fetchCommitBySha = createServerFn({ method: 'GET' })
 				repository: true,
 				commitChanges: true,
 			},
+			columns: {
+				sha: true,
+				message: true,
+				changes: true,
+				additions: true,
+				deletions: true,
+				commitType: true,
+				summary: true,
+				technologies: true,
+			},
 		});
 
 		if (!commit) {
@@ -54,12 +69,21 @@ const fetchCommitBySha = createServerFn({ method: 'GET' })
 		return { commit };
 	});
 
+type CommitSummary = z.infer<typeof CommitSummarySchema>;
+
 const summarizeCommit = createServerFn({ method: 'POST' })
 	.validator((data: { commit: CommitInput; repository: RepositoryInput }) => data)
 	.handler(async ({ data: { commit, repository } }) => {
-		const openai = new OpenAI();
-		const thread = await openai.beta.threads.create({
+		const db = createConnection();
+
+		const response = await openai.chat.completions.create({
+			model: 'gpt-4o-mini',
+			response_format: { type: 'json_schema', json_schema: commitSummarizerSchema },
 			messages: [
+				{
+					role: 'system',
+					content: commitSummarizerInstructions,
+				},
 				{
 					role: 'user',
 					content: JSON.stringify({ commit, repository }),
@@ -67,32 +91,25 @@ const summarizeCommit = createServerFn({ method: 'POST' })
 			],
 		});
 
-		const assistantResponse = await assistant;
-		const run = await openai.beta.threads.runs.create(thread.id, {
-			assistant_id: assistantResponse.id,
-		});
-
-		// Poll for completion
-		let completedRun = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-		while (completedRun.status !== 'completed') {
-			if (completedRun.status === 'failed' || completedRun.status === 'cancelled') {
-				throw new Error(
-					`Run ${completedRun.status}: ${completedRun.last_error?.message || 'Unknown error'}`
-				);
-			}
-			if (completedRun.status === 'expired') {
-				throw new Error('Request timed out');
-			}
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			completedRun = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+		const rawContent = response.choices[0]?.message?.content;
+		if (!rawContent) {
+			throw new Error('No response from OpenAI');
 		}
 
-		const messages = await openai.beta.threads.messages.list(thread.id);
-		const lastMessage = messages.data[0];
-		if (lastMessage.role === 'assistant' && lastMessage.content[0].type === 'text') {
-			return { summary: lastMessage.content[0] };
-		}
-		throw new Error('Unexpected response format from assistant');
+		// Parse and validate the response
+		const summary = CommitSummarySchema.parse(JSON.parse(rawContent));
+
+		// Save the summary to the database
+		await db
+			.update(githubCommits)
+			.set({
+				commitType: summary.primary_purpose,
+				summary: summary.summary,
+				technologies: summary.technologies,
+			})
+			.where(eq(githubCommits.sha, commit.sha));
+
+		return { summary };
 	});
 
 export const Route = createFileRoute('/commits_/$sha')({
@@ -102,7 +119,15 @@ export const Route = createFileRoute('/commits_/$sha')({
 
 function CommitView() {
 	const { commit } = Route.useLoaderData();
-	const [summary, setSummary] = useState<null | OpenAI.Beta.Threads.Messages.MessageContent>(null);
+	const [summary, setSummary] = useState<CommitSummary | null>(
+		commit.summary && commit.commitType
+			? {
+					primary_purpose: commit.commitType,
+					summary: commit.summary,
+					technologies: commit.technologies || [],
+				}
+			: null
+	);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -155,46 +180,52 @@ function CommitView() {
 					{commit.message}
 				</Text>
 				<Text as="p" mb="4">
-					Repository: {commit.repository.fullName}
+					Repository: <Code>{commit.repository.fullName}</Code>
 				</Text>
 				<Text as="p" mb="4">
 					Changes: +{commit.additions} -{commit.deletions} ({commit.changes} total)
 				</Text>
 
-				<Button onClick={handleAnalyze} disabled={loading}>
-					{loading ? 'Analyzing commit...' : 'Analyze Commit'}
-				</Button>
+				<Box mt="4">
+					<Flex justify="between" align="center" mb="2">
+						<Heading size="4">Analysis</Heading>
+						<Button onClick={handleAnalyze} disabled={loading} variant="soft">
+							{loading ? 'Analyzing...' : summary ? 'Re-Analyze' : 'Analyze Commit'}
+						</Button>
+					</Flex>
 
-				{error && (
-					<Card mt="4">
-						<Text color="red" as="p">
-							{error}
-						</Text>
-					</Card>
-				)}
-
-				{summary && summary.type === 'text' && (
-					<Box mt="4">
-						<Heading size="4" mb="2">
-							Analysis
-						</Heading>
-						<Card>
-							<Code>
-								<pre style={{ whiteSpace: 'pre-wrap' }}>{summary.text.value}</pre>
-							</Code>
+					{error && (
+						<Card mt="2">
+							<Text color="red" as="p">
+								{error}
+							</Text>
 						</Card>
+					)}
+
+					<Box mt="2">
+						{summary ? (
+							<CodeBlock>{JSON.stringify(summary, null, 2)}</CodeBlock>
+						) : (
+							<Card>
+								<Text color="gray" align="center" as="p">
+									No Summary Generated
+								</Text>
+							</Card>
+						)}
 					</Box>
-				)}
+				</Box>
 
 				<Box mt="4">
 					<Heading size="4" mb="2">
 						Changed Files
 					</Heading>
-					{commit.commitChanges.map((change) => (
-						<Text as="p" key={change.id}>
-							{change.filename}
-						</Text>
-					))}
+					<Flex direction="column" gap="2" align="start">
+						{commit.commitChanges.map((change) => (
+							<Code key={change.id} variant="ghost">
+								{change.filename}
+							</Code>
+						))}
+					</Flex>
 				</Box>
 			</Card>
 		</Container>
