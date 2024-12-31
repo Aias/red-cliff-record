@@ -23,7 +23,7 @@
 		"sync:twitter": "bun run schema/integrations/twitter/sync.ts"
 	},
 	"dependencies": {
-		"@octokit/request-error": "^6.1.5",
+		"@octokit/request-error": "^6.1.6",
 		"@octokit/rest": "^21.0.2",
 		"@rcr/lib": "workspace:*",
 		"airtable": "^0.12.2",
