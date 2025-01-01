@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod.mjs';
 import { loadEnv } from '@rcr/lib/env';
 import { GithubCommitType } from '@rcr/database/schema/integrations/github/types';
 import { z } from 'zod';
@@ -43,47 +44,38 @@ You will be given the following as input:
 </style-rules>`;
 
 export const CommitSummarySchema = z.object({
-	primary_purpose: z.enum(GithubCommitType.options),
-	summary: z.string(),
-	technologies: z.array(z.string()),
+	primary_purpose: GithubCommitType.describe(
+		'The primary purpose of the commit based on conventional commit types.'
+	),
+	summary: z
+		.string()
+		.describe(
+			'A markdown-formatted summary of the github commit according to the given instructions.'
+		),
+	technologies: z
+		.array(z.string())
+		.describe(
+			'An array of strings which represent relevant tools, technologies, packages, languages, frameworks, etc.'
+		),
 });
 
-export const commitSummarizerSchema = {
-	name: 'markdown_summary',
-	schema: {
-		type: 'object',
-		properties: {
-			primary_purpose: {
-				type: 'string',
-				enum: GithubCommitType.options,
-				description: 'The primary purpose of the commit based on conventional commit types.',
-			},
-			summary: {
-				type: 'string',
-				description:
-					'A markdown-formatted summary of the github commit according to the given instructions.',
-			},
-			technologies: {
-				type: 'array',
-				description:
-					'An array of strings which represent relevant tools, technologies, packages, languages, frameworks, etc.',
-				items: {
-					type: 'string',
-				},
-			},
-		},
-		required: ['primary_purpose', 'summary', 'technologies'],
-		additionalProperties: false,
-	},
-	strict: true,
+export type CommitSummary = z.infer<typeof CommitSummarySchema>;
+
+export const summarizeCommit = async (contents: string) => {
+	const completion = await openai.beta.chat.completions.parse({
+		model: 'gpt-4o',
+		response_format: zodResponseFormat(CommitSummarySchema, 'commit_summary'),
+		messages: [
+			{ role: 'system', content: commitSummarizerInstructions },
+			{ role: 'user', content: contents },
+		],
+	});
+
+	const summary = completion.choices[0].message.parsed;
+
+	if (!summary) {
+		throw new Error('No response from OpenAI');
+	}
+
+	return summary;
 };
-
-export const assistant = openai.beta.assistants.create({
-	name: 'Github Commit Summarizer',
-	instructions: commitSummarizerInstructions,
-	response_format: {
-		type: 'json_schema',
-		json_schema: commitSummarizerSchema,
-	},
-	model: 'gpt-4o-mini',
-});

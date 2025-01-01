@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Container, Card, Heading } from '@radix-ui/themes';
-import { Link } from '../components/Link';
+import { AppLink } from '../components/AppLink';
 
 export const Route = createFileRoute('/')({
 	component: Home,
@@ -14,11 +14,11 @@ function Home() {
 					Red Cliff Record Admin
 				</Heading>
 				<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-					<Link to={`/history/$date`} params={{ date: new Date().toLocaleDateString('en-CA') }}>
+					<AppLink to={`/history/$date`} params={{ date: new Date().toLocaleDateString('en-CA') }}>
 						Daily History
-					</Link>
-					<Link to="/omit-list">Omit List</Link>
-					<Link to="/commits">Commits</Link>
+					</AppLink>
+					<AppLink to="/omit-list">Omit List</AppLink>
+					<AppLink to="/commits">Commits</AppLink>
 				</div>
 			</Card>
 		</Container>

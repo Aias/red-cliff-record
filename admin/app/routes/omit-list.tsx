@@ -1,7 +1,7 @@
 import { createConnection, arcBrowsingHistoryOmitList, arcBrowsingHistory } from '@rcr/database';
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
-import { Container, Heading, Table, Button, TextField } from '@radix-ui/themes';
+import { Heading, Table, Button, TextField, Flex, ScrollArea } from '@radix-ui/themes';
 import {
 	useReactTable,
 	getCoreRowModel,
@@ -213,7 +213,7 @@ function OmitListPage() {
 	};
 
 	return (
-		<Container p="4">
+		<Flex p="4" direction="column" height="100%">
 			<Heading size="7" mb="4" as="h1">
 				Browsing History Omit List
 			</Heading>
@@ -233,31 +233,32 @@ function OmitListPage() {
 				/>
 				<Button onClick={handleAdd}>Add Pattern</Button>
 			</div>
-
-			<Table.Root variant="surface">
-				<Table.Header>
-					{table.getHeaderGroups().map((headerGroup) => (
-						<Table.Row key={headerGroup.id}>
-							{headerGroup.headers.map((header) => (
-								<Table.ColumnHeaderCell key={header.id}>
-									{flexRender(header.column.columnDef.header, header.getContext())}
-								</Table.ColumnHeaderCell>
-							))}
-						</Table.Row>
-					))}
-				</Table.Header>
-				<Table.Body>
-					{table.getRowModel().rows.map((row) => (
-						<Table.Row key={row.id}>
-							{row.getVisibleCells().map((cell) => (
-								<Table.Cell key={cell.id}>
-									{flexRender(cell.column.columnDef.cell, cell.getContext())}
-								</Table.Cell>
-							))}
-						</Table.Row>
-					))}
-				</Table.Body>
-			</Table.Root>
-		</Container>
+			<ScrollArea>
+				<Table.Root variant="surface">
+					<Table.Header>
+						{table.getHeaderGroups().map((headerGroup) => (
+							<Table.Row key={headerGroup.id}>
+								{headerGroup.headers.map((header) => (
+									<Table.ColumnHeaderCell key={header.id}>
+										{flexRender(header.column.columnDef.header, header.getContext())}
+									</Table.ColumnHeaderCell>
+								))}
+							</Table.Row>
+						))}
+					</Table.Header>
+					<Table.Body>
+						{table.getRowModel().rows.map((row) => (
+							<Table.Row key={row.id}>
+								{row.getVisibleCells().map((cell) => (
+									<Table.Cell key={cell.id}>
+										{flexRender(cell.column.columnDef.cell, cell.getContext())}
+									</Table.Cell>
+								))}
+							</Table.Row>
+						))}
+					</Table.Body>
+				</Table.Root>
+			</ScrollArea>
+		</Flex>
 	);
 }

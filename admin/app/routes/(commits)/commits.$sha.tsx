@@ -1,20 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Container, Card, Heading, Text, Box, Button, Code, Flex } from '@radix-ui/themes';
+import { Card, Heading, Text, Box, Button, Code, Flex, ScrollArea } from '@radix-ui/themes';
 import { eq } from 'drizzle-orm';
 import { createServerFn } from '@tanstack/start';
 import { createConnection } from '@rcr/database';
 import { githubCommits } from '@rcr/database/schema/integrations/github/schema';
-import { useState } from 'react';
-import {
-	commitSummarizerSchema,
-	commitSummarizerInstructions,
-	CommitSummarySchema,
-} from '../lib/assistants';
-import { z } from 'zod';
-import { openai } from '../lib/assistants';
-import { CodeBlock } from '../components/CodeBlock';
+import { useState, useEffect } from 'react';
+import { CommitSummary, summarizeCommit } from '../../lib/commit-summarizer';
+import { CodeBlock } from '../../components/CodeBlock';
+import { AppLink } from '../../components/AppLink';
+import styles from './commits.module.css';
 
-type CommitChange = {
+export type CommitChange = {
 	filename: string;
 	status: string;
 	changes: number | null;
@@ -23,7 +19,7 @@ type CommitChange = {
 	patch: string;
 };
 
-type CommitInput = {
+export type CommitInput = {
 	message: string;
 	sha: string;
 	changes: number | null;
@@ -32,7 +28,7 @@ type CommitInput = {
 	commitChanges: CommitChange[];
 };
 
-type RepositoryInput = {
+export type RepositoryInput = {
 	fullName: string;
 	description: string | null;
 	language: string | null;
@@ -69,35 +65,12 @@ const fetchCommitBySha = createServerFn({ method: 'GET' })
 		return { commit };
 	});
 
-type CommitSummary = z.infer<typeof CommitSummarySchema>;
-
-const summarizeCommit = createServerFn({ method: 'POST' })
+export const updateCommitSummary = createServerFn({ method: 'POST' })
 	.validator((data: { commit: CommitInput; repository: RepositoryInput }) => data)
 	.handler(async ({ data: { commit, repository } }) => {
 		const db = createConnection();
 
-		const response = await openai.chat.completions.create({
-			model: 'gpt-4o-mini',
-			response_format: { type: 'json_schema', json_schema: commitSummarizerSchema },
-			messages: [
-				{
-					role: 'system',
-					content: commitSummarizerInstructions,
-				},
-				{
-					role: 'user',
-					content: JSON.stringify({ commit, repository }),
-				},
-			],
-		});
-
-		const rawContent = response.choices[0]?.message?.content;
-		if (!rawContent) {
-			throw new Error('No response from OpenAI');
-		}
-
-		// Parse and validate the response
-		const summary = CommitSummarySchema.parse(JSON.parse(rawContent));
+		const summary = await summarizeCommit(JSON.stringify({ commit, repository }));
 
 		// Save the summary to the database
 		await db
@@ -112,7 +85,7 @@ const summarizeCommit = createServerFn({ method: 'POST' })
 		return { summary };
 	});
 
-export const Route = createFileRoute('/commits_/$sha')({
+export const Route = createFileRoute('/(commits)/commits/$sha')({
 	loader: ({ params: { sha } }) => fetchCommitBySha({ data: sha }),
 	component: CommitView,
 });
@@ -131,11 +104,23 @@ function CommitView() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	useEffect(() => {
+		setSummary(
+			commit.summary && commit.commitType
+				? {
+						primary_purpose: commit.commitType,
+						summary: commit.summary,
+						technologies: commit.technologies || [],
+					}
+				: null
+		);
+	}, [commit]);
+
 	const handleAnalyze = async () => {
 		setLoading(true);
 		setError(null);
 		try {
-			const response = await summarizeCommit({
+			const response = await updateCommitSummary({
 				data: {
 					commit: {
 						message: commit.message,
@@ -171,11 +156,18 @@ function CommitView() {
 	};
 
 	return (
-		<Container size="3" p="4">
-			<Card>
-				<Heading size="6" mb="4">
+		<Card className={styles.commitInspector}>
+			<Heading size="6" mb="4">
+				<Flex align="center" gap="2" justify="between">
 					Commit {commit.sha.slice(0, 7)}
-				</Heading>
+					<AppLink to={'/commits'}>
+						<Text size="3" weight="regular">
+							Close
+						</Text>
+					</AppLink>
+				</Flex>
+			</Heading>
+			<ScrollArea>
 				<Text as="p" mb="4">
 					{commit.message}
 				</Text>
@@ -227,7 +219,7 @@ function CommitView() {
 						))}
 					</Flex>
 				</Box>
-			</Card>
-		</Container>
+			</ScrollArea>
+		</Card>
 	);
 }

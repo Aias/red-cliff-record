@@ -12,22 +12,16 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as OmitListImport } from './routes/omit-list'
-import { Route as CommitsImport } from './routes/commits'
 import { Route as IndexImport } from './routes/index'
 import { Route as HistoryDateImport } from './routes/history.$date'
-import { Route as CommitsShaImport } from './routes/commits_.$sha'
+import { Route as commitsCommitsImport } from './routes/(commits)/commits'
+import { Route as commitsCommitsShaImport } from './routes/(commits)/commits.$sha'
 
 // Create/Update Routes
 
 const OmitListRoute = OmitListImport.update({
   id: '/omit-list',
   path: '/omit-list',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const CommitsRoute = CommitsImport.update({
-  id: '/commits',
-  path: '/commits',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -43,10 +37,16 @@ const HistoryDateRoute = HistoryDateImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const CommitsShaRoute = CommitsShaImport.update({
-  id: '/commits_/$sha',
-  path: '/commits/$sha',
+const commitsCommitsRoute = commitsCommitsImport.update({
+  id: '/(commits)/commits',
+  path: '/commits',
   getParentRoute: () => rootRoute,
+} as any)
+
+const commitsCommitsShaRoute = commitsCommitsShaImport.update({
+  id: '/$sha',
+  path: '/$sha',
+  getParentRoute: () => commitsCommitsRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -60,13 +60,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/commits': {
-      id: '/commits'
-      path: '/commits'
-      fullPath: '/commits'
-      preLoaderRoute: typeof CommitsImport
-      parentRoute: typeof rootRoute
-    }
     '/omit-list': {
       id: '/omit-list'
       path: '/omit-list'
@@ -74,11 +67,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OmitListImport
       parentRoute: typeof rootRoute
     }
-    '/commits_/$sha': {
-      id: '/commits_/$sha'
-      path: '/commits/$sha'
-      fullPath: '/commits/$sha'
-      preLoaderRoute: typeof CommitsShaImport
+    '/(commits)/commits': {
+      id: '/(commits)/commits'
+      path: '/commits'
+      fullPath: '/commits'
+      preLoaderRoute: typeof commitsCommitsImport
       parentRoute: typeof rootRoute
     }
     '/history/$date': {
@@ -88,69 +81,86 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryDateImport
       parentRoute: typeof rootRoute
     }
+    '/(commits)/commits/$sha': {
+      id: '/(commits)/commits/$sha'
+      path: '/$sha'
+      fullPath: '/commits/$sha'
+      preLoaderRoute: typeof commitsCommitsShaImport
+      parentRoute: typeof commitsCommitsImport
+    }
   }
 }
 
 // Create and export the route tree
 
+interface commitsCommitsRouteChildren {
+  commitsCommitsShaRoute: typeof commitsCommitsShaRoute
+}
+
+const commitsCommitsRouteChildren: commitsCommitsRouteChildren = {
+  commitsCommitsShaRoute: commitsCommitsShaRoute,
+}
+
+const commitsCommitsRouteWithChildren = commitsCommitsRoute._addFileChildren(
+  commitsCommitsRouteChildren,
+)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/commits': typeof CommitsRoute
   '/omit-list': typeof OmitListRoute
-  '/commits/$sha': typeof CommitsShaRoute
+  '/commits': typeof commitsCommitsRouteWithChildren
   '/history/$date': typeof HistoryDateRoute
+  '/commits/$sha': typeof commitsCommitsShaRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/commits': typeof CommitsRoute
   '/omit-list': typeof OmitListRoute
-  '/commits/$sha': typeof CommitsShaRoute
+  '/commits': typeof commitsCommitsRouteWithChildren
   '/history/$date': typeof HistoryDateRoute
+  '/commits/$sha': typeof commitsCommitsShaRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/commits': typeof CommitsRoute
   '/omit-list': typeof OmitListRoute
-  '/commits_/$sha': typeof CommitsShaRoute
+  '/(commits)/commits': typeof commitsCommitsRouteWithChildren
   '/history/$date': typeof HistoryDateRoute
+  '/(commits)/commits/$sha': typeof commitsCommitsShaRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/commits'
     | '/omit-list'
-    | '/commits/$sha'
+    | '/commits'
     | '/history/$date'
+    | '/commits/$sha'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/commits' | '/omit-list' | '/commits/$sha' | '/history/$date'
+  to: '/' | '/omit-list' | '/commits' | '/history/$date' | '/commits/$sha'
   id:
     | '__root__'
     | '/'
-    | '/commits'
     | '/omit-list'
-    | '/commits_/$sha'
+    | '/(commits)/commits'
     | '/history/$date'
+    | '/(commits)/commits/$sha'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CommitsRoute: typeof CommitsRoute
   OmitListRoute: typeof OmitListRoute
-  CommitsShaRoute: typeof CommitsShaRoute
+  commitsCommitsRoute: typeof commitsCommitsRouteWithChildren
   HistoryDateRoute: typeof HistoryDateRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CommitsRoute: CommitsRoute,
   OmitListRoute: OmitListRoute,
-  CommitsShaRoute: CommitsShaRoute,
+  commitsCommitsRoute: commitsCommitsRouteWithChildren,
   HistoryDateRoute: HistoryDateRoute,
 }
 
@@ -165,26 +175,29 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/commits",
         "/omit-list",
-        "/commits_/$sha",
+        "/(commits)/commits",
         "/history/$date"
       ]
     },
     "/": {
       "filePath": "index.tsx"
     },
-    "/commits": {
-      "filePath": "commits.tsx"
-    },
     "/omit-list": {
       "filePath": "omit-list.tsx"
     },
-    "/commits_/$sha": {
-      "filePath": "commits_.$sha.tsx"
+    "/(commits)/commits": {
+      "filePath": "(commits)/commits.tsx",
+      "children": [
+        "/(commits)/commits/$sha"
+      ]
     },
     "/history/$date": {
       "filePath": "history.$date.tsx"
+    },
+    "/(commits)/commits/$sha": {
+      "filePath": "(commits)/commits.$sha.tsx",
+      "parent": "/(commits)/commits"
     }
   }
 }

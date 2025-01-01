@@ -1,17 +1,25 @@
 import { Outlet, ScrollRestoration, createRootRoute } from '@tanstack/react-router';
-import { Meta, Scripts } from '@tanstack/start';
-import type { ReactNode } from 'react';
+import { createServerFn, Meta, Scripts } from '@tanstack/start';
+import { useState, type ReactNode } from 'react';
 import { Theme } from '@radix-ui/themes';
 import { grass } from '@radix-ui/colors';
 
 import radixStyles from '@radix-ui/themes/styles.css?url';
-import appStyles from '../styles/app.css?url';
 
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
 import { NotFound } from '../components/NotFound';
 import { seo, SITE_NAME } from '../lib/seo';
+import { AppLayout } from '../components/AppLayout';
+import { z } from 'zod';
+import { getCookie } from 'vinxi/http';
+
+export const getThemeCookie = createServerFn({ method: 'GET' }).handler(async () => {
+	const theme = z.enum(['light', 'dark']).default('dark').parse(getCookie('theme'));
+	return { theme };
+});
 
 export const Route = createRootRoute({
+	loader: () => getThemeCookie(),
 	head: () => ({
 		meta: [
 			{
@@ -28,7 +36,6 @@ export const Route = createRootRoute({
 		],
 		links: [
 			{ rel: 'stylesheet', href: radixStyles },
-			{ rel: 'stylesheet', href: appStyles },
 			{
 				rel: 'apple-touch-icon',
 				sizes: '180x180',
@@ -63,10 +70,16 @@ export const Route = createRootRoute({
 
 // TODO: Something funky going on with suspense/hydration errors on initial load.
 function RootComponent() {
+	const { theme: initialTheme } = Route.useLoaderData() as { theme: 'light' | 'dark' };
+
+	// Store the current theme in state, initialized from the server-provided theme
+	const [appearance, setAppearance] = useState<'light' | 'dark'>(initialTheme);
 	return (
 		<RootDocument>
-			<Theme accentColor="grass" radius="small" scaling="90%" appearance="dark">
-				<Outlet />
+			<Theme accentColor="grass" radius="small" scaling="90%" appearance={appearance}>
+				<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
+					<Outlet />
+				</AppLayout>
 			</Theme>
 		</RootDocument>
 	);
