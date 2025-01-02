@@ -6,7 +6,6 @@ import * as mainSchema from '../main/schema';
 import * as operationsSchema from '../operations/schema';
 
 loadEnv();
-loadEnv();
 
 // PostgreSQL (main) connection
 export const createPgConnection = () => {

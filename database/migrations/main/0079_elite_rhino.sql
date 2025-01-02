@@ -1,2 +1,0 @@
-ALTER TABLE "integrations"."github_commits" DROP CONSTRAINT "github_commits_sha_unique";--> statement-breakpoint
-ALTER TABLE "integrations"."github_commits" ADD CONSTRAINT "github_commits_repository_id_sha_unique" UNIQUE("repository_id","sha");

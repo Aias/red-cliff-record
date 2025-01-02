@@ -1,1 +1,0 @@
-ALTER TYPE "public"."integration_type" ADD VALUE 'twitter';

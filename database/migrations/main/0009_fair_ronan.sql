@@ -1,1 +1,0 @@
-ALTER TABLE "integration_runs" RENAME COLUMN "type" TO "run_type";

@@ -1,1 +1,0 @@
-ALTER TABLE "raindrop"."raindrops" ALTER COLUMN "collection_id" DROP NOT NULL;

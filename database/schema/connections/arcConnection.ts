@@ -15,7 +15,7 @@ export const createArcConnection = () => {
 	copyFileSync(arcDbPath, arcDbCopyPath);
 
 	const client = createClient({
-		url: `file:${arcDbPath}`,
+		url: `file:${arcDbCopyPath}`,
 		intMode: 'bigint',
 	});
 

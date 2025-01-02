@@ -1,2 +1,0 @@
-ALTER TABLE "integrations"."airtable_attachments" DROP COLUMN IF EXISTS "content_created_at";--> statement-breakpoint
-ALTER TABLE "integrations"."airtable_attachments" DROP COLUMN IF EXISTS "content_updated_at";

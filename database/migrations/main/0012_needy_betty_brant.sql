@@ -1,1 +1,0 @@
-ALTER TABLE "browsing_history" ALTER COLUMN "view_epoch_microseconds" SET DATA TYPE bigint;
