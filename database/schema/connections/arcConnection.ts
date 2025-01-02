@@ -1,5 +1,5 @@
-import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { Database } from 'bun:sqlite';
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
 import { copyFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -13,6 +13,11 @@ export const arcDbCopyPath = join(homedir(), `${arcHistoryPath}-copy`);
 
 export const createArcConnection = () => {
 	copyFileSync(arcDbPath, arcDbCopyPath);
-	const sqlite = new Database(arcDbCopyPath, { readonly: true });
-	return drizzle(sqlite, { schema });
+
+	const client = createClient({
+		url: `file:${arcDbPath}`,
+		intMode: 'bigint',
+	});
+
+	return drizzle(client, { schema });
 };

@@ -23,6 +23,7 @@
 		"sync:twitter": "bun run schema/integrations/twitter/sync.ts"
 	},
 	"dependencies": {
+		"@libsql/client": "^0.14.0",
 		"@octokit/request-error": "^6.1.6",
 		"@octokit/rest": "^21.0.2",
 		"@rcr/lib": "workspace:*",

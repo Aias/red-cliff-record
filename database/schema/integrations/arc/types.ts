@@ -10,9 +10,9 @@ export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
 export type Browser = z.infer<typeof Browser>;
 
 export const DailyVisitsQueryRowSchema = z.object({
-	viewTime: z.number().int().nonnegative(),
-	viewDuration: z.number().int().default(0),
-	durationSinceLastView: z.number().int().nullable().default(0),
+	viewTime: z.number().or(z.bigint()).transform(Number),
+	viewDuration: z.number().or(z.bigint()).transform(Number).default(0),
+	durationSinceLastView: z.number().or(z.bigint()).transform(Number).nullable().default(0),
 	url: z.string(),
 	pageTitle: emptyStringToNull(z.string()).transform(sanitizeString),
 	searchTerms: emptyStringToNull(z.string()).transform(sanitizeString),
