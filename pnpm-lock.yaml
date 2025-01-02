@@ -8,31 +8,115 @@ importers:
 
   .:
     dependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.717.0
+        version: 3.717.0
+      '@libsql/client':
+        specifier: ^0.14.0
+        version: 0.14.0
+      '@octokit/request-error':
+        specifier: ^6.1.6
+        version: 6.1.6
+      '@octokit/rest':
+        specifier: ^21.0.2
+        version: 21.0.2
+      '@radix-ui/colors':
+        specifier: ^3.0.0
+        version: 3.0.0
+      '@radix-ui/react-icons':
+        specifier: ^1.3.2
+        version: 1.3.2(react@19.0.0)
+      '@radix-ui/themes':
+        specifier: ^3.1.6
+        version: 3.1.6(@types/react-dom@19.0.2(@types/react@19.0.2))(@types/react@19.0.2)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@tanstack/react-query':
+        specifier: ^5.62.11
+        version: 5.62.11(react@19.0.0)
+      '@tanstack/react-router':
+        specifier: ^1.93.0
+        version: 1.93.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@tanstack/react-table':
+        specifier: ^8.20.6
+        version: 8.20.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@tanstack/start':
+        specifier: ^1.93.0
+        version: 1.93.0(@libsql/client@0.14.0)(@types/node@22.10.2)(db0@0.2.1(@libsql/client@0.14.0)(drizzle-orm@0.38.3(@libsql/client@0.14.0)(@types/pg@8.11.10)(@types/react@19.0.2)(bun-types@1.1.37)(pg@8.13.1)(react@19.0.0)))(drizzle-orm@0.38.3(@libsql/client@0.14.0)(@types/pg@8.11.10)(@types/react@19.0.2)(bun-types@1.1.37)(pg@8.13.1)(react@19.0.0))(ioredis@5.4.2)(jiti@2.4.2)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(terser@5.37.0)(tsx@4.19.2)(typescript@5.7.2)(vite@6.0.6(@types/node@22.10.2)(jiti@2.4.2)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0))(yaml@2.7.0)
+      airtable:
+        specifier: ^0.12.2
+        version: 0.12.2
+      classnames:
+        specifier: ^2.5.1
+        version: 2.5.1
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
       drizzle-orm:
         specifier: ^0.38.3
         version: 0.38.3(@libsql/client@0.14.0)(@types/pg@8.11.10)(@types/react@19.0.2)(bun-types@1.1.37)(pg@8.13.1)(react@19.0.0)
+      drizzle-zod:
+        specifier: ^0.6.1
+        version: 0.6.1(drizzle-orm@0.38.3(@libsql/client@0.14.0)(@types/pg@8.11.10)(@types/react@19.0.2)(bun-types@1.1.37)(pg@8.13.1)(react@19.0.0))(zod@3.24.1)
       mime-types:
         specifier: ^2.1.35
         version: 2.1.35
+      next-themes:
+        specifier: ^0.4.4
+        version: 0.4.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       openai:
         specifier: ^4.77.0
         version: 4.77.0(zod@3.24.1)
+      pg:
+        specifier: ^8.13.1
+        version: 8.13.1
+      react:
+        specifier: ^19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.0.0(react@19.0.0)
+      vinxi:
+        specifier: ^0.5.1
+        version: 0.5.1(@libsql/client@0.14.0)(@types/node@22.10.2)(db0@0.2.1(@libsql/client@0.14.0)(drizzle-orm@0.38.3(@libsql/client@0.14.0)(@types/pg@8.11.10)(@types/react@19.0.2)(bun-types@1.1.37)(pg@8.13.1)(react@19.0.0)))(drizzle-orm@0.38.3(@libsql/client@0.14.0)(@types/pg@8.11.10)(@types/react@19.0.2)(bun-types@1.1.37)(pg@8.13.1)(react@19.0.0))(ioredis@5.4.2)(jiti@2.4.2)(terser@5.37.0)(tsx@4.19.2)(typescript@5.7.2)(yaml@2.7.0)
       zod:
         specifier: ^3.24.1
         version: 3.24.1
     devDependencies:
+      '@octokit/types':
+        specifier: ^13.6.2
+        version: 13.6.2
+      '@types/bun':
+        specifier: ^1.1.14
+        version: 1.1.14
       '@types/eslint':
         specifier: 9.6.1
         version: 9.6.1
       '@types/mime-types':
         specifier: ^2.1.4
         version: 2.1.4
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.11.10
+      '@types/react':
+        specifier: ^19.0.2
+        version: 19.0.2
+      '@types/react-dom':
+        specifier: ^19.0.2
+        version: 19.0.2(@types/react@19.0.2)
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.19.0
         version: 8.19.0(@typescript-eslint/parser@8.19.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)
       '@typescript-eslint/parser':
         specifier: ^8.19.0
         version: 8.19.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.4
+        version: 4.3.4(vite@6.0.6(@types/node@22.10.2)(jiti@2.4.2)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0))
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.4.20(postcss@8.4.49)
+      drizzle-kit:
+        specifier: ^0.30.1
+        version: 0.30.1
       eslint:
         specifier: ^9.17.0
         version: 9.17.0(jiti@2.4.2)
@@ -42,9 +126,15 @@ importers:
       globals:
         specifier: ^15.14.0
         version: 15.14.0
+      postcss:
+        specifier: ^8.4.49
+        version: 8.4.49
       prettier:
         specifier: ^3.4.2
         version: 3.4.2
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.17
       typescript:
         specifier: ^5.7.2
         version: 5.7.2
@@ -7674,7 +7764,7 @@ snapshots:
 
   '@types/ws@8.5.13':
     dependencies:
-      '@types/node': 20.12.14
+      '@types/node': 22.10.2
 
   '@typescript-eslint/eslint-plugin@8.19.0(@typescript-eslint/parser@8.19.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)':
     dependencies:

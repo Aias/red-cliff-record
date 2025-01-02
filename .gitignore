@@ -1,13 +1,9 @@
 .DS_Store
 node_modules
 build
-.svelte-kit
-.wrangler
 .env
 .env.*
 .yarn
-.vscode
-.cursorignore
 **/.temp/**
 **/.output/**
 **/.vinxi/**
