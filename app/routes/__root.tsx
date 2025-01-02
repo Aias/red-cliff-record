@@ -1,10 +1,11 @@
 import { Outlet, ScrollRestoration, createRootRoute } from '@tanstack/react-router';
 import { createServerFn, Meta, Scripts } from '@tanstack/start';
 import { useState, type ReactNode } from 'react';
-import { Theme } from '@radix-ui/themes';
+import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { grass } from '@radix-ui/colors';
 
-import '@radix-ui/themes/styles.css';
+import radixStyles from '@radix-ui/themes/styles.css?url';
+
 import '../styles/globals.css';
 
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
@@ -13,11 +14,21 @@ import { seo, SITE_NAME } from '../lib/seo';
 import { AppLayout } from '../components/AppLayout';
 import { z } from 'zod';
 import { getCookie } from 'vinxi/http';
+import classNames from 'classnames';
 
 export const getThemeCookie = createServerFn({ method: 'GET' }).handler(async () => {
 	const theme = z.enum(['light', 'dark']).default('dark').parse(getCookie('theme'));
 	return { theme };
 });
+
+const defaultTheme: ThemeProps = {
+	appearance: 'dark',
+	radius: 'small',
+	scaling: '90%',
+	grayColor: 'olive',
+	accentColor: 'grass',
+	panelBackground: 'translucent',
+};
 
 export const Route = createRootRoute({
 	loader: () => getThemeCookie(),
@@ -36,6 +47,10 @@ export const Route = createRootRoute({
 			}),
 		],
 		links: [
+			{
+				rel: 'stylesheet',
+				href: radixStyles,
+			},
 			{
 				rel: 'apple-touch-icon',
 				sizes: '180x180',
@@ -59,8 +74,9 @@ export const Route = createRootRoute({
 	}),
 	component: RootComponent,
 	errorComponent: (props) => {
+		const { theme: initialTheme } = Route.useLoaderData() as { theme: 'light' | 'dark' };
 		return (
-			<RootDocument>
+			<RootDocument theme={{ ...defaultTheme, appearance: initialTheme }}>
 				<DefaultCatchBoundary {...props} />
 			</RootDocument>
 		);
@@ -68,15 +84,19 @@ export const Route = createRootRoute({
 	notFoundComponent: () => <NotFound />,
 });
 
-// TODO: Something funky going on with suspense/hydration errors on initial load.
 function RootComponent() {
 	const { theme: initialTheme } = Route.useLoaderData() as { theme: 'light' | 'dark' };
 
 	// Store the current theme in state, initialized from the server-provided theme
 	const [appearance, setAppearance] = useState<'light' | 'dark'>(initialTheme);
 	return (
-		<RootDocument>
-			<Theme accentColor="grass" radius="small" scaling="90%" appearance={appearance}>
+		<RootDocument theme={{ ...defaultTheme, appearance: appearance }}>
+			<Theme
+				accentColor={defaultTheme.accentColor}
+				radius={defaultTheme.radius}
+				scaling={defaultTheme.scaling}
+				appearance={appearance}
+			>
 				<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
 					<Outlet />
 				</AppLayout>
@@ -85,10 +105,19 @@ function RootComponent() {
 	);
 }
 
-// TODO: Fix this warning rather than cover it up. See: https://github.com/pacocoursey/next-themes/issues/169
-function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+function RootDocument({ children, theme }: Readonly<{ children: ReactNode; theme: ThemeProps }>) {
+	const { appearance, radius, scaling, grayColor, accentColor, panelBackground } = theme;
 	return (
-		<html>
+		<html
+			className={classNames('radix-themes', appearance)}
+			data-is-root-theme="true"
+			data-accent-color={accentColor}
+			data-gray-color={grayColor}
+			data-has-background="true"
+			data-panel-background={panelBackground}
+			data-radius={radius}
+			data-scaling={scaling}
+		>
 			<head>
 				<Meta />
 			</head>

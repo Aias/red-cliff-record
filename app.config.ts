@@ -1,17 +1,12 @@
 import { defineConfig } from '@tanstack/start/config';
-import tailwindcss from 'tailwindcss';
-import autoprefixer from 'autoprefixer';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
 	server: {
 		compatibilityDate: '2024-11-30',
 	},
 	vite: {
-		css: {
-			postcss: {
-				plugins: [tailwindcss, autoprefixer],
-			},
-		},
+		plugins: [tailwindcss()],
 		resolve: {
 			alias: {
 				'@/app': '/app',

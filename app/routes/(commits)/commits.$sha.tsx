@@ -155,7 +155,7 @@ function CommitView() {
 	};
 
 	return (
-		<Card className="flex-1 flex-grow basis-full">
+		<Card className="flex-1 grow basis-full">
 			<Heading size="6" mb="4">
 				<Flex align="center" gap="2" justify="between">
 					Commit {commit.sha.slice(0, 7)}

@@ -21,11 +21,11 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 	};
 
 	return (
-		<Flex direction="column" className="fixed inset-0 overflow-hidden">
+		<Flex direction="column" className="fixed overflow-hidden inset-0">
 			<Flex
 				align="center"
-				gap="3"
-				className="fixed bottom-4 right-4 inline-flex z-[100] bg-panel-solid border border-gray-5 rounded-2 shadow-6 px-3 py-2"
+				gap="4"
+				className="fixed bottom-4 right-4 inline-flex z-100 bg-panel-solid border border-gray-5 rounded-2 shadow-6 px-3 py-2"
 			>
 				<IconButton variant="ghost" size="2" onClick={() => navigate({ to: '/' })}>
 					<HomeIcon />
