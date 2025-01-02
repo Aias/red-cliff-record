@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react';
 import { CommitSummary, summarizeCommit } from '../../lib/commit-summarizer';
 import { CodeBlock } from '../../components/CodeBlock';
 import { AppLink } from '../../components/AppLink';
-import styles from './commits.module.css';
 
 export type CommitChange = {
 	filename: string;
@@ -156,7 +155,7 @@ function CommitView() {
 	};
 
 	return (
-		<Card className={styles.commitInspector}>
+		<Card className="flex-1 flex-grow basis-full">
 			<Heading size="6" mb="4">
 				<Flex align="center" gap="2" justify="between">
 					Commit {commit.sha.slice(0, 7)}

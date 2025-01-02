@@ -6,13 +6,14 @@ import { githubCommits } from '@rcr/database/schema/integrations/github/schema';
 import { desc, eq } from 'drizzle-orm';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
-import styles from './commits.module.css';
+
 import { useNavigate } from '@tanstack/react-router';
 import classNames from 'classnames';
 import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
 import { CommitInput, RepositoryInput } from './commits.$sha';
 import { summarizeCommit } from '../../lib/commit-summarizer';
+
 const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
 	const db = createConnection();
 	const commits = await db.query.githubCommits.findMany({
@@ -117,16 +118,8 @@ function CommitList() {
 	};
 
 	return (
-		<Flex
-			gap="2"
-			width="100%"
-			height="100%"
-			overflow="hidden"
-			justify="center"
-			p="3"
-			className={styles.container}
-		>
-			<Card className={styles.commitList}>
+		<Flex gap="2" width="100%" height="100%" overflow="hidden" justify="center" p="3">
+			<Card className="min-w-[480px]">
 				<Flex justify="between" align="center" mb="4">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedCommits.size > 0 && (
@@ -136,7 +129,7 @@ function CommitList() {
 					)}
 				</Flex>
 				<ScrollArea>
-					<Table.Root className={styles.commitListTable}>
+					<Table.Root>
 						<Table.Header>
 							<Table.Row>
 								<Table.ColumnHeaderCell title="Select Commits to Summarize"></Table.ColumnHeaderCell>
@@ -156,10 +149,10 @@ function CommitList() {
 										if ((e.target as HTMLElement).closest('.checkbox')) return;
 										navigate({ to: '/commits/$sha', params: { sha: commit.sha } });
 									}}
-									className={classNames({
-										[styles.selected]: sha === commit.sha,
-										[styles.commitRow]: true,
-									})}
+									className={classNames(
+										'cursor-pointer',
+										sha === commit.sha ? 'bg-accent-a2 hover:bg-accent-a3' : 'hover:bg-gray-a2'
+									)}
 								>
 									<Table.Cell className="checkbox">
 										<Checkbox
