@@ -12,8 +12,6 @@ import {
 	unique,
 	boolean,
 	index,
-	geometry,
-	customType,
 } from 'drizzle-orm/pg-core';
 import { relations, SQL, sql } from 'drizzle-orm';
 
@@ -350,12 +348,6 @@ export type NewIndexRelation = typeof indexRelations.$inferInsert;
    LOCATIONS
    ============================== */
 
-const multipolygon = customType<{ data: string }>({
-	dataType() {
-		return 'geometry(MultiPolygon, 4326)';
-	},
-});
-
 export const locations = pgTable(
 	'locations',
 	{
@@ -363,8 +355,6 @@ export const locations = pgTable(
 		name: text('name').notNull(),
 		locationType: text('location_type').notNull().default('Place'),
 		description: text('description'),
-		coordinates: geometry('coordinates', { srid: 4326, type: 'point', mode: 'xy' }).notNull(),
-		boundingBox: multipolygon('bounding_box'),
 		sourcePlatform: text('source_platform'),
 		sourceData: json('source_data'),
 		mapPageId: integer('map_page_id').references(() => sources.id),
@@ -379,10 +369,6 @@ export const locations = pgTable(
 	(table) => [
 		index('location_map_page_idx').on(table.mapPageId),
 		index('location_map_image_idx').on(table.mapImageId),
-		// Spatial index on geometry
-		index('location_coordinates_idx').using('gist', table.coordinates),
-		// Spatial index on bounding box
-		index('location_bounding_box_idx').using('gist', table.boundingBox),
 		// Index for type lookups
 		index('location_type_idx').on(table.locationType),
 		// Parent-child lookups

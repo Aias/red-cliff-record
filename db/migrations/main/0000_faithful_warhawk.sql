@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION postgis;
 
 CREATE SCHEMA "operations";
 --> statement-breakpoint

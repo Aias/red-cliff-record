@@ -9,7 +9,7 @@ import * as operationsSchema from '../schema/operations/schema';
 // PostgreSQL (main) connection
 export const createPgConnection = () => {
 	return drizzle({
-		connection: process.env.DATABASE_URL!,
+		connection: process.env.REMOTE_DATABASE_URL!,
 		casing: 'snake_case',
 		schema: {
 			...integrationsSchema,

@@ -120,7 +120,7 @@ function CommitList() {
 	};
 
 	return (
-		<main className={classNames('p-4 flex h-full gap-2 overflow-hidden', styles.layout)}>
+		<main className={classNames('p-3 flex h-full gap-2 overflow-hidden', styles.layout)}>
 			<Card>
 				<header className="flex justify-between items-center mb-4 gap-2">
 					<Heading size="6">Recent Commits</Heading>

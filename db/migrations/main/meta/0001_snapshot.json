@@ -1,6 +1,6 @@
 {
-  "id": "b6baaa66-8f07-4080-afce-c21d9d97c1fb",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "41c9a274-3a55-4071-94da-89ae0484d26c",
+  "prevId": "b6baaa66-8f07-4080-afce-c21d9d97c1fb",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -320,18 +320,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "coordinates": {
-          "name": "coordinates",
-          "type": "geometry(point)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "bounding_box": {
-          "name": "bounding_box",
-          "type": "geometry(MultiPolygon, 4326)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "source_platform": {
           "name": "source_platform",
           "type": "text",
@@ -430,36 +418,6 @@
           "isUnique": false,
           "concurrently": false,
           "method": "btree",
-          "with": {}
-        },
-        "location_coordinates_idx": {
-          "name": "location_coordinates_idx",
-          "columns": [
-            {
-              "expression": "coordinates",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "gist",
-          "with": {}
-        },
-        "location_bounding_box_idx": {
-          "name": "location_bounding_box_idx",
-          "columns": [
-            {
-              "expression": "bounding_box",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "gist",
           "with": {}
         },
         "location_type_idx": {

@@ -1,13 +1,20 @@
 {
-	"version": "7",
-	"dialect": "postgresql",
-	"entries": [
-		{
-			"idx": 0,
-			"version": "7",
-			"when": 1735831968892,
-			"tag": "0000_glorious_malice",
-			"breakpoints": true
-		}
-	]
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1735916506113,
+      "tag": "0000_faithful_warhawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1735917059162,
+      "tag": "0001_awesome_bruce_banner",
+      "breakpoints": true
+    }
+  ]
 }

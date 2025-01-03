@@ -20,9 +20,9 @@ fi
 echo "Using backup file: $DUMP_FILE"
 
 # Restore to the remote database
-pg_restore -h aws-0-us-east-1.pooler.supabase.com \
+pg_restore -h aws-0-us-west-1.pooler.supabase.com \
           -p 6543 \
-          -U postgres.flwvhqkzhkvrlpzciuwq \
+          -U postgres.febiwifjeueentvcovkr \
           -d postgres \
           --clean --if-exists -v \
           --no-owner --no-privileges \
