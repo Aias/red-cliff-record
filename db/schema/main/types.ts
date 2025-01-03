@@ -34,7 +34,7 @@ export type MediaFormat = z.infer<typeof MediaFormat>;
 
 export const IndexMainType = z.enum([
 	'entity', // who/what created something
-	'category ', // what something is about
+	'category', // what something is about
 	'format', // what something is
 ]);
 export type IndexMainType = z.infer<typeof IndexMainType>;

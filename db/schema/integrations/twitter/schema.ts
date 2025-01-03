@@ -1,8 +1,9 @@
-import { text, integer, index, foreignKey } from 'drizzle-orm/pg-core';
+import { text, integer, index, foreignKey, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
+import { indexEntries, records } from '../../main/schema';
 
 export const twitterTweets = integrationSchema.table(
 	'twitter_tweets',
@@ -18,6 +19,13 @@ export const twitterTweets = integrationSchema.table(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		recordId: integer('record_id').references(() => records.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
 	(table) => [
 		index().on(table.integrationRunId),
@@ -25,6 +33,8 @@ export const twitterTweets = integrationSchema.table(
 			columns: [table.quotedTweetId],
 			foreignColumns: [table.id],
 		}),
+		index().on(table.archivedAt),
+		index().on(table.recordId),
 	]
 );
 
@@ -42,6 +52,10 @@ export const twitterTweetsRelations = relations(twitterTweets, ({ one, many }) =
 	integrationRun: one(integrationRuns, {
 		fields: [twitterTweets.integrationRunId],
 		references: [integrationRuns.id],
+	}),
+	record: one(records, {
+		fields: [twitterTweets.recordId],
+		references: [records.id],
 	}),
 }));
 
@@ -65,28 +79,43 @@ export const twitterMediaRelations = relations(twitterMedia, ({ one }) => ({
 	}),
 }));
 
-export const twitterUsers = integrationSchema.table('twitter_users', {
-	id: text('id').primaryKey(),
-	username: text('username'),
-	displayName: text('display_name'),
-	description: text('description'),
-	location: text('location'),
-	url: text('url'),
-	externalUrl: text('external_url'),
-	profileImageUrl: text('profile_image_url'),
-	profileBannerUrl: text('profile_banner_url'),
-	integrationRunId: integer('integration_run_id')
-		.references(() => integrationRuns.id)
-		.notNull(),
-	...contentTimestamps,
-	...databaseTimestamps,
-});
+export const twitterUsers = integrationSchema.table(
+	'twitter_users',
+	{
+		id: text('id').primaryKey(),
+		username: text('username'),
+		displayName: text('display_name'),
+		description: text('description'),
+		location: text('location'),
+		url: text('url'),
+		externalUrl: text('external_url'),
+		profileImageUrl: text('profile_image_url'),
+		profileBannerUrl: text('profile_banner_url'),
+		integrationRunId: integer('integration_run_id')
+			.references(() => integrationRuns.id)
+			.notNull(),
+		...contentTimestamps,
+		...databaseTimestamps,
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		indexEntryId: integer('index_entry_id').references(() => indexEntries.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+	},
+	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
+);
 
 export const twitterUsersRelations = relations(twitterUsers, ({ many, one }) => ({
 	tweets: many(twitterTweets),
 	integrationRun: one(integrationRuns, {
 		fields: [twitterUsers.integrationRunId],
 		references: [integrationRuns.id],
+	}),
+	indexEntry: one(indexEntries, {
+		fields: [twitterUsers.indexEntryId],
+		references: [indexEntries.id],
 	}),
 }));
 

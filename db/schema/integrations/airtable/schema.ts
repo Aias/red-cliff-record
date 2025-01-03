@@ -1,8 +1,9 @@
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { relations } from 'drizzle-orm';
-import { text, integer, timestamp, foreignKey, primaryKey } from 'drizzle-orm/pg-core';
+import { text, integer, timestamp, foreignKey, primaryKey, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
+import { indexEntries, records } from '../../main/schema';
 
 export const airtableExtracts = integrationSchema.table(
 	'airtable_extracts',
@@ -25,12 +26,21 @@ export const airtableExtracts = integrationSchema.table(
 		}),
 		...contentTimestamps,
 		...databaseTimestamps,
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		recordId: integer('record_id').references(() => records.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
 	(table) => [
 		foreignKey({
 			columns: [table.parentId],
 			foreignColumns: [table.id],
 		}),
+		index().on(table.archivedAt),
+		index().on(table.recordId),
 	]
 );
 
@@ -51,6 +61,10 @@ export const airtableExtractsRelations = relations(airtableExtracts, ({ many, on
 	integrationRun: one(integrationRuns, {
 		fields: [airtableExtracts.integrationRunId],
 		references: [integrationRuns.id],
+	}),
+	record: one(records, {
+		fields: [airtableExtracts.recordId],
+		references: [records.id],
 	}),
 }));
 
@@ -75,46 +89,76 @@ export const airtableAttachmentsRelations = relations(airtableAttachments, ({ on
 	}),
 }));
 
-export const airtableCreators = integrationSchema.table('airtable_creators', {
-	id: text('id').primaryKey(),
-	name: text('name').notNull(),
-	type: text('type').notNull().default('Individual'),
-	primaryProject: text('primary_project'),
-	website: text('website'),
-	professions: text('professions').array(),
-	organizations: text('organizations').array(),
-	nationalities: text('nationalities').array(),
-	integrationRunId: integer('integration_run_id')
-		.references(() => integrationRuns.id)
-		.notNull(),
-	...contentTimestamps,
-	...databaseTimestamps,
-});
+export const airtableCreators = integrationSchema.table(
+	'airtable_creators',
+	{
+		id: text('id').primaryKey(),
+		name: text('name').notNull(),
+		type: text('type').notNull().default('Individual'),
+		primaryProject: text('primary_project'),
+		website: text('website'),
+		professions: text('professions').array(),
+		organizations: text('organizations').array(),
+		nationalities: text('nationalities').array(),
+		integrationRunId: integer('integration_run_id')
+			.references(() => integrationRuns.id)
+			.notNull(),
+		...contentTimestamps,
+		...databaseTimestamps,
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		indexEntryId: integer('index_entry_id').references(() => indexEntries.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+	},
+	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
+);
 
 export const airtableCreatorsRelations = relations(airtableCreators, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [airtableCreators.integrationRunId],
 		references: [integrationRuns.id],
 	}),
+	indexEntry: one(indexEntries, {
+		fields: [airtableCreators.indexEntryId],
+		references: [indexEntries.id],
+	}),
 }));
 
-export const airtableSpaces = integrationSchema.table('airtable_spaces', {
-	id: text('id').primaryKey(),
-	name: text('name').notNull(),
-	fullName: text('full_name'),
-	icon: text('icon'),
-	description: text('description'),
-	integrationRunId: integer('integration_run_id')
-		.references(() => integrationRuns.id)
-		.notNull(),
-	...contentTimestamps,
-	...databaseTimestamps,
-});
+export const airtableSpaces = integrationSchema.table(
+	'airtable_spaces',
+	{
+		id: text('id').primaryKey(),
+		name: text('name').notNull(),
+		fullName: text('full_name'),
+		icon: text('icon'),
+		description: text('description'),
+		integrationRunId: integer('integration_run_id')
+			.references(() => integrationRuns.id)
+			.notNull(),
+		...contentTimestamps,
+		...databaseTimestamps,
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		indexEntryId: integer('index_entry_id').references(() => indexEntries.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+	},
+	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
+);
 
 export const airtableSpacesRelations = relations(airtableSpaces, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [airtableSpaces.integrationRunId],
 		references: [integrationRuns.id],
+	}),
+	indexEntry: one(indexEntries, {
+		fields: [airtableSpaces.indexEntryId],
+		references: [indexEntries.id],
 	}),
 }));
 

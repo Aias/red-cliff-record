@@ -9,6 +9,7 @@ import { serial, text, integer, index, boolean, timestamp } from 'drizzle-orm/pg
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
 import { GithubCommitChangeStatus, GithubCommitType } from './types';
+import { indexEntries, records } from '../../main/schema';
 
 const githubStats = {
 	changes: integer('changes'),
@@ -40,8 +41,15 @@ export const githubUsers = integrationSchema.table(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		indexEntryId: integer('index_entry_id').references(() => indexEntries.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
-	(table) => [index().on(table.login)]
+	(table) => [index().on(table.login), index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
 
 export const githubRepositories = integrationSchema.table(
@@ -68,8 +76,20 @@ export const githubRepositories = integrationSchema.table(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		recordId: integer('record_id').references(() => records.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
-	(table) => [index().on(table.ownerId), index().on(table.nodeId)]
+	(table) => [
+		index().on(table.ownerId),
+		index().on(table.nodeId),
+		index().on(table.archivedAt),
+		index().on(table.recordId),
+	]
 );
 
 export const githubCommitTypesEnum = integrationSchema.enum(
@@ -127,6 +147,10 @@ export const githubUsersRelations = relations(githubUsers, ({ one }) => ({
 		fields: [githubUsers.integrationRunId],
 		references: [integrationRuns.id],
 	}),
+	indexEntry: one(indexEntries, {
+		fields: [githubUsers.indexEntryId],
+		references: [indexEntries.id],
+	}),
 }));
 
 export const githubRepositoriesRelations = relations(githubRepositories, ({ one }) => ({
@@ -137,6 +161,10 @@ export const githubRepositoriesRelations = relations(githubRepositories, ({ one 
 	integrationRun: one(integrationRuns, {
 		fields: [githubRepositories.integrationRunId],
 		references: [integrationRuns.id],
+	}),
+	record: one(records, {
+		fields: [githubRepositories.recordId],
+		references: [records.id],
 	}),
 }));
 

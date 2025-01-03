@@ -1,8 +1,9 @@
-import { integer, text, index, boolean, unique, foreignKey } from 'drizzle-orm/pg-core';
+import { integer, text, index, boolean, unique, foreignKey, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
+import { records } from '../../main/schema';
 
 export const raindropRaindrops = integrationSchema.table(
 	'raindrop_raindrops',
@@ -23,12 +24,21 @@ export const raindropRaindrops = integrationSchema.table(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		recordId: integer('record_id').references(() => records.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.linkUrl),
 		index().on(table.createdAt),
 		unique().on(table.linkUrl, table.createdAt),
+		index().on(table.archivedAt),
+		index().on(table.recordId),
 	]
 );
 
@@ -40,6 +50,10 @@ export const raindropRaindropsRelations = relations(raindropRaindrops, ({ one })
 	integrationRun: one(integrationRuns, {
 		fields: [raindropRaindrops.integrationRunId],
 		references: [integrationRuns.id],
+	}),
+	record: one(records, {
+		fields: [raindropRaindrops.recordId],
+		references: [records.id],
 	}),
 }));
 
