@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
-import { Card, Heading, Table, Flex, ScrollArea, Button, Checkbox } from '@radix-ui/themes';
+import { Card, Heading, Table, ScrollArea, Button, Checkbox } from '@radix-ui/themes';
 import { createServerFn } from '@tanstack/start';
 import { createPgConnection as createConnection } from '@/db/connections';
 import { githubCommits } from '@/db/schema/integrations/schema';
@@ -13,6 +13,8 @@ import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
 import { CommitInput, RepositoryInput } from './commits.$sha';
 import { summarizeCommit } from '../../lib/commit-summarizer';
+
+import styles from './commits.module.css';
 
 const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
 	const db = createConnection();
@@ -118,16 +120,16 @@ function CommitList() {
 	};
 
 	return (
-		<Flex gap="2" width="100%" height="100%" overflow="hidden" justify="center" p="3">
-			<Card className="min-w-[480px]">
-				<Flex justify="between" align="center" mb="4">
+		<main className={classNames('p-4 flex h-full gap-2 overflow-hidden', styles.layout)}>
+			<Card>
+				<header className="flex justify-between items-center mb-4 gap-2">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedCommits.size > 0 && (
 						<Button onClick={handleBatchSummarize} disabled={loading} variant="soft">
 							{loading ? 'Summarizing...' : `Summarize ${selectedCommits.size} Commits`}
 						</Button>
 					)}
-				</Flex>
+				</header>
 				<ScrollArea>
 					<Table.Root>
 						<Table.Header>
@@ -199,6 +201,6 @@ function CommitList() {
 				</ScrollArea>
 			</Card>
 			<Outlet />
-		</Flex>
+		</main>
 	);
 }

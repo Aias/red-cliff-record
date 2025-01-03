@@ -8,18 +8,29 @@ export const Route = createFileRoute('/')({
 
 function Home() {
 	return (
-		<Container size="1" p="4">
-			<Card style={{ maxWidth: '400px', margin: '48px auto' }}>
+		<Container size="1" p="4" className="flex flex-col h-full">
+			<Card className="max-w-sm mx-auto my-9">
 				<Heading size="6" mb="4" align="center">
 					Red Cliff Record Admin
 				</Heading>
-				<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-					<AppLink to={`/history/$date`} params={{ date: new Date().toLocaleDateString('en-CA') }}>
-						Daily History
-					</AppLink>
-					<AppLink to="/omit-list">Omit List</AppLink>
-					<AppLink to="/commits">Commits</AppLink>
-				</div>
+				<nav>
+					<ul className="flex flex-col gap-2 list-none p-0">
+						<li>
+							<AppLink
+								to={`/history/$date`}
+								params={{ date: new Date().toLocaleDateString('en-CA') }}
+							>
+								Daily History
+							</AppLink>
+						</li>
+						<li>
+							<AppLink to="/omit-list">Omit List</AppLink>
+						</li>
+						<li>
+							<AppLink to="/commits">Commits</AppLink>
+						</li>
+					</ul>
+				</nav>
 			</Card>
 		</Container>
 	);

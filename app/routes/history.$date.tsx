@@ -6,15 +6,7 @@ import {
 import { sql } from 'drizzle-orm';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
-import {
-	Heading,
-	Table,
-	Text,
-	Link as RadixLink,
-	Button,
-	Flex,
-	ScrollArea,
-} from '@radix-ui/themes';
+import { Heading, Table, Text, Link as RadixLink, Button, ScrollArea } from '@radix-ui/themes';
 import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
 const fetchHistoryForDate = createServerFn({ method: 'GET' })
@@ -65,9 +57,9 @@ function DailyActivityPage() {
 	const formatDateParam = (date: Date) => date.toISOString().split('T')[0];
 
 	return (
-		<Flex p="4" direction="column" height="100%">
-			<Flex justify="between" align="center" mb="4">
-				<Heading size="7" as="h1">
+		<main className="p-4 h-full flex flex-col">
+			<header className="flex justify-between flex-wrap items-center mb-4 gap-4">
+				<Heading size="7" as="h1" className="min-w-200px">
 					{localDate.toLocaleDateString('en-US', {
 						weekday: 'long',
 						year: 'numeric',
@@ -75,21 +67,21 @@ function DailyActivityPage() {
 						day: 'numeric',
 					})}
 				</Heading>
-				<Flex gap="2">
-					<Link to="/history/$date" params={{ date: formatDateParam(prevDate) }}>
-						<Button variant="soft">
+				<nav className="flex gap-2">
+					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
+						<Link to="/history/$date" params={{ date: formatDateParam(prevDate) }}>
 							<ChevronLeftIcon />
 							Previous Day
-						</Button>
-					</Link>
-					<Link to="/history/$date" params={{ date: formatDateParam(nextDate) }}>
-						<Button variant="soft">
+						</Link>
+					</Button>
+					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
+						<Link to="/history/$date" params={{ date: formatDateParam(nextDate) }}>
 							Next Day
 							<ChevronRightIcon />
-						</Button>
-					</Link>
-				</Flex>
-			</Flex>
+						</Link>
+					</Button>
+				</nav>
+			</header>
 
 			<Heading size="5" mb="4" as="h2">
 				Browser History
@@ -117,10 +109,8 @@ function DailyActivityPage() {
 										</Text>
 									</Table.Cell>
 									<Table.Cell maxWidth="320px">
-										<RadixLink asChild>
-											<a href={url.href} target="_blank" rel="noopener noreferrer">
-												{`${url.hostname}${url.pathname}`}
-											</a>
+										<RadixLink href={url.href} target="_blank" rel="noopener noreferrer">
+											{`${url.hostname}${url.pathname}`}
 										</RadixLink>
 									</Table.Cell>
 									<Table.Cell>{pageTitle}</Table.Cell>
@@ -134,6 +124,6 @@ function DailyActivityPage() {
 					</Table.Body>
 				</Table.Root>
 			</ScrollArea>
-		</Flex>
+		</main>
 	);
 }

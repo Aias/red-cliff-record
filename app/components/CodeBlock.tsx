@@ -7,15 +7,8 @@ interface CodeBlockProps {
 
 export function CodeBlock({ children }: CodeBlockProps) {
 	return (
-		<Box
-			style={{
-				backgroundColor: 'var(--color-surface)',
-				borderRadius: 'var(--radius-3)',
-				border: '1px solid var(--gray-4)',
-			}}
-			p="3"
-		>
-			<pre style={{ margin: 0 }}>
+		<Box className="bg-surface border border-gray-4 rounded-3 p-3">
+			<pre>
 				<Code
 					size="2"
 					variant="ghost"

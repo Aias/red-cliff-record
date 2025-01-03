@@ -1,6 +1,8 @@
-@layer theme, base, components, utilities;
+@layer reset, theme, base, components, utilities;
 
+@import './reset.css' layer(reset);
 @import 'tailwindcss/theme' layer(theme);
+@import '@radix-ui/themes/styles.css' layer(base);
 @import 'tailwindcss/utilities' layer(utilities);
 
 @variant dark (&:where(.dark, .dark *));

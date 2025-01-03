@@ -1,0 +1,12 @@
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+ul,
+ol,
+menu,
+pre {
+	margin: 0;
+}

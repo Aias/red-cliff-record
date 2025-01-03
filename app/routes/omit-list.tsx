@@ -2,7 +2,7 @@ import { createPgConnection as createConnection } from '@/db/connections';
 import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@/db/schema/integrations/schema';
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
-import { Heading, Table, Button, TextField, Flex, ScrollArea } from '@radix-ui/themes';
+import { Heading, Table, Button, TextField, ScrollArea } from '@radix-ui/themes';
 import {
 	useReactTable,
 	getCoreRowModel,
@@ -214,12 +214,12 @@ function OmitListPage() {
 	};
 
 	return (
-		<Flex p="4" direction="column" height="100%">
+		<main className="p-4 flex flex-col h-full">
 			<Heading size="7" mb="4" as="h1">
 				Browsing History Omit List
 			</Heading>
 
-			<div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+			<div className="flex gap-2 mb-4">
 				<TextField.Root
 					ref={inputRef}
 					style={{ flex: 1 }}
@@ -260,6 +260,6 @@ function OmitListPage() {
 					</Table.Body>
 				</Table.Root>
 			</ScrollArea>
-		</Flex>
+		</main>
 	);
 }

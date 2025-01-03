@@ -7,8 +7,8 @@ export const Icon = ({ size = '3', color, children, ...props }: TextProps) => {
 			size={size}
 			color={color}
 			{...props}
+			className="inline-block"
 			style={{
-				display: 'inline-block',
 				width: '1em',
 				height: '1em',
 				lineHeight: 1,

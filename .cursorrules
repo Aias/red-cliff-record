@@ -1,0 +1,9 @@
+**Additional instructions for this project:**
+
+- Use Radix Themes for functional and interactive components.
+- Use Tailwind for styling and layouy, except where Radix Themes supports the equivalent style props, e.g. 'color' or 'size' for Text, Button, etc.
+- Use Radix Themes for typographic components like Text, Headings, Em, Link, Code, etc.
+- Always use semantic HTML where appropriate for layout and structure. This includes using the correct HTML tags for sectioning elements, navigation, lists, and other content.
+- When writing new code, focus on modularity and reusability. Always keep in mind the current context and file structure, and look for opportunities to abstract and reuse components.
+- When interacting with the database, use Tanstack's useServerFn hook to call server functions, with validation and type safety via zod.
+- Use existing types wherever possible rather than duplicating them, e.g. import existing zod schemas or drizzle types directly when reading from / writing to the database.

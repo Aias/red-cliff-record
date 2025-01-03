@@ -1,0 +1,29 @@
+.layout {
+	container-type: inline-size;
+}
+
+/* Default state - commit list takes full width when no commit selected */
+.layout > :first-child:last-child {
+	width: 100%;
+}
+
+/* When commit is selected, set min-width for list and allow flex growth for details */
+@container (min-width: 800px) {
+	.layout > :first-child:not(:last-child) {
+		min-width: 420px;
+	}
+}
+
+/* Hide list when container is narrow and commit is selected */
+@container (max-width: 799px) {
+	.layout > :first-child:not(:last-child) {
+		display: none;
+	}
+}
+
+/* Hide commit details when container is narrow and showing list */
+@container (max-width: 799px) {
+	.layout > :first-child:not(:last-child) {
+		display: none;
+	}
+}

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Card, Heading, Text, Box, Button, Code, Flex, ScrollArea } from '@radix-ui/themes';
+import { Card, Heading, Text, Button, Code, ScrollArea } from '@radix-ui/themes';
 import { eq } from 'drizzle-orm';
 import { createServerFn } from '@tanstack/start';
 import { createPgConnection as createConnection } from '@/db/connections';
@@ -155,45 +155,41 @@ function CommitView() {
 	};
 
 	return (
-		<Card className="flex-1 grow basis-full">
-			<Heading size="6" mb="4">
-				<Flex align="center" gap="2" justify="between">
-					Commit {commit.sha.slice(0, 7)}
-					<AppLink to={'/commits'}>
-						<Text size="3" weight="regular">
-							Close
-						</Text>
-					</AppLink>
-				</Flex>
-			</Heading>
+		<Card className="grow basis-full">
+			<header className="flex justify-between items-center mb-4 gap-2">
+				<Heading size="6">Commit {commit.sha.slice(0, 7)}</Heading>
+				<AppLink to={'/commits'}>
+					<Text size="3" weight="regular">
+						Close
+					</Text>
+				</AppLink>
+			</header>
 			<ScrollArea>
-				<Text as="p" mb="4">
-					{commit.message}
-				</Text>
-				<Text as="p" mb="4">
-					Repository: <Code>{commit.repository.fullName}</Code>
-				</Text>
-				<Text as="p" mb="4">
-					Changes: +{commit.additions} -{commit.deletions} ({commit.changes} total)
-				</Text>
+				<div className="flex flex-col gap-4">
+					<Text as="p">{commit.message}</Text>
+					<Text as="p">
+						Repository: <Code>{commit.repository.fullName}</Code>
+					</Text>
+					<Text as="p">
+						Changes: +{commit.additions} -{commit.deletions} ({commit.changes} total)
+					</Text>
 
-				<Box mt="4">
-					<Flex justify="between" align="center" mb="2">
-						<Heading size="4">Analysis</Heading>
-						<Button onClick={handleAnalyze} disabled={loading} variant="soft">
-							{loading ? 'Analyzing...' : summary ? 'Re-Analyze' : 'Analyze Commit'}
-						</Button>
-					</Flex>
+					<section>
+						<header className="flex justify-between items-center mb-3 gap-2">
+							<Heading size="4">Analysis</Heading>
+							<Button onClick={handleAnalyze} disabled={loading} variant="soft">
+								{loading ? 'Analyzing...' : summary ? 'Re-Analyze' : 'Analyze Commit'}
+							</Button>
+						</header>
 
-					{error && (
-						<Card mt="2">
-							<Text color="red" as="p">
-								{error}
-							</Text>
-						</Card>
-					)}
+						{error && (
+							<Card>
+								<Text color="red" as="p">
+									{error}
+								</Text>
+							</Card>
+						)}
 
-					<Box mt="2">
 						{summary ? (
 							<CodeBlock>{JSON.stringify(summary, null, 2)}</CodeBlock>
 						) : (
@@ -203,21 +199,21 @@ function CommitView() {
 								</Text>
 							</Card>
 						)}
-					</Box>
-				</Box>
+					</section>
 
-				<Box mt="4">
-					<Heading size="4" mb="2">
-						Changed Files
-					</Heading>
-					<Flex direction="column" gap="2" align="start">
-						{commit.commitChanges.map((change) => (
-							<Code key={change.id} variant="ghost">
-								{change.filename}
-							</Code>
-						))}
-					</Flex>
-				</Box>
+					<section>
+						<header className="flex justify-between items-center mb-3 gap-2">
+							<Heading size="4">Changed Files</Heading>
+						</header>
+						<ul className="flex flex-col gap-2 list-none p-0">
+							{commit.commitChanges.map((change) => (
+								<li key={change.id}>
+									<Code variant="ghost">{change.filename}</Code>
+								</li>
+							))}
+						</ul>
+					</section>
+				</div>
 			</ScrollArea>
 		</Card>
 	);
