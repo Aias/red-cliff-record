@@ -77,7 +77,10 @@ export const airtableAttachments = integrationSchema.table('airtable_attachments
 	width: integer('width'),
 	height: integer('height'),
 	extractId: text('extract_id')
-		.references(() => airtableExtracts.id)
+		.references(() => airtableExtracts.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		})
 		.notNull(),
 	...databaseTimestamps,
 });
@@ -166,10 +169,16 @@ export const airtableExtractCreators = integrationSchema.table(
 	'airtable_extract_creators',
 	{
 		extractId: text('extract_id')
-			.references(() => airtableExtracts.id)
+			.references(() => airtableExtracts.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		creatorId: text('creator_id')
-			.references(() => airtableCreators.id)
+			.references(() => airtableCreators.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		...databaseTimestamps,
 	},
@@ -193,10 +202,16 @@ export const airtableExtractSpaces = integrationSchema.table(
 	'airtable_extract_spaces',
 	{
 		extractId: text('extract_id')
-			.references(() => airtableExtracts.id)
+			.references(() => airtableExtracts.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		spaceId: text('space_id')
-			.references(() => airtableSpaces.id)
+			.references(() => airtableSpaces.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		...databaseTimestamps,
 	},
@@ -220,10 +235,16 @@ export const airtableExtractConnections = integrationSchema.table(
 	'airtable_extract_connections',
 	{
 		fromExtractId: text('from_extract_id')
-			.references(() => airtableExtracts.id)
+			.references(() => airtableExtracts.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		toExtractId: text('to_extract_id')
-			.references(() => airtableExtracts.id)
+			.references(() => airtableExtracts.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		...databaseTimestamps,
 	},

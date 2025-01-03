@@ -54,34 +54,37 @@ export const timepoints = pgTable(
 		...databaseTimestamps,
 	},
 	(table) => [
-		index('timepoint_start_date_idx').on(table.startDate),
-		index('timepoint_start_instant_idx').on(table.startInstant),
-		index('timepoint_start_granularity_idx').on(table.startGranularity),
-		index('timepoint_end_date_idx').on(table.endDate),
-		index('timepoint_end_instant_idx').on(table.endInstant),
-		index('timepoint_end_granularity_idx').on(table.endGranularity),
+		index().on(table.startDate),
+		index().on(table.startInstant),
+		index().on(table.startGranularity),
+		index().on(table.endDate),
+		index().on(table.endInstant),
+		index().on(table.endGranularity),
 	]
 );
 
-// New junction table for record-timepoint relationships
+// Junction table for record-timepoint relationships
 export const recordTimepoints = pgTable(
 	'record_timepoints',
 	{
 		id: serial('id').primaryKey(),
 		recordId: integer('record_id')
-			.references(() => records.id)
+			.references(() => records.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		timepointId: integer('timepoint_id')
-			.references(() => timepoints.id)
+			.references(() => timepoints.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		label: text('label'),
 		order: text('order').notNull().default('a0'),
 		...databaseTimestamps,
 	},
-	(table) => [
-		index('record_timepoint_record_idx').on(table.recordId),
-		index('record_timepoint_timepoint_idx').on(table.timepointId),
-	]
+	(table) => [index().on(table.recordId), index().on(table.timepointId)]
 );
 
 // Relations
@@ -117,9 +120,9 @@ export const sources = pgTable(
 		...databaseTimestamps,
 	},
 	(table) => [
-		unique('source_url_idx').on(table.url),
-		index('source_domain_idx').on(table.domain),
-		index('crawl_status_idx').on(table.lastCrawlDate, table.lastHttpStatus),
+		unique().on(table.url),
+		index().on(table.domain),
+		index().on(table.lastCrawlDate, table.lastHttpStatus),
 	]
 );
 
@@ -129,14 +132,17 @@ export const sourceContents = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		sourceId: integer('source_id')
-			.references(() => sources.id)
+			.references(() => sources.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		contentHtml: text('content_html').notNull(),
 		contentMarkdown: text('content_markdown'),
 		metadata: json('metadata'), // headers, meta tags, etc
 		...databaseTimestamps,
 	},
-	(table) => [index('source_content_source_idx').on(table.sourceId)]
+	(table) => [index().on(table.sourceId)]
 );
 
 // Relationship table for source connections
@@ -145,18 +151,24 @@ export const sourceConnections = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		fromSourceId: integer('from_source_id')
-			.references(() => sources.id)
+			.references(() => sources.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		toSourceId: integer('to_source_id')
-			.references(() => sources.id)
+			.references(() => sources.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		metadata: json('metadata').$type<LinkMetadata>(),
 		...databaseTimestamps,
 	},
 	(table) => [
-		unique('source_connection_unique_idx').on(table.fromSourceId, table.toSourceId),
-		index('source_connection_source_idx').on(table.fromSourceId),
-		index('source_connection_target_idx').on(table.toSourceId),
+		unique().on(table.fromSourceId, table.toSourceId),
+		index().on(table.fromSourceId),
+		index().on(table.toSourceId),
 	]
 );
 
@@ -175,7 +187,10 @@ export const media = pgTable(
 		width: integer('width'),
 		height: integer('height'),
 		versionOfMediaId: integer('version_of_media_id'),
-		sourcePageId: integer('source_page_id').references(() => sources.id),
+		sourcePageId: integer('source_page_id').references(() => sources.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		metadata: json('metadata'),
 		...databaseTimestamps,
 	},
@@ -184,11 +199,11 @@ export const media = pgTable(
 			columns: [table.versionOfMediaId],
 			foreignColumns: [table.id],
 		}),
-		unique('media_url_idx').on(table.url),
-		index('media_format_idx').on(table.format),
-		index('media_mime_type_idx').on(table.mimeType),
-		index('media_source_idx').on(table.sourcePageId),
-		index('media_version_idx').on(table.versionOfMediaId),
+		unique().on(table.url),
+		index().on(table.format),
+		index().on(table.mimeType),
+		index().on(table.sourcePageId),
+		index().on(table.versionOfMediaId),
 	]
 );
 
@@ -265,8 +280,14 @@ export const indexEntries = pgTable(
 		private: boolean('private').notNull().default(false),
 		mainType: indexMainTypeEnum('main_type').notNull(),
 		subType: text('sub_type'),
-		canonicalPageId: integer('canonical_page_id').references(() => sources.id),
-		canonicalMediaId: integer('canonical_media_id').references(() => media.id),
+		canonicalPageId: integer('canonical_page_id').references(() => sources.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		canonicalMediaId: integer('canonical_media_id').references(() => media.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		aliasOf: integer('alias_of'),
 		...databaseTimestamps,
 	},
@@ -275,10 +296,10 @@ export const indexEntries = pgTable(
 			columns: [table.aliasOf],
 			foreignColumns: [table.id],
 		}),
-		unique('index_entry_idx').on(table.name, table.sense, table.mainType),
-		index('type_subtype_idx').on(table.mainType, table.subType),
-		index('canonical_page_idx').on(table.canonicalPageId),
-		index('canonical_media_idx').on(table.canonicalMediaId),
+		unique().on(table.name, table.sense, table.mainType),
+		index().on(table.mainType, table.subType),
+		index().on(table.canonicalPageId),
+		index().on(table.canonicalMediaId),
 	]
 );
 
@@ -288,15 +309,21 @@ export const indexRelations = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		sourceId: integer('source_id')
-			.references(() => indexEntries.id)
+			.references(() => indexEntries.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		targetId: integer('target_id')
-			.references(() => indexEntries.id)
+			.references(() => indexEntries.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		type: indexRelationTypeEnum('type').notNull().default('related_to'),
 		...databaseTimestamps,
 	},
-	(table) => [unique('index_relation_unique_idx').on(table.sourceId, table.targetId, table.type)]
+	(table) => [unique().on(table.sourceId, table.targetId, table.type)]
 );
 
 // Relations
@@ -357,8 +384,14 @@ export const locations = pgTable(
 		description: text('description'),
 		sourcePlatform: text('source_platform'),
 		sourceData: json('source_data'),
-		mapPageId: integer('map_page_id').references(() => sources.id),
-		mapImageId: integer('map_image_id').references(() => media.id),
+		mapPageId: integer('map_page_id').references(() => sources.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		mapImageId: integer('map_image_id').references(() => media.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		address: text('address'),
 		timezone: text('timezone'),
 		population: integer('population'),
@@ -367,22 +400,18 @@ export const locations = pgTable(
 		...databaseTimestamps,
 	},
 	(table) => [
-		index('location_map_page_idx').on(table.mapPageId),
-		index('location_map_image_idx').on(table.mapImageId),
+		index().on(table.mapPageId),
+		index().on(table.mapImageId),
 		// Index for type lookups
-		index('location_type_idx').on(table.locationType),
+		index().on(table.locationType),
 		// Parent-child lookups
-		index('location_parent_idx').on(table.parentLocationId),
+		index().on(table.parentLocationId),
 		// Self-referential foreign key
 		foreignKey({
 			columns: [table.parentLocationId],
 			foreignColumns: [table.id],
 		}),
-		unique('location_name_type_parent_idx').on(
-			table.name,
-			table.locationType,
-			table.parentLocationId
-		),
+		unique().on(table.name, table.locationType, table.parentLocationId),
 	]
 );
 
@@ -429,18 +458,20 @@ export const records = pgTable(
 		title: text('title'),
 		content: text('content'),
 		type: recordTypeEnum('type').notNull(),
-		formatId: integer('format_id').references(() => indexEntries.id),
+		formatId: integer('format_id').references(() => indexEntries.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		private: boolean('private').notNull().default(false),
 		flags: flagEnum('flags').array(),
 		needsCuration: boolean('needs_curation').notNull().default(true),
-		locationId: integer('location_id').references(() => locations.id),
+		locationId: integer('location_id').references(() => locations.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		...databaseTimestamps,
 	},
-	(table) => [
-		index('record_type_idx').on(table.type),
-		index('record_format_idx').on(table.formatId),
-		index('record_location_idx').on(table.locationId),
-	]
+	(table) => [index().on(table.type), index().on(table.formatId), index().on(table.locationId)]
 );
 
 // Combined hierarchy/relations table
@@ -449,10 +480,16 @@ export const recordRelations = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		sourceId: integer('source_id')
-			.references(() => records.id)
+			.references(() => records.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		targetId: integer('target_id')
-			.references(() => records.id)
+			.references(() => records.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		type: recordRelationTypeEnum('type').notNull(),
 		order: text('order').notNull().default('a0'),
@@ -460,9 +497,9 @@ export const recordRelations = pgTable(
 		...databaseTimestamps,
 	},
 	(table) => [
-		index('record_relation_source_idx').on(table.sourceId),
-		index('record_relation_target_idx').on(table.targetId),
-		unique('record_relation_unique_idx').on(table.sourceId, table.targetId, table.type),
+		index().on(table.sourceId),
+		index().on(table.targetId),
+		unique().on(table.sourceId, table.targetId, table.type),
 	]
 );
 
@@ -472,10 +509,16 @@ export const recordCreators = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		recordId: integer('record_id')
-			.references(() => records.id)
+			.references(() => records.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		entityId: integer('entity_id')
-			.references(() => indexEntries.id)
+			.references(() => indexEntries.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		role: creatorRoleTypeEnum('role').notNull(),
 		order: text('order').notNull().default('a0'),
@@ -483,9 +526,9 @@ export const recordCreators = pgTable(
 		...databaseTimestamps,
 	},
 	(table) => [
-		index('record_creator_record_idx').on(table.recordId),
-		index('record_creator_entity_idx').on(table.entityId),
-		unique('record_creator_unique_idx').on(table.recordId, table.entityId, table.role),
+		index().on(table.recordId),
+		index().on(table.entityId),
+		unique().on(table.recordId, table.entityId, table.role),
 	]
 );
 
@@ -495,19 +538,25 @@ export const recordCategories = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		recordId: integer('record_id')
-			.references(() => records.id)
+			.references(() => records.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		categoryId: integer('category_id')
-			.references(() => indexEntries.id)
+			.references(() => indexEntries.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		type: categorizationTypeEnum('type').notNull(),
 		primary: boolean('primary').notNull().default(false),
 		...databaseTimestamps,
 	},
 	(table) => [
-		index('record_category_record_idx').on(table.recordId),
-		index('record_category_category_idx').on(table.categoryId),
-		unique('record_category_unique_idx').on(table.recordId, table.categoryId, table.type),
+		index().on(table.recordId),
+		index().on(table.categoryId),
+		unique().on(table.recordId, table.categoryId, table.type),
 	]
 );
 
@@ -528,19 +577,25 @@ export const recordMedia = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		recordId: integer('record_id')
-			.references(() => records.id)
+			.references(() => records.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		mediaId: integer('media_id')
-			.references(() => media.id)
+			.references(() => media.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		caption: text('caption'),
 		order: text('order').notNull().default('a0'),
 		...databaseTimestamps,
 	},
 	(table) => [
-		index('record_media_record_idx').on(table.recordId),
-		index('record_media_media_idx').on(table.mediaId),
-		unique('record_media_unique_idx').on(table.recordId, table.mediaId),
+		index().on(table.recordId),
+		index().on(table.mediaId),
+		unique().on(table.recordId, table.mediaId),
 	]
 );
 
@@ -550,18 +605,24 @@ export const recordSources = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		recordId: integer('record_id')
-			.references(() => records.id)
+			.references(() => records.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		sourceId: integer('source_id')
-			.references(() => sources.id)
+			.references(() => sources.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		order: text('order').notNull().default('a0'),
 		...databaseTimestamps,
 	},
 	(table) => [
-		index('record_source_record_idx').on(table.recordId),
-		index('record_source_source_idx').on(table.sourceId),
-		unique('record_source_unique_idx').on(table.recordId, table.sourceId),
+		index().on(table.recordId),
+		index().on(table.sourceId),
+		unique().on(table.recordId, table.sourceId),
 	]
 );
 

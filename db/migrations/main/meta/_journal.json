@@ -43,6 +43,13 @@
       "when": 1735933235397,
       "tag": "0005_daily_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1735936567082,
+      "tag": "0006_jittery_timeslip",
+      "breakpoints": true
     }
   ]
 }

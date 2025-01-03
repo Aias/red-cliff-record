@@ -60,7 +60,10 @@ export const githubRepositories = integrationSchema.table(
 		name: text('name').notNull(),
 		fullName: text('full_name').notNull(),
 		ownerId: integer('owner_id')
-			.references(() => githubUsers.id)
+			.references(() => githubUsers.id, {
+				onDelete: 'set null',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		readme: text('readme'),
 		private: boolean('private').notNull(),
@@ -104,7 +107,10 @@ export const githubCommits = integrationSchema.table(
 		sha: text('sha').notNull().unique(),
 		message: text('message').notNull(),
 		repositoryId: integer('repository_id')
-			.references(() => githubRepositories.id)
+			.references(() => githubRepositories.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		htmlUrl: text('html_url').notNull(),
 		commitType: githubCommitTypesEnum('commit_type'),
@@ -134,7 +140,10 @@ export const githubCommitChanges = integrationSchema.table(
 		status: githubCommitChangeStatusEnum('status').notNull(),
 		patch: text('patch').notNull(),
 		commitId: text('commit_id')
-			.references(() => githubCommits.nodeId)
+			.references(() => githubCommits.nodeId, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
 			.notNull(),
 		...githubStats,
 		...databaseTimestampsNonUpdatable,

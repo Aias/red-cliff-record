@@ -9,9 +9,10 @@ export const twitterTweets = integrationSchema.table(
 	'twitter_tweets',
 	{
 		id: text('id').primaryKey(),
-		userId: text('user_id')
-			.references(() => twitterUsers.id)
-			.notNull(),
+		userId: text('user_id').references(() => twitterUsers.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		text: text('text'),
 		quotedTweetId: text('quoted_tweet_id'),
 		integrationRunId: integer('integration_run_id')
@@ -65,7 +66,10 @@ export const twitterMedia = integrationSchema.table('twitter_media', {
 	url: text('url'),
 	mediaUrl: text('media_url'),
 	tweetId: text('tweet_id')
-		.references(() => twitterTweets.id)
+		.references(() => twitterTweets.id, {
+			onDelete: 'cascade',
+			onUpdate: 'cascade',
+		})
 		.notNull(),
 	...contentTimestamps,
 	...databaseTimestamps,

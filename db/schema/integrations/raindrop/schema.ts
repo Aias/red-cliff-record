@@ -18,7 +18,10 @@ export const raindropRaindrops = integrationSchema.table(
 		tags: text('tags').array(),
 		important: boolean('important').notNull().default(false),
 		domain: text('domain'),
-		collectionId: integer('collection_id').references(() => raindropCollections.id),
+		collectionId: integer('collection_id').references(() => raindropCollections.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
