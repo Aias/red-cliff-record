@@ -1,4 +1,5 @@
-import { timestamp } from 'drizzle-orm/pg-core';
+import { pgSchema, timestamp } from 'drizzle-orm/pg-core';
+import { IntegrationType } from './types';
 
 const createdAt = timestamp('created_at', {
 	withTimezone: true,
@@ -37,3 +38,10 @@ export const contentTimestamps = {
 export const contentTimestampsNonUpdatable = {
 	contentCreatedAt,
 };
+
+export const operationsSchema = pgSchema('operations');
+
+export const integrationTypeEnum = operationsSchema.enum(
+	'integration_type',
+	IntegrationType.options
+);

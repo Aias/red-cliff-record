@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgSchema, serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
+import { serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
 import { arcBrowsingHistory } from '../integrations/arc/schema';
 import { githubCommits, githubRepositories } from '../integrations/github/schema';
 import {
@@ -11,19 +11,14 @@ import { adobeLightroomImages } from '../integrations/adobe/schema';
 import { raindropCollections, raindropRaindrops } from '../integrations/raindrop/schema';
 import { readwiseDocuments } from '../integrations/readwise/schema';
 import { twitterTweets, twitterUsers } from '../integrations/twitter/schema';
-import { databaseTimestampsNonUpdatable } from './common';
-import { IntegrationStatus, IntegrationType, RunType } from './types';
+import { databaseTimestampsNonUpdatable, operationsSchema, integrationTypeEnum } from './common';
+import { IntegrationStatus, RunType } from './types';
 
-export const operationsSchema = pgSchema('operations');
+export { operationsSchema, integrationTypeEnum };
 
 export const integrationStatusEnum = operationsSchema.enum(
 	'integration_status',
 	IntegrationStatus.options
-);
-
-export const integrationTypeEnum = operationsSchema.enum(
-	'integration_type',
-	IntegrationType.options
 );
 
 export const runTypeEnum = operationsSchema.enum('run_type', RunType.options);
