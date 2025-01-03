@@ -13,11 +13,15 @@ const fetchHistoryForDate = createServerFn({ method: 'GET' })
 	.validator((data: string) => data)
 	.handler(async ({ data: date }) => {
 		const db = createConnection();
+		const tzOffset = new Date().getTimezoneOffset();
+		// Invert the sign of the offset
+		const adjustedOffset = -tzOffset;
+
 		const history = await db
 			.select()
 			.from(arcBrowsingHistoryDaily)
 			.where(
-				sql`DATE(${arcBrowsingHistoryDaily.date}) = ${date} AND NOT EXISTS (
+				sql`DATE(${arcBrowsingHistoryDaily.firstVisit} + INTERVAL ${sql.raw(`'${adjustedOffset} MINUTES'`)}) = to_date(${date}, 'YYYY-MM-DD') AND NOT EXISTS (
 					SELECT 1 FROM ${arcBrowsingHistoryOmitList}
 					WHERE ${arcBrowsingHistoryDaily.url} LIKE CONCAT('%', ${arcBrowsingHistoryOmitList.pattern}, '%')
 				)`
@@ -57,7 +61,7 @@ function DailyActivityPage() {
 	const formatDateParam = (date: Date) => date.toISOString().split('T')[0];
 
 	return (
-		<main className="p-4 h-full flex flex-col">
+		<main className="p-3 h-full flex flex-col">
 			<header className="flex justify-between flex-wrap items-center mb-4 gap-4">
 				<Heading size="7" as="h1" className="min-w-200px">
 					{localDate.toLocaleDateString('en-US', {

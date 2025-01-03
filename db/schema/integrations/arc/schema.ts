@@ -57,9 +57,7 @@ export const arcBrowsingHistoryDaily = integrationSchema
 	.as((qb) =>
 		qb
 			.select({
-				date: sql<Date>`DATE(${arcBrowsingHistory.viewTime} AT TIME ZONE CURRENT_SETTING('timezone'))`.as(
-					'date'
-				),
+				dayStart: sql<Date>`date_trunc('day', ${arcBrowsingHistory.viewTime})`.as('day_start'),
 				url: sql<string>`${arcBrowsingHistory.url}`.as('url'),
 				pageTitle: sql<string>`${arcBrowsingHistory.pageTitle}`.as('page_title'),
 				hostname: sql<string>`${arcBrowsingHistory.hostname}`.as('hostname'),
@@ -72,7 +70,7 @@ export const arcBrowsingHistoryDaily = integrationSchema
 			})
 			.from(arcBrowsingHistory)
 			.groupBy(
-				sql<Date>`DATE(${arcBrowsingHistory.viewTime} AT TIME ZONE CURRENT_SETTING('timezone'))`,
+				sql`date_trunc('day', ${arcBrowsingHistory.viewTime})`,
 				arcBrowsingHistory.url,
 				arcBrowsingHistory.pageTitle,
 				arcBrowsingHistory.hostname
