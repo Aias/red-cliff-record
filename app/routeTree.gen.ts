@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as OmitListImport } from './routes/omit-list'
 import { Route as IndexImport } from './routes/index'
 import { Route as HistoryDateImport } from './routes/history.$date'
+import { Route as indexQueueImport } from './routes/(index)/queue'
 import { Route as commitsCommitsImport } from './routes/(commits)/commits'
 import { Route as commitsCommitsShaImport } from './routes/(commits)/commits.$sha'
 
@@ -34,6 +35,12 @@ const IndexRoute = IndexImport.update({
 const HistoryDateRoute = HistoryDateImport.update({
   id: '/history/$date',
   path: '/history/$date',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const indexQueueRoute = indexQueueImport.update({
+  id: '/(index)/queue',
+  path: '/queue',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -74,6 +81,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof commitsCommitsImport
       parentRoute: typeof rootRoute
     }
+    '/(index)/queue': {
+      id: '/(index)/queue'
+      path: '/queue'
+      fullPath: '/queue'
+      preLoaderRoute: typeof indexQueueImport
+      parentRoute: typeof rootRoute
+    }
     '/history/$date': {
       id: '/history/$date'
       path: '/history/$date'
@@ -109,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/omit-list': typeof OmitListRoute
   '/commits': typeof commitsCommitsRouteWithChildren
+  '/queue': typeof indexQueueRoute
   '/history/$date': typeof HistoryDateRoute
   '/commits/$sha': typeof commitsCommitsShaRoute
 }
@@ -117,6 +132,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/omit-list': typeof OmitListRoute
   '/commits': typeof commitsCommitsRouteWithChildren
+  '/queue': typeof indexQueueRoute
   '/history/$date': typeof HistoryDateRoute
   '/commits/$sha': typeof commitsCommitsShaRoute
 }
@@ -126,6 +142,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/omit-list': typeof OmitListRoute
   '/(commits)/commits': typeof commitsCommitsRouteWithChildren
+  '/(index)/queue': typeof indexQueueRoute
   '/history/$date': typeof HistoryDateRoute
   '/(commits)/commits/$sha': typeof commitsCommitsShaRoute
 }
@@ -136,15 +153,23 @@ export interface FileRouteTypes {
     | '/'
     | '/omit-list'
     | '/commits'
+    | '/queue'
     | '/history/$date'
     | '/commits/$sha'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/omit-list' | '/commits' | '/history/$date' | '/commits/$sha'
+  to:
+    | '/'
+    | '/omit-list'
+    | '/commits'
+    | '/queue'
+    | '/history/$date'
+    | '/commits/$sha'
   id:
     | '__root__'
     | '/'
     | '/omit-list'
     | '/(commits)/commits'
+    | '/(index)/queue'
     | '/history/$date'
     | '/(commits)/commits/$sha'
   fileRoutesById: FileRoutesById
@@ -154,6 +179,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   OmitListRoute: typeof OmitListRoute
   commitsCommitsRoute: typeof commitsCommitsRouteWithChildren
+  indexQueueRoute: typeof indexQueueRoute
   HistoryDateRoute: typeof HistoryDateRoute
 }
 
@@ -161,6 +187,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   OmitListRoute: OmitListRoute,
   commitsCommitsRoute: commitsCommitsRouteWithChildren,
+  indexQueueRoute: indexQueueRoute,
   HistoryDateRoute: HistoryDateRoute,
 }
 
@@ -177,6 +204,7 @@ export const routeTree = rootRoute
         "/",
         "/omit-list",
         "/(commits)/commits",
+        "/(index)/queue",
         "/history/$date"
       ]
     },
@@ -191,6 +219,9 @@ export const routeTree = rootRoute
       "children": [
         "/(commits)/commits/$sha"
       ]
+    },
+    "/(index)/queue": {
+      "filePath": "(index)/queue.tsx"
     },
     "/history/$date": {
       "filePath": "history.$date.tsx"

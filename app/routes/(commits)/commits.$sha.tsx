@@ -2,8 +2,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Card, Heading, Text, Button, Code, ScrollArea } from '@radix-ui/themes';
 import { eq } from 'drizzle-orm';
 import { createServerFn } from '@tanstack/start';
-import { createPgConnection as createConnection } from '@/db/connections';
-import { githubCommits } from '@/db/schema/integrations/schema';
+import { db } from '@/db/connections';
+import { githubCommits } from '@/db/schema';
 import { useState, useEffect } from 'react';
 import { CommitSummary, summarizeCommit } from '../../lib/commit-summarizer';
 import { CodeBlock } from '../../components/CodeBlock';
@@ -38,7 +38,6 @@ export type RepositoryInput = {
 const fetchCommitBySha = createServerFn({ method: 'GET' })
 	.validator((data: string) => data)
 	.handler(async ({ data: sha }) => {
-		const db = createConnection();
 		const commit = await db.query.githubCommits.findFirst({
 			where: eq(githubCommits.sha, sha),
 			with: {
@@ -67,8 +66,6 @@ const fetchCommitBySha = createServerFn({ method: 'GET' })
 export const updateCommitSummary = createServerFn({ method: 'POST' })
 	.validator((data: { commit: CommitInput; repository: RepositoryInput }) => data)
 	.handler(async ({ data: { commit, repository } }) => {
-		const db = createConnection();
-
 		const summary = await summarizeCommit(JSON.stringify({ commit, repository }));
 
 		// Save the summary to the database

@@ -1,9 +1,9 @@
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { relations } from 'drizzle-orm';
 import { text, timestamp, integer, json, index } from 'drizzle-orm/pg-core';
-import { integrationRuns } from '../../operations/schema';
-import { integrationSchema } from '..';
-import { records, media } from '../../main/schema';
+import { integrationRuns } from '../../operations';
+import { integrationSchema } from '../schema';
+import { records, media } from '../../main';
 
 export const adobeLightroomImages = integrationSchema.table(
 	'adobe_lightroom_images',

@@ -1,5 +1,5 @@
-import { createPgConnection as createConnection } from '@/db/connections';
-import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@/db/schema/integrations/schema';
+import { db } from '@/db/connections';
+import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@/db/schema';
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
 import { Heading, Table, Button, TextField, ScrollArea } from '@radix-ui/themes';
@@ -22,7 +22,6 @@ type OmitPattern = {
 };
 
 const fetchOmitList = createServerFn({ method: 'GET' }).handler(async () => {
-	const db = createConnection();
 	const patterns = await db
 		.select({
 			pattern: arcBrowsingHistoryOmitList.pattern,
@@ -43,7 +42,6 @@ const fetchOmitList = createServerFn({ method: 'GET' }).handler(async () => {
 const addPattern = createServerFn({ method: 'POST' })
 	.validator((data: { pattern: string }) => data)
 	.handler(async ({ data }) => {
-		const db = createConnection();
 		await db.insert(arcBrowsingHistoryOmitList).values({
 			pattern: data.pattern,
 		});
@@ -53,7 +51,6 @@ const addPattern = createServerFn({ method: 'POST' })
 const updatePattern = createServerFn({ method: 'POST' })
 	.validator((data: { oldPattern: string; newPattern: string }) => data)
 	.handler(async ({ data }) => {
-		const db = createConnection();
 		await db
 			.update(arcBrowsingHistoryOmitList)
 			.set({
@@ -67,7 +64,6 @@ const updatePattern = createServerFn({ method: 'POST' })
 const deletePattern = createServerFn({ method: 'POST' })
 	.validator((data: { pattern: string }) => data)
 	.handler(async ({ data }) => {
-		const db = createConnection();
 		await db
 			.delete(arcBrowsingHistoryOmitList)
 			.where(eq(arcBrowsingHistoryOmitList.pattern, data.pattern));

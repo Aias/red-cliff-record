@@ -1,8 +1,8 @@
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { Card, Heading, Table, ScrollArea, Button, Checkbox } from '@radix-ui/themes';
 import { createServerFn } from '@tanstack/start';
-import { createPgConnection as createConnection } from '@/db/connections';
-import { githubCommits } from '@/db/schema/integrations/schema';
+import { db } from '@/db/connections';
+import { githubCommits } from '@/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
@@ -17,7 +17,6 @@ import { summarizeCommit } from '../../lib/commit-summarizer';
 import styles from './commits.module.css';
 
 const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
-	const db = createConnection();
 	const commits = await db.query.githubCommits.findMany({
 		with: {
 			repository: true,
@@ -40,8 +39,6 @@ const batchSummarizeCommits = createServerFn({ method: 'POST' })
 		}) => data
 	)
 	.handler(async ({ data }) => {
-		const db = createConnection();
-
 		// Process commits in parallel
 		const summaries = await Promise.all(
 			data.commits.map(async ({ commit, repository }) => {

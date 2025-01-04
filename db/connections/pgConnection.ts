@@ -2,9 +2,9 @@ import 'dotenv/config';
 
 import { drizzle } from 'drizzle-orm/node-postgres';
 
-import * as integrationsSchema from '../schema/integrations/schema';
-import * as mainSchema from '../schema/main/schema';
-import * as operationsSchema from '../schema/operations/schema';
+import * as integrationsSchema from '../schema/integrations';
+import * as mainSchema from '../schema/main';
+import * as operationsSchema from '../schema/operations';
 
 // PostgreSQL (main) connection
 export const createPgConnection = () => {
@@ -20,3 +20,5 @@ export const createPgConnection = () => {
 };
 
 export type PgConnection = ReturnType<typeof createPgConnection>;
+
+export const db = createPgConnection();

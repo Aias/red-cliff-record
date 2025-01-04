@@ -1,9 +1,7 @@
-import { createPgConnection } from '../connections';
-import { integrationRuns } from '../schema/operations/schema';
-import { IntegrationType, IntegrationStatus, RunType } from '../schema/operations/types';
+import { db } from '@/db/connections';
+import { integrationRuns } from '@/db/schema';
+import { IntegrationType, IntegrationStatus, RunType } from '@/db/schema/operations/types';
 import { eq } from 'drizzle-orm';
-
-const db = createPgConnection();
 
 type IntegrationFunction = (integrationRunId: number) => Promise<number>;
 

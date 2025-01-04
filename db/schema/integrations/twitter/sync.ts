@@ -2,17 +2,15 @@ import {
 	twitterTweets as tweetsTable,
 	twitterMedia as mediaTable,
 	twitterUsers as usersTable,
-} from './schema';
+} from '.';
 import { IntegrationType } from '../../operations/types';
-import { createPgConnection } from '../../../connections';
+import { db } from '@/db/connections';
 import { runIntegration } from '../../../utils/run-integration';
 import { resolve } from 'path';
 import { readFileSync, readdirSync } from 'fs';
 import { homedir } from 'os';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
 import { processUser, processTweet, processMedia } from './helpers';
-
-const db = createPgConnection();
 
 export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 	const twitterDataDir = resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');

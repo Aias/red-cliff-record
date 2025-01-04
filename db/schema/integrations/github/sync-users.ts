@@ -1,10 +1,10 @@
 import type { PgConnection } from '../../../connections';
-import { type NewGithubUser, githubUsers } from './schema';
+import { type NewGithubUser, githubUsers } from '.';
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';
 import { logRateLimitInfo } from './helpers';
-import { db } from './sync-stars';
+import { db } from '@/db/connections';
 
 export async function ensureGithubUserExists(
 	db: PgConnection,

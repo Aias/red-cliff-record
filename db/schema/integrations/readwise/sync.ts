@@ -1,6 +1,6 @@
 import { desc } from 'drizzle-orm';
-import { createPgConnection, type PgConnection } from '../../../connections';
-import { readwiseDocuments, type NewReadwiseDocument } from '../readwise/schema';
+import { db } from '@/db/connections';
+import { readwiseDocuments, type NewReadwiseDocument } from '.';
 import { IntegrationType } from '../../operations/types';
 import { runIntegration } from '../../../utils/run-integration';
 import {
@@ -9,9 +9,7 @@ import {
 	type ReadwiseArticlesResponse,
 } from './types';
 
-const db = createPgConnection();
-
-async function getMostRecentUpdateTime(db: PgConnection) {
+async function getMostRecentUpdateTime() {
 	const mostRecent = await db.query.readwiseDocuments.findFirst({
 		columns: {
 			contentUpdatedAt: true,
@@ -129,7 +127,7 @@ function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle
 }
 
 async function syncReadwiseDocuments(integrationRunId: number): Promise<number> {
-	const lastUpdateTime = await getMostRecentUpdateTime(db);
+	const lastUpdateTime = await getMostRecentUpdateTime();
 
 	const allDocuments: ReadwiseArticle[] = [];
 	let nextPageCursor: string | null = null;

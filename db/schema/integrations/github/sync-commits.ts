@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { RequestError } from '@octokit/request-error';
-import { createPgConnection } from '../../../connections';
+import { db } from '@/db/connections';
 import {
 	githubRepositories,
 	githubCommits,
@@ -8,14 +8,13 @@ import {
 	type NewGithubRepository,
 	type NewGithubCommit,
 	type NewGithubCommitChange,
-} from './schema';
+} from '.';
 import { eq, desc } from 'drizzle-orm';
 import { logRateLimitInfo } from './helpers';
 import type { Endpoints } from '@octokit/types';
 import { ensureGithubUserExists } from './sync-users';
 type GithubRepository = Endpoints['GET /repos/{owner}/{repo}']['response']['data'];
 
-const db = createPgConnection();
 const MAX_PATCH_LENGTH = 2048;
 
 async function getMostRecentCommitDate(): Promise<Date | null> {

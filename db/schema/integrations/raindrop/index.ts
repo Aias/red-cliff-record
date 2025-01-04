@@ -1,9 +1,9 @@
 import { integer, text, index, boolean, unique, foreignKey, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
-import { integrationRuns } from '../../operations/schema';
-import { integrationSchema } from '..';
-import { indexEntries, media, records } from '../../main/schema';
+import { integrationRuns } from '../../operations';
+import { integrationSchema } from '../schema';
+import { indexEntries, media, records } from '../../main';
 
 export const raindropRaindrops = integrationSchema.table(
 	'raindrop_raindrops',

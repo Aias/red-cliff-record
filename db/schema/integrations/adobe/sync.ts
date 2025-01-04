@@ -1,11 +1,9 @@
-import { createPgConnection } from '../../../connections';
-import { adobeLightroomImages } from '../adobe/schema';
-import type { NewAdobeLightroomImage } from '../adobe/schema';
+import { db } from '@/db/connections';
+import { adobeLightroomImages } from '.';
+import type { NewAdobeLightroomImage } from '.';
 import { IntegrationType } from '../../operations/types';
 import { runIntegration } from '../../../utils/run-integration';
 import { LightroomJsonResponseSchema } from './types';
-
-const db = createPgConnection();
 
 const ALBUM_URL =
 	'https://lightroom.adobe.com/v2/spaces/f89a3c5060d8467a952c66de97edbe39/albums/f1edd4179e2f4e1d802f8a94f40b542c/assets?embed=asset%3Buser&order_after=-&exclude=incomplete&subtype=image';

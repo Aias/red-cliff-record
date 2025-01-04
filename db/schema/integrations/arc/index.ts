@@ -1,8 +1,8 @@
 import { databaseTimestamps, databaseTimestampsNonUpdatable } from '../../operations/common';
 import { relations, sql } from 'drizzle-orm';
 import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
-import { integrationRuns } from '../../operations/schema';
-import { integrationSchema } from '..';
+import { integrationRuns } from '../../operations';
+import { integrationSchema } from '../schema';
 import { Browser } from './types';
 
 export const browserEnum = integrationSchema.enum('browser', Browser.options);

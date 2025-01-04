@@ -1,10 +1,10 @@
 import { index, text, timestamp, integer, numeric, foreignKey, date } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
-import { integrationRuns } from '../../operations/schema';
-import { integrationSchema } from '..';
+import { integrationRuns } from '../../operations';
+import { integrationSchema } from '../schema';
 import { ReadwiseLocation, ReadwiseCategory } from './types';
-import { media, records } from '../../main/schema';
+import { media, records } from '../../main';
 
 export const readwiseLocationEnum = integrationSchema.enum(
 	'readwise_location',

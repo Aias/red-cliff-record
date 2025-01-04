@@ -1,8 +1,5 @@
-import { createPgConnection as createConnection } from '@/db/connections';
-import {
-	arcBrowsingHistoryDaily,
-	arcBrowsingHistoryOmitList,
-} from '@/db/schema/integrations/schema';
+import { db } from '@/db/connections';
+import { arcBrowsingHistoryDaily, arcBrowsingHistoryOmitList } from '@/db/schema';
 import { sql } from 'drizzle-orm';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
@@ -12,7 +9,6 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 const fetchHistoryForDate = createServerFn({ method: 'GET' })
 	.validator((data: string) => data)
 	.handler(async ({ data: date }) => {
-		const db = createConnection();
 		const tzOffset = new Date().getTimezoneOffset();
 		// Invert the sign of the offset
 		const adjustedOffset = -tzOffset;

@@ -1,17 +1,15 @@
-import { createPgConnection } from '../../../connections';
+import { db } from '@/db/connections';
 import {
 	raindropRaindrops,
 	raindropCollections,
 	type NewRaindropRaindrop,
 	type NewRaindropCollection,
-} from '../raindrop/schema';
+} from '.';
 import { IntegrationType } from '../../operations/types';
 import { runIntegration } from '../../../utils/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
 import { desc } from 'drizzle-orm';
-
-const db = createPgConnection();
 
 async function syncCollections(integrationRunId: number) {
 	let successCount = 0;

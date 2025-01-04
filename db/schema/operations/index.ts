@@ -1,16 +1,12 @@
 import { relations } from 'drizzle-orm';
 import { serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
-import { arcBrowsingHistory } from '../integrations/arc/schema';
-import { githubCommits, githubRepositories } from '../integrations/github/schema';
-import {
-	airtableCreators,
-	airtableExtracts,
-	airtableSpaces,
-} from '../integrations/airtable/schema';
-import { adobeLightroomImages } from '../integrations/adobe/schema';
-import { raindropCollections, raindropRaindrops } from '../integrations/raindrop/schema';
-import { readwiseDocuments } from '../integrations/readwise/schema';
-import { twitterTweets, twitterUsers } from '../integrations/twitter/schema';
+import { arcBrowsingHistory } from '../integrations/arc';
+import { githubCommits, githubRepositories } from '../integrations/github';
+import { airtableCreators, airtableExtracts, airtableSpaces } from '../integrations/airtable';
+import { adobeLightroomImages } from '../integrations/adobe';
+import { raindropCollections, raindropRaindrops } from '../integrations/raindrop';
+import { readwiseDocuments } from '../integrations/readwise';
+import { twitterTweets, twitterUsers } from '../integrations/twitter';
 import { databaseTimestampsNonUpdatable, operationsSchema, integrationTypeEnum } from './common';
 import { IntegrationStatus, RunType } from './types';
 

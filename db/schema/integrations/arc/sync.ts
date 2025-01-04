@@ -1,9 +1,5 @@
-import { createPgConnection } from '../../../connections';
-import {
-	arcBrowsingHistory,
-	arcBrowsingHistoryDaily,
-	type NewArcBrowsingHistory,
-} from '../arc/schema';
+import { db } from '@/db/connections';
+import { arcBrowsingHistory, arcBrowsingHistoryDaily, type NewArcBrowsingHistory } from '.';
 import { Browser } from './types';
 import { IntegrationType } from '../../operations/types';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
@@ -14,8 +10,6 @@ import { visits, urls } from '../../arc';
 import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';
 import { DailyVisitsQueryResultSchema } from './types';
 import readline from 'readline';
-
-const pgDb = createPgConnection();
 
 // Helper function to create readline interface
 const createPrompt = () => {
@@ -41,7 +35,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 	const currentHostname = os.hostname();
 
 	// Get all unique hostnames from the database
-	const uniqueHostnames = await pgDb
+	const uniqueHostnames = await db
 		.select({
 			hostname: arcBrowsingHistory.hostname,
 		})
@@ -67,7 +61,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 	console.log('Starting Arc browser history incremental update...');
 
 	// Get the most recent viewEpochMicroseconds from the database
-	const latestVisit = await pgDb.query.arcBrowsingHistory.findFirst({
+	const latestVisit = await db.query.arcBrowsingHistory.findFirst({
 		columns: {
 			viewEpochMicroseconds: true,
 		},
@@ -126,7 +120,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		const chunkSize = 100;
 		for (let i = 0; i < history.length; i += chunkSize) {
 			const chunk = history.slice(i, i + chunkSize);
-			await pgDb.insert(arcBrowsingHistory).values(chunk);
+			await db.insert(arcBrowsingHistory).values(chunk);
 			console.log(
 				`Inserted chunk ${i / chunkSize + 1} of ${Math.ceil(history.length / chunkSize)}`
 			);
@@ -134,7 +128,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 		console.log('New history entries inserted');
 
 		console.log('Refreshing materialized view...');
-		await pgDb.refreshMaterializedView(arcBrowsingHistoryDaily);
+		await db.refreshMaterializedView(arcBrowsingHistoryDaily);
 		console.log('Materialized view refreshed');
 	} else {
 		console.log('No new history entries to insert');

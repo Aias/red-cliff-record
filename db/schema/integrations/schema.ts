@@ -1,8 +1,3 @@
-export * from './';
-export * from './adobe/schema';
-export * from './airtable/schema';
-export * from './arc/schema';
-export * from './github/schema';
-export * from './raindrop/schema';
-export * from './readwise/schema';
-export * from './twitter/schema';
+import { pgSchema } from 'drizzle-orm/pg-core';
+
+export const integrationSchema = pgSchema('integrations');

@@ -1,4 +1,4 @@
-import { createPgConnection, airtableBase } from '../../../connections';
+import { db, airtableBase } from '@/db/connections';
 import { ExtractFieldSetSchema, CreatorFieldSetSchema, SpaceFieldSetSchema } from './types';
 import {
 	airtableExtracts,
@@ -8,7 +8,7 @@ import {
 	airtableExtractCreators,
 	airtableExtractSpaces,
 	airtableExtractConnections,
-} from '../airtable/schema';
+} from '.';
 import type {
 	NewAirtableCreator,
 	NewAirtableSpace,
@@ -17,13 +17,12 @@ import type {
 	NewAirtableExtractCreator,
 	NewAirtableExtractSpace,
 	NewAirtableExtractConnection,
-} from '../airtable/schema';
+} from '.';
 import { IntegrationType } from '../../operations/types';
 import { eq } from 'drizzle-orm';
 import { runIntegration } from '../../../utils/run-integration';
 
 const CHUNK_SIZE = 100;
-const db = createPgConnection();
 
 async function cleanupExistingRecords() {
 	console.log('Cleaning up existing Airtable records...');

@@ -1,9 +1,9 @@
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { relations } from 'drizzle-orm';
 import { text, integer, timestamp, foreignKey, primaryKey, index } from 'drizzle-orm/pg-core';
-import { integrationRuns } from '../../operations/schema';
-import { integrationSchema } from '..';
-import { indexEntries, media, records } from '../../main/schema';
+import { integrationRuns } from '../../operations';
+import { integrationSchema } from '../schema';
+import { indexEntries, media, records } from '../../main';
 
 export const airtableExtracts = integrationSchema.table(
 	'airtable_extracts',

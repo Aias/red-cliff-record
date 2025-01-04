@@ -6,10 +6,10 @@ import {
 } from '../../operations/common';
 import { relations } from 'drizzle-orm';
 import { serial, text, integer, index, boolean, timestamp } from 'drizzle-orm/pg-core';
-import { integrationRuns } from '../../operations/schema';
-import { integrationSchema } from '..';
+import { integrationRuns } from '../../operations';
+import { integrationSchema } from '../schema';
 import { GithubCommitChangeStatus, GithubCommitType } from './types';
-import { indexEntries, records } from '../../main/schema';
+import { indexEntries, records } from '../../main';
 
 const githubStats = {
 	changes: integer('changes'),
