@@ -1,10 +1,13 @@
+import { desc } from 'drizzle-orm';
 import { createPgConnection, type PgConnection } from '../../../connections';
 import { readwiseDocuments, type NewReadwiseDocument } from '../readwise/schema';
 import { IntegrationType } from '../../operations/types';
 import { runIntegration } from '../../../utils/run-integration';
-import { ReadwiseArticlesResponseSchema } from './types';
-import type { ReadwiseArticle, ReadwiseArticlesResponse } from './types';
-import { desc } from 'drizzle-orm';
+import {
+	ReadwiseArticlesResponseSchema,
+	type ReadwiseArticle,
+	type ReadwiseArticlesResponse,
+} from './types';
 
 const db = createPgConnection();
 

@@ -3,6 +3,7 @@ import { relations } from 'drizzle-orm';
 import { text, timestamp, integer, json, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
+import { records, media } from '../../main/schema';
 
 export const adobeLightroomImages = integrationSchema.table(
 	'adobe_lightroom_images',
@@ -29,16 +30,41 @@ export const adobeLightroomImages = integrationSchema.table(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		recordId: integer('record_id').references(() => records.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		mediaId: integer('media_id').references(() => media.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		...contentTimestamps,
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.integrationRunId), index().on(table.captureDate)]
+	(table) => [
+		index().on(table.integrationRunId),
+		index().on(table.captureDate),
+		index().on(table.archivedAt),
+		index().on(table.recordId),
+		index().on(table.mediaId),
+	]
 );
 
 export const adobeLightroomImagesRelations = relations(adobeLightroomImages, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [adobeLightroomImages.integrationRunId],
 		references: [integrationRuns.id],
+	}),
+	record: one(records, {
+		fields: [adobeLightroomImages.recordId],
+		references: [records.id],
+	}),
+	media: one(media, {
+		fields: [adobeLightroomImages.mediaId],
+		references: [media.id],
 	}),
 }));
 

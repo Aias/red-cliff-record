@@ -3,7 +3,7 @@ import { relations } from 'drizzle-orm';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
-import { records } from '../../main/schema';
+import { indexEntries, media, records } from '../../main/schema';
 
 export const raindropRaindrops = integrationSchema.table(
 	'raindrop_raindrops',
@@ -34,14 +34,19 @@ export const raindropRaindrops = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		mediaId: integer('media_id').references(() => media.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
 	(table) => [
+		unique().on(table.linkUrl, table.createdAt),
 		index().on(table.integrationRunId),
 		index().on(table.linkUrl),
 		index().on(table.createdAt),
-		unique().on(table.linkUrl, table.createdAt),
 		index().on(table.archivedAt),
 		index().on(table.recordId),
+		index().on(table.mediaId),
 	]
 );
 
@@ -57,6 +62,10 @@ export const raindropRaindropsRelations = relations(raindropRaindrops, ({ one })
 	record: one(records, {
 		fields: [raindropRaindrops.recordId],
 		references: [records.id],
+	}),
+	media: one(media, {
+		fields: [raindropRaindrops.mediaId],
+		references: [media.id],
 	}),
 }));
 
@@ -74,10 +83,19 @@ export const raindropCollections = integrationSchema.table(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		indexEntryId: integer('index_entry_id').references(() => indexEntries.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
 	(table) => [
 		index().on(table.parentId),
 		foreignKey({ columns: [table.parentId], foreignColumns: [table.id] }),
+		index().on(table.archivedAt),
+		index().on(table.indexEntryId),
 	]
 );
 
@@ -92,6 +110,10 @@ export const raindropCollectionsRelations = relations(raindropCollections, ({ on
 	integrationRun: one(integrationRuns, {
 		fields: [raindropCollections.integrationRunId],
 		references: [integrationRuns.id],
+	}),
+	indexEntry: one(indexEntries, {
+		fields: [raindropCollections.indexEntryId],
+		references: [indexEntries.id],
 	}),
 }));
 

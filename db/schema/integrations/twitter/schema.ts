@@ -3,7 +3,7 @@ import { relations } from 'drizzle-orm';
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
-import { indexEntries, records } from '../../main/schema';
+import { indexEntries, media, records } from '../../main/schema';
 
 export const twitterTweets = integrationSchema.table(
 	'twitter_tweets',
@@ -60,26 +60,41 @@ export const twitterTweetsRelations = relations(twitterTweets, ({ one, many }) =
 	}),
 }));
 
-export const twitterMedia = integrationSchema.table('twitter_media', {
-	id: text('id').primaryKey(),
-	type: text('type'),
-	url: text('url'),
-	mediaUrl: text('media_url'),
-	tweetId: text('tweet_id')
-		.references(() => twitterTweets.id, {
-			onDelete: 'cascade',
+export const twitterMedia = integrationSchema.table(
+	'twitter_media',
+	{
+		id: text('id').primaryKey(),
+		type: text('type'),
+		url: text('url'),
+		mediaUrl: text('media_url'),
+		tweetId: text('tweet_id')
+			.references(() => twitterTweets.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
+			.notNull(),
+		archivedAt: timestamp('archived_at', {
+			withTimezone: true,
+		}),
+		mediaId: integer('media_id').references(() => media.id, {
+			onDelete: 'set null',
 			onUpdate: 'cascade',
-		})
-		.notNull(),
-	...contentTimestamps,
-	...databaseTimestamps,
-});
+		}),
+		...contentTimestamps,
+		...databaseTimestamps,
+	},
+	(table) => [index().on(table.archivedAt), index().on(table.mediaId)]
+);
 
 export const twitterMediaRelations = relations(twitterMedia, ({ one }) => ({
 	tweet: one(twitterTweets, {
 		fields: [twitterMedia.tweetId],
 		references: [twitterTweets.id],
 		relationName: 'tweetMedia',
+	}),
+	media: one(media, {
+		fields: [twitterMedia.mediaId],
+		references: [media.id],
 	}),
 }));
 

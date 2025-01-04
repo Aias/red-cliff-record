@@ -4,7 +4,7 @@ import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
 import { ReadwiseLocation, ReadwiseCategory } from './types';
-import { records } from '../../main/schema';
+import { media, records } from '../../main/schema';
 
 export const readwiseLocationEnum = integrationSchema.enum(
 	'readwise_location',
@@ -61,6 +61,10 @@ export const readwiseDocuments = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		mediaId: integer('media_id').references(() => media.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
 	(table) => [
 		index().on(table.integrationRunId),
@@ -69,6 +73,7 @@ export const readwiseDocuments = integrationSchema.table(
 		index().on(table.parentId),
 		index().on(table.archivedAt),
 		index().on(table.recordId),
+		index().on(table.mediaId),
 		foreignKey({
 			columns: [table.parentId],
 			foreignColumns: [table.id],
@@ -92,6 +97,10 @@ export const readwiseDocumentsRelations = relations(readwiseDocuments, ({ one, m
 	record: one(records, {
 		fields: [readwiseDocuments.recordId],
 		references: [records.id],
+	}),
+	media: one(media, {
+		fields: [readwiseDocuments.mediaId],
+		references: [media.id],
 	}),
 }));
 

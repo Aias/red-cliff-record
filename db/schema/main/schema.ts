@@ -98,6 +98,74 @@ export type RecordTimepoint = typeof recordTimepoints.$inferSelect;
 export type NewRecordTimepoint = typeof recordTimepoints.$inferInsert;
 
 /* ==============================
+   LOCATIONS
+   ============================== */
+
+export const locations = pgTable(
+	'locations',
+	{
+		id: serial('id').primaryKey(),
+		name: text('name').notNull(),
+		locationType: text('location_type').notNull().default('Place'),
+		description: text('description'),
+		sourcePlatform: text('source_platform'),
+		sourceData: json('source_data'),
+		mapPageId: integer('map_page_id').references(() => sources.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		mapImageId: integer('map_image_id').references(() => media.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		address: text('address'),
+		timezone: text('timezone'),
+		population: integer('population'),
+		elevation: integer('elevation'),
+		parentLocationId: integer('parent_location_id'),
+		...databaseTimestamps,
+	},
+	(table) => [
+		index().on(table.mapPageId),
+		index().on(table.mapImageId),
+		// Index for type lookups
+		index().on(table.locationType),
+		// Parent-child lookups
+		index().on(table.parentLocationId),
+		// Self-referential foreign key
+		foreignKey({
+			columns: [table.parentLocationId],
+			foreignColumns: [table.id],
+		}),
+		unique().on(table.name, table.locationType, table.parentLocationId),
+	]
+);
+
+// Relations
+export const locationRelations = relations(locations, ({ one, many }) => ({
+	mapPage: one(sources, {
+		fields: [locations.mapPageId],
+		references: [sources.id],
+	}),
+	mapImage: one(media, {
+		fields: [locations.mapImageId],
+		references: [media.id],
+	}),
+	parent: one(locations, {
+		fields: [locations.parentLocationId],
+		references: [locations.id],
+		relationName: 'parentChild',
+	}),
+	children: many(locations, {
+		relationName: 'parentChild',
+	}),
+}));
+
+// Type exports
+export type Location = typeof locations.$inferSelect;
+export type NewLocation = typeof locations.$inferInsert;
+
+/* ==============================
    SOURCES, CONTENT, & MEDIA
    ============================== */
 
@@ -106,7 +174,7 @@ export const sources = pgTable(
 	'sources',
 	{
 		id: serial('id').primaryKey(),
-		url: text('url').notNull(),
+		url: text('url').notNull().unique(),
 		domain: text('domain').generatedAlwaysAs(
 			(): SQL => sql`LOWER(regexp_replace(${sources.url}, '^https?://([^/]+).*$', '\\1'))`
 		),
@@ -118,11 +186,7 @@ export const sources = pgTable(
 		lastHttpStatus: integer('last_http_status'),
 		...databaseTimestamps,
 	},
-	(table) => [
-		unique().on(table.url),
-		index().on(table.domain),
-		index().on(table.lastCrawlDate, table.lastHttpStatus),
-	]
+	(table) => [index().on(table.domain), index().on(table.lastCrawlDate, table.lastHttpStatus)]
 );
 
 // Full-text source contents
@@ -177,7 +241,7 @@ export const media = pgTable(
 	'media',
 	{
 		id: serial('id').primaryKey(),
-		url: text('url').notNull(),
+		url: text('url').notNull().unique(),
 		format: mediaFormatEnum('format').notNull(),
 		mimeType: text('mime_type').notNull(),
 		title: text('title'),
@@ -198,7 +262,6 @@ export const media = pgTable(
 			columns: [table.versionOfMediaId],
 			foreignColumns: [table.id],
 		}),
-		unique().on(table.url),
 		index().on(table.format),
 		index().on(table.mimeType),
 		index().on(table.sourcePageId),
@@ -369,74 +432,6 @@ export type IndexEntry = typeof indexEntries.$inferSelect;
 export type NewIndexEntry = typeof indexEntries.$inferInsert;
 export type IndexRelation = typeof indexRelations.$inferSelect;
 export type NewIndexRelation = typeof indexRelations.$inferInsert;
-
-/* ==============================
-   LOCATIONS
-   ============================== */
-
-export const locations = pgTable(
-	'locations',
-	{
-		id: serial('id').primaryKey(),
-		name: text('name').notNull(),
-		locationType: text('location_type').notNull().default('Place'),
-		description: text('description'),
-		sourcePlatform: text('source_platform'),
-		sourceData: json('source_data'),
-		mapPageId: integer('map_page_id').references(() => sources.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
-		mapImageId: integer('map_image_id').references(() => media.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
-		address: text('address'),
-		timezone: text('timezone'),
-		population: integer('population'),
-		elevation: integer('elevation'),
-		parentLocationId: integer('parent_location_id'),
-		...databaseTimestamps,
-	},
-	(table) => [
-		index().on(table.mapPageId),
-		index().on(table.mapImageId),
-		// Index for type lookups
-		index().on(table.locationType),
-		// Parent-child lookups
-		index().on(table.parentLocationId),
-		// Self-referential foreign key
-		foreignKey({
-			columns: [table.parentLocationId],
-			foreignColumns: [table.id],
-		}),
-		unique().on(table.name, table.locationType, table.parentLocationId),
-	]
-);
-
-// Relations
-export const locationRelations = relations(locations, ({ one, many }) => ({
-	mapPage: one(sources, {
-		fields: [locations.mapPageId],
-		references: [sources.id],
-	}),
-	mapImage: one(media, {
-		fields: [locations.mapImageId],
-		references: [media.id],
-	}),
-	parent: one(locations, {
-		fields: [locations.parentLocationId],
-		references: [locations.id],
-		relationName: 'parentChild',
-	}),
-	children: many(locations, {
-		relationName: 'parentChild',
-	}),
-}));
-
-// Type exports
-export type Location = typeof locations.$inferSelect;
-export type NewLocation = typeof locations.$inferInsert;
 
 /* ==============================
    RECORDS

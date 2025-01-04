@@ -3,7 +3,7 @@ import { relations } from 'drizzle-orm';
 import { text, integer, timestamp, foreignKey, primaryKey, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations/schema';
 import { integrationSchema } from '..';
-import { indexEntries, records } from '../../main/schema';
+import { indexEntries, media, records } from '../../main/schema';
 
 export const airtableExtracts = integrationSchema.table(
 	'airtable_extracts',
@@ -83,12 +83,23 @@ export const airtableAttachments = integrationSchema.table('airtable_attachments
 		})
 		.notNull(),
 	...databaseTimestamps,
+	archivedAt: timestamp('archived_at', {
+		withTimezone: true,
+	}),
+	mediaId: integer('media_id').references(() => media.id, {
+		onDelete: 'set null',
+		onUpdate: 'cascade',
+	}),
 });
 
 export const airtableAttachmentsRelations = relations(airtableAttachments, ({ one }) => ({
 	extract: one(airtableExtracts, {
 		fields: [airtableAttachments.extractId],
 		references: [airtableExtracts.id],
+	}),
+	media: one(media, {
+		fields: [airtableAttachments.mediaId],
+		references: [media.id],
 	}),
 }));
 
