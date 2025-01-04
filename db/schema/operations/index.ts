@@ -7,7 +7,8 @@ import { adobeLightroomImages } from '../integrations/adobe';
 import { raindropCollections, raindropRaindrops } from '../integrations/raindrop';
 import { readwiseDocuments } from '../integrations/readwise';
 import { twitterTweets, twitterUsers } from '../integrations/twitter';
-import { databaseTimestampsNonUpdatable, operationsSchema, integrationTypeEnum } from './common';
+import { databaseTimestampsNonUpdatable } from './common';
+import { operationsSchema, integrationTypeEnum } from './schema';
 import { IntegrationStatus, RunType } from './types';
 
 export { operationsSchema, integrationTypeEnum };

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emptyStringToNull } from '../../../utils/schema-helpers';
+import { emptyStringToNull } from '../../helpers';
 
 export const GithubCommitType = z.enum([
 	'feature',

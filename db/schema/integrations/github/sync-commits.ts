@@ -33,7 +33,7 @@ async function ensureRepositoryExists(
 	integrationRunId: number
 ): Promise<number> {
 	// First ensure the owner exists
-	await ensureGithubUserExists(db, repoData.owner, integrationRunId);
+	await ensureGithubUserExists(repoData.owner, integrationRunId);
 
 	// Then insert repository if it doesn't exist
 	const newRepo: NewGithubRepository = {

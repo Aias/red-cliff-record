@@ -1,8 +1,7 @@
 import { desc } from 'drizzle-orm';
 import { db } from '@/db/connections';
 import { readwiseDocuments, type NewReadwiseDocument } from '.';
-import { IntegrationType } from '../../operations/types';
-import { runIntegration } from '../../../utils/run-integration';
+import { runIntegration } from '../../operations/run-integration';
 import {
 	ReadwiseArticlesResponseSchema,
 	type ReadwiseArticle,
@@ -180,7 +179,7 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.enum.readwise, syncReadwiseDocuments);
+		await runIntegration('readwise', syncReadwiseDocuments);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

@@ -5,8 +5,7 @@ import {
 	type NewRaindropRaindrop,
 	type NewRaindropCollection,
 } from '.';
-import { IntegrationType } from '../../operations/types';
-import { runIntegration } from '../../../utils/run-integration';
+import { runIntegration } from '../../operations/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
 import { desc } from 'drizzle-orm';
@@ -195,8 +194,8 @@ async function syncRaindrops(integrationRunId: number) {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.enum.raindrop, syncCollections);
-		await runIntegration(IntegrationType.enum.raindrop, syncRaindrops);
+		await runIntegration('raindrop', syncCollections);
+		await runIntegration('raindrop', syncRaindrops);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

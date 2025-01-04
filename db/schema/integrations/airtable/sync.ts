@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db, airtableBase } from '@/db/connections';
 import { ExtractFieldSetSchema, CreatorFieldSetSchema, SpaceFieldSetSchema } from './types';
 import {
@@ -18,9 +19,7 @@ import type {
 	NewAirtableExtractSpace,
 	NewAirtableExtractConnection,
 } from '.';
-import { IntegrationType } from '../../operations/types';
-import { eq } from 'drizzle-orm';
-import { runIntegration } from '../../../utils/run-integration';
+import { runIntegration } from '../../operations/run-integration';
 
 const CHUNK_SIZE = 100;
 
@@ -231,7 +230,7 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.enum.airtable, syncAirtableData);
+		await runIntegration('airtable', syncAirtableData);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

@@ -1,4 +1,3 @@
-import type { PgConnection } from '../../../connections';
 import { type NewGithubUser, githubUsers } from '.';
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
@@ -7,7 +6,6 @@ import { logRateLimitInfo } from './helpers';
 import { db } from '@/db/connections';
 
 export async function ensureGithubUserExists(
-	db: PgConnection,
 	userData: {
 		id: number;
 		login: string;

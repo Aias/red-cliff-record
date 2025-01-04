@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emptyStringToNull } from '../../../utils/schema-helpers';
+import { emptyStringToNull } from '../../helpers';
 
 export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);
 export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;

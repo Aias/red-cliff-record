@@ -1,14 +1,13 @@
+import { resolve } from 'path';
+import { readFileSync, readdirSync } from 'fs';
+import { homedir } from 'os';
 import {
 	twitterTweets as tweetsTable,
 	twitterMedia as mediaTable,
 	twitterUsers as usersTable,
 } from '.';
-import { IntegrationType } from '../../operations/types';
 import { db } from '@/db/connections';
-import { runIntegration } from '../../../utils/run-integration';
-import { resolve } from 'path';
-import { readFileSync, readdirSync } from 'fs';
-import { homedir } from 'os';
+import { runIntegration } from '../../operations/run-integration';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
 import { processUser, processTweet, processMedia } from './helpers';
 
@@ -178,7 +177,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.enum.twitter, syncTwitterBookmarks);
+		await runIntegration('twitter', syncTwitterBookmarks);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

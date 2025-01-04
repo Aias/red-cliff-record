@@ -15,7 +15,8 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations, SQL, sql } from 'drizzle-orm';
 
-import { databaseTimestamps, integrationTypeEnum } from '../operations/common';
+import { databaseTimestamps } from '../operations/common';
+import { integrationTypeEnum } from '../operations/schema';
 import { IntegrationType } from '../operations/types';
 import {
 	CategorizationType,

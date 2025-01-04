@@ -1,8 +1,7 @@
 import { db } from '@/db/connections';
 import { adobeLightroomImages } from '.';
 import type { NewAdobeLightroomImage } from '.';
-import { IntegrationType } from '../../operations/types';
-import { runIntegration } from '../../../utils/run-integration';
+import { runIntegration } from '../../operations/run-integration';
 import { LightroomJsonResponseSchema } from './types';
 
 const ALBUM_URL =
@@ -98,7 +97,7 @@ async function syncLightroomImages(integrationRunId: number) {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.enum.lightroom, syncLightroomImages);
+		await runIntegration('lightroom', syncLightroomImages);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

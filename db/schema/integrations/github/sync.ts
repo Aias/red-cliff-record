@@ -1,13 +1,12 @@
-import { IntegrationType } from '../../operations/types';
-import { runIntegration } from '../../../utils/run-integration';
+import { runIntegration } from '../../operations/run-integration';
 import { syncGitHubStars } from './sync-stars';
 import { syncGitHubCommits } from './sync-commits';
 import { updatePartialUsers } from './sync-users';
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.enum.github, syncGitHubStars);
-		await runIntegration(IntegrationType.enum.github, syncGitHubCommits);
+		await runIntegration('github', syncGitHubStars);
+		await runIntegration('github', syncGitHubCommits);
 		await updatePartialUsers();
 
 		process.exit(0);

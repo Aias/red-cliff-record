@@ -80,7 +80,7 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 				}
 
 				// First ensure the owner exists using shared helper
-				await ensureGithubUserExists(db, repo.owner, integrationRunId);
+				await ensureGithubUserExists(repo.owner, integrationRunId);
 
 				// Then insert the repository
 				const newRepo: NewGithubRepository = {

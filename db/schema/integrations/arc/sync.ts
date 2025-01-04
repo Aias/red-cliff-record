@@ -1,15 +1,13 @@
+import os from 'os';
+import readline from 'readline';
 import { db } from '@/db/connections';
 import { arcBrowsingHistory, arcBrowsingHistoryDaily, type NewArcBrowsingHistory } from '.';
-import { Browser } from './types';
-import { IntegrationType } from '../../operations/types';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
-import { runIntegration } from '../../../utils/run-integration';
+import { runIntegration } from '../../operations/run-integration';
 import { chromeEpochMicrosecondsToDatetime } from '@/app/lib/time-helpers';
-import os from 'os';
 import { visits, urls } from '../../arc';
 import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';
-import { DailyVisitsQueryResultSchema } from './types';
-import readline from 'readline';
+import { DailyVisitsQueryResultSchema, Browser } from './types';
 
 // Helper function to create readline interface
 const createPrompt = () => {
@@ -139,7 +137,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 
 const main = async () => {
 	try {
-		await runIntegration(IntegrationType.enum.browser_history, syncBrowserHistory);
+		await runIntegration('browser_history', syncBrowserHistory);
 		process.exit();
 	} catch (err) {
 		console.error('Error in main:', err);

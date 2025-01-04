@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emptyStringToNull } from '../../../utils/schema-helpers';
+import { emptyStringToNull } from '../../helpers';
 
 const sanitizeString = (str: string | null): string | null => {
 	if (!str) return null;

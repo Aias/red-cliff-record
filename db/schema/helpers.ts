@@ -6,3 +6,4 @@ export const emptyStringToNull = <T extends z.ZodType>(schema: T) =>
 		.nullable()
 		.transform((str) => (str === '' ? null : str))
 		.pipe(schema.nullable());
+export type IntegrationFunction = (integrationRunId: number) => Promise<number>;
