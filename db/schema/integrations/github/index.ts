@@ -196,6 +196,12 @@ export const githubCommitChangesRelations = relations(githubCommitChanges, ({ on
 	}),
 }));
 
+export const githubIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	githubUsers: many(githubUsers),
+	githubRepositories: many(githubRepositories),
+	githubCommits: many(githubCommits),
+}));
+
 export type GithubUser = typeof githubUsers.$inferSelect;
 export type NewGithubUser = typeof githubUsers.$inferInsert;
 export type GithubRepository = typeof githubRepositories.$inferSelect;

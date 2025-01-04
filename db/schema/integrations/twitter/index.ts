@@ -138,6 +138,11 @@ export const twitterUsersRelations = relations(twitterUsers, ({ many, one }) => 
 	}),
 }));
 
+export const twitterIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	tweets: many(twitterTweets),
+	users: many(twitterUsers),
+}));
+
 export type TwitterTweet = typeof twitterTweets.$inferSelect;
 export type NewTwitterTweet = typeof twitterTweets.$inferInsert;
 export type TwitterMedia = typeof twitterMedia.$inferSelect;

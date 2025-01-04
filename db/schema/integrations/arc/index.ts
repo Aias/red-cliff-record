@@ -52,6 +52,10 @@ export const arcBrowsingHistoryRelations = relations(arcBrowsingHistory, ({ one 
 	}),
 }));
 
+export const arcIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	arcBrowsingHistory: many(arcBrowsingHistory),
+}));
+
 export const arcBrowsingHistoryDaily = integrationSchema
 	.materializedView('arc_browsing_history_daily')
 	.as((qb) =>

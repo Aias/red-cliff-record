@@ -68,5 +68,9 @@ export const adobeLightroomImagesRelations = relations(adobeLightroomImages, ({ 
 	}),
 }));
 
+export const adobeIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	adobeLightroomImages: many(adobeLightroomImages),
+}));
+
 export type AdobeLightroomImage = typeof adobeLightroomImages.$inferSelect;
 export type NewAdobeLightroomImage = typeof adobeLightroomImages.$inferInsert;

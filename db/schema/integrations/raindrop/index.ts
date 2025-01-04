@@ -117,6 +117,11 @@ export const raindropCollectionsRelations = relations(raindropCollections, ({ on
 	}),
 }));
 
+export const raindropIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	raindropCollections: many(raindropCollections),
+	raindropRaindrops: many(raindropRaindrops),
+}));
+
 export type RaindropRaindrop = typeof raindropRaindrops.$inferSelect;
 export type NewRaindropRaindrop = typeof raindropRaindrops.$inferInsert;
 export type RaindropCollection = typeof raindropCollections.$inferSelect;

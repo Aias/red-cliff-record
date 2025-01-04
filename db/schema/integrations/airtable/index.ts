@@ -278,6 +278,12 @@ export const airtableExtractConnectionsRelations = relations(
 	})
 );
 
+export const airtableIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	airtableExtracts: many(airtableExtracts),
+	airtableCreators: many(airtableCreators),
+	airtableSpaces: many(airtableSpaces),
+}));
+
 export type AirtableExtract = typeof airtableExtracts.$inferSelect;
 export type NewAirtableExtract = typeof airtableExtracts.$inferInsert;
 export type AirtableExtractConnection = typeof airtableExtractConnections.$inferSelect;

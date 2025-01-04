@@ -104,5 +104,9 @@ export const readwiseDocumentsRelations = relations(readwiseDocuments, ({ one, m
 	}),
 }));
 
+export const readwiseIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	readwiseDocuments: many(readwiseDocuments),
+}));
+
 export type ReadwiseDocument = typeof readwiseDocuments.$inferSelect;
 export type NewReadwiseDocument = typeof readwiseDocuments.$inferInsert;
