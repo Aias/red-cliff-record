@@ -16,6 +16,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as HistoryDateImport } from './routes/history.$date'
 import { Route as indexQueueImport } from './routes/(index)/queue'
 import { Route as commitsCommitsImport } from './routes/(commits)/commits'
+import { Route as indexQueueAirtableIdImport } from './routes/(index)/queue.$airtableId'
 import { Route as commitsCommitsShaImport } from './routes/(commits)/commits.$sha'
 
 // Create/Update Routes
@@ -48,6 +49,12 @@ const commitsCommitsRoute = commitsCommitsImport.update({
   id: '/(commits)/commits',
   path: '/commits',
   getParentRoute: () => rootRoute,
+} as any)
+
+const indexQueueAirtableIdRoute = indexQueueAirtableIdImport.update({
+  id: '/$airtableId',
+  path: '/$airtableId',
+  getParentRoute: () => indexQueueRoute,
 } as any)
 
 const commitsCommitsShaRoute = commitsCommitsShaImport.update({
@@ -102,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof commitsCommitsShaImport
       parentRoute: typeof commitsCommitsImport
     }
+    '/(index)/queue/$airtableId': {
+      id: '/(index)/queue/$airtableId'
+      path: '/$airtableId'
+      fullPath: '/queue/$airtableId'
+      preLoaderRoute: typeof indexQueueAirtableIdImport
+      parentRoute: typeof indexQueueImport
+    }
   }
 }
 
@@ -119,22 +133,36 @@ const commitsCommitsRouteWithChildren = commitsCommitsRoute._addFileChildren(
   commitsCommitsRouteChildren,
 )
 
+interface indexQueueRouteChildren {
+  indexQueueAirtableIdRoute: typeof indexQueueAirtableIdRoute
+}
+
+const indexQueueRouteChildren: indexQueueRouteChildren = {
+  indexQueueAirtableIdRoute: indexQueueAirtableIdRoute,
+}
+
+const indexQueueRouteWithChildren = indexQueueRoute._addFileChildren(
+  indexQueueRouteChildren,
+)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/omit-list': typeof OmitListRoute
   '/commits': typeof commitsCommitsRouteWithChildren
-  '/queue': typeof indexQueueRoute
+  '/queue': typeof indexQueueRouteWithChildren
   '/history/$date': typeof HistoryDateRoute
   '/commits/$sha': typeof commitsCommitsShaRoute
+  '/queue/$airtableId': typeof indexQueueAirtableIdRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/omit-list': typeof OmitListRoute
   '/commits': typeof commitsCommitsRouteWithChildren
-  '/queue': typeof indexQueueRoute
+  '/queue': typeof indexQueueRouteWithChildren
   '/history/$date': typeof HistoryDateRoute
   '/commits/$sha': typeof commitsCommitsShaRoute
+  '/queue/$airtableId': typeof indexQueueAirtableIdRoute
 }
 
 export interface FileRoutesById {
@@ -142,9 +170,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/omit-list': typeof OmitListRoute
   '/(commits)/commits': typeof commitsCommitsRouteWithChildren
-  '/(index)/queue': typeof indexQueueRoute
+  '/(index)/queue': typeof indexQueueRouteWithChildren
   '/history/$date': typeof HistoryDateRoute
   '/(commits)/commits/$sha': typeof commitsCommitsShaRoute
+  '/(index)/queue/$airtableId': typeof indexQueueAirtableIdRoute
 }
 
 export interface FileRouteTypes {
@@ -156,6 +185,7 @@ export interface FileRouteTypes {
     | '/queue'
     | '/history/$date'
     | '/commits/$sha'
+    | '/queue/$airtableId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -164,6 +194,7 @@ export interface FileRouteTypes {
     | '/queue'
     | '/history/$date'
     | '/commits/$sha'
+    | '/queue/$airtableId'
   id:
     | '__root__'
     | '/'
@@ -172,6 +203,7 @@ export interface FileRouteTypes {
     | '/(index)/queue'
     | '/history/$date'
     | '/(commits)/commits/$sha'
+    | '/(index)/queue/$airtableId'
   fileRoutesById: FileRoutesById
 }
 
@@ -179,7 +211,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   OmitListRoute: typeof OmitListRoute
   commitsCommitsRoute: typeof commitsCommitsRouteWithChildren
-  indexQueueRoute: typeof indexQueueRoute
+  indexQueueRoute: typeof indexQueueRouteWithChildren
   HistoryDateRoute: typeof HistoryDateRoute
 }
 
@@ -187,7 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   OmitListRoute: OmitListRoute,
   commitsCommitsRoute: commitsCommitsRouteWithChildren,
-  indexQueueRoute: indexQueueRoute,
+  indexQueueRoute: indexQueueRouteWithChildren,
   HistoryDateRoute: HistoryDateRoute,
 }
 
@@ -221,7 +253,10 @@ export const routeTree = rootRoute
       ]
     },
     "/(index)/queue": {
-      "filePath": "(index)/queue.tsx"
+      "filePath": "(index)/queue.tsx",
+      "children": [
+        "/(index)/queue/$airtableId"
+      ]
     },
     "/history/$date": {
       "filePath": "history.$date.tsx"
@@ -229,6 +264,10 @@ export const routeTree = rootRoute
     "/(commits)/commits/$sha": {
       "filePath": "(commits)/commits.$sha.tsx",
       "parent": "/(commits)/commits"
+    },
+    "/(index)/queue/$airtableId": {
+      "filePath": "(index)/queue.$airtableId.tsx",
+      "parent": "/(index)/queue"
     }
   }
 }

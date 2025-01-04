@@ -29,6 +29,9 @@ function Home() {
 						<li>
 							<AppLink to="/commits">Commits</AppLink>
 						</li>
+						<li>
+							<AppLink to="/queue">Index Queue</AppLink>
+						</li>
 					</ul>
 				</nav>
 			</Card>

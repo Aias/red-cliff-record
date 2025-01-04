@@ -16,6 +16,12 @@ export default tseslint.config(
 		},
 	},
 	{
+		rules: {
+			'@typescript-eslint/no-unused-vars': 'off',
+			'no-unused-vars': 'off',
+		},
+	},
+	{
 		ignores: ['**/build/**', '**/dist/**'],
 	}
 );
