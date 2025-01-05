@@ -1,6 +1,6 @@
 import { desc } from 'drizzle-orm';
 import { db } from '@/db/connections';
-import { readwiseDocuments, type NewReadwiseDocument } from '.';
+import { readwiseDocuments, type ReadwiseDocumentInsert } from '.';
 import { runIntegration } from '../../operations/run-integration';
 import {
 	ReadwiseArticlesResponseSchema,
@@ -66,7 +66,7 @@ async function fetchReadwiseDocuments(
 const mapReadwiseArticleToDocument = (
 	article: ReadwiseArticle,
 	integrationRunId: number
-): NewReadwiseDocument => ({
+): ReadwiseDocumentInsert => ({
 	id: article.id,
 	parentId: article.parent_id,
 	url: article.url,

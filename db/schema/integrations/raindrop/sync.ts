@@ -1,9 +1,9 @@
 import { db } from '@/db/connections';
 import {
-	raindropRaindrops,
+	raindropBookmarks,
 	raindropCollections,
-	type NewRaindropRaindrop,
-	type NewRaindropCollection,
+	type RaindropBookmarkInsert,
+	type RaindropCollectionInsert,
 } from '.';
 import { runIntegration } from '../../operations/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
@@ -46,7 +46,7 @@ async function syncCollections(integrationRunId: number) {
 	console.log('Inserting collections to database.');
 	for (const collection of allCollections) {
 		try {
-			const collectionToInsert: NewRaindropCollection = {
+			const collectionToInsert: RaindropCollectionInsert = {
 				id: collection._id,
 				title: collection.title,
 				parentId: collection.parent?.$id,
@@ -85,11 +85,11 @@ async function syncRaindrops(integrationRunId: number) {
 	console.log('Starting Raindrop sync...');
 
 	// Get the most recent raindrop date from the database
-	const latestRaindrop = await db.query.raindropRaindrops.findFirst({
+	const latestRaindrop = await db.query.raindropBookmarks.findFirst({
 		columns: {
 			contentUpdatedAt: true,
 		},
-		orderBy: desc(raindropRaindrops.contentUpdatedAt),
+		orderBy: desc(raindropBookmarks.contentUpdatedAt),
 	});
 
 	const lastKnownDate = latestRaindrop?.contentUpdatedAt;
@@ -144,7 +144,7 @@ async function syncRaindrops(integrationRunId: number) {
 	console.log(`🎉 Found ${newRaindrops.length} new raindrops to process`);
 
 	// Convert raindrops to bookmark format
-	const raindropsToInsert: NewRaindropRaindrop[] = newRaindrops.map((raindrop) => ({
+	const raindropsToInsert: RaindropBookmarkInsert[] = newRaindrops.map((raindrop) => ({
 		id: raindrop._id,
 		linkUrl: raindrop.link,
 		title: raindrop.title,
@@ -167,10 +167,10 @@ async function syncRaindrops(integrationRunId: number) {
 	for (const raindrop of raindropsToInsert) {
 		try {
 			await db
-				.insert(raindropRaindrops)
+				.insert(raindropBookmarks)
 				.values(raindrop)
 				.onConflictDoUpdate({
-					target: raindropRaindrops.id,
+					target: raindropBookmarks.id,
 					set: { ...raindrop, updatedAt: new Date() },
 				});
 			successCount++;

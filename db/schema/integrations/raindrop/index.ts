@@ -1,12 +1,14 @@
 import { integer, text, index, boolean, unique, foreignKey, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { createSelectSchema, createInsertSchema, createUpdateSchema } from 'drizzle-zod';
+import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '../schema';
 import { indexEntries, media, records } from '../../main';
 
-export const raindropRaindrops = integrationSchema.table(
-	'raindrop_raindrops',
+export const raindropBookmarks = integrationSchema.table(
+	'raindrop_bookmarks',
 	{
 		id: integer('id').primaryKey(),
 		linkUrl: text('link_url').notNull(),
@@ -50,21 +52,21 @@ export const raindropRaindrops = integrationSchema.table(
 	]
 );
 
-export const raindropRaindropsRelations = relations(raindropRaindrops, ({ one }) => ({
+export const raindropRaindropsRelations = relations(raindropBookmarks, ({ one }) => ({
 	collection: one(raindropCollections, {
-		fields: [raindropRaindrops.collectionId],
+		fields: [raindropBookmarks.collectionId],
 		references: [raindropCollections.id],
 	}),
 	integrationRun: one(integrationRuns, {
-		fields: [raindropRaindrops.integrationRunId],
+		fields: [raindropBookmarks.integrationRunId],
 		references: [integrationRuns.id],
 	}),
 	record: one(records, {
-		fields: [raindropRaindrops.recordId],
+		fields: [raindropBookmarks.recordId],
 		references: [records.id],
 	}),
 	media: one(media, {
-		fields: [raindropRaindrops.mediaId],
+		fields: [raindropBookmarks.mediaId],
 		references: [media.id],
 	}),
 }));
@@ -100,7 +102,7 @@ export const raindropCollections = integrationSchema.table(
 );
 
 export const raindropCollectionsRelations = relations(raindropCollections, ({ one, many }) => ({
-	raindrops: many(raindropRaindrops),
+	raindrops: many(raindropBookmarks),
 	children: many(raindropCollections, { relationName: 'parentCollection' }),
 	parent: one(raindropCollections, {
 		fields: [raindropCollections.parentId],
@@ -119,10 +121,20 @@ export const raindropCollectionsRelations = relations(raindropCollections, ({ on
 
 export const raindropIntegrationRelations = relations(integrationRuns, ({ many }) => ({
 	raindropCollections: many(raindropCollections),
-	raindropRaindrops: many(raindropRaindrops),
+	raindropRaindrops: many(raindropBookmarks),
 }));
 
-export type RaindropRaindrop = typeof raindropRaindrops.$inferSelect;
-export type NewRaindropRaindrop = typeof raindropRaindrops.$inferInsert;
-export type RaindropCollection = typeof raindropCollections.$inferSelect;
-export type NewRaindropCollection = typeof raindropCollections.$inferInsert;
+// Schema and type definitions
+export const RaindropCollectionSelectSchema = createSelectSchema(raindropCollections);
+export type RaindropCollectionSelect = z.infer<typeof RaindropCollectionSelectSchema>;
+export const RaindropCollectionInsertSchema = createInsertSchema(raindropCollections);
+export type RaindropCollectionInsert = z.infer<typeof RaindropCollectionInsertSchema>;
+export const RaindropCollectionUpdateSchema = createUpdateSchema(raindropCollections);
+export type RaindropCollectionUpdate = z.infer<typeof RaindropCollectionUpdateSchema>;
+
+export const RaindropBookmarkSelectSchema = createSelectSchema(raindropBookmarks);
+export type RaindropBookmarkSelect = z.infer<typeof RaindropBookmarkSelectSchema>;
+export const RaindropBookmarkInsertSchema = createInsertSchema(raindropBookmarks);
+export type RaindropBookmarkInsert = z.infer<typeof RaindropBookmarkInsertSchema>;
+export const RaindropBookmarkUpdateSchema = createUpdateSchema(raindropBookmarks);
+export type RaindropBookmarkUpdate = z.infer<typeof RaindropBookmarkUpdateSchema>;

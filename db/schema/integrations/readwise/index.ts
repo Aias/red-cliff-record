@@ -1,10 +1,27 @@
 import { index, text, timestamp, integer, numeric, foreignKey, date } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '../schema';
-import { ReadwiseLocation, ReadwiseCategory } from './types';
 import { media, records } from '../../main';
+
+export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);
+export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;
+
+export const ReadwiseCategory = z.enum([
+	'article',
+	'email',
+	'rss',
+	'highlight',
+	'note',
+	'pdf',
+	'epub',
+	'tweet',
+	'video',
+]);
+export type ReadwiseCategory = z.infer<typeof ReadwiseCategory>;
 
 export const readwiseLocationEnum = integrationSchema.enum(
 	'readwise_location',
@@ -108,5 +125,9 @@ export const readwiseIntegrationRelations = relations(integrationRuns, ({ many }
 	readwiseDocuments: many(readwiseDocuments),
 }));
 
-export type ReadwiseDocument = typeof readwiseDocuments.$inferSelect;
-export type NewReadwiseDocument = typeof readwiseDocuments.$inferInsert;
+export const ReadwiseDocumentSelectSchema = createSelectSchema(readwiseDocuments);
+export type ReadwiseDocumentSelect = z.infer<typeof ReadwiseDocumentSelectSchema>;
+export const ReadwiseDocumentInsertSchema = createInsertSchema(readwiseDocuments);
+export type ReadwiseDocumentInsert = z.infer<typeof ReadwiseDocumentInsertSchema>;
+export const ReadwiseDocumentUpdateSchema = createUpdateSchema(readwiseDocuments);
+export type ReadwiseDocumentUpdate = z.infer<typeof ReadwiseDocumentUpdateSchema>;

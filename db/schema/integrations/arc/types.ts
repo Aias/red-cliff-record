@@ -15,7 +15,6 @@ export const DailyVisitsQueryRowSchema = z.object({
 	searchTerms: emptyStringToNull(z.string()).transform(sanitizeString),
 	relatedSearches: emptyStringToNull(z.string()).transform(sanitizeString),
 });
-export const DailyVisitsQueryResultSchema = z.array(DailyVisitsQueryRowSchema);
-
-export type DailyVisitsQueryResult = z.infer<typeof DailyVisitsQueryResultSchema>;
 export type DailyVisitsQueryRow = z.infer<typeof DailyVisitsQueryRowSchema>;
+
+export const DailyVisitsQueryResultSchema = z.array(DailyVisitsQueryRowSchema);

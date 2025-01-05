@@ -1,7 +1,7 @@
 import { asc, eq } from 'drizzle-orm';
 import { visits, contextAnnotations, urls, contentAnnotations } from '../../arc';
 import { createArcConnection } from '../../../connections';
-import type { DailyVisitsQueryResult, DailyVisitsQueryRow } from './types';
+import type { DailyVisitsQueryRow } from './types';
 
 const arcDb = createArcConnection();
 
@@ -21,8 +21,8 @@ export const dailyVisitsQuery = arcDb
 	.leftJoin(contentAnnotations, eq(visits.id, contentAnnotations.visitId))
 	.leftJoin(contextAnnotations, eq(visits.id, contextAnnotations.visitId));
 
-export const collapseSequentialVisits = (dailyHistory: DailyVisitsQueryResult) => {
-	const collapsed: DailyVisitsQueryResult = [];
+export const collapseSequentialVisits = (dailyHistory: DailyVisitsQueryRow[]) => {
+	const collapsed: DailyVisitsQueryRow[] = [];
 	let current: DailyVisitsQueryRow | null = null;
 
 	for (const visit of dailyHistory) {

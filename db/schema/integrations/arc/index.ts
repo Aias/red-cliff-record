@@ -4,6 +4,7 @@ import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '../schema';
 import { z } from 'zod';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
 export type Browser = z.infer<typeof Browser>;
@@ -84,7 +85,40 @@ export const arcBrowsingHistoryDaily = integrationSchema
 			)
 	);
 
-export type ArcBrowsingHistory = typeof arcBrowsingHistory.$inferSelect;
-export type NewArcBrowsingHistory = typeof arcBrowsingHistory.$inferInsert;
-export type ArcBrowsingHistoryOmitList = typeof arcBrowsingHistoryOmitList.$inferSelect;
-export type NewArcBrowsingHistoryOmitList = typeof arcBrowsingHistoryOmitList.$inferInsert;
+export const ArcBrowsingHistorySelectSchema = createSelectSchema(arcBrowsingHistory);
+export type ArcBrowsingHistorySelect = z.infer<typeof ArcBrowsingHistorySelectSchema>;
+export const ArcBrowsingHistoryInsertSchema = createInsertSchema(arcBrowsingHistory);
+export type ArcBrowsingHistoryInsert = z.infer<typeof ArcBrowsingHistoryInsertSchema>;
+export const ArcBrowsingHistoryUpdateSchema = createUpdateSchema(arcBrowsingHistory);
+export type ArcBrowsingHistoryUpdate = z.infer<typeof ArcBrowsingHistoryUpdateSchema>;
+
+export const ArcBrowsingHistoryOmitListSelectSchema = createSelectSchema(
+	arcBrowsingHistoryOmitList
+);
+export type ArcBrowsingHistoryOmitListSelect = z.infer<
+	typeof ArcBrowsingHistoryOmitListSelectSchema
+>;
+export const ArcBrowsingHistoryOmitListInsertSchema = createInsertSchema(
+	arcBrowsingHistoryOmitList
+);
+export type ArcBrowsingHistoryOmitListInsert = z.infer<
+	typeof ArcBrowsingHistoryOmitListInsertSchema
+>;
+export const ArcBrowsingHistoryOmitListUpdateSchema = createUpdateSchema(
+	arcBrowsingHistoryOmitList
+);
+export type ArcBrowsingHistoryOmitListUpdate = z.infer<
+	typeof ArcBrowsingHistoryOmitListUpdateSchema
+>;
+
+export const ArcDailyHistorySelectSchema = z.object({
+	dayStart: z.date(),
+	url: z.string(),
+	pageTitle: z.string(),
+	hostname: z.string(),
+	totalDuration: z.number().int().min(0),
+	firstVisit: z.date(),
+	lastVisit: z.date(),
+	visitCount: z.number().int().min(0),
+});
+export type ArcDailyHistorySelect = z.infer<typeof ArcDailyHistorySelectSchema>;

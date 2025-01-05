@@ -1,21 +1,6 @@
 import { z } from 'zod';
 import { emptyStringToNull } from '../../helpers';
-
-export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);
-export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;
-
-export const ReadwiseCategory = z.enum([
-	'article',
-	'email',
-	'rss',
-	'highlight',
-	'note',
-	'pdf',
-	'epub',
-	'tweet',
-	'video',
-]);
-export type ReadwiseCategory = z.infer<typeof ReadwiseCategory>;
+import { ReadwiseCategory, ReadwiseLocation } from '.';
 
 const ReadwiseTagSchema = z.object({
 	name: z.string(),

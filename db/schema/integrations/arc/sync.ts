@@ -5,7 +5,7 @@ import {
 	arcBrowsingHistory,
 	arcBrowsingHistoryDaily,
 	Browser,
-	type NewArcBrowsingHistory,
+	type ArcBrowsingHistoryInsert,
 } from '.';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
 import { runIntegration } from '../../operations/run-integration';
@@ -102,7 +102,7 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 	const collapsedHistory = collapseSequentialVisits(dailyHistory);
 	console.log(`Collapsed into ${collapsedHistory.length} entries`);
 
-	const history: NewArcBrowsingHistory[] = collapsedHistory.map((h) => ({
+	const history: ArcBrowsingHistoryInsert[] = collapsedHistory.map((h) => ({
 		browser: Browser.enum.arc,
 		hostname: currentHostname,
 		viewTime: chromeEpochMicrosecondsToDatetime(h.viewTime),

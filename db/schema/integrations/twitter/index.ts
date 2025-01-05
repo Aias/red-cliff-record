@@ -1,5 +1,7 @@
 import { text, integer, index, foreignKey, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { z } from 'zod';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '../schema';
 import { contentTimestamps, databaseTimestamps } from '../../operations/common';
@@ -143,9 +145,23 @@ export const twitterIntegrationRelations = relations(integrationRuns, ({ many })
 	users: many(twitterUsers),
 }));
 
-export type TwitterTweet = typeof twitterTweets.$inferSelect;
-export type NewTwitterTweet = typeof twitterTweets.$inferInsert;
-export type TwitterMedia = typeof twitterMedia.$inferSelect;
-export type NewTwitterMedia = typeof twitterMedia.$inferInsert;
-export type TwitterUser = typeof twitterUsers.$inferSelect;
-export type NewTwitterUser = typeof twitterUsers.$inferInsert;
+export const TwitterTweetSelectSchema = createSelectSchema(twitterTweets);
+export type TwitterTweetSelect = z.infer<typeof TwitterTweetSelectSchema>;
+export const TwitterTweetInsertSchema = createInsertSchema(twitterTweets);
+export type TwitterTweetInsert = z.infer<typeof TwitterTweetInsertSchema>;
+export const TwitterTweetUpdateSchema = createUpdateSchema(twitterTweets);
+export type TwitterTweetUpdate = z.infer<typeof TwitterTweetUpdateSchema>;
+
+export const TwitterMediaSelectSchema = createSelectSchema(twitterMedia);
+export type TwitterMediaSelect = z.infer<typeof TwitterMediaSelectSchema>;
+export const TwitterMediaInsertSchema = createInsertSchema(twitterMedia);
+export type TwitterMediaInsert = z.infer<typeof TwitterMediaInsertSchema>;
+export const TwitterMediaUpdateSchema = createUpdateSchema(twitterMedia);
+export type TwitterMediaUpdate = z.infer<typeof TwitterMediaUpdateSchema>;
+
+export const TwitterUserSelectSchema = createSelectSchema(twitterUsers);
+export type TwitterUserSelect = z.infer<typeof TwitterUserSelectSchema>;
+export const TwitterUserInsertSchema = createInsertSchema(twitterUsers);
+export type TwitterUserInsert = z.infer<typeof TwitterUserInsertSchema>;
+export const TwitterUserUpdateSchema = createUpdateSchema(twitterUsers);
+export type TwitterUserUpdate = z.infer<typeof TwitterUserUpdateSchema>;
