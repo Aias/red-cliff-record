@@ -1,11 +1,13 @@
+import { relations } from 'drizzle-orm';
+import { serial, text, integer, index, boolean, timestamp } from 'drizzle-orm/pg-core';
+import { createSelectSchema, createInsertSchema, createUpdateSchema } from 'drizzle-zod';
+import { z } from 'zod';
 import {
 	contentTimestamps,
 	contentTimestampsNonUpdatable,
 	databaseTimestamps,
 	databaseTimestampsNonUpdatable,
 } from '../../operations/common';
-import { relations } from 'drizzle-orm';
-import { serial, text, integer, index, boolean, timestamp } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '../schema';
 import { GithubCommitChangeStatus, GithubCommitType } from './types';
@@ -202,11 +204,31 @@ export const githubIntegrationRelations = relations(integrationRuns, ({ many }) 
 	githubCommits: many(githubCommits),
 }));
 
-export type GithubUser = typeof githubUsers.$inferSelect;
-export type NewGithubUser = typeof githubUsers.$inferInsert;
-export type GithubRepository = typeof githubRepositories.$inferSelect;
-export type NewGithubRepository = typeof githubRepositories.$inferInsert;
-export type GithubCommit = typeof githubCommits.$inferSelect;
-export type NewGithubCommit = typeof githubCommits.$inferInsert;
-export type GithubCommitChange = typeof githubCommitChanges.$inferSelect;
-export type NewGithubCommitChange = typeof githubCommitChanges.$inferInsert;
+// Schema and type definitions
+export const GithubUserSelectSchema = createSelectSchema(githubUsers);
+export type GithubUserSelect = z.infer<typeof GithubUserSelectSchema>;
+export const GithubUserInsertSchema = createInsertSchema(githubUsers);
+export type GithubUserInsert = z.infer<typeof GithubUserInsertSchema>;
+export const GithubUserUpdateSchema = createUpdateSchema(githubUsers);
+export type GithubUserUpdate = z.infer<typeof GithubUserUpdateSchema>;
+
+export const GithubRepositorySelectSchema = createSelectSchema(githubRepositories);
+export type GithubRepositorySelect = z.infer<typeof GithubRepositorySelectSchema>;
+export const GithubRepositoryInsertSchema = createInsertSchema(githubRepositories);
+export type GithubRepositoryInsert = z.infer<typeof GithubRepositoryInsertSchema>;
+export const GithubRepositoryUpdateSchema = createUpdateSchema(githubRepositories);
+export type GithubRepositoryUpdate = z.infer<typeof GithubRepositoryUpdateSchema>;
+
+export const GithubCommitSelectSchema = createSelectSchema(githubCommits);
+export type GithubCommitSelect = z.infer<typeof GithubCommitSelectSchema>;
+export const GithubCommitInsertSchema = createInsertSchema(githubCommits);
+export type GithubCommitInsert = z.infer<typeof GithubCommitInsertSchema>;
+export const GithubCommitUpdateSchema = createUpdateSchema(githubCommits);
+export type GithubCommitUpdate = z.infer<typeof GithubCommitUpdateSchema>;
+
+export const GithubCommitChangeSelectSchema = createSelectSchema(githubCommitChanges);
+export type GithubCommitChangeSelect = z.infer<typeof GithubCommitChangeSelectSchema>;
+export const GithubCommitChangeInsertSchema = createInsertSchema(githubCommitChanges);
+export type GithubCommitChangeInsert = z.infer<typeof GithubCommitChangeInsertSchema>;
+export const GithubCommitChangeUpdateSchema = createUpdateSchema(githubCommitChanges);
+export type GithubCommitChangeUpdate = z.infer<typeof GithubCommitChangeUpdateSchema>;

@@ -9,15 +9,13 @@ import {
 	airtableExtractCreators,
 	airtableExtractSpaces,
 	airtableExtractConnections,
-} from '.';
-import type {
-	NewAirtableCreator,
-	NewAirtableSpace,
-	NewAirtableExtract,
-	NewAirtableAttachment,
-	NewAirtableExtractCreator,
-	NewAirtableExtractSpace,
-	NewAirtableExtractConnection,
+	type AirtableCreatorInsert,
+	type AirtableSpaceInsert,
+	type AirtableExtractInsert,
+	type AirtableAttachmentInsert,
+	type AirtableExtractCreatorInsert,
+	type AirtableExtractSpaceInsert,
+	type AirtableExtractConnectionInsert,
 } from '.';
 import { runIntegration } from '../../operations/run-integration';
 
@@ -44,7 +42,7 @@ async function seedCreators(integrationRunId: number) {
 
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
-		const creatorsToInsert: NewAirtableCreator[] = chunk.map((record) => {
+		const creatorsToInsert: AirtableCreatorInsert[] = chunk.map((record) => {
 			const fields = CreatorFieldSetSchema.parse(record.fields);
 			return {
 				id: record.id,
@@ -74,7 +72,7 @@ async function seedSpaces(integrationRunId: number) {
 
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
-		const spacesToInsert: NewAirtableSpace[] = chunk.map((record) => {
+		const spacesToInsert: AirtableSpaceInsert[] = chunk.map((record) => {
 			const fields = SpaceFieldSetSchema.parse(record.fields);
 			return {
 				id: record.id,
@@ -101,7 +99,7 @@ async function seedExtracts(integrationRunId: number) {
 
 	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
 		const chunk = records.slice(i, i + CHUNK_SIZE);
-		const extractsToInsert: NewAirtableExtract[] = chunk.map((record) => {
+		const extractsToInsert: AirtableExtractInsert[] = chunk.map((record) => {
 			const fields = ExtractFieldSetSchema.parse(record.fields);
 			return {
 				id: record.id,
@@ -150,7 +148,7 @@ async function seedAttachments() {
 
 		for (let i = 0; i < images.length; i += CHUNK_SIZE) {
 			const chunk = images.slice(i, i + CHUNK_SIZE);
-			const attachmentsToInsert: NewAirtableAttachment[] = chunk.map((attachment) => ({
+			const attachmentsToInsert: AirtableAttachmentInsert[] = chunk.map((attachment) => ({
 				id: attachment.id,
 				url: attachment.url,
 				filename: attachment.filename,
@@ -177,7 +175,7 @@ async function seedRelations() {
 		if (fields.creatorIds?.length) {
 			for (let i = 0; i < fields.creatorIds.length; i += CHUNK_SIZE) {
 				const chunk = fields.creatorIds.slice(i, i + CHUNK_SIZE);
-				const relations: NewAirtableExtractCreator[] = chunk.map((creatorId) => ({
+				const relations: AirtableExtractCreatorInsert[] = chunk.map((creatorId) => ({
 					extractId: record.id,
 					creatorId,
 				}));
@@ -189,7 +187,7 @@ async function seedRelations() {
 		if (fields.spaceIds?.length) {
 			for (let i = 0; i < fields.spaceIds.length; i += CHUNK_SIZE) {
 				const chunk = fields.spaceIds.slice(i, i + CHUNK_SIZE);
-				const relations: NewAirtableExtractSpace[] = chunk.map((spaceId) => ({
+				const relations: AirtableExtractSpaceInsert[] = chunk.map((spaceId) => ({
 					extractId: record.id,
 					spaceId,
 				}));
@@ -201,7 +199,7 @@ async function seedRelations() {
 		if (fields.connectionIds?.length) {
 			for (let i = 0; i < fields.connectionIds.length; i += CHUNK_SIZE) {
 				const chunk = fields.connectionIds.slice(i, i + CHUNK_SIZE);
-				const relations: NewAirtableExtractConnection[] = chunk.map((toExtractId) => ({
+				const relations: AirtableExtractConnectionInsert[] = chunk.map((toExtractId) => ({
 					fromExtractId: record.id,
 					toExtractId,
 				}));

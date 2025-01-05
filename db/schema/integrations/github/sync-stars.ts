@@ -2,7 +2,7 @@ import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { desc, isNotNull } from 'drizzle-orm';
 import { db } from '@/db/connections';
-import { githubRepositories, type NewGithubRepository } from '.';
+import { githubRepositories, type GithubRepositoryInsert } from '.';
 import { GithubStarredReposResponseSchema } from './types';
 import { logRateLimitInfo } from './helpers';
 import { ensureGithubUserExists } from './sync-users';
@@ -83,7 +83,7 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 				await ensureGithubUserExists(repo.owner, integrationRunId);
 
 				// Then insert the repository
-				const newRepo: NewGithubRepository = {
+				const newRepo: GithubRepositoryInsert = {
 					id: repo.id,
 					nodeId: repo.node_id,
 					name: repo.name,

@@ -1,6 +1,10 @@
 import { db } from '@/db/connections';
 import { eq } from 'drizzle-orm';
-import { AirtableSpace, airtableSpaces } from '@/db/schema/integrations/airtable';
+import {
+	AirtableSpaceSelectSchema,
+	airtableSpaces,
+	type AirtableSpaceSelect,
+} from '@/db/schema/integrations/airtable';
 import {
 	DataList,
 	Text,
@@ -22,10 +26,10 @@ export const Route = createFileRoute('/(index)/queue/$airtableId')({
 	loader: ({ params }) => fetchSpaceById({ data: params.airtableId }),
 });
 
-const createIndexEntry = createServerFn({ method: 'POST' })
-	.validator((data: { space: AirtableSpace }) => data)
-	.handler(async ({ data: { space } }) => {
-		const { id, name, contentCreatedAt, contentUpdatedAt, createdAt, updatedAt } = space;
+const createIndexEntryFromAirtableSpace = createServerFn({ method: 'POST' })
+	.validator(AirtableSpaceSelectSchema)
+	.handler(async ({ data }) => {
+		const { id, name, contentCreatedAt, contentUpdatedAt, createdAt, updatedAt } = data;
 
 		const titleCaseName = name.replace(/\b\w/g, (char) => char.toUpperCase());
 
@@ -130,7 +134,7 @@ const IndexEntryForm = ({
 	space,
 }: {
 	indexEntry: IndexEntry;
-	space: AirtableSpace;
+	space: AirtableSpaceSelect;
 }) => {
 	const [{ private: isPrivate, name, shortName, notes, sense, mainType, subType }, setIndexEntry] =
 		useState(indexEntry);
@@ -202,7 +206,7 @@ const NoIndexEntry = ({
 	space,
 	setIndexEntry,
 }: {
-	space: AirtableSpace;
+	space: AirtableSpaceSelect;
 	setIndexEntry: (indexEntry: IndexEntry) => void;
 }) => {
 	return (
@@ -210,7 +214,7 @@ const NoIndexEntry = ({
 			<Text>No index entry found for this space.</Text>
 			<Button
 				onClick={async () => {
-					const indexEntry = await createIndexEntry({ data: { space } });
+					const indexEntry = await createIndexEntryFromAirtableSpace({ data: space });
 					setIndexEntry(indexEntry);
 				}}
 			>

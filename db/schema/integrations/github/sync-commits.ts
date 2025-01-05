@@ -5,9 +5,9 @@ import {
 	githubRepositories,
 	githubCommits,
 	githubCommitChanges,
-	type NewGithubRepository,
-	type NewGithubCommit,
-	type NewGithubCommitChange,
+	type GithubRepositoryInsert,
+	type GithubCommitInsert,
+	type GithubCommitChangeInsert,
 } from '.';
 import { eq, desc } from 'drizzle-orm';
 import { logRateLimitInfo } from './helpers';
@@ -36,7 +36,7 @@ async function ensureRepositoryExists(
 	await ensureGithubUserExists(repoData.owner, integrationRunId);
 
 	// Then insert repository if it doesn't exist
-	const newRepo: NewGithubRepository = {
+	const newRepo: GithubRepositoryInsert = {
 		id: repoData.id,
 		nodeId: repoData.node_id,
 		name: repoData.name,
@@ -165,7 +165,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 				await ensureRepositoryExists(repoResponse.data, integrationRunId);
 
 				// Insert new commit
-				const newCommit: NewGithubCommit = {
+				const newCommit: GithubCommitInsert = {
 					nodeId: item.node_id,
 					sha: item.sha,
 					message: item.commit.message,
@@ -183,7 +183,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 				// Insert commit changes only for new commits
 				for (const file of detailedCommit.data.files || []) {
-					const newChange: NewGithubCommitChange = {
+					const newChange: GithubCommitChangeInsert = {
 						filename: file.filename,
 						status: file.status,
 						patch: file.patch ? file.patch.slice(0, MAX_PATCH_LENGTH) : '',

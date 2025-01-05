@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { createFileRoute } from '@tanstack/react-router';
 import { Card, Heading, Text, Button, Code, ScrollArea } from '@radix-ui/themes';
 import { eq } from 'drizzle-orm';
@@ -9,34 +10,33 @@ import { CommitSummary, summarizeCommit } from '../../lib/commit-summarizer';
 import { CodeBlock } from '../../components/CodeBlock';
 import { AppLink } from '../../components/AppLink';
 
-export type CommitChange = {
-	filename: string;
-	status: string;
-	changes: number | null;
-	deletions: number | null;
-	additions: number | null;
-	patch: string;
-};
-
-export type CommitInput = {
-	message: string;
-	sha: string;
-	changes: number | null;
-	additions: number | null;
-	deletions: number | null;
-	commitChanges: CommitChange[];
-};
-
-export type RepositoryInput = {
-	fullName: string;
-	description: string | null;
-	language: string | null;
-	topics: string[] | null;
-	licenseName: string | null;
-};
+export const CommitSummaryInputSchema = z.object({
+	message: z.string(),
+	sha: z.string(),
+	changes: z.number().nullable(),
+	additions: z.number().nullable(),
+	deletions: z.number().nullable(),
+	commitChanges: z.array(
+		z.object({
+			filename: z.string(),
+			status: z.string(),
+			changes: z.number().nullable(),
+			deletions: z.number().nullable(),
+			additions: z.number().nullable(),
+			patch: z.string(),
+		})
+	),
+	repository: z.object({
+		fullName: z.string(),
+		description: z.string().nullable(),
+		language: z.string().nullable(),
+		topics: z.array(z.string()).nullable(),
+		licenseName: z.string().nullable(),
+	}),
+});
 
 const fetchCommitBySha = createServerFn({ method: 'GET' })
-	.validator((data: string) => data)
+	.validator(z.string())
 	.handler(async ({ data: sha }) => {
 		const commit = await db.query.githubCommits.findFirst({
 			where: eq(githubCommits.sha, sha),
@@ -64,9 +64,9 @@ const fetchCommitBySha = createServerFn({ method: 'GET' })
 	});
 
 export const updateCommitSummary = createServerFn({ method: 'POST' })
-	.validator((data: { commit: CommitInput; repository: RepositoryInput }) => data)
-	.handler(async ({ data: { commit, repository } }) => {
-		const summary = await summarizeCommit(JSON.stringify({ commit, repository }));
+	.validator(CommitSummaryInputSchema)
+	.handler(async ({ data: commitSummaryInput }) => {
+		const summary = await summarizeCommit(JSON.stringify(commitSummaryInput));
 
 		// Save the summary to the database
 		await db
@@ -76,7 +76,7 @@ export const updateCommitSummary = createServerFn({ method: 'POST' })
 				summary: summary.summary,
 				technologies: summary.technologies,
 			})
-			.where(eq(githubCommits.sha, commit.sha));
+			.where(eq(githubCommits.sha, commitSummaryInput.sha));
 
 		return { summary };
 	});
@@ -118,21 +118,19 @@ function CommitView() {
 		try {
 			const response = await updateCommitSummary({
 				data: {
-					commit: {
-						message: commit.message,
-						sha: commit.sha,
-						changes: commit.changes,
-						additions: commit.additions,
-						deletions: commit.deletions,
-						commitChanges: commit.commitChanges.map((change) => ({
-							filename: change.filename,
-							status: change.status,
-							changes: change.changes,
-							deletions: change.deletions,
-							additions: change.additions,
-							patch: change.patch,
-						})),
-					},
+					message: commit.message,
+					sha: commit.sha,
+					changes: commit.changes,
+					additions: commit.additions,
+					deletions: commit.deletions,
+					commitChanges: commit.commitChanges.map((change) => ({
+						filename: change.filename,
+						status: change.status,
+						changes: change.changes,
+						deletions: change.deletions,
+						additions: change.additions,
+						patch: change.patch,
+					})),
 					repository: {
 						fullName: commit.repository.fullName,
 						description: commit.repository.description,

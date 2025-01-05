@@ -5,9 +5,10 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
 import { Heading, Table, Text, Link as RadixLink, Button, ScrollArea } from '@radix-ui/themes';
 import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
+import { z } from 'zod';
 
 const fetchHistoryForDate = createServerFn({ method: 'GET' })
-	.validator((data: string) => data)
+	.validator(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
 	.handler(async ({ data: date }) => {
 		const tzOffset = new Date().getTimezoneOffset();
 		// Invert the sign of the offset

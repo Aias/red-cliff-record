@@ -1,8 +1,9 @@
+import { z } from 'zod';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { Card, Heading, Table, ScrollArea, Button, Checkbox } from '@radix-ui/themes';
 import { createServerFn } from '@tanstack/start';
 import { db } from '@/db/connections';
-import { githubCommits } from '@/db/schema';
+import { githubCommits } from '@/db/schema/integrations/github';
 import { desc, eq } from 'drizzle-orm';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
@@ -11,8 +12,8 @@ import { useNavigate } from '@tanstack/react-router';
 import classNames from 'classnames';
 import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
-import { CommitInput, RepositoryInput } from './commits.$sha';
 import { summarizeCommit } from '../../lib/commit-summarizer';
+import { CommitSummaryInputSchema } from './commits.$sha';
 
 import styles from './commits.module.css';
 
@@ -30,19 +31,12 @@ const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
 
 // Add new server function for batch summarization
 const batchSummarizeCommits = createServerFn({ method: 'POST' })
-	.validator(
-		(data: {
-			commits: Array<{
-				commit: CommitInput;
-				repository: RepositoryInput;
-			}>;
-		}) => data
-	)
+	.validator(z.array(CommitSummaryInputSchema))
 	.handler(async ({ data }) => {
 		// Process commits in parallel
 		const summaries = await Promise.all(
-			data.commits.map(async ({ commit, repository }) => {
-				const summary = await summarizeCommit(JSON.stringify({ commit, repository }));
+			data.map(async (commitSummaryInput) => {
+				const summary = await summarizeCommit(JSON.stringify(commitSummaryInput));
 
 				// Update database
 				await db
@@ -52,9 +46,9 @@ const batchSummarizeCommits = createServerFn({ method: 'POST' })
 						summary: summary.summary,
 						technologies: summary.technologies,
 					})
-					.where(eq(githubCommits.sha, commit.sha));
+					.where(eq(githubCommits.sha, commitSummaryInput.sha));
 
-				return { sha: commit.sha, summary };
+				return { sha: commitSummaryInput.sha, summary };
 			})
 		);
 
@@ -77,35 +71,31 @@ function CommitList() {
 		setLoading(true);
 		try {
 			await batchSummarizeCommits({
-				data: {
-					commits: Array.from(selectedCommits).map((sha) => {
-						const commit = commits.find((c) => c.sha === sha)!;
-						return {
-							commit: {
-								message: commit.message,
-								sha: commit.sha,
-								changes: commit.changes,
-								additions: commit.additions,
-								deletions: commit.deletions,
-								commitChanges: commit.commitChanges.map((change) => ({
-									filename: change.filename,
-									status: change.status,
-									changes: change.changes,
-									deletions: change.deletions,
-									additions: change.additions,
-									patch: change.patch,
-								})),
-							},
-							repository: {
-								fullName: commit.repository.fullName,
-								description: commit.repository.description,
-								language: commit.repository.language,
-								topics: commit.repository.topics,
-								licenseName: commit.repository.licenseName,
-							},
-						};
-					}),
-				},
+				data: Array.from(selectedCommits).map((sha) => {
+					const commit = commits.find((c) => c.sha === sha)!;
+					return {
+						message: commit.message,
+						sha: commit.sha,
+						changes: commit.changes,
+						additions: commit.additions,
+						deletions: commit.deletions,
+						commitChanges: commit.commitChanges.map((change) => ({
+							filename: change.filename,
+							status: change.status,
+							changes: change.changes,
+							deletions: change.deletions,
+							additions: change.additions,
+							patch: change.patch,
+						})),
+						repository: {
+							fullName: commit.repository.fullName,
+							description: commit.repository.description,
+							language: commit.repository.language,
+							topics: commit.repository.topics,
+							licenseName: commit.repository.licenseName,
+						},
+					};
+				}),
 			});
 			// Clear selection after successful summarization
 			setSelectedCommits(new Set());

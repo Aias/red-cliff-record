@@ -1,6 +1,6 @@
 import { db } from '@/db/connections';
 import { adobeLightroomImages } from '.';
-import type { NewAdobeLightroomImage } from '.';
+import type { AdobeLightroomImageInsert } from '.';
 import { runIntegration } from '../../operations/run-integration';
 import { LightroomJsonResponseSchema } from './types';
 
@@ -47,7 +47,7 @@ async function syncLightroomImages(integrationRunId: number) {
 		const url2048 = `${baseUrl}${asset.links['/rels/rendition_type/2048'].href}`;
 		const rating = ratings?.[Object.keys(ratings)[0]]?.rating ?? 0;
 
-		const imageToInsert: NewAdobeLightroomImage = {
+		const imageToInsert: AdobeLightroomImageInsert = {
 			id: asset.id,
 			url2048,
 			links: asset.links,

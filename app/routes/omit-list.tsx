@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-table';
 import { useState, useRef } from 'react';
 import { eq, ilike, count } from 'drizzle-orm';
+import { z } from 'zod';
 
 type OmitPattern = {
 	pattern: string;
@@ -40,16 +41,16 @@ const fetchOmitList = createServerFn({ method: 'GET' }).handler(async () => {
 });
 
 const addPattern = createServerFn({ method: 'POST' })
-	.validator((data: { pattern: string }) => data)
+	.validator(z.string())
 	.handler(async ({ data }) => {
 		await db.insert(arcBrowsingHistoryOmitList).values({
-			pattern: data.pattern,
+			pattern: data,
 		});
 		return { success: true };
 	});
 
 const updatePattern = createServerFn({ method: 'POST' })
-	.validator((data: { oldPattern: string; newPattern: string }) => data)
+	.validator(z.object({ oldPattern: z.string(), newPattern: z.string() }))
 	.handler(async ({ data }) => {
 		await db
 			.update(arcBrowsingHistoryOmitList)
@@ -62,11 +63,9 @@ const updatePattern = createServerFn({ method: 'POST' })
 	});
 
 const deletePattern = createServerFn({ method: 'POST' })
-	.validator((data: { pattern: string }) => data)
+	.validator(z.string())
 	.handler(async ({ data }) => {
-		await db
-			.delete(arcBrowsingHistoryOmitList)
-			.where(eq(arcBrowsingHistoryOmitList.pattern, data.pattern));
+		await db.delete(arcBrowsingHistoryOmitList).where(eq(arcBrowsingHistoryOmitList.pattern, data));
 		return { success: true };
 	});
 
@@ -195,7 +194,7 @@ function OmitListPage() {
 
 	const handleAdd = async () => {
 		if (!newPattern) return;
-		await addPattern({ data: { pattern: newPattern } });
+		await addPattern({ data: newPattern });
 		const { response } = await fetchOmitList();
 		setData(response);
 		setNewPattern('');
@@ -204,7 +203,7 @@ function OmitListPage() {
 	};
 
 	const handleDelete = async (pattern: string) => {
-		await deletePattern({ data: { pattern } });
+		await deletePattern({ data: pattern });
 		const { response } = await fetchOmitList();
 		setData(response);
 	};

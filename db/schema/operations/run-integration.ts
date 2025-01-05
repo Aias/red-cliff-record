@@ -1,8 +1,9 @@
 import { db } from '@/db/connections';
 import { eq } from 'drizzle-orm';
 import { integrationRuns } from '.';
-import { IntegrationFunction } from '../helpers';
 import { IntegrationType, RunType, IntegrationStatus } from './types';
+
+type IntegrationFunction = (integrationRunId: number) => Promise<number>;
 
 export async function runIntegration(
 	integrationType: IntegrationType,

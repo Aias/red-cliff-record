@@ -1,6 +1,8 @@
-import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { relations } from 'drizzle-orm';
 import { text, timestamp, integer, json, index } from 'drizzle-orm/pg-core';
+import { createSelectSchema, createInsertSchema, createUpdateSchema } from 'drizzle-zod';
+import { z } from 'zod';
+import { contentTimestamps, databaseTimestamps } from '../../operations/common';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '../schema';
 import { records, media } from '../../main';
@@ -72,5 +74,9 @@ export const adobeIntegrationRelations = relations(integrationRuns, ({ many }) =
 	adobeLightroomImages: many(adobeLightroomImages),
 }));
 
-export type AdobeLightroomImage = typeof adobeLightroomImages.$inferSelect;
-export type NewAdobeLightroomImage = typeof adobeLightroomImages.$inferInsert;
+export const AdobeLightroomImageSelectSchema = createSelectSchema(adobeLightroomImages);
+export type AdobeLightroomImageSelect = z.infer<typeof AdobeLightroomImageSelectSchema>;
+export const AdobeLightroomImageInsertSchema = createInsertSchema(adobeLightroomImages);
+export type AdobeLightroomImageInsert = z.infer<typeof AdobeLightroomImageInsertSchema>;
+export const AdobeLightroomImageUpdateSchema = createUpdateSchema(adobeLightroomImages);
+export type AdobeLightroomImageUpdate = z.infer<typeof AdobeLightroomImageUpdateSchema>;

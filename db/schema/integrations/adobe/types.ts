@@ -36,7 +36,7 @@ const LightroomAssetExifSchema = z.object({
 	MaxApertureValue: z.tuple([z.number(), z.number()]).optional(),
 	FocalLength: z.tuple([z.number(), z.number()]),
 	LightSource: z.string().optional(),
-	DateTimeOriginal: z.coerce.date(),
+	DateTimeOriginal: z.string(),
 	ExposureBiasValue: z.tuple([z.number(), z.number()]),
 	ExposureTime: z.tuple([z.number(), z.number()]),
 	MeteringMode: z.string(),
@@ -77,7 +77,7 @@ const AestheticsSchema = z.object({
 	application: z.string(),
 	balancing: z.number(),
 	content: z.number(),
-	created: z.coerce.date(),
+	created: z.string(),
 	dof: z.number(),
 	emphasis: z.number(),
 	harmony: z.number(),
@@ -156,7 +156,7 @@ const LightroomAssetPayloadSchema = z.object({
 	autoTags: AutoTagsSchema,
 });
 
-export const LightroomAssetSchema = z.object({
+const LightroomAssetSchema = z.object({
 	id: z.string(),
 	type: z.string(),
 	subtype: z.string(),
@@ -167,7 +167,7 @@ export const LightroomAssetSchema = z.object({
 	payload: LightroomAssetPayloadSchema,
 });
 
-export const LightroomResourceSchema = z.object({
+const LightroomResourceSchema = z.object({
 	id: z.string(),
 	type: z.string(),
 	created: z.string(),

@@ -1,4 +1,4 @@
-import { type NewGithubUser, githubUsers } from '.';
+import { type GithubUserInsert, githubUsers } from '.';
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';
@@ -17,7 +17,7 @@ export async function ensureGithubUserExists(
 	integrationRunId: number
 ): Promise<number> {
 	// First insert basic user info
-	const user: NewGithubUser = {
+	const user: GithubUserInsert = {
 		id: userData.id,
 		login: userData.login,
 		nodeId: userData.node_id,
