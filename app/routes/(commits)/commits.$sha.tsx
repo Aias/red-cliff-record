@@ -4,7 +4,7 @@ import { Card, Heading, Text, Button, Code, ScrollArea } from '@radix-ui/themes'
 import { eq } from 'drizzle-orm';
 import { createServerFn } from '@tanstack/start';
 import { db } from '@/db/connections';
-import { githubCommits } from '@/db/schema';
+import { githubCommits } from '@schema';
 import { useState, useEffect } from 'react';
 import { CommitSummary, summarizeCommit } from '../../lib/commit-summarizer';
 import { CodeBlock } from '../../components/CodeBlock';

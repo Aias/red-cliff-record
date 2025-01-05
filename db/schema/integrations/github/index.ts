@@ -10,7 +10,6 @@ import {
 } from '../../operations/common';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '../schema';
-import { GithubCommitChangeStatus, GithubCommitType } from './types';
 import { indexEntries, records } from '../../main';
 
 const githubStats = {
@@ -96,6 +95,30 @@ export const githubRepositories = integrationSchema.table(
 		index().on(table.recordId),
 	]
 );
+
+export const GithubCommitType = z.enum([
+	'feature',
+	'enhancement',
+	'bugfix',
+	'refactor',
+	'documentation',
+	'style',
+	'chore',
+	'test',
+	'build',
+]);
+export type GithubCommitType = z.infer<typeof GithubCommitType>;
+
+export const GithubCommitChangeStatus = z.enum([
+	'added',
+	'modified',
+	'removed',
+	'renamed',
+	'copied',
+	'changed',
+	'unchanged',
+]);
+export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatus>;
 
 export const githubCommitTypesEnum = integrationSchema.enum(
 	'github_commit_types',

@@ -1,30 +1,6 @@
 import { z } from 'zod';
 import { emptyStringToNull } from '../../helpers';
 
-export const GithubCommitType = z.enum([
-	'feature',
-	'enhancement',
-	'bugfix',
-	'refactor',
-	'documentation',
-	'style',
-	'chore',
-	'test',
-	'build',
-]);
-export type GithubCommitType = z.infer<typeof GithubCommitType>;
-
-export const GithubCommitChangeStatus = z.enum([
-	'added',
-	'modified',
-	'removed',
-	'renamed',
-	'copied',
-	'changed',
-	'unchanged',
-]);
-export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatus>;
-
 export const GithubEventSchema = z.object({
 	id: z.string(),
 	type: z.string(),

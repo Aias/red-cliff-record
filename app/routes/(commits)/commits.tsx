@@ -1,17 +1,17 @@
+import { useState } from 'react';
+import classNames from 'classnames';
 import { z } from 'zod';
+import { desc, eq } from 'drizzle-orm';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { Card, Heading, Table, ScrollArea, Button, Checkbox } from '@radix-ui/themes';
 import { createServerFn } from '@tanstack/start';
 import { db } from '@/db/connections';
-import { githubCommits } from '@/db/schema/integrations/github';
-import { desc, eq } from 'drizzle-orm';
+import { githubCommits } from '@schema';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
 
 import { useNavigate } from '@tanstack/react-router';
-import classNames from 'classnames';
 import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
-import { useState } from 'react';
 import { summarizeCommit } from '../../lib/commit-summarizer';
 import { CommitSummaryInputSchema } from './commits.$sha';
 

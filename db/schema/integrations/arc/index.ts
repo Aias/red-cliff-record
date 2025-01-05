@@ -3,7 +3,10 @@ import { relations, sql } from 'drizzle-orm';
 import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../../operations';
 import { integrationSchema } from '../schema';
-import { Browser } from './types';
+import { z } from 'zod';
+
+export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
+export type Browser = z.infer<typeof Browser>;
 
 export const browserEnum = integrationSchema.enum('browser', Browser.options);
 

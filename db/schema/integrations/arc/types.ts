@@ -6,9 +6,6 @@ const sanitizeString = (str: string | null): string | null => {
 	return str.replace(/\0/g, '').trim();
 };
 
-export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
-export type Browser = z.infer<typeof Browser>;
-
 export const DailyVisitsQueryRowSchema = z.object({
 	viewTime: z.number().or(z.bigint()).transform(Number),
 	viewDuration: z.number().or(z.bigint()).transform(Number).default(0),

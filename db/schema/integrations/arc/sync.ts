@@ -1,13 +1,18 @@
 import os from 'os';
 import readline from 'readline';
 import { db } from '@/db/connections';
-import { arcBrowsingHistory, arcBrowsingHistoryDaily, type NewArcBrowsingHistory } from '.';
+import {
+	arcBrowsingHistory,
+	arcBrowsingHistoryDaily,
+	Browser,
+	type NewArcBrowsingHistory,
+} from '.';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
 import { runIntegration } from '../../operations/run-integration';
 import { chromeEpochMicrosecondsToDatetime } from '@/app/lib/time-helpers';
 import { visits, urls } from '../../arc';
 import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';
-import { DailyVisitsQueryResultSchema, Browser } from './types';
+import { DailyVisitsQueryResultSchema } from './types';
 
 // Helper function to create readline interface
 const createPrompt = () => {

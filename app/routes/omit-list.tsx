@@ -1,5 +1,5 @@
 import { db } from '@/db/connections';
-import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@/db/schema';
+import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@schema';
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
 import { Heading, Table, Button, TextField, ScrollArea } from '@radix-ui/themes';

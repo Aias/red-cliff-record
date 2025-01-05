@@ -11,6 +11,7 @@ export default defineConfig({
 			alias: {
 				'@/app': '/app',
 				'@/db': '/db',
+				'@schema': '/db/schema',
 			},
 		},
 	},

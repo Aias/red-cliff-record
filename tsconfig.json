@@ -10,7 +10,8 @@
 		"baseUrl": ".",
 		"paths": {
 			"@/app/*": ["app/*"],
-			"@/db/*": ["db/*"]
+			"@/db/*": ["db/*"],
+			"@schema": ["db/schema"]
 		}
 	},
 	"include": ["app/**/*", "db/**/*"],

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod.mjs';
-import { GithubCommitType } from '@/db/schema/integrations/github/types';
+import { GithubCommitType } from '@schema';
 import { z } from 'zod';
 
 export const openai = new OpenAI({
@@ -33,7 +33,7 @@ You will be given the following as input:
 
 - For the *commit summary*, use markdown formatting, but do not use headings. Primarily use paragraphs, but ordered / unordered lists, and inline formatting syntax are allowed where appropriate. Avoid code blocks.
 - If only one or two files have changed, list the specific files in the commit summary. If more than two files have changed, do not attempt to list them all.
-- For *tools and technologies*, use the common name of the tool, technology, package, or framework, with correct capitalization and spacing. List up to 10 in order of relevance.
+- For *tools and technologies*, use the common name of the tool, technology, package, or framework, with correct capitalization and spacing. List up to 10 in order of relevance. Do not include lockfile updates unless also included in changes to package.json.
 - If the commit is a refactoring, focus on the intent of the refactoring and the functional relevance of the changes.
 - If the commit is a bug fix, focus on the intent of the fix and the functional relevance of the changes.
 - If the commit is a new feature, focus on the intent of the feature and the functional relevance of the changes.

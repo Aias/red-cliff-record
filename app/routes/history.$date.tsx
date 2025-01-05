@@ -1,5 +1,5 @@
 import { db } from '@/db/connections';
-import { arcBrowsingHistoryDaily, arcBrowsingHistoryOmitList } from '@/db/schema';
+import { arcBrowsingHistoryDaily, arcBrowsingHistoryOmitList } from '@schema';
 import { sql } from 'drizzle-orm';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';

@@ -1,10 +1,6 @@
 import { db } from '@/db/connections';
 import { eq } from 'drizzle-orm';
-import {
-	AirtableSpaceSelectSchema,
-	airtableSpaces,
-	type AirtableSpaceSelect,
-} from '@/db/schema/integrations/airtable';
+import { AirtableSpaceSelectSchema, airtableSpaces, type AirtableSpaceSelect } from '@schema';
 import {
 	DataList,
 	Text,
