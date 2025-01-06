@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { CommitSummary, summarizeCommit } from '../../lib/commit-summarizer';
 import { CodeBlock } from '../../components/CodeBlock';
 import { AppLink } from '../../components/AppLink';
+import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 
 export const CommitSummaryInputSchema = z.object({
 	message: z.string(),
@@ -63,6 +64,12 @@ const fetchCommitBySha = createServerFn({ method: 'GET' })
 		return { commit };
 	});
 
+const commitQueryOptions = (sha: string) =>
+	queryOptions({
+		queryKey: ['commit', sha],
+		queryFn: () => fetchCommitBySha({ data: sha }),
+	});
+
 export const updateCommitSummary = createServerFn({ method: 'POST' })
 	.validator(CommitSummaryInputSchema)
 	.handler(async ({ data: commitSummaryInput }) => {
@@ -82,12 +89,30 @@ export const updateCommitSummary = createServerFn({ method: 'POST' })
 	});
 
 export const Route = createFileRoute('/(commits)/commits/$sha')({
-	loader: ({ params: { sha } }) => fetchCommitBySha({ data: sha }),
+	loader: async ({ context, params: { sha } }) => {
+		await context.queryClient.ensureQueryData(commitQueryOptions(sha));
+
+		return {
+			title: `Commit ${sha}`,
+		};
+	},
+	head: ({ loaderData }) => ({
+		meta: loaderData
+			? [
+					{
+						title: loaderData.title,
+					},
+				]
+			: undefined,
+	}),
 	component: CommitView,
 });
 
 function CommitView() {
-	const { commit } = Route.useLoaderData();
+	const { sha } = Route.useParams();
+	const {
+		data: { commit },
+	} = useSuspenseQuery(commitQueryOptions(sha));
 	const [summary, setSummary] = useState<CommitSummary | null>(
 		commit.summary && commit.commitType
 			? {

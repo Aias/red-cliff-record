@@ -16,6 +16,7 @@ import { summarizeCommit } from '../../lib/commit-summarizer';
 import { CommitSummaryInputSchema } from './commits.$sha';
 
 import styles from './commits.module.css';
+import { queryOptions, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
 const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
 	const commits = await db.query.githubCommits.findMany({
@@ -28,6 +29,12 @@ const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
 	});
 	return { commits };
 });
+
+const commitsQueryOptions = () =>
+	queryOptions({
+		queryKey: ['commits'],
+		queryFn: () => fetchCommits(),
+	});
 
 // Add new server function for batch summarization
 const batchSummarizeCommits = createServerFn({ method: 'POST' })
@@ -56,19 +63,23 @@ const batchSummarizeCommits = createServerFn({ method: 'POST' })
 	});
 
 export const Route = createFileRoute('/(commits)/commits')({
-	loader: () => fetchCommits(),
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(commitsQueryOptions());
+	},
 	component: CommitList,
 });
 
 function CommitList() {
-	const { commits } = Route.useLoaderData();
+	const {
+		data: { commits },
+	} = useSuspenseQuery(commitsQueryOptions());
 	const navigate = useNavigate();
 	const { sha } = useParams({ strict: false });
 	const [selectedCommits, setSelectedCommits] = useState<Set<string>>(new Set());
-	const [loading, setLoading] = useState(false);
-
+	const [isSummarizing, setIsSummarizing] = useState(false);
+	const queryClient = useQueryClient();
 	const handleBatchSummarize = async () => {
-		setLoading(true);
+		setIsSummarizing(true);
 		try {
 			await batchSummarizeCommits({
 				data: Array.from(selectedCommits).map((sha) => {
@@ -97,12 +108,20 @@ function CommitList() {
 					};
 				}),
 			});
+			queryClient.invalidateQueries({
+				queryKey: ['commits'],
+			});
+			selectedCommits.forEach((sha) => {
+				queryClient.invalidateQueries({
+					queryKey: ['commit', sha],
+				});
+			});
 			// Clear selection after successful summarization
 			setSelectedCommits(new Set());
 		} catch (error) {
 			console.error('Error batch summarizing commits:', error);
 		} finally {
-			setLoading(false);
+			setIsSummarizing(false);
 		}
 	};
 
@@ -112,8 +131,8 @@ function CommitList() {
 				<header className="flex justify-between items-center mb-4 gap-2">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedCommits.size > 0 && (
-						<Button onClick={handleBatchSummarize} disabled={loading} variant="soft">
-							{loading ? 'Summarizing...' : `Summarize ${selectedCommits.size} Commits`}
+						<Button onClick={handleBatchSummarize} disabled={isSummarizing} variant="soft">
+							{isSummarizing ? 'Summarizing...' : `Summarize ${selectedCommits.size} Commits`}
 						</Button>
 					)}
 				</header>

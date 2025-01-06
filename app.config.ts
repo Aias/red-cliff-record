@@ -1,4 +1,5 @@
 import { defineConfig } from '@tanstack/start/config';
+import tsConfigPaths from 'vite-tsconfig-paths';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
@@ -6,13 +7,6 @@ export default defineConfig({
 		compatibilityDate: '2024-11-30',
 	},
 	vite: {
-		plugins: [tailwindcss()],
-		resolve: {
-			alias: {
-				'@/app': '/app',
-				'@/db': '/db',
-				'@schema': '/db/schema',
-			},
-		},
+		plugins: [tsConfigPaths(), tailwindcss()],
 	},
 });

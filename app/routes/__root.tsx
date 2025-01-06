@@ -1,5 +1,6 @@
-import { Outlet, ScrollRestoration, createRootRoute } from '@tanstack/react-router';
+import { Outlet, ScrollRestoration, createRootRouteWithContext } from '@tanstack/react-router';
 import { createServerFn, Meta, Scripts } from '@tanstack/start';
+import { type QueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { grass } from '@radix-ui/colors';
@@ -29,7 +30,9 @@ const defaultTheme: ThemeProps = {
 	panelBackground: 'translucent',
 };
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{
+	queryClient: QueryClient;
+}>()({
 	loader: () => getThemeCookie(),
 	head: () => ({
 		meta: [
