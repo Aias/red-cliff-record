@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import { indexEntries, IndexEntry } from '@/db/schema/main';
 import { IndexMainType } from '@/db/schema/main/types';
 import { CheckboxWithLabel } from '@/app/components/CheckboxWithLabel';
+
 export const Route = createFileRoute('/(index)/queue/$airtableId')({
 	component: RouteComponent,
 	loader: ({ params }) => fetchSpaceById({ data: params.airtableId }),

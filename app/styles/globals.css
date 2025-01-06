@@ -1,8 +1,5 @@
-@layer reset, theme, base, components, utilities;
-
 @import './reset.css' layer(reset);
 @import 'tailwindcss/theme' layer(theme);
-@import '@radix-ui/themes/styles.css' layer(base);
 @import 'tailwindcss/utilities' layer(utilities);
 
 @source '../components';
@@ -11,6 +8,10 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
+	--font-sans: var(--font-family-sans);
+	--font-serif: var(--font-family-serif);
+	--font-mono: var(--font-family-mono);
+
 	--color-background: var(--color-background);
 	--color-overlay: var(--color-overlay);
 	--color-surface: var(--color-surface);

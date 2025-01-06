@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { grass } from '@radix-ui/colors';
 
+import baseStyles from '../styles/base.css?url';
 import '../styles/globals.css';
 
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
@@ -45,6 +46,10 @@ export const Route = createRootRoute({
 			}),
 		],
 		links: [
+			{
+				rel: 'stylesheet',
+				href: baseStyles,
+			},
 			{
 				rel: 'apple-touch-icon',
 				sizes: '180x180',

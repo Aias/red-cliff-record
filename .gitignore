@@ -7,3 +7,5 @@ build
 **/.temp/**
 **/.output/**
 **/.vinxi/**
+
+public/fonts

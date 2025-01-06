@@ -103,7 +103,7 @@ function DailyActivityPage() {
 					<Table.Body>
 						{history.map(
 							({ hostname, pageTitle, totalDuration, url, visitCount, firstVisit, lastVisit }) => (
-								<Table.Row key={`${hostname}-${url.href}-${pageTitle}`}>
+								<Table.Row key={`${hostname}-${url.href}-${firstVisit}`}>
 									<Table.Cell>
 										<Text wrap="nowrap">
 											{hostname.replaceAll('.local', '').replaceAll('-', ' ')}
