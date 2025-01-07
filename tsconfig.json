@@ -1,19 +1,19 @@
 {
 	"compilerOptions": {
+		"strict": true,
 		"module": "ESNext",
 		"target": "ES2022",
 		"moduleResolution": "bundler",
 		"esModuleInterop": true,
-		"strictNullChecks": true,
 		"skipLibCheck": true,
 		"jsx": "react-jsx",
 		"baseUrl": ".",
 		"paths": {
 			"@/app/*": ["app/*"],
 			"@/db/*": ["db/*"],
-			"@schema": ["db/schema"]
+			"@schema/*": ["db/schema/*"]
 		}
 	},
-	"include": ["app/**/*", "db/**/*"],
+	"include": ["app/**/*", "db/**/*", "integrations/**/*"],
 	"exclude": ["node_modules", "build", "dist"]
 }

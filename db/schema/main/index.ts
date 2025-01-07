@@ -14,8 +14,9 @@ import {
 	index,
 } from 'drizzle-orm/pg-core';
 import { relations, SQL, sql } from 'drizzle-orm';
-
-import { databaseTimestamps } from '../operations/common';
+import { z } from 'zod';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { databaseTimestamps } from '../common';
 import { integrationTypeEnum } from '../operations/schema';
 import { IntegrationType } from '../operations/types';
 import {
@@ -92,12 +93,6 @@ export const timepointsRelations = relations(timepoints, ({ many }) => ({
 	timepoints: many(recordTimepoints),
 }));
 
-// Type exports
-export type Timepoint = typeof timepoints.$inferSelect;
-export type NewTimepoint = typeof timepoints.$inferInsert;
-export type RecordTimepoint = typeof recordTimepoints.$inferSelect;
-export type NewRecordTimepoint = typeof recordTimepoints.$inferInsert;
-
 /* ==============================
    LOCATIONS
    ============================== */
@@ -161,10 +156,6 @@ export const locationRelations = relations(locations, ({ one, many }) => ({
 		relationName: 'parentChild',
 	}),
 }));
-
-// Type exports
-export type Location = typeof locations.$inferSelect;
-export type NewLocation = typeof locations.$inferInsert;
 
 /* ==============================
    SOURCES, CONTENT, & MEDIA
@@ -314,16 +305,6 @@ export const mediaRelations = relations(media, ({ one, many }) => ({
 	}),
 }));
 
-// Type exports
-export type Source = typeof sources.$inferSelect;
-export type NewSource = typeof sources.$inferInsert;
-export type SourceContent = typeof sourceContents.$inferSelect;
-export type NewSourceContent = typeof sourceContents.$inferInsert;
-export type SourceConnection = typeof sourceConnections.$inferSelect;
-export type NewSourceConnection = typeof sourceConnections.$inferInsert;
-export type Media = typeof media.$inferSelect;
-export type NewMedia = typeof media.$inferInsert;
-
 /* ==============================
    INDEX
    ============================== */
@@ -428,11 +409,19 @@ export const indexRelationsRelations = relations(indexRelations, ({ one }) => ({
 	}),
 }));
 
-// Type exports
-export type IndexEntry = typeof indexEntries.$inferSelect;
-export type NewIndexEntry = typeof indexEntries.$inferInsert;
-export type IndexRelation = typeof indexRelations.$inferSelect;
-export type NewIndexRelation = typeof indexRelations.$inferInsert;
+export const IndexEntrySelectSchema = createSelectSchema(indexEntries);
+export type IndexEntrySelect = z.infer<typeof IndexEntrySelectSchema>;
+export const IndexEntryInsertSchema = createInsertSchema(indexEntries);
+export type IndexEntryInsert = z.infer<typeof IndexEntryInsertSchema>;
+export const IndexEntryUpdateSchema = createUpdateSchema(indexEntries);
+export type IndexEntryUpdate = z.infer<typeof IndexEntryUpdateSchema>;
+
+export const IndexRelationSelectSchema = createSelectSchema(indexRelations);
+export type IndexRelationSelect = z.infer<typeof IndexRelationSelectSchema>;
+export const IndexRelationInsertSchema = createInsertSchema(indexRelations);
+export type IndexRelationInsert = z.infer<typeof IndexRelationInsertSchema>;
+export const IndexRelationUpdateSchema = createUpdateSchema(indexRelations);
+export type IndexRelationUpdate = z.infer<typeof IndexRelationUpdateSchema>;
 
 /* ==============================
    RECORDS
@@ -696,16 +685,3 @@ export const recordPagesRelations = relations(recordSources, ({ one }) => ({
 		references: [sources.id],
 	}),
 }));
-
-export type Record = typeof records.$inferSelect;
-export type NewRecord = typeof records.$inferInsert;
-export type RecordRelation = typeof recordRelations.$inferSelect;
-export type NewRecordRelation = typeof recordRelations.$inferInsert;
-export type RecordCreator = typeof recordCreators.$inferSelect;
-export type NewRecordCreator = typeof recordCreators.$inferInsert;
-export type RecordCategory = typeof recordCategories.$inferSelect;
-export type NewRecordCategory = typeof recordCategories.$inferInsert;
-export type RecordMedia = typeof recordMedia.$inferSelect;
-export type NewRecordMedia = typeof recordMedia.$inferInsert;
-export type RecordSource = typeof recordSources.$inferSelect;
-export type NewRecordSource = typeof recordSources.$inferInsert;

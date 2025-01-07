@@ -1,5 +1,5 @@
 import { serial, text, timestamp, integer, index } from 'drizzle-orm/pg-core';
-import { databaseTimestampsNonUpdatable } from './common';
+import { databaseTimestampsNonUpdatable } from '../common';
 import { operationsSchema, integrationTypeEnum } from './schema';
 import { IntegrationStatus, RunType } from './types';
 

@@ -1,6 +1,6 @@
 import { isNull } from 'drizzle-orm';
 import { Table, Heading, ScrollArea } from '@radix-ui/themes';
-import { airtableSpaces } from '@schema';
+import { airtableSpaces } from '@schema/integrations';
 import { createFileRoute, Outlet, useNavigate, useParams } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
 import { db } from '@/db/connections';

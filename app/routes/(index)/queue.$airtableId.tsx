@@ -1,6 +1,10 @@
 import { db } from '@/db/connections';
 import { eq } from 'drizzle-orm';
-import { AirtableSpaceSelectSchema, airtableSpaces, type AirtableSpaceSelect } from '@schema';
+import {
+	AirtableSpaceSelectSchema,
+	airtableSpaces,
+	type AirtableSpaceSelect,
+} from '@schema/integrations';
 import {
 	DataList,
 	Text,
@@ -14,7 +18,7 @@ import {
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
 import { useEffect, useState } from 'react';
-import { indexEntries, IndexEntry } from '@/db/schema/main';
+import { indexEntries, IndexEntrySelect } from '@/db/schema/main';
 import { IndexMainType } from '@/db/schema/main/types';
 import { CheckboxWithLabel } from '@/app/components/CheckboxWithLabel';
 
@@ -78,7 +82,7 @@ const archiveSpace = createServerFn({ method: 'POST' })
 
 function RouteComponent() {
 	const space = Route.useLoaderData();
-	const [indexEntry, setIndexEntry] = useState<IndexEntry | null>(space.indexEntry);
+	const [indexEntry, setIndexEntry] = useState<IndexEntrySelect | null>(space.indexEntry);
 
 	useEffect(() => {
 		setIndexEntry(space.indexEntry);
@@ -130,7 +134,7 @@ const IndexEntryForm = ({
 	indexEntry,
 	space,
 }: {
-	indexEntry: IndexEntry;
+	indexEntry: IndexEntrySelect;
 	space: AirtableSpaceSelect;
 }) => {
 	const [{ private: isPrivate, name, shortName, notes, sense, mainType, subType }, setIndexEntry] =
@@ -204,7 +208,7 @@ const NoIndexEntry = ({
 	setIndexEntry,
 }: {
 	space: AirtableSpaceSelect;
-	setIndexEntry: (indexEntry: IndexEntry) => void;
+	setIndexEntry: (indexEntry: IndexEntrySelect) => void;
 }) => {
 	return (
 		<div className="rounded-2 p-4 align-center justify-center flex flex-col border border-gray-a4 text-center gap-2">

@@ -6,7 +6,7 @@ import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { Card, Heading, Table, ScrollArea, Button, Checkbox } from '@radix-ui/themes';
 import { createServerFn } from '@tanstack/start';
 import { db } from '@/db/connections';
-import { githubCommits } from '@schema';
+import { githubCommits } from '@schema/integrations';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
 
