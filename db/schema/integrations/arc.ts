@@ -41,6 +41,13 @@ export const arcBrowsingHistory = integrationSchema.table(
 	]
 );
 
+export const ArcBrowsingHistorySelectSchema = createSelectSchema(arcBrowsingHistory);
+export type ArcBrowsingHistorySelect = z.infer<typeof ArcBrowsingHistorySelectSchema>;
+export const ArcBrowsingHistoryInsertSchema = createInsertSchema(arcBrowsingHistory);
+export type ArcBrowsingHistoryInsert = z.infer<typeof ArcBrowsingHistoryInsertSchema>;
+export const ArcBrowsingHistoryUpdateSchema = createUpdateSchema(arcBrowsingHistory);
+export type ArcBrowsingHistoryUpdate = z.infer<typeof ArcBrowsingHistoryUpdateSchema>;
+
 export const arcBrowsingHistoryOmitList = integrationSchema.table(
 	'arc_browsing_history_omit_list',
 	{
@@ -48,24 +55,6 @@ export const arcBrowsingHistoryOmitList = integrationSchema.table(
 		...databaseTimestamps,
 	}
 );
-
-export const arcBrowsingHistoryRelations = relations(arcBrowsingHistory, ({ one }) => ({
-	integrationRun: one(integrationRuns, {
-		fields: [arcBrowsingHistory.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-}));
-
-export const arcIntegrationRelations = relations(integrationRuns, ({ many }) => ({
-	arcBrowsingHistory: many(arcBrowsingHistory),
-}));
-
-export const ArcBrowsingHistorySelectSchema = createSelectSchema(arcBrowsingHistory);
-export type ArcBrowsingHistorySelect = z.infer<typeof ArcBrowsingHistorySelectSchema>;
-export const ArcBrowsingHistoryInsertSchema = createInsertSchema(arcBrowsingHistory);
-export type ArcBrowsingHistoryInsert = z.infer<typeof ArcBrowsingHistoryInsertSchema>;
-export const ArcBrowsingHistoryUpdateSchema = createUpdateSchema(arcBrowsingHistory);
-export type ArcBrowsingHistoryUpdate = z.infer<typeof ArcBrowsingHistoryUpdateSchema>;
 
 export const ArcBrowsingHistoryOmitListSelectSchema = createSelectSchema(
 	arcBrowsingHistoryOmitList
@@ -85,3 +74,14 @@ export const ArcBrowsingHistoryOmitListUpdateSchema = createUpdateSchema(
 export type ArcBrowsingHistoryOmitListUpdate = z.infer<
 	typeof ArcBrowsingHistoryOmitListUpdateSchema
 >;
+
+export const arcBrowsingHistoryRelations = relations(arcBrowsingHistory, ({ one }) => ({
+	integrationRun: one(integrationRuns, {
+		fields: [arcBrowsingHistory.integrationRunId],
+		references: [integrationRuns.id],
+	}),
+}));
+
+export const arcIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	arcBrowsingHistory: many(arcBrowsingHistory),
+}));

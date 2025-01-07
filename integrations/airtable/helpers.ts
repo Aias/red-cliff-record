@@ -2,7 +2,10 @@ import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
 import Airtable from 'airtable';
-import { getContentTypeFromExtension, getExtensionFromContentType } from '@/app/lib/extensions';
+import {
+	getContentTypeFromExtension,
+	getExtensionFromContentType,
+} from '@/app/lib/content-helpers';
 import {
 	S3Client,
 	PutObjectCommand,

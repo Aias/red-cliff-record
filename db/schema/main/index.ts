@@ -346,6 +346,13 @@ export const indexEntries = pgTable(
 	]
 );
 
+export const IndexEntrySelectSchema = createSelectSchema(indexEntries);
+export type IndexEntrySelect = z.infer<typeof IndexEntrySelectSchema>;
+export const IndexEntryInsertSchema = createInsertSchema(indexEntries);
+export type IndexEntryInsert = z.infer<typeof IndexEntryInsertSchema>;
+export const IndexEntryUpdateSchema = createUpdateSchema(indexEntries);
+export type IndexEntryUpdate = z.infer<typeof IndexEntryUpdateSchema>;
+
 // See-also relationships
 export const indexRelations = pgTable(
 	'index_relations',
@@ -368,6 +375,13 @@ export const indexRelations = pgTable(
 	},
 	(table) => [unique().on(table.sourceId, table.targetId, table.type)]
 );
+
+export const IndexRelationSelectSchema = createSelectSchema(indexRelations);
+export type IndexRelationSelect = z.infer<typeof IndexRelationSelectSchema>;
+export const IndexRelationInsertSchema = createInsertSchema(indexRelations);
+export type IndexRelationInsert = z.infer<typeof IndexRelationInsertSchema>;
+export const IndexRelationUpdateSchema = createUpdateSchema(indexRelations);
+export type IndexRelationUpdate = z.infer<typeof IndexRelationUpdateSchema>;
 
 // Relations
 export const indexEntriesRelations = relations(indexEntries, ({ one, many }) => ({
@@ -408,20 +422,6 @@ export const indexRelationsRelations = relations(indexRelations, ({ one }) => ({
 	}),
 }));
 
-export const IndexEntrySelectSchema = createSelectSchema(indexEntries);
-export type IndexEntrySelect = z.infer<typeof IndexEntrySelectSchema>;
-export const IndexEntryInsertSchema = createInsertSchema(indexEntries);
-export type IndexEntryInsert = z.infer<typeof IndexEntryInsertSchema>;
-export const IndexEntryUpdateSchema = createUpdateSchema(indexEntries);
-export type IndexEntryUpdate = z.infer<typeof IndexEntryUpdateSchema>;
-
-export const IndexRelationSelectSchema = createSelectSchema(indexRelations);
-export type IndexRelationSelect = z.infer<typeof IndexRelationSelectSchema>;
-export const IndexRelationInsertSchema = createInsertSchema(indexRelations);
-export type IndexRelationInsert = z.infer<typeof IndexRelationInsertSchema>;
-export const IndexRelationUpdateSchema = createUpdateSchema(indexRelations);
-export type IndexRelationUpdate = z.infer<typeof IndexRelationUpdateSchema>;
-
 /* ==============================
    RECORDS
    ============================== */
@@ -457,6 +457,13 @@ export const records = pgTable(
 	(table) => [index().on(table.type), index().on(table.formatId), index().on(table.locationId)]
 );
 
+export const RecordSelectSchema = createSelectSchema(records);
+export type RecordSelect = z.infer<typeof RecordSelectSchema>;
+export const RecordInsertSchema = createInsertSchema(records);
+export type RecordInsert = z.infer<typeof RecordInsertSchema>;
+export const RecordUpdateSchema = createUpdateSchema(records);
+export type RecordUpdate = z.infer<typeof RecordUpdateSchema>;
+
 // Combined hierarchy/relations table
 export const recordRelations = pgTable(
 	'record_relations',
@@ -486,6 +493,13 @@ export const recordRelations = pgTable(
 	]
 );
 
+export const RecordRelationSelectSchema = createSelectSchema(recordRelations);
+export type RecordRelationSelect = z.infer<typeof RecordRelationSelectSchema>;
+export const RecordRelationInsertSchema = createInsertSchema(recordRelations);
+export type RecordRelationInsert = z.infer<typeof RecordRelationInsertSchema>;
+export const RecordRelationUpdateSchema = createUpdateSchema(recordRelations);
+export type RecordRelationUpdate = z.infer<typeof RecordRelationUpdateSchema>;
+
 // Creator relationships
 export const recordCreators = pgTable(
 	'record_creators',
@@ -514,6 +528,13 @@ export const recordCreators = pgTable(
 		unique().on(table.recordId, table.entityId, table.role),
 	]
 );
+
+export const RecordCreatorSelectSchema = createSelectSchema(recordCreators);
+export type RecordCreatorSelect = z.infer<typeof RecordCreatorSelectSchema>;
+export const RecordCreatorInsertSchema = createInsertSchema(recordCreators);
+export type RecordCreatorInsert = z.infer<typeof RecordCreatorInsertSchema>;
+export const RecordCreatorUpdateSchema = createUpdateSchema(recordCreators);
+export type RecordCreatorUpdate = z.infer<typeof RecordCreatorUpdateSchema>;
 
 // Categorization
 export const recordCategories = pgTable(
@@ -554,6 +575,13 @@ export const recordCategoriesRelations = relations(recordCategories, ({ one }) =
 	}),
 }));
 
+export const RecordCategorySelectSchema = createSelectSchema(recordCategories);
+export type RecordCategorySelect = z.infer<typeof RecordCategorySelectSchema>;
+export const RecordCategoryInsertSchema = createInsertSchema(recordCategories);
+export type RecordCategoryInsert = z.infer<typeof RecordCategoryInsertSchema>;
+export const RecordCategoryUpdateSchema = createUpdateSchema(recordCategories);
+export type RecordCategoryUpdate = z.infer<typeof RecordCategoryUpdateSchema>;
+
 // Media links with captions
 export const recordMedia = pgTable(
 	'record_media',
@@ -582,6 +610,13 @@ export const recordMedia = pgTable(
 	]
 );
 
+export const RecordMediaSelectSchema = createSelectSchema(recordMedia);
+export type RecordMediaSelect = z.infer<typeof RecordMediaSelectSchema>;
+export const RecordMediaInsertSchema = createInsertSchema(recordMedia);
+export type RecordMediaInsert = z.infer<typeof RecordMediaInsertSchema>;
+export const RecordMediaUpdateSchema = createUpdateSchema(recordMedia);
+export type RecordMediaUpdate = z.infer<typeof RecordMediaUpdateSchema>;
+
 // Page links
 export const recordSources = pgTable(
 	'record_sources',
@@ -608,6 +643,13 @@ export const recordSources = pgTable(
 		unique().on(table.recordId, table.sourceId),
 	]
 );
+
+export const RecordSourceSelectSchema = createSelectSchema(recordSources);
+export type RecordSourceSelect = z.infer<typeof RecordSourceSelectSchema>;
+export const RecordSourceInsertSchema = createInsertSchema(recordSources);
+export type RecordSourceInsert = z.infer<typeof RecordSourceInsertSchema>;
+export const RecordSourceUpdateSchema = createUpdateSchema(recordSources);
+export type RecordSourceUpdate = z.infer<typeof RecordSourceUpdateSchema>;
 
 // Relations
 export const recordsRelations = relations(records, ({ one, many }) => ({

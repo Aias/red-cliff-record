@@ -121,13 +121,13 @@ export const readwiseDocumentsRelations = relations(readwiseDocuments, ({ one, m
 	}),
 }));
 
-export const readwiseIntegrationRelations = relations(integrationRuns, ({ many }) => ({
-	readwiseDocuments: many(readwiseDocuments),
-}));
-
 export const ReadwiseDocumentSelectSchema = createSelectSchema(readwiseDocuments);
 export type ReadwiseDocumentSelect = z.infer<typeof ReadwiseDocumentSelectSchema>;
 export const ReadwiseDocumentInsertSchema = createInsertSchema(readwiseDocuments);
 export type ReadwiseDocumentInsert = z.infer<typeof ReadwiseDocumentInsertSchema>;
 export const ReadwiseDocumentUpdateSchema = createUpdateSchema(readwiseDocuments);
 export type ReadwiseDocumentUpdate = z.infer<typeof ReadwiseDocumentUpdateSchema>;
+
+export const readwiseIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	readwiseDocuments: many(readwiseDocuments),
+}));

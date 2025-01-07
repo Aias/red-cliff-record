@@ -46,6 +46,13 @@ export const airtableExtracts = integrationSchema.table(
 	]
 );
 
+export const AirtableExtractSelectSchema = createSelectSchema(airtableExtracts);
+export type AirtableExtractSelect = z.infer<typeof AirtableExtractSelectSchema>;
+export const AirtableExtractInsertSchema = createInsertSchema(airtableExtracts);
+export type AirtableExtractInsert = z.infer<typeof AirtableExtractInsertSchema>;
+export const AirtableExtractUpdateSchema = createUpdateSchema(airtableExtracts);
+export type AirtableExtractUpdate = z.infer<typeof AirtableExtractUpdateSchema>;
+
 export const airtableExtractsRelations = relations(airtableExtracts, ({ many, one }) => ({
 	children: many(airtableExtracts, {
 		relationName: 'parentChild',
@@ -94,6 +101,13 @@ export const airtableAttachments = integrationSchema.table('airtable_attachments
 	}),
 });
 
+export const AirtableAttachmentSelectSchema = createSelectSchema(airtableAttachments);
+export type AirtableAttachmentSelect = z.infer<typeof AirtableAttachmentSelectSchema>;
+export const AirtableAttachmentInsertSchema = createInsertSchema(airtableAttachments);
+export type AirtableAttachmentInsert = z.infer<typeof AirtableAttachmentInsertSchema>;
+export const AirtableAttachmentUpdateSchema = createUpdateSchema(airtableAttachments);
+export type AirtableAttachmentUpdate = z.infer<typeof AirtableAttachmentUpdateSchema>;
+
 export const airtableAttachmentsRelations = relations(airtableAttachments, ({ one }) => ({
 	extract: one(airtableExtracts, {
 		fields: [airtableAttachments.extractId],
@@ -132,6 +146,13 @@ export const airtableCreators = integrationSchema.table(
 	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
 
+export const AirtableCreatorSelectSchema = createSelectSchema(airtableCreators);
+export type AirtableCreatorSelect = z.infer<typeof AirtableCreatorSelectSchema>;
+export const AirtableCreatorInsertSchema = createInsertSchema(airtableCreators);
+export type AirtableCreatorInsert = z.infer<typeof AirtableCreatorInsertSchema>;
+export const AirtableCreatorUpdateSchema = createUpdateSchema(airtableCreators);
+export type AirtableCreatorUpdate = z.infer<typeof AirtableCreatorUpdateSchema>;
+
 export const airtableCreatorsRelations = relations(airtableCreators, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [airtableCreators.integrationRunId],
@@ -167,6 +188,13 @@ export const airtableSpaces = integrationSchema.table(
 	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
 
+export const AirtableSpaceSelectSchema = createSelectSchema(airtableSpaces);
+export type AirtableSpaceSelect = z.infer<typeof AirtableSpaceSelectSchema>;
+export const AirtableSpaceInsertSchema = createInsertSchema(airtableSpaces);
+export type AirtableSpaceInsert = z.infer<typeof AirtableSpaceInsertSchema>;
+export const AirtableSpaceUpdateSchema = createUpdateSchema(airtableSpaces);
+export type AirtableSpaceUpdate = z.infer<typeof AirtableSpaceUpdateSchema>;
+
 export const airtableSpacesRelations = relations(airtableSpaces, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [airtableSpaces.integrationRunId],
@@ -197,6 +225,13 @@ export const airtableExtractCreators = integrationSchema.table(
 	},
 	(table) => [primaryKey({ columns: [table.extractId, table.creatorId] })]
 );
+
+export const AirtableExtractCreatorSelectSchema = createSelectSchema(airtableExtractCreators);
+export type AirtableExtractCreatorSelect = z.infer<typeof AirtableExtractCreatorSelectSchema>;
+export const AirtableExtractCreatorInsertSchema = createInsertSchema(airtableExtractCreators);
+export type AirtableExtractCreatorInsert = z.infer<typeof AirtableExtractCreatorInsertSchema>;
+export const AirtableExtractCreatorUpdateSchema = createUpdateSchema(airtableExtractCreators);
+export type AirtableExtractCreatorUpdate = z.infer<typeof AirtableExtractCreatorUpdateSchema>;
 
 export const airtableExtractCreatorsRelations = relations(airtableExtractCreators, ({ one }) => ({
 	extract: one(airtableExtracts, {
@@ -231,6 +266,13 @@ export const airtableExtractSpaces = integrationSchema.table(
 	(table) => [primaryKey({ columns: [table.extractId, table.spaceId] })]
 );
 
+export const AirtableExtractSpaceSelectSchema = createSelectSchema(airtableExtractSpaces);
+export type AirtableExtractSpaceSelect = z.infer<typeof AirtableExtractSpaceSelectSchema>;
+export const AirtableExtractSpaceInsertSchema = createInsertSchema(airtableExtractSpaces);
+export type AirtableExtractSpaceInsert = z.infer<typeof AirtableExtractSpaceInsertSchema>;
+export const AirtableExtractSpaceUpdateSchema = createUpdateSchema(airtableExtractSpaces);
+export type AirtableExtractSpaceUpdate = z.infer<typeof AirtableExtractSpaceUpdateSchema>;
+
 export const airtableExtractSpacesRelations = relations(airtableExtractSpaces, ({ one }) => ({
 	extract: one(airtableExtracts, {
 		fields: [airtableExtractSpaces.extractId],
@@ -264,6 +306,13 @@ export const airtableExtractConnections = integrationSchema.table(
 	(table) => [primaryKey({ columns: [table.fromExtractId, table.toExtractId] })]
 );
 
+export const AirtableExtractConnectionSelectSchema = createSelectSchema(airtableExtractConnections);
+export type AirtableExtractConnectionSelect = z.infer<typeof AirtableExtractConnectionSelectSchema>;
+export const AirtableExtractConnectionInsertSchema = createInsertSchema(airtableExtractConnections);
+export type AirtableExtractConnectionInsert = z.infer<typeof AirtableExtractConnectionInsertSchema>;
+export const AirtableExtractConnectionUpdateSchema = createUpdateSchema(airtableExtractConnections);
+export type AirtableExtractConnectionUpdate = z.infer<typeof AirtableExtractConnectionUpdateSchema>;
+
 export const airtableExtractConnectionsRelations = relations(
 	airtableExtractConnections,
 	({ one }) => ({
@@ -285,53 +334,3 @@ export const airtableIntegrationRelations = relations(integrationRuns, ({ many }
 	airtableCreators: many(airtableCreators),
 	airtableSpaces: many(airtableSpaces),
 }));
-
-// Schema and type definitions
-export const AirtableExtractSelectSchema = createSelectSchema(airtableExtracts);
-export type AirtableExtractSelect = z.infer<typeof AirtableExtractSelectSchema>;
-export const AirtableExtractInsertSchema = createInsertSchema(airtableExtracts);
-export type AirtableExtractInsert = z.infer<typeof AirtableExtractInsertSchema>;
-export const AirtableExtractUpdateSchema = createUpdateSchema(airtableExtracts);
-export type AirtableExtractUpdate = z.infer<typeof AirtableExtractUpdateSchema>;
-
-export const AirtableAttachmentSelectSchema = createSelectSchema(airtableAttachments);
-export type AirtableAttachmentSelect = z.infer<typeof AirtableAttachmentSelectSchema>;
-export const AirtableAttachmentInsertSchema = createInsertSchema(airtableAttachments);
-export type AirtableAttachmentInsert = z.infer<typeof AirtableAttachmentInsertSchema>;
-export const AirtableAttachmentUpdateSchema = createUpdateSchema(airtableAttachments);
-export type AirtableAttachmentUpdate = z.infer<typeof AirtableAttachmentUpdateSchema>;
-
-export const AirtableCreatorSelectSchema = createSelectSchema(airtableCreators);
-export type AirtableCreatorSelect = z.infer<typeof AirtableCreatorSelectSchema>;
-export const AirtableCreatorInsertSchema = createInsertSchema(airtableCreators);
-export type AirtableCreatorInsert = z.infer<typeof AirtableCreatorInsertSchema>;
-export const AirtableCreatorUpdateSchema = createUpdateSchema(airtableCreators);
-export type AirtableCreatorUpdate = z.infer<typeof AirtableCreatorUpdateSchema>;
-
-export const AirtableSpaceSelectSchema = createSelectSchema(airtableSpaces);
-export type AirtableSpaceSelect = z.infer<typeof AirtableSpaceSelectSchema>;
-export const AirtableSpaceInsertSchema = createInsertSchema(airtableSpaces);
-export type AirtableSpaceInsert = z.infer<typeof AirtableSpaceInsertSchema>;
-export const AirtableSpaceUpdateSchema = createUpdateSchema(airtableSpaces);
-export type AirtableSpaceUpdate = z.infer<typeof AirtableSpaceUpdateSchema>;
-
-export const AirtableExtractCreatorSelectSchema = createSelectSchema(airtableExtractCreators);
-export type AirtableExtractCreatorSelect = z.infer<typeof AirtableExtractCreatorSelectSchema>;
-export const AirtableExtractCreatorInsertSchema = createInsertSchema(airtableExtractCreators);
-export type AirtableExtractCreatorInsert = z.infer<typeof AirtableExtractCreatorInsertSchema>;
-export const AirtableExtractCreatorUpdateSchema = createUpdateSchema(airtableExtractCreators);
-export type AirtableExtractCreatorUpdate = z.infer<typeof AirtableExtractCreatorUpdateSchema>;
-
-export const AirtableExtractSpaceSelectSchema = createSelectSchema(airtableExtractSpaces);
-export type AirtableExtractSpaceSelect = z.infer<typeof AirtableExtractSpaceSelectSchema>;
-export const AirtableExtractSpaceInsertSchema = createInsertSchema(airtableExtractSpaces);
-export type AirtableExtractSpaceInsert = z.infer<typeof AirtableExtractSpaceInsertSchema>;
-export const AirtableExtractSpaceUpdateSchema = createUpdateSchema(airtableExtractSpaces);
-export type AirtableExtractSpaceUpdate = z.infer<typeof AirtableExtractSpaceUpdateSchema>;
-
-export const AirtableExtractConnectionSelectSchema = createSelectSchema(airtableExtractConnections);
-export type AirtableExtractConnectionSelect = z.infer<typeof AirtableExtractConnectionSelectSchema>;
-export const AirtableExtractConnectionInsertSchema = createInsertSchema(airtableExtractConnections);
-export type AirtableExtractConnectionInsert = z.infer<typeof AirtableExtractConnectionInsertSchema>;
-export const AirtableExtractConnectionUpdateSchema = createUpdateSchema(airtableExtractConnections);
-export type AirtableExtractConnectionUpdate = z.infer<typeof AirtableExtractConnectionUpdateSchema>;

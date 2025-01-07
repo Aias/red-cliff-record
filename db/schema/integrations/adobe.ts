@@ -55,6 +55,13 @@ export const adobeLightroomImages = integrationSchema.table(
 	]
 );
 
+export const AdobeLightroomImageSelectSchema = createSelectSchema(adobeLightroomImages);
+export type AdobeLightroomImageSelect = z.infer<typeof AdobeLightroomImageSelectSchema>;
+export const AdobeLightroomImageInsertSchema = createInsertSchema(adobeLightroomImages);
+export type AdobeLightroomImageInsert = z.infer<typeof AdobeLightroomImageInsertSchema>;
+export const AdobeLightroomImageUpdateSchema = createUpdateSchema(adobeLightroomImages);
+export type AdobeLightroomImageUpdate = z.infer<typeof AdobeLightroomImageUpdateSchema>;
+
 export const adobeLightroomImagesRelations = relations(adobeLightroomImages, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [adobeLightroomImages.integrationRunId],
@@ -73,10 +80,3 @@ export const adobeLightroomImagesRelations = relations(adobeLightroomImages, ({ 
 export const adobeIntegrationRelations = relations(integrationRuns, ({ many }) => ({
 	adobeLightroomImages: many(adobeLightroomImages),
 }));
-
-export const AdobeLightroomImageSelectSchema = createSelectSchema(adobeLightroomImages);
-export type AdobeLightroomImageSelect = z.infer<typeof AdobeLightroomImageSelectSchema>;
-export const AdobeLightroomImageInsertSchema = createInsertSchema(adobeLightroomImages);
-export type AdobeLightroomImageInsert = z.infer<typeof AdobeLightroomImageInsertSchema>;
-export const AdobeLightroomImageUpdateSchema = createUpdateSchema(adobeLightroomImages);
-export type AdobeLightroomImageUpdate = z.infer<typeof AdobeLightroomImageUpdateSchema>;

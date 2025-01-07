@@ -41,6 +41,13 @@ export const twitterTweets = integrationSchema.table(
 	]
 );
 
+export const TwitterTweetSelectSchema = createSelectSchema(twitterTweets);
+export type TwitterTweetSelect = z.infer<typeof TwitterTweetSelectSchema>;
+export const TwitterTweetInsertSchema = createInsertSchema(twitterTweets);
+export type TwitterTweetInsert = z.infer<typeof TwitterTweetInsertSchema>;
+export const TwitterTweetUpdateSchema = createUpdateSchema(twitterTweets);
+export type TwitterTweetUpdate = z.infer<typeof TwitterTweetUpdateSchema>;
+
 export const twitterTweetsRelations = relations(twitterTweets, ({ one, many }) => ({
 	media: many(twitterMedia, { relationName: 'tweetMedia' }),
 	user: one(twitterUsers, {
@@ -88,6 +95,13 @@ export const twitterMedia = integrationSchema.table(
 	(table) => [index().on(table.archivedAt), index().on(table.mediaId)]
 );
 
+export const TwitterMediaSelectSchema = createSelectSchema(twitterMedia);
+export type TwitterMediaSelect = z.infer<typeof TwitterMediaSelectSchema>;
+export const TwitterMediaInsertSchema = createInsertSchema(twitterMedia);
+export type TwitterMediaInsert = z.infer<typeof TwitterMediaInsertSchema>;
+export const TwitterMediaUpdateSchema = createUpdateSchema(twitterMedia);
+export type TwitterMediaUpdate = z.infer<typeof TwitterMediaUpdateSchema>;
+
 export const twitterMediaRelations = relations(twitterMedia, ({ one }) => ({
 	tweet: one(twitterTweets, {
 		fields: [twitterMedia.tweetId],
@@ -128,6 +142,13 @@ export const twitterUsers = integrationSchema.table(
 	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
 
+export const TwitterUserSelectSchema = createSelectSchema(twitterUsers);
+export type TwitterUserSelect = z.infer<typeof TwitterUserSelectSchema>;
+export const TwitterUserInsertSchema = createInsertSchema(twitterUsers);
+export type TwitterUserInsert = z.infer<typeof TwitterUserInsertSchema>;
+export const TwitterUserUpdateSchema = createUpdateSchema(twitterUsers);
+export type TwitterUserUpdate = z.infer<typeof TwitterUserUpdateSchema>;
+
 export const twitterUsersRelations = relations(twitterUsers, ({ many, one }) => ({
 	tweets: many(twitterTweets),
 	integrationRun: one(integrationRuns, {
@@ -144,24 +165,3 @@ export const twitterIntegrationRelations = relations(integrationRuns, ({ many })
 	tweets: many(twitterTweets),
 	users: many(twitterUsers),
 }));
-
-export const TwitterTweetSelectSchema = createSelectSchema(twitterTweets);
-export type TwitterTweetSelect = z.infer<typeof TwitterTweetSelectSchema>;
-export const TwitterTweetInsertSchema = createInsertSchema(twitterTweets);
-export type TwitterTweetInsert = z.infer<typeof TwitterTweetInsertSchema>;
-export const TwitterTweetUpdateSchema = createUpdateSchema(twitterTweets);
-export type TwitterTweetUpdate = z.infer<typeof TwitterTweetUpdateSchema>;
-
-export const TwitterMediaSelectSchema = createSelectSchema(twitterMedia);
-export type TwitterMediaSelect = z.infer<typeof TwitterMediaSelectSchema>;
-export const TwitterMediaInsertSchema = createInsertSchema(twitterMedia);
-export type TwitterMediaInsert = z.infer<typeof TwitterMediaInsertSchema>;
-export const TwitterMediaUpdateSchema = createUpdateSchema(twitterMedia);
-export type TwitterMediaUpdate = z.infer<typeof TwitterMediaUpdateSchema>;
-
-export const TwitterUserSelectSchema = createSelectSchema(twitterUsers);
-export type TwitterUserSelect = z.infer<typeof TwitterUserSelectSchema>;
-export const TwitterUserInsertSchema = createInsertSchema(twitterUsers);
-export type TwitterUserInsert = z.infer<typeof TwitterUserInsertSchema>;
-export const TwitterUserUpdateSchema = createUpdateSchema(twitterUsers);
-export type TwitterUserUpdate = z.infer<typeof TwitterUserUpdateSchema>;

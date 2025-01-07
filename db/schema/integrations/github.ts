@@ -53,6 +53,13 @@ export const githubUsers = integrationSchema.table(
 	(table) => [index().on(table.login), index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
 
+export const GithubUserSelectSchema = createSelectSchema(githubUsers);
+export type GithubUserSelect = z.infer<typeof GithubUserSelectSchema>;
+export const GithubUserInsertSchema = createInsertSchema(githubUsers);
+export type GithubUserInsert = z.infer<typeof GithubUserInsertSchema>;
+export const GithubUserUpdateSchema = createUpdateSchema(githubUsers);
+export type GithubUserUpdate = z.infer<typeof GithubUserUpdateSchema>;
+
 export const githubRepositories = integrationSchema.table(
 	'github_repositories',
 	{
@@ -95,6 +102,13 @@ export const githubRepositories = integrationSchema.table(
 		index().on(table.recordId),
 	]
 );
+
+export const GithubRepositorySelectSchema = createSelectSchema(githubRepositories);
+export type GithubRepositorySelect = z.infer<typeof GithubRepositorySelectSchema>;
+export const GithubRepositoryInsertSchema = createInsertSchema(githubRepositories);
+export type GithubRepositoryInsert = z.infer<typeof GithubRepositoryInsertSchema>;
+export const GithubRepositoryUpdateSchema = createUpdateSchema(githubRepositories);
+export type GithubRepositoryUpdate = z.infer<typeof GithubRepositoryUpdateSchema>;
 
 export const GithubCommitType = z.enum([
 	'feature',
@@ -152,6 +166,13 @@ export const githubCommits = integrationSchema.table(
 	(table) => [index().on(table.repositoryId), index().on(table.sha)]
 );
 
+export const GithubCommitSelectSchema = createSelectSchema(githubCommits);
+export type GithubCommitSelect = z.infer<typeof GithubCommitSelectSchema>;
+export const GithubCommitInsertSchema = createInsertSchema(githubCommits);
+export type GithubCommitInsert = z.infer<typeof GithubCommitInsertSchema>;
+export const GithubCommitUpdateSchema = createUpdateSchema(githubCommits);
+export type GithubCommitUpdate = z.infer<typeof GithubCommitUpdateSchema>;
+
 export const githubCommitChangeStatusEnum = integrationSchema.enum(
 	'github_commit_change_status',
 	GithubCommitChangeStatus.options
@@ -175,6 +196,13 @@ export const githubCommitChanges = integrationSchema.table(
 	},
 	(table) => [index().on(table.commitId), index().on(table.filename)]
 );
+
+export const GithubCommitChangeSelectSchema = createSelectSchema(githubCommitChanges);
+export type GithubCommitChangeSelect = z.infer<typeof GithubCommitChangeSelectSchema>;
+export const GithubCommitChangeInsertSchema = createInsertSchema(githubCommitChanges);
+export type GithubCommitChangeInsert = z.infer<typeof GithubCommitChangeInsertSchema>;
+export const GithubCommitChangeUpdateSchema = createUpdateSchema(githubCommitChanges);
+export type GithubCommitChangeUpdate = z.infer<typeof GithubCommitChangeUpdateSchema>;
 
 export const githubUsersRelations = relations(githubUsers, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
@@ -226,32 +254,3 @@ export const githubIntegrationRelations = relations(integrationRuns, ({ many }) 
 	githubRepositories: many(githubRepositories),
 	githubCommits: many(githubCommits),
 }));
-
-// Schema and type definitions
-export const GithubUserSelectSchema = createSelectSchema(githubUsers);
-export type GithubUserSelect = z.infer<typeof GithubUserSelectSchema>;
-export const GithubUserInsertSchema = createInsertSchema(githubUsers);
-export type GithubUserInsert = z.infer<typeof GithubUserInsertSchema>;
-export const GithubUserUpdateSchema = createUpdateSchema(githubUsers);
-export type GithubUserUpdate = z.infer<typeof GithubUserUpdateSchema>;
-
-export const GithubRepositorySelectSchema = createSelectSchema(githubRepositories);
-export type GithubRepositorySelect = z.infer<typeof GithubRepositorySelectSchema>;
-export const GithubRepositoryInsertSchema = createInsertSchema(githubRepositories);
-export type GithubRepositoryInsert = z.infer<typeof GithubRepositoryInsertSchema>;
-export const GithubRepositoryUpdateSchema = createUpdateSchema(githubRepositories);
-export type GithubRepositoryUpdate = z.infer<typeof GithubRepositoryUpdateSchema>;
-
-export const GithubCommitSelectSchema = createSelectSchema(githubCommits);
-export type GithubCommitSelect = z.infer<typeof GithubCommitSelectSchema>;
-export const GithubCommitInsertSchema = createInsertSchema(githubCommits);
-export type GithubCommitInsert = z.infer<typeof GithubCommitInsertSchema>;
-export const GithubCommitUpdateSchema = createUpdateSchema(githubCommits);
-export type GithubCommitUpdate = z.infer<typeof GithubCommitUpdateSchema>;
-
-export const GithubCommitChangeSelectSchema = createSelectSchema(githubCommitChanges);
-export type GithubCommitChangeSelect = z.infer<typeof GithubCommitChangeSelectSchema>;
-export const GithubCommitChangeInsertSchema = createInsertSchema(githubCommitChanges);
-export type GithubCommitChangeInsert = z.infer<typeof GithubCommitChangeInsertSchema>;
-export const GithubCommitChangeUpdateSchema = createUpdateSchema(githubCommitChanges);
-export type GithubCommitChangeUpdate = z.infer<typeof GithubCommitChangeUpdateSchema>;

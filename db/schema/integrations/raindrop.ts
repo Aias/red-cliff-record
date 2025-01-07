@@ -52,7 +52,14 @@ export const raindropBookmarks = integrationSchema.table(
 	]
 );
 
-export const raindropRaindropsRelations = relations(raindropBookmarks, ({ one }) => ({
+export const RaindropBookmarkSelectSchema = createSelectSchema(raindropBookmarks);
+export type RaindropBookmarkSelect = z.infer<typeof RaindropBookmarkSelectSchema>;
+export const RaindropBookmarkInsertSchema = createInsertSchema(raindropBookmarks);
+export type RaindropBookmarkInsert = z.infer<typeof RaindropBookmarkInsertSchema>;
+export const RaindropBookmarkUpdateSchema = createUpdateSchema(raindropBookmarks);
+export type RaindropBookmarkUpdate = z.infer<typeof RaindropBookmarkUpdateSchema>;
+
+export const raindropBookmarksRelations = relations(raindropBookmarks, ({ one }) => ({
 	collection: one(raindropCollections, {
 		fields: [raindropBookmarks.collectionId],
 		references: [raindropCollections.id],
@@ -101,6 +108,13 @@ export const raindropCollections = integrationSchema.table(
 	]
 );
 
+export const RaindropCollectionSelectSchema = createSelectSchema(raindropCollections);
+export type RaindropCollectionSelect = z.infer<typeof RaindropCollectionSelectSchema>;
+export const RaindropCollectionInsertSchema = createInsertSchema(raindropCollections);
+export type RaindropCollectionInsert = z.infer<typeof RaindropCollectionInsertSchema>;
+export const RaindropCollectionUpdateSchema = createUpdateSchema(raindropCollections);
+export type RaindropCollectionUpdate = z.infer<typeof RaindropCollectionUpdateSchema>;
+
 export const raindropCollectionsRelations = relations(raindropCollections, ({ one, many }) => ({
 	raindrops: many(raindropBookmarks),
 	children: many(raindropCollections, { relationName: 'parentCollection' }),
@@ -123,18 +137,3 @@ export const raindropIntegrationRelations = relations(integrationRuns, ({ many }
 	raindropCollections: many(raindropCollections),
 	raindropRaindrops: many(raindropBookmarks),
 }));
-
-// Schema and type definitions
-export const RaindropCollectionSelectSchema = createSelectSchema(raindropCollections);
-export type RaindropCollectionSelect = z.infer<typeof RaindropCollectionSelectSchema>;
-export const RaindropCollectionInsertSchema = createInsertSchema(raindropCollections);
-export type RaindropCollectionInsert = z.infer<typeof RaindropCollectionInsertSchema>;
-export const RaindropCollectionUpdateSchema = createUpdateSchema(raindropCollections);
-export type RaindropCollectionUpdate = z.infer<typeof RaindropCollectionUpdateSchema>;
-
-export const RaindropBookmarkSelectSchema = createSelectSchema(raindropBookmarks);
-export type RaindropBookmarkSelect = z.infer<typeof RaindropBookmarkSelectSchema>;
-export const RaindropBookmarkInsertSchema = createInsertSchema(raindropBookmarks);
-export type RaindropBookmarkInsert = z.infer<typeof RaindropBookmarkInsertSchema>;
-export const RaindropBookmarkUpdateSchema = createUpdateSchema(raindropBookmarks);
-export type RaindropBookmarkUpdate = z.infer<typeof RaindropBookmarkUpdateSchema>;
