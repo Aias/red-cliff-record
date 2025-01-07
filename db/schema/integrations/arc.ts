@@ -1,5 +1,5 @@
 import { databaseTimestamps, databaseTimestampsNonUpdatable } from '../common';
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
@@ -19,7 +19,7 @@ export const arcBrowsingHistory = integrationSchema.table(
 			withTimezone: true,
 		}).notNull(),
 		browser: browserEnum('browser').notNull().default(Browser.enum.arc),
-		hostname: text('hostname'),
+		hostname: text('hostname').notNull(),
 		viewEpochMicroseconds: bigint('view_epoch_microseconds', { mode: 'bigint' }),
 		viewDuration: integer('view_duration'),
 		durationSinceLastView: integer('duration_since_last_view'),
@@ -60,31 +60,6 @@ export const arcIntegrationRelations = relations(integrationRuns, ({ many }) => 
 	arcBrowsingHistory: many(arcBrowsingHistory),
 }));
 
-export const arcBrowsingHistoryDaily = integrationSchema
-	.materializedView('arc_browsing_history_daily')
-	.as((qb) =>
-		qb
-			.select({
-				dayStart: sql<Date>`date_trunc('day', ${arcBrowsingHistory.viewTime})`.as('day_start'),
-				url: sql<string>`${arcBrowsingHistory.url}`.as('url'),
-				pageTitle: sql<string>`${arcBrowsingHistory.pageTitle}`.as('page_title'),
-				hostname: sql<string>`${arcBrowsingHistory.hostname}`.as('hostname'),
-				totalDuration: sql<number>`SUM(COALESCE(${arcBrowsingHistory.viewDuration}, 0))`.as(
-					'total_duration'
-				),
-				firstVisit: sql<Date>`MIN(${arcBrowsingHistory.viewTime})`.as('first_visit'),
-				lastVisit: sql<Date>`MAX(${arcBrowsingHistory.viewTime})`.as('last_visit'),
-				visitCount: sql<number>`COUNT(*)`.as('visit_count'),
-			})
-			.from(arcBrowsingHistory)
-			.groupBy(
-				sql`date_trunc('day', ${arcBrowsingHistory.viewTime})`,
-				arcBrowsingHistory.url,
-				arcBrowsingHistory.pageTitle,
-				arcBrowsingHistory.hostname
-			)
-	);
-
 export const ArcBrowsingHistorySelectSchema = createSelectSchema(arcBrowsingHistory);
 export type ArcBrowsingHistorySelect = z.infer<typeof ArcBrowsingHistorySelectSchema>;
 export const ArcBrowsingHistoryInsertSchema = createInsertSchema(arcBrowsingHistory);
@@ -110,15 +85,3 @@ export const ArcBrowsingHistoryOmitListUpdateSchema = createUpdateSchema(
 export type ArcBrowsingHistoryOmitListUpdate = z.infer<
 	typeof ArcBrowsingHistoryOmitListUpdateSchema
 >;
-
-export const ArcDailyHistorySelectSchema = z.object({
-	dayStart: z.date(),
-	url: z.string(),
-	pageTitle: z.string(),
-	hostname: z.string(),
-	totalDuration: z.number().int().min(0),
-	firstVisit: z.date(),
-	lastVisit: z.date(),
-	visitCount: z.number().int().min(0),
-});
-export type ArcDailyHistorySelect = z.infer<typeof ArcDailyHistorySelectSchema>;

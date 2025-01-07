@@ -1,12 +1,7 @@
 import os from 'os';
 import readline from 'readline';
 import { db } from '@/db/connections';
-import {
-	arcBrowsingHistory,
-	arcBrowsingHistoryDaily,
-	Browser,
-	type ArcBrowsingHistoryInsert,
-} from '@schema/integrations';
+import { arcBrowsingHistory, Browser, type ArcBrowsingHistoryInsert } from '@schema/integrations';
 import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
 import { runIntegration } from '../common/run-integration';
 import { chromeEpochMicrosecondsToDatetime } from '@/app/lib/time-helpers';
@@ -129,10 +124,6 @@ async function syncBrowserHistory(integrationRunId: number): Promise<number> {
 			);
 		}
 		console.log('New history entries inserted');
-
-		console.log('Refreshing materialized view...');
-		await db.refreshMaterializedView(arcBrowsingHistoryDaily);
-		console.log('Materialized view refreshed');
 	} else {
 		console.log('No new history entries to insert');
 	}

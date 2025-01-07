@@ -1,5 +1,5 @@
 import { db } from '@/db/connections';
-import { arcBrowsingHistoryDaily, arcBrowsingHistoryOmitList } from '@schema/integrations';
+import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@schema/integrations';
 import { sql } from 'drizzle-orm';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
@@ -11,19 +11,27 @@ const fetchHistoryForDate = createServerFn({ method: 'GET' })
 	.validator(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
 	.handler(async ({ data: date }) => {
 		const tzOffset = new Date().getTimezoneOffset();
-		// Invert the sign of the offset
 		const adjustedOffset = -tzOffset;
 
 		const history = await db
-			.select()
-			.from(arcBrowsingHistoryDaily)
+			.select({
+				hostname: arcBrowsingHistory.hostname,
+				url: arcBrowsingHistory.url,
+				pageTitle: arcBrowsingHistory.pageTitle,
+				totalDuration: sql<number>`sum(${arcBrowsingHistory.viewDuration})`,
+				visitCount: sql<number>`count(*)`,
+				firstVisit: sql<string>`min(${arcBrowsingHistory.viewTime})`,
+				lastVisit: sql<string>`max(${arcBrowsingHistory.viewTime})`,
+			})
+			.from(arcBrowsingHistory)
 			.where(
-				sql`DATE(${arcBrowsingHistoryDaily.firstVisit} + INTERVAL ${sql.raw(`'${adjustedOffset} MINUTES'`)}) = to_date(${date}, 'YYYY-MM-DD') AND NOT EXISTS (
+				sql`DATE(${arcBrowsingHistory.viewTime} + INTERVAL ${sql.raw(`'${adjustedOffset} MINUTES'`)}) = to_date(${date}, 'YYYY-MM-DD') AND NOT EXISTS (
 					SELECT 1 FROM ${arcBrowsingHistoryOmitList}
-					WHERE ${arcBrowsingHistoryDaily.url} LIKE CONCAT('%', ${arcBrowsingHistoryOmitList.pattern}, '%')
+					WHERE ${arcBrowsingHistory.url} LIKE ${arcBrowsingHistoryOmitList.pattern}
 				)`
 			)
-			.orderBy(arcBrowsingHistoryDaily.firstVisit);
+			.groupBy(arcBrowsingHistory.hostname, arcBrowsingHistory.url, arcBrowsingHistory.pageTitle)
+			.orderBy(sql`min(${arcBrowsingHistory.viewTime})`);
 
 		return history;
 	});

@@ -17,8 +17,7 @@ import { relations, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { databaseTimestamps } from '../common';
-import { integrationTypeEnum } from '../operations/schema';
-import { IntegrationType } from '../operations/types';
+import { IntegrationType, integrationTypeEnum } from '../operations';
 import {
 	CategorizationType,
 	CreatorRoleType,
