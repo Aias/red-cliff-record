@@ -21,6 +21,34 @@
 	--color-panel-translucent: var(--color-panel-translucent);
 	--color-panel: var(--color-panel);
 
+	--color-display: var(--gray-12);
+	--color-primary: var(--gray-a12);
+	--color-secondary: var(--gray-a11);
+	--color-hint: var(--gray-a10);
+	--color-symbol: var(--gray-a11);
+	--color-accent: var(--accent-11);
+	--color-ghost: var(--gray-a6);
+
+	--color-main: var(--accent-9);
+	--color-main-active: var(--accent-10);
+	--color-main-contrast: var(--accent-contrast);
+
+	--color-tint: var(--gray-a2);
+	--color-stain: var(--gray-a3);
+	--color-dye: var(--gray-a4);
+
+	--color-hovered: color-mix(in oklch, var(--gray-a1), var(--gray-a2));
+	--color-active: color-mix(in oklch, var(--gray-a2), var(--gray-a3));
+	--color-selected: color-mix(in oklch, var(--accent-a2), var(--accent-a3));
+	--color-selected-hovered: color-mix(in oklch, var(--accent-a3), var(--accent-a4));
+	--color-divider: var(--gray-a4);
+	--color-border-subtle: var(--gray-4);
+	--color-border: var(--gray-5);
+	--color-border-selected: var(--accent-a5);
+	--color-border-active: var(--gray-6);
+	--color-edge: var(--gray-8);
+	--color-indicator: var(--accent-9);
+
 	--color-gray-1: var(--gray-1);
 	--color-gray-2: var(--gray-2);
 	--color-gray-3: var(--gray-3);

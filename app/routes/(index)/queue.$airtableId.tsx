@@ -1,10 +1,5 @@
-import { db } from '@/db/connections';
-import { eq } from 'drizzle-orm';
-import {
-	AirtableSpaceSelectSchema,
-	airtableSpaces,
-	type AirtableSpaceSelect,
-} from '@schema/integrations';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { type AirtableSpaceSelect } from '@schema/integrations';
 import {
 	DataList,
 	Text,
@@ -14,83 +9,37 @@ import {
 	TextField,
 	SegmentedControl,
 	TextArea,
+	IconButton,
 } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
-import { createServerFn } from '@tanstack/start';
 import { useEffect, useState } from 'react';
-import { indexEntries, IndexEntrySelect } from '@/db/schema/main';
+import { useForm } from '@tanstack/react-form';
+import { IndexEntrySelectSchema, IndexEntrySelect } from '@/db/schema/main';
 import { IndexMainType } from '@/db/schema/main/types';
 import { CheckboxWithLabel } from '@/app/components/CheckboxWithLabel';
+import { AppLink } from '@/app/components/AppLink';
+import {
+	airtableSpaceByIdQueryOptions,
+	createIndexEntryFromAirtableSpace,
+	archiveSpaces,
+	updateIndexEntry,
+} from './-queries';
+import { Cross1Icon } from '@radix-ui/react-icons';
 
 export const Route = createFileRoute('/(index)/queue/$airtableId')({
 	component: RouteComponent,
-	loader: ({ params }) => fetchSpaceById({ data: params.airtableId }),
+	loader: ({ params, context }) =>
+		context.queryClient.ensureQueryData(airtableSpaceByIdQueryOptions(params.airtableId)),
 });
 
-const createIndexEntryFromAirtableSpace = createServerFn({ method: 'POST' })
-	.validator(AirtableSpaceSelectSchema)
-	.handler(async ({ data }) => {
-		const { id, name, contentCreatedAt, contentUpdatedAt, createdAt, updatedAt } = data;
-
-		const titleCaseName = name.replace(/\b\w/g, (char) => char.toUpperCase());
-
-		const [indexEntry] = await db
-			.insert(indexEntries)
-			.values({
-				name: titleCaseName,
-				mainType: 'category',
-				createdAt: contentCreatedAt ?? createdAt,
-				updatedAt: contentUpdatedAt ?? updatedAt,
-			})
-			.returning();
-
-		await db
-			.update(airtableSpaces)
-			.set({
-				indexEntryId: indexEntry.id,
-			})
-			.where(eq(airtableSpaces.id, id));
-
-		return indexEntry;
-	});
-
-const fetchSpaceById = createServerFn({ method: 'GET' })
-	.validator((data: string) => data)
-	.handler(async ({ data: airtableId }) => {
-		const space = await db.query.airtableSpaces.findFirst({
-			where: eq(airtableSpaces.id, airtableId),
-			with: {
-				indexEntry: true,
-			},
-		});
-
-		if (!space) {
-			throw new Error('Record not found');
-		}
-
-		return space;
-	});
-
-const archiveSpace = createServerFn({ method: 'POST' })
-	.validator((data: { spaceId: string }) => data)
-	.handler(async ({ data: { spaceId } }) => {
-		await db
-			.update(airtableSpaces)
-			.set({ archivedAt: new Date() })
-			.where(eq(airtableSpaces.id, spaceId));
-	});
-
 function RouteComponent() {
-	const space = Route.useLoaderData();
-	const [indexEntry, setIndexEntry] = useState<IndexEntrySelect | null>(space.indexEntry);
-
-	useEffect(() => {
-		setIndexEntry(space.indexEntry);
-	}, [space]);
+	const { airtableId } = Route.useParams();
+	const { data: space } = useSuspenseQuery(airtableSpaceByIdQueryOptions(airtableId));
+	const queryClient = useQueryClient();
 
 	return (
 		<Card className="flex gap-2 shrink basis-full">
-			<div className="flex flex-col max-w-sm gap-4">
+			<div className="flex flex-col w-sm gap-4">
 				<Heading size="4">Selected Space</Heading>
 				{!space ? (
 					<Text>Not Found.</Text>
@@ -114,16 +63,35 @@ function RouteComponent() {
 						))}
 					</DataList.Root>
 				)}
-				<Button variant="soft" onClick={() => archiveSpace({ data: { spaceId: space.id } })}>
+				<Button
+					variant="soft"
+					onClick={() =>
+						archiveSpaces({ data: [space.id] }).then(() => {
+							queryClient.invalidateQueries({
+								queryKey: ['airtableSpaceById', space.id],
+							});
+							queryClient.invalidateQueries({
+								queryKey: ['airtableSpaces'],
+							});
+						})
+					}
+				>
 					Archive
 				</Button>
 			</div>
-			<div className="flex flex-col gap-4 grow pl-3 ml-3 border-l border-gray-a4">
-				<Heading size="4">Index Entry</Heading>
-				{indexEntry ? (
-					<IndexEntryForm indexEntry={indexEntry} space={space} />
+			<div className="flex flex-col gap-4 grow pl-3 ml-3 border-l border-divider">
+				<div className="flex justify-between items-center">
+					<Heading size="4">Index Entry</Heading>
+					<AppLink asChild to={'/queue'}>
+						<IconButton size="1" variant="soft">
+							<Cross1Icon />
+						</IconButton>
+					</AppLink>
+				</div>
+				{space.indexEntry ? (
+					<IndexEntryForm indexEntry={space.indexEntry} space={space} />
 				) : (
-					<NoIndexEntry space={space} setIndexEntry={setIndexEntry} />
+					<NoIndexEntry space={space} />
 				)}
 			</div>
 		</Card>
@@ -137,86 +105,174 @@ const IndexEntryForm = ({
 	indexEntry: IndexEntrySelect;
 	space: AirtableSpaceSelect;
 }) => {
-	const [{ private: isPrivate, name, shortName, notes, sense, mainType, subType }, setIndexEntry] =
-		useState(indexEntry);
+	const queryClient = useQueryClient();
+	const entryMutation = useMutation({
+		mutationFn: updateIndexEntry,
+		onSuccess: (data) => {
+			queryClient.setQueryData(['airtableSpaceById', space.id], {
+				...space,
+				indexEntryId: data.id,
+				indexEntry: data,
+			});
+			queryClient.setQueryData(['airtableSpaces'], (oldData: AirtableSpaceSelect[]) => {
+				return oldData.map((space) =>
+					space.indexEntryId === data.id ? { ...space, indexEntry: data } : space
+				);
+			});
+		},
+	});
+
+	const form = useForm({
+		defaultValues: indexEntry,
+		onSubmit: async ({ value }) => {
+			entryMutation.mutate({ data: value });
+		},
+		validators: {
+			onChange: IndexEntrySelectSchema,
+		},
+	});
+
+	useEffect(() => {
+		form.reset(indexEntry);
+	}, [indexEntry]);
+
 	return (
-		<form className="flex flex-col gap-2">
-			<label className="flex flex-col gap-1">
-				<Text size="2" color="gray">
-					Main Type
-				</Text>
-				<SegmentedControl.Root
-					variant="classic"
-					value={mainType}
-					onValueChange={(value) =>
-						setIndexEntry({ ...indexEntry, mainType: value as IndexMainType })
-					}
-				>
-					<SegmentedControl.Item value="entity">Entity</SegmentedControl.Item>
-					<SegmentedControl.Item value="category">Category</SegmentedControl.Item>
-					<SegmentedControl.Item value="format">Format</SegmentedControl.Item>
-				</SegmentedControl.Root>
-			</label>
-			<label>
-				<Text size="2" color="gray">
-					Name
-				</Text>
-				<TextField.Root
-					value={name}
-					onChange={(e) => setIndexEntry({ ...indexEntry, name: e.target.value })}
-				/>
-			</label>
-			<label>
-				<Text size="2" color="gray">
-					Short Name
-				</Text>
-				<TextField.Root
-					value={shortName || ''}
-					onChange={(e) => setIndexEntry({ ...indexEntry, shortName: e.target.value })}
-				/>
-			</label>
-			<label>
-				<Text size="2" color="gray">
-					Sense
-				</Text>
-				<TextField.Root
-					value={sense || ''}
-					onChange={(e) => setIndexEntry({ ...indexEntry, sense: e.target.value })}
-				/>
-			</label>
-			<label>
-				<Text size="2" color="gray">
-					Notes
-				</Text>
-				<TextArea
-					value={notes || ''}
-					onChange={(e) => setIndexEntry({ ...indexEntry, notes: e.target.value })}
-				/>
-			</label>
-			<CheckboxWithLabel
-				className="mt-2"
-				label="Private"
-				checked={isPrivate}
-				onChange={() => setIndexEntry({ ...indexEntry, private: !isPrivate })}
+		<form
+			className="flex flex-col gap-2"
+			onSubmit={(e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				form.handleSubmit();
+			}}
+		>
+			<form.Field name="mainType">
+				{(field) => (
+					<label className="flex flex-col gap-1">
+						<Text size="2" color="gray">
+							Main Type
+						</Text>
+						<SegmentedControl.Root
+							variant="classic"
+							value={field.state.value}
+							onValueChange={(value) => field.handleChange(value as IndexMainType)}
+						>
+							<SegmentedControl.Item value="entity">Entity</SegmentedControl.Item>
+							<SegmentedControl.Item value="category">Category</SegmentedControl.Item>
+							<SegmentedControl.Item value="format">Format</SegmentedControl.Item>
+						</SegmentedControl.Root>
+					</label>
+				)}
+			</form.Field>
+
+			<form.Field name="name">
+				{(field) => (
+					<label>
+						<Text size="2" color="gray">
+							Name
+						</Text>
+						<TextField.Root
+							type="text"
+							value={field.state.value}
+							onChange={(e) => field.handleChange(e.target.value)}
+						/>
+					</label>
+				)}
+			</form.Field>
+
+			<form.Field name="sense">
+				{(field) => (
+					<label>
+						<Text size="2" color="gray">
+							Sense
+						</Text>
+						<TextField.Root
+							type="text"
+							value={field.state.value || ''}
+							onChange={(e) => field.handleChange(e.target.value)}
+						/>
+					</label>
+				)}
+			</form.Field>
+
+			<form.Field name="shortName">
+				{(field) => (
+					<label>
+						<Text size="2" color="gray">
+							Short Name
+						</Text>
+						<TextField.Root
+							type="text"
+							value={field.state.value || ''}
+							onChange={(e) => field.handleChange(e.target.value)}
+						/>
+					</label>
+				)}
+			</form.Field>
+
+			<form.Field name="notes">
+				{(field) => (
+					<label>
+						<Text size="2" color="gray">
+							Notes
+						</Text>
+						<TextArea
+							value={field.state.value || ''}
+							onChange={(e) => field.handleChange(e.target.value)}
+						/>
+					</label>
+				)}
+			</form.Field>
+
+			<form.Field name="private">
+				{(field) => (
+					<CheckboxWithLabel
+						className="mt-2"
+						label="Private"
+						checked={field.state.value || false}
+						onCheckedChange={(checked) => field.handleChange(!!checked)}
+					/>
+				)}
+			</form.Field>
+
+			<form.Subscribe
+				selector={(state) => [state.canSubmit, state.isSubmitting]}
+				children={([canSubmit, isSubmitting]) => (
+					<div className="border-t border-divider pt-4 mt-4">
+						<Button type="submit" disabled={!canSubmit}>
+							{isSubmitting ? '...Saving' : 'Save Changes'}
+						</Button>
+					</div>
+				)}
 			/>
 		</form>
 	);
 };
 
-const NoIndexEntry = ({
-	space,
-	setIndexEntry,
-}: {
-	space: AirtableSpaceSelect;
-	setIndexEntry: (indexEntry: IndexEntrySelect) => void;
-}) => {
+const NoIndexEntry = ({ space }: { space: AirtableSpaceSelect }) => {
+	const queryClient = useQueryClient();
 	return (
 		<div className="rounded-2 p-4 align-center justify-center flex flex-col border border-gray-a4 text-center gap-2">
 			<Text>No index entry found for this space.</Text>
 			<Button
 				onClick={async () => {
-					const indexEntry = await createIndexEntryFromAirtableSpace({ data: space });
-					setIndexEntry(indexEntry);
+					const { indexEntry: newIndexEntry, airtableSpace: updatedAirtableSpace } =
+						await createIndexEntryFromAirtableSpace({ data: space });
+					queryClient.setQueryData(['airtableSpaceById', space.id], {
+						...updatedAirtableSpace,
+						indexEntryId: newIndexEntry.id,
+						indexEntry: newIndexEntry,
+					});
+					queryClient.setQueryData(['airtableSpaces'], (oldData: AirtableSpaceSelect[]) => {
+						return oldData.map((oldSpace) =>
+							oldSpace.id === space.id
+								? {
+										...updatedAirtableSpace,
+										indexEntryId: newIndexEntry.id,
+										indexEntry: newIndexEntry,
+									}
+								: oldSpace
+						);
+					});
 				}}
 			>
 				Create Index Entry

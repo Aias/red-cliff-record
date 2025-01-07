@@ -9,4 +9,11 @@ ol,
 menu,
 pre {
 	margin: 0;
+	padding: 0;
+}
+
+ul,
+ol,
+menu {
+	list-style: none;
 }

@@ -153,8 +153,6 @@ function CommitList() {
 								<Table.Row
 									key={commit.sha}
 									onClick={(e) => {
-										// Don't navigate if clicking checkbox
-										if ((e.target as HTMLElement).closest('.checkbox')) return;
 										navigate({ to: '/commits/$sha', params: { sha: commit.sha } });
 									}}
 									className={classNames(

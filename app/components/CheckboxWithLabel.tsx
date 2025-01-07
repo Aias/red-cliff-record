@@ -1,24 +1,22 @@
-import { Checkbox, Flex, Text, type TextProps } from '@radix-ui/themes';
+import { Checkbox, Flex, Text } from '@radix-ui/themes';
 import { ComponentProps } from 'react';
 
-type CheckboxWithLabelProps = {
+type CheckboxWithLabelProps = Omit<ComponentProps<typeof Checkbox>, 'size'> & {
 	label: string;
-	checked: boolean;
-	onChange: (checked: boolean) => void;
 	size?: '1' | '2' | '3';
-} & ComponentProps<'label'>;
+	className?: string;
+};
 
 export const CheckboxWithLabel = ({
 	label,
-	checked,
-	onChange,
 	size = '2',
-	...textProps
+	className,
+	...checkboxProps
 }: CheckboxWithLabelProps) => {
 	return (
-		<label {...textProps}>
+		<label className={className}>
 			<Flex gap={size === '1' ? '1' : '2'} align="center">
-				<Checkbox size={size} checked={checked} onCheckedChange={onChange} />
+				<Checkbox size={size} {...checkboxProps} />
 				<Text size={size} weight="medium">
 					{label}
 				</Text>

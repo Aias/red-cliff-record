@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createFileRoute } from '@tanstack/react-router';
-import { Card, Heading, Text, Button, Code, ScrollArea } from '@radix-ui/themes';
+import { Card, Heading, Text, Button, Code, ScrollArea, IconButton } from '@radix-ui/themes';
 import { eq } from 'drizzle-orm';
 import { createServerFn } from '@tanstack/start';
 import { db } from '@/db/connections';
@@ -10,6 +10,7 @@ import { CommitSummary, summarizeCommit } from '../../lib/commit-summarizer';
 import { CodeBlock } from '../../components/CodeBlock';
 import { AppLink } from '../../components/AppLink';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import { Cross1Icon } from '@radix-ui/react-icons';
 
 export const CommitSummaryInputSchema = z.object({
 	message: z.string(),
@@ -178,10 +179,10 @@ function CommitView() {
 		<Card className="grow basis-full">
 			<header className="flex justify-between items-center mb-4 gap-2">
 				<Heading size="6">Commit {commit.sha.slice(0, 7)}</Heading>
-				<AppLink to={'/commits'}>
-					<Text size="3" weight="regular">
-						Close
-					</Text>
+				<AppLink to={'/commits'} asChild>
+					<IconButton size="1" variant="soft">
+						<Cross1Icon />
+					</IconButton>
 				</AppLink>
 			</header>
 			<ScrollArea>
