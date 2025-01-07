@@ -1,10 +1,17 @@
-import { Button, Checkbox, Heading, ScrollArea, Text } from '@radix-ui/themes';
+import { Button, Checkbox, Heading, IconButton, ScrollArea, Text } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useNavigate, useParams } from '@tanstack/react-router';
 import classNames from 'classnames';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { airtableSpaceQueryOptions, archiveSpaces, createIndexEntries } from './-queries';
+import { useQueryClient, useSuspenseQuery, useQuery } from '@tanstack/react-query';
+import {
+	airtableSpaceQueryOptions,
+	archiveQueueLengthQueryOptions,
+	archiveSpaces,
+	createIndexEntries,
+} from './-queries';
 import { AppLink } from '@/app/components/AppLink';
 import { useState } from 'react';
+import { Cross1Icon, Link1Icon } from '@radix-ui/react-icons';
+import { Icon } from '@/app/components/Icon';
 
 export const Route = createFileRoute('/(index)/queue')({
 	loader: async ({ context }) => {
@@ -15,6 +22,7 @@ export const Route = createFileRoute('/(index)/queue')({
 
 function RouteComponent() {
 	const { data: spaces } = useSuspenseQuery(airtableSpaceQueryOptions());
+	const { data: archiveQueueLength } = useQuery(archiveQueueLengthQueryOptions());
 	const navigate = useNavigate();
 	const { airtableId } = useParams({
 		strict: false,
@@ -50,6 +58,9 @@ function RouteComponent() {
 		try {
 			await archiveSpaces({ data: Array.from(selectedSpaces) });
 			queryClient.invalidateQueries({
+				queryKey: ['archiveQueueLength'],
+			});
+			queryClient.invalidateQueries({
 				queryKey: ['airtableSpaces'],
 			});
 			selectedSpaces.forEach((id) => {
@@ -67,35 +78,78 @@ function RouteComponent() {
 
 	return (
 		<main className="p-3 basis-full grow-0 h-full flex gap-2">
-			<section className="flex flex-col gap-2 grow-0 shrink min-w-2xs">
-				<Heading size="4">Index Queue</Heading>
+			<section className="flex flex-col gap-2 grow-0 shrink min-w-xs">
+				<header className="flex flex-row gap-2 justify-between items-center">
+					<Heading size="4">Index Queue</Heading>
+					{archiveQueueLength && (
+						<Text size="3" color="gray">
+							{archiveQueueLength} remaining
+						</Text>
+					)}
+				</header>
 
 				<div className="flex flex-row gap-2 justify-between items-center">
 					<Text>{selectedSpaces.size} selected</Text>
-					{selectedSpaces.size > 0 && (
-						<menu className="flex flex-row gap-1 items-center">
-							<li>
-								<Button
-									size="1"
-									variant="soft"
-									disabled={processing}
-									onClick={handleArchiveSelected}
-								>
-									Archive All
-								</Button>
-							</li>
-							<li>
-								<Button
-									size="1"
-									variant="soft"
-									disabled={processing}
-									onClick={handleBatchCreateEntries}
-								>
-									Create Entries
-								</Button>
-							</li>
-						</menu>
-					)}
+					<menu className="flex flex-row gap-1 items-center">
+						{selectedSpaces.size > 0 ? (
+							<>
+								<li>
+									<Button
+										size="1"
+										variant="soft"
+										disabled={processing}
+										onClick={handleArchiveSelected}
+									>
+										Archive All
+									</Button>
+								</li>
+								<li>
+									<Button
+										size="1"
+										variant="soft"
+										disabled={processing}
+										onClick={handleBatchCreateEntries}
+									>
+										Create Entries
+									</Button>
+								</li>
+								<li>
+									<IconButton variant="soft" size="1" onClick={() => setSelectedSpaces(new Set())}>
+										<Cross1Icon className="w-3 h-3" />
+									</IconButton>
+								</li>
+							</>
+						) : (
+							<>
+								<li>
+									<Button
+										size="1"
+										variant="soft"
+										onClick={() => {
+											setSelectedSpaces(
+												new Set(spaces.filter((s) => s.indexEntry).map((s) => s.id))
+											);
+										}}
+									>
+										All Mapped
+									</Button>
+								</li>
+								<li>
+									<Button
+										size="1"
+										variant="soft"
+										onClick={() => {
+											setSelectedSpaces(
+												new Set(spaces.filter((s) => !s.indexEntry).map((s) => s.id))
+											);
+										}}
+									>
+										All Unmapped
+									</Button>
+								</li>
+							</>
+						)}
+					</menu>
 				</div>
 				<ScrollArea>
 					<ul className="flex flex-col gap-2">
@@ -146,7 +200,10 @@ function RouteComponent() {
 									</Text>
 								)}
 								{space.indexEntry && (
-									<div className="flex flex-row gap-1 border-t border-gray-a3 pt-2 mt-2">
+									<div className="flex flex-row gap-1 items-center border-t border-gray-a3 pt-2 mt-2">
+										<Icon size="3" color="grass" className="mr-1">
+											<Link1Icon />
+										</Icon>
 										<Text size="2" color="gray" className="capitalize">
 											{space.indexEntry.mainType}:
 										</Text>

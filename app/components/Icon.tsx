@@ -1,13 +1,14 @@
 import { Text, TextProps } from '@radix-ui/themes';
+import cn from 'classnames';
 
-export const Icon = ({ size = '3', color, children, ...props }: TextProps) => {
+export const Icon = ({ size = '3', color, children, className, ...props }: TextProps) => {
 	return (
 		<Text
 			asChild
 			size={size}
 			color={color}
 			{...props}
-			className="inline-block"
+			className={cn('inline-block', className)}
 			style={{
 				width: '1em',
 				height: '1em',

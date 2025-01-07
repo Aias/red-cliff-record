@@ -24,6 +24,17 @@ export const airtableSpaceQueryOptions = () =>
 		queryFn: () => getAirtableSpaces(),
 	});
 
+const getArchiveQueueLength = createServerFn({ method: 'GET' }).handler(async () => {
+	const count = await db.$count(airtableSpaces, isNull(airtableSpaces.archivedAt));
+	return count;
+});
+
+export const archiveQueueLengthQueryOptions = () =>
+	queryOptions({
+		queryKey: ['archiveQueueLength'],
+		queryFn: () => getArchiveQueueLength(),
+	});
+
 export const fetchSpaceById = createServerFn({ method: 'GET' })
 	.validator(z.string())
 	.handler(async ({ data: airtableId }) => {
