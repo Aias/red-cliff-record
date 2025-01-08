@@ -20,10 +20,3 @@
 		display: none;
 	}
 }
-
-/* Hide commit details when container is narrow and showing list */
-@container (max-width: 799px) {
-	.layout > :first-child:not(:last-child) {
-		display: none;
-	}
-}

@@ -24,8 +24,8 @@ export type DataGridProps<T> = {
 	sorting?: boolean;
 	selection?: {
 		enabled: boolean;
-		onRowToggle?: (id: string) => void;
-		onSelectionChange?: (selectedIds: Set<string>) => void;
+		selectedIds: Set<string>;
+		onSelectionChange: (selectedIds: Set<string>) => void;
 	};
 	onRowClick?: (row: T) => void;
 	getRowId: (row: T) => string;
@@ -60,27 +60,34 @@ export function DataGrid<T>({
 	cellProps,
 }: DataGridProps<T>) {
 	const [sortingState, setSortingState] = useState<SortingState>([]);
-	const { selectedIds, toggleSelection } = useSelection(data.map((row) => ({ id: getRowId(row) })));
 
-	// Prepend selection column if enabled
 	const columns = useMemo(
 		() =>
 			selection?.enabled
 				? [
 						{
 							id: 'select',
-							header: 'Select',
+							header: '',
 							meta: {
 								align: 'center',
 							},
 							cell: ({ row }) => (
 								<Checkbox
-									checked={selectedIds.has(getRowId(row.original))}
+									title="Select"
+									checked={selection.selectedIds.has(getRowId(row.original))}
 									onClick={(e) => {
 										e.stopPropagation();
 										const id = getRowId(row.original);
-										toggleSelection(id);
-										selection.onRowToggle?.(id);
+										const newSelection = new Set(selection.selectedIds);
+										if (newSelection.has(id)) {
+											newSelection.delete(id);
+										} else {
+											newSelection.add(id);
+										}
+										selection.onSelectionChange(newSelection);
+									}}
+									style={{
+										marginTop: '0.1em',
 									}}
 								/>
 							),
@@ -88,19 +95,8 @@ export function DataGrid<T>({
 						...userColumns,
 					]
 				: userColumns,
-		[
-			selection?.enabled,
-			userColumns,
-			selectedIds,
-			getRowId,
-			toggleSelection,
-			selection?.onRowToggle,
-		]
+		[selection?.enabled, userColumns, selection?.selectedIds, getRowId]
 	);
-
-	useEffect(() => {
-		selection?.onSelectionChange?.(selectedIds);
-	}, [selectedIds]);
 
 	const table = useReactTable({
 		data,
@@ -145,7 +141,7 @@ export function DataGrid<T>({
 								key={row.id}
 								className={cn(
 									onRowClick && 'selectable',
-									selectedIds.has(getRowId(row.original)) && 'active',
+									selection?.selectedIds.has(getRowId(row.original)) && 'active',
 									customRowProps?.className
 								)}
 								onClick={() => onRowClick?.(row.original)}

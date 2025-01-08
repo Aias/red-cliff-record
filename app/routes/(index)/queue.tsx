@@ -8,11 +8,10 @@ import {
 	createIndexEntries,
 } from './-queries';
 import { AppLink } from '@/app/components/AppLink';
-import { useState } from 'react';
 import { Cross1Icon, Link1Icon } from '@radix-ui/react-icons';
 import { Icon } from '@/app/components/Icon';
 import { useSelection } from '@/app/lib/useSelection';
-import { invalidateQueries } from '@/app/lib/query-helpers';
+import { useBatchOperation } from '@/app/lib/useBatchOperation';
 
 export const Route = createFileRoute('/(index)/queue')({
 	loader: async ({ context }) => {
@@ -29,43 +28,32 @@ function RouteComponent() {
 		strict: false,
 	});
 	const { selectedIds, toggleSelection, selectAll, clearSelection } = useSelection(spaces);
-	const [processing, setProcessing] = useState(false);
 	const queryClient = useQueryClient();
 
-	const handleBatchCreateEntries = async () => {
-		setProcessing(true);
-		try {
-			await createIndexEntries({
-				data: Array.from(selectedIds).map((id) => spaces.find((s) => s.id === id)!),
-			});
-			await invalidateQueries(queryClient, [
-				['airtableSpaces'],
-				...Array.from(selectedIds).map((id) => ['airtableSpaceById', id]),
-			]);
-			clearSelection();
-		} catch (error) {
-			console.error('Error creating index entries:', error);
-		} finally {
-			setProcessing(false);
-		}
-	};
+	const createEntriesOperation = useBatchOperation({
+		selectedIds,
+		clearSelection,
+		queryClient,
+		invalidateKeys: [
+			['airtableSpaces'],
+			...Array.from(selectedIds).map((id) => ['airtableSpaceById', id]),
+		],
+		prepareData: (ids) => ids.map((id) => spaces.find((s) => s.id === id)!),
+		operation: createIndexEntries,
+	});
 
-	const handleArchiveSelected = async () => {
-		setProcessing(true);
-		try {
-			await archiveSpaces({ data: Array.from(selectedIds) });
-			await invalidateQueries(queryClient, [
-				['archiveQueueLength'],
-				['airtableSpaces'],
-				...Array.from(selectedIds).map((id) => ['airtableSpaceById', id]),
-			]);
-			clearSelection();
-		} catch (error) {
-			console.error('Error archiving spaces:', error);
-		} finally {
-			setProcessing(false);
-		}
-	};
+	const archiveOperation = useBatchOperation({
+		selectedIds,
+		clearSelection,
+		queryClient,
+		invalidateKeys: [
+			['archiveQueueLength'],
+			['airtableSpaces'],
+			...Array.from(selectedIds).map((id) => ['airtableSpaceById', id]),
+		],
+		prepareData: (ids) => ids,
+		operation: archiveSpaces,
+	});
 
 	return (
 		<main className="p-3 basis-full grow-0 h-full flex gap-2">
@@ -88,8 +76,8 @@ function RouteComponent() {
 									<Button
 										size="1"
 										variant="soft"
-										disabled={processing}
-										onClick={handleArchiveSelected}
+										disabled={archiveOperation.processing}
+										onClick={archiveOperation.execute}
 									>
 										Archive All
 									</Button>
@@ -98,8 +86,8 @@ function RouteComponent() {
 									<Button
 										size="1"
 										variant="soft"
-										disabled={processing}
-										onClick={handleBatchCreateEntries}
+										disabled={createEntriesOperation.processing}
+										onClick={createEntriesOperation.execute}
 									>
 										Create Entries
 									</Button>
