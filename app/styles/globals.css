@@ -173,16 +173,16 @@
 		@apply border-border bg-hovered;
 	}
 
-	.selectable:active {
+	.selectable:is(.active, :active) {
 		@apply border-border-active bg-active;
 	}
 
-	.selectable:where(.selected, [data-status='active'], :has([data-status='active'])) {
+	.selectable:is(.selected, [data-status='active'], :has([data-status='active'])) {
 		@apply border-border-selected bg-selected;
 	}
 
-	.selectable:where(.selected, [data-status='active'], :has([data-status='active'])):hover,
-	.selectable:where(.selected, [data-status='active'], :has([data-status='active'])):active {
+	.selectable:is(.selected, [data-status='active'], :has([data-status='active'])):hover,
+	.selectable:is(.selected, [data-status='active'], :has([data-status='active'])):active {
 		@apply bg-selected-hovered border-border-selected;
 	}
 }

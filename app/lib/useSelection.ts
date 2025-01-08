@@ -32,6 +32,10 @@ export function useSelection<T extends { id: string }>(items: T[]) {
 		});
 	}
 
+	function setSelection(selection: Set<string>) {
+		setSelectedIds(selection);
+	}
+
 	const selectAll = (predicate?: (item: T) => boolean) => {
 		setSelectedIds(
 			new Set(items.filter((item) => (predicate ? predicate(item) : true)).map((item) => item.id))
@@ -59,6 +63,7 @@ export function useSelection<T extends { id: string }>(items: T[]) {
 		selectedIds,
 		toggleSelection,
 		clearSelection,
+		setSelection,
 		selectAll,
 	};
 }

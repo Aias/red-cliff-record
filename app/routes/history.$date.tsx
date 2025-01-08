@@ -3,9 +3,12 @@ import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@schema/integrat
 import { sql } from 'drizzle-orm';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
-import { Heading, Table, Text, Link as RadixLink, Button, ScrollArea } from '@radix-ui/themes';
+import { Heading, Text, Link as RadixLink, Button, ScrollArea } from '@radix-ui/themes';
 import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { z } from 'zod';
+import { useMemo } from 'react';
+import { ColumnDef } from '@tanstack/react-table';
+import { DataGrid } from '@/app/components/DataGrid';
 
 const fetchHistoryForDate = createServerFn({ method: 'GET' })
 	.validator(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
@@ -65,6 +68,79 @@ function DailyActivityPage() {
 
 	const formatDateParam = (date: Date) => date.toISOString().split('T')[0];
 
+	const columns = useMemo<ColumnDef<(typeof history)[0]>[]>(
+		() => [
+			{
+				accessorKey: 'hostname',
+				header: 'Source',
+				cell: ({ row }) => (
+					<Text wrap="nowrap">
+						{row.original.hostname.replaceAll('.local', '').replaceAll('-', ' ')}
+					</Text>
+				),
+			},
+			{
+				accessorKey: 'url',
+				header: 'URL',
+				cell: ({ row }) => (
+					<RadixLink href={row.original.url.href} target="_blank" rel="noopener noreferrer">
+						{`${row.original.url.hostname}${row.original.url.pathname}`}
+					</RadixLink>
+				),
+				meta: {
+					columnProps: {
+						maxWidth: '320px',
+					},
+				},
+			},
+			{
+				accessorKey: 'pageTitle',
+				header: 'Page Title',
+			},
+			{
+				accessorKey: 'totalDuration',
+				header: 'Duration',
+				cell: ({ getValue }) => formatNumber(getValue() as number),
+				meta: {
+					columnProps: {
+						align: 'right',
+					},
+				},
+			},
+			{
+				accessorKey: 'visitCount',
+				header: 'Visits',
+				cell: ({ getValue }) => formatNumber(getValue() as number),
+				meta: {
+					columnProps: {
+						align: 'right',
+					},
+				},
+			},
+			{
+				accessorKey: 'firstVisit',
+				header: 'First Visit',
+				cell: ({ getValue }) => formatTime(getValue() as string),
+				meta: {
+					columnProps: {
+						minWidth: '100px',
+					},
+				},
+			},
+			{
+				accessorKey: 'lastVisit',
+				header: 'Last Visit',
+				cell: ({ getValue }) => formatTime(getValue() as string),
+				meta: {
+					columnProps: {
+						minWidth: '100px',
+					},
+				},
+			},
+		],
+		[]
+	);
+
 	return (
 		<main className="p-3 h-full flex flex-col">
 			<header className="flex justify-between flex-wrap items-center mb-4 gap-4">
@@ -96,42 +172,12 @@ function DailyActivityPage() {
 				Browser History
 			</Heading>
 			<ScrollArea>
-				<Table.Root variant="surface">
-					<Table.Header>
-						<Table.Row>
-							<Table.ColumnHeaderCell>Source</Table.ColumnHeaderCell>
-							<Table.ColumnHeaderCell>URL</Table.ColumnHeaderCell>
-							<Table.ColumnHeaderCell>Page Title</Table.ColumnHeaderCell>
-							<Table.ColumnHeaderCell align="right">Duration</Table.ColumnHeaderCell>
-							<Table.ColumnHeaderCell align="right">Visits</Table.ColumnHeaderCell>
-							<Table.ColumnHeaderCell>First Visit</Table.ColumnHeaderCell>
-							<Table.ColumnHeaderCell>Last Visit</Table.ColumnHeaderCell>
-						</Table.Row>
-					</Table.Header>
-					<Table.Body>
-						{history.map(
-							({ hostname, pageTitle, totalDuration, url, visitCount, firstVisit, lastVisit }) => (
-								<Table.Row key={`${hostname}-${url.href}-${firstVisit}`}>
-									<Table.Cell>
-										<Text wrap="nowrap">
-											{hostname.replaceAll('.local', '').replaceAll('-', ' ')}
-										</Text>
-									</Table.Cell>
-									<Table.Cell maxWidth="320px">
-										<RadixLink href={url.href} target="_blank" rel="noopener noreferrer">
-											{`${url.hostname}${url.pathname}`}
-										</RadixLink>
-									</Table.Cell>
-									<Table.Cell>{pageTitle}</Table.Cell>
-									<Table.Cell align="right">{formatNumber(totalDuration)}</Table.Cell>
-									<Table.Cell align="right">{formatNumber(visitCount)}</Table.Cell>
-									<Table.Cell minWidth="100px">{formatTime(firstVisit)}</Table.Cell>
-									<Table.Cell minWidth="100px">{formatTime(lastVisit)}</Table.Cell>
-								</Table.Row>
-							)
-						)}
-					</Table.Body>
-				</Table.Root>
+				<DataGrid
+					data={history}
+					columns={columns}
+					sorting={true}
+					getRowId={(row) => `${row.hostname}-${row.url.href}-${row.firstVisit}`}
+				/>
 			</ScrollArea>
 		</main>
 	);

@@ -2,24 +2,25 @@ import { db } from '@/db/connections';
 import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@schema/integrations';
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/start';
-import { Heading, Table, Button, TextField, ScrollArea } from '@radix-ui/themes';
-import {
-	useReactTable,
-	getCoreRowModel,
-	flexRender,
-	ColumnDef,
-	getSortedRowModel,
-	SortingState,
-} from '@tanstack/react-table';
-import { useState, useRef } from 'react';
-import { eq, ilike, count } from 'drizzle-orm';
+import { Heading, Button, TextField, ScrollArea, Spinner } from '@radix-ui/themes';
+import type { ColumnDef } from '@tanstack/react-table';
+import { useState, useRef, useMemo } from 'react';
+import { eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { DataGrid } from '@/app/components/DataGrid';
+import {
+	useMutation,
+	useQueryClient,
+	useSuspenseQuery,
+	useQuery,
+	queryOptions,
+} from '@tanstack/react-query';
+import { invalidateQueries } from '@/app/lib/query-helpers';
 
 type OmitPattern = {
 	pattern: string;
 	createdAt: Date;
 	updatedAt: Date | null;
-	matchCount: number;
 };
 
 const fetchOmitList = createServerFn({ method: 'GET' }).handler(async () => {
@@ -28,38 +29,58 @@ const fetchOmitList = createServerFn({ method: 'GET' }).handler(async () => {
 			pattern: arcBrowsingHistoryOmitList.pattern,
 			createdAt: arcBrowsingHistoryOmitList.createdAt,
 			updatedAt: arcBrowsingHistoryOmitList.updatedAt,
-			matchCount: count(arcBrowsingHistory.id),
 		})
 		.from(arcBrowsingHistoryOmitList)
-		.leftJoin(arcBrowsingHistory, ilike(arcBrowsingHistory.url, arcBrowsingHistoryOmitList.pattern))
-		.groupBy(
-			arcBrowsingHistoryOmitList.pattern,
-			arcBrowsingHistoryOmitList.createdAt,
-			arcBrowsingHistoryOmitList.updatedAt
-		);
-	return { response: patterns };
+		.orderBy(arcBrowsingHistoryOmitList.pattern);
+
+	return patterns;
 });
+
+const fetchPatternCounts = createServerFn({ method: 'GET' }).handler(async () => {
+	const counts = await db
+		.select({
+			pattern: arcBrowsingHistoryOmitList.pattern,
+			matchCount: db.$count(
+				arcBrowsingHistory,
+				ilike(arcBrowsingHistory.url, sql`${arcBrowsingHistoryOmitList.pattern}`)
+			),
+		})
+		.from(arcBrowsingHistoryOmitList)
+		.orderBy(arcBrowsingHistoryOmitList.pattern);
+
+	return Object.fromEntries(counts.map(({ pattern, matchCount }) => [pattern, matchCount]));
+});
+
+export const omitListQueryOptions = () =>
+	queryOptions({
+		queryKey: ['omitList'],
+		queryFn: () => fetchOmitList(),
+	});
 
 const addPattern = createServerFn({ method: 'POST' })
 	.validator(z.string())
 	.handler(async ({ data }) => {
-		await db.insert(arcBrowsingHistoryOmitList).values({
-			pattern: data,
-		});
-		return { success: true };
+		const [result] = await db
+			.insert(arcBrowsingHistoryOmitList)
+			.values({
+				pattern: data,
+			})
+			.returning();
+		return result;
 	});
 
 const updatePattern = createServerFn({ method: 'POST' })
 	.validator(z.object({ oldPattern: z.string(), newPattern: z.string() }))
 	.handler(async ({ data }) => {
-		await db
+		const [result] = await db
 			.update(arcBrowsingHistoryOmitList)
 			.set({
 				pattern: data.newPattern,
 				updatedAt: new Date(),
 			})
-			.where(eq(arcBrowsingHistoryOmitList.pattern, data.oldPattern));
-		return { success: true };
+			.where(eq(arcBrowsingHistoryOmitList.pattern, data.oldPattern))
+			.returning();
+		return result;
 	});
 
 const deletePattern = createServerFn({ method: 'POST' })
@@ -70,7 +91,7 @@ const deletePattern = createServerFn({ method: 'POST' })
 	});
 
 export const Route = createFileRoute('/omit-list')({
-	loader: async () => fetchOmitList(),
+	loader: ({ context }) => context.queryClient.ensureQueryData(omitListQueryOptions()),
 	component: OmitListPage,
 });
 
@@ -98,7 +119,6 @@ function EditableCell({
 				style={{ cursor: 'pointer', padding: '4px' }}
 				onClick={() => {
 					setIsEditing(true);
-					// Focus the input on next render
 					setTimeout(() => inputRef.current?.focus(), 0);
 				}}
 			>
@@ -127,85 +147,111 @@ function EditableCell({
 }
 
 function OmitListPage() {
-	const { response: initialData } = Route.useLoaderData();
-	const [data, setData] = useState<OmitPattern[]>(initialData);
+	const queryClient = useQueryClient();
+	const { data: patterns } = useSuspenseQuery(omitListQueryOptions());
+	const { data: counts, isFetching: isLoadingCounts } = useQuery({
+		queryKey: ['omitListCounts'],
+		queryFn: () => fetchPatternCounts(),
+	});
 	const [newPattern, setNewPattern] = useState('');
 	const inputRef = useRef<HTMLInputElement>(null);
-	const [sorting, setSorting] = useState<SortingState>([
-		{
-			id: 'pattern',
-			desc: false,
-		},
-	]);
 
-	const handleUpdatePattern = async (oldPattern: string, newPattern: string) => {
-		await updatePattern({ data: { oldPattern, newPattern } });
-		const { response } = await fetchOmitList();
-		setData(response);
-	};
-
-	const columns: ColumnDef<OmitPattern>[] = [
-		{
-			accessorKey: 'pattern',
-			header: 'Pattern',
-			cell: ({ getValue }) => (
-				<EditableCell value={getValue() as string} onSave={handleUpdatePattern} />
-			),
+	const addPatternMutation = useMutation({
+		mutationFn: (pattern: string) => addPattern({ data: pattern }),
+		onSuccess: (newPattern) => {
+			queryClient.setQueryData(['omitList'], (old: typeof patterns) => [...old, newPattern]);
+			queryClient.invalidateQueries({ queryKey: ['omitListCounts'] });
+			setNewPattern('');
+			inputRef.current?.focus();
 		},
-		{
-			accessorKey: 'matchCount',
-			header: 'Matches',
-			cell: (info) => info.getValue(),
-		},
-		{
-			accessorKey: 'createdAt',
-			header: 'Created',
-			cell: (info) => new Date(info.getValue() as string).toLocaleString(),
-		},
-		{
-			accessorKey: 'updatedAt',
-			header: 'Last Updated',
-			cell: (info) => {
-				const value = info.getValue() as string | null;
-				return value ? new Date(value).toLocaleString() : 'Never';
-			},
-		},
-		{
-			id: 'actions',
-			header: 'Actions',
-			cell: ({ row }) => (
-				<Button color="red" variant="soft" onClick={() => handleDelete(row.original.pattern)}>
-					Delete
-				</Button>
-			),
-		},
-	];
-
-	const table = useReactTable({
-		data,
-		columns,
-		getCoreRowModel: getCoreRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-		state: {
-			sorting,
-		},
-		onSortingChange: setSorting,
 	});
 
-	const handleAdd = async () => {
-		if (!newPattern) return;
-		await addPattern({ data: newPattern });
-		const { response } = await fetchOmitList();
-		setData(response);
-		setNewPattern('');
-		// Maintain focus on the input
-		inputRef.current?.focus();
-	};
+	const updatePatternMutation = useMutation({
+		mutationFn: (params: { oldPattern: string; newPattern: string }) =>
+			updatePattern({ data: params }),
+		onSuccess: (updatedPattern, variables) => {
+			queryClient.setQueryData(['omitList'], (old: typeof patterns) =>
+				old.map((p) => (p.pattern === variables.oldPattern ? updatedPattern : p))
+			);
+			queryClient.invalidateQueries({ queryKey: ['omitListCounts'] });
+		},
+	});
 
-	const handleDelete = async (pattern: string) => {
-		await deletePattern({ data: pattern });
-		const { response } = await fetchOmitList();
-		setData(response);
+	const deletePatternMutation = useMutation({
+		mutationFn: (pattern: string) => deletePattern({ data: pattern }),
+		onSuccess: (_, deletedPattern) => {
+			queryClient.setQueryData(['omitList'], (old: typeof patterns) =>
+				old.filter((p) => p.pattern !== deletedPattern)
+			);
+			queryClient.invalidateQueries({ queryKey: ['omitListCounts'] });
+		},
+	});
+
+	const columns = useMemo<ColumnDef<OmitPattern>[]>(
+		() => [
+			{
+				accessorKey: 'pattern',
+				header: 'Pattern',
+				cell: ({ getValue, row }) => (
+					<EditableCell
+						value={getValue() as string}
+						onSave={(oldValue, newValue) =>
+							updatePatternMutation.mutate({ oldPattern: oldValue, newPattern: newValue })
+						}
+					/>
+				),
+			},
+			{
+				accessorKey: 'matchCount',
+				header: 'Matches',
+				cell: ({ row }) => {
+					if (isLoadingCounts) return <Spinner size="2" />;
+					return counts?.[row.original.pattern] ?? 0;
+				},
+				meta: {
+					columnProps: {
+						align: 'right',
+					},
+				},
+			},
+			{
+				accessorKey: 'createdAt',
+				header: 'Created',
+				cell: ({ getValue }) => new Date(getValue() as string).toLocaleString(),
+			},
+			{
+				accessorKey: 'updatedAt',
+				header: 'Last Updated',
+				cell: ({ getValue }) => {
+					const value = getValue() as string | null;
+					return value ? new Date(value).toLocaleString() : 'Never';
+				},
+			},
+			{
+				id: 'actions',
+				header: 'Actions',
+				cell: ({ row }) => (
+					<Button
+						color="red"
+						variant="soft"
+						onClick={() => deletePatternMutation.mutate(row.original.pattern)}
+					>
+						Delete
+					</Button>
+				),
+				meta: {
+					columnProps: {
+						align: 'center',
+					},
+				},
+			},
+		],
+		[counts, isLoadingCounts]
+	);
+
+	const handleAdd = () => {
+		if (!newPattern) return;
+		addPatternMutation.mutate(newPattern);
 	};
 
 	return (
@@ -230,30 +276,15 @@ function OmitListPage() {
 				<Button onClick={handleAdd}>Add Pattern</Button>
 			</div>
 			<ScrollArea>
-				<Table.Root variant="surface">
-					<Table.Header>
-						{table.getHeaderGroups().map((headerGroup) => (
-							<Table.Row key={headerGroup.id}>
-								{headerGroup.headers.map((header) => (
-									<Table.ColumnHeaderCell key={header.id}>
-										{flexRender(header.column.columnDef.header, header.getContext())}
-									</Table.ColumnHeaderCell>
-								))}
-							</Table.Row>
-						))}
-					</Table.Header>
-					<Table.Body>
-						{table.getRowModel().rows.map((row) => (
-							<Table.Row key={row.id}>
-								{row.getVisibleCells().map((cell) => (
-									<Table.Cell key={cell.id}>
-										{flexRender(cell.column.columnDef.cell, cell.getContext())}
-									</Table.Cell>
-								))}
-							</Table.Row>
-						))}
-					</Table.Body>
-				</Table.Root>
+				<DataGrid
+					data={patterns}
+					columns={columns}
+					sorting={true}
+					getRowId={(row) => row.pattern}
+					rowProps={{
+						align: 'center',
+					}}
+				/>
 			</ScrollArea>
 		</main>
 	);

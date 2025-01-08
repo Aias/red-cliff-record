@@ -1,24 +1,24 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { z } from 'zod';
 import { desc, eq } from 'drizzle-orm';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
-import { Card, Heading, Table, ScrollArea, Button, Checkbox } from '@radix-ui/themes';
+import { Card, Heading, ScrollArea, Button } from '@radix-ui/themes';
 import { createServerFn } from '@tanstack/start';
 import { db } from '@/db/connections';
-import { githubCommits } from '@schema/integrations';
+import { githubCommits, GithubCommitSelect } from '@schema/integrations';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
 import { cn } from '@/app/lib/classNames';
-
 import { useNavigate } from '@tanstack/react-router';
 import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
 import { summarizeCommit } from '../../lib/commit-summarizer';
 import { CommitSummaryInputSchema } from './commits.$sha';
-
+import { DataGrid } from '@/app/components/DataGrid';
+import type { ColumnDef } from '@tanstack/react-table';
 import styles from './commits.module.css';
 import { queryOptions, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useSelection } from '@/app/lib/useSelection';
 import { invalidateQueries } from '@/app/lib/query-helpers';
+import { useSelection } from '@/app/lib/useSelection';
 
 const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
 	const commits = await db.query.githubCommits.findMany({
@@ -76,14 +76,67 @@ function CommitList() {
 		data: { commits },
 	} = useSuspenseQuery(commitsQueryOptions());
 	const navigate = useNavigate();
-	const { sha } = useParams({ strict: false });
-	const { selectedIds, toggleSelection, clearSelection } = useSelection(
+	const [isSummarizing, setIsSummarizing] = useState(false);
+	const { selectedIds, toggleSelection, setSelection } = useSelection(
 		commits.map((commit) => ({ id: commit.sha }))
 	);
-	const [isSummarizing, setIsSummarizing] = useState(false);
 	const queryClient = useQueryClient();
 
+	const columns = useMemo<ColumnDef<GithubCommitSelect>[]>(
+		() => [
+			{
+				accessorKey: 'sha',
+				header: 'SHA',
+				cell: ({ row }) => (
+					<AppLink to={`/commits/$sha`} params={{ sha: row.original.sha }}>
+						{row.original.sha.slice(0, 7)}
+					</AppLink>
+				),
+			},
+			{
+				accessorKey: 'repository.name',
+				header: 'Repository',
+			},
+			{
+				accessorKey: 'message',
+				header: 'Message',
+			},
+			{
+				accessorKey: 'committedAt',
+				header: 'Date',
+				cell: ({ getValue }) => {
+					const date = getValue() as Date | null;
+					return date ? new Date(date).toLocaleDateString() : '';
+				},
+			},
+			{
+				accessorKey: 'summary',
+				header: 'Summarized',
+				meta: {
+					columnProps: {
+						align: 'center',
+					},
+				},
+				cell: ({ getValue }) => {
+					const summary = getValue();
+					return summary ? (
+						<Icon color="grass">
+							<CheckCircledIcon />
+						</Icon>
+					) : (
+						<Icon>
+							<CircleIcon />
+						</Icon>
+					);
+				},
+			},
+		],
+		[]
+	);
+
 	const handleBatchSummarize = async () => {
+		if (selectedIds.size === 0) return;
+
 		setIsSummarizing(true);
 		try {
 			await batchSummarizeCommits({
@@ -117,7 +170,6 @@ function CommitList() {
 				['commits'],
 				...Array.from(selectedIds).map((sha) => ['commit', sha]),
 			]);
-			clearSelection();
 		} catch (error) {
 			console.error('Error batch summarizing commits:', error);
 		} finally {
@@ -131,66 +183,23 @@ function CommitList() {
 				<header className="flex justify-between items-center mb-4 gap-2">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedIds.size > 0 && (
-						<Button onClick={handleBatchSummarize} disabled={isSummarizing} variant="soft">
+						<Button onClick={handleBatchSummarize} disabled={isSummarizing}>
 							{isSummarizing ? 'Summarizing...' : `Summarize ${selectedIds.size} Commits`}
 						</Button>
 					)}
 				</header>
 				<ScrollArea>
-					<Table.Root>
-						<Table.Header>
-							<Table.Row>
-								<Table.ColumnHeaderCell title="Select Commits to Summarize"></Table.ColumnHeaderCell>
-								<Table.ColumnHeaderCell>SHA</Table.ColumnHeaderCell>
-								<Table.ColumnHeaderCell>Repository</Table.ColumnHeaderCell>
-								<Table.ColumnHeaderCell>Message</Table.ColumnHeaderCell>
-								<Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
-								<Table.ColumnHeaderCell align="center">Summarized</Table.ColumnHeaderCell>
-							</Table.Row>
-						</Table.Header>
-						<Table.Body>
-							{commits.map((commit) => (
-								<Table.Row
-									key={commit.sha}
-									onClick={(e) => {
-										navigate({ to: '/commits/$sha', params: { sha: commit.sha } });
-									}}
-									className="selectable"
-								>
-									<Table.Cell className="checkbox">
-										<Checkbox
-											checked={selectedIds.has(commit.sha)}
-											onClick={(e) => {
-												e.stopPropagation();
-												toggleSelection(commit.sha);
-											}}
-										/>
-									</Table.Cell>
-									<Table.Cell>
-										<AppLink to={`/commits/$sha`} params={{ sha: commit.sha }}>
-											{commit.sha.slice(0, 7)}
-										</AppLink>
-									</Table.Cell>
-									<Table.Cell>{commit.repository.name}</Table.Cell>
-									<Table.Cell>{commit.message}</Table.Cell>
-									<Table.Cell>
-										{commit.committedAt ? new Date(commit.committedAt).toLocaleDateString() : ''}
-									</Table.Cell>
-									<Table.Cell align="center">
-										{commit.summary ? (
-											<Icon color="grass">
-												<CheckCircledIcon />
-											</Icon>
-										) : (
-											<Icon>
-												<CircleIcon />
-											</Icon>
-										)}
-									</Table.Cell>
-								</Table.Row>
-							))}
-						</Table.Body>
-					</Table.Root>
+					<DataGrid
+						data={commits}
+						columns={columns}
+						sorting={true}
+						selection={{
+							enabled: true,
+							onSelectionChange: setSelection,
+						}}
+						onRowClick={(commit) => navigate({ to: '/commits/$sha', params: { sha: commit.sha } })}
+						getRowId={(commit) => commit.sha}
+					/>
 				</ScrollArea>
 			</Card>
 			<Outlet />
