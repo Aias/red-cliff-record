@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import classNames from 'classnames';
 import { z } from 'zod';
 import { desc, eq } from 'drizzle-orm';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
@@ -9,6 +8,7 @@ import { db } from '@/db/connections';
 import { githubCommits } from '@schema/integrations';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
+import { cn } from '@/app/lib/classNames';
 
 import { useNavigate } from '@tanstack/react-router';
 import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
@@ -17,6 +17,8 @@ import { CommitSummaryInputSchema } from './commits.$sha';
 
 import styles from './commits.module.css';
 import { queryOptions, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useSelection } from '@/app/lib/useSelection';
+import { invalidateQueries } from '@/app/lib/query-helpers';
 
 const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
 	const commits = await db.query.githubCommits.findMany({
@@ -75,14 +77,17 @@ function CommitList() {
 	} = useSuspenseQuery(commitsQueryOptions());
 	const navigate = useNavigate();
 	const { sha } = useParams({ strict: false });
-	const [selectedCommits, setSelectedCommits] = useState<Set<string>>(new Set());
+	const { selectedIds, toggleSelection, clearSelection } = useSelection(
+		commits.map((commit) => ({ id: commit.sha }))
+	);
 	const [isSummarizing, setIsSummarizing] = useState(false);
 	const queryClient = useQueryClient();
+
 	const handleBatchSummarize = async () => {
 		setIsSummarizing(true);
 		try {
 			await batchSummarizeCommits({
-				data: Array.from(selectedCommits).map((sha) => {
+				data: Array.from(selectedIds).map((sha) => {
 					const commit = commits.find((c) => c.sha === sha)!;
 					return {
 						message: commit.message,
@@ -108,16 +113,11 @@ function CommitList() {
 					};
 				}),
 			});
-			queryClient.invalidateQueries({
-				queryKey: ['commits'],
-			});
-			selectedCommits.forEach((sha) => {
-				queryClient.invalidateQueries({
-					queryKey: ['commit', sha],
-				});
-			});
-			// Clear selection after successful summarization
-			setSelectedCommits(new Set());
+			await invalidateQueries(queryClient, [
+				['commits'],
+				...Array.from(selectedIds).map((sha) => ['commit', sha]),
+			]);
+			clearSelection();
 		} catch (error) {
 			console.error('Error batch summarizing commits:', error);
 		} finally {
@@ -126,13 +126,13 @@ function CommitList() {
 	};
 
 	return (
-		<main className={classNames('p-3 flex h-full gap-2 overflow-hidden', styles.layout)}>
+		<main className={cn('p-3 flex h-full gap-2 overflow-hidden', styles.layout)}>
 			<Card>
 				<header className="flex justify-between items-center mb-4 gap-2">
 					<Heading size="6">Recent Commits</Heading>
-					{selectedCommits.size > 0 && (
+					{selectedIds.size > 0 && (
 						<Button onClick={handleBatchSummarize} disabled={isSummarizing} variant="soft">
-							{isSummarizing ? 'Summarizing...' : `Summarize ${selectedCommits.size} Commits`}
+							{isSummarizing ? 'Summarizing...' : `Summarize ${selectedIds.size} Commits`}
 						</Button>
 					)}
 				</header>
@@ -155,25 +155,14 @@ function CommitList() {
 									onClick={(e) => {
 										navigate({ to: '/commits/$sha', params: { sha: commit.sha } });
 									}}
-									className={classNames(
-										'cursor-pointer',
-										sha === commit.sha ? 'bg-accent-a2 hover:bg-accent-a3' : 'hover:bg-gray-a2'
-									)}
+									className="selectable"
 								>
 									<Table.Cell className="checkbox">
 										<Checkbox
-											checked={selectedCommits.has(commit.sha)}
+											checked={selectedIds.has(commit.sha)}
 											onClick={(e) => {
 												e.stopPropagation();
-												setSelectedCommits((prev) => {
-													const next = new Set(prev);
-													if (next.has(commit.sha)) {
-														next.delete(commit.sha);
-													} else {
-														next.add(commit.sha);
-													}
-													return next;
-												});
+												toggleSelection(commit.sha);
 											}}
 										/>
 									</Table.Cell>

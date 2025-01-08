@@ -1,5 +1,5 @@
 import { Text, TextProps } from '@radix-ui/themes';
-import cn from 'classnames';
+import { cn } from '@/app/lib/classNames';
 
 export const Icon = ({ size = '3', color, children, className, ...props }: TextProps) => {
 	return (

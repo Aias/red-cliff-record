@@ -26,6 +26,7 @@ import {
 	updateIndexEntry,
 } from './-queries';
 import { Cross1Icon } from '@radix-ui/react-icons';
+import { invalidateQueries } from '@/app/lib/query-helpers';
 
 export const Route = createFileRoute('/(index)/queue/$airtableId')({
 	component: RouteComponent,
@@ -47,15 +48,11 @@ function RouteComponent() {
 					variant="soft"
 					onClick={() =>
 						archiveSpaces({ data: [space.id] }).then(() => {
-							queryClient.invalidateQueries({
-								queryKey: ['archiveQueueLength'],
-							});
-							queryClient.invalidateQueries({
-								queryKey: ['airtableSpaceById', space.id],
-							});
-							queryClient.invalidateQueries({
-								queryKey: ['airtableSpaces'],
-							});
+							invalidateQueries(queryClient, [
+								['archiveQueueLength'],
+								['airtableSpaceById', space.id],
+								['airtableSpaces'],
+							]);
 						})
 					}
 				>

@@ -164,11 +164,25 @@
 	--shadow-6: var(--shadow-6);
 }
 
-html {
-	min-height: 100dvh;
-}
+@layer utilities {
+	.selectable {
+		@apply cursor-pointer border-border-subtle;
+	}
 
-body {
-	margin: 0;
-	min-height: 100dvh;
+	.selectable:hover {
+		@apply border-border bg-hovered;
+	}
+
+	.selectable:active {
+		@apply border-border-active bg-active;
+	}
+
+	.selectable:where(.selected, [data-status='active'], :has([data-status='active'])) {
+		@apply border-border-selected bg-selected;
+	}
+
+	.selectable:where(.selected, [data-status='active'], :has([data-status='active'])):hover,
+	.selectable:where(.selected, [data-status='active'], :has([data-status='active'])):active {
+		@apply bg-selected-hovered border-border-selected;
+	}
 }

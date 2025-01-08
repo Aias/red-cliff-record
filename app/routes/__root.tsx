@@ -14,7 +14,7 @@ import { seo, SITE_NAME } from '../lib/seo';
 import { AppLayout } from '../components/AppLayout';
 import { z } from 'zod';
 import { getCookie } from 'vinxi/http';
-import classNames from 'classnames';
+import { cn } from '@/app/lib/classNames';
 
 export const getThemeCookie = createServerFn({ method: 'GET' }).handler(async () => {
 	const theme = z.enum(['light', 'dark']).default('dark').parse(getCookie('theme'));
@@ -111,7 +111,7 @@ function RootDocument({ children, theme }: Readonly<{ children: ReactNode; theme
 	const { appearance, radius, scaling, grayColor, accentColor, panelBackground } = theme;
 	return (
 		<html
-			className={classNames('radix-themes', appearance)}
+			className={cn('radix-themes', appearance)}
 			data-is-root-theme="true"
 			data-accent-color={accentColor}
 			data-gray-color={grayColor}

@@ -1,6 +1,5 @@
 import { Button, Checkbox, Heading, IconButton, ScrollArea, Text } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useNavigate, useParams } from '@tanstack/react-router';
-import classNames from 'classnames';
 import { useQueryClient, useSuspenseQuery, useQuery } from '@tanstack/react-query';
 import {
 	airtableSpaceQueryOptions,
@@ -12,6 +11,8 @@ import { AppLink } from '@/app/components/AppLink';
 import { useState } from 'react';
 import { Cross1Icon, Link1Icon } from '@radix-ui/react-icons';
 import { Icon } from '@/app/components/Icon';
+import { useSelection } from '@/app/lib/useSelection';
+import { invalidateQueries } from '@/app/lib/query-helpers';
 
 export const Route = createFileRoute('/(index)/queue')({
 	loader: async ({ context }) => {
@@ -27,7 +28,7 @@ function RouteComponent() {
 	const { airtableId } = useParams({
 		strict: false,
 	});
-	const [selectedSpaces, setSelectedSpaces] = useState<Set<string>>(new Set());
+	const { selectedIds, toggleSelection, selectAll, clearSelection } = useSelection(spaces);
 	const [processing, setProcessing] = useState(false);
 	const queryClient = useQueryClient();
 
@@ -35,17 +36,13 @@ function RouteComponent() {
 		setProcessing(true);
 		try {
 			await createIndexEntries({
-				data: Array.from(selectedSpaces).map((id) => spaces.find((s) => s.id === id)!),
+				data: Array.from(selectedIds).map((id) => spaces.find((s) => s.id === id)!),
 			});
-			queryClient.invalidateQueries({
-				queryKey: ['airtableSpaces'],
-			});
-			selectedSpaces.forEach((id) => {
-				queryClient.invalidateQueries({
-					queryKey: ['airtableSpaceById', id],
-				});
-			});
-			setSelectedSpaces(new Set());
+			await invalidateQueries(queryClient, [
+				['airtableSpaces'],
+				...Array.from(selectedIds).map((id) => ['airtableSpaceById', id]),
+			]);
+			clearSelection();
 		} catch (error) {
 			console.error('Error creating index entries:', error);
 		} finally {
@@ -56,19 +53,13 @@ function RouteComponent() {
 	const handleArchiveSelected = async () => {
 		setProcessing(true);
 		try {
-			await archiveSpaces({ data: Array.from(selectedSpaces) });
-			queryClient.invalidateQueries({
-				queryKey: ['archiveQueueLength'],
-			});
-			queryClient.invalidateQueries({
-				queryKey: ['airtableSpaces'],
-			});
-			selectedSpaces.forEach((id) => {
-				queryClient.invalidateQueries({
-					queryKey: ['airtableSpaceById', id],
-				});
-			});
-			setSelectedSpaces(new Set());
+			await archiveSpaces({ data: Array.from(selectedIds) });
+			await invalidateQueries(queryClient, [
+				['archiveQueueLength'],
+				['airtableSpaces'],
+				...Array.from(selectedIds).map((id) => ['airtableSpaceById', id]),
+			]);
+			clearSelection();
 		} catch (error) {
 			console.error('Error archiving spaces:', error);
 		} finally {
@@ -89,9 +80,9 @@ function RouteComponent() {
 				</header>
 
 				<div className="flex flex-row gap-2 justify-between items-center">
-					<Text>{selectedSpaces.size} selected</Text>
+					<Text>{selectedIds.size} selected</Text>
 					<menu className="flex flex-row gap-1 items-center">
-						{selectedSpaces.size > 0 ? (
+						{selectedIds.size > 0 ? (
 							<>
 								<li>
 									<Button
@@ -114,7 +105,7 @@ function RouteComponent() {
 									</Button>
 								</li>
 								<li>
-									<IconButton variant="soft" size="1" onClick={() => setSelectedSpaces(new Set())}>
+									<IconButton variant="soft" size="1" onClick={() => clearSelection()}>
 										<Cross1Icon className="w-3 h-3" />
 									</IconButton>
 								</li>
@@ -125,11 +116,7 @@ function RouteComponent() {
 									<Button
 										size="1"
 										variant="soft"
-										onClick={() => {
-											setSelectedSpaces(
-												new Set(spaces.filter((s) => s.indexEntry).map((s) => s.id))
-											);
-										}}
+										onClick={() => selectAll((space) => Boolean(space.indexEntry))}
 									>
 										All Mapped
 									</Button>
@@ -138,11 +125,7 @@ function RouteComponent() {
 									<Button
 										size="1"
 										variant="soft"
-										onClick={() => {
-											setSelectedSpaces(
-												new Set(spaces.filter((s) => !s.indexEntry).map((s) => s.id))
-											);
-										}}
+										onClick={() => selectAll((space) => !space.indexEntry)}
 									>
 										All Unmapped
 									</Button>
@@ -156,12 +139,7 @@ function RouteComponent() {
 						{spaces.map((space) => (
 							<li
 								key={space.id}
-								className={classNames(
-									'flex flex-col p-2 border  rounded-2 cursor-pointer',
-									space.id === airtableId
-										? 'bg-selected hover:bg-selected-hovered border-border-selected'
-										: 'hover:bg-hovered border-border-subtle'
-								)}
+								className="flex flex-col p-2 border rounded-2 selectable"
 								onClick={(e) => {
 									navigate({
 										to: '/queue/$airtableId',
@@ -171,18 +149,10 @@ function RouteComponent() {
 							>
 								<div className="flex flex-row items-center gap-3">
 									<Checkbox
-										checked={selectedSpaces.has(space.id)}
+										checked={selectedIds.has(space.id)}
 										onClick={(e) => {
 											e.stopPropagation();
-											setSelectedSpaces((prev) => {
-												const next = new Set(prev);
-												if (next.has(space.id)) {
-													next.delete(space.id);
-												} else {
-													next.add(space.id);
-												}
-												return next;
-											});
+											toggleSelection(space.id);
 										}}
 									/>
 									<AppLink
