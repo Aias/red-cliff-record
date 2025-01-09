@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/start';
-import { z } from 'zod';
 import { setCookie } from 'vinxi/http';
+import { z } from 'zod';
 
 export const setTheme = createServerFn({ method: 'POST' })
 	.validator((data: unknown) => {

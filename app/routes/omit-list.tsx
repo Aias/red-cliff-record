@@ -1,20 +1,20 @@
-import { db } from '@/db/connections';
-import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@schema/integrations';
+import { useMemo, useRef, useState } from 'react';
+import { Button, Heading, ScrollArea, Spinner, TextField } from '@radix-ui/themes';
+import {
+	queryOptions,
+	useMutation,
+	useQuery,
+	useQueryClient,
+	useSuspenseQuery,
+} from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { createServerFn } from '@tanstack/start';
-import { Heading, Button, TextField, ScrollArea, Spinner } from '@radix-ui/themes';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useState, useRef, useMemo } from 'react';
+import { createServerFn } from '@tanstack/start';
 import { eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { DataGrid } from '@/app/components/DataGrid';
-import {
-	useMutation,
-	useQueryClient,
-	useSuspenseQuery,
-	useQuery,
-	queryOptions,
-} from '@tanstack/react-query';
+import { db } from '@/db/connections';
+import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '@schema/integrations';
 
 type OmitPattern = {
 	pattern: string;
@@ -191,7 +191,7 @@ function OmitListPage() {
 			{
 				accessorKey: 'pattern',
 				header: 'Pattern',
-				cell: ({ getValue, row }) => (
+				cell: ({ getValue }) => (
 					<EditableCell
 						value={getValue() as string}
 						onSave={(oldValue, newValue) =>

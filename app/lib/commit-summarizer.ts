@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod.mjs';
-import { GithubCommitType } from '@schema/integrations';
 import { z } from 'zod';
+import { GithubCommitType } from '@schema/integrations';
 
 export const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,

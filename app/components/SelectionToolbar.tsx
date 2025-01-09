@@ -1,5 +1,5 @@
 import { Cross1Icon } from '@radix-ui/react-icons';
-import { IconButton, Text, Button, type ButtonProps } from '@radix-ui/themes';
+import { Button, IconButton, Text, type ButtonProps } from '@radix-ui/themes';
 import { Icon } from './Icon';
 
 interface SelectionActionsProps {

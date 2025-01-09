@@ -1,5 +1,5 @@
+import { Button, Text } from '@radix-ui/themes';
 import { Link } from '@tanstack/react-router';
-import { Text, Button } from '@radix-ui/themes';
 
 export function NotFound() {
 	return (

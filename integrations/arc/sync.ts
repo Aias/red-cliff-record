@@ -1,11 +1,11 @@
 import os from 'os';
 import readline from 'readline';
-import { db } from '@/db/connections';
-import { arcBrowsingHistory, Browser, type ArcBrowsingHistoryInsert } from '@schema/integrations';
-import { eq, and, gt, desc, notLike, isNotNull, ne } from 'drizzle-orm';
-import { runIntegration } from '../common/run-integration';
+import { and, desc, eq, gt, isNotNull, ne, notLike } from 'drizzle-orm';
 import { chromeEpochMicrosecondsToDatetime } from '@/app/lib/time-helpers';
-import { visits, urls } from '@schema/arc';
+import { db } from '@/db/connections';
+import { urls, visits } from '@schema/arc';
+import { arcBrowsingHistory, Browser, type ArcBrowsingHistoryInsert } from '@schema/integrations';
+import { runIntegration } from '../common/run-integration';
 import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';
 import { DailyVisitsQueryResultSchema } from './types';
 

@@ -1,20 +1,18 @@
-import { Outlet, ScrollRestoration, createRootRouteWithContext } from '@tanstack/react-router';
-import { createServerFn, Meta, Scripts } from '@tanstack/start';
-import { type QueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
-import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { grass } from '@radix-ui/colors';
-
-import baseStyles from '../styles/base.css?url';
-import '../styles/globals.css';
-
+import { Theme, type ThemeProps } from '@radix-ui/themes';
+import { type QueryClient } from '@tanstack/react-query';
+import { createRootRouteWithContext, Outlet, ScrollRestoration } from '@tanstack/react-router';
+import { createServerFn, Meta, Scripts } from '@tanstack/start';
+import { getCookie } from 'vinxi/http';
+import { z } from 'zod';
+import { cn } from '@/app/lib/classNames';
+import { AppLayout } from '../components/AppLayout';
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
 import { NotFound } from '../components/NotFound';
 import { seo, SITE_NAME } from '../lib/seo';
-import { AppLayout } from '../components/AppLayout';
-import { z } from 'zod';
-import { getCookie } from 'vinxi/http';
-import { cn } from '@/app/lib/classNames';
+import baseStyles from '../styles/base.css?url';
+import '../styles/globals.css';
 
 export const getThemeCookie = createServerFn({ method: 'GET' }).handler(async () => {
 	const theme = z.enum(['light', 'dark']).default('dark').parse(getCookie('theme'));

@@ -1,9 +1,9 @@
-import { type GithubUserInsert, githubUsers } from '@schema/integrations';
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';
-import { logRateLimitInfo } from './helpers';
 import { db } from '@/db/connections';
+import { githubUsers, type GithubUserInsert } from '@schema/integrations';
+import { logRateLimitInfo } from './helpers';
 
 export async function ensureGithubUserExists(
 	userData: {

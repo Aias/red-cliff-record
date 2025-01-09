@@ -1,19 +1,19 @@
-import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
+import {
+	HeadObjectCommand,
+	PutObjectCommand,
+	S3Client,
+	S3ServiceException,
+} from '@aws-sdk/client-s3';
 import Airtable from 'airtable';
+import 'dotenv/config';
+import type { z } from 'zod';
 import {
 	getContentTypeFromExtension,
 	getExtensionFromContentType,
 } from '@/app/lib/content-helpers';
-import {
-	S3Client,
-	PutObjectCommand,
-	HeadObjectCommand,
-	S3ServiceException,
-} from '@aws-sdk/client-s3';
 import { AirtableAttachmentSchema } from './types';
-import type { z } from 'zod';
 
 Airtable.configure({
 	apiKey: process.env.AIRTABLE_ACCESS_TOKEN,

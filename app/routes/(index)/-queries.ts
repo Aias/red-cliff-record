@@ -1,19 +1,22 @@
 import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/start';
-import { isNull, eq, inArray } from 'drizzle-orm';
+import { desc, eq, inArray, isNull } from 'drizzle-orm';
+import { z } from 'zod';
 import { db } from '@/db/connections';
 import { airtableSpaces, AirtableSpaceSelectSchema } from '@/db/schema/integrations';
 import { indexEntries, IndexEntrySelectSchema } from '@/db/schema/main';
-import { z } from 'zod';
 
 export const getAirtableSpaces = createServerFn({ method: 'GET' }).handler(async () => {
 	const spaces = await db.query.airtableSpaces.findMany({
 		with: {
 			indexEntry: true,
 		},
-		where: isNull(airtableSpaces.archivedAt),
 		limit: 100,
-		orderBy: [airtableSpaces.contentCreatedAt, airtableSpaces.name],
+		orderBy: [
+			desc(airtableSpaces.archivedAt),
+			airtableSpaces.contentCreatedAt,
+			airtableSpaces.name,
+		],
 	});
 	return spaces;
 });
@@ -109,13 +112,21 @@ export const createIndexEntries = createServerFn({ method: 'POST' })
 		return newEntries;
 	});
 
-export const archiveSpaces = createServerFn({ method: 'POST' })
-	.validator(z.array(z.string()))
-	.handler(async ({ data: spaceIds }) => {
+const SetSpaceArchiveStatusSchema = z.object({
+	ids: z.array(z.string()),
+	shouldArchive: z.boolean().default(true),
+});
+
+export const setSpaceArchiveStatus = createServerFn({ method: 'POST' })
+	.validator(SetSpaceArchiveStatusSchema)
+	.handler(async ({ data: { ids, shouldArchive } }) => {
 		await db
 			.update(airtableSpaces)
-			.set({ archivedAt: new Date() })
-			.where(inArray(airtableSpaces.id, spaceIds));
+			.set({
+				archivedAt: shouldArchive ? new Date() : null,
+				updatedAt: new Date(),
+			})
+			.where(inArray(airtableSpaces.id, ids));
 	});
 
 export const updateIndexEntry = createServerFn({ method: 'POST' })

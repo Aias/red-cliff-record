@@ -1,11 +1,11 @@
-import { integer, text, index, boolean, unique, foreignKey, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { createSelectSchema, createInsertSchema, createUpdateSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { boolean, foreignKey, index, integer, text, timestamp, unique } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { type z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
+import { indexEntries, media, records } from '../main';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
-import { indexEntries, media, records } from '../main';
 
 export const raindropBookmarks = integrationSchema.table(
 	'raindrop_bookmarks',

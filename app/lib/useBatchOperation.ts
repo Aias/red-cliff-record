@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { QueryClient } from '@tanstack/react-query';
+import { type QueryClient } from '@tanstack/react-query';
 import { invalidateQueries } from './query-helpers';
 
 interface BatchOperationOptions<T, R extends object | void> {

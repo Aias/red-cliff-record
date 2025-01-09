@@ -1,10 +1,10 @@
-import { databaseTimestamps, databaseTimestampsNonUpdatable } from '../common';
 import { relations } from 'drizzle-orm';
-import { serial, timestamp, text, bigint, integer, index } from 'drizzle-orm/pg-core';
+import { bigint, index, integer, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { z } from 'zod';
+import { databaseTimestamps, databaseTimestampsNonUpdatable } from '../common';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
-import { z } from 'zod';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
 export type Browser = z.infer<typeof Browser>;

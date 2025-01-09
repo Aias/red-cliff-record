@@ -1,16 +1,16 @@
-import { z } from 'zod';
+import { useEffect, useState } from 'react';
+import { Cross1Icon } from '@radix-ui/react-icons';
+import { Button, Card, Code, Heading, IconButton, ScrollArea, Text } from '@radix-ui/themes';
+import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Card, Heading, Text, Button, Code, ScrollArea, IconButton } from '@radix-ui/themes';
-import { eq } from 'drizzle-orm';
 import { createServerFn } from '@tanstack/start';
+import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 import { db } from '@/db/connections';
 import { githubCommits } from '@schema/integrations';
-import { useState, useEffect } from 'react';
-import { CommitSummary, summarizeCommit } from '../../lib/commit-summarizer';
-import { CodeBlock } from '../../components/CodeBlock';
 import { AppLink } from '../../components/AppLink';
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
-import { Cross1Icon } from '@radix-ui/react-icons';
+import { CodeBlock } from '../../components/CodeBlock';
+import { summarizeCommit, type CommitSummary } from '../../lib/commit-summarizer';
 
 export const CommitSummaryInputSchema = z.object({
 	message: z.string(),

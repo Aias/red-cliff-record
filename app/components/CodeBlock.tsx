@@ -1,4 +1,3 @@
-// components/CodeBlock.tsx
 import { Code } from '@radix-ui/themes';
 
 interface CodeBlockProps {

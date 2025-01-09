@@ -1,6 +1,6 @@
+import { Button, Container } from '@radix-ui/themes';
 import { ErrorComponent, Link, rootRouteId, useMatch, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
-import { Button, Container } from '@radix-ui/themes';
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 	const router = useRouter();

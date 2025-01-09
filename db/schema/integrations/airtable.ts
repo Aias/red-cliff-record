@@ -1,11 +1,11 @@
 import { relations } from 'drizzle-orm';
-import { text, integer, timestamp, foreignKey, primaryKey, index } from 'drizzle-orm/pg-core';
-import { createSelectSchema, createInsertSchema, createUpdateSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { foreignKey, index, integer, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { type z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
+import { indexEntries, media, records } from '../main';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
-import { indexEntries, media, records } from '../main';
 
 export const airtableExtracts = integrationSchema.table(
 	'airtable_extracts',

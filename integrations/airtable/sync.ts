@@ -1,24 +1,24 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/connections';
-import { airtableBase } from './helpers';
-import { ExtractFieldSetSchema, CreatorFieldSetSchema, SpaceFieldSetSchema } from './types';
 import {
-	airtableExtracts,
 	airtableAttachments,
 	airtableCreators,
-	airtableSpaces,
-	airtableExtractCreators,
-	airtableExtractSpaces,
 	airtableExtractConnections,
-	type AirtableCreatorInsert,
-	type AirtableSpaceInsert,
-	type AirtableExtractInsert,
+	airtableExtractCreators,
+	airtableExtracts,
+	airtableExtractSpaces,
+	airtableSpaces,
 	type AirtableAttachmentInsert,
-	type AirtableExtractCreatorInsert,
-	type AirtableExtractSpaceInsert,
+	type AirtableCreatorInsert,
 	type AirtableExtractConnectionInsert,
+	type AirtableExtractCreatorInsert,
+	type AirtableExtractInsert,
+	type AirtableExtractSpaceInsert,
+	type AirtableSpaceInsert,
 } from '@schema/integrations';
 import { runIntegration } from '../common/run-integration';
+import { airtableBase } from './helpers';
+import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
 
 const CHUNK_SIZE = 100;
 

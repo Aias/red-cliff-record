@@ -1,9 +1,7 @@
 import 'dotenv/config';
-
 import { drizzle } from 'drizzle-orm/node-postgres';
-
-import * as mainSchema from '@schema/main';
 import * as integrationsSchema from '@schema/integrations';
+import * as mainSchema from '@schema/main';
 import * as operationsSchema from '@schema/operations';
 
 // PostgreSQL (main) connection

@@ -1,18 +1,19 @@
-import { Octokit } from '@octokit/rest';
 import { RequestError } from '@octokit/request-error';
+import { Octokit } from '@octokit/rest';
+import type { Endpoints } from '@octokit/types';
+import { desc, eq } from 'drizzle-orm';
 import { db } from '@/db/connections';
 import {
-	githubRepositories,
-	githubCommits,
 	githubCommitChanges,
-	type GithubRepositoryInsert,
-	type GithubCommitInsert,
+	githubCommits,
+	githubRepositories,
 	type GithubCommitChangeInsert,
+	type GithubCommitInsert,
+	type GithubRepositoryInsert,
 } from '@schema/integrations';
-import { eq, desc } from 'drizzle-orm';
 import { logRateLimitInfo } from './helpers';
-import type { Endpoints } from '@octokit/types';
 import { ensureGithubUserExists } from './sync-users';
+
 type GithubRepository = Endpoints['GET /repos/{owner}/{repo}']['response']['data'];
 
 const MAX_PATCH_LENGTH = 2048;

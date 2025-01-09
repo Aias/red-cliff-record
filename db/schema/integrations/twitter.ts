@@ -1,11 +1,11 @@
-import { text, integer, index, foreignKey, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { foreignKey, index, integer, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
-import { z } from 'zod';
-import { integrationRuns } from '../operations';
-import { integrationSchema } from './schema';
+import { type z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { indexEntries, media, records } from '../main';
+import { integrationRuns } from '../operations';
+import { integrationSchema } from './schema';
 
 export const twitterTweets = integrationSchema.table(
 	'twitter_tweets',

@@ -1,21 +1,21 @@
+import { relations, sql, type SQL } from 'drizzle-orm';
 import {
+	boolean,
+	date,
+	foreignKey,
+	index,
+	integer,
+	json,
+	pgEnum,
 	pgTable,
 	serial,
 	text,
-	date,
 	time,
 	timestamp,
-	integer,
-	pgEnum,
-	foreignKey,
-	json,
 	unique,
-	boolean,
-	index,
 } from 'drizzle-orm/pg-core';
-import { relations, SQL, sql } from 'drizzle-orm';
-import { z } from 'zod';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { type z } from 'zod';
 import { databaseTimestamps } from '../common';
 import { IntegrationType, integrationTypeEnum } from '../operations';
 import {

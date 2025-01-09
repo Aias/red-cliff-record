@@ -1,3 +1,4 @@
+import { desc } from 'drizzle-orm';
 import { db } from '@/db/connections';
 import {
 	raindropBookmarks,
@@ -8,7 +9,6 @@ import {
 import { runIntegration } from '../common/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
-import { desc } from 'drizzle-orm';
 
 async function syncCollections(integrationRunId: number) {
 	let successCount = 0;

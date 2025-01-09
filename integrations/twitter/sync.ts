@@ -1,15 +1,15 @@
-import { resolve } from 'path';
-import { readFileSync, readdirSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { homedir } from 'os';
+import { resolve } from 'path';
+import { db } from '@/db/connections';
 import {
-	twitterTweets as tweetsTable,
 	twitterMedia as mediaTable,
+	twitterTweets as tweetsTable,
 	twitterUsers as usersTable,
 } from '@schema/integrations';
-import { db } from '@/db/connections';
 import { runIntegration } from '../common/run-integration';
+import { processMedia, processTweet, processUser } from './helpers';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
-import { processUser, processTweet, processMedia } from './helpers';
 
 export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 	const twitterDataDir = resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');

@@ -3,9 +3,9 @@ import { Octokit } from '@octokit/rest';
 import { desc, isNotNull } from 'drizzle-orm';
 import { db } from '@/db/connections';
 import { githubRepositories, type GithubRepositoryInsert } from '@schema/integrations';
-import { GithubStarredReposResponseSchema } from './types';
 import { logRateLimitInfo } from './helpers';
 import { ensureGithubUserExists } from './sync-users';
+import { GithubStarredReposResponseSchema } from './types';
 
 const PAGE_SIZE = 50;
 

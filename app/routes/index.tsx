@@ -1,5 +1,5 @@
+import { Card, Container, Heading } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
-import { Container, Card, Heading } from '@radix-ui/themes';
 import { AppLink } from '../components/AppLink';
 
 export const Route = createFileRoute('/')({

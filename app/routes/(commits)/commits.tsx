@@ -1,23 +1,22 @@
-import { z } from 'zod';
-import { desc, eq } from 'drizzle-orm';
-import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { Card, Heading, ScrollArea, Button } from '@radix-ui/themes';
+import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
+import { Button, Card, Heading, ScrollArea } from '@radix-ui/themes';
+import { queryOptions, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
+import type { ColumnDef } from '@tanstack/react-table';
 import { createServerFn } from '@tanstack/start';
+import { desc, eq } from 'drizzle-orm';
+import { z } from 'zod';
+import { DataGrid } from '@/app/components/DataGrid';
+import { cn } from '@/app/lib/classNames';
+import { useBatchOperation } from '@/app/lib/useBatchOperation';
+import { useSelection } from '@/app/lib/useSelection';
 import { db } from '@/db/connections';
-import { githubCommits, GithubCommitSelect } from '@schema/integrations';
+import { githubCommits, type GithubCommitSelect } from '@schema/integrations';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
-import { cn } from '@/app/lib/classNames';
-import { useNavigate } from '@tanstack/react-router';
-import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
 import { summarizeCommit } from '../../lib/commit-summarizer';
 import { CommitSummaryInputSchema } from './commits.$sha';
-import { DataGrid } from '@/app/components/DataGrid';
-import type { ColumnDef } from '@tanstack/react-table';
 import styles from './commits.module.css';
-import { queryOptions, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useSelection } from '@/app/lib/useSelection';
-import { useBatchOperation } from '@/app/lib/useBatchOperation';
 
 const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
 	const commits = await db.query.githubCommits.findMany({

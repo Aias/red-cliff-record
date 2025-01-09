@@ -1,5 +1,5 @@
+import { type ComponentProps } from 'react';
 import { Checkbox, Flex, Text } from '@radix-ui/themes';
-import { ComponentProps } from 'react';
 
 type CheckboxWithLabelProps = Omit<ComponentProps<typeof Checkbox>, 'size'> & {
 	label: string;

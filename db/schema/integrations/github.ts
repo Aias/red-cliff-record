@@ -1,6 +1,6 @@
 import { relations } from 'drizzle-orm';
-import { serial, text, integer, index, boolean, timestamp } from 'drizzle-orm/pg-core';
-import { createSelectSchema, createInsertSchema, createUpdateSchema } from 'drizzle-zod';
+import { boolean, index, integer, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import {
 	contentTimestamps,
@@ -8,9 +8,9 @@ import {
 	databaseTimestamps,
 	databaseTimestampsNonUpdatable,
 } from '../common';
+import { indexEntries, records } from '../main';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
-import { indexEntries, records } from '../main';
 
 const githubStats = {
 	changes: integer('changes'),

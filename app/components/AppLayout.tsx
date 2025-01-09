@@ -1,11 +1,11 @@
-import { SunIcon, MoonIcon, ArchiveIcon } from '@radix-ui/react-icons';
+import type { ReactNode } from 'react';
+import { ArchiveIcon, MoonIcon, SunIcon } from '@radix-ui/react-icons';
 import { Button, DropdownMenu, IconButton, Separator, Text } from '@radix-ui/themes';
-import { ReactNode } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/start';
 import { setTheme } from '../lib/server/setTheme';
 import { AppLink } from './AppLink';
 import { Icon } from './Icon';
-import { useNavigate } from '@tanstack/react-router';
 
 interface AppLayoutProps {
 	children: ReactNode;

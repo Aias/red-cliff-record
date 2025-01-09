@@ -1,18 +1,18 @@
-import { Table, Checkbox, Text } from '@radix-ui/themes';
+import { useMemo, useState } from 'react';
+import { Checkbox, Table, Text } from '@radix-ui/themes';
 import type { ColumnDef, RowData } from '@tanstack/react-table';
 import {
-	useReactTable,
-	getCoreRowModel,
 	flexRender,
+	getCoreRowModel,
 	getSortedRowModel,
+	useReactTable,
 	type SortingState,
 } from '@tanstack/react-table';
-import { useSelection } from '@/app/lib/useSelection';
 import { cn } from '@/app/lib/classNames';
-import { useEffect, useMemo, useState } from 'react';
 
 // Add custom meta type for column alignment
 declare module '@tanstack/react-table' {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	interface ColumnMeta<TData extends RowData, TValue> {
 		columnProps?: React.ComponentProps<typeof Table.Cell>;
 	}

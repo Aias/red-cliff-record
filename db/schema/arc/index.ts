@@ -1,13 +1,13 @@
+import { sql } from 'drizzle-orm';
 import {
-	sqliteTable,
-	numeric,
+	blob,
 	index,
 	integer,
-	text,
-	blob,
+	numeric,
 	primaryKey,
+	sqliteTable,
+	text,
 } from 'drizzle-orm/sqlite-core';
-import { sql } from 'drizzle-orm';
 
 export const meta = sqliteTable('meta', {
 	key: numeric().primaryKey().notNull(),

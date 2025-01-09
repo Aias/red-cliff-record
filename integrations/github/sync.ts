@@ -1,6 +1,6 @@
 import { runIntegration } from '../common/run-integration';
-import { syncGitHubStars } from './sync-stars';
 import { syncGitHubCommits } from './sync-commits';
+import { syncGitHubStars } from './sync-stars';
 import { updatePartialUsers } from './sync-users';
 
 async function syncGitHubData(): Promise<void> {
