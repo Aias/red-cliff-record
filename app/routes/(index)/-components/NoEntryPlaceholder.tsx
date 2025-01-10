@@ -1,13 +1,52 @@
-import { Button, Text } from '@radix-ui/themes';
-import { useQueryClient } from '@tanstack/react-query';
+import { Button, Flex, Text } from '@radix-ui/themes';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { invalidateQueries } from '@/app/lib/query-helpers';
 import type { AirtableSpaceSelect } from '@/db/schema/integrations/airtable';
-import { createIndexEntryFromAirtableSpace } from '../-queries';
+import {
+	createIndexEntryFromAirtableSpace,
+	linkSpaceToIndexEntry,
+	relatedIndicesQueryOptions,
+} from '../-queries';
+import { IndexEntryCard } from './IndexEntryCard';
 
 export const NoEntryPlaceholder = ({ space }: { space: AirtableSpaceSelect }) => {
 	const queryClient = useQueryClient();
+	const { data: relatedIndices } = useSuspenseQuery(relatedIndicesQueryOptions(space.name));
+
 	return (
-		<div className="rounded-2 p-4 align-center justify-center flex flex-col border border-gray-a4 text-center gap-2">
-			<Text>No index entry found for this space.</Text>
+		<div className="rounded-2 p-4 flex flex-col border border-gray-a4 gap-4">
+			{relatedIndices.length > 0 ? (
+				<>
+					<Text>Found similar index entries:</Text>
+					<Flex direction="column" gap="2">
+						{relatedIndices.map((index) => (
+							<IndexEntryCard
+								key={index.id}
+								index={index}
+								action={{
+									label: 'Link',
+									onClick: () => {
+										linkSpaceToIndexEntry({
+											data: { spaceId: space.id, indexEntryId: index.id },
+										}).then(() => {
+											invalidateQueries(queryClient, [
+												['airtableSpaceById', space.id],
+												['airtableSpaces'],
+											]);
+										});
+									},
+								}}
+							/>
+						))}
+					</Flex>
+					<Text size="2" color="gray">
+						Or create a new entry:
+					</Text>
+				</>
+			) : (
+				<Text>No matching index entries found.</Text>
+			)}
+
 			<Button
 				onClick={async () => {
 					const { indexEntry: newIndexEntry, airtableSpace: updatedAirtableSpace } =
@@ -30,7 +69,7 @@ export const NoEntryPlaceholder = ({ space }: { space: AirtableSpaceSelect }) =>
 					});
 				}}
 			>
-				Create Index Entry
+				Create New Index Entry
 			</Button>
 		</div>
 	);

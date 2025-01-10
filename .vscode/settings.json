@@ -1,4 +1,7 @@
 {
 	"eslint.useFlatConfig": true,
-	"eslint.workingDirectories": ["."]
+	"eslint.workingDirectories": ["."],
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit"
+	}
 }

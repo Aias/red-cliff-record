@@ -1,4 +1,4 @@
-import { Cross1Icon } from '@radix-ui/react-icons';
+import { Cross1Icon, LinkBreak2Icon } from '@radix-ui/react-icons';
 import { Button, Card, Heading, IconButton, Text } from '@radix-ui/themes';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -7,7 +7,11 @@ import { MetadataList } from '@/app/components/MetadataList';
 import { invalidateQueries } from '@/app/lib/query-helpers';
 import { IndexEntryForm } from './-components/IndexEntryForm';
 import { NoEntryPlaceholder } from './-components/NoEntryPlaceholder';
-import { airtableSpaceByIdQueryOptions, setSpaceArchiveStatus } from './-queries';
+import {
+	airtableSpaceByIdQueryOptions,
+	setSpaceArchiveStatus,
+	unlinkIndexEntries,
+} from './-queries';
 
 export const Route = createFileRoute('/(index)/queue/$airtableId')({
 	component: RouteComponent,
@@ -22,8 +26,27 @@ function RouteComponent() {
 
 	return (
 		<Card className="flex gap-2 shrink basis-full">
-			<div className="flex flex-col w-sm gap-4">
-				<Heading size="4">Selected Space</Heading>
+			<section className="flex flex-col w-sm gap-4">
+				<header className="flex justify-between items-center">
+					<Heading size="4">Selected Space</Heading>
+					{space.indexEntryId && (
+						<IconButton
+							size="1"
+							variant="soft"
+							color="red"
+							onClick={() => {
+								unlinkIndexEntries({ data: [space.id] }).then(() => {
+									invalidateQueries(queryClient, [
+										['airtableSpaceById', space.id],
+										['airtableSpaces'],
+									]);
+								});
+							}}
+						>
+							<LinkBreak2Icon className="w-4 h-4" />
+						</IconButton>
+					)}
+				</header>
 				{!space ? <Text>Not Found.</Text> : <MetadataList metadata={space} />}
 				<Button
 					variant="soft"
@@ -41,8 +64,8 @@ function RouteComponent() {
 				>
 					{space.archivedAt ? 'Unarchive' : 'Archive'}
 				</Button>
-			</div>
-			<div className="flex flex-col gap-4 grow pl-3 ml-3 border-l border-divider">
+			</section>
+			<section className="flex flex-col gap-4 grow pl-3 ml-3 border-l border-divider">
 				<div className="flex justify-between items-center">
 					<Heading size="4">Index Entry</Heading>
 					<AppLink asChild to={'/queue'}>
@@ -56,7 +79,7 @@ function RouteComponent() {
 				) : (
 					<NoEntryPlaceholder space={space} />
 				)}
-			</div>
+			</section>
 		</Card>
 	);
 }
