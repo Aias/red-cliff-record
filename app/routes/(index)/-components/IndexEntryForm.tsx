@@ -2,35 +2,28 @@ import { useEffect } from 'react';
 import { ExternalLinkIcon, ImageIcon } from '@radix-ui/react-icons';
 import { Button, SegmentedControl, Text, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { CheckboxWithLabel } from '@/app/components/CheckboxWithLabel';
 import { MetadataList } from '@/app/components/MetadataList';
-import type { AirtableSpaceSelect } from '@/db/schema/integrations';
-import { IndicesSelectSchema, type IndexMainType, type IndicesSelect } from '@/db/schema/main';
+import {
+	IndicesSelectSchema,
+	type IndexMainType,
+	type IndicesSelect,
+	type IndicesUpdate,
+} from '@/db/schema/main';
 import { updateIndexEntry } from '../-queries';
 
-export const IndexEntryForm = ({
-	indexEntry,
-	space,
-}: {
+type IndexEntryFormProps = {
 	indexEntry: IndicesSelect;
-	space: AirtableSpaceSelect;
-}) => {
-	const queryClient = useQueryClient();
+	defaults: IndicesUpdate;
+	updateCallback?: (data: IndicesSelect) => Promise<void> | void;
+};
+
+export const IndexEntryForm = ({ indexEntry, defaults, updateCallback }: IndexEntryFormProps) => {
+	console.log(`Suggested defaults:`, defaults);
 	const entryMutation = useMutation({
 		mutationFn: updateIndexEntry,
-		onSuccess: (data) => {
-			queryClient.setQueryData(['airtableSpaceById', space.id], {
-				...space,
-				indexEntryId: data.id,
-				indexEntry: data,
-			});
-			queryClient.setQueryData(['airtableSpaces'], (oldData: AirtableSpaceSelect[]) => {
-				return oldData.map((space) =>
-					space.indexEntryId === data.id ? { ...space, indexEntry: data } : space
-				);
-			});
-		},
+		onSuccess: updateCallback,
 	});
 
 	const form = useForm({

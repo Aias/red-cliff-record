@@ -67,8 +67,8 @@ export const indices = pgTable(
 );
 
 const indicesExtensions = {
-	canonicalUrl: z.string().url().nullable(),
-	canonicalMediaUrl: z.string().url().nullable(),
+	canonicalUrl: z.string().url().nullable().optional(),
+	canonicalMediaUrl: z.string().url().nullable().optional(),
 };
 
 export const IndicesSelectSchema = createSelectSchema(indices).extend(indicesExtensions);

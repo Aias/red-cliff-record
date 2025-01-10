@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { type QueryClient } from '@tanstack/react-query';
-import { invalidateQueries } from './query-helpers';
 
 interface BatchOperationOptions<T, R extends object | void> {
 	selectedIds: Set<string>;
@@ -31,7 +30,7 @@ export function useBatchOperation<T, R extends object | void>({
 		try {
 			const data = prepareData(Array.from(selectedIds));
 			const result = await operation({ data });
-			await invalidateQueries(queryClient, invalidateKeys);
+			invalidateKeys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
 			clearSelection();
 			return result;
 		} catch (error) {

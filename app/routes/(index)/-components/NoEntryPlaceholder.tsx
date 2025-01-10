@@ -1,6 +1,5 @@
 import { Button, Flex, Text } from '@radix-ui/themes';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { invalidateQueries } from '@/app/lib/query-helpers';
 import type { AirtableSpaceSelect } from '@/db/schema/integrations/airtable';
 import {
 	createIndexEntryFromAirtableSpace,
@@ -29,10 +28,9 @@ export const NoEntryPlaceholder = ({ space }: { space: AirtableSpaceSelect }) =>
 										linkSpaceToIndexEntry({
 											data: { spaceId: space.id, indexEntryId: index.id },
 										}).then(() => {
-											invalidateQueries(queryClient, [
-												['airtableSpaceById', space.id],
-												['airtableSpaces'],
-											]);
+											queryClient.invalidateQueries({
+												queryKey: ['index', 'airtable', 'spaces'],
+											});
 										});
 									},
 								}}

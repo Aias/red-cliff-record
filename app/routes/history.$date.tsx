@@ -142,7 +142,7 @@ function DailyActivityPage() {
 	);
 
 	return (
-		<main className="p-3 h-full flex flex-col">
+		<main className="p-3 basis-full overflow-hidden flex flex-col">
 			<header className="flex justify-between flex-wrap items-center mb-4 gap-4">
 				<Heading size="7" as="h1" className="min-w-200px">
 					{localDate.toLocaleDateString('en-US', {

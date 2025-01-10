@@ -36,7 +36,7 @@
 		"sync:twitter": "bun run integrations/twitter/sync.ts"
 	},
 	"dependencies": {
-		"@aws-sdk/client-s3": "^3.726.0",
+		"@aws-sdk/client-s3": "^3.726.1",
 		"@libsql/client": "^0.14.0",
 		"@octokit/request-error": "^6.1.6",
 		"@octokit/rest": "^21.1.0",
@@ -58,7 +58,7 @@
 		"drizzle-zod": "^0.6.1",
 		"mime-types": "^2.1.35",
 		"next-themes": "^0.4.4",
-		"openai": "^4.77.4",
+		"openai": "^4.78.1",
 		"pg": "^8.13.1",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",

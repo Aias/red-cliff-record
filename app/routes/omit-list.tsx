@@ -254,7 +254,7 @@ function OmitListPage() {
 	};
 
 	return (
-		<main className="p-4 flex flex-col h-full">
+		<main className="p-4 basis-full overflow-hidden flex flex-col">
 			<Heading size="7" mb="4" as="h1">
 				Browsing History Omit List
 			</Heading>

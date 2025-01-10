@@ -2,6 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/start';
 import { desc, eq, ilike, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
+import { toTitleCase } from '@/app/lib/formatting';
 import { db } from '@/db/connections';
 import {
 	airtableSpaces,
@@ -31,7 +32,7 @@ export type AirtableSpaceWithIndexEntry = AirtableSpaceSelect & {
 
 export const airtableSpacesQueryOptions = () =>
 	queryOptions({
-		queryKey: ['airtableSpaces'],
+		queryKey: ['index', 'airtable', 'spaces'],
 		queryFn: () => getAirtableSpaces(),
 	});
 
@@ -42,7 +43,7 @@ const getArchiveQueueLength = createServerFn({ method: 'GET' }).handler(async ()
 
 export const archiveQueueLengthQueryOptions = () =>
 	queryOptions({
-		queryKey: ['archiveQueueLength'],
+		queryKey: ['index', 'airtable', 'length'],
 		queryFn: () => getArchiveQueueLength(),
 	});
 
@@ -57,12 +58,11 @@ export const createOrUpdateIndexEntry = createServerFn({ method: 'POST' })
 	)
 	.handler(async ({ data }) => {
 		const { existingIndexEntryId, ...values } = data;
-		const titleCaseName = values.name.replace(/\b\w/g, (char) => char.toUpperCase());
 
 		if (existingIndexEntryId) {
 			const [indexEntry] = await db
 				.update(indices)
-				.set({ ...values, name: titleCaseName })
+				.set({ ...values, name: toTitleCase(values.name) })
 				.where(eq(indices.id, existingIndexEntryId))
 				.returning();
 			return indexEntry;
@@ -70,7 +70,7 @@ export const createOrUpdateIndexEntry = createServerFn({ method: 'POST' })
 
 		const [indexEntry] = await db
 			.insert(indices)
-			.values({ ...values, name: titleCaseName, mainType: 'category' as const })
+			.values({ ...values, name: toTitleCase(values.name), mainType: 'category' as const })
 			.returning();
 		return indexEntry;
 	});
@@ -181,6 +181,6 @@ export const getRelatedIndices = createServerFn({ method: 'GET' })
 
 export const relatedIndicesQueryOptions = (searchString: string) =>
 	queryOptions({
-		queryKey: ['relatedIndices', searchString],
+		queryKey: ['index', 'related', searchString],
 		queryFn: () => getRelatedIndices({ data: searchString }),
 	});
