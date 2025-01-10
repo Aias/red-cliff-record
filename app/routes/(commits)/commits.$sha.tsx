@@ -10,7 +10,8 @@ import { db } from '@/db/connections';
 import { githubCommits } from '@schema/integrations';
 import { AppLink } from '../../components/AppLink';
 import { CodeBlock } from '../../components/CodeBlock';
-import { summarizeCommit, type CommitSummary } from '../../lib/commit-summarizer';
+import { summarizeCommit } from './-summarizer';
+import { type CommitSummary } from './-summarizer/types';
 
 export const CommitSummaryInputSchema = z.object({
 	message: z.string(),

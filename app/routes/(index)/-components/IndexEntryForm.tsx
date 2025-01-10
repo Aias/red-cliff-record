@@ -5,8 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckboxWithLabel } from '@/app/components/CheckboxWithLabel';
 import { MetadataList } from '@/app/components/MetadataList';
 import type { AirtableSpaceSelect } from '@/db/schema/integrations';
-import { IndicesSelectSchema, type IndicesSelect } from '@/db/schema/main';
-import { type IndexMainType } from '@/db/schema/main';
+import { IndicesSelectSchema, type IndexMainType, type IndicesSelect } from '@/db/schema/main';
 import { updateIndexEntry } from '../-queries';
 
 export const IndexEntryForm = ({

@@ -14,7 +14,7 @@ import { db } from '@/db/connections';
 import { githubCommits, type GithubCommitSelect } from '@schema/integrations';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
-import { summarizeCommit } from '../../lib/commit-summarizer';
+import { summarizeCommit } from './-summarizer';
 import { CommitSummaryInputSchema } from './commits.$sha';
 import styles from './commits.module.css';
 
