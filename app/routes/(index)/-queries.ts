@@ -3,8 +3,12 @@ import { createServerFn } from '@tanstack/start';
 import { desc, eq, ilike, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db/connections';
-import { airtableSpaces, AirtableSpaceSelectSchema } from '@/db/schema/integrations';
-import { indices, IndicesSelectSchema } from '@/db/schema/main';
+import {
+	airtableSpaces,
+	AirtableSpaceSelectSchema,
+	type AirtableSpaceSelect,
+} from '@/db/schema/integrations';
+import { indices, IndicesSelectSchema, type IndicesSelect } from '@/db/schema/main';
 
 export const getAirtableSpaces = createServerFn({ method: 'GET' }).handler(async () => {
 	const spaces = await db.query.airtableSpaces.findMany({
@@ -21,7 +25,11 @@ export const getAirtableSpaces = createServerFn({ method: 'GET' }).handler(async
 	return spaces;
 });
 
-export const airtableSpaceQueryOptions = () =>
+export type AirtableSpaceWithIndexEntry = AirtableSpaceSelect & {
+	indexEntry: IndicesSelect | null;
+};
+
+export const airtableSpacesQueryOptions = () =>
 	queryOptions({
 		queryKey: ['airtableSpaces'],
 		queryFn: () => getAirtableSpaces(),
@@ -36,29 +44,6 @@ export const archiveQueueLengthQueryOptions = () =>
 	queryOptions({
 		queryKey: ['archiveQueueLength'],
 		queryFn: () => getArchiveQueueLength(),
-	});
-
-export const fetchSpaceById = createServerFn({ method: 'GET' })
-	.validator(z.string())
-	.handler(async ({ data: airtableId }) => {
-		const space = await db.query.airtableSpaces.findFirst({
-			where: eq(airtableSpaces.id, airtableId),
-			with: {
-				indexEntry: true,
-			},
-		});
-
-		if (!space) {
-			throw new Error('Record not found');
-		}
-
-		return space;
-	});
-
-export const airtableSpaceByIdQueryOptions = (airtableId: string) =>
-	queryOptions({
-		queryKey: ['airtableSpaceById', airtableId],
-		queryFn: () => fetchSpaceById({ data: airtableId }),
 	});
 
 export const createOrUpdateIndexEntry = createServerFn({ method: 'POST' })

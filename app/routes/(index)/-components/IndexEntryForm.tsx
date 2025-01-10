@@ -148,6 +148,8 @@ export const IndexEntryForm = ({
 								Canonical URL
 							</Text>
 							<TextField.Root
+								type="url"
+								placeholder="e.g., https://www.example.com"
 								value={field.state.value || ''}
 								onChange={(e) => field.handleChange(e.target.value)}
 							>
@@ -166,6 +168,8 @@ export const IndexEntryForm = ({
 								Image URL
 							</Text>
 							<TextField.Root
+								type="url"
+								placeholder="e.g., https://www.example.com/image.jpg"
 								value={field.state.value || ''}
 								onChange={(e) => field.handleChange(e.target.value)}
 							>

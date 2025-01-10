@@ -76,7 +76,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 							<DropdownMenu.Item
 								onClick={() =>
 									navigate({
-										to: '/queue',
+										to: '/queue/airtable',
 									})
 								}
 							>

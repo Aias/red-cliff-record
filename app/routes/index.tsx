@@ -30,7 +30,7 @@ function Home() {
 							<AppLink to="/commits">Commits</AppLink>
 						</li>
 						<li>
-							<AppLink to="/queue">Index Queue</AppLink>
+							<AppLink to="/queue/airtable">Index Queue</AppLink>
 						</li>
 					</ul>
 				</nav>
