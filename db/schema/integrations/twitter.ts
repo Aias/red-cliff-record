@@ -3,7 +3,8 @@ import { foreignKey, index, integer, text, timestamp } from 'drizzle-orm/pg-core
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { type z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
-import { indexEntries, media, records } from '../main';
+import { indices, records } from '../main';
+import { media } from '../main/media';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
 
@@ -134,7 +135,7 @@ export const twitterUsers = integrationSchema.table(
 		archivedAt: timestamp('archived_at', {
 			withTimezone: true,
 		}),
-		indexEntryId: integer('index_entry_id').references(() => indexEntries.id, {
+		indexEntryId: integer('index_entry_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
@@ -155,9 +156,9 @@ export const twitterUsersRelations = relations(twitterUsers, ({ many, one }) => 
 		fields: [twitterUsers.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indexEntries, {
+	indexEntry: one(indices, {
 		fields: [twitterUsers.indexEntryId],
-		references: [indexEntries.id],
+		references: [indices.id],
 	}),
 }));
 

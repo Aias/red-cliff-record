@@ -3,7 +3,8 @@ import { foreignKey, index, integer, primaryKey, text, timestamp } from 'drizzle
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { type z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
-import { indexEntries, media, records } from '../main';
+import { indices, records } from '../main';
+import { media } from '../main/media';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
 
@@ -138,7 +139,7 @@ export const airtableCreators = integrationSchema.table(
 		archivedAt: timestamp('archived_at', {
 			withTimezone: true,
 		}),
-		indexEntryId: integer('index_entry_id').references(() => indexEntries.id, {
+		indexEntryId: integer('index_entry_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
@@ -158,9 +159,9 @@ export const airtableCreatorsRelations = relations(airtableCreators, ({ one }) =
 		fields: [airtableCreators.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indexEntries, {
+	indexEntry: one(indices, {
 		fields: [airtableCreators.indexEntryId],
-		references: [indexEntries.id],
+		references: [indices.id],
 	}),
 }));
 
@@ -180,7 +181,7 @@ export const airtableSpaces = integrationSchema.table(
 		archivedAt: timestamp('archived_at', {
 			withTimezone: true,
 		}),
-		indexEntryId: integer('index_entry_id').references(() => indexEntries.id, {
+		indexEntryId: integer('index_entry_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
@@ -200,9 +201,9 @@ export const airtableSpacesRelations = relations(airtableSpaces, ({ one }) => ({
 		fields: [airtableSpaces.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indexEntries, {
+	indexEntry: one(indices, {
 		fields: [airtableSpaces.indexEntryId],
-		references: [indexEntries.id],
+		references: [indices.id],
 	}),
 }));
 

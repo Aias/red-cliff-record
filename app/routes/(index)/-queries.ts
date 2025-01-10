@@ -4,7 +4,7 @@ import { desc, eq, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db/connections';
 import { airtableSpaces, AirtableSpaceSelectSchema } from '@/db/schema/integrations';
-import { indexEntries, IndexEntrySelectSchema } from '@/db/schema/main';
+import { indices, IndicesSelectSchema } from '@/db/schema/main';
 
 export const getAirtableSpaces = createServerFn({ method: 'GET' }).handler(async () => {
 	const spaces = await db.query.airtableSpaces.findMany({
@@ -81,13 +81,13 @@ export const createIndexEntryFromAirtableSpace = createServerFn({ method: 'POST'
 		if (indexEntryId) {
 			// Update existing entry
 			[indexEntry] = await db
-				.update(indexEntries)
+				.update(indices)
 				.set(values)
-				.where(eq(indexEntries.id, indexEntryId))
+				.where(eq(indices.id, indexEntryId))
 				.returning();
 		} else {
 			// Create new entry
-			[indexEntry] = await db.insert(indexEntries).values(values).returning();
+			[indexEntry] = await db.insert(indices).values(values).returning();
 
 			// Link the new entry to the airtable space
 			[airtableSpace] = await db
@@ -130,14 +130,14 @@ export const setSpaceArchiveStatus = createServerFn({ method: 'POST' })
 	});
 
 export const updateIndexEntry = createServerFn({ method: 'POST' })
-	.validator(IndexEntrySelectSchema)
+	.validator(IndicesSelectSchema)
 	.handler(async ({ data }) => {
 		const { id, ...values } = data;
 
 		const [updatedEntry] = await db
-			.update(indexEntries)
+			.update(indices)
 			.set({ ...values, updatedAt: new Date() })
-			.where(eq(indexEntries.id, id))
+			.where(eq(indices.id, id))
 			.returning();
 
 		return updatedEntry;

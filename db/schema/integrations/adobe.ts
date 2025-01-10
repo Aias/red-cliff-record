@@ -3,7 +3,8 @@ import { index, integer, json, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { type z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
-import { media, records } from '../main';
+import { records } from '../main';
+import { media } from '../main/media';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
 

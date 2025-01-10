@@ -8,7 +8,7 @@ import {
 	databaseTimestamps,
 	databaseTimestampsNonUpdatable,
 } from '../common';
-import { indexEntries, records } from '../main';
+import { indices, records } from '../main';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
 
@@ -45,7 +45,7 @@ export const githubUsers = integrationSchema.table(
 		archivedAt: timestamp('archived_at', {
 			withTimezone: true,
 		}),
-		indexEntryId: integer('index_entry_id').references(() => indexEntries.id, {
+		indexEntryId: integer('index_entry_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
@@ -209,9 +209,9 @@ export const githubUsersRelations = relations(githubUsers, ({ one }) => ({
 		fields: [githubUsers.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indexEntries, {
+	indexEntry: one(indices, {
 		fields: [githubUsers.indexEntryId],
-		references: [indexEntries.id],
+		references: [indices.id],
 	}),
 }));
 
