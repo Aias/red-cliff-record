@@ -12,7 +12,7 @@ import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
 import { NotFound } from '../components/NotFound';
 import { seo, SITE_NAME } from '../lib/seo';
 import baseStyles from '../styles/base.css?url';
-import '../styles/globals.css';
+import globalStyles from '../styles/globals.css?url';
 
 export const getThemeCookie = createServerFn({ method: 'GET' }).handler(async () => {
 	const theme = z.enum(['light', 'dark']).default('dark').parse(getCookie('theme'));
@@ -50,6 +50,10 @@ export const Route = createRootRouteWithContext<{
 			{
 				rel: 'stylesheet',
 				href: baseStyles,
+			},
+			{
+				rel: 'stylesheet',
+				href: globalStyles,
 			},
 			{
 				rel: 'apple-touch-icon',
