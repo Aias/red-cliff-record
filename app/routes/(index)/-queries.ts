@@ -145,7 +145,7 @@ export const unlinkIndexEntries = createServerFn({ method: 'POST' })
 	.handler(async ({ data: ids }) => {
 		const [space] = await db
 			.update(airtableSpaces)
-			.set({ indexEntryId: null, updatedAt: new Date() })
+			.set({ indexEntryId: null, archivedAt: null, updatedAt: new Date() })
 			.where(inArray(airtableSpaces.id, ids))
 			.returning();
 		return space;

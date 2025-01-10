@@ -34,22 +34,24 @@ export const indices = pgTable(
 	'indices',
 	{
 		id: serial('id').primaryKey(),
+		mainType: indexMainTypeEnum('main_type').notNull(),
+		subType: text('sub_type'),
 		name: text('name').notNull(),
 		shortName: text('short_name'),
 		sense: text('sense'),
 		notes: text('notes'),
-		private: boolean('private').notNull().default(false),
-		mainType: indexMainTypeEnum('main_type').notNull(),
-		subType: text('sub_type'),
 		canonicalPageId: integer('canonical_page_id').references(() => sources.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		canonicalUrl: text('canonical_url'),
 		canonicalMediaId: integer('canonical_media_id').references(() => media.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		canonicalMediaUrl: text('canonical_media_url'),
 		aliasOf: integer('alias_of'),
+		private: boolean('private').notNull().default(false),
 		...databaseTimestamps,
 	},
 	(table) => [
@@ -64,14 +66,18 @@ export const indices = pgTable(
 	]
 );
 
-export const IndicesSelectSchema = createSelectSchema(indices);
+const indicesExtensions = {
+	canonicalUrl: z.string().url().nullable(),
+	canonicalMediaUrl: z.string().url().nullable(),
+};
+
+export const IndicesSelectSchema = createSelectSchema(indices).extend(indicesExtensions);
 export type IndicesSelect = z.infer<typeof IndicesSelectSchema>;
-export const IndicesInsertSchema = createInsertSchema(indices);
+export const IndicesInsertSchema = createInsertSchema(indices).extend(indicesExtensions);
 export type IndicesInsert = z.infer<typeof IndicesInsertSchema>;
-export const IndicesUpdateSchema = createUpdateSchema(indices);
+export const IndicesUpdateSchema = createUpdateSchema(indices).extend(indicesExtensions);
 export type IndicesUpdate = z.infer<typeof IndicesUpdateSchema>;
 
-// See-also relationships
 export const indexRelations = pgTable(
 	'index_relations',
 	{
