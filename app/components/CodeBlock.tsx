@@ -6,7 +6,7 @@ interface CodeBlockProps {
 
 export function CodeBlock({ children }: CodeBlockProps) {
 	return (
-		<pre className="bg-surface border border-gray-4 rounded-3 p-3">
+		<pre className="rounded-3 border border-gray-4 bg-surface p-3">
 			<Code
 				size="2"
 				variant="ghost"

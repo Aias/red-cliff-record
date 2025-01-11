@@ -18,9 +18,9 @@ export const DetailsPage = memo(
 		const queryClient = useQueryClient();
 
 		return (
-			<Card className="flex gap-2 shrink basis-full">
-				<section className="flex flex-col w-sm gap-4">
-					<header className="flex justify-between items-center">
+			<Card className="flex shrink basis-full gap-2">
+				<section className="flex w-sm flex-col gap-4">
+					<header className="flex items-center justify-between">
 						<Heading size="4">Selected Space</Heading>
 						{space.indexEntryId && (
 							<IconButton
@@ -35,7 +35,7 @@ export const DetailsPage = memo(
 									});
 								}}
 							>
-								<LinkBreak2Icon className="w-4 h-4" />
+								<LinkBreak2Icon className="h-4 w-4" />
 							</IconButton>
 						)}
 					</header>
@@ -55,8 +55,8 @@ export const DetailsPage = memo(
 						{space.archivedAt ? 'Unarchive' : 'Archive'}
 					</Button>
 				</section>
-				<section className="flex flex-col gap-4 grow pl-3 ml-3 border-l border-divider">
-					<div className="flex justify-between items-center">
+				<section className="ml-3 flex grow flex-col gap-4 border-l border-divider pl-3">
+					<div className="flex items-center justify-between">
 						<Heading size="4">Index Entry</Heading>
 						<IconButton size="1" variant="soft" onClick={handleClose}>
 							<Cross1Icon />

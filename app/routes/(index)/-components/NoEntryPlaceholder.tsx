@@ -13,7 +13,7 @@ export const NoEntryPlaceholder = ({ space }: { space: AirtableSpaceSelect }) =>
 	const { data: relatedIndices } = useSuspenseQuery(relatedIndicesQueryOptions(space.name));
 
 	return (
-		<div className="rounded-2 p-4 flex flex-col border border-gray-a4 gap-4">
+		<div className="flex flex-col gap-4 rounded-2 border border-gray-a4 p-4">
 			{relatedIndices.length > 0 ? (
 				<>
 					<Text>Found similar index entries:</Text>

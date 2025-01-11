@@ -142,8 +142,8 @@ function DailyActivityPage() {
 	);
 
 	return (
-		<main className="p-3 basis-full overflow-hidden flex flex-col">
-			<header className="flex justify-between flex-wrap items-center mb-4 gap-4">
+		<main className="flex basis-full flex-col overflow-hidden p-3">
+			<header className="mb-4 flex flex-wrap items-center justify-between gap-4">
 				<Heading size="7" as="h1" className="min-w-200px">
 					{localDate.toLocaleDateString('en-US', {
 						weekday: 'long',

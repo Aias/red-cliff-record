@@ -21,7 +21,7 @@ export function SelectionActions({
 }: SelectionActionsProps) {
 	const { size = '2', ...rest } = buttonProps;
 	return (
-		<div role="toolbar" className="flex gap-2 items-center">
+		<div role="toolbar" className="flex items-center gap-2">
 			<Text size={size}>{selectedCount} selected</Text>
 			{actions.map((action) => (
 				<Button

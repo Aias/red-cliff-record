@@ -8,7 +8,7 @@ export function NotFound() {
 				<Text color="gray" as="p">
 					The page you are looking for does not exist.
 				</Text>
-				<nav className="flex gap-2 items-center flex-wrap">
+				<nav className="flex flex-wrap items-center gap-2">
 					<Button variant="solid" color="green" onClick={() => window.history.back()}>
 						Go back
 					</Button>

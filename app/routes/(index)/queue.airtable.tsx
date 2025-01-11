@@ -58,9 +58,9 @@ function RouteComponent() {
 	});
 
 	return (
-		<main className="p-3 basis-full overflow-hidden flex gap-2">
-			<section className="flex flex-col gap-2 grow-0 shrink min-w-xs">
-				<header className="flex flex-row gap-2 justify-between items-center">
+		<main className="flex basis-full gap-2 overflow-hidden p-3">
+			<section className="flex min-w-xs shrink grow-0 flex-col gap-2">
+				<header className="flex flex-row items-center justify-between gap-2">
 					<Heading size="4">Index Queue</Heading>
 
 					<Text size="3" color="gray">
@@ -68,9 +68,9 @@ function RouteComponent() {
 					</Text>
 				</header>
 
-				<div className="flex flex-row gap-2 justify-between items-center">
+				<div className="flex flex-row items-center justify-between gap-2">
 					<Text>{selectedIds.size} selected</Text>
-					<menu className="flex flex-row gap-1 items-center">
+					<menu className="flex flex-row items-center gap-1">
 						{selectedIds.size > 0 ? (
 							<>
 								<li>
@@ -95,7 +95,7 @@ function RouteComponent() {
 								</li>
 								<li>
 									<IconButton variant="soft" size="1" onClick={() => clearSelection()}>
-										<Cross1Icon className="w-3 h-3" />
+										<Cross1Icon className="h-3 w-3" />
 									</IconButton>
 								</li>
 							</>

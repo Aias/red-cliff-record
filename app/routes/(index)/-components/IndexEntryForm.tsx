@@ -53,7 +53,7 @@ export const IndexEntryForm = ({ indexEntry, defaults, updateCallback }: IndexEn
 				<div className="flex gap-4">
 					<form.Field name="mainType">
 						{(field) => (
-							<label className="flex flex-col gap-1 grow">
+							<label className="flex grow flex-col gap-1">
 								<Text size="2" color="gray">
 									Main Type
 								</Text>
@@ -202,7 +202,7 @@ export const IndexEntryForm = ({ indexEntry, defaults, updateCallback }: IndexEn
 				<form.Subscribe
 					selector={(state) => [state.canSubmit, state.isSubmitting]}
 					children={([canSubmit, isSubmitting]) => (
-						<div className="border-t border-divider pt-4 mt-4">
+						<div className="mt-4 border-t border-divider pt-4">
 							<Button type="submit" disabled={!canSubmit}>
 								{isSubmitting ? '...Saving' : 'Save Changes'}
 							</Button>

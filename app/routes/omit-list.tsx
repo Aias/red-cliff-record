@@ -254,12 +254,12 @@ function OmitListPage() {
 	};
 
 	return (
-		<main className="p-4 basis-full overflow-hidden flex flex-col">
+		<main className="flex basis-full flex-col overflow-hidden p-4">
 			<Heading size="7" mb="4" as="h1">
 				Browsing History Omit List
 			</Heading>
 
-			<div className="flex gap-2 mb-4">
+			<div className="mb-4 flex gap-2">
 				<TextField.Root
 					ref={inputRef}
 					style={{ flex: 1 }}

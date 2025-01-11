@@ -187,6 +187,6 @@
 
 	.selectable:is(.selected, [data-status='active'], :has([data-status='active'])):hover,
 	.selectable:is(.selected, [data-status='active'], :has([data-status='active'])):active {
-		@apply bg-selected-hovered border-border-selected;
+		@apply border-border-selected bg-selected-hovered;
 	}
 }

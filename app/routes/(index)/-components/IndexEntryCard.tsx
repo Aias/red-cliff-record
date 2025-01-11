@@ -12,7 +12,7 @@ interface IndexEntryCardProps {
 export function IndexEntryCard({ index, action }: IndexEntryCardProps) {
 	return (
 		<Card size="2" className="flex items-center">
-			<div className="grow flex flex-col gap-2">
+			<div className="flex grow flex-col gap-2">
 				<div className="flex items-center gap-3">
 					<Text size="3" weight="bold">
 						{index.name}
@@ -37,7 +37,7 @@ export function IndexEntryCard({ index, action }: IndexEntryCardProps) {
 				)}
 			</div>
 			{action && (
-				<div className="flex flex-col justify-center ml-2 pl-2 border-l border-divider">
+				<div className="ml-2 flex flex-col justify-center border-l border-divider pl-2">
 					<Button size="2" variant="soft" onClick={action.onClick}>
 						{action.label}
 					</Button>

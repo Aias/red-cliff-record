@@ -178,7 +178,7 @@ function CommitView() {
 
 	return (
 		<Card className="grow basis-full">
-			<header className="flex justify-between items-center mb-4 gap-2">
+			<header className="mb-4 flex items-center justify-between gap-2">
 				<Heading size="6">Commit {commit.sha.slice(0, 7)}</Heading>
 				<AppLink to={'/commits'} asChild>
 					<IconButton size="1" variant="soft">
@@ -197,7 +197,7 @@ function CommitView() {
 					</Text>
 
 					<section>
-						<header className="flex justify-between items-center mb-3 gap-2">
+						<header className="mb-3 flex items-center justify-between gap-2">
 							<Heading size="4">Analysis</Heading>
 							<Button onClick={handleAnalyze} disabled={loading} variant="soft">
 								{loading ? 'Analyzing...' : summary ? 'Re-Analyze' : 'Analyze Commit'}
@@ -224,10 +224,10 @@ function CommitView() {
 					</section>
 
 					<section>
-						<header className="flex justify-between items-center mb-3 gap-2">
+						<header className="mb-3 flex items-center justify-between gap-2">
 							<Heading size="4">Changed Files</Heading>
 						</header>
-						<ul className="flex flex-col gap-2 list-none p-0">
+						<ul className="flex list-none flex-col gap-2 p-0">
 							{commit.commitChanges.map((change) => (
 								<li key={change.id}>
 									<Code variant="ghost">{change.filename}</Code>

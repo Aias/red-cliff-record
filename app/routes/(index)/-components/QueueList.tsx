@@ -32,7 +32,7 @@ export const QueueList = ({
 				<li
 					key={id}
 					className={cn(
-						'flex flex-col p-2 border rounded-2 selectable',
+						'selectable flex flex-col rounded-2 border p-2',
 						archivedAt && 'opacity-80',
 						selected && 'selected'
 					)}
@@ -59,7 +59,7 @@ export const QueueList = ({
 						</Text>
 					)}
 					{indexEntry && (
-						<div className="flex flex-row gap-1 items-center border-t border-gray-a3 pt-2 mt-2">
+						<div className="mt-2 flex flex-row items-center gap-1 border-t border-gray-a3 pt-2">
 							<Icon size="3" color={archivedAt ? 'gray' : 'grass'} className="mr-1">
 								<Link1Icon />
 							</Icon>

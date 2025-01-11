@@ -163,9 +163,9 @@ function CommitList() {
 	});
 
 	return (
-		<main className={cn('p-3 flex h-full gap-2 overflow-hidden', styles.layout)}>
+		<main className={cn('flex h-full gap-2 overflow-hidden p-3', styles.layout)}>
 			<Card>
-				<header className="flex justify-between items-center mb-4 gap-2">
+				<header className="mb-4 flex items-center justify-between gap-2">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedIds.size > 0 && (
 						<Button onClick={batchOperation.execute} disabled={batchOperation.processing}>

@@ -8,13 +8,13 @@ export const Route = createFileRoute('/')({
 
 function Home() {
 	return (
-		<Container size="1" p="4" className="flex flex-col h-full">
-			<Card className="max-w-sm mx-auto my-9">
+		<Container size="1" p="4" className="flex h-full flex-col">
+			<Card className="mx-auto my-9 max-w-sm">
 				<Heading size="6" mb="4" align="center">
 					Red Cliff Record Admin
 				</Heading>
 				<nav>
-					<ul className="flex flex-col gap-2 list-none p-0">
+					<ul className="flex list-none flex-col gap-2 p-0">
 						<li>
 							<AppLink
 								to={`/history/$date`}
