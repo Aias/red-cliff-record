@@ -4,9 +4,14 @@ import react from '@vitejs/plugin-react';
 import tsConfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
+	tsr: {
+		appDirectory: './src/app',
+	},
 	vite: {
 		plugins: [
-			tsConfigPaths(),
+			tsConfigPaths({
+				projects: ['./tsconfig.json'],
+			}),
 			{
 				...react({
 					babel: {

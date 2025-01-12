@@ -1,3 +1,4 @@
+// @ts-nocheck
 import eslint from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
@@ -24,7 +25,12 @@ export default tseslint.config(
 		},
 		rules: {
 			'react-compiler/react-compiler': 'error',
-			'@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+			'@typescript-eslint/no-unused-vars': [
+				'warn',
+				{
+					argsIgnorePattern: '^_',
+				},
+			],
 			'no-unused-vars': 'off',
 			'@typescript-eslint/consistent-type-imports': [
 				'warn',
@@ -49,17 +55,17 @@ export default tseslint.config(
 							position: 'before',
 						},
 						{
-							pattern: '@/app/**',
+							pattern: '~/app/**',
 							group: 'internal',
 							position: 'before',
 						},
 						{
-							pattern: '@/db/**',
+							pattern: '~/db/**',
 							group: 'internal',
 							position: 'before',
 						},
 						{
-							pattern: '@schema/**',
+							pattern: '~//db/schema/**',
 							group: 'internal',
 							position: 'before',
 						},
@@ -75,6 +81,18 @@ export default tseslint.config(
 						types: 'types-last',
 					},
 					warnOnUnassignedImports: true,
+				},
+			],
+			'drizzle/enforce-delete-with-where': [
+				'error',
+				{
+					drizzleObjectName: ['db', 'ctx.db'],
+				},
+			],
+			'drizzle/enforce-update-with-where': [
+				'error',
+				{
+					drizzleObjectName: ['db', 'ctx.db'],
 				},
 			],
 		},
