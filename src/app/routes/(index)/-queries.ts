@@ -72,6 +72,7 @@ export const createOrUpdateIndexEntry = createServerFn({ method: 'POST' })
 			.insert(indices)
 			.values({ ...values, name: toTitleCase(values.name), mainType: 'category' as const })
 			.returning();
+
 		return indexEntry;
 	});
 
@@ -105,6 +106,10 @@ export const createIndexEntryFromAirtableSpace = createServerFn({ method: 'POST'
 				updatedAt: space.contentUpdatedAt ?? space.updatedAt,
 			},
 		});
+
+		if (!indexEntry) {
+			throw new Error('Failed to create or update index entry');
+		}
 
 		const airtableSpace = await linkSpaceToIndexEntry({
 			data: {
@@ -163,6 +168,10 @@ export const updateIndexEntry = createServerFn({ method: 'POST' })
 			.set({ ...values, updatedAt: new Date() })
 			.where(eq(indices.id, id))
 			.returning();
+
+		if (!updatedEntry) {
+			throw new Error('Failed to update index entry');
+		}
 
 		return updatedEntry;
 	});

@@ -16,7 +16,7 @@ export async function runIntegration(
 ): Promise<void> {
 	console.log(`Starting ${integrationType} integration run for ${runType}...`);
 
-	const run = await db
+	const [run] = await db
 		.insert(integrationRuns)
 		.values({
 			integrationType,
@@ -25,15 +25,15 @@ export async function runIntegration(
 		})
 		.returning();
 
-	if (run.length === 0) {
+	if (!run) {
 		throw new Error('Could not create integration run.');
 	}
 
-	console.log(`Created integration run with ID ${run[0].id}`);
+	console.log(`Created integration run with ID ${run.id}`);
 
 	try {
 		console.log('Executing integration function...');
-		const entriesCreated = await fn(run[0].id);
+		const entriesCreated = await fn(run.id);
 		console.log(`Successfully created ${entriesCreated} entries`);
 
 		console.log('Updating integration run status...');
@@ -44,7 +44,7 @@ export async function runIntegration(
 				runEndTime: new Date(),
 				entriesCreated,
 			})
-			.where(eq(integrationRuns.id, run[0].id));
+			.where(eq(integrationRuns.id, run.id));
 		console.log('Integration run completed successfully');
 	} catch (err) {
 		console.error('Integration run failed:', err instanceof Error ? err.message : String(err));
@@ -55,7 +55,7 @@ export async function runIntegration(
 				runEndTime: new Date(),
 				message: err instanceof Error ? err.message : String(err),
 			})
-			.where(eq(integrationRuns.id, run[0].id));
+			.where(eq(integrationRuns.id, run.id));
 		throw err;
 	}
 }

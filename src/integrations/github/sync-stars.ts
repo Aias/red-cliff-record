@@ -62,7 +62,7 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 			if (mostRecentStarredAt) {
 				const oldestStarOnPage = parsedResponse.data.reduce(
 					(oldest, star) => (star.starred_at < oldest ? star.starred_at : oldest),
-					parsedResponse.data[0].starred_at
+					parsedResponse.data[0]!.starred_at
 				);
 				if (oldestStarOnPage <= mostRecentStarredAt) {
 					console.log(

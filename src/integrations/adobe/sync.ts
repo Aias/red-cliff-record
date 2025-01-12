@@ -45,7 +45,8 @@ async function syncLightroomImages(integrationRunId: number) {
 			userUpdated,
 		} = payload;
 		const url2048 = `${baseUrl}${asset.links['/rels/rendition_type/2048'].href}`;
-		const rating = ratings?.[Object.keys(ratings)[0]]?.rating ?? 0;
+		const firstRatingKey = ratings ? Object.keys(ratings)[0] : undefined;
+		const rating = firstRatingKey && ratings ? (ratings[firstRatingKey]?.rating ?? 0) : 0;
 
 		const imageToInsert: AdobeLightroomImageInsert = {
 			id: asset.id,

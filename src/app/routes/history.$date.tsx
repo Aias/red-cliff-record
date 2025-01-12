@@ -66,7 +66,7 @@ function DailyActivityPage() {
 	const nextDate = new Date(localDate);
 	nextDate.setDate(nextDate.getDate() + 1);
 
-	const formatDateParam = (date: Date) => date.toISOString().split('T')[0];
+	const formatDateParam = (date: Date): string => date.toISOString().split('T')[0]!;
 
 	const columns = useMemo<ColumnDef<(typeof history)[0]>[]>(
 		() => [

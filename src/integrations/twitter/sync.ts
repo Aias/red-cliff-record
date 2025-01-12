@@ -26,7 +26,13 @@ export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 			return [];
 		}
 
-		const mostRecentFile = resolve(twitterDataDir, files[0]);
+		const firstFile = files[0];
+		if (!firstFile) {
+			console.log('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');
+			return [];
+		}
+
+		const mostRecentFile = resolve(twitterDataDir, firstFile);
 		console.log(`Using Twitter bookmarks file: ${mostRecentFile}`);
 
 		const data = readFileSync(mostRecentFile, 'utf-8');

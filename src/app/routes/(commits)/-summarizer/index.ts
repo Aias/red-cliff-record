@@ -50,11 +50,12 @@ export const summarizeCommit = async (contents: string) => {
 		],
 	});
 
-	const summary = completion.choices[0].message.parsed;
-
-	if (!summary) {
+	const firstChoice = completion.choices[0];
+	if (!firstChoice?.message.parsed) {
 		throw new Error('No response from OpenAI');
 	}
+
+	const summary = firstChoice.message.parsed;
 
 	return summary;
 };
