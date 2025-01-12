@@ -7,7 +7,6 @@ import { createServerFn } from '@tanstack/start';
 import { desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { DataGrid } from '@/app/components/DataGrid';
-import { cn } from '@/app/lib/classNames';
 import { useBatchOperation } from '@/app/lib/useBatchOperation';
 import { useSelection } from '@/app/lib/useSelection';
 import { db } from '@/db/connections';
@@ -163,7 +162,7 @@ function CommitList() {
 	});
 
 	return (
-		<main className={cn('flex h-full gap-2 overflow-hidden p-3', styles.layout)}>
+		<main className={`flex h-full gap-2 overflow-hidden p-3 ${styles.layout}`}>
 			<Card>
 				<header className="mb-4 flex items-center justify-between gap-2">
 					<Heading size="6">Recent Commits</Heading>

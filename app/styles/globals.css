@@ -163,30 +163,24 @@
 	--shadow-6: var(--shadow-6);
 }
 
-@layer utilities {
-	.surface {
-		background-color: var(--color-panel);
-		backdrop-filter: var(--backdrop-filter-panel);
-	}
+@utility surface {
+	@apply bg-panel;
+	backdrop-filter: var(--backdrop-filter-panel);
+}
 
-	.selectable {
-		@apply cursor-pointer border-border-subtle;
-	}
-
-	.selectable:hover {
+@utility selectable {
+	@apply cursor-pointer border-border-subtle;
+	&:hover {
 		@apply border-border bg-hovered;
 	}
-
-	.selectable:is(.active, :active) {
+	&:is(.active, :active) {
 		@apply border-border-active bg-active;
 	}
-
-	.selectable:is(.selected, [data-status='active'], :has([data-status='active'])) {
+	&:is(.selected, [data-status='active'], :has([data-status='active'])) {
 		@apply border-border-selected bg-selected;
 	}
-
-	.selectable:is(.selected, [data-status='active'], :has([data-status='active'])):hover,
-	.selectable:is(.selected, [data-status='active'], :has([data-status='active'])):active {
+	&:is(.selected, [data-status='active'], :has([data-status='active'])):hover,
+	&:is(.selected, [data-status='active'], :has([data-status='active'])):active {
 		@apply border-border-selected bg-selected-hovered;
 	}
 }

@@ -8,7 +8,6 @@ import {
 	useReactTable,
 	type SortingState,
 } from '@tanstack/react-table';
-import { cn } from '@/app/lib/classNames';
 
 // Add custom meta type for column alignment
 declare module '@tanstack/react-table' {
@@ -120,7 +119,7 @@ export function DataGrid<T>({
 								onClick={
 									header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined
 								}
-								className={cn(header.column.getCanSort() && 'cursor-pointer')}
+								className={header.column.getCanSort() ? 'cursor-pointer' : undefined}
 								{...header.column.columnDef.meta?.columnProps}
 								{...headerCellProps}
 							>
@@ -133,19 +132,17 @@ export function DataGrid<T>({
 			<Table.Body {...bodyProps}>
 				{table.getRowModel().rows.length > 0 ? (
 					table.getRowModel().rows.map((row) => {
-						const customRowProps =
-							typeof rowProps === 'function' ? rowProps(row.original) : rowProps;
+						const { className: customClass = '', ...rest } =
+							(typeof rowProps === 'function' ? rowProps(row.original) : rowProps) ?? {};
 
 						return (
 							<Table.Row
 								key={row.id}
-								className={cn(
-									onRowClick && 'selectable',
-									selection?.selectedIds.has(getRowId(row.original)) && 'active',
-									customRowProps?.className
-								)}
+								data-active={selection?.selectedIds.has(getRowId(row.original))}
+								data-selectable={onRowClick !== undefined}
+								className={`data-active:active data-selectable:selectable ${customClass}`}
 								onClick={() => onRowClick?.(row.original)}
-								{...customRowProps}
+								{...rest}
 							>
 								{row.getVisibleCells().map((cell) => {
 									const customCellProps =

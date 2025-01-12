@@ -6,7 +6,6 @@ import { createRootRouteWithContext, Outlet, ScrollRestoration } from '@tanstack
 import { createServerFn, Meta, Scripts } from '@tanstack/start';
 import { getCookie } from 'vinxi/http';
 import { z } from 'zod';
-import { cn } from '@/app/lib/classNames';
 import { AppLayout } from '../components/AppLayout';
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
 import { NotFound } from '../components/NotFound';
@@ -113,7 +112,7 @@ function RootDocument({ children, theme }: Readonly<{ children: ReactNode; theme
 	const { appearance, radius, scaling, grayColor, accentColor, panelBackground } = theme;
 	return (
 		<html
-			className={cn('radix-themes', appearance)}
+			className={`radix-themes ${appearance}`}
 			data-is-root-theme="true"
 			data-accent-color={accentColor}
 			data-gray-color={grayColor}

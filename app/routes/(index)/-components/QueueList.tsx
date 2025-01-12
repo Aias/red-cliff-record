@@ -1,7 +1,6 @@
 import { Link1Icon } from '@radix-ui/react-icons';
 import { Checkbox, Text } from '@radix-ui/themes';
 import { Icon } from '@/app/components/Icon';
-import { cn } from '@/app/lib/classNames';
 import type { IndicesSelect } from '@/db/schema/main';
 
 type QueueEntry = {
@@ -31,11 +30,9 @@ export const QueueList = ({
 			{entries.map(({ id, name, description, indexEntry, archivedAt, selected }) => (
 				<li
 					key={id}
-					className={cn(
-						'selectable flex flex-col rounded-2 border p-2',
-						archivedAt && 'opacity-80',
-						selected && 'selected'
-					)}
+					data-selected={selected}
+					data-archived={Boolean(archivedAt)}
+					className="selectable data-selected:selected flex flex-col rounded-2 border p-2 data-archived:opacity-80"
 					onClick={() => {
 						onEntryClick(id);
 					}}
