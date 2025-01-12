@@ -59,7 +59,7 @@ function RouteComponent() {
 
 	return (
 		<main className="flex basis-full gap-2 overflow-hidden p-3">
-			<section className="min-w-xs flex shrink grow-0 flex-col gap-2">
+			<section className="flex min-w-xs shrink grow-0 flex-col gap-2">
 				<header className="flex flex-row items-center justify-between gap-2">
 					<Heading size="4">Index Queue</Heading>
 

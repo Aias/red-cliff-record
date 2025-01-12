@@ -1,5 +1,5 @@
 import { Badge, Button, Card, Text } from '@radix-ui/themes';
-import type { IndicesSelect } from '~//db/schema/main';
+import type { IndicesSelect } from '~/server/db/schema/main';
 
 interface IndexEntryCardProps {
 	index: IndicesSelect;
@@ -37,7 +37,7 @@ export function IndexEntryCard({ index, action }: IndexEntryCardProps) {
 				)}
 			</div>
 			{action && (
-				<div className="border-divider ml-2 flex flex-col justify-center border-l pl-2">
+				<div className="ml-2 flex flex-col justify-center border-l border-divider pl-2">
 					<Button size="2" variant="soft" onClick={action.onClick}>
 						{action.label}
 					</Button>

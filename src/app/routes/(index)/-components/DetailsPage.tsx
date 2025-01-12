@@ -4,7 +4,7 @@ import { Button, Card, Heading, IconButton, Text } from '@radix-ui/themes';
 import { useQueryClient } from '@tanstack/react-query';
 import { MetadataList } from '~/app/components/MetadataList';
 import { toTitleCase } from '~/app/lib/formatting';
-import type { AirtableSpaceSelect } from '~//db/schema/integrations';
+import type { AirtableSpaceSelect } from '~/server/db/schema/integrations';
 import {
 	setSpaceArchiveStatus,
 	unlinkIndexEntries,
@@ -19,7 +19,7 @@ export const DetailsPage = memo(
 
 		return (
 			<Card className="flex shrink basis-full gap-2">
-				<section className="w-sm flex flex-col gap-4">
+				<section className="flex w-sm flex-col gap-4">
 					<header className="flex items-center justify-between">
 						<Heading size="4">Selected Space</Heading>
 						{space.indexEntryId && (
@@ -55,7 +55,7 @@ export const DetailsPage = memo(
 						{space.archivedAt ? 'Unarchive' : 'Archive'}
 					</Button>
 				</section>
-				<section className="border-divider ml-3 flex grow flex-col gap-4 border-l pl-3">
+				<section className="ml-3 flex grow flex-col gap-4 border-l border-divider pl-3">
 					<div className="flex items-center justify-between">
 						<Heading size="4">Index Entry</Heading>
 						<IconButton size="1" variant="soft" onClick={handleClose}>

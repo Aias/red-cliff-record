@@ -13,8 +13,8 @@ import { createServerFn } from '@tanstack/start';
 import { eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { DataGrid } from '~/app/components/DataGrid';
-import { db } from '~/db/connections';
-import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~//db/schema/integrations';
+import { db } from '~/server/db/connections';
+import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~/server/db/schema/integrations';
 
 type OmitPattern = {
 	pattern: string;

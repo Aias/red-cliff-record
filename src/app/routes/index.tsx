@@ -4,6 +4,14 @@ import { AppLink } from '../components/AppLink';
 
 export const Route = createFileRoute('/')({
 	component: Home,
+	loader: async ({ context: { trpc } }) => {
+		const hello = await trpc.test.hello.query({
+			text: 'world!',
+		});
+		return {
+			hello,
+		};
+	},
 });
 
 function Home() {

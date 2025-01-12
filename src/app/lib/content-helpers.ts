@@ -1,5 +1,5 @@
 import mime from 'mime-types';
-import { FLAGS, MediaFormat, type Flag } from '~//db/schema/main';
+import { FLAGS, MediaFormat, type Flag } from '~/server/db/schema/main';
 
 export const extensions: { [key: string]: string } = {
 	'.jpg': 'image/jpeg',

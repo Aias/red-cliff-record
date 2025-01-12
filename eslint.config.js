@@ -60,12 +60,12 @@ export default tseslint.config(
 							position: 'before',
 						},
 						{
-							pattern: '~/db/**',
+							pattern: '~/server/db/**',
 							group: 'internal',
 							position: 'before',
 						},
 						{
-							pattern: '~//db/schema/**',
+							pattern: '~/server/db/schema/**',
 							group: 'internal',
 							position: 'before',
 						},

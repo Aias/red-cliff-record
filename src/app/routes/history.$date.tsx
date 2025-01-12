@@ -7,8 +7,8 @@ import { createServerFn } from '@tanstack/start';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { DataGrid } from '~/app/components/DataGrid';
-import { db } from '~/db/connections';
-import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~//db/schema/integrations';
+import { db } from '~/server/db/connections';
+import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~/server/db/schema/integrations';
 
 const fetchHistoryForDate = createServerFn({ method: 'GET' })
 	.validator(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
@@ -153,13 +153,13 @@ function DailyActivityPage() {
 					})}
 				</Heading>
 				<nav className="flex gap-2">
-					<Button variant="soft" asChild className="whitespace-nowrap text-nowrap">
+					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
 						<Link to="/history/$date" params={{ date: formatDateParam(prevDate) }}>
 							<ChevronLeftIcon />
 							Previous Day
 						</Link>
 					</Button>
-					<Button variant="soft" asChild className="whitespace-nowrap text-nowrap">
+					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
 						<Link to="/history/$date" params={{ date: formatDateParam(nextDate) }}>
 							Next Day
 							<ChevronRightIcon />

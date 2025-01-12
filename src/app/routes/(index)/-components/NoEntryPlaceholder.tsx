@@ -1,6 +1,6 @@
 import { Button, Flex, Text } from '@radix-ui/themes';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import type { AirtableSpaceSelect } from '~/db/schema/integrations/airtable';
+import type { AirtableSpaceSelect } from '~/server/db/schema/integrations/airtable';
 import {
 	createIndexEntryFromAirtableSpace,
 	linkSpaceToIndexEntry,
@@ -13,7 +13,7 @@ export const NoEntryPlaceholder = ({ space }: { space: AirtableSpaceSelect }) =>
 	const { data: relatedIndices } = useSuspenseQuery(relatedIndicesQueryOptions(space.name));
 
 	return (
-		<div className="rounded-2 border-gray-a4 flex flex-col gap-4 border p-4">
+		<div className="flex flex-col gap-4 rounded-2 border border-gray-a4 p-4">
 			{relatedIndices.length > 0 ? (
 				<>
 					<Text>Found similar index entries:</Text>

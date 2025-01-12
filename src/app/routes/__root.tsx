@@ -1,35 +1,23 @@
 import { useState, type ReactNode } from 'react';
-import { grass } from '@radix-ui/colors';
 import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { type QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet, ScrollRestoration } from '@tanstack/react-router';
-import { createServerFn, Meta, Scripts } from '@tanstack/start';
-import { getCookie } from 'vinxi/http';
-import { z } from 'zod';
+import { Meta, Scripts } from '@tanstack/start';
 import { AppLayout } from '../components/AppLayout';
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
 import { NotFound } from '../components/NotFound';
 import { seo, SITE_NAME } from '../lib/seo';
 import baseStyles from '../styles/base.css?url';
 import globalStyles from '../styles/globals.css?url';
+import type { TRPCClient } from '../trpc';
+import { getThemeCookie, defaultTheme, themeColor } from '../lib/theme';
 
-export const getThemeCookie = createServerFn({ method: 'GET' }).handler(async () => {
-	const theme = z.enum(['light', 'dark']).default('dark').parse(getCookie('theme'));
-	return { theme };
-});
-
-const defaultTheme: ThemeProps = {
-	appearance: 'dark',
-	radius: 'small',
-	scaling: '90%',
-	grayColor: 'olive',
-	accentColor: 'grass',
-	panelBackground: 'translucent',
-};
-
-export const Route = createRootRouteWithContext<{
+export interface RouterAppContext {
 	queryClient: QueryClient;
-}>()({
+	trpc: TRPCClient;
+}
+
+export const Route = createRootRouteWithContext<RouterAppContext>()({
 	loader: () => getThemeCookie(),
 	head: () => ({
 		meta: [
@@ -71,7 +59,7 @@ export const Route = createRootRouteWithContext<{
 				sizes: '16x16',
 				href: '/favicon-16x16.png',
 			},
-			{ rel: 'manifest', href: '/site.webmanifest', color: grass.grass9 },
+			{ rel: 'manifest', href: '/site.webmanifest', color: themeColor },
 			{ rel: 'icon', href: '/favicon.ico' },
 		],
 	}),
@@ -89,9 +77,8 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
 	const { theme: initialTheme } = Route.useLoaderData() as { theme: 'light' | 'dark' };
-
-	// Store the current theme in state, initialized from the server-provided theme
 	const [appearance, setAppearance] = useState<'light' | 'dark'>(initialTheme);
+
 	return (
 		<RootDocument theme={{ ...defaultTheme, appearance: appearance }}>
 			<Theme

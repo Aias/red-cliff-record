@@ -10,7 +10,7 @@ import {
 	type IndexMainType,
 	type IndicesSelect,
 	type IndicesUpdate,
-} from '~/db/schema/main';
+} from '~/server/db/schema/main';
 import { updateIndexEntry } from '../-queries';
 
 type IndexEntryFormProps = {
@@ -202,7 +202,7 @@ export const IndexEntryForm = ({ indexEntry, defaults, updateCallback }: IndexEn
 				<form.Subscribe
 					selector={(state) => [state.canSubmit, state.isSubmitting]}
 					children={([canSubmit, isSubmitting]) => (
-						<div className="border-divider mt-4 border-t pt-4">
+						<div className="mt-4 border-t border-divider pt-4">
 							<Button type="submit" disabled={!canSubmit}>
 								{isSubmitting ? '...Saving' : 'Save Changes'}
 							</Button>

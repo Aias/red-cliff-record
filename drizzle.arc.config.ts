@@ -1,9 +1,9 @@
 import { defineConfig } from 'drizzle-kit';
-import { connectionUrl } from '~/db/connections/arc-sqlite';
+import { connectionUrl } from '~/server/db/connections/arc-sqlite';
 
 export default defineConfig({
-	out: './db/migrations/arc',
-	schema: './db/schema/arc',
+	out: './src/db/migrations/arc',
+	schema: './src/db/schema/arc',
 	dialect: 'sqlite',
 	dbCredentials: {
 		url: connectionUrl,

@@ -9,33 +9,14 @@ import { z } from 'zod';
 import { DataGrid } from '~/app/components/DataGrid';
 import { useBatchOperation } from '~/app/lib/useBatchOperation';
 import { useSelection } from '~/app/lib/useSelection';
-import { db } from '~/db/connections';
-import { githubCommits, type GithubCommitSelect } from '~//db/schema/integrations';
+import { db } from '~/server/db/connections';
+import { githubCommits, type GithubCommitSelect } from '~/server/db/schema/integrations';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
 import { summarizeCommit } from './-summarizer';
 import { CommitSummaryInputSchema } from './commits.$sha';
 import styles from './commits.module.css';
 
-const fetchCommits = createServerFn({ method: 'GET' }).handler(async () => {
-	const commits = await db.query.githubCommits.findMany({
-		with: {
-			repository: true,
-			commitChanges: true,
-		},
-		orderBy: [desc(githubCommits.committedAt)],
-		limit: 50,
-	});
-	return { commits };
-});
-
-const commitsQueryOptions = () =>
-	queryOptions({
-		queryKey: ['commits'],
-		queryFn: () => fetchCommits(),
-	});
-
-// Add new server function for batch summarization
 const batchSummarizeCommits = createServerFn({ method: 'POST' })
 	.validator(z.array(CommitSummaryInputSchema))
 	.handler(async ({ data }) => {
@@ -62,8 +43,9 @@ const batchSummarizeCommits = createServerFn({ method: 'POST' })
 	});
 
 export const Route = createFileRoute('/(commits)/commits')({
-	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData(commitsQueryOptions());
+	loader: async ({ context: { trpc } }) => {
+		const commits = await trpc.github.commits.query();
+		return { commits };
 	},
 	component: CommitList,
 });
@@ -118,9 +100,7 @@ const columns: ColumnDef<GithubCommitSelect>[] = [
 ];
 
 function CommitList() {
-	const {
-		data: { commits },
-	} = useSuspenseQuery(commitsQueryOptions());
+	const { commits } = Route.useLoaderData();
 	const navigate = useNavigate();
 	const { selectedIds, setSelection, clearSelection } = useSelection(
 		commits.map((commit) => ({ id: commit.sha }))

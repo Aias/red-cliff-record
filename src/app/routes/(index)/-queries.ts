@@ -3,13 +3,13 @@ import { createServerFn } from '@tanstack/start';
 import { desc, eq, ilike, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { toTitleCase } from '~/app/lib/formatting';
-import { db } from '~/db/connections';
+import { db } from '~/server/db/connections';
 import {
 	airtableSpaces,
 	AirtableSpaceSelectSchema,
 	type AirtableSpaceSelect,
-} from '~/db/schema/integrations';
-import { indices, IndicesSelectSchema, type IndicesSelect } from '~/db/schema/main';
+} from '~/server/db/schema/integrations';
+import { indices, IndicesSelectSchema, type IndicesSelect } from '~/server/db/schema/main';
 
 export const getAirtableSpaces = createServerFn({ method: 'GET' }).handler(async () => {
 	const spaces = await db.query.airtableSpaces.findMany({
