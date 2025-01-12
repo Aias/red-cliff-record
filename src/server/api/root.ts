@@ -1,6 +1,6 @@
-import { testRouter } from '~/server/api/routers/test';
-import { githubRouter } from '~/server/api/routers/github';
-import { createTRPCRouter } from './trpc';
+import { testRouter } from './routers/test';
+import { githubRouter } from './routers/github';
+import { createTRPCRouter } from './init';
 
 /**
  * This is the primary router for your server.

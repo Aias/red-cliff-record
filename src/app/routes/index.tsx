@@ -1,25 +1,31 @@
 import { Card, Container, Heading } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { AppLink } from '../components/AppLink';
+import { useTRPC } from '~/app/trpc';
+import { useSuspenseQuery } from '@tanstack/react-query';
 
 export const Route = createFileRoute('/')({
 	component: Home,
 	loader: async ({ context: { trpc } }) => {
-		const hello = await trpc.test.hello.query({
+		await trpc.test.hello.prefetch({
 			text: 'world!',
 		});
-		return {
-			hello,
-		};
 	},
 });
 
 function Home() {
+	const trpc = useTRPC();
+	const hello = useSuspenseQuery(
+		trpc.test.hello.queryOptions({
+			text: 'world!',
+		})
+	);
+
 	return (
 		<Container size="1" p="4" className="flex h-full flex-col">
 			<Card className="mx-auto my-9 max-w-sm">
 				<Heading size="6" mb="4" align="center">
-					Red Cliff Record Admin
+					Red Cliff Record Admin {hello.data.greeting}
 				</Heading>
 				<nav>
 					<ul className="flex list-none flex-col gap-2 p-0">

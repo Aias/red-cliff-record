@@ -1,10 +1,10 @@
 import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
 import { Button, Card, Heading, ScrollArea } from '@radix-ui/themes';
-import { queryOptions, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { createServerFn } from '@tanstack/start';
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { DataGrid } from '~/app/components/DataGrid';
 import { useBatchOperation } from '~/app/lib/useBatchOperation';
@@ -16,6 +16,7 @@ import { Icon } from '../../components/Icon';
 import { summarizeCommit } from './-summarizer';
 import { CommitSummaryInputSchema } from './commits.$sha';
 import styles from './commits.module.css';
+import { useTRPC } from '~/app/trpc';
 
 const batchSummarizeCommits = createServerFn({ method: 'POST' })
 	.validator(z.array(CommitSummaryInputSchema))
@@ -43,9 +44,8 @@ const batchSummarizeCommits = createServerFn({ method: 'POST' })
 	});
 
 export const Route = createFileRoute('/(commits)/commits')({
-	loader: async ({ context: { trpc } }) => {
-		const commits = await trpc.github.commits.query();
-		return { commits };
+	loader: async ({ context: { trpc, queryClient } }) => {
+		await queryClient.ensureQueryData(trpc.github.commits.queryOptions());
 	},
 	component: CommitList,
 });
@@ -100,7 +100,8 @@ const columns: ColumnDef<GithubCommitSelect>[] = [
 ];
 
 function CommitList() {
-	const { commits } = Route.useLoaderData();
+	const trpc = useTRPC();
+	const { data: commits } = useSuspenseQuery(trpc.github.commits.queryOptions());
 	const navigate = useNavigate();
 	const { selectedIds, setSelection, clearSelection } = useSelection(
 		commits.map((commit) => ({ id: commit.sha }))

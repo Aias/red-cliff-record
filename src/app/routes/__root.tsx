@@ -9,12 +9,13 @@ import { NotFound } from '../components/NotFound';
 import { seo, SITE_NAME } from '../lib/seo';
 import baseStyles from '../styles/base.css?url';
 import globalStyles from '../styles/globals.css?url';
-import type { TRPCClient } from '../trpc';
 import { getThemeCookie, defaultTheme, themeColor } from '../lib/theme';
+import { createServerSideHelpers } from '@trpc/react-query/server';
+import { AppRouter } from '~/server/api/root';
 
 export interface RouterAppContext {
 	queryClient: QueryClient;
-	trpc: TRPCClient;
+	trpc: ReturnType<typeof createServerSideHelpers<AppRouter>>;
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({

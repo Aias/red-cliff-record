@@ -1,4 +1,4 @@
-import { createTRPCRouter, publicProcedure } from '../trpc';
+import { createTRPCRouter, publicProcedure } from '../init';
 import { desc } from 'drizzle-orm';
 import { githubCommits } from '~/server/db/schema/integrations';
 
