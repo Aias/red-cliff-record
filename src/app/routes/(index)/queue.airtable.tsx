@@ -18,6 +18,7 @@ export const Route = createFileRoute('/(index)/queue/airtable')({
 
 function RouteComponent() {
 	const [spaces] = trpc.airtable.getSpaces.useSuspenseQuery({ limit: 100 });
+	const trpcUtils = trpc.useUtils();
 	const { data: archiveQueueLength } = trpc.airtable.getArchiveQueueLength.useQuery();
 
 	const { selectedIds, toggleSelection, selectAll, clearSelection } = useSelection(spaces);
@@ -33,8 +34,16 @@ function RouteComponent() {
 	}, []);
 
 	const createIndexMutation = trpc.indices.createIndexEntry.useMutation();
-	const archiveSpacesMutation = trpc.airtable.setSpaceArchiveStatus.useMutation();
-	const linkSpaceToIndexEntryMutation = trpc.airtable.linkSpaceToIndexEntry.useMutation();
+	const archiveSpacesMutation = trpc.airtable.setSpaceArchiveStatus.useMutation({
+		onSuccess: () => {
+			trpcUtils.airtable.getSpaces.invalidate();
+		},
+	});
+	const linkSpaceToIndexEntryMutation = trpc.airtable.linkSpaceToIndexEntry.useMutation({
+		onSuccess: () => {
+			trpcUtils.airtable.getSpaces.invalidate();
+		},
+	});
 
 	const handleBatchCreateIndices = useCallback(async () => {
 		const selectedSpaces = spaces.filter((space) => selectedIds.has(space.id));
@@ -55,13 +64,15 @@ function RouteComponent() {
 					)
 			)
 		);
+		clearSelection();
 	}, [createIndexMutation, linkSpaceToIndexEntryMutation, selectedIds]);
 
-	const handleBatchArchiveSpaces = useCallback(() => {
-		archiveSpacesMutation.mutate({
+	const handleBatchArchiveSpaces = useCallback(async () => {
+		await archiveSpacesMutation.mutateAsync({
 			spaceIds: Array.from(selectedIds),
 			shouldArchive: true,
 		});
+		clearSelection();
 	}, [archiveSpacesMutation, selectedIds]);
 
 	return (
