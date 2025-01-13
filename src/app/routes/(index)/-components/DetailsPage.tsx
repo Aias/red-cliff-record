@@ -1,21 +1,31 @@
 import { memo } from 'react';
 import { Cross1Icon, LinkBreak2Icon } from '@radix-ui/react-icons';
 import { Button, Card, Heading, IconButton, Text } from '@radix-ui/themes';
-import { useQueryClient } from '@tanstack/react-query';
 import { MetadataList } from '~/app/components/MetadataList';
 import { toTitleCase } from '~/app/lib/formatting';
+import { trpc } from '~/app/trpc';
 import type { AirtableSpaceSelect } from '~/server/db/schema/integrations';
-import {
-	setSpaceArchiveStatus,
-	unlinkIndexEntries,
-	type AirtableSpaceWithIndexEntry,
-} from '../-queries';
+import { type IndicesSelect } from '~/server/db/schema/main';
 import { IndexEntryForm } from './IndexEntryForm';
 import { NoEntryPlaceholder } from './NoEntryPlaceholder';
 
+type AirtableSpaceWithIndexEntry = AirtableSpaceSelect & {
+	indexEntry: IndicesSelect | null;
+};
+
 export const DetailsPage = memo(
 	({ space, handleClose }: { space: AirtableSpaceWithIndexEntry; handleClose: () => void }) => {
-		const queryClient = useQueryClient();
+		const trpcUtils = trpc.useUtils();
+		const unlinkSpacesMutation = trpc.airtable.unlinkSpacesFromIndices.useMutation({
+			onSuccess: () => {
+				trpcUtils.airtable.getSpaces.invalidate();
+			},
+		});
+		const setSpaceArchiveStatusMutation = trpc.airtable.setSpaceArchiveStatus.useMutation({
+			onSuccess: () => {
+				trpcUtils.airtable.getSpaces.invalidate();
+			},
+		});
 
 		return (
 			<Card className="flex shrink basis-full gap-2">
@@ -28,11 +38,7 @@ export const DetailsPage = memo(
 								variant="soft"
 								color="red"
 								onClick={() => {
-									unlinkIndexEntries({ data: [space.id] }).then(() => {
-										queryClient.invalidateQueries({
-											queryKey: ['index', 'airtable'],
-										});
-									});
+									unlinkSpacesMutation.mutate([space.id]);
 								}}
 							>
 								<LinkBreak2Icon className="h-4 w-4" />
@@ -43,12 +49,9 @@ export const DetailsPage = memo(
 					<Button
 						variant="soft"
 						onClick={() =>
-							setSpaceArchiveStatus({
-								data: { ids: [space.id], shouldArchive: !space.archivedAt },
-							}).then(() => {
-								queryClient.invalidateQueries({
-									queryKey: ['index', 'airtable'],
-								});
+							setSpaceArchiveStatusMutation.mutate({
+								spaceIds: [space.id],
+								shouldArchive: !space.archivedAt,
 							})
 						}
 					>
@@ -71,18 +74,6 @@ export const DetailsPage = memo(
 								createdAt: space.contentCreatedAt ?? undefined,
 								updatedAt: space.contentUpdatedAt ?? undefined,
 								mainType: 'category',
-							}}
-							updateCallback={(indexEntry) => {
-								queryClient.setQueryData(
-									['index', 'airtable', 'spaces'],
-									(oldData: AirtableSpaceSelect[]) => {
-										return oldData.map((space) =>
-											space.indexEntryId === indexEntry.id
-												? { ...space, indexEntry: indexEntry }
-												: space
-										);
-									}
-								);
 							}}
 						/>
 					) : (

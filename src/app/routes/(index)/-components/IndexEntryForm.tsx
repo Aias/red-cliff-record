@@ -2,16 +2,15 @@ import { useEffect } from 'react';
 import { ExternalLinkIcon, ImageIcon } from '@radix-ui/react-icons';
 import { Button, SegmentedControl, Text, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
-import { useMutation } from '@tanstack/react-query';
 import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
 import { MetadataList } from '~/app/components/MetadataList';
+import { trpc } from '~/app/trpc';
 import {
 	IndicesSelectSchema,
 	type IndexMainType,
 	type IndicesSelect,
 	type IndicesUpdate,
 } from '~/server/db/schema/main';
-import { updateIndexEntry } from '../-queries';
 
 type IndexEntryFormProps = {
 	indexEntry: IndicesSelect;
@@ -19,17 +18,15 @@ type IndexEntryFormProps = {
 	updateCallback?: (data: IndicesSelect) => Promise<void> | void;
 };
 
-export const IndexEntryForm = ({ indexEntry, defaults, updateCallback }: IndexEntryFormProps) => {
-	console.log(`Suggested defaults:`, defaults);
-	const entryMutation = useMutation({
-		mutationFn: updateIndexEntry,
+export const IndexEntryForm = ({ indexEntry, updateCallback }: IndexEntryFormProps) => {
+	const updateIndexEntryMutation = trpc.indices.updateIndexEntry.useMutation({
 		onSuccess: updateCallback,
 	});
 
 	const form = useForm({
 		defaultValues: indexEntry,
 		onSubmit: async ({ value }) => {
-			entryMutation.mutate({ data: value });
+			updateIndexEntryMutation.mutate(value);
 		},
 		validators: {
 			onChange: IndicesSelectSchema,

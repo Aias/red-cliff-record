@@ -16,8 +16,10 @@ import { DailyVisitsQueryResultSchema } from './types';
 // Helper function to create readline interface
 const createPrompt = () => {
 	return readline.createInterface({
-		input: process.stdin,
-		output: process.stdout,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		input: process.stdin as any,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		output: process.stdout as any,
 	});
 };
 

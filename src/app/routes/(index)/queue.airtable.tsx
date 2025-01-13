@@ -1,61 +1,68 @@
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { Cross1Icon } from '@radix-ui/react-icons';
 import { Button, Heading, IconButton, ScrollArea, Text } from '@radix-ui/themes';
-import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Placeholder } from '~/app/components/Placeholder';
-import { useBatchOperation } from '~/app/lib/useBatchOperation';
+import { toTitleCase } from '~/app/lib/formatting';
 import { useSelection } from '~/app/lib/useSelection';
+import { trpc } from '~/app/trpc';
 import { DetailsPage } from './-components/DetailsPage';
 import { QueueList } from './-components/QueueList';
-import {
-	airtableSpacesQueryOptions,
-	archiveQueueLengthQueryOptions,
-	createIndexEntries,
-	setSpaceArchiveStatus,
-} from './-queries';
 
 export const Route = createFileRoute('/(index)/queue/airtable')({
-	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData(airtableSpacesQueryOptions());
+	loader: async ({ context: { queryClient, trpc } }) => {
+		await queryClient.ensureQueryData(trpc.airtable.getSpaces.queryOptions({ limit: 100 }));
 	},
 	component: RouteComponent,
 });
 
 function RouteComponent() {
-	const queryClient = useQueryClient();
-	const { data: spaces } = useSuspenseQuery(airtableSpacesQueryOptions());
-	const { data: archiveQueueLength } = useQuery(archiveQueueLengthQueryOptions());
+	const [spaces] = trpc.airtable.getSpaces.useSuspenseQuery({ limit: 100 });
+	const { data: archiveQueueLength } = trpc.airtable.getArchiveQueueLength.useQuery();
 
 	const { selectedIds, toggleSelection, selectAll, clearSelection } = useSelection(spaces);
-	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+	const [inspectedSpaceId, setInspectedSpaceId] = useState<string | null>(null);
 
-	const selectedSpace = useMemo(
-		() => (selectedSpaceId ? spaces.find((space) => space.id === selectedSpaceId) : null),
-		[selectedSpaceId, spaces]
+	const inspectedSpace = useMemo(
+		() => (inspectedSpaceId ? spaces.find((space) => space.id === inspectedSpaceId) : null),
+		[inspectedSpaceId, spaces]
 	);
 
 	const unselectSpace = useCallback(() => {
-		setSelectedSpaceId(null);
+		setInspectedSpaceId(null);
 	}, []);
 
-	const createEntriesOperation = useBatchOperation({
-		selectedIds,
-		clearSelection,
-		queryClient,
-		invalidateKeys: [['index', 'airtable', 'spaces']],
-		prepareData: (ids) => ids.map((id) => spaces.find((s) => s.id === id)!),
-		operation: createIndexEntries,
-	});
+	const createIndexMutation = trpc.indices.createIndexEntry.useMutation();
+	const archiveSpacesMutation = trpc.airtable.setSpaceArchiveStatus.useMutation();
+	const linkSpaceToIndexEntryMutation = trpc.airtable.linkSpaceToIndexEntry.useMutation();
 
-	const archiveOperation = useBatchOperation({
-		selectedIds,
-		clearSelection,
-		queryClient,
-		invalidateKeys: [['index', 'airtable']],
-		prepareData: (ids) => ({ ids }),
-		operation: setSpaceArchiveStatus,
-	});
+	const handleBatchCreateIndices = useCallback(async () => {
+		const selectedSpaces = spaces.filter((space) => selectedIds.has(space.id));
+		await Promise.all(
+			selectedSpaces.map((space) =>
+				createIndexMutation
+					.mutateAsync({
+						name: toTitleCase(space.name),
+						mainType: 'category',
+						createdAt: space.createdAt ?? space.contentCreatedAt,
+						updatedAt: space.updatedAt ?? space.contentUpdatedAt,
+					})
+					.then((newEntry) =>
+						linkSpaceToIndexEntryMutation.mutateAsync({
+							spaceId: space.id,
+							indexEntryId: newEntry.id,
+						})
+					)
+			)
+		);
+	}, [createIndexMutation, linkSpaceToIndexEntryMutation, selectedIds]);
+
+	const handleBatchArchiveSpaces = useCallback(() => {
+		archiveSpacesMutation.mutate({
+			spaceIds: Array.from(selectedIds),
+			shouldArchive: true,
+		});
+	}, [archiveSpacesMutation, selectedIds]);
 
 	return (
 		<main className="flex basis-full gap-2 overflow-hidden p-3">
@@ -77,8 +84,8 @@ function RouteComponent() {
 									<Button
 										size="1"
 										variant="soft"
-										disabled={archiveOperation.processing}
-										onClick={archiveOperation.execute}
+										disabled={archiveSpacesMutation.isPending}
+										onClick={handleBatchArchiveSpaces}
 									>
 										Archive All
 									</Button>
@@ -87,8 +94,8 @@ function RouteComponent() {
 									<Button
 										size="1"
 										variant="soft"
-										disabled={createEntriesOperation.processing}
-										onClick={createEntriesOperation.execute}
+										disabled={createIndexMutation.isPending}
+										onClick={handleBatchCreateIndices}
 									>
 										Create Entries
 									</Button>
@@ -131,15 +138,15 @@ function RouteComponent() {
 							description,
 							archivedAt,
 							indexEntry,
-							selected: id === selectedSpaceId,
+							selected: id === inspectedSpaceId,
 						}))}
 						selectedIds={selectedIds}
 						toggleSelection={toggleSelection}
-						onEntryClick={setSelectedSpaceId}
+						onEntryClick={setInspectedSpaceId}
 					/>
 				</ScrollArea>
 			</section>
-			{selectedSpace ? (
+			{inspectedSpace ? (
 				<Suspense
 					fallback={
 						<Placeholder>
@@ -147,7 +154,7 @@ function RouteComponent() {
 						</Placeholder>
 					}
 				>
-					<DetailsPage space={selectedSpace} handleClose={unselectSpace} />
+					<DetailsPage space={inspectedSpace} handleClose={unselectSpace} />
 				</Suspense>
 			) : (
 				<Placeholder>

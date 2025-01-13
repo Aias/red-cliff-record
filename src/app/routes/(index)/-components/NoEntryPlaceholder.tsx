@@ -1,16 +1,23 @@
 import { Button, Flex, Text } from '@radix-ui/themes';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { toTitleCase } from '~/app/lib/formatting';
+import { trpc } from '~/app/trpc';
 import type { AirtableSpaceSelect } from '~/server/db/schema/integrations/airtable';
-import {
-	createIndexEntryFromAirtableSpace,
-	linkSpaceToIndexEntry,
-	relatedIndicesQueryOptions,
-} from '../-queries';
 import { IndexEntryCard } from './IndexEntryCard';
 
 export const NoEntryPlaceholder = ({ space }: { space: AirtableSpaceSelect }) => {
-	const queryClient = useQueryClient();
-	const { data: relatedIndices } = useSuspenseQuery(relatedIndicesQueryOptions(space.name));
+	const [relatedIndices] = trpc.indices.findRelatedIndices.useSuspenseQuery(space.name);
+	const trpcUtils = trpc.useUtils();
+
+	const linkSpaceToIndexEntryMutation = trpc.airtable.linkSpaceToIndexEntry.useMutation({
+		onSuccess: () => {
+			trpcUtils.airtable.getSpaces.invalidate();
+		},
+	});
+	const createIndexEntryMutation = trpc.indices.createIndexEntry.useMutation({
+		onSuccess: () => {
+			trpcUtils.airtable.getSpaces.invalidate();
+		},
+	});
 
 	return (
 		<div className="flex flex-col gap-4 rounded-2 border border-gray-a4 p-4">
@@ -25,12 +32,9 @@ export const NoEntryPlaceholder = ({ space }: { space: AirtableSpaceSelect }) =>
 								action={{
 									label: 'Link',
 									onClick: () => {
-										linkSpaceToIndexEntry({
-											data: { spaceId: space.id, indexEntryId: index.id },
-										}).then(() => {
-											queryClient.invalidateQueries({
-												queryKey: ['index', 'airtable', 'spaces'],
-											});
+										linkSpaceToIndexEntryMutation.mutate({
+											spaceId: space.id,
+											indexEntryId: index.id,
 										});
 									},
 								}}
@@ -47,24 +51,19 @@ export const NoEntryPlaceholder = ({ space }: { space: AirtableSpaceSelect }) =>
 
 			<Button
 				onClick={async () => {
-					const { indexEntry: newIndexEntry, airtableSpace: updatedAirtableSpace } =
-						await createIndexEntryFromAirtableSpace({ data: space });
-					queryClient.setQueryData(['airtableSpaceById', space.id], {
-						...updatedAirtableSpace,
-						indexEntryId: newIndexEntry.id,
-						indexEntry: newIndexEntry,
-					});
-					queryClient.setQueryData(['airtableSpaces'], (oldData: AirtableSpaceSelect[]) => {
-						return oldData.map((oldSpace) =>
-							oldSpace.id === space.id
-								? {
-										...updatedAirtableSpace,
-										indexEntryId: newIndexEntry.id,
-										indexEntry: newIndexEntry,
-									}
-								: oldSpace
-						);
-					});
+					createIndexEntryMutation
+						.mutateAsync({
+							name: toTitleCase(space.name),
+							mainType: 'category',
+							createdAt: space.contentCreatedAt ?? space.createdAt,
+							updatedAt: space.contentUpdatedAt ?? space.updatedAt,
+						})
+						.then((newEntry) => {
+							linkSpaceToIndexEntryMutation.mutate({
+								spaceId: space.id,
+								indexEntryId: newEntry.id,
+							});
+						});
 				}}
 			>
 				Create New Index Entry

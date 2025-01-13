@@ -30,9 +30,9 @@ export const QueueList = ({
 			{entries.map(({ id, name, description, indexEntry, archivedAt, selected }) => (
 				<li
 					key={id}
-					data-selected={selected}
+					data-status={selected ? 'active' : undefined}
 					data-archived={Boolean(archivedAt)}
-					className="data-selected:selected flex selectable flex-col rounded-2 border p-2 data-archived:opacity-80"
+					className="flex selectable flex-col rounded-2 border p-2 data-archived:opacity-80"
 					onClick={() => {
 						onEntryClick(id);
 					}}
