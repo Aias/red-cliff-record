@@ -4,7 +4,7 @@ import { Button, Heading, Link as RadixLink, ScrollArea, Text } from '@radix-ui/
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataGrid } from '~/app/components/DataGrid';
-import { formatNumber, formatTime, formatISODate } from '~/app/lib/formatting';
+import { formatISODate, formatNumber, formatTime } from '~/app/lib/formatting';
 
 export const Route = createFileRoute('/history/$date')({
 	loader: ({ params: { date }, context: { queryClient, trpc } }) =>

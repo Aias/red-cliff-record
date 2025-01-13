@@ -1,8 +1,8 @@
-import { ThemeProps } from '@radix-ui/themes';
+import { grass } from '@radix-ui/colors';
+import { type ThemeProps } from '@radix-ui/themes';
 import { createServerFn } from '@tanstack/start';
 import { getCookie } from 'vinxi/http';
 import { z } from 'zod';
-import { grass } from '@radix-ui/colors';
 
 export const ThemeCookieSchema = z.enum(['light', 'dark']).default('dark');
 

@@ -39,28 +39,21 @@ function OmitListPage() {
 	const addPatternMutation = trpc.omitList.createPattern.useMutation({
 		onSuccess: async () => {
 			setNewPattern('');
-			await Promise.all([
-				trpcUtils.omitList.getList.refetch(),
-				trpcUtils.omitList.getCounts.refetch(),
-			]);
+			trpcUtils.omitList.getList.refetch();
+			trpcUtils.omitList.getCounts.refetch();
 		},
 	});
 
 	const updatePatternMutation = trpc.omitList.updatePattern.useMutation({
 		onSuccess: async () => {
-			await Promise.all([
-				trpcUtils.omitList.getList.refetch(),
-				trpcUtils.omitList.getCounts.refetch(),
-			]);
+			trpcUtils.omitList.getList.refetch();
+			trpcUtils.omitList.getCounts.refetch();
 		},
 	});
 
 	const deletePatternMutation = trpc.omitList.deletePattern.useMutation({
-		onSuccess: async () => {
-			await Promise.all([
-				trpcUtils.omitList.getList.refetch(),
-				trpcUtils.omitList.getCounts.refetch(),
-			]);
+		onSuccess: () => {
+			trpcUtils.omitList.getList.refetch();
 		},
 	});
 

@@ -1,7 +1,7 @@
-import { createTRPCRouter, publicProcedure } from '../init';
 import { eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~/server/db/schema/integrations';
+import { createTRPCRouter, publicProcedure } from '../init';
 
 export const browserHistoryRouter = createTRPCRouter({
 	getByDate: publicProcedure

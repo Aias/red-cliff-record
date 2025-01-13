@@ -1,13 +1,13 @@
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routerWithQueryClient } from '@tanstack/react-router-with-query';
+import { httpBatchLink } from '@trpc/client';
+import { createServerSideHelpers } from '@trpc/react-query/server';
+import superjson from 'superjson';
 import { DefaultCatchBoundary } from './components/DefaultCatchBoundary';
 import { NotFound } from './components/NotFound';
 import { routeTree } from './routeTree.gen';
 import { trpc } from './trpc';
-import { createServerSideHelpers } from '@trpc/react-query/server';
-import superjson from 'superjson';
-import { httpBatchLink } from '@trpc/client';
 
 function getBaseUrl() {
 	if (typeof window !== 'undefined') return window.location.origin;

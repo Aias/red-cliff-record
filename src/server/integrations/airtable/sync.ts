@@ -1,3 +1,4 @@
+/* eslint-disable drizzle/enforce-delete-with-where */
 import { eq } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
 import {

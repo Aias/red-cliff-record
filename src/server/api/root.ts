@@ -1,6 +1,6 @@
+import { createTRPCRouter } from './init';
 import { githubRouter } from './routers/github';
 import { browserHistoryRouter, omitListRouter } from './routers/history';
-import { createTRPCRouter } from './init';
 
 /**
  * This is the primary router for your server.

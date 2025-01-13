@@ -3,15 +3,15 @@ import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { type QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet, ScrollRestoration } from '@tanstack/react-router';
 import { Meta, Scripts } from '@tanstack/start';
+import { type createServerSideHelpers } from '@trpc/react-query/server';
+import { type AppRouter } from '~/server/api/root';
 import { AppLayout } from '../components/AppLayout';
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
 import { NotFound } from '../components/NotFound';
 import { seo, SITE_NAME } from '../lib/seo';
+import { defaultTheme, getThemeCookie, themeColor } from '../lib/theme';
 import baseStyles from '../styles/base.css?url';
 import globalStyles from '../styles/globals.css?url';
-import { getThemeCookie, defaultTheme, themeColor } from '../lib/theme';
-import { createServerSideHelpers } from '@trpc/react-query/server';
-import { AppRouter } from '~/server/api/root';
 
 export interface RouterAppContext {
 	queryClient: QueryClient;

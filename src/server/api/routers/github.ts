@@ -1,6 +1,6 @@
-import { createTRPCRouter, publicProcedure } from '../init';
 import { desc } from 'drizzle-orm';
 import { githubCommits } from '~/server/db/schema/integrations';
+import { createTRPCRouter, publicProcedure } from '../init';
 
 export const githubRouter = createTRPCRouter({
 	commits: publicProcedure.query(({ ctx: { db } }) => {

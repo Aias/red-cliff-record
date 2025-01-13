@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { DataGrid } from '~/app/components/DataGrid';
 import { useBatchOperation } from '~/app/lib/useBatchOperation';
 import { useSelection } from '~/app/lib/useSelection';
+import { useTRPCUtils } from '~/app/trpc';
 import { db } from '~/server/db/connections';
 import { githubCommits, type GithubCommitSelect } from '~/server/db/schema/integrations';
 import { AppLink } from '../../components/AppLink';
@@ -16,7 +17,6 @@ import { Icon } from '../../components/Icon';
 import { summarizeCommit } from './-summarizer';
 import { CommitSummaryInputSchema } from './commits.$sha';
 import styles from './commits.module.css';
-import { useTRPCUtils } from '~/app/trpc';
 
 const batchSummarizeCommits = createServerFn({ method: 'POST' })
 	.validator(z.array(CommitSummaryInputSchema))
