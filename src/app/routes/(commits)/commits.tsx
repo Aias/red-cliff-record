@@ -1,51 +1,54 @@
+import { useCallback } from 'react';
 import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
 import { Button, Card, Heading, ScrollArea } from '@radix-ui/themes';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { createServerFn } from '@tanstack/start';
-import { eq } from 'drizzle-orm';
-import { z } from 'zod';
 import { DataGrid } from '~/app/components/DataGrid';
-import { useBatchOperation } from '~/app/lib/useBatchOperation';
 import { useSelection } from '~/app/lib/useSelection';
-import { useTRPCUtils } from '~/app/trpc';
-import { db } from '~/server/db/connections';
-import { githubCommits, type GithubCommitSelect } from '~/server/db/schema/integrations';
+import { trpc } from '~/app/trpc';
+import { type CommitSummaryInput } from '~/server/api/routers/github.types';
+import {
+	type GithubCommitChangeSelect,
+	type GithubCommitSelect,
+	type GithubRepositorySelect,
+} from '~/server/db/schema/integrations';
 import { AppLink } from '../../components/AppLink';
 import { Icon } from '../../components/Icon';
-import { summarizeCommit } from './-summarizer';
-import { CommitSummaryInputSchema } from './commits.$sha';
 import styles from './commits.module.css';
 
-const batchSummarizeCommits = createServerFn({ method: 'POST' })
-	.validator(z.array(CommitSummaryInputSchema))
-	.handler(async ({ data }) => {
-		// Process commits in parallel
-		const summaries = await Promise.all(
-			data.map(async (commitSummaryInput) => {
-				const summary = await summarizeCommit(JSON.stringify(commitSummaryInput));
+type CommitSelect = GithubCommitSelect & {
+	repository: GithubRepositorySelect;
+	commitChanges: GithubCommitChangeSelect[];
+};
 
-				// Update database
-				await db
-					.update(githubCommits)
-					.set({
-						commitType: summary.primary_purpose,
-						summary: summary.summary,
-						technologies: summary.technologies,
-					})
-					.where(eq(githubCommits.sha, commitSummaryInput.sha));
-
-				return { sha: commitSummaryInput.sha, summary };
-			})
-		);
-
-		return { summaries };
-	});
+export const mapCommitToInput = (commit: CommitSelect): CommitSummaryInput => {
+	return {
+		message: commit.message,
+		sha: commit.sha,
+		changes: commit.changes,
+		additions: commit.additions,
+		deletions: commit.deletions,
+		commitChanges: commit.commitChanges.map((change) => ({
+			filename: change.filename,
+			status: change.status,
+			changes: change.changes,
+			deletions: change.deletions,
+			additions: change.additions,
+			patch: change.patch,
+		})),
+		repository: {
+			fullName: commit.repository.fullName,
+			description: commit.repository.description,
+			language: commit.repository.language,
+			topics: commit.repository.topics,
+			licenseName: commit.repository.licenseName,
+		},
+	};
+};
 
 export const Route = createFileRoute('/(commits)/commits')({
 	loader: async ({ context: { trpc, queryClient } }) => {
-		await queryClient.ensureQueryData(trpc.github.commits.queryOptions());
+		await queryClient.ensureQueryData(trpc.github.getCommits.queryOptions());
 	},
 	component: CommitList,
 });
@@ -100,47 +103,29 @@ const columns: ColumnDef<GithubCommitSelect>[] = [
 ];
 
 function CommitList() {
-	const trpc = useTRPCUtils();
-	const { data: commits } = useSuspenseQuery(trpc.github.commits.queryOptions());
+	const [commits, commitsQuery] = trpc.github.getCommits.useSuspenseQuery();
+	const trpcUtils = trpc.useUtils();
 	const navigate = useNavigate();
 	const { selectedIds, setSelection, clearSelection } = useSelection(
 		commits.map((commit) => ({ id: commit.sha }))
 	);
-	const queryClient = useQueryClient();
 
-	const batchOperation = useBatchOperation({
-		selectedIds,
-		clearSelection,
-		queryClient,
-		invalidateKeys: [['commits'], ...Array.from(selectedIds).map((sha) => ['commit', sha])],
-		prepareData: (shas) =>
-			shas.map((sha) => {
-				const commit = commits.find((c) => c.sha === sha)!;
-				return {
-					message: commit.message,
-					sha: commit.sha,
-					changes: commit.changes,
-					additions: commit.additions,
-					deletions: commit.deletions,
-					commitChanges: commit.commitChanges.map((change) => ({
-						filename: change.filename,
-						status: change.status,
-						changes: change.changes,
-						deletions: change.deletions,
-						additions: change.additions,
-						patch: change.patch,
-					})),
-					repository: {
-						fullName: commit.repository.fullName,
-						description: commit.repository.description,
-						language: commit.repository.language,
-						topics: commit.repository.topics,
-						licenseName: commit.repository.licenseName,
-					},
-				};
-			}),
-		operation: batchSummarizeCommits,
+	const batchSummarizeCommits = trpc.github.batchSummarize.useMutation({
+		onSuccess: async () => {
+			await commitsQuery.refetch();
+			trpcUtils.github.getCommitBySha.invalidate();
+			clearSelection();
+		},
 	});
+
+	const handleBatchSummarize = useCallback(() => {
+		const selectedCommits = Array.from(selectedIds).map((sha) => {
+			const commit = commits.find((c) => c.sha === sha)!;
+			return mapCommitToInput(commit);
+		});
+
+		batchSummarizeCommits.mutate(selectedCommits);
+	}, [batchSummarizeCommits, selectedIds, commits]);
 
 	return (
 		<main className={`flex h-full gap-2 overflow-hidden p-3 ${styles.layout}`}>
@@ -148,8 +133,8 @@ function CommitList() {
 				<header className="mb-4 flex items-center justify-between gap-2">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedIds.size > 0 && (
-						<Button onClick={batchOperation.execute} disabled={batchOperation.processing}>
-							{batchOperation.processing
+						<Button onClick={handleBatchSummarize} disabled={batchSummarizeCommits.isPending}>
+							{batchSummarizeCommits.isPending
 								? 'Summarizing...'
 								: `Summarize ${selectedIds.size} Commits`}
 						</Button>

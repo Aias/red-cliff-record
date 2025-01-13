@@ -36,14 +36,14 @@ importers:
         specifier: ^0.41.1
         version: 0.41.1(@tanstack/start@1.95.5(@libsql/client@0.14.0)(@types/node@22.10.5)(db0@0.2.1(@libsql/client@0.14.0)(drizzle-orm@0.38.3(@libsql/client@0.14.0)(@types/pg@8.11.10)(@types/react@19.0.6)(bun-types@1.1.43)(pg@8.13.1)(postgres@3.4.5)(react@19.0.0)))(drizzle-orm@0.38.3(@libsql/client@0.14.0)(@types/pg@8.11.10)(@types/react@19.0.6)(bun-types@1.1.43)(pg@8.13.1)(postgres@3.4.5)(react@19.0.0))(ioredis@5.4.2)(jiti@2.4.2)(lightningcss@1.29.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(terser@5.37.0)(tsx@4.19.2)(typescript@5.7.3)(vite@6.0.7(@types/node@22.10.5)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.37.0)(tsx@4.19.2)))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(typescript@5.7.3)
       '@tanstack/react-query':
-        specifier: ^5.64.0
-        version: 5.64.0(react@19.0.0)
+        specifier: ^5.64.1
+        version: 5.64.1(react@19.0.0)
       '@tanstack/react-router':
         specifier: ^1.95.5
         version: 1.95.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@tanstack/react-router-with-query':
         specifier: ^1.95.5
-        version: 1.95.5(@tanstack/react-query@5.64.0(react@19.0.0))(@tanstack/react-router@1.95.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        version: 1.95.5(@tanstack/react-query@5.64.1(react@19.0.0))(@tanstack/react-router@1.95.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@tanstack/react-table':
         specifier: ^8.20.6
         version: 8.20.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -55,7 +55,7 @@ importers:
         version: 11.0.0-rc.700(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(typescript@5.7.3)
       '@trpc/react-query':
         specifier: ^11.0.0-rc.446
-        version: 11.0.0-rc.700(@tanstack/react-query@5.64.0(react@19.0.0))(@trpc/client@11.0.0-rc.700(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(typescript@5.7.3)
+        version: 11.0.0-rc.700(@tanstack/react-query@5.64.1(react@19.0.0))(@trpc/client@11.0.0-rc.700(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(typescript@5.7.3)
       '@trpc/server':
         specifier: ^11.0.0-rc.446
         version: 11.0.0-rc.700(typescript@5.7.3)
@@ -117,9 +117,6 @@ importers:
       '@types/mime-types':
         specifier: ^2.1.4
         version: 2.1.4
-      '@types/pg':
-        specifier: ^8.11.10
-        version: 8.11.10
       '@types/react':
         specifier: ^19.0.6
         version: 19.0.6
@@ -2630,8 +2627,8 @@ packages:
     resolution: {integrity: sha512-FgUauZLg+nRybH5dKyAYokmXs064rHc0qpMizKxTegSTMHj/z2B6T7pjEG2Zd6dBegeYNVL97ROg7Srr9cuBug==}
     engines: {node: '>=12'}
 
-  '@tanstack/query-core@5.64.0':
-    resolution: {integrity: sha512-/MPJt/AaaMzdWJZTafgMyYhEX/lGjQrNz8+NDQSk8fNoU5PHqh05FhQaBrEQafW2PeBHsRbefEf//qKMiSAbQQ==}
+  '@tanstack/query-core@5.64.1':
+    resolution: {integrity: sha512-978Wx4Wl4UJZbmvU/rkaM9cQtXXrbhK0lsz/UZhYIbyKYA8E4LdomTwyh2GHZ4oU0BKKoDH4YlKk2VscCUgNmg==}
 
   '@tanstack/react-cross-context@1.87.6':
     resolution: {integrity: sha512-roKUsTChxywpIDKhJbUcnGm5ql05TzIrcwjFlOZenHRUqIEqxzINHkDMmQQdm280q4oxjkyu7CsnXKIDaPZrqA==}
@@ -2648,8 +2645,8 @@ packages:
       '@tanstack/start':
         optional: true
 
-  '@tanstack/react-query@5.64.0':
-    resolution: {integrity: sha512-tBMzlROROUcTDMpDt1NC3n9ndKnJHPB3RCpa6Bf9f31TFvqhLz879x8jldtKU+6IwMSw1Pn4K1AKA+2SYyA6TA==}
+  '@tanstack/react-query@5.64.1':
+    resolution: {integrity: sha512-vW5ggHpIO2Yjj44b4sB+Fd3cdnlMJppXRBJkEHvld6FXh3j5dwWJoQo7mGtKI2RbSFyiyu/PhGAy0+Vv5ev9Eg==}
     peerDependencies:
       react: ^18 || ^19
 
@@ -8401,7 +8398,7 @@ snapshots:
 
   '@tanstack/history@1.95.2': {}
 
-  '@tanstack/query-core@5.64.0': {}
+  '@tanstack/query-core@5.64.1': {}
 
   '@tanstack/react-cross-context@1.87.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
     dependencies:
@@ -8421,14 +8418,14 @@ snapshots:
       - react-dom
       - typescript
 
-  '@tanstack/react-query@5.64.0(react@19.0.0)':
+  '@tanstack/react-query@5.64.1(react@19.0.0)':
     dependencies:
-      '@tanstack/query-core': 5.64.0
+      '@tanstack/query-core': 5.64.1
       react: 19.0.0
 
-  '@tanstack/react-router-with-query@1.95.5(@tanstack/react-query@5.64.0(react@19.0.0))(@tanstack/react-router@1.95.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+  '@tanstack/react-router-with-query@1.95.5(@tanstack/react-query@5.64.1(react@19.0.0))(@tanstack/react-router@1.95.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
     dependencies:
-      '@tanstack/react-query': 5.64.0(react@19.0.0)
+      '@tanstack/react-query': 5.64.1(react@19.0.0)
       '@tanstack/react-router': 1.95.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
@@ -8588,9 +8585,9 @@ snapshots:
       '@trpc/server': 11.0.0-rc.700(typescript@5.7.3)
       typescript: 5.7.3
 
-  '@trpc/react-query@11.0.0-rc.700(@tanstack/react-query@5.64.0(react@19.0.0))(@trpc/client@11.0.0-rc.700(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(typescript@5.7.3)':
+  '@trpc/react-query@11.0.0-rc.700(@tanstack/react-query@5.64.1(react@19.0.0))(@trpc/client@11.0.0-rc.700(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(typescript@5.7.3)':
     dependencies:
-      '@tanstack/react-query': 5.64.0(react@19.0.0)
+      '@tanstack/react-query': 5.64.1(react@19.0.0)
       '@trpc/client': 11.0.0-rc.700(@trpc/server@11.0.0-rc.700(typescript@5.7.3))(typescript@5.7.3)
       '@trpc/server': 11.0.0-rc.700(typescript@5.7.3)
       react: 19.0.0
@@ -8677,6 +8674,7 @@ snapshots:
       '@types/node': 22.10.5
       pg-protocol: 1.7.0
       pg-types: 4.0.2
+    optional: true
 
   '@types/react-dom@19.0.3(@types/react@19.0.6)':
     dependencies:
@@ -10732,7 +10730,8 @@ snapshots:
       define-properties: 1.2.1
       es-object-atoms: 1.0.0
 
-  obuf@1.1.2: {}
+  obuf@1.1.2:
+    optional: true
 
   ofetch@1.4.1:
     dependencies:
@@ -10852,16 +10851,19 @@ snapshots:
   pg-connection-string@2.7.0:
     optional: true
 
-  pg-int8@1.0.1: {}
+  pg-int8@1.0.1:
+    optional: true
 
-  pg-numeric@1.0.2: {}
+  pg-numeric@1.0.2:
+    optional: true
 
   pg-pool@3.7.0(pg@8.13.1):
     dependencies:
       pg: 8.13.1
     optional: true
 
-  pg-protocol@1.7.0: {}
+  pg-protocol@1.7.0:
+    optional: true
 
   pg-types@2.2.0:
     dependencies:
@@ -10881,6 +10883,7 @@ snapshots:
       postgres-date: 2.1.0
       postgres-interval: 3.0.0
       postgres-range: 1.1.4
+    optional: true
 
   pg@8.13.1:
     dependencies:
@@ -10923,7 +10926,8 @@ snapshots:
   postgres-array@2.0.0:
     optional: true
 
-  postgres-array@3.0.2: {}
+  postgres-array@3.0.2:
+    optional: true
 
   postgres-bytea@1.0.0:
     optional: true
@@ -10931,20 +10935,24 @@ snapshots:
   postgres-bytea@3.0.0:
     dependencies:
       obuf: 1.1.2
+    optional: true
 
   postgres-date@1.0.7:
     optional: true
 
-  postgres-date@2.1.0: {}
+  postgres-date@2.1.0:
+    optional: true
 
   postgres-interval@1.2.0:
     dependencies:
       xtend: 4.0.2
     optional: true
 
-  postgres-interval@3.0.0: {}
+  postgres-interval@3.0.0:
+    optional: true
 
-  postgres-range@1.1.4: {}
+  postgres-range@1.1.4:
+    optional: true
 
   postgres@3.4.5: {}
 

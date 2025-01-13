@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod.mjs';
-import { CommitSummarySchema } from './types';
+import { CommitSummaryResponseSchema } from '~/server/api/routers/github.types';
 
 export const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
@@ -43,7 +43,7 @@ You will be given the following as input:
 export const summarizeCommit = async (contents: string) => {
 	const completion = await openai.beta.chat.completions.parse({
 		model: 'gpt-4o',
-		response_format: zodResponseFormat(CommitSummarySchema, 'commit_summary'),
+		response_format: zodResponseFormat(CommitSummaryResponseSchema, 'commit_summary'),
 		messages: [
 			{ role: 'system', content: commitSummarizerInstructions },
 			{ role: 'user', content: contents },
