@@ -1,5 +1,7 @@
+// @ts-nocheck
 import eslint from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import drizzle from 'eslint-plugin-drizzle';
 import importPlugin from 'eslint-plugin-import';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import globals from 'globals';
@@ -21,10 +23,17 @@ export default tseslint.config(
 		plugins: {
 			'react-compiler': reactCompiler,
 			import: importPlugin,
+			drizzle: drizzle,
 		},
 		rules: {
 			'react-compiler/react-compiler': 'error',
-			'@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+			'@typescript-eslint/no-unused-vars': [
+				'warn',
+				{
+					argsIgnorePattern: '^_',
+				},
+			],
+			'@typescript-eslint/ban-ts-comment': 'off',
 			'no-unused-vars': 'off',
 			'@typescript-eslint/consistent-type-imports': [
 				'warn',
@@ -49,17 +58,7 @@ export default tseslint.config(
 							position: 'before',
 						},
 						{
-							pattern: '@/app/**',
-							group: 'internal',
-							position: 'before',
-						},
-						{
-							pattern: '@/db/**',
-							group: 'internal',
-							position: 'before',
-						},
-						{
-							pattern: '@schema/**',
+							pattern: '~/**',
 							group: 'internal',
 							position: 'before',
 						},
@@ -77,6 +76,25 @@ export default tseslint.config(
 					warnOnUnassignedImports: true,
 				},
 			],
+			'drizzle/enforce-delete-with-where': [
+				'error',
+				{
+					drizzleObjectName: ['db', 'ctx.db'],
+				},
+			],
+			'drizzle/enforce-update-with-where': [
+				'error',
+				{
+					drizzleObjectName: ['db', 'ctx.db'],
+				},
+			],
+		},
+	},
+	{
+		files: ['**/*.{ts,tsx}'],
+		rules: {
+			'drizzle/enforce-delete-with-where': ['error', { drizzleObjectName: ['db', 'ctx.db'] }],
+			'drizzle/enforce-update-with-where': ['error', { drizzleObjectName: ['db', 'ctx.db'] }],
 		},
 	},
 	{

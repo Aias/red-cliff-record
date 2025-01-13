@@ -1,11 +1,13 @@
 .DS_Store
-node_modules
-build
+/node_modules
+/build
+/dist
 .env
 .env.*
 .yarn
-**/.temp/**
-**/.output/**
-**/.vinxi/**
+/.temp
+/.output
+/.vinxi
+*.tsbuildinfo
 
 public/fonts
