@@ -1,5 +1,5 @@
-import { testRouter } from './routers/test';
 import { githubRouter } from './routers/github';
+import { browserHistoryRouter, omitListRouter } from './routers/history';
 import { createTRPCRouter } from './init';
 
 /**
@@ -8,8 +8,9 @@ import { createTRPCRouter } from './init';
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-	test: testRouter,
 	github: githubRouter,
+	history: browserHistoryRouter,
+	omitList: omitListRouter,
 });
 
 // export type definition of API

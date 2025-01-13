@@ -1,188 +1,66 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button, Heading, ScrollArea, Spinner, TextField } from '@radix-ui/themes';
-import {
-	queryOptions,
-	useMutation,
-	useQuery,
-	useQueryClient,
-	useSuspenseQuery,
-} from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { createServerFn } from '@tanstack/start';
-import { eq, ilike, sql } from 'drizzle-orm';
-import { z } from 'zod';
 import { DataGrid } from '~/app/components/DataGrid';
-import { db } from '~/server/db/connections';
-import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~/server/db/schema/integrations';
+import { EditableCell } from '~/app/components/DataGrid';
+import { trpc, useTRPCUtils } from '~/app/trpc';
 
 type OmitPattern = {
 	pattern: string;
 	createdAt: Date;
 	updatedAt: Date | null;
+	matchCount: number;
 };
 
-const fetchOmitList = createServerFn({ method: 'GET' }).handler(async () => {
-	const patterns = await db
-		.select({
-			pattern: arcBrowsingHistoryOmitList.pattern,
-			createdAt: arcBrowsingHistoryOmitList.createdAt,
-			updatedAt: arcBrowsingHistoryOmitList.updatedAt,
-		})
-		.from(arcBrowsingHistoryOmitList)
-		.orderBy(arcBrowsingHistoryOmitList.pattern);
-
-	return patterns;
-});
-
-const fetchPatternCounts = createServerFn({ method: 'GET' }).handler(async () => {
-	const counts = await db
-		.select({
-			pattern: arcBrowsingHistoryOmitList.pattern,
-			matchCount: db.$count(
-				arcBrowsingHistory,
-				ilike(arcBrowsingHistory.url, sql`${arcBrowsingHistoryOmitList.pattern}`)
-			),
-		})
-		.from(arcBrowsingHistoryOmitList)
-		.orderBy(arcBrowsingHistoryOmitList.pattern);
-
-	return Object.fromEntries(counts.map(({ pattern, matchCount }) => [pattern, matchCount]));
-});
-
-export const omitListQueryOptions = () =>
-	queryOptions({
-		queryKey: ['omitList'],
-		queryFn: () => fetchOmitList(),
-	});
-
-const addPattern = createServerFn({ method: 'POST' })
-	.validator(z.string())
-	.handler(async ({ data }) => {
-		const [result] = await db
-			.insert(arcBrowsingHistoryOmitList)
-			.values({
-				pattern: data,
-			})
-			.returning();
-		return result;
-	});
-
-const updatePattern = createServerFn({ method: 'POST' })
-	.validator(z.object({ oldPattern: z.string(), newPattern: z.string() }))
-	.handler(async ({ data }) => {
-		const [result] = await db
-			.update(arcBrowsingHistoryOmitList)
-			.set({
-				pattern: data.newPattern,
-				updatedAt: new Date(),
-			})
-			.where(eq(arcBrowsingHistoryOmitList.pattern, data.oldPattern))
-			.returning();
-		return result;
-	});
-
-const deletePattern = createServerFn({ method: 'POST' })
-	.validator(z.string())
-	.handler(async ({ data }) => {
-		await db.delete(arcBrowsingHistoryOmitList).where(eq(arcBrowsingHistoryOmitList.pattern, data));
-		return { success: true };
-	});
-
 export const Route = createFileRoute('/omit-list')({
-	loader: ({ context }) => context.queryClient.ensureQueryData(omitListQueryOptions()),
+	loader: ({ context: { queryClient, trpc } }) =>
+		queryClient.ensureQueryData(trpc.omitList.getList.queryOptions()),
 	component: OmitListPage,
 });
 
-function EditableCell({
-	value: initialValue,
-	onSave,
-}: {
-	value: string;
-	onSave: (oldValue: string, newValue: string) => void;
-}) {
-	const [isEditing, setIsEditing] = useState(false);
-	const [value, setValue] = useState(initialValue);
-	const inputRef = useRef<HTMLInputElement>(null);
-
-	const onBlur = () => {
-		setIsEditing(false);
-		if (value !== initialValue) {
-			onSave(initialValue, value);
-		}
-	};
-
-	if (!isEditing) {
-		return (
-			<div
-				style={{ cursor: 'pointer', padding: '4px' }}
-				onClick={() => {
-					setIsEditing(true);
-					setTimeout(() => inputRef.current?.focus(), 0);
-				}}
-			>
-				{value}
-			</div>
-		);
-	}
-
-	return (
-		<TextField.Root
-			ref={inputRef}
-			value={value}
-			onChange={(e) => setValue(e.target.value)}
-			onBlur={onBlur}
-			onKeyDown={(e) => {
-				if (e.key === 'Enter') {
-					onBlur();
-				}
-				if (e.key === 'Escape') {
-					setIsEditing(false);
-					setValue(initialValue);
-				}
-			}}
-		/>
-	);
-}
-
 function OmitListPage() {
-	const queryClient = useQueryClient();
-	const { data: patterns } = useSuspenseQuery(omitListQueryOptions());
-	const { data: counts, isFetching: isLoadingCounts } = useQuery({
-		queryKey: ['omitListCounts'],
-		queryFn: () => fetchPatternCounts(),
-	});
+	const [patterns] = trpc.omitList.getList.useSuspenseQuery();
+	const trpcUtils = useTRPCUtils();
+	const { data: counts, isFetching: isLoadingCounts } = trpc.omitList.getCounts.useQuery();
+
+	const tableData = useMemo(
+		() =>
+			patterns.map((pattern) => ({
+				...pattern,
+				matchCount: counts?.find((c) => c.pattern === pattern.pattern)?.matchCount ?? 0,
+			})),
+		[patterns, counts]
+	);
+
 	const [newPattern, setNewPattern] = useState('');
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const addPatternMutation = useMutation({
-		mutationFn: (pattern: string) => addPattern({ data: pattern }),
-		onSuccess: (newPattern) => {
-			queryClient.setQueryData(['omitList'], (old: typeof patterns) => [...old, newPattern]);
-			queryClient.invalidateQueries({ queryKey: ['omitListCounts'] });
+	const addPatternMutation = trpc.omitList.createPattern.useMutation({
+		onSuccess: async () => {
 			setNewPattern('');
-			inputRef.current?.focus();
+			await Promise.all([
+				trpcUtils.omitList.getList.refetch(),
+				trpcUtils.omitList.getCounts.refetch(),
+			]);
 		},
 	});
 
-	const updatePatternMutation = useMutation({
-		mutationFn: (params: { oldPattern: string; newPattern: string }) =>
-			updatePattern({ data: params }),
-		onSuccess: (updatedPattern, variables) => {
-			queryClient.setQueryData(['omitList'], (old: typeof patterns) =>
-				old.map((p) => (p.pattern === variables.oldPattern ? updatedPattern : p))
-			);
-			queryClient.invalidateQueries({ queryKey: ['omitListCounts'] });
+	const updatePatternMutation = trpc.omitList.updatePattern.useMutation({
+		onSuccess: async () => {
+			await Promise.all([
+				trpcUtils.omitList.getList.refetch(),
+				trpcUtils.omitList.getCounts.refetch(),
+			]);
 		},
 	});
 
-	const deletePatternMutation = useMutation({
-		mutationFn: (pattern: string) => deletePattern({ data: pattern }),
-		onSuccess: (_, deletedPattern) => {
-			queryClient.setQueryData(['omitList'], (old: typeof patterns) =>
-				old.filter((p) => p.pattern !== deletedPattern)
-			);
-			queryClient.invalidateQueries({ queryKey: ['omitListCounts'] });
+	const deletePatternMutation = trpc.omitList.deletePattern.useMutation({
+		onSuccess: async () => {
+			await Promise.all([
+				trpcUtils.omitList.getList.refetch(),
+				trpcUtils.omitList.getCounts.refetch(),
+			]);
 		},
 	});
 
@@ -195,7 +73,10 @@ function OmitListPage() {
 					<EditableCell
 						value={getValue() as string}
 						onSave={(oldValue, newValue) =>
-							updatePatternMutation.mutate({ oldPattern: oldValue, newPattern: newValue })
+							updatePatternMutation.mutate({
+								oldPattern: oldValue,
+								newPattern: newValue,
+							})
 						}
 					/>
 				),
@@ -205,7 +86,7 @@ function OmitListPage() {
 				header: 'Matches',
 				cell: ({ row }) => {
 					if (isLoadingCounts) return <Spinner size="2" />;
-					return counts?.[row.original.pattern] ?? 0;
+					return row.original.matchCount ?? 0;
 				},
 				meta: {
 					columnProps: {
@@ -245,13 +126,13 @@ function OmitListPage() {
 				},
 			},
 		],
-		[counts, isLoadingCounts]
+		[isLoadingCounts]
 	);
 
-	const handleAdd = () => {
+	const handleAdd = useCallback(() => {
 		if (!newPattern) return;
 		addPatternMutation.mutate(newPattern);
-	};
+	}, [newPattern, addPatternMutation]);
 
 	return (
 		<main className="flex basis-full flex-col overflow-hidden p-4">
@@ -259,24 +140,28 @@ function OmitListPage() {
 				Browsing History Omit List
 			</Heading>
 
-			<div className="mb-4 flex gap-2">
+			<form className="mb-4 flex gap-2">
 				<TextField.Root
 					ref={inputRef}
 					style={{ flex: 1 }}
+					type="text"
 					placeholder="Enter URL pattern to omit..."
 					value={newPattern}
 					onChange={(e) => setNewPattern(e.target.value)}
-					onKeyDown={(e) => {
-						if (e.key === 'Enter') {
-							handleAdd();
-						}
-					}}
 				/>
-				<Button onClick={handleAdd}>Add Pattern</Button>
-			</div>
+				<Button
+					type="submit"
+					onClick={(e) => {
+						e.preventDefault();
+						handleAdd();
+					}}
+				>
+					Add Pattern
+				</Button>
+			</form>
 			<ScrollArea>
 				<DataGrid
-					data={patterns}
+					data={tableData}
 					columns={columns}
 					sorting={true}
 					getRowId={(row) => row.pattern}

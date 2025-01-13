@@ -16,7 +16,7 @@ import { Icon } from '../../components/Icon';
 import { summarizeCommit } from './-summarizer';
 import { CommitSummaryInputSchema } from './commits.$sha';
 import styles from './commits.module.css';
-import { useTRPC } from '~/app/trpc';
+import { useTRPCUtils } from '~/app/trpc';
 
 const batchSummarizeCommits = createServerFn({ method: 'POST' })
 	.validator(z.array(CommitSummaryInputSchema))
@@ -100,7 +100,7 @@ const columns: ColumnDef<GithubCommitSelect>[] = [
 ];
 
 function CommitList() {
-	const trpc = useTRPC();
+	const trpc = useTRPCUtils();
 	const { data: commits } = useSuspenseQuery(trpc.github.commits.queryOptions());
 	const navigate = useNavigate();
 	const { selectedIds, setSelection, clearSelection } = useSelection(

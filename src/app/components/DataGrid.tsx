@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Checkbox, Table, Text } from '@radix-ui/themes';
+import { useMemo, useRef, useState } from 'react';
+import { Checkbox, Table, Text, TextField } from '@radix-ui/themes';
 import type { ColumnDef, RowData } from '@tanstack/react-table';
 import {
 	flexRender,
@@ -106,6 +106,7 @@ export function DataGrid<T>({
 			sorting: sortingState,
 		},
 		onSortingChange: setSortingState,
+		getRowId,
 	});
 
 	return (
@@ -172,5 +173,56 @@ export function DataGrid<T>({
 				)}
 			</Table.Body>
 		</Table.Root>
+	);
+}
+
+export function EditableCell({
+	value: initialValue,
+	onSave,
+}: {
+	value: string;
+	onSave: (oldValue: string, newValue: string) => void;
+}) {
+	const [isEditing, setIsEditing] = useState(false);
+	const [value, setValue] = useState(initialValue);
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	const onBlur = () => {
+		setIsEditing(false);
+		if (value !== initialValue) {
+			onSave(initialValue, value);
+		}
+	};
+
+	if (!isEditing) {
+		return (
+			<div
+				style={{ cursor: 'pointer', padding: '4px' }}
+				onClick={() => {
+					setIsEditing(true);
+					setTimeout(() => inputRef.current?.focus(), 0);
+				}}
+			>
+				{value}
+			</div>
+		);
+	}
+
+	return (
+		<TextField.Root
+			ref={inputRef}
+			value={value}
+			onChange={(e) => setValue(e.target.value)}
+			onBlur={onBlur}
+			onKeyDown={(e) => {
+				if (e.key === 'Enter') {
+					onBlur();
+				}
+				if (e.key === 'Escape') {
+					setIsEditing(false);
+					setValue(initialValue);
+				}
+			}}
+		/>
 	);
 }

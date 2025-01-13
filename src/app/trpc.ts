@@ -3,6 +3,6 @@ import type { AppRouter } from '~/server/api/root';
 
 export const trpc = createTRPCReact<AppRouter>();
 
-export const useTRPC = () => {
+export const useTRPCUtils = () => {
 	return trpc.useUtils();
 };

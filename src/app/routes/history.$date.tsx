@@ -3,54 +3,14 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { Button, Heading, Link as RadixLink, ScrollArea, Text } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { createServerFn } from '@tanstack/start';
-import { sql } from 'drizzle-orm';
-import { z } from 'zod';
 import { DataGrid } from '~/app/components/DataGrid';
-import { db } from '~/server/db/connections';
-import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~/server/db/schema/integrations';
-
-const fetchHistoryForDate = createServerFn({ method: 'GET' })
-	.validator(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
-	.handler(async ({ data: date }) => {
-		const tzOffset = new Date().getTimezoneOffset();
-		const adjustedOffset = -tzOffset;
-
-		const history = await db
-			.select({
-				hostname: arcBrowsingHistory.hostname,
-				url: arcBrowsingHistory.url,
-				pageTitle: arcBrowsingHistory.pageTitle,
-				totalDuration: sql<number>`sum(${arcBrowsingHistory.viewDuration})`,
-				visitCount: sql<number>`count(*)`,
-				firstVisit: sql<string>`min(${arcBrowsingHistory.viewTime})`,
-				lastVisit: sql<string>`max(${arcBrowsingHistory.viewTime})`,
-			})
-			.from(arcBrowsingHistory)
-			.where(
-				sql`DATE(${arcBrowsingHistory.viewTime} + INTERVAL ${sql.raw(`'${adjustedOffset} MINUTES'`)}) = to_date(${date}, 'YYYY-MM-DD') AND NOT EXISTS (
-					SELECT 1 FROM ${arcBrowsingHistoryOmitList}
-					WHERE ${arcBrowsingHistory.url} LIKE ${arcBrowsingHistoryOmitList.pattern}
-				)`
-			)
-			.groupBy(arcBrowsingHistory.hostname, arcBrowsingHistory.url, arcBrowsingHistory.pageTitle)
-			.orderBy(sql`min(${arcBrowsingHistory.viewTime})`);
-
-		return history;
-	});
+import { formatNumber, formatTime, formatISODate } from '~/app/lib/formatting';
 
 export const Route = createFileRoute('/history/$date')({
-	loader: ({ params: { date } }) => fetchHistoryForDate({ data: date }),
+	loader: ({ params: { date }, context: { queryClient, trpc } }) =>
+		queryClient.ensureQueryData(trpc.history.getByDate.queryOptions(date)),
 	component: DailyActivityPage,
 });
-
-const formatNumber = (num: number) => new Intl.NumberFormat().format(Math.round(num));
-const formatTime = (date: Date | string) =>
-	new Date(date).toLocaleTimeString(undefined, {
-		hour: '2-digit',
-		minute: '2-digit',
-		hour12: true,
-	});
 
 function DailyActivityPage() {
 	const response = Route.useLoaderData();
@@ -60,13 +20,14 @@ function DailyActivityPage() {
 		url: new URL(entry.url),
 	}));
 
-	const localDate = new Date(`${date}T00:00`);
-	const prevDate = new Date(localDate);
-	prevDate.setDate(prevDate.getDate() - 1);
-	const nextDate = new Date(localDate);
-	nextDate.setDate(nextDate.getDate() + 1);
-
-	const formatDateParam = (date: Date): string => date.toISOString().split('T')[0]!;
+	const { localDate, prevDate, nextDate } = useMemo(() => {
+		const localDate = new Date(`${date}T00:00`);
+		const prevDate = new Date(localDate);
+		prevDate.setDate(prevDate.getDate() - 1);
+		const nextDate = new Date(localDate);
+		nextDate.setDate(nextDate.getDate() + 1);
+		return { localDate, prevDate, nextDate };
+	}, [date]);
 
 	const columns = useMemo<ColumnDef<(typeof history)[0]>[]>(
 		() => [
@@ -154,13 +115,13 @@ function DailyActivityPage() {
 				</Heading>
 				<nav className="flex gap-2">
 					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
-						<Link to="/history/$date" params={{ date: formatDateParam(prevDate) }}>
+						<Link to="/history/$date" params={{ date: formatISODate(prevDate) }}>
 							<ChevronLeftIcon />
 							Previous Day
 						</Link>
 					</Button>
 					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
-						<Link to="/history/$date" params={{ date: formatDateParam(nextDate) }}>
+						<Link to="/history/$date" params={{ date: formatISODate(nextDate) }}>
 							Next Day
 							<ChevronRightIcon />
 						</Link>
