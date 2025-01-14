@@ -5,7 +5,8 @@
 		"source.fixAll.eslint": "explicit"
 	},
 	"files.associations": {
-		"*.css": "tailwindcss"
+		"*.css": "tailwindcss",
+		"*.svg": "html"
 	},
 	"files.watcherExclude": {
 		"**/node_modules/**": true,

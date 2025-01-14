@@ -1,6 +1,12 @@
 import 'dotenv/config';
 import { defineConfig } from 'drizzle-kit';
 
+// Get the correct database URL
+const databaseUrl = process.env.DATABASE_URL?.replace(
+	'${DATABASE_URL_LOCAL}',
+	process.env.DATABASE_URL_LOCAL ?? ''
+);
+
 export default defineConfig({
 	out: './src/server/db/migrations/main',
 	schema: [
@@ -10,7 +16,7 @@ export default defineConfig({
 	],
 	dialect: 'postgresql',
 	dbCredentials: {
-		url: process.env.DATABASE_URL!,
+		url: databaseUrl!,
 	},
 	casing: 'snake_case',
 });
