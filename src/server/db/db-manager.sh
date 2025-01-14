@@ -6,22 +6,27 @@ set -e
 # Default values
 DATABASE_NAME="redcliffrecord"
 BACKUP_DIR="$HOME/Documents/Red Cliff Record/Backups"
+
+# Parse connection details from DATABASE_URL_REMOTE
+if [ -f .env ]; then
+    source .env
+    SUPABASE_URL="${DATABASE_URL_REMOTE}"
+else
+    echo "Error: .env file not found"
+    exit 1
+fi
+
 SUPABASE_HOST="aws-0-us-west-1.pooler.supabase.com"
 SUPABASE_PORT="6543"
 SUPABASE_USER="postgres.febiwifjeueentvcovkr"
-SUPABASE_URL="postgres://$SUPABASE_USER@$SUPABASE_HOST:$SUPABASE_PORT/postgres"
 
 # Function to print usage
 print_usage() {
-    echo "Usage: $0 [OPTIONS] COMMAND SOURCE [TARGET]"
+    echo "Usage: $0 [OPTIONS] COMMAND SOURCE|TARGET"
     echo
     echo "Commands:"
-    echo "  backup   Create a backup from SOURCE"
-    echo "  restore  Restore to TARGET from most recent backup of SOURCE"
-    echo
-    echo "Source/Target:"
-    echo "  local    Local PostgreSQL database"
-    echo "  remote   Supabase remote database"
+    echo "  backup SOURCE    Create a backup from specified source (local or remote)"
+    echo "  restore TARGET   Restore to specified target (local or remote)"
     echo
     echo "Options:"
     echo "  -d, --database NAME    Database name (default: redcliffrecord)"
@@ -29,12 +34,11 @@ print_usage() {
     echo "  -h, --help            Show this help message"
     echo
     echo "Examples:"
-    echo "  $0 backup local                  # Backup local database"
-    echo "  $0 backup remote                 # Backup remote database"
-    echo "  $0 restore local                 # Restore to local from local backup"
-    echo "  $0 restore remote                # Restore to remote from remote backup"
-    echo "  $0 restore remote local          # Restore to local from remote backup"
-    echo "  $0 -d mydb backup local          # Backup local database with custom name"
+    echo "  $0 backup local           # Backup from local database"
+    echo "  $0 backup remote          # Backup from remote database"
+    echo "  $0 restore local          # Restore to local database"
+    echo "  $0 restore remote         # Restore to remote database"
+    echo "  $0 -d mydb backup local   # Backup local database with custom name"
 }
 
 # Parse options
@@ -48,12 +52,11 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# Validate command and source
+# Validate command and location
 COMMAND=$1
-SOURCE=$2
-TARGET=${3:-$SOURCE}  # If no target specified, use source
+LOCATION=$2
 
-if [[ ! "$COMMAND" =~ ^(backup|restore)$ ]] || [[ ! "$SOURCE" =~ ^(local|remote)$ ]] || [[ ! "$TARGET" =~ ^(local|remote)$ ]]; then
+if [[ ! "$COMMAND" =~ ^(backup|restore)$ ]] || [[ ! "$LOCATION" =~ ^(local|remote)$ ]]; then
     print_usage
     exit 1
 fi
@@ -65,12 +68,26 @@ mkdir -p "$BACKUP_DIR"
 do_backup() {
     local source=$1
     local date=$(date +%Y-%m-%d-%H-%M-%S)
-    local backup_file="$BACKUP_DIR/${DATABASE_NAME}-${source}-${date}.dump"
+    local backup_file="$BACKUP_DIR/${DATABASE_NAME}-${date}.dump"
 
     echo "Creating backup from $source database..."
     
     if [ "$source" = "local" ]; then
-        pg_dump -U postgres -F c -v -C "$DATABASE_NAME" > "$backup_file"
+        pg_dump -U postgres \
+            --format=custom \
+            --verbose \
+            --clean \
+            --if-exists \
+            --quote-all-identifiers \
+            --no-owner \
+            --no-privileges \
+            --no-comments \
+            --no-tablespaces \
+            --schema 'public' \
+            --schema 'integrations' \
+            --schema 'operations' \
+            --schema 'drizzle' \
+            "$DATABASE_NAME" > "$backup_file"
     else
         pg_dump "$SUPABASE_URL" \
             --format=custom \
@@ -81,8 +98,11 @@ do_backup() {
             --no-owner \
             --no-privileges \
             --no-comments \
-            --exclude-schema 'extensions|graphql|graphql_public|net|tiger|pgbouncer|vault|realtime|supabase_functions|storage|pg*|information_schema|auth' \
-            --schema '*' \
+            --no-tablespaces \
+            --schema 'public' \
+            --schema 'integrations' \
+            --schema 'operations' \
+            --schema 'drizzle' \
             > "$backup_file"
     fi
 
@@ -91,14 +111,13 @@ do_backup() {
 
 # Function to perform restore
 do_restore() {
-    local source=$1
-    local target=$2
+    local target=$1
     
-    # Find the most recent backup file for the source
-    local dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}-${source}"-*.dump 2>/dev/null | sort -r | head -n1)
+    # Find the most recent backup file - ignore legacy backup files with -backup- in the name
+    local dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}"-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
 
     if [ ! -f "$dump_file" ]; then
-        echo "No backup files found for $source in: $BACKUP_DIR"
+        echo "No backup files found in: $BACKUP_DIR"
         exit 1
     fi
 
@@ -106,7 +125,7 @@ do_restore() {
 
     if [ "$target" = "local" ]; then
         # Restore to local
-        local target_db="${DATABASE_NAME}-${source}"
+        local target_db="${DATABASE_NAME}"
         
         # Close existing connections
         psql -U postgres -d postgres -c "
@@ -119,17 +138,26 @@ do_restore() {
         dropdb -U postgres --if-exists "$target_db"
         createdb -U postgres "$target_db"
 
-        # Restore
-        pg_restore -U postgres -d "$target_db" -c -v --if-exists "$dump_file"
+        # Restore with clean options
+        pg_restore -U postgres -d "$target_db" \
+            --clean \
+            --if-exists \
+            --no-owner \
+            --no-privileges \
+            --no-comments \
+            -v "$dump_file"
     else
-        # Restore to remote
         pg_restore -h $SUPABASE_HOST \
                   -p $SUPABASE_PORT \
                   -U $SUPABASE_USER \
                   -d postgres \
-                  --clean --if-exists -v \
-                  --no-owner --no-privileges \
+                  --clean \
+                  --if-exists \
+                  --no-owner \
+                  --no-privileges \
                   --no-comments \
+                  --no-tablespaces \
+                  -v \
                   "$dump_file"
     fi
 
@@ -139,9 +167,9 @@ do_restore() {
 # Execute command
 case $COMMAND in
     backup)
-        do_backup $SOURCE
+        do_backup $LOCATION
         ;;
     restore)
-        do_restore $SOURCE $TARGET
+        do_restore $LOCATION
         ;;
 esac
