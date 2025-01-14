@@ -15,14 +15,14 @@ type OmitPattern = {
 
 export const Route = createFileRoute('/omit-list')({
 	loader: ({ context: { queryClient, trpc } }) =>
-		queryClient.ensureQueryData(trpc.omitList.getList.queryOptions()),
+		queryClient.ensureQueryData(trpc.history.getOmitList.queryOptions()),
 	component: OmitListPage,
 });
 
 function OmitListPage() {
-	const [patterns] = trpc.omitList.getList.useSuspenseQuery();
+	const [patterns] = trpc.history.getOmitList.useSuspenseQuery();
 	const trpcUtils = trpc.useUtils();
-	const { data: counts, isFetching: isLoadingCounts } = trpc.omitList.getCounts.useQuery();
+	const { data: counts, isFetching: isLoadingCounts } = trpc.history.getOmittedCounts.useQuery();
 
 	const tableData = useMemo(
 		() =>
@@ -36,24 +36,24 @@ function OmitListPage() {
 	const [newPattern, setNewPattern] = useState('');
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const addPatternMutation = trpc.omitList.createPattern.useMutation({
+	const addPatternMutation = trpc.history.createOmitPattern.useMutation({
 		onSuccess: async () => {
 			setNewPattern('');
-			trpcUtils.omitList.getList.refetch();
-			trpcUtils.omitList.getCounts.refetch();
+			trpcUtils.history.getOmitList.refetch();
+			trpcUtils.history.getOmittedCounts.refetch();
 		},
 	});
 
-	const updatePatternMutation = trpc.omitList.updatePattern.useMutation({
+	const updatePatternMutation = trpc.history.updateOmitPattern.useMutation({
 		onSuccess: async () => {
-			trpcUtils.omitList.getList.refetch();
-			trpcUtils.omitList.getCounts.refetch();
+			trpcUtils.history.getOmitList.refetch();
+			trpcUtils.history.getOmittedCounts.refetch();
 		},
 	});
 
-	const deletePatternMutation = trpc.omitList.deletePattern.useMutation({
+	const deletePatternMutation = trpc.history.deleteOmitPattern.useMutation({
 		onSuccess: () => {
-			trpcUtils.omitList.getList.refetch();
+			trpcUtils.history.getOmitList.refetch();
 		},
 	});
 

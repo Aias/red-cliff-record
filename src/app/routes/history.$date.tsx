@@ -8,7 +8,7 @@ import { formatISODate, formatNumber, formatTime } from '~/app/lib/formatting';
 
 export const Route = createFileRoute('/history/$date')({
 	loader: ({ params: { date }, context: { queryClient, trpc } }) =>
-		queryClient.ensureQueryData(trpc.history.getByDate.queryOptions(date)),
+		queryClient.ensureQueryData(trpc.history.getHistoryForDate.queryOptions(date)),
 	component: DailyActivityPage,
 });
 

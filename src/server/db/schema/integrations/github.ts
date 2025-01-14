@@ -204,7 +204,8 @@ export type GithubCommitChangeInsert = z.infer<typeof GithubCommitChangeInsertSc
 export const GithubCommitChangeUpdateSchema = createUpdateSchema(githubCommitChanges);
 export type GithubCommitChangeUpdate = z.infer<typeof GithubCommitChangeUpdateSchema>;
 
-export const githubUsersRelations = relations(githubUsers, ({ one }) => ({
+export const githubUsersRelations = relations(githubUsers, ({ one, many }) => ({
+	repositories: many(githubRepositories),
 	integrationRun: one(integrationRuns, {
 		fields: [githubUsers.integrationRunId],
 		references: [integrationRuns.id],

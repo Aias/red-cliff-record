@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
-import { githubCommits } from '~/server/db/schema/integrations';
+import { githubCommits, githubRepositories, githubUsers } from '~/server/db/schema/integrations';
 import { summarizeCommit } from '~/server/services/ai/summarize-commit';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { CommitSummaryInputSchema } from './github.types';
@@ -64,4 +64,29 @@ export const githubRouter = createTRPCRouter({
 				});
 			}
 		}),
+
+	getStars: publicProcedure.query(async ({ ctx: { db } }) => {
+		const stars = await db.query.githubRepositories.findMany({
+			with: {
+				owner: true,
+			},
+			where: and(isNotNull(githubRepositories.starredAt), isNull(githubRepositories.recordId)),
+			orderBy: [desc(githubRepositories.archivedAt), desc(githubRepositories.starredAt)],
+			limit: 100,
+		});
+
+		return stars;
+	}),
+
+	getUsers: publicProcedure.query(async ({ ctx: { db } }) => {
+		const users = await db.query.githubUsers.findMany({
+			with: {
+				repositories: true,
+			},
+			where: isNull(githubUsers.indexEntryId),
+			orderBy: [desc(githubUsers.archivedAt), desc(githubUsers.contentCreatedAt)],
+			limit: 100,
+		});
+		return users;
+	}),
 });

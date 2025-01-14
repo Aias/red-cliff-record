@@ -1,10 +1,10 @@
 import { eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~/server/db/schema/integrations';
-import { createTRPCRouter, publicProcedure } from '../init';
+import { createTRPCRouter, publicProcedure, mergeRouters } from '../init';
 
-export const browserHistoryRouter = createTRPCRouter({
-	getByDate: publicProcedure
+const browserHistoryRouter = createTRPCRouter({
+	getHistoryForDate: publicProcedure
 		.input(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
 		.query(({ ctx: { db }, input: date }) => {
 			const tzOffset = new Date().getTimezoneOffset();
@@ -32,8 +32,8 @@ export const browserHistoryRouter = createTRPCRouter({
 		}),
 });
 
-export const omitListRouter = createTRPCRouter({
-	getList: publicProcedure.query(({ ctx: { db } }) => {
+const omitListRouter = createTRPCRouter({
+	getOmitList: publicProcedure.query(({ ctx: { db } }) => {
 		return db
 			.select({
 				pattern: arcBrowsingHistoryOmitList.pattern,
@@ -44,7 +44,7 @@ export const omitListRouter = createTRPCRouter({
 			.orderBy(arcBrowsingHistoryOmitList.pattern);
 	}),
 
-	getCounts: publicProcedure.query(({ ctx: { db } }) => {
+	getOmittedCounts: publicProcedure.query(({ ctx: { db } }) => {
 		return db
 			.select({
 				pattern: arcBrowsingHistoryOmitList.pattern,
@@ -57,11 +57,13 @@ export const omitListRouter = createTRPCRouter({
 			.orderBy(arcBrowsingHistoryOmitList.pattern);
 	}),
 
-	createPattern: publicProcedure.input(z.string()).mutation(({ ctx: { db }, input: pattern }) => {
-		return db.insert(arcBrowsingHistoryOmitList).values({ pattern }).returning();
-	}),
+	createOmitPattern: publicProcedure
+		.input(z.string())
+		.mutation(({ ctx: { db }, input: pattern }) => {
+			return db.insert(arcBrowsingHistoryOmitList).values({ pattern }).returning();
+		}),
 
-	updatePattern: publicProcedure
+	updateOmitPattern: publicProcedure
 		.input(z.object({ oldPattern: z.string(), newPattern: z.string() }))
 		.mutation(({ ctx: { db }, input: { oldPattern, newPattern } }) => {
 			return db
@@ -71,10 +73,14 @@ export const omitListRouter = createTRPCRouter({
 				.returning();
 		}),
 
-	deletePattern: publicProcedure.input(z.string()).mutation(({ ctx: { db }, input: pattern }) => {
-		return db
-			.delete(arcBrowsingHistoryOmitList)
-			.where(eq(arcBrowsingHistoryOmitList.pattern, pattern))
-			.returning();
-	}),
+	deleteOmitPattern: publicProcedure
+		.input(z.string())
+		.mutation(({ ctx: { db }, input: pattern }) => {
+			return db
+				.delete(arcBrowsingHistoryOmitList)
+				.where(eq(arcBrowsingHistoryOmitList.pattern, pattern))
+				.returning();
+		}),
 });
+
+export const historyRouter = mergeRouters(browserHistoryRouter, omitListRouter);

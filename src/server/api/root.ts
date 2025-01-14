@@ -1,24 +1,25 @@
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { createTRPCRouter } from './init';
+import { adobeRouter } from './routers/adobe';
 import { airtableRouter } from './routers/airtable';
 import { githubRouter } from './routers/github';
-import { browserHistoryRouter, omitListRouter } from './routers/history';
+import { historyRouter } from './routers/history';
 import { indicesRouter } from './routers/indices';
+import { raindropRouter } from './routers/raindrop';
+import { readwiseRouter } from './routers/readwise';
+import { twitterRouter } from './routers/twitter';
 
-/**
- * This is the primary router for your server.
- *
- * All routers added in /api/routers should be manually added here.
- */
 export const appRouter = createTRPCRouter({
+	adobe: adobeRouter,
 	airtable: airtableRouter,
 	github: githubRouter,
-	history: browserHistoryRouter,
+	history: historyRouter,
 	indices: indicesRouter,
-	omitList: omitListRouter,
+	raindrop: raindropRouter,
+	readwise: readwiseRouter,
+	twitter: twitterRouter,
 });
 
-// export type definition of API
 export type AppRouter = typeof appRouter;
 
 export type RouterInputs = inferRouterInputs<AppRouter>;
