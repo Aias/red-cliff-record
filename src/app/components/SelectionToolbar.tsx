@@ -1,6 +1,6 @@
 import { Cross1Icon } from '@radix-ui/react-icons';
 import { Button, IconButton, Text, type ButtonProps } from '@radix-ui/themes';
-import { Icon } from './Icon';
+import { IconWrapper } from './Icon';
 
 interface SelectionActionsProps {
 	selectedCount: number;
@@ -35,9 +35,9 @@ export function SelectionActions({
 				</Button>
 			))}
 			<IconButton variant="soft" onClick={onClear} size={size} {...rest} title="Clear selection">
-				<Icon size={size}>
+				<IconWrapper size={size}>
 					<Cross1Icon />
-				</Icon>
+				</IconWrapper>
 			</IconButton>
 		</div>
 	);

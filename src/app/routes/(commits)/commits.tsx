@@ -13,7 +13,7 @@ import {
 	type GithubRepositorySelect,
 } from '~/server/db/schema/integrations';
 import { AppLink } from '../../components/AppLink';
-import { Icon } from '../../components/Icon';
+import { IconWrapper } from '../../components/Icon';
 import styles from './commits.module.css';
 
 type CommitSelect = GithubCommitSelect & {
@@ -90,13 +90,13 @@ const columns: ColumnDef<GithubCommitSelect>[] = [
 		cell: ({ getValue }) => {
 			const summary = getValue();
 			return summary ? (
-				<Icon color="grass">
+				<IconWrapper color="grass">
 					<CheckCircledIcon />
-				</Icon>
+				</IconWrapper>
 			) : (
-				<Icon>
+				<IconWrapper>
 					<CircleIcon />
-				</Icon>
+				</IconWrapper>
 			);
 		},
 	},

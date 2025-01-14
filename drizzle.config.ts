@@ -10,7 +10,7 @@ export default defineConfig({
 	],
 	dialect: 'postgresql',
 	dbCredentials: {
-		url: process.env.REMOTE_DATABASE_URL!,
+		url: process.env.DATABASE_URL!,
 	},
 	casing: 'snake_case',
 });
