@@ -1,9 +1,21 @@
 **Additional instructions for this project:**
 
-- Use Radix Themes for functional and interactive components.
-- Use Tailwind for styling and layouy, except where Radix Themes supports the equivalent style props, e.g. 'color' or 'size' for Text, Button, etc.
-- Use Radix Themes for typographic components like Text, Headings, Em, Link, Code, etc.
+- Use Tailwind for styling and layout, except where Radix Themes supports the equivalent style props, e.g. `color` or `size` for Text, Button, etc.
+- Use Radix Themes for typographic components like <Text>, <Headings>, <Em>, <Link>, <Code>, etc.
 - Always use semantic HTML where appropriate for layout and structure. This includes using the correct HTML tags for sectioning elements, navigation, lists, and other content.
+- Use Radix Themes for functional and interactive components, especially for interactive components such as buttons, checkboxes, inputs, etc.
+- Use Tanstack Forms for form handling and validation, which can be integrated with Radix Themes, Tailwind, tRPC, and Tanstack Query.
+- Reusable components should be created in `/src/components` and named like `ExampleComponent.tsx`. Components that are specific to a page should be created in the page's directory either in a `-components` folder or named like `-PageComponent.tsx`. The `-` prefix instructs Tanstack to ignore the component when generating routes.
+- Interaction with the database should be done via rTPC, with new API routes created as need within `/src/server/api/routers`. Input validation should be done via zod and database queries should be done via drizzle.
+- tRPC is built on Tanstack Query (React Query) – make sure to use the React tRPC client, hooks, and utilities from `/src/app/trpc.ts` wherever possible. For loading route data, the query client and tRPC client are provided in the `context` object within the `loader` function.
+- Make sure to invalidate, refetch, or update query data as needed when interacting with the database or after mutations.
+- Typescript is not optional, the application must be fully typed.Use existing types wherever possible rather than duplicating them, e.g. import existing zod schemas or drizzle types directly when reading from / writing to the database.
 - When writing new code, focus on modularity and reusability. Always keep in mind the current context and file structure, and look for opportunities to abstract and reuse components.
-- When interacting with the database, use Tanstack's useServerFn hook to call server functions, with validation and type safety via zod.
-- Use existing types wherever possible rather than duplicating them, e.g. import existing zod schemas or drizzle types directly when reading from / writing to the database.
+- Performance is critical. Any opportunity to optimize performance should be taken.
+
+**Communication guidelines:**
+
+- Respond succinctly and directly to questions and prompts.
+- If you are unsure of an answer, say so and ask the questioner to clarify.
+- If an existing pattern or library feature is unfamiliar, search the web for documentation and examples. This project is built on a number of cutting-edge libraries which may not be in your knowledge base.
+- Consider alternate solutions to problems and push back on assumptions. Do not be afraid to say "no" or "not possible" if it is not possible to do what is being asked. Do not be afraid to call out invalid assumptions, non-optimal solutions, or other constraints.

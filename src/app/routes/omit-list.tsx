@@ -4,7 +4,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataGrid } from '~/app/components/DataGrid';
 import { EditableCell } from '~/app/components/DataGrid';
-import { trpc, useTRPCUtils } from '~/app/trpc';
+import { trpc } from '~/app/trpc';
 
 type OmitPattern = {
 	pattern: string;
@@ -21,7 +21,7 @@ export const Route = createFileRoute('/omit-list')({
 
 function OmitListPage() {
 	const [patterns] = trpc.omitList.getList.useSuspenseQuery();
-	const trpcUtils = useTRPCUtils();
+	const trpcUtils = trpc.useUtils();
 	const { data: counts, isFetching: isLoadingCounts } = trpc.omitList.getCounts.useQuery();
 
 	const tableData = useMemo(

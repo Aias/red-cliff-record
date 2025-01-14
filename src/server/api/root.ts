@@ -1,3 +1,4 @@
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { createTRPCRouter } from './init';
 import { airtableRouter } from './routers/airtable';
 import { githubRouter } from './routers/github';
@@ -19,3 +20,6 @@ export const appRouter = createTRPCRouter({
 
 // export type definition of API
 export type AppRouter = typeof appRouter;
+
+export type RouterInputs = inferRouterInputs<AppRouter>;
+export type RouterOutputs = inferRouterOutputs<AppRouter>;

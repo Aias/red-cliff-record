@@ -18,11 +18,25 @@ export const Route = createFileRoute('/(index)/queue/airtable')({
 
 function RouteComponent() {
 	const [spaces] = trpc.airtable.getSpaces.useSuspenseQuery({ limit: 100 });
+	const [creators] = trpc.airtable.getCreators.useSuspenseQuery({ limit: 100 });
+	const { data: spacesQueueLength } = trpc.airtable.getSpacesQueueLength.useQuery();
+	// const { data: creatorsQueueLength } = trpc.airtable.getCreatorsQueueLength.useQuery();
 	const trpcUtils = trpc.useUtils();
-	const { data: archiveQueueLength } = trpc.airtable.getArchiveQueueLength.useQuery();
 
 	const { selectedIds, toggleSelection, selectAll, clearSelection } = useSelection(spaces);
 	const [inspectedSpaceId, setInspectedSpaceId] = useState<string | null>(null);
+
+	const listItems = useMemo(() => {
+		console.log(creators);
+		return spaces.map(({ id, name, description, archivedAt, indexEntry }) => ({
+			id,
+			name,
+			description,
+			archivedAt,
+			indexEntry,
+			selected: id === inspectedSpaceId,
+		}));
+	}, [spaces, inspectedSpaceId]);
 
 	const inspectedSpace = useMemo(
 		() => (inspectedSpaceId ? spaces.find((space) => space.id === inspectedSpaceId) : null),
@@ -33,8 +47,12 @@ function RouteComponent() {
 		setInspectedSpaceId(null);
 	}, []);
 
-	const createIndexMutation = trpc.indices.createIndexEntry.useMutation();
-	const archiveSpacesMutation = trpc.airtable.setSpaceArchiveStatus.useMutation({
+	const createIndexMutation = trpc.indices.createIndexEntry.useMutation({
+		onSuccess: () => {
+			trpcUtils.airtable.getSpaces.invalidate();
+		},
+	});
+	const archiveSpacesMutation = trpc.airtable.setSpacesArchiveStatus.useMutation({
 		onSuccess: () => {
 			trpcUtils.airtable.getSpaces.invalidate();
 		},
@@ -82,7 +100,7 @@ function RouteComponent() {
 					<Heading size="4">Index Queue</Heading>
 
 					<Text size="3" color="gray">
-						{archiveQueueLength ? `${archiveQueueLength} unarchived` : 'All archived'}
+						{spacesQueueLength ? `${spacesQueueLength} unarchived` : 'All archived'}
 					</Text>
 				</header>
 
@@ -143,14 +161,7 @@ function RouteComponent() {
 				</div>
 				<ScrollArea>
 					<QueueList
-						entries={spaces.map(({ id, name, description, archivedAt, indexEntry }) => ({
-							id,
-							name,
-							description,
-							archivedAt,
-							indexEntry,
-							selected: id === inspectedSpaceId,
-						}))}
+						entries={listItems}
 						selectedIds={selectedIds}
 						toggleSelection={toggleSelection}
 						onEntryClick={setInspectedSpaceId}

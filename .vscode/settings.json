@@ -6,5 +6,21 @@
 	},
 	"files.associations": {
 		"*.css": "tailwindcss"
-	}
+	},
+	"files.watcherExclude": {
+		"**/node_modules/**": true,
+		"**/dist/**": true,
+		"**/.vinxi/**": true,
+		"**/.output/**": true
+	},
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/bower_components": true,
+		"**/*.code-search": true,
+		"**/dist": true,
+		"**/.vinxi": true,
+		"**/.output": true
+	},
+	"typescript.tsserver.maxTsServerMemory": 8000,
+	"typescript.tsserver.nodePath": "node"
 }

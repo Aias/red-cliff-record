@@ -1,4 +1,4 @@
-import { desc, eq, ilike } from 'drizzle-orm';
+import { desc, eq, ilike, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { indices, IndicesInsertSchema, IndicesUpdateSchema } from '~/server/db/schema/main';
 import { createTRPCRouter, publicProcedure } from '../init';
@@ -40,7 +40,11 @@ export const indicesRouter = createTRPCRouter({
 
 	findRelatedIndices: publicProcedure.input(z.string()).query(({ ctx: { db }, input }) => {
 		return db.query.indices.findMany({
-			where: ilike(indices.name, `%${input}%`),
+			where: or(
+				ilike(indices.name, `%${input}%`),
+				ilike(indices.shortName, `%${input}%`),
+				ilike(indices.notes, `%${input}%`)
+			),
 			limit: 10,
 			orderBy: desc(indices.updatedAt),
 		});

@@ -16,12 +16,13 @@ type AirtableSpaceWithIndexEntry = AirtableSpaceSelect & {
 export const DetailsPage = memo(
 	({ space, handleClose }: { space: AirtableSpaceWithIndexEntry; handleClose: () => void }) => {
 		const trpcUtils = trpc.useUtils();
+
 		const unlinkSpacesMutation = trpc.airtable.unlinkSpacesFromIndices.useMutation({
 			onSuccess: () => {
 				trpcUtils.airtable.getSpaces.invalidate();
 			},
 		});
-		const setSpaceArchiveStatusMutation = trpc.airtable.setSpaceArchiveStatus.useMutation({
+		const setSpaceArchiveStatusMutation = trpc.airtable.setSpacesArchiveStatus.useMutation({
 			onSuccess: () => {
 				trpcUtils.airtable.getSpaces.invalidate();
 			},

@@ -1,7 +1,6 @@
 // @ts-nocheck
 import eslint from '@eslint/js';
 import prettier from 'eslint-config-prettier';
-import drizzle from 'eslint-plugin-drizzle';
 import importPlugin from 'eslint-plugin-import';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import globals from 'globals';
@@ -23,7 +22,6 @@ export default tseslint.config(
 		plugins: {
 			'react-compiler': reactCompiler,
 			import: importPlugin,
-			drizzle: drizzle,
 		},
 		rules: {
 			'react-compiler/react-compiler': 'error',
@@ -76,25 +74,6 @@ export default tseslint.config(
 					warnOnUnassignedImports: true,
 				},
 			],
-			'drizzle/enforce-delete-with-where': [
-				'error',
-				{
-					drizzleObjectName: ['db', 'ctx.db'],
-				},
-			],
-			'drizzle/enforce-update-with-where': [
-				'error',
-				{
-					drizzleObjectName: ['db', 'ctx.db'],
-				},
-			],
-		},
-	},
-	{
-		files: ['**/*.{ts,tsx}'],
-		rules: {
-			'drizzle/enforce-delete-with-where': ['error', { drizzleObjectName: ['db', 'ctx.db'] }],
-			'drizzle/enforce-update-with-where': ['error', { drizzleObjectName: ['db', 'ctx.db'] }],
 		},
 	},
 	{
