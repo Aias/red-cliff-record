@@ -58,15 +58,6 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 							<DropdownMenu.Item
 								onClick={() =>
 									navigate({
-										to: '/omit-list',
-									})
-								}
-							>
-								History Omit List
-							</DropdownMenu.Item>
-							<DropdownMenu.Item
-								onClick={() =>
-									navigate({
 										to: '/commits',
 									})
 								}

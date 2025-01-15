@@ -23,6 +23,9 @@ export function createRouter() {
 			hydrate: {
 				deserializeData: superjson.deserialize,
 			},
+			queries: {
+				staleTime: 1000 * 60, // 1 minute
+			},
 		},
 	});
 

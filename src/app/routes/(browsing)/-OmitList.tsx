@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button, Heading, ScrollArea, Spinner, TextField } from '@radix-ui/themes';
-import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataGrid } from '~/app/components/DataGrid';
 import { EditableCell } from '~/app/components/DataGrid';
 import { trpc } from '~/app/trpc';
+import { Placeholder } from '~/app/components/Placeholder';
+import type { HTMLAttributes } from 'react';
 
 type OmitPattern = {
 	pattern: string;
@@ -13,20 +14,16 @@ type OmitPattern = {
 	matchCount: number;
 };
 
-export const Route = createFileRoute('/omit-list')({
-	loader: ({ context: { queryClient, trpc } }) =>
-		queryClient.ensureQueryData(trpc.history.getOmitList.queryOptions()),
-	component: OmitListPage,
-});
+interface OmitListProps extends HTMLAttributes<HTMLDivElement> {}
 
-function OmitListPage() {
-	const [patterns] = trpc.history.getOmitList.useSuspenseQuery();
+export const OmitList = ({ className, ...props }: OmitListProps) => {
+	const { data: patterns } = trpc.history.getOmitList.useQuery();
 	const trpcUtils = trpc.useUtils();
-	const { data: counts, isFetching: isLoadingCounts } = trpc.history.getOmittedCounts.useQuery();
+	const { data: counts, isFetching: isFetchingCounts } = trpc.history.getOmittedCounts.useQuery();
 
 	const tableData = useMemo(
 		() =>
-			patterns.map((pattern) => ({
+			patterns?.map((pattern) => ({
 				...pattern,
 				matchCount: counts?.find((c) => c.pattern === pattern.pattern)?.matchCount ?? 0,
 			})),
@@ -78,7 +75,7 @@ function OmitListPage() {
 				accessorKey: 'matchCount',
 				header: 'Matches',
 				cell: ({ row }) => {
-					if (isLoadingCounts) return <Spinner size="2" />;
+					if (isFetchingCounts) return <Spinner size="2" />;
 					return row.original.matchCount ?? 0;
 				},
 				meta: {
@@ -119,7 +116,7 @@ function OmitListPage() {
 				},
 			},
 		],
-		[isLoadingCounts]
+		[isFetchingCounts]
 	);
 
 	const handleAdd = useCallback(() => {
@@ -128,41 +125,46 @@ function OmitListPage() {
 	}, [newPattern, addPatternMutation]);
 
 	return (
-		<main className="flex basis-full flex-col overflow-hidden p-4">
-			<Heading size="7" mb="4" as="h1">
-				Browsing History Omit List
-			</Heading>
-
-			<form className="mb-4 flex gap-2">
-				<TextField.Root
-					ref={inputRef}
-					style={{ flex: 1 }}
-					type="text"
-					placeholder="Enter URL pattern to omit..."
-					value={newPattern}
-					onChange={(e) => setNewPattern(e.target.value)}
-				/>
-				<Button
-					type="submit"
-					onClick={(e) => {
-						e.preventDefault();
-						handleAdd();
-					}}
-				>
-					Add Pattern
-				</Button>
-			</form>
-			<ScrollArea>
-				<DataGrid
-					data={tableData}
-					columns={columns}
-					sorting={true}
-					getRowId={(row) => row.pattern}
-					rowProps={{
-						align: 'center',
-					}}
-				/>
-			</ScrollArea>
-		</main>
+		<div className={`flex flex-col ${className ?? ''}`} {...props}>
+			{!tableData ? (
+				<Placeholder>Loading patterns...</Placeholder>
+			) : (
+				<>
+					<form className="mb-4 flex gap-2">
+						<TextField.Root
+							ref={inputRef}
+							style={{ flex: 1 }}
+							type="text"
+							placeholder="Enter URL pattern to omit..."
+							value={newPattern}
+							onChange={(e) => setNewPattern(e.target.value)}
+						/>
+						<Button
+							type="submit"
+							onClick={(e) => {
+								e.preventDefault();
+								handleAdd();
+							}}
+						>
+							Add Pattern
+						</Button>
+					</form>
+					<ScrollArea>
+						<DataGrid
+							data={tableData}
+							columns={columns}
+							sorting={true}
+							getRowId={(row) => row.pattern}
+							rowProps={{
+								align: 'center',
+							}}
+							rootProps={{
+								variant: 'ghost',
+							}}
+						/>
+					</ScrollArea>
+				</>
+			)}
+		</div>
 	);
-}
+};

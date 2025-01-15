@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { Button, Heading, Link as RadixLink, ScrollArea, Text } from '@radix-ui/themes';
+import { Button, Heading, Link as RadixLink, ScrollArea, Text, Dialog } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataGrid } from '~/app/components/DataGrid';
 import { formatISODate, formatNumber, formatTime } from '~/app/lib/formatting';
+import { OmitList } from './-OmitList';
 
-export const Route = createFileRoute('/history/$date')({
+export const Route = createFileRoute('/(browsing)/history/$date')({
 	loader: ({ params: { date }, context: { queryClient, trpc } }) =>
 		queryClient.ensureQueryData(trpc.history.getHistoryForDate.queryOptions(date)),
 	component: DailyActivityPage,
@@ -129,9 +130,31 @@ function DailyActivityPage() {
 				</nav>
 			</header>
 
-			<Heading size="5" mb="4" as="h2">
-				Browser History
-			</Heading>
+			<div role="toolbar" className="mb-4 flex items-center gap-4">
+				<Heading size="5" as="h2">
+					Browser History
+				</Heading>
+				<Dialog.Root>
+					<Dialog.Trigger>
+						<Button variant="outline">Modify Omit List</Button>
+					</Dialog.Trigger>
+					<Dialog.Content
+						width="75dvw"
+						maxWidth="75dvw"
+						height="75dvh"
+						maxHeight="75dvh"
+						className="flex flex-col gap-4"
+					>
+						<header>
+							<Dialog.Title>Omit List</Dialog.Title>
+							<Dialog.Description>
+								URLs matching patterns in this list will not be publicly visible or indexed.
+							</Dialog.Description>
+						</header>
+						<OmitList className="grow overflow-hidden" />
+					</Dialog.Content>
+				</Dialog.Root>
+			</div>
 			<ScrollArea>
 				<DataGrid
 					data={history}
