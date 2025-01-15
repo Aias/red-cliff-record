@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Button, Heading, ScrollArea, Spinner, TextField } from '@radix-ui/themes';
+import type { HTMLAttributes } from 'react';
+import { Button, ScrollArea, Spinner, TextField } from '@radix-ui/themes';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataGrid } from '~/app/components/DataGrid';
 import { EditableCell } from '~/app/components/DataGrid';
-import { trpc } from '~/app/trpc';
 import { Placeholder } from '~/app/components/Placeholder';
-import type { HTMLAttributes } from 'react';
+import { trpc } from '~/app/trpc';
 
 type OmitPattern = {
 	pattern: string;
@@ -14,9 +14,7 @@ type OmitPattern = {
 	matchCount: number;
 };
 
-interface OmitListProps extends HTMLAttributes<HTMLDivElement> {}
-
-export const OmitList = ({ className, ...props }: OmitListProps) => {
+export const OmitList = ({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) => {
 	const { data: patterns } = trpc.history.getOmitList.useQuery();
 	const trpcUtils = trpc.useUtils();
 	const { data: counts, isFetching: isFetchingCounts } = trpc.history.getOmittedCounts.useQuery();
@@ -125,7 +123,7 @@ export const OmitList = ({ className, ...props }: OmitListProps) => {
 	}, [newPattern, addPatternMutation]);
 
 	return (
-		<div className={`flex flex-col ${className ?? ''}`} {...props}>
+		<div className={`flex flex-col ${className}`} {...props}>
 			{!tableData ? (
 				<Placeholder>Loading patterns...</Placeholder>
 			) : (

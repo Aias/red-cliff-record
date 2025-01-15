@@ -6,6 +6,7 @@
 
 html {
 	min-height: 100dvh;
+	scrollbar-width: thin;
 }
 
 body {

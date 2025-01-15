@@ -168,6 +168,10 @@
 	backdrop-filter: var(--backdrop-filter-panel);
 }
 
+@utility card {
+	@apply rounded-md border border-border-subtle surface p-3;
+}
+
 @utility selectable {
 	@apply cursor-pointer border-border-subtle;
 	&:hover {

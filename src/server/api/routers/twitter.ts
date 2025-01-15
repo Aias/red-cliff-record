@@ -1,6 +1,7 @@
 import { desc, isNull } from 'drizzle-orm';
-import { createTRPCRouter, publicProcedure } from '../init';
 import { twitterMedia, twitterTweets, twitterUsers } from '~/server/db/schema/integrations';
+import { createTRPCRouter, publicProcedure } from '../init';
+import { DEFAULT_LIMIT } from './common';
 
 export const twitterRouter = createTRPCRouter({
 	getTweets: publicProcedure.query(async ({ ctx }) => {
@@ -12,7 +13,7 @@ export const twitterRouter = createTRPCRouter({
 			},
 			where: isNull(twitterTweets.recordId),
 			orderBy: [desc(twitterTweets.archivedAt), desc(twitterTweets.contentCreatedAt)],
-			limit: 100,
+			limit: DEFAULT_LIMIT,
 		});
 
 		return tweets;
@@ -25,7 +26,7 @@ export const twitterRouter = createTRPCRouter({
 			},
 			where: isNull(twitterUsers.indexEntryId),
 			orderBy: [desc(twitterUsers.archivedAt), desc(twitterUsers.contentCreatedAt)],
-			limit: 100,
+			limit: DEFAULT_LIMIT,
 		});
 
 		return users;
@@ -38,7 +39,7 @@ export const twitterRouter = createTRPCRouter({
 			},
 			where: isNull(twitterMedia.mediaId),
 			orderBy: [desc(twitterMedia.archivedAt), desc(twitterMedia.contentCreatedAt)],
-			limit: 100,
+			limit: DEFAULT_LIMIT,
 		});
 
 		return media;

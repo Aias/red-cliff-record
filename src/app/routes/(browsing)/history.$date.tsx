@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { Button, Heading, Link as RadixLink, ScrollArea, Text, Dialog } from '@radix-ui/themes';
+import { Button, Dialog, Heading, Link as RadixLink, ScrollArea, Text } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataGrid } from '~/app/components/DataGrid';

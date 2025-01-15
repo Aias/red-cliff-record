@@ -1,6 +1,7 @@
 import { desc, isNull } from 'drizzle-orm';
 import { raindropBookmarks, raindropCollections } from '~/server/db/schema/integrations';
 import { createTRPCRouter, publicProcedure } from '../init';
+import { DEFAULT_LIMIT } from './common';
 
 export const raindropRouter = createTRPCRouter({
 	getCollections: publicProcedure.query(async ({ ctx }) => {
@@ -11,7 +12,7 @@ export const raindropRouter = createTRPCRouter({
 			},
 			where: isNull(raindropCollections.indexEntryId),
 			orderBy: [desc(raindropCollections.archivedAt), desc(raindropCollections.contentCreatedAt)],
-			limit: 100,
+			limit: DEFAULT_LIMIT,
 		});
 
 		return collections;
@@ -24,7 +25,7 @@ export const raindropRouter = createTRPCRouter({
 			},
 			where: isNull(raindropBookmarks.recordId),
 			orderBy: [desc(raindropBookmarks.archivedAt), desc(raindropBookmarks.contentCreatedAt)],
-			limit: 100,
+			limit: DEFAULT_LIMIT,
 		});
 
 		return bookmarks;

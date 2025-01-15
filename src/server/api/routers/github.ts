@@ -1,9 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, isNull, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { githubCommits, githubRepositories, githubUsers } from '~/server/db/schema/integrations';
 import { summarizeCommit } from '~/server/services/ai/summarize-commit';
 import { createTRPCRouter, publicProcedure } from '../init';
+import { DEFAULT_LIMIT } from './common';
 import { CommitSummaryInputSchema } from './github.types';
 
 export const githubRouter = createTRPCRouter({
@@ -14,7 +15,7 @@ export const githubRouter = createTRPCRouter({
 				commitChanges: true,
 			},
 			orderBy: [desc(githubCommits.committedAt)],
-			limit: 50,
+			limit: DEFAULT_LIMIT,
 		});
 	}),
 
@@ -72,7 +73,7 @@ export const githubRouter = createTRPCRouter({
 			},
 			where: and(isNotNull(githubRepositories.starredAt), isNull(githubRepositories.recordId)),
 			orderBy: [desc(githubRepositories.archivedAt), desc(githubRepositories.starredAt)],
-			limit: 100,
+			limit: DEFAULT_LIMIT,
 		});
 
 		return stars;
@@ -85,7 +86,7 @@ export const githubRouter = createTRPCRouter({
 			},
 			where: isNull(githubUsers.indexEntryId),
 			orderBy: [desc(githubUsers.archivedAt), desc(githubUsers.contentCreatedAt)],
-			limit: 100,
+			limit: DEFAULT_LIMIT,
 		});
 		return users;
 	}),

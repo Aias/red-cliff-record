@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { readwiseDocuments } from '~/server/db/schema/integrations';
 import { createTRPCRouter, publicProcedure } from '../init';
+import { DEFAULT_LIMIT } from './common';
 
 export const readwiseRouter = createTRPCRouter({
 	getDocuments: publicProcedure.query(async ({ ctx }) => {
@@ -14,7 +15,7 @@ export const readwiseRouter = createTRPCRouter({
 				isNull(readwiseDocuments.parentId)
 			),
 			orderBy: [desc(readwiseDocuments.archivedAt), desc(readwiseDocuments.contentCreatedAt)],
-			limit: 100,
+			limit: DEFAULT_LIMIT,
 		});
 
 		return documents;

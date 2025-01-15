@@ -172,7 +172,6 @@ export const airtableSpaces = integrationSchema.table(
 		name: text('name').notNull(),
 		fullName: text('full_name'),
 		icon: text('icon'),
-		description: text('description'),
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),

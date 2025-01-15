@@ -11,14 +11,14 @@ import { QueueList } from './-components/QueueList';
 
 export const Route = createFileRoute('/(index)/queue/airtable')({
 	loader: async ({ context: { queryClient, trpc } }) => {
-		await queryClient.ensureQueryData(trpc.airtable.getSpaces.queryOptions({ limit: 100 }));
+		await queryClient.ensureQueryData(trpc.airtable.getSpaces.queryOptions());
 	},
 	component: RouteComponent,
 });
 
 function RouteComponent() {
-	const [spaces] = trpc.airtable.getSpaces.useSuspenseQuery({ limit: 100 });
-	const [creators] = trpc.airtable.getCreators.useSuspenseQuery({ limit: 100 });
+	const [spaces] = trpc.airtable.getSpaces.useSuspenseQuery();
+	const [creators] = trpc.airtable.getCreators.useSuspenseQuery();
 	const { data: spacesQueueLength } = trpc.airtable.getSpacesQueueLength.useQuery();
 	// const { data: creatorsQueueLength } = trpc.airtable.getCreatorsQueueLength.useQuery();
 	const trpcUtils = trpc.useUtils();
@@ -28,10 +28,10 @@ function RouteComponent() {
 
 	const listItems = useMemo(() => {
 		console.log(creators);
-		return spaces.map(({ id, name, description, archivedAt, indexEntry }) => ({
+		return spaces.map(({ id, name, fullName, archivedAt, indexEntry }) => ({
 			id,
 			name,
-			description,
+			description: fullName,
 			archivedAt,
 			indexEntry,
 			selected: id === inspectedSpaceId,

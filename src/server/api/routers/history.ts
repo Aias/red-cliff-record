@@ -1,7 +1,7 @@
 import { eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~/server/db/schema/integrations';
-import { createTRPCRouter, publicProcedure, mergeRouters } from '../init';
+import { createTRPCRouter, mergeRouters, publicProcedure } from '../init';
 
 const browserHistoryRouter = createTRPCRouter({
 	getHistoryForDate: publicProcedure

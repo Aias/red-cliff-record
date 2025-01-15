@@ -1,4 +1,3 @@
-// @ts-nocheck
 import eslint from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
@@ -25,14 +24,9 @@ export default tseslint.config(
 		},
 		rules: {
 			'react-compiler/react-compiler': 'error',
-			'@typescript-eslint/no-unused-vars': [
-				'warn',
-				{
-					argsIgnorePattern: '^_',
-				},
-			],
-			'@typescript-eslint/ban-ts-comment': 'off',
+			'@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
 			'no-unused-vars': 'off',
+			'@typescript-eslint/ban-ts-comment': 'off',
 			'@typescript-eslint/consistent-type-imports': [
 				'warn',
 				{
@@ -56,7 +50,12 @@ export default tseslint.config(
 							position: 'before',
 						},
 						{
-							pattern: '~/**',
+							pattern: '~/app/**',
+							group: 'internal',
+							position: 'before',
+						},
+						{
+							pattern: '~/server/**',
 							group: 'internal',
 							position: 'before',
 						},

@@ -30,6 +30,14 @@ export const integrationTypeEnum = operationsSchema.enum(
 	'integration_type',
 	IntegrationType.options
 );
+export type IntegrationService =
+	| 'adobe'
+	| 'airtable'
+	| 'arc'
+	| 'github'
+	| 'raindrop'
+	| 'readwise'
+	| 'twitter';
 
 export const RunType = z.enum(['seed', 'sync']);
 export type RunType = z.infer<typeof RunType>;
