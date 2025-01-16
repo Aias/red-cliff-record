@@ -14,7 +14,6 @@ import {
 	type GithubCommitSelect,
 	type GithubRepositorySelect,
 } from '~/server/db/schema/integrations';
-import styles from './commits.module.css';
 
 type CommitSelect = GithubCommitSelect & {
 	repository: GithubRepositorySelect;
@@ -128,8 +127,8 @@ function CommitList() {
 	}, [batchSummarizeCommits, selectedIds, commits]);
 
 	return (
-		<main className={`flex h-full gap-2 overflow-hidden p-3 ${styles.layout}`}>
-			<Card>
+		<main className="@container flex h-full gap-2 overflow-hidden p-3">
+			<Card className="grow basis-1/3 @max-[799px]:hidden @[800px]:min-w-[420px]">
 				<header className="mb-4 flex items-center justify-between gap-2">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedIds.size > 0 && (

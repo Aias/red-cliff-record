@@ -55,7 +55,7 @@
 		"airtable": "^0.12.2",
 		"babel-plugin-react-compiler": "19.0.0-beta-e552027-20250112",
 		"dotenv": "^16.4.7",
-		"drizzle-orm": "^0.38.3",
+		"drizzle-orm": "^0.38.4",
 		"drizzle-zod": "^0.6.1",
 		"mime-types": "^2.1.35",
 		"openai": "^4.78.1",

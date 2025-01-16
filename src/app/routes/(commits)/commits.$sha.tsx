@@ -44,7 +44,7 @@ function CommitView() {
 	}, [commit]);
 
 	return (
-		<Card className="grow basis-full">
+		<Card className="grow basis-full @max-[799px]:basis-full">
 			<header className="mb-4 flex items-center justify-between gap-2">
 				<Heading size="6">Commit {commit.sha.slice(0, 7)}</Heading>
 				<AppLink to={'/commits'} asChild>
@@ -53,7 +53,7 @@ function CommitView() {
 					</IconButton>
 				</AppLink>
 			</header>
-			<ScrollArea>
+			<ScrollArea scrollbars="vertical">
 				<div className="flex flex-col gap-4">
 					<Text as="p">{commit.message}</Text>
 					<Text as="p">
