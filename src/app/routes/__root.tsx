@@ -62,6 +62,17 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			{ rel: 'manifest', href: '/site.webmanifest', color: themeColor },
 			{ rel: 'icon', href: '/favicon.ico' },
 		],
+		scripts: import.meta.env.DEV
+			? [
+					{
+						type: 'module',
+						children: `import RefreshRuntime from "/_build/@react-refresh";
+RefreshRuntime.injectIntoGlobalHook(window)
+window.$RefreshReg$ = () => {}
+window.$RefreshSig$ = () => (type) => type`,
+					},
+				]
+			: [],
 	}),
 	component: RootComponent,
 	errorComponent: (props) => {

@@ -78,7 +78,7 @@ export function IntegrationList<T>({
 				size="2"
 				as="h3"
 				color="gray"
-				className="mr-4 flex shrink-0 grow-0 basis-24 flex-col items-center justify-center rounded-md border border-divider bg-background p-3 font-mono"
+				className="mr-4 flex shrink-0 grow-0 basis-32 flex-col items-center justify-center rounded-md border border-divider bg-background p-3 font-mono"
 				truncate
 			>
 				{label}

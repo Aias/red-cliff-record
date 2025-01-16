@@ -36,7 +36,6 @@
 		"sync:twitter": "bun run src/server/integrations/twitter/sync.ts"
 	},
 	"dependencies": {
-		"@aws-sdk/client-s3": "^3.729.0",
 		"@libsql/client": "^0.14.0",
 		"@octokit/request-error": "^6.1.6",
 		"@octokit/rest": "^21.1.0",
@@ -69,6 +68,7 @@
 	},
 	"devDependencies": {
 		"@octokit/types": "^13.7.0",
+		"@types/bun": "^1.1.16",
 		"@types/eslint": "9.6.1",
 		"@types/mime-types": "^2.1.4",
 		"@types/react": "^19.0.7",
@@ -76,7 +76,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.20.0",
 		"@typescript-eslint/parser": "^8.20.0",
 		"@vitejs/plugin-react": "^4.3.4",
-		"drizzle-kit": "^0.30.1",
+		"drizzle-kit": "^0.30.2",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-import": "^2.31.0",
@@ -89,5 +89,5 @@
 		"typescript-eslint": "^8.20.0",
 		"vite-tsconfig-paths": "^5.1.4"
 	},
-	"packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a"
+	"packageManager": "pnpm@9.15.4"
 }

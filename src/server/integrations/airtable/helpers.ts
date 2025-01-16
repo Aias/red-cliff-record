@@ -1,18 +1,9 @@
-import fs from 'fs/promises';
 import path from 'path';
-import {
-	HeadObjectCommand,
-	PutObjectCommand,
-	S3Client,
-	S3ServiceException,
-} from '@aws-sdk/client-s3';
 import Airtable from 'airtable';
+import { S3Client } from 'bun';
 import 'dotenv/config';
+import mime from 'mime-types';
 import type { z } from 'zod';
-import {
-	getContentTypeFromExtension,
-	getExtensionFromContentType,
-} from '~/app/lib/content-helpers';
 import { AirtableAttachmentSchema } from './types';
 
 Airtable.configure({
@@ -21,15 +12,17 @@ Airtable.configure({
 
 export const airtableBase = Airtable.base(process.env.AIRTABLE_BASE_ID_BWB!);
 
+const TEMP_DIR = path.join(process.cwd(), '.temp');
+
 type Attachment = z.infer<typeof AirtableAttachmentSchema>;
 
-const s3Client = new S3Client({
-	region: 'auto',
-	endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-	credentials: {
-		accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-		secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-	},
+// Create S3 client
+const s3 = new S3Client({
+	region: process.env.S3_REGION!,
+	accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+	secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+	bucket: process.env.S3_BUCKET!,
+	endpoint: process.env.S3_ENDPOINT!,
 });
 
 export async function getAttachmentsForRecord(recordId: string): Promise<Attachment[]> {
@@ -63,60 +56,50 @@ export async function downloadAttachment(image: Attachment) {
 		}
 
 		const contentType = response.headers.get('Content-Type');
-		const finalExtension = fileExtension || getExtensionFromContentType(contentType) || '.jpg';
-		const finalFilename = `${image.id}${finalExtension}`;
-		const finalFilepath = path.join(process.cwd(), '.temp', finalFilename);
+		// Use mime-types to get extension, fallback to original extension or .jpg
+		const finalExtension =
+			mime.extension(contentType || '') || path.extname(image.filename) || '.jpg';
+		const finalFilename = `${image.id}.${finalExtension}`;
+		const finalFilepath = path.join(TEMP_DIR, finalFilename);
 
-		const buffer = await response.arrayBuffer();
-		await fs.writeFile(finalFilepath, new Uint8Array(buffer));
+		await Bun.write(finalFilepath, response);
 		console.log(`Downloaded: ${finalFilename}`);
 	} catch (error) {
 		console.error(`Error downloading ${filename}:`, error);
 	}
 }
 
-export function getFileExtension(image: Attachment): string {
+function getFileExtension(image: Attachment): string {
 	// Try to get extension from original filename
 	const fileExtension = path.extname(image.filename);
 	if (fileExtension.length > 1) return fileExtension;
 
-	// If no extension in filename, try to infer from type
-	return getExtensionFromContentType(image.type) || '';
+	// Use mime-types to get extension from content type, fallback to .jpg
+	return `.${mime.extension(image.type) || 'jpg'}`;
 }
 
-export async function uploadAttachment(tempDir: string, filename: string) {
-	const filepath = path.join(tempDir, filename);
+export async function uploadAttachment(filename: string) {
+	const filepath = path.join(TEMP_DIR, filename);
 
 	try {
-		// Check if the file already exists
-		try {
-			await s3Client.send(
-				new HeadObjectCommand({
-					Bucket: process.env.R2_BUCKET_NAME,
-					Key: filename,
-				})
-			);
+		// Check if the file already exists in S3
+		const exists = await s3.exists(filename);
+		if (exists) {
 			console.log(`File ${filename} already exists. Skipping.`);
-			return; // Skip this file
-		} catch (error) {
-			if (!(error instanceof S3ServiceException) || error.$metadata?.httpStatusCode !== 404) {
-				// If it's not a 'Not Found' error, rethrow it
-				throw error;
-			}
-			// If the file doesn't exist, continue with the upload
+			return;
 		}
 
-		const fileContent = await fs.readFile(filepath);
-		const contentType = getContentTypeFromExtension(path.extname(filename));
+		// Create file reference
+		const file = Bun.file(filepath);
 
-		const command = new PutObjectCommand({
-			Bucket: process.env.R2_BUCKET_NAME,
-			Key: filename,
-			Body: fileContent,
-			ContentType: contentType,
+		// Use mime.lookup to get content type from filename
+		const contentType = mime.lookup(filename) || 'application/octet-stream';
+
+		// Upload to S3 with content type
+		await s3.write(filename, file, {
+			type: contentType,
 		});
 
-		await s3Client.send(command);
 		console.log(`Uploaded: ${filename}`);
 	} catch (error) {
 		console.error(`Error uploading ${filename}:`, error);
