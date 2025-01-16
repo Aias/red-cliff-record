@@ -3,8 +3,9 @@
 		/* Base Options: */
 		"esModuleInterop": true,
 		"skipLibCheck": true,
-		"target": "es2022",
+		"target": "ESNext",
 		"allowJs": true,
+		"checkJs": false,
 		"resolveJsonModule": true,
 		"moduleDetection": "force",
 		"isolatedModules": true,
@@ -12,14 +13,16 @@
 		/* Strictness */
 		"strict": true,
 		"noUncheckedIndexedAccess": true,
-		"checkJs": false,
+		"noFallthroughCasesInSwitch": true, // Bun recommended
 
 		/* Bundled projects */
-		"lib": ["dom", "dom.iterable", "ES2022"],
 		"noEmit": true,
+		"lib": ["dom", "dom.iterable", "ESNext"],
+		"jsx": "react-jsx",
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
-		"jsx": "react-jsx",
+		"verbatimModuleSyntax": true, // Bun recommended
+		"allowImportingTsExtensions": true, // Bun recommended
 
 		/* Performance */
 		"incremental": true,

@@ -13,27 +13,28 @@
 	},
 	"type": "module",
 	"scripts": {
-		"format": "prettier --write .",
-		"lint": "prettier --write . && eslint . --fix",
-		"typecheck": "tsc --noEmit --watch --preserveWatchOutput",
-		"dev": "vinxi dev & tsc --noEmit --watch",
-		"build": "vinxi build",
-		"start": "vinxi start",
-		"db:migrate": "drizzle-kit migrate",
-		"db:generate": "drizzle-kit generate",
-		"db:studio": "drizzle-kit studio",
+		"format": "bun prettier --write .",
+		"lint": "bun prettier --write . && bun eslint . --fix",
+		"typecheck": "bun tsc --noEmit --watch --preserveWatchOutput",
+		"dev": "bun vinxi dev & bun tsc --noEmit --watch",
+		"build": "bun vinxi build",
+		"start": "bun vinxi start",
+		"update": "bunx npm-check-updates -i",
+		"db:migrate": "bun drizzle-kit migrate",
+		"db:generate": "bun drizzle-kit generate",
+		"db:studio": "bun drizzle-kit studio",
 		"db:backup-local": "bash src/server/db/db-manager.sh backup local",
 		"db:backup-remote": "bash src/server/db/db-manager.sh backup remote",
 		"db:restore-local": "bash src/server/db/db-manager.sh restore local",
 		"db:restore-remote": "bash src/server/db/db-manager.sh restore remote",
-		"sync:daily": "bun run sync:arc && bun run sync:raindrop && bun run sync:readwise && bun run sync:github",
-		"sync:adobe": "bun run src/server/integrations/adobe/sync.ts",
-		"sync:airtable": "bun run src/server/integrations/airtable/sync.ts",
-		"sync:arc": "bun run src/server/integrations/arc/sync.ts",
-		"sync:github": "bun run src/server/integrations/github/sync.ts",
-		"sync:raindrop": "bun run src/server/integrations/raindrop/sync.ts",
-		"sync:readwise": "bun run src/server/integrations/readwise/sync.ts",
-		"sync:twitter": "bun run src/server/integrations/twitter/sync.ts"
+		"sync:daily": "bun sync:arc && bun sync:raindrop && bun sync:readwise && bun sync:github",
+		"sync:adobe": "bun src/server/integrations/adobe/sync.ts",
+		"sync:airtable": "bun src/server/integrations/airtable/sync.ts",
+		"sync:arc": "bun src/server/integrations/arc/sync.ts",
+		"sync:github": "bun src/server/integrations/github/sync.ts",
+		"sync:raindrop": "bun src/server/integrations/raindrop/sync.ts",
+		"sync:readwise": "bun src/server/integrations/readwise/sync.ts",
+		"sync:twitter": "bun src/server/integrations/twitter/sync.ts"
 	},
 	"dependencies": {
 		"@libsql/client": "^0.14.0",
@@ -89,5 +90,5 @@
 		"typescript-eslint": "^8.20.0",
 		"vite-tsconfig-paths": "^5.1.4"
 	},
-	"packageManager": "pnpm@9.15.4"
+	"packageManager": "bun@1.1.43"
 }

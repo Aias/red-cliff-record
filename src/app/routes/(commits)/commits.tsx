@@ -128,7 +128,7 @@ function CommitList() {
 
 	return (
 		<main className="@container flex h-full gap-2 overflow-hidden p-3">
-			<Card className="grow basis-1/3 @max-[799px]:hidden @[800px]:min-w-[420px]">
+			<Card className="grow basis-0 @max-[799px]:hidden min-w-[max(420px,50%)]">
 				<header className="mb-4 flex items-center justify-between gap-2">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedIds.size > 0 && (
