@@ -1,6 +1,6 @@
 import { Cross1Icon } from '@radix-ui/react-icons';
 import { Button, IconButton, Text, type ButtonProps } from '@radix-ui/themes';
-import { IconWrapper } from './Icon';
+import { IconWrapper } from './IconWrapper';
 
 interface SelectionActionsProps {
 	selectedCount: number;

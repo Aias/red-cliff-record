@@ -1,6 +1,6 @@
 import { Link1Icon } from '@radix-ui/react-icons';
 import { Checkbox, Text } from '@radix-ui/themes';
-import { IconWrapper } from '~/app/components/Icon';
+import { IconWrapper } from '~/app/components/IconWrapper';
 import type { IndicesSelect } from '~/server/db/schema/main';
 
 type QueueEntry = {

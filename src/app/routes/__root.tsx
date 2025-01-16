@@ -65,7 +65,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	}),
 	component: RootComponent,
 	errorComponent: (props) => {
-		const { theme: initialTheme } = Route.useLoaderData() as { theme: 'light' | 'dark' };
+		const { theme: initialTheme } = Route.useLoaderData();
 		return (
 			<RootDocument theme={{ ...defaultTheme, appearance: initialTheme }}>
 				<DefaultCatchBoundary {...props} />

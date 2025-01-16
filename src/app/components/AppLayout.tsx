@@ -5,7 +5,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/start';
 import { setTheme } from '../lib/server/setTheme';
 import { AppLink } from './AppLink';
-import { IconWrapper } from './Icon';
+import { IconWrapper } from './IconWrapper';
 
 interface AppLayoutProps {
 	children: ReactNode;

@@ -85,9 +85,7 @@ export function DataGrid<T>({
 										}
 										selection.onSelectionChange(newSelection);
 									}}
-									style={{
-										marginTop: '0.1em',
-									}}
+									className="mt-[0.1em]"
 								/>
 							),
 						} as ColumnDef<T>,
@@ -197,11 +195,11 @@ export function EditableCell({
 	if (!isEditing) {
 		return (
 			<div
-				style={{ cursor: 'pointer', padding: '4px' }}
 				onClick={() => {
 					setIsEditing(true);
 					setTimeout(() => inputRef.current?.focus(), 0);
 				}}
+				className="cursor-pointer p-1"
 			>
 				{value}
 			</div>

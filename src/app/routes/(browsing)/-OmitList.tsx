@@ -131,7 +131,7 @@ export const OmitList = ({ className = '', ...props }: HTMLAttributes<HTMLDivEle
 					<form className="mb-4 flex gap-2">
 						<TextField.Root
 							ref={inputRef}
-							style={{ flex: 1 }}
+							className="flex-1"
 							type="text"
 							placeholder="Enter URL pattern to omit..."
 							value={newPattern}

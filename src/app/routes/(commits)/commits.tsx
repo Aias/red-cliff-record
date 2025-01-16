@@ -3,7 +3,9 @@ import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
 import { Button, Card, Heading, ScrollArea } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
+import { AppLink } from '~/app/components/AppLink';
 import { DataGrid } from '~/app/components/DataGrid';
+import { IconWrapper } from '~/app/components/IconWrapper';
 import { useSelection } from '~/app/lib/useSelection';
 import { trpc } from '~/app/trpc';
 import { type CommitSummaryInput } from '~/server/api/routers/github.types';
@@ -12,8 +14,6 @@ import {
 	type GithubCommitSelect,
 	type GithubRepositorySelect,
 } from '~/server/db/schema/integrations';
-import { AppLink } from '../../components/AppLink';
-import { IconWrapper } from '../../components/Icon';
 import styles from './commits.module.css';
 
 type CommitSelect = GithubCommitSelect & {

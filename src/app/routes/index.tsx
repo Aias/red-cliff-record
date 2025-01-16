@@ -9,8 +9,6 @@ export const Route = createFileRoute('/')({
 	component: Home,
 });
 
-const LABEL_WIDTH = '64px';
-
 function Home() {
 	return (
 		<main className="flex basis-full flex-col gap-4 overflow-hidden p-3">
@@ -65,6 +63,8 @@ const LoadingPlaceholder = () => (
 	</div>
 );
 
+const LABEL_WIDTH = '64px';
+
 export function IntegrationList<T>({
 	data,
 	config,
@@ -78,11 +78,8 @@ export function IntegrationList<T>({
 				size="2"
 				as="h3"
 				color="gray"
-				className="mr-4 flex shrink-0 grow-0 flex-col items-center justify-center rounded-md border border-divider bg-background p-3 font-mono"
+				className="mr-4 flex shrink-0 grow-0 basis-24 flex-col items-center justify-center rounded-md border border-divider bg-background p-3 font-mono"
 				truncate
-				style={{
-					flexBasis: '96px',
-				}}
 			>
 				{label}
 			</Heading>

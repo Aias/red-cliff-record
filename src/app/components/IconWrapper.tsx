@@ -5,7 +5,6 @@ export const IconWrapper = ({
 	color,
 	children,
 	className = '',
-	style = {},
 	...props
 }: TextProps) => {
 	return (
@@ -14,14 +13,7 @@ export const IconWrapper = ({
 			size={size}
 			color={color}
 			{...props}
-			className={`inline-flex ${className}`}
-			style={{
-				width: '1em',
-				height: '1em',
-				aspectRatio: '1/1',
-				lineHeight: 1,
-				...style,
-			}}
+			className={`inline-flex aspect-square h-[1em] w-[1em] leading-none ${className}`}
 		>
 			{children}
 		</Text>

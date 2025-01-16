@@ -4,6 +4,8 @@ import type { AdobeLightroomImageInsert } from '~/server/db/schema/integrations'
 import { runIntegration } from '../common/run-integration';
 import { LightroomJsonResponseSchema } from './types';
 
+// TODO: Fix this sync, the photo URLs stop working if the image is removed from the album.
+
 const ALBUM_URL =
 	'https://lightroom.adobe.com/v2/spaces/f89a3c5060d8467a952c66de97edbe39/albums/f1edd4179e2f4e1d802f8a94f40b542c/assets?embed=asset%3Buser&order_after=-&exclude=incomplete&subtype=image';
 
