@@ -211,9 +211,6 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 			console.log(`Processed new commits from page ${page}`);
 			page++;
-
-			// Add a small delay between requests
-			await new Promise((resolve) => setTimeout(resolve, 1000));
 		} catch (error) {
 			if (error instanceof RequestError) {
 				console.error('GitHub API Error:', {

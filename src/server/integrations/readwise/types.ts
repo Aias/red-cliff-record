@@ -16,6 +16,7 @@ export const ReadwiseArticleSchema = z.object({
 	site_name: z.string().nullable(),
 	source: z.string().nullable(),
 	content: z.string().nullable(),
+	html_content: z.string().nullable(),
 	notes: z.string().nullable(),
 	category: ReadwiseCategory,
 	location: ReadwiseLocation.nullable(),

@@ -40,6 +40,8 @@ async function fetchReadwiseDocuments(
 		params.append('updatedAfter', afterDate.toISOString());
 	}
 
+	params.append('withHtmlContent', 'true');
+
 	const response = await fetch(`https://readwise.io/api/v3/list/?${params.toString()}`, {
 		headers: {
 			Authorization: `Token ${process.env.READWISE_TOKEN}`,
@@ -80,6 +82,7 @@ const mapReadwiseArticleToDocument = (
 	wordCount: article.word_count,
 	summary: article.summary,
 	content: article.content,
+	htmlContent: article.html_content,
 	notes: article.notes,
 	imageUrl: article.image_url,
 	sourceUrl: article.source_url,

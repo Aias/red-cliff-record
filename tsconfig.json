@@ -9,6 +9,7 @@
 		"resolveJsonModule": true,
 		"moduleDetection": "force",
 		"isolatedModules": true,
+		"types": ["bun", "vite/client"],
 
 		/* Strictness */
 		"strict": true,

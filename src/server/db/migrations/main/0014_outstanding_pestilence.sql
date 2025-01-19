@@ -1,0 +1,1 @@
+ALTER TABLE "integrations"."readwise_documents" ADD COLUMN "html_content" text;

@@ -44,6 +44,7 @@ export const readwiseDocuments = integrationSchema.table(
 		author: text('author'),
 		source: text('source'),
 		content: text('content'),
+		htmlContent: text('html_content'),
 		category: readwiseCategoryEnum(),
 		location: readwiseLocationEnum(),
 		tags: text('tags').array(),
