@@ -63,8 +63,6 @@ const LoadingPlaceholder = () => (
 	</div>
 );
 
-const LABEL_WIDTH = '64px';
-
 export function IntegrationList<T>({
 	data,
 	config,
@@ -86,11 +84,11 @@ export function IntegrationList<T>({
 			<ol className="-mb-3 flex shrink-0 grow-0 basis-full overflow-x-auto overflow-y-hidden pb-3">
 				{data.length > 0 ? (
 					data.map((item, index) => (
-						<li key={index} className="mr-4 w-xs shrink-0 grow-0 border-r border-divider pr-4">
+						<li key={index} className="mr-4 w-72 shrink-0 grow-0 border-r border-divider pr-4">
 							<DataList.Root size="1" trim="both" className="gap-1">
 								{config.map(({ label, accessor, href }) => (
 									<DataList.Item key={label}>
-										<DataList.Label width={LABEL_WIDTH} minWidth={LABEL_WIDTH}>
+										<DataList.Label className="w-20 min-w-20">
 											<Text truncate>{label}</Text>
 										</DataList.Label>
 										<DataList.Value>
