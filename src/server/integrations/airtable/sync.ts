@@ -26,13 +26,15 @@ async function cleanupExistingRecords() {
 	console.log('Cleaning up existing Airtable records...');
 
 	// Delete in correct order to maintain referential integrity
-	await db.delete(airtableExtractConnections);
-	await db.delete(airtableExtractSpaces);
-	await db.delete(airtableExtractCreators);
-	await db.delete(airtableAttachments);
-	await db.delete(airtableExtracts);
-	await db.delete(airtableSpaces);
-	await db.delete(airtableCreators);
+	await db.transaction(async (tx) => {
+		await tx.delete(airtableExtractConnections);
+		await tx.delete(airtableExtractSpaces);
+		await tx.delete(airtableExtractCreators);
+		await tx.delete(airtableAttachments);
+		await tx.delete(airtableExtracts);
+		await tx.delete(airtableSpaces);
+		await tx.delete(airtableCreators);
+	});
 
 	console.log('Cleanup complete');
 }

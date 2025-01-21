@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
 import { Route as commitsCommitsImport } from './routes/(commits)/commits'
+import { Route as QueueIndexSourceImport } from './routes/queue/index/$source'
 import { Route as indexQueueAirtableImport } from './routes/(index)/queue.airtable'
 import { Route as commitsCommitsShaImport } from './routes/(commits)/commits.$sha'
 import { Route as browsingHistoryDateImport } from './routes/(browsing)/history.$date'
@@ -28,6 +29,12 @@ const IndexRoute = IndexImport.update({
 const commitsCommitsRoute = commitsCommitsImport.update({
   id: '/(commits)/commits',
   path: '/commits',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const QueueIndexSourceRoute = QueueIndexSourceImport.update({
+  id: '/queue/index/$source',
+  path: '/queue/index/$source',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -88,6 +95,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof indexQueueAirtableImport
       parentRoute: typeof rootRoute
     }
+    '/queue/index/$source': {
+      id: '/queue/index/$source'
+      path: '/queue/index/$source'
+      fullPath: '/queue/index/$source'
+      preLoaderRoute: typeof QueueIndexSourceImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -111,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/history/$date': typeof browsingHistoryDateRoute
   '/commits/$sha': typeof commitsCommitsShaRoute
   '/queue/airtable': typeof indexQueueAirtableRoute
+  '/queue/index/$source': typeof QueueIndexSourceRoute
 }
 
 export interface FileRoutesByTo {
@@ -119,6 +134,7 @@ export interface FileRoutesByTo {
   '/history/$date': typeof browsingHistoryDateRoute
   '/commits/$sha': typeof commitsCommitsShaRoute
   '/queue/airtable': typeof indexQueueAirtableRoute
+  '/queue/index/$source': typeof QueueIndexSourceRoute
 }
 
 export interface FileRoutesById {
@@ -128,6 +144,7 @@ export interface FileRoutesById {
   '/(browsing)/history/$date': typeof browsingHistoryDateRoute
   '/(commits)/commits/$sha': typeof commitsCommitsShaRoute
   '/(index)/queue/airtable': typeof indexQueueAirtableRoute
+  '/queue/index/$source': typeof QueueIndexSourceRoute
 }
 
 export interface FileRouteTypes {
@@ -138,8 +155,15 @@ export interface FileRouteTypes {
     | '/history/$date'
     | '/commits/$sha'
     | '/queue/airtable'
+    | '/queue/index/$source'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/commits' | '/history/$date' | '/commits/$sha' | '/queue/airtable'
+  to:
+    | '/'
+    | '/commits'
+    | '/history/$date'
+    | '/commits/$sha'
+    | '/queue/airtable'
+    | '/queue/index/$source'
   id:
     | '__root__'
     | '/'
@@ -147,6 +171,7 @@ export interface FileRouteTypes {
     | '/(browsing)/history/$date'
     | '/(commits)/commits/$sha'
     | '/(index)/queue/airtable'
+    | '/queue/index/$source'
   fileRoutesById: FileRoutesById
 }
 
@@ -155,6 +180,7 @@ export interface RootRouteChildren {
   commitsCommitsRoute: typeof commitsCommitsRouteWithChildren
   browsingHistoryDateRoute: typeof browsingHistoryDateRoute
   indexQueueAirtableRoute: typeof indexQueueAirtableRoute
+  QueueIndexSourceRoute: typeof QueueIndexSourceRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -162,6 +188,7 @@ const rootRouteChildren: RootRouteChildren = {
   commitsCommitsRoute: commitsCommitsRouteWithChildren,
   browsingHistoryDateRoute: browsingHistoryDateRoute,
   indexQueueAirtableRoute: indexQueueAirtableRoute,
+  QueueIndexSourceRoute: QueueIndexSourceRoute,
 }
 
 export const routeTree = rootRoute
@@ -177,7 +204,8 @@ export const routeTree = rootRoute
         "/",
         "/(commits)/commits",
         "/(browsing)/history/$date",
-        "/(index)/queue/airtable"
+        "/(index)/queue/airtable",
+        "/queue/index/$source"
       ]
     },
     "/": {
@@ -198,6 +226,9 @@ export const routeTree = rootRoute
     },
     "/(index)/queue/airtable": {
       "filePath": "(index)/queue.airtable.tsx"
+    },
+    "/queue/index/$source": {
+      "filePath": "queue/index/$source.tsx"
     }
   }
 }

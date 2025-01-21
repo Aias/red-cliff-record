@@ -108,77 +108,84 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 		});
 	});
 
-	// 1. Insert Users
-	console.log(`Inserting ${processedUsers.length} users...`);
-	for (const user of processedUsers) {
-		await db
-			.insert(usersTable)
-			.values({
-				id: user.id,
-				username: user.username,
-				displayName: user.displayName,
-				description: user.description,
-				location: user.location,
-				url: user.twitterUrl,
-				externalUrl: user.userExternalLink?.expanded_url,
-				profileImageUrl: user.profileImageUrl,
-				profileBannerUrl: user.profileBannerUrl,
-				contentCreatedAt: user.createdAt,
-				integrationRunId: integrationRunId,
-			})
-			.onConflictDoNothing({ target: usersTable.id });
-	}
+	return await db.transaction(
+		async (tx) => {
+			// 1. Insert Users in bulk
+			console.log(`Inserting ${processedUsers.length} users...`);
+			await tx
+				.insert(usersTable)
+				.values(
+					processedUsers.map((user) => ({
+						id: user.id,
+						username: user.username,
+						displayName: user.displayName,
+						description: user.description,
+						location: user.location,
+						url: user.twitterUrl,
+						externalUrl: user.userExternalLink?.expanded_url,
+						profileImageUrl: user.profileImageUrl,
+						profileBannerUrl: user.profileBannerUrl,
+						contentCreatedAt: user.createdAt,
+						integrationRunId: integrationRunId,
+					}))
+				)
+				.onConflictDoNothing({ target: usersTable.id });
 
-	// 2. Insert Regular Tweets
-	console.log(`Inserting ${processedTweets.length} regular tweets...`);
-	for (const tweet of processedTweets) {
-		await db
-			.insert(tweetsTable)
-			.values({
-				id: tweet.id,
-				userId: tweet.userId,
-				text: tweet.text,
-				quotedTweetId: tweet.quotedTweetId,
-				integrationRunId: integrationRunId,
-				contentCreatedAt: tweet.createdAt,
-			})
-			.onConflictDoNothing({ target: tweetsTable.id });
-	}
+			// 2. Insert Regular Tweets in bulk
+			console.log(`Inserting ${processedTweets.length} regular tweets...`);
+			await tx
+				.insert(tweetsTable)
+				.values(
+					processedTweets.map((tweet) => ({
+						id: tweet.id,
+						userId: tweet.userId,
+						text: tweet.text,
+						quotedTweetId: tweet.quotedTweetId,
+						integrationRunId: integrationRunId,
+						contentCreatedAt: tweet.createdAt,
+					}))
+				)
+				.onConflictDoNothing({ target: tweetsTable.id });
 
-	// 3. Insert Quoted Tweets
-	console.log(`Inserting ${processedQuoteTweets.length} tweets with quotes...`);
-	for (const tweet of processedQuoteTweets) {
-		await db
-			.insert(tweetsTable)
-			.values({
-				id: tweet.id,
-				userId: tweet.userId,
-				text: tweet.text,
-				quotedTweetId: tweet.quotedTweetId,
-				integrationRunId: integrationRunId,
-				contentCreatedAt: tweet.createdAt,
-			})
-			.onConflictDoNothing({ target: tweetsTable.id });
-	}
+			// 3. Insert Quoted Tweets in bulk
+			console.log(`Inserting ${processedQuoteTweets.length} tweets with quotes...`);
+			await tx
+				.insert(tweetsTable)
+				.values(
+					processedQuoteTweets.map((tweet) => ({
+						id: tweet.id,
+						userId: tweet.userId,
+						text: tweet.text,
+						quotedTweetId: tweet.quotedTweetId,
+						integrationRunId: integrationRunId,
+						contentCreatedAt: tweet.createdAt,
+					}))
+				)
+				.onConflictDoNothing({ target: tweetsTable.id });
 
-	// 4. Insert Media
-	console.log(`Inserting ${processedMedia.length} media items...`);
-	for (const mediaItem of processedMedia) {
-		await db
-			.insert(mediaTable)
-			.values({
-				id: mediaItem.id,
-				type: mediaItem.type,
-				url: mediaItem.shortUrl,
-				mediaUrl: mediaItem.mediaUrl,
-				tweetId: mediaItem.tweetId,
-			})
-			.onConflictDoNothing({ target: mediaTable.id });
-	}
+			// 4. Insert Media in bulk
+			console.log(`Inserting ${processedMedia.length} media items...`);
+			await tx
+				.insert(mediaTable)
+				.values(
+					processedMedia.map((mediaItem) => ({
+						id: mediaItem.id,
+						type: mediaItem.type,
+						url: mediaItem.shortUrl,
+						mediaUrl: mediaItem.mediaUrl,
+						tweetId: mediaItem.tweetId,
+					}))
+				)
+				.onConflictDoNothing({ target: mediaTable.id });
 
-	const totalTweets = processedTweets.length + processedQuoteTweets.length;
-	console.log(`Successfully processed ${totalTweets} tweets`);
-	return totalTweets;
+			const totalTweets = processedTweets.length + processedQuoteTweets.length;
+			console.log(`Successfully processed ${totalTweets} tweets`);
+			return totalTweets;
+		},
+		{
+			isolationLevel: 'read committed',
+		}
+	);
 }
 
 const main = async () => {

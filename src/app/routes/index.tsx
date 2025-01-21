@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { DataList, Heading, Link, Spinner, Text } from '@radix-ui/themes';
-import { createFileRoute, type ReactNode } from '@tanstack/react-router';
+import { DataList, Heading, Link as ExternalLink, Spinner, Text } from '@radix-ui/themes';
+import { createFileRoute, Link, type LinkOptions, type ReactNode } from '@tanstack/react-router';
 import type { IntegrationService } from '~/server/db/schema/operations';
 import { ServiceAvatar } from '../components/IntegrationAvatar';
 import { trpc } from '../trpc';
@@ -55,6 +55,7 @@ interface IntegrationListProps<T> extends React.HTMLAttributes<HTMLDivElement> {
 	label: string;
 	data: T[];
 	config: IntegrationListConfig<T>[];
+	linkOptions: LinkOptions;
 }
 
 const LoadingPlaceholder = () => (
@@ -68,6 +69,7 @@ export function IntegrationList<T>({
 	config,
 	className = '',
 	label,
+	linkOptions,
 	...props
 }: IntegrationListProps<T>) {
 	return (
@@ -76,10 +78,11 @@ export function IntegrationList<T>({
 				size="2"
 				as="h3"
 				color="gray"
-				className="mr-4 flex shrink-0 grow-0 basis-32 flex-col items-center justify-center rounded-md border border-divider bg-background p-3 font-mono"
+				className="mr-4 flex shrink-0 grow-0 basis-32 flex-col items-center justify-center rounded-md border border-divider bg-background p-3 font-mono decoration-transparent hover:bg-tint hover:text-theme-text"
 				truncate
+				asChild
 			>
-				{label}
+				<Link {...linkOptions}>{label}</Link>
 			</Heading>
 			<ol className="-mb-3 flex shrink-0 grow-0 basis-full overflow-x-auto overflow-y-hidden pb-3">
 				{data.length > 0 ? (
@@ -95,9 +98,9 @@ export function IntegrationList<T>({
 											{!accessor(item) ? (
 												<Text className="text-hint">—</Text>
 											) : href && href(item) ? (
-												<Link href={href(item)!} target="_blank" truncate>
+												<ExternalLink href={href(item)!} target="_blank" truncate>
 													{accessor(item)}
-												</Link>
+												</ExternalLink>
 											) : (
 												<Text truncate>{accessor(item)}</Text>
 											)}
@@ -144,7 +147,17 @@ const AdobeSection = () => {
 	return (
 		<IntegrationQueueSection service="adobe">
 			{adobeLightroomImages ? (
-				<IntegrationList label="Lightroom" data={adobeLightroomImages} config={config} />
+				<IntegrationList
+					label="Lightroom"
+					data={adobeLightroomImages}
+					config={config}
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'adobe',
+						},
+					}}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
@@ -205,22 +218,62 @@ const AirtableSection = () => {
 	return (
 		<IntegrationQueueSection service="airtable">
 			{airtableSpaces ? (
-				<IntegrationList label="Spaces" data={airtableSpaces} config={spacesConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'airtable',
+						},
+					}}
+					label="Spaces"
+					data={airtableSpaces}
+					config={spacesConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
 			{airtableCreators ? (
-				<IntegrationList label="Creators" data={airtableCreators} config={creatorsConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'airtable',
+						},
+					}}
+					label="Creators"
+					data={airtableCreators}
+					config={creatorsConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
 			{airtableExtracts ? (
-				<IntegrationList label="Extracts" data={airtableExtracts} config={extractsConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'airtable',
+						},
+					}}
+					label="Extracts"
+					data={airtableExtracts}
+					config={extractsConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
 			{airtableAttachments ? (
-				<IntegrationList label="Images" data={airtableAttachments} config={attachmentsConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'airtable',
+						},
+					}}
+					label="Images"
+					data={airtableAttachments}
+					config={attachmentsConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
@@ -253,12 +306,32 @@ const GithubSection = () => {
 	return (
 		<IntegrationQueueSection service="github">
 			{githubStars ? (
-				<IntegrationList label="Stars" data={githubStars} config={starsConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'github',
+						},
+					}}
+					label="Stars"
+					data={githubStars}
+					config={starsConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
 			{githubUsers ? (
-				<IntegrationList label="Users" data={githubUsers} config={usersConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'github',
+						},
+					}}
+					label="Users"
+					data={githubUsers}
+					config={usersConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
@@ -293,6 +366,12 @@ const RaindropSection = () => {
 		<IntegrationQueueSection service="raindrop">
 			{raindropCollections ? (
 				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'raindrop',
+						},
+					}}
 					label="Collections"
 					data={raindropCollections}
 					config={collectionsConfig}
@@ -301,7 +380,17 @@ const RaindropSection = () => {
 				<LoadingPlaceholder />
 			)}
 			{raindropBookmarks ? (
-				<IntegrationList label="Bookmarks" data={raindropBookmarks} config={bookmarksConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'raindrop',
+						},
+					}}
+					label="Bookmarks"
+					data={raindropBookmarks}
+					config={bookmarksConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
@@ -324,7 +413,17 @@ const ReadwiseSection = () => {
 	return (
 		<IntegrationQueueSection service="readwise">
 			{readwiseDocuments ? (
-				<IntegrationList label="Documents" data={readwiseDocuments} config={documentsConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'readwise',
+						},
+					}}
+					label="Documents"
+					data={readwiseDocuments}
+					config={documentsConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
@@ -367,17 +466,47 @@ const TwitterSection = () => {
 	return (
 		<IntegrationQueueSection service="twitter">
 			{twitterTweets ? (
-				<IntegrationList label="Tweets" data={twitterTweets} config={tweetsConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'twitter',
+						},
+					}}
+					label="Tweets"
+					data={twitterTweets}
+					config={tweetsConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
 			{twitterUsers ? (
-				<IntegrationList label="Users" data={twitterUsers} config={usersConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'twitter',
+						},
+					}}
+					label="Users"
+					data={twitterUsers}
+					config={usersConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}
 			{twitterMedia ? (
-				<IntegrationList label="Media" data={twitterMedia} config={mediaConfig} />
+				<IntegrationList
+					linkOptions={{
+						to: '/queue/index/$source',
+						params: {
+							source: 'twitter',
+						},
+					}}
+					label="Media"
+					data={twitterMedia}
+					config={mediaConfig}
+				/>
 			) : (
 				<LoadingPlaceholder />
 			)}

@@ -27,6 +27,7 @@
 	--color-hint: var(--gray-a10);
 	--color-symbol: var(--gray-a11);
 	--color-ghost: var(--gray-a6);
+	--color-theme-text: var(--accent-a11);
 
 	--color-main: var(--accent-9);
 	--color-main-active: var(--accent-10);

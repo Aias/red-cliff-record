@@ -38,7 +38,7 @@ export const indicesRouter = createTRPCRouter({
 			return entry;
 		}),
 
-	findRelatedIndices: publicProcedure.input(z.string()).query(({ ctx: { db }, input }) => {
+	search: publicProcedure.input(z.string()).query(({ ctx: { db }, input }) => {
 		return db.query.indices.findMany({
 			where: or(
 				ilike(indices.name, `%${input}%`),

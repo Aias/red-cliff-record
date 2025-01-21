@@ -150,7 +150,6 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 
 	console.log(`Retrieved ${allDocuments.length} documents to process`);
 
-	// Replace the existing sort with our new hierarchical sort
 	const sortedDocuments = sortDocumentsByHierarchy(allDocuments);
 
 	let successCount = 0;

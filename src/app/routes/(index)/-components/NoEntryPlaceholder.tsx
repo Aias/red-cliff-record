@@ -5,7 +5,7 @@ import type { AirtableSpaceSelect } from '~/server/db/schema/integrations/airtab
 import { IndexEntryCard } from './IndexEntryCard';
 
 export const NoEntryPlaceholder = ({ space }: { space: AirtableSpaceSelect }) => {
-	const [relatedIndices] = trpc.indices.findRelatedIndices.useSuspenseQuery(space.name);
+	const [relatedIndices] = trpc.indices.search.useSuspenseQuery(space.name);
 	const trpcUtils = trpc.useUtils();
 
 	const linkSpaceToIndexEntryMutation = trpc.airtable.linkSpaceToIndexEntry.useMutation({
