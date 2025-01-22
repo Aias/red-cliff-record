@@ -18,7 +18,6 @@ export const Route = createFileRoute('/(index)/queue/airtable')({
 
 function RouteComponent() {
 	const [spaces] = trpc.airtable.getSpaces.useSuspenseQuery();
-	const [creators] = trpc.airtable.getCreators.useSuspenseQuery();
 	const { data: spacesQueueLength } = trpc.airtable.getSpacesQueueLength.useQuery();
 	// const { data: creatorsQueueLength } = trpc.airtable.getCreatorsQueueLength.useQuery();
 	const trpcUtils = trpc.useUtils();
@@ -27,7 +26,6 @@ function RouteComponent() {
 	const [inspectedSpaceId, setInspectedSpaceId] = useState<string | null>(null);
 
 	const listItems = useMemo(() => {
-		console.log(creators);
 		return spaces.map(({ id, name, fullName, archivedAt, indexEntry }) => ({
 			id,
 			name,

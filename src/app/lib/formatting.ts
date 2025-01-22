@@ -10,3 +10,32 @@ export const formatTime = (date: Date | string) =>
 	});
 
 export const formatISODate = (date: Date): string => date.toISOString().split('T')[0]!;
+
+export const getArticle = (str: string) => (/^[aeiou]/i.test(str) ? 'an' : 'a');
+
+export const formatCreatorDescription = (
+	type: string,
+	professions?: string[],
+	nationalities?: string[]
+) => {
+	// Format nationalities if present (hyphenated, maintain case)
+	const nationalityString = nationalities?.length ? nationalities.join('-') + ' ' : '';
+
+	// Format professions if present (lowercase, proper comma/and formatting)
+	const professionString = professions?.length
+		? professions
+				.map((p) => p.toLowerCase())
+				.reduce((acc, curr, idx, arr) => {
+					if (idx === 0) return curr;
+					if (arr.length === 2) return `${acc} and ${curr}`;
+					if (idx === arr.length - 1) return `${acc}, and ${curr}`;
+					return `${acc}, ${curr}`;
+				})
+		: type.toLowerCase();
+
+	// Use existing getArticle helper function
+	const firstWord = nationalityString || professionString;
+	const article = toTitleCase(getArticle(firstWord));
+
+	return `${article} ${nationalityString}${professionString}.`;
+};

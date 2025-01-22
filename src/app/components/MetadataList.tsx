@@ -1,8 +1,12 @@
 import { DataList, Text } from '@radix-ui/themes';
 
-export const MetadataList = ({ metadata }: { metadata: Record<string, unknown> }) => {
+interface MetadataListProps extends DataList.RootProps {
+	metadata: Record<string, unknown>;
+}
+
+export const MetadataList = ({ metadata, className = '', ...props }: MetadataListProps) => {
 	return (
-		<DataList.Root className="border-y border-gray-a4 py-4">
+		<DataList.Root className={`gap-2 ${className}`} {...props}>
 			{Object.entries(metadata).map(([key, value]) => (
 				<DataList.Item key={key}>
 					<DataList.Label>{key}</DataList.Label>
@@ -18,7 +22,9 @@ export const MetadataList = ({ metadata }: { metadata: Record<string, unknown> }
 								String(value)
 							)
 						) : (
-							<Text color="gray">—</Text>
+							<Text color="gray" className="text-hint">
+								—
+							</Text>
 						)}
 					</DataList.Value>
 				</DataList.Item>

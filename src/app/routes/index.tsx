@@ -152,10 +152,7 @@ const AdobeSection = () => {
 					data={adobeLightroomImages}
 					config={config}
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'adobe',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 				/>
 			) : (
@@ -220,10 +217,7 @@ const AirtableSection = () => {
 			{airtableSpaces ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'airtable',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Spaces"
 					data={airtableSpaces}
@@ -235,10 +229,7 @@ const AirtableSection = () => {
 			{airtableCreators ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'airtable',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Creators"
 					data={airtableCreators}
@@ -250,10 +241,7 @@ const AirtableSection = () => {
 			{airtableExtracts ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'airtable',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Extracts"
 					data={airtableExtracts}
@@ -265,10 +253,7 @@ const AirtableSection = () => {
 			{airtableAttachments ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'airtable',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Images"
 					data={airtableAttachments}
@@ -308,10 +293,7 @@ const GithubSection = () => {
 			{githubStars ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'github',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Stars"
 					data={githubStars}
@@ -323,10 +305,7 @@ const GithubSection = () => {
 			{githubUsers ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'github',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Users"
 					data={githubUsers}
@@ -367,10 +346,7 @@ const RaindropSection = () => {
 			{raindropCollections ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'raindrop',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Collections"
 					data={raindropCollections}
@@ -382,10 +358,7 @@ const RaindropSection = () => {
 			{raindropBookmarks ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'raindrop',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Bookmarks"
 					data={raindropBookmarks}
@@ -415,10 +388,7 @@ const ReadwiseSection = () => {
 			{readwiseDocuments ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'readwise',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Documents"
 					data={readwiseDocuments}
@@ -468,10 +438,7 @@ const TwitterSection = () => {
 			{twitterTweets ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'twitter',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Tweets"
 					data={twitterTweets}
@@ -483,10 +450,7 @@ const TwitterSection = () => {
 			{twitterUsers ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'twitter',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Users"
 					data={twitterUsers}
@@ -498,10 +462,7 @@ const TwitterSection = () => {
 			{twitterMedia ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/$source',
-						params: {
-							source: 'twitter',
-						},
+						to: '/queue/index/airtable-creators',
 					}}
 					label="Media"
 					data={twitterMedia}
