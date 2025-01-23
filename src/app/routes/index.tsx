@@ -217,7 +217,7 @@ const AirtableSection = () => {
 			{airtableSpaces ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/airtable-creators',
+						to: '/queue/index/airtable-spaces',
 					}}
 					label="Spaces"
 					data={airtableSpaces}
@@ -305,7 +305,7 @@ const GithubSection = () => {
 			{githubUsers ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/airtable-creators',
+						to: '/queue/index/github-users',
 					}}
 					label="Users"
 					data={githubUsers}

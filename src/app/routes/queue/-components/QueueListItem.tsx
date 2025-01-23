@@ -1,19 +1,15 @@
 import { ExternalLinkIcon } from '@radix-ui/react-icons';
 import { Avatar, Button, Checkbox, Heading, Link, Text } from '@radix-ui/themes';
+import type { QueueItem } from './types';
 
-interface QueueListItemProps extends React.HTMLAttributes<HTMLDivElement> {
-	title: string;
-	avatarUrl?: string | null;
-	externalUrl?: string | null;
-	description?: string | null;
-	mapped?: boolean;
-	archivedAt?: Date | null;
-	children?: React.ReactNode;
-	handleClick?: () => void;
-	handleSelect?: () => void;
-	selected?: boolean;
-	active?: boolean;
-}
+type QueueListItemProps = Omit<QueueItem, 'id'> &
+	React.HTMLAttributes<HTMLDivElement> & {
+		children?: React.ReactNode;
+		handleClick?: () => void;
+		handleSelect?: () => void;
+		selected?: boolean;
+		active?: boolean;
+	};
 
 export function QueueItem({
 	title,

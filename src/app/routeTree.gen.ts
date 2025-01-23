@@ -11,14 +11,28 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as QueueRouteImport } from './routes/queue/route'
+import { Route as CommitsRouteImport } from './routes/commits/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as commitsCommitsImport } from './routes/(commits)/commits'
+import { Route as HistoryDateImport } from './routes/history/$date'
+import { Route as CommitsShaImport } from './routes/commits/$sha'
+import { Route as QueueIndexGithubUsersImport } from './routes/queue/index.github-users'
+import { Route as QueueIndexAirtableSpacesImport } from './routes/queue/index.airtable-spaces'
 import { Route as QueueIndexAirtableCreatorsImport } from './routes/queue/index.airtable-creators'
-import { Route as indexQueueAirtableImport } from './routes/(index)/queue.airtable'
-import { Route as commitsCommitsShaImport } from './routes/(commits)/commits.$sha'
-import { Route as browsingHistoryDateImport } from './routes/(browsing)/history.$date'
 
 // Create/Update Routes
+
+const QueueRouteRoute = QueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const CommitsRouteRoute = CommitsRouteImport.update({
+  id: '/commits',
+  path: '/commits',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -26,37 +40,37 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const commitsCommitsRoute = commitsCommitsImport.update({
-  id: '/(commits)/commits',
-  path: '/commits',
+const HistoryDateRoute = HistoryDateImport.update({
+  id: '/history/$date',
+  path: '/history/$date',
   getParentRoute: () => rootRoute,
+} as any)
+
+const CommitsShaRoute = CommitsShaImport.update({
+  id: '/$sha',
+  path: '/$sha',
+  getParentRoute: () => CommitsRouteRoute,
+} as any)
+
+const QueueIndexGithubUsersRoute = QueueIndexGithubUsersImport.update({
+  id: '/index/github-users',
+  path: '/index/github-users',
+  getParentRoute: () => QueueRouteRoute,
+} as any)
+
+const QueueIndexAirtableSpacesRoute = QueueIndexAirtableSpacesImport.update({
+  id: '/index/airtable-spaces',
+  path: '/index/airtable-spaces',
+  getParentRoute: () => QueueRouteRoute,
 } as any)
 
 const QueueIndexAirtableCreatorsRoute = QueueIndexAirtableCreatorsImport.update(
   {
-    id: '/queue/index/airtable-creators',
-    path: '/queue/index/airtable-creators',
-    getParentRoute: () => rootRoute,
+    id: '/index/airtable-creators',
+    path: '/index/airtable-creators',
+    getParentRoute: () => QueueRouteRoute,
   } as any,
 )
-
-const indexQueueAirtableRoute = indexQueueAirtableImport.update({
-  id: '/(index)/queue/airtable',
-  path: '/queue/airtable',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const commitsCommitsShaRoute = commitsCommitsShaImport.update({
-  id: '/$sha',
-  path: '/$sha',
-  getParentRoute: () => commitsCommitsRoute,
-} as any)
-
-const browsingHistoryDateRoute = browsingHistoryDateImport.update({
-  id: '/(browsing)/history/$date',
-  path: '/history/$date',
-  getParentRoute: () => rootRoute,
-} as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -69,84 +83,120 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/(commits)/commits': {
-      id: '/(commits)/commits'
+    '/commits': {
+      id: '/commits'
       path: '/commits'
       fullPath: '/commits'
-      preLoaderRoute: typeof commitsCommitsImport
+      preLoaderRoute: typeof CommitsRouteImport
       parentRoute: typeof rootRoute
     }
-    '/(browsing)/history/$date': {
-      id: '/(browsing)/history/$date'
-      path: '/history/$date'
-      fullPath: '/history/$date'
-      preLoaderRoute: typeof browsingHistoryDateImport
+    '/queue': {
+      id: '/queue'
+      path: '/queue'
+      fullPath: '/queue'
+      preLoaderRoute: typeof QueueRouteImport
       parentRoute: typeof rootRoute
     }
-    '/(commits)/commits/$sha': {
-      id: '/(commits)/commits/$sha'
+    '/commits/$sha': {
+      id: '/commits/$sha'
       path: '/$sha'
       fullPath: '/commits/$sha'
-      preLoaderRoute: typeof commitsCommitsShaImport
-      parentRoute: typeof commitsCommitsImport
+      preLoaderRoute: typeof CommitsShaImport
+      parentRoute: typeof CommitsRouteImport
     }
-    '/(index)/queue/airtable': {
-      id: '/(index)/queue/airtable'
-      path: '/queue/airtable'
-      fullPath: '/queue/airtable'
-      preLoaderRoute: typeof indexQueueAirtableImport
+    '/history/$date': {
+      id: '/history/$date'
+      path: '/history/$date'
+      fullPath: '/history/$date'
+      preLoaderRoute: typeof HistoryDateImport
       parentRoute: typeof rootRoute
     }
     '/queue/index/airtable-creators': {
       id: '/queue/index/airtable-creators'
-      path: '/queue/index/airtable-creators'
+      path: '/index/airtable-creators'
       fullPath: '/queue/index/airtable-creators'
       preLoaderRoute: typeof QueueIndexAirtableCreatorsImport
-      parentRoute: typeof rootRoute
+      parentRoute: typeof QueueRouteImport
+    }
+    '/queue/index/airtable-spaces': {
+      id: '/queue/index/airtable-spaces'
+      path: '/index/airtable-spaces'
+      fullPath: '/queue/index/airtable-spaces'
+      preLoaderRoute: typeof QueueIndexAirtableSpacesImport
+      parentRoute: typeof QueueRouteImport
+    }
+    '/queue/index/github-users': {
+      id: '/queue/index/github-users'
+      path: '/index/github-users'
+      fullPath: '/queue/index/github-users'
+      preLoaderRoute: typeof QueueIndexGithubUsersImport
+      parentRoute: typeof QueueRouteImport
     }
   }
 }
 
 // Create and export the route tree
 
-interface commitsCommitsRouteChildren {
-  commitsCommitsShaRoute: typeof commitsCommitsShaRoute
+interface CommitsRouteRouteChildren {
+  CommitsShaRoute: typeof CommitsShaRoute
 }
 
-const commitsCommitsRouteChildren: commitsCommitsRouteChildren = {
-  commitsCommitsShaRoute: commitsCommitsShaRoute,
+const CommitsRouteRouteChildren: CommitsRouteRouteChildren = {
+  CommitsShaRoute: CommitsShaRoute,
 }
 
-const commitsCommitsRouteWithChildren = commitsCommitsRoute._addFileChildren(
-  commitsCommitsRouteChildren,
+const CommitsRouteRouteWithChildren = CommitsRouteRoute._addFileChildren(
+  CommitsRouteRouteChildren,
+)
+
+interface QueueRouteRouteChildren {
+  QueueIndexAirtableCreatorsRoute: typeof QueueIndexAirtableCreatorsRoute
+  QueueIndexAirtableSpacesRoute: typeof QueueIndexAirtableSpacesRoute
+  QueueIndexGithubUsersRoute: typeof QueueIndexGithubUsersRoute
+}
+
+const QueueRouteRouteChildren: QueueRouteRouteChildren = {
+  QueueIndexAirtableCreatorsRoute: QueueIndexAirtableCreatorsRoute,
+  QueueIndexAirtableSpacesRoute: QueueIndexAirtableSpacesRoute,
+  QueueIndexGithubUsersRoute: QueueIndexGithubUsersRoute,
+}
+
+const QueueRouteRouteWithChildren = QueueRouteRoute._addFileChildren(
+  QueueRouteRouteChildren,
 )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/commits': typeof commitsCommitsRouteWithChildren
-  '/history/$date': typeof browsingHistoryDateRoute
-  '/commits/$sha': typeof commitsCommitsShaRoute
-  '/queue/airtable': typeof indexQueueAirtableRoute
+  '/commits': typeof CommitsRouteRouteWithChildren
+  '/queue': typeof QueueRouteRouteWithChildren
+  '/commits/$sha': typeof CommitsShaRoute
+  '/history/$date': typeof HistoryDateRoute
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
+  '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
+  '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/commits': typeof commitsCommitsRouteWithChildren
-  '/history/$date': typeof browsingHistoryDateRoute
-  '/commits/$sha': typeof commitsCommitsShaRoute
-  '/queue/airtable': typeof indexQueueAirtableRoute
+  '/commits': typeof CommitsRouteRouteWithChildren
+  '/queue': typeof QueueRouteRouteWithChildren
+  '/commits/$sha': typeof CommitsShaRoute
+  '/history/$date': typeof HistoryDateRoute
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
+  '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
+  '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/(commits)/commits': typeof commitsCommitsRouteWithChildren
-  '/(browsing)/history/$date': typeof browsingHistoryDateRoute
-  '/(commits)/commits/$sha': typeof commitsCommitsShaRoute
-  '/(index)/queue/airtable': typeof indexQueueAirtableRoute
+  '/commits': typeof CommitsRouteRouteWithChildren
+  '/queue': typeof QueueRouteRouteWithChildren
+  '/commits/$sha': typeof CommitsShaRoute
+  '/history/$date': typeof HistoryDateRoute
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
+  '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
+  '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
 }
 
 export interface FileRouteTypes {
@@ -154,43 +204,47 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/commits'
-    | '/history/$date'
+    | '/queue'
     | '/commits/$sha'
-    | '/queue/airtable'
+    | '/history/$date'
     | '/queue/index/airtable-creators'
+    | '/queue/index/airtable-spaces'
+    | '/queue/index/github-users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/commits'
-    | '/history/$date'
+    | '/queue'
     | '/commits/$sha'
-    | '/queue/airtable'
+    | '/history/$date'
     | '/queue/index/airtable-creators'
+    | '/queue/index/airtable-spaces'
+    | '/queue/index/github-users'
   id:
     | '__root__'
     | '/'
-    | '/(commits)/commits'
-    | '/(browsing)/history/$date'
-    | '/(commits)/commits/$sha'
-    | '/(index)/queue/airtable'
+    | '/commits'
+    | '/queue'
+    | '/commits/$sha'
+    | '/history/$date'
     | '/queue/index/airtable-creators'
+    | '/queue/index/airtable-spaces'
+    | '/queue/index/github-users'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  commitsCommitsRoute: typeof commitsCommitsRouteWithChildren
-  browsingHistoryDateRoute: typeof browsingHistoryDateRoute
-  indexQueueAirtableRoute: typeof indexQueueAirtableRoute
-  QueueIndexAirtableCreatorsRoute: typeof QueueIndexAirtableCreatorsRoute
+  CommitsRouteRoute: typeof CommitsRouteRouteWithChildren
+  QueueRouteRoute: typeof QueueRouteRouteWithChildren
+  HistoryDateRoute: typeof HistoryDateRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  commitsCommitsRoute: commitsCommitsRouteWithChildren,
-  browsingHistoryDateRoute: browsingHistoryDateRoute,
-  indexQueueAirtableRoute: indexQueueAirtableRoute,
-  QueueIndexAirtableCreatorsRoute: QueueIndexAirtableCreatorsRoute,
+  CommitsRouteRoute: CommitsRouteRouteWithChildren,
+  QueueRouteRoute: QueueRouteRouteWithChildren,
+  HistoryDateRoute: HistoryDateRoute,
 }
 
 export const routeTree = rootRoute
@@ -204,33 +258,46 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/(commits)/commits",
-        "/(browsing)/history/$date",
-        "/(index)/queue/airtable",
-        "/queue/index/airtable-creators"
+        "/commits",
+        "/queue",
+        "/history/$date"
       ]
     },
     "/": {
       "filePath": "index.tsx"
     },
-    "/(commits)/commits": {
-      "filePath": "(commits)/commits.tsx",
+    "/commits": {
+      "filePath": "commits/route.tsx",
       "children": [
-        "/(commits)/commits/$sha"
+        "/commits/$sha"
       ]
     },
-    "/(browsing)/history/$date": {
-      "filePath": "(browsing)/history.$date.tsx"
+    "/queue": {
+      "filePath": "queue/route.tsx",
+      "children": [
+        "/queue/index/airtable-creators",
+        "/queue/index/airtable-spaces",
+        "/queue/index/github-users"
+      ]
     },
-    "/(commits)/commits/$sha": {
-      "filePath": "(commits)/commits.$sha.tsx",
-      "parent": "/(commits)/commits"
+    "/commits/$sha": {
+      "filePath": "commits/$sha.tsx",
+      "parent": "/commits"
     },
-    "/(index)/queue/airtable": {
-      "filePath": "(index)/queue.airtable.tsx"
+    "/history/$date": {
+      "filePath": "history/$date.tsx"
     },
     "/queue/index/airtable-creators": {
-      "filePath": "queue/index.airtable-creators.tsx"
+      "filePath": "queue/index.airtable-creators.tsx",
+      "parent": "/queue"
+    },
+    "/queue/index/airtable-spaces": {
+      "filePath": "queue/index.airtable-spaces.tsx",
+      "parent": "/queue"
+    },
+    "/queue/index/github-users": {
+      "filePath": "queue/index.github-users.tsx",
+      "parent": "/queue"
     }
   }
 }

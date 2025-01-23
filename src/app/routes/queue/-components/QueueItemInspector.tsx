@@ -1,4 +1,4 @@
-import { Heading } from '@radix-ui/themes';
+import { Heading, ScrollArea } from '@radix-ui/themes';
 import { MetadataList } from '~/app/components/MetadataList';
 
 interface QueueItemInspectorProps<T extends Record<string, unknown>> {
@@ -16,7 +16,9 @@ export const QueueItemInspector = <T extends Record<string, unknown>>({
 				<Heading size="3" as="h2">
 					{lookup(item)}
 				</Heading>
-				<MetadataList metadata={item} className="gap-3" />
+				<ScrollArea scrollbars="vertical">
+					<MetadataList metadata={item} className="gap-3" />
+				</ScrollArea>
 			</div>
 		</div>
 	);
