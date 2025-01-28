@@ -4,6 +4,7 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'driz
 import { type z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { indices, records } from '../main';
+import { embeddings } from '../main/embeddings';
 import { media } from '../main/media';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
@@ -36,6 +37,10 @@ export const airtableExtracts = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		embeddingId: integer('embedding_id').references(() => embeddings.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
 	(table) => [
 		foreignKey({
@@ -44,6 +49,7 @@ export const airtableExtracts = integrationSchema.table(
 		}),
 		index().on(table.archivedAt),
 		index().on(table.recordId),
+		index().on(table.embeddingId),
 	]
 );
 
@@ -143,8 +149,16 @@ export const airtableCreators = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		embeddingId: integer('embedding_id').references(() => embeddings.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
-	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
+	(table) => [
+		index().on(table.archivedAt),
+		index().on(table.indexEntryId),
+		index().on(table.embeddingId),
+	]
 );
 
 export const AirtableCreatorSelectSchema = createSelectSchema(airtableCreators);
@@ -154,7 +168,7 @@ export type AirtableCreatorInsert = z.infer<typeof AirtableCreatorInsertSchema>;
 export const AirtableCreatorUpdateSchema = createUpdateSchema(airtableCreators);
 export type AirtableCreatorUpdate = z.infer<typeof AirtableCreatorUpdateSchema>;
 
-export const airtableCreatorsRelations = relations(airtableCreators, ({ one }) => ({
+export const airtableCreatorsRelations = relations(airtableCreators, ({ one, many }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [airtableCreators.integrationRunId],
 		references: [integrationRuns.id],
@@ -163,6 +177,7 @@ export const airtableCreatorsRelations = relations(airtableCreators, ({ one }) =
 		fields: [airtableCreators.indexEntryId],
 		references: [indices.id],
 	}),
+	creatorExtracts: many(airtableExtractCreators, { relationName: 'creatorToExtract' }),
 }));
 
 export const airtableSpaces = integrationSchema.table(
@@ -184,8 +199,16 @@ export const airtableSpaces = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		embeddingId: integer('embedding_id').references(() => embeddings.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
-	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
+	(table) => [
+		index().on(table.archivedAt),
+		index().on(table.indexEntryId),
+		index().on(table.embeddingId),
+	]
 );
 
 export const AirtableSpaceSelectSchema = createSelectSchema(airtableSpaces);
@@ -195,7 +218,7 @@ export type AirtableSpaceInsert = z.infer<typeof AirtableSpaceInsertSchema>;
 export const AirtableSpaceUpdateSchema = createUpdateSchema(airtableSpaces);
 export type AirtableSpaceUpdate = z.infer<typeof AirtableSpaceUpdateSchema>;
 
-export const airtableSpacesRelations = relations(airtableSpaces, ({ one }) => ({
+export const airtableSpacesRelations = relations(airtableSpaces, ({ one, many }) => ({
 	integrationRun: one(integrationRuns, {
 		fields: [airtableSpaces.integrationRunId],
 		references: [integrationRuns.id],
@@ -204,6 +227,7 @@ export const airtableSpacesRelations = relations(airtableSpaces, ({ one }) => ({
 		fields: [airtableSpaces.indexEntryId],
 		references: [indices.id],
 	}),
+	spaceExtracts: many(airtableExtractSpaces, { relationName: 'spaceToExtract' }),
 }));
 
 export const airtableExtractCreators = integrationSchema.table(

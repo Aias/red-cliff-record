@@ -11,6 +11,7 @@ import {
 import { indices, records } from '../main';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
+import { embeddings } from '../main';
 
 const githubStats = {
 	changes: integer('changes'),
@@ -49,8 +50,17 @@ export const githubUsers = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		embeddingId: integer('embedding_id').references(() => embeddings.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
-	(table) => [index().on(table.login), index().on(table.archivedAt), index().on(table.indexEntryId)]
+	(table) => [
+		index().on(table.login),
+		index().on(table.archivedAt),
+		index().on(table.indexEntryId),
+		index().on(table.embeddingId),
+	]
 );
 
 export const GithubUserSelectSchema = createSelectSchema(githubUsers);
@@ -91,6 +101,10 @@ export const githubRepositories = integrationSchema.table(
 			withTimezone: true,
 		}),
 		recordId: integer('record_id').references(() => records.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		embeddingId: integer('embedding_id').references(() => embeddings.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
