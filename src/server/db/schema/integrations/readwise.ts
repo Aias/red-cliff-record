@@ -3,8 +3,7 @@ import { date, foreignKey, index, integer, numeric, text, timestamp } from 'driz
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
-import { records } from '../main';
-import { media } from '../main/media';
+import { embeddings, media, records } from '../main';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
 
@@ -84,6 +83,10 @@ export const readwiseDocuments = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		embeddingId: integer('embedding_id').references(() => embeddings.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 	},
 	(table) => [
 		index().on(table.integrationRunId),
@@ -120,6 +123,10 @@ export const readwiseDocumentsRelations = relations(readwiseDocuments, ({ one, m
 	media: one(media, {
 		fields: [readwiseDocuments.mediaId],
 		references: [media.id],
+	}),
+	embedding: one(embeddings, {
+		fields: [readwiseDocuments.embeddingId],
+		references: [embeddings.id],
 	}),
 }));
 

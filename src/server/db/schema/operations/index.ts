@@ -18,6 +18,7 @@ export const IntegrationType = z.enum([
 	'airtable',
 	'browser_history',
 	'crawler',
+	'embeddings',
 	'github',
 	'lightroom',
 	'manual',
