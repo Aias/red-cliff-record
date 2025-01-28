@@ -76,13 +76,9 @@ do_backup() {
         pg_dump -U postgres \
             --format=custom \
             --verbose \
-            --clean \
-            --if-exists \
-            --quote-all-identifiers \
             --no-owner \
             --no-privileges \
             --no-comments \
-            --no-tablespaces \
             --schema 'public' \
             --schema 'integrations' \
             --schema 'operations' \
@@ -92,13 +88,9 @@ do_backup() {
         pg_dump "$SUPABASE_URL" \
             --format=custom \
             --verbose \
-            --clean \
-            --if-exists \
-            --quote-all-identifiers \
             --no-owner \
             --no-privileges \
             --no-comments \
-            --no-tablespaces \
             --schema 'public' \
             --schema 'integrations' \
             --schema 'operations' \
@@ -113,7 +105,7 @@ do_backup() {
 do_restore() {
     local target=$1
     
-    # Find the most recent backup file - ignore legacy backup files with -backup- in the name
+    # Find the most recent backup file
     local dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}"-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
 
     if [ ! -f "$dump_file" ]; then
@@ -124,41 +116,31 @@ do_restore() {
     echo "Using backup file: $dump_file"
 
     if [ "$target" = "local" ]; then
-        # Restore to local
-        local target_db="${DATABASE_NAME}"
-        
-        # Close existing connections
-        psql -U postgres -d postgres -c "
+        echo "Restoring data to local database..."
+        # Terminate existing connections except our own
+        psql -U postgres -d "$DATABASE_NAME" -c "
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '$target_db'
+            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
             AND pid <> pg_backend_pid();"
 
-        # Drop and create fresh database
-        dropdb -U postgres --if-exists "$target_db"
-        createdb -U postgres "$target_db"
-
-        # Restore with clean options
-        pg_restore -U postgres -d "$target_db" \
+        pg_restore -U postgres -d "$DATABASE_NAME" \
             --clean \
             --if-exists \
             --no-owner \
             --no-privileges \
-            --no-comments \
             -v "$dump_file"
     else
+        echo "Restoring data to remote database..."
         pg_restore -h $SUPABASE_HOST \
-                  -p $SUPABASE_PORT \
-                  -U $SUPABASE_USER \
-                  -d postgres \
-                  --clean \
-                  --if-exists \
-                  --no-owner \
-                  --no-privileges \
-                  --no-comments \
-                  --no-tablespaces \
-                  -v \
-                  "$dump_file"
+            -p $SUPABASE_PORT \
+            -U $SUPABASE_USER \
+            -d postgres \
+            --clean \
+            --if-exists \
+            --no-owner \
+            --no-privileges \
+            -v "$dump_file"
     fi
 
     echo "Restore completed successfully"
