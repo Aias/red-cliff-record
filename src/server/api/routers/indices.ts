@@ -1,7 +1,8 @@
-import { desc, eq, ilike, or } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { indices, IndicesInsertSchema, IndicesUpdateSchema } from '~/server/db/schema/main';
 import { createTRPCRouter, publicProcedure } from '../init';
+import { SIMILARITY_THRESHOLD } from './common';
 
 export const indicesRouter = createTRPCRouter({
 	createIndexEntry: publicProcedure
@@ -38,15 +39,22 @@ export const indicesRouter = createTRPCRouter({
 			return entry;
 		}),
 
-	search: publicProcedure.input(z.string()).query(({ ctx: { db }, input }) => {
+	search: publicProcedure.input(z.string()).query(async ({ ctx: { db }, input }) => {
 		return db.query.indices.findMany({
-			where: or(
-				ilike(indices.name, `%${input}%`),
-				ilike(indices.shortName, `%${input}%`),
-				ilike(indices.notes, `%${input}%`)
-			),
+			where: sql`(
+          ${indices.name} <-> ${input} < ${SIMILARITY_THRESHOLD} OR
+          ${indices.shortName} <-> ${input} < ${SIMILARITY_THRESHOLD} OR
+          ${indices.notes} <-> ${input} < ${SIMILARITY_THRESHOLD}
+        )`,
 			limit: 10,
-			orderBy: desc(indices.updatedAt),
+			orderBy: [
+				sql`LEAST(
+            ${indices.name} <-> ${input},
+            ${indices.shortName} <-> ${input},
+            ${indices.notes} <-> ${input}
+          )`,
+				desc(indices.updatedAt),
+			],
 		});
 	}),
 });
