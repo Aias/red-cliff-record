@@ -1,107 +1,124 @@
-import path from 'path';
 import Airtable from 'airtable';
-import { S3Client } from 'bun';
 import 'dotenv/config';
-import mime from 'mime-types';
-import type { z } from 'zod';
+import { eq, notIlike } from 'drizzle-orm';
+import { db } from '~/server/db/connections';
+import type {
+	AirtableAttachmentSelect,
+	AirtableExtractSelect,
+} from '~/server/db/schema/integrations';
+import { airtableAttachments } from '~/server/db/schema/integrations';
+import { uploadMediaToR2 } from '../common/media-helpers';
 import { AirtableAttachmentSchema } from './types';
 
 Airtable.configure({
 	apiKey: process.env.AIRTABLE_ACCESS_TOKEN,
 });
 
-export const airtableBase = Airtable.base(process.env.AIRTABLE_BASE_ID_BWB!);
+export const airtableBase = Airtable.base(process.env.AIRTABLE_BASE_ID!);
 
-const TEMP_DIR = path.join(process.cwd(), '.temp');
+type AttachmentWithExtract = AirtableAttachmentSelect & {
+	extract: AirtableExtractSelect;
+};
 
-type Attachment = z.infer<typeof AirtableAttachmentSchema>;
-
-// Create S3 client
-const s3 = new S3Client({
-	region: process.env.S3_REGION!,
-	accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-	secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-	bucket: process.env.S3_BUCKET!,
-	endpoint: process.env.S3_ENDPOINT!,
-});
-
-export async function getAttachmentsForRecord(recordId: string): Promise<Attachment[]> {
+async function processAttachment(attachment: AttachmentWithExtract) {
 	try {
-		const record = await airtableBase('extracts').find(recordId);
-		const images = AirtableAttachmentSchema.array().parse(record.get('images'));
-		return images || [];
-	} catch (error) {
-		console.error(`Error fetching attachments for record ${recordId}:`, error);
-		return [];
-	}
-}
+		const { id: extractId, title: extractTitle } = attachment.extract;
+		const currentRecord = await airtableBase('extracts').find(extractId);
+		const attachments = AirtableAttachmentSchema.array().parse(currentRecord.get('images'));
 
-export async function downloadAttachmentsForRecord(images: Attachment[]) {
-	if (!images || images.length === 0) return;
+		for (const attachment of attachments) {
+			const { id, url: airtableUrl, filename } = attachment;
+			console.log(`Processing ${filename} (${id})`);
 
-	for (const image of images) {
-		await downloadAttachment(image);
-	}
-}
+			try {
+				const r2Url = await uploadMediaToR2(airtableUrl);
+				console.log(`Uploaded to R2: ${r2Url}`);
 
-export async function downloadAttachment(image: Attachment) {
-	const url = image.url;
-	const fileExtension = getFileExtension(image);
-	const filename = `${image.id}${fileExtension}`;
+				const [updatedAttachment] = await db
+					.update(airtableAttachments)
+					.set({
+						url: r2Url,
+						updatedAt: new Date(),
+					})
+					.where(eq(airtableAttachments.id, attachment.id))
+					.returning();
 
-	try {
-		const response = await fetch(url);
-		if (!response.ok) {
-			throw new Error(`Failed to download ${url}: ${response.status}`);
+				if (!updatedAttachment) {
+					console.error('Failed to update attachment in database:', {
+						extractTitle,
+						extractId,
+						filename,
+						attachmentId: id,
+						r2Url,
+					});
+					continue;
+				}
+				console.log(`Updated attachment ${attachment.id} to ${r2Url}\n`);
+			} catch (error) {
+				console.error('Error processing image:', {
+					extractTitle,
+					extractId,
+					attachmentId: id,
+					filename,
+					error: error instanceof Error ? error.message : String(error),
+				});
+				continue;
+			}
 		}
-
-		const contentType = response.headers.get('Content-Type');
-		// Use mime-types to get extension, fallback to original extension or .jpg
-		const finalExtension =
-			mime.extension(contentType || '') || path.extname(image.filename) || '.jpg';
-		const finalFilename = `${image.id}.${finalExtension}`;
-		const finalFilepath = path.join(TEMP_DIR, finalFilename);
-
-		await Bun.write(finalFilepath, response);
-		console.log(`Downloaded: ${finalFilename}`);
+		return true;
 	} catch (error) {
-		console.error(`Error downloading ${filename}:`, error);
-	}
-}
-
-function getFileExtension(image: Attachment): string {
-	// Try to get extension from original filename
-	const fileExtension = path.extname(image.filename);
-	if (fileExtension.length > 1) return fileExtension;
-
-	// Use mime-types to get extension from content type, fallback to .jpg
-	return `.${mime.extension(image.type) || 'jpg'}`;
-}
-
-export async function uploadAttachment(filename: string) {
-	const filepath = path.join(TEMP_DIR, filename);
-
-	try {
-		// Check if the file already exists in S3
-		const exists = await s3.exists(filename);
-		if (exists) {
-			console.log(`File ${filename} already exists. Skipping.`);
-			return;
-		}
-
-		// Create file reference
-		const file = Bun.file(filepath);
-
-		// Use mime.lookup to get content type from filename
-		const contentType = mime.lookup(filename) || 'application/octet-stream';
-
-		// Upload to S3 with content type
-		await s3.write(filename, file, {
-			type: contentType,
+		console.error('Error processing attachment:', {
+			attachmentId: attachment.id,
+			extractId: attachment.extract.id,
+			error: error instanceof Error ? error.message : String(error),
 		});
-
-		console.log(`Uploaded: ${filename}`);
-	} catch (error) {
-		console.error(`Error uploading ${filename}:`, error);
+		return false;
 	}
+}
+
+async function processBatch(batch: AttachmentWithExtract[]) {
+	const results = await Promise.all(batch.map(processAttachment));
+	return results.filter(Boolean).length;
+}
+
+export async function storeMedia() {
+	console.log('Starting media storage process...');
+
+	const attachments = await db.query.airtableAttachments.findMany({
+		with: {
+			extract: true,
+		},
+		where: notIlike(airtableAttachments.url, '%assets.barnsworthburning.net%'),
+	});
+
+	if (attachments.length === 0) {
+		console.log('No attachments to process');
+		return 0;
+	}
+
+	console.log(`Found ${attachments.length} attachments to process`);
+
+	const BATCH_SIZE = 50;
+	let successCount = 0;
+
+	// Process in batches
+	for (let i = 0; i < attachments.length; i += BATCH_SIZE) {
+		const batch = attachments.slice(i, i + BATCH_SIZE);
+		console.log(
+			`Processing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(attachments.length / BATCH_SIZE)}`
+		);
+
+		const batchSuccesses = await processBatch(batch);
+		successCount += batchSuccesses;
+
+		console.log(`Completed batch with ${batchSuccesses} successes`);
+
+		// Add a small delay between batches to prevent rate limiting
+		if (i + BATCH_SIZE < attachments.length) {
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+		}
+	}
+
+	console.log(`Successfully processed ${successCount} out of ${attachments.length} attachments`);
+	return successCount;
 }

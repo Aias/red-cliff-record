@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
 import {
 	airtableAttachments,
@@ -16,8 +16,9 @@ import {
 	type AirtableExtractSpaceInsert,
 	type AirtableSpaceInsert,
 } from '~/server/db/schema/integrations';
+import { deleteMediaFromR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
-import { airtableBase } from './helpers';
+import { airtableBase, storeMedia } from './helpers';
 import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
 
 const CHUNK_SIZE = 100;
@@ -25,7 +26,51 @@ const CHUNK_SIZE = 100;
 async function cleanupExistingRecords() {
 	console.log('Cleaning up existing Airtable records...');
 
-	// Delete in correct order to maintain referential integrity
+	// First, get all attachments with R2 URLs that need to be deleted
+	console.log(`Deleting attachments from R2 bucket.`);
+	const attachmentsToDelete = await db.query.airtableAttachments.findMany({
+		where: ilike(airtableAttachments.url, `%${process.env.ASSETS_DOMAIN}%`),
+	});
+
+	if (attachmentsToDelete.length > 0) {
+		console.log(`Found ${attachmentsToDelete.length} R2 assets to delete`);
+
+		// Process in batches of 50
+		const BATCH_SIZE = 50;
+		for (let i = 0; i < attachmentsToDelete.length; i += BATCH_SIZE) {
+			const batch = attachmentsToDelete.slice(i, i + BATCH_SIZE);
+			console.log(
+				`Processing deletion batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(
+					attachmentsToDelete.length / BATCH_SIZE
+				)}`
+			);
+
+			await Promise.all(
+				batch.map(async (attachment) => {
+					try {
+						// Extract the asset ID from the URL
+						const url = new URL(attachment.url);
+						const assetId = url.pathname.slice(1); // Remove leading slash
+						await deleteMediaFromR2(assetId);
+						console.log(`Deleted R2 asset: ${assetId}`);
+					} catch (error) {
+						console.error('Failed to delete R2 asset:', {
+							attachmentId: attachment.id,
+							url: attachment.url,
+							error: error instanceof Error ? error.message : String(error),
+						});
+					}
+				})
+			);
+
+			// Add a small delay between batches to prevent rate limiting
+			if (i + BATCH_SIZE < attachmentsToDelete.length) {
+				await new Promise((resolve) => setTimeout(resolve, 1000));
+			}
+		}
+	}
+
+	// Then proceed with database cleanup in correct order to maintain referential integrity
 	await db.transaction(async (tx) => {
 		await tx.delete(airtableExtractConnections);
 		await tx.delete(airtableExtractSpaces);
@@ -225,6 +270,10 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 		airtableExtracts,
 		eq(airtableExtracts.integrationRunId, integrationRunId)
 	);
+
+	const updatedMediaCount = await storeMedia();
+
+	console.log(`Updated ${updatedMediaCount} media records`);
 
 	return count;
 }

@@ -24,7 +24,6 @@ export default defineConfig({
 						plugins: [['babel-plugin-react-compiler', { target: '19' }]],
 					},
 				}),
-				// apply: 'build',
 			},
 			tailwindcss(),
 		],
