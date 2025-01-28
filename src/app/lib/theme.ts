@@ -4,8 +4,6 @@ import { createServerFn } from '@tanstack/start';
 import { getCookie } from 'vinxi/http';
 import { z } from 'zod';
 
-// TODO: Fix cookie not being read from request appropriately.
-
 export const ThemeCookieSchema = z.enum(['light', 'dark']).default('dark');
 
 export const getThemeCookie = createServerFn({ method: 'GET' }).handler(() => {

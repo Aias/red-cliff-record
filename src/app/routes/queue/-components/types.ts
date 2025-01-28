@@ -8,10 +8,11 @@ export interface QueueItem {
 	archivedAt?: Date | null;
 }
 
-export interface QueueConfig<TInput, TOutput> {
+export interface QueueConfig<TInput, TOutput, TOutputCreate = Partial<TOutput>> {
 	name: string;
 	mapToQueueItem: (input: TInput) => QueueItem;
-	getOutputDefaults: (input: TInput) => Partial<TOutput>;
-	getItemId: (item: TInput) => string;
+	getOutputDefaults: (input: TInput) => TOutputCreate;
+	getInputId: (item: TInput) => string;
+	getOutputId: (item: TOutput) => string;
 	lookup: (item: TInput) => string;
 }

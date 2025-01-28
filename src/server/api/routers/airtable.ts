@@ -36,12 +36,13 @@ const spacesRouter = createTRPCRouter({
 				indexEntryId: z.number().int().positive(),
 			})
 		)
-		.mutation(({ ctx: { db }, input: { spaceId, indexEntryId } }) => {
-			return db
+		.mutation(async ({ ctx: { db }, input: { spaceId, indexEntryId } }) => {
+			const [updatedSpace] = await db
 				.update(airtableSpaces)
 				.set({ indexEntryId, updatedAt: new Date() })
 				.where(eq(airtableSpaces.id, spaceId))
 				.returning();
+			return updatedSpace;
 		}),
 
 	unlinkSpacesFromIndices: publicProcedure
@@ -96,12 +97,13 @@ const creatorsRouter = createTRPCRouter({
 				indexEntryId: z.number().int().positive(),
 			})
 		)
-		.mutation(({ ctx: { db }, input: { creatorId, indexEntryId } }) => {
-			return db
+		.mutation(async ({ ctx: { db }, input: { creatorId, indexEntryId } }) => {
+			const [updatedCreator] = await db
 				.update(airtableCreators)
 				.set({ indexEntryId, updatedAt: new Date() })
 				.where(eq(airtableCreators.id, creatorId))
 				.returning();
+			return updatedCreator;
 		}),
 
 	unlinkCreatorsFromIndices: publicProcedure

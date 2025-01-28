@@ -88,7 +88,7 @@ export function IntegrationList<T>({
 				{data.length > 0 ? (
 					data.map((item, index) => (
 						<li key={index} className="mr-4 w-72 shrink-0 grow-0 border-r border-divider pr-4">
-							<DataList.Root size="1" trim="both" className="gap-1">
+							<DataList.Root size="1" trim="normal" className="gap-1">
 								{config.map(({ label, accessor, href }) => (
 									<DataList.Item key={label}>
 										<DataList.Label className="w-20 min-w-20">

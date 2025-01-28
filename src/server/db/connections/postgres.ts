@@ -1,4 +1,6 @@
 import 'dotenv/config';
+// TODO: Use Bun's native postgres client when it's a bit more stable: https://orm.drizzle.team/docs/get-started/bun-sql-new
+// Note: Will also need to work with Tanstack Start. Probably after Start removes Vinxi dependency: https://tanstack.com/router/latest/docs/framework/react/start/build-from-scratch#install-dependencies
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as integrationsSchema from '~/server/db/schema/integrations';

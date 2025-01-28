@@ -29,7 +29,8 @@ const config: QueueConfig<GithubUserSelect, IndicesSelect> = {
 		createdAt: user.contentCreatedAt ?? user.createdAt,
 		updatedAt: user.contentUpdatedAt ?? user.updatedAt,
 	}),
-	getItemId: (user) => user.nodeId,
+	getInputId: (user) => user.nodeId,
+	getOutputId: (index) => index.id.toString(),
 	lookup: (user) => user.login,
 };
 

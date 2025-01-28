@@ -27,12 +27,15 @@ export function QueueItem({
 	...props
 }: QueueListItemProps) {
 	return (
-		<section className={`flex flex-col gap-2 ${className}`} {...props}>
+		<section className={`flex flex-col gap-2 ${className}`} {...props} onClick={handleClick}>
 			<header className="flex items-center gap-2">
 				<Avatar size="1" src={avatarUrl ?? undefined} fallback={title[0]!} />
 				<Button
 					variant="ghost"
-					onClick={handleClick}
+					onClick={(e) => {
+						e.stopPropagation();
+						handleClick?.();
+					}}
 					asChild
 					className="hover:bg-transparent"
 					data-status={active ? 'active' : 'inactive'}
@@ -42,13 +45,26 @@ export function QueueItem({
 					</Heading>
 				</Button>
 				{externalUrl && (
-					<Button variant="ghost" size="1" asChild>
+					<Button
+						variant="ghost"
+						size="1"
+						asChild
+						onClick={(e) => {
+							e.stopPropagation();
+						}}
+					>
 						<Link href={externalUrl} target="_blank" rel="noopener noreferrer">
 							<ExternalLinkIcon />
 						</Link>
 					</Button>
 				)}
-				<Checkbox checked={selected} onCheckedChange={handleSelect} />
+				<Checkbox
+					checked={selected}
+					onClick={(e) => {
+						e.stopPropagation();
+						handleSelect?.();
+					}}
+				/>
 			</header>
 			{description && (
 				<Text size="1" color="gray">

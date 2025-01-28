@@ -25,7 +25,8 @@ const config: QueueConfig<AirtableSpaceSelect, IndicesSelect> = {
 		createdAt: space.contentCreatedAt ?? space.createdAt,
 		updatedAt: space.contentUpdatedAt ?? space.updatedAt,
 	}),
-	getItemId: (space) => space.id,
+	getInputId: (space) => space.id,
+	getOutputId: (index) => index.id.toString(),
 	lookup: (space) => space.name,
 };
 
