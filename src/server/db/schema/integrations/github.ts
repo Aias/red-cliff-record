@@ -9,9 +9,9 @@ import {
 	databaseTimestampsNonUpdatable,
 } from '../common';
 import { indices, records } from '../main';
+import { embeddings } from '../main';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
-import { embeddings } from '../main';
 
 const githubStats = {
 	changes: integer('changes'),
@@ -156,7 +156,7 @@ export const githubCommitTypesEnum = integrationSchema.enum(
 export const githubCommits = integrationSchema.table(
 	'github_commits',
 	{
-		nodeId: text('node_id').primaryKey(),
+		id: text('id').primaryKey(),
 		sha: text('sha').notNull().unique(),
 		message: text('message').notNull(),
 		repositoryId: integer('repository_id')
@@ -173,6 +173,10 @@ export const githubCommits = integrationSchema.table(
 			.references(() => integrationRuns.id)
 			.notNull(),
 		...githubStats,
+		embeddingId: integer('embedding_id').references(() => embeddings.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		committedAt: timestamp('committed_at', { withTimezone: true }),
 		...contentTimestampsNonUpdatable,
 		...databaseTimestampsNonUpdatable,
@@ -200,7 +204,7 @@ export const githubCommitChanges = integrationSchema.table(
 		status: githubCommitChangeStatusEnum('status').notNull(),
 		patch: text('patch').notNull(),
 		commitId: text('commit_id')
-			.references(() => githubCommits.nodeId, {
+			.references(() => githubCommits.id, {
 				onDelete: 'cascade',
 				onUpdate: 'cascade',
 			})
@@ -260,7 +264,7 @@ export const githubCommitsRelations = relations(githubCommits, ({ many, one }) =
 export const githubCommitChangesRelations = relations(githubCommitChanges, ({ one }) => ({
 	commit: one(githubCommits, {
 		fields: [githubCommitChanges.commitId],
-		references: [githubCommits.nodeId],
+		references: [githubCommits.id],
 	}),
 }));
 

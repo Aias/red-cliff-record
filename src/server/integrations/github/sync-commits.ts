@@ -122,7 +122,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 				// First check if commit exists by SHA
 				const existingCommit = await db.query.githubCommits.findFirst({
 					columns: {
-						nodeId: true,
+						id: true,
 						sha: true,
 					},
 					where: eq(githubCommits.sha, item.sha),
@@ -167,7 +167,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 				// Insert new commit
 				const newCommit: GithubCommitInsert = {
-					nodeId: item.node_id,
+					id: item.node_id,
 					sha: item.sha,
 					message: item.commit.message,
 					htmlUrl: item.html_url,

@@ -1,5 +1,9 @@
 import { db } from '~/server/db/connections';
-import { type githubRepositories, type githubUsers } from '~/server/db/schema/integrations/github';
+import {
+	type githubCommits,
+	type githubRepositories,
+	type githubUsers,
+} from '~/server/db/schema/integrations/github';
 import { syncEmbeddings, type EmbeddableDocument } from '../common/embeddings';
 import { runIntegration } from '../common/run-integration';
 
@@ -109,6 +113,67 @@ class GithubUser implements EmbeddableDocument {
 	}
 }
 
+class GithubCommit implements EmbeddableDocument {
+	constructor(
+		private commit: typeof githubCommits.$inferSelect & {
+			repository?: {
+				fullName: string | null;
+			} | null;
+			commitChanges?: {
+				filename: string | null;
+				status: string | null;
+				changes: number | null;
+			}[];
+		}
+	) {}
+
+	get id() {
+		return this.commit.id;
+	}
+
+	get tableName() {
+		return 'integrations.github_commits';
+	}
+
+	get embeddingIdColumn() {
+		return 'embedding_id';
+	}
+
+	getEmbeddingText(): string {
+		const textParts = [
+			'# Commit Information',
+			`Message: ${this.commit.message || '—'}`,
+			`Type: ${this.commit.commitType || '—'}`,
+			`Summary: ${this.commit.summary || '—'}`,
+			`Technologies: ${this.commit.technologies?.join(', ') || '—'}`,
+			`Changes: ${this.commit.changes || '—'}`,
+			`Additions: ${this.commit.additions || '—'}`,
+			`Deletions: ${this.commit.deletions || '—'}`,
+		];
+
+		if (this.commit.repository) {
+			textParts.push(
+				'',
+				'# Repository Information',
+				`Repository: ${this.commit.repository.fullName || '—'}`
+			);
+		}
+
+		if (this.commit.commitChanges?.length) {
+			textParts.push(
+				'',
+				'# Changed Files',
+				...this.commit.commitChanges.map(
+					(change) =>
+						`${change.filename || '—'} (${change.status || '—'}, ${change.changes || '—'} changes)`
+				)
+			);
+		}
+
+		return textParts.join('\n');
+	}
+}
+
 // Fetch functions
 async function getRepositoriesWithoutEmbeddings() {
 	const repos = await db.query.githubRepositories.findMany({
@@ -144,6 +209,27 @@ async function getUsersWithoutEmbeddings() {
 	return users.map((user) => new GithubUser(user));
 }
 
+async function getCommitsWithoutEmbeddings() {
+	const commits = await db.query.githubCommits.findMany({
+		with: {
+			repository: {
+				columns: {
+					fullName: true,
+				},
+			},
+			commitChanges: {
+				columns: {
+					filename: true,
+					status: true,
+					changes: true,
+				},
+			},
+		},
+		where: (fields, { isNull }) => isNull(fields.embeddingId),
+	});
+	return commits.map((commit) => new GithubCommit(commit));
+}
+
 // Sync function
 async function syncGithubEmbeddings(): Promise<number> {
 	let totalCount = 0;
@@ -153,6 +239,9 @@ async function syncGithubEmbeddings(): Promise<number> {
 
 	// Sync users
 	totalCount += await syncEmbeddings(getUsersWithoutEmbeddings, 'github-users');
+
+	// Sync commits
+	totalCount += await syncEmbeddings(getCommitsWithoutEmbeddings, 'github-commits');
 
 	return totalCount;
 }

@@ -127,6 +127,20 @@
       "when": 1738034580641,
       "tag": "0017_real_siren",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1738073267361,
+      "tag": "0018_cute_terrax",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1738074300960,
+      "tag": "0019_tricky_diamondback",
+      "breakpoints": true
     }
   ]
 }
