@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { formatCreatorDescription } from '~/app/lib/formatting';
+import { formatCreatorDescription, toTitleCase } from '~/app/lib/formatting';
 import { trpc } from '~/app/trpc';
 import type { AirtableCreatorSelect } from '~/server/db/schema/integrations';
 import type { IndicesInsert, IndicesSelect } from '~/server/db/schema/main';
@@ -36,7 +36,8 @@ const config: QueueConfig<AirtableCreatorSelect, IndicesSelect, IndicesInsert> =
 	}),
 	getInputId: (creator) => creator.id,
 	getOutputId: (index) => index.id.toString(),
-	lookup: (creator) => creator.name,
+	getInputTitle: (creator) => creator.name,
+	getOutputTitle: (index) => `${index.name} (${index.sense ?? toTitleCase(index.mainType)})`,
 };
 
 function RouteComponent() {

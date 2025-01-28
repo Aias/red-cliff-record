@@ -11,7 +11,7 @@ type QueueListItemProps = Omit<QueueItem, 'id'> &
 		active?: boolean;
 	};
 
-export function QueueItem({
+export function QueueListItem({
 	title,
 	avatarUrl,
 	externalUrl,

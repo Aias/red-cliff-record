@@ -40,7 +40,7 @@ export const indicesRouter = createTRPCRouter({
 		}),
 
 	search: publicProcedure.input(z.string()).query(async ({ ctx: { db }, input }) => {
-		return db.query.indices.findMany({
+		const matches = await db.query.indices.findMany({
 			where: sql`(
           ${indices.name} <-> ${input} < ${SIMILARITY_THRESHOLD} OR
           ${indices.shortName} <-> ${input} < ${SIMILARITY_THRESHOLD} OR
@@ -56,5 +56,6 @@ export const indicesRouter = createTRPCRouter({
 				desc(indices.updatedAt),
 			],
 		});
+		return matches;
 	}),
 });

@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { githubCommits, githubRepositories, githubUsers } from '~/server/db/schema/integrations';
 import { summarizeCommit } from '~/server/services/ai/summarize-commit';
@@ -90,4 +90,37 @@ export const githubRouter = createTRPCRouter({
 		});
 		return users;
 	}),
+
+	linkUserToIndexEntry: publicProcedure
+		.input(
+			z.object({ userId: z.number().int().positive(), indexEntryId: z.number().int().positive() })
+		)
+		.mutation(async ({ ctx: { db }, input: { userId, indexEntryId } }) => {
+			const [updatedUser] = await db
+				.update(githubUsers)
+				.set({ indexEntryId, updatedAt: new Date() })
+				.where(eq(githubUsers.id, userId))
+				.returning();
+			return updatedUser;
+		}),
+
+	unlinkUsersFromIndices: publicProcedure
+		.input(z.array(z.number().int().positive()))
+		.mutation(async ({ ctx: { db }, input: userIds }) => {
+			return db
+				.update(githubUsers)
+				.set({ indexEntryId: null, updatedAt: new Date() })
+				.where(inArray(githubUsers.id, userIds))
+				.returning();
+		}),
+
+	setUsersArchiveStatus: publicProcedure
+		.input(z.object({ userIds: z.array(z.number().int().positive()), shouldArchive: z.boolean() }))
+		.mutation(async ({ ctx: { db }, input: { userIds, shouldArchive } }) => {
+			return db
+				.update(githubUsers)
+				.set({ archivedAt: shouldArchive ? new Date() : null })
+				.where(inArray(githubUsers.id, userIds))
+				.returning();
+		}),
 });

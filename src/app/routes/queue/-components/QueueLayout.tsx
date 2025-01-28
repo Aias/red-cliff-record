@@ -3,32 +3,29 @@ import { Cross1Icon } from '@radix-ui/react-icons';
 import { Button, DropdownMenu, Heading, IconButton, ScrollArea, Text } from '@radix-ui/themes';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { IconWrapper } from '~/app/components/IconWrapper';
+import { MetadataList } from '~/app/components/MetadataList';
 import { Placeholder } from '~/app/components/Placeholder';
 import { useSelection } from '~/app/lib/useSelection';
-import { QueueItemInspector } from './QueueItemInspector';
-import { QueueItem } from './QueueListItem';
-import type { QueueConfig } from './types';
+import { MappingHandler } from './MappingHandler';
+import { QueueListItem } from './QueueListItem';
+import type { QueueActions, QueueConfig } from './types';
 
-interface QueueLayoutProps<TInput, TOutput> {
+interface QueueLayoutProps<TInput, TOutput> extends QueueActions<TInput, TOutput> {
 	config: QueueConfig<TInput, TOutput>;
 	items: TInput[];
-	handleSearch?: (query: string) => Promise<TOutput[] | void>;
-	handleCreate?: (input: TInput) => Promise<TOutput | void>;
-	handleLink?: (inputId: string, outputId: string) => Promise<TInput | void>;
-	handleUnlink?: (inputIds: string[]) => Promise<TInput[] | void>;
-	handleArchive?: (inputIds: string[]) => Promise<TInput[] | void>;
-	handleUnarchive?: (inputIds: string[]) => Promise<TInput[] | void>;
+	children?: (output: Partial<TOutput>) => React.ReactNode;
 }
 
-export const QueueLayout = <TInput, TOutput>({
+export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 	config,
 	items,
-	handleSearch = async (_query) => {},
-	handleCreate = async (_defaults) => {},
-	handleLink = async (_inputId, _outputId) => {},
-	handleUnlink = async (_inputIds) => {},
-	handleArchive = async (_inputIds) => {},
-	handleUnarchive = async (_inputIds) => {},
+	children = (_output) => <div>No content defined.</div>,
+	handleSearch,
+	handleCreate,
+	handleLink,
+	handleUnlink,
+	handleArchive,
+	handleUnarchive,
 }: QueueLayoutProps<TInput, TOutput>) => {
 	const navigate = useNavigate();
 	const { selectedIds, toggleSelection, selectAll, clearSelection } = useSelection(
@@ -41,6 +38,11 @@ export const QueueLayout = <TInput, TOutput>({
 		if (!inspectedItemId) return undefined;
 		return items.find((item) => config.getInputId(item) === inspectedItemId);
 	}, [items, inspectedItemId]);
+
+	const inspectedQueueItem = useMemo(() => {
+		if (!inspectedItem) return undefined;
+		return config.mapToQueueItem(inspectedItem);
+	}, [inspectedItem]);
 
 	return (
 		<main className="flex grow overflow-hidden">
@@ -68,8 +70,8 @@ export const QueueLayout = <TInput, TOutput>({
 												selectedIds.forEach(async (id) => {
 													const selectedItem = items.find((item) => config.getInputId(item) === id);
 													if (!selectedItem) return;
-													console.log('Searching for', config.lookup(selectedItem));
-													const search = await handleSearch(config.lookup(selectedItem));
+													console.log('Searching for', config.getInputTitle(selectedItem));
+													const search = await handleSearch(config.getInputTitle(selectedItem));
 													if (search && search.length > 0 && search[0]) {
 														console.log(
 															'Mapping found, linking',
@@ -150,7 +152,7 @@ export const QueueLayout = <TInput, TOutput>({
 							const queueItem = config.mapToQueueItem(item);
 							return (
 								<li key={itemId}>
-									<QueueItem
+									<QueueListItem
 										{...queueItem}
 										className="selectable card"
 										handleClick={() => navigate({ to: '.', search: { itemId } })}
@@ -166,7 +168,30 @@ export const QueueLayout = <TInput, TOutput>({
 			</div>
 			<div className="flex grow overflow-hidden p-3">
 				{inspectedItem ? (
-					<QueueItemInspector item={inspectedItem} lookup={config.lookup} />
+					<div className="flex grow gap-3">
+						<div className="flex w-1/2 flex-col gap-3">
+							<Heading size="3" as="h2">
+								{config.getInputTitle(inspectedItem)}
+							</Heading>
+							<ScrollArea scrollbars="vertical">
+								<MetadataList metadata={inspectedItem} className="gap-3" />
+							</ScrollArea>
+						</div>
+						<div className="flex grow flex-col gap-3">
+							{inspectedQueueItem?.mapped ? (
+								children(config.getOutputDefaults(inspectedItem))
+							) : inspectedQueueItem ? (
+								<MappingHandler
+									config={config}
+									inspectedItem={inspectedItem}
+									inspectedQueueItem={inspectedQueueItem}
+									handleSearch={handleSearch}
+									handleCreate={handleCreate}
+									handleLink={handleLink}
+								/>
+							) : undefined}
+						</div>
+					</div>
 				) : (
 					<Placeholder>
 						<Text size="3" color="gray">
