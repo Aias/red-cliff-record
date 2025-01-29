@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Cross1Icon } from '@radix-ui/react-icons';
 import { Button, DropdownMenu, Heading, IconButton, ScrollArea, Text } from '@radix-ui/themes';
 import { useNavigate, useSearch } from '@tanstack/react-router';
@@ -13,13 +13,13 @@ import type { QueueActions, QueueConfig } from './types';
 interface QueueLayoutProps<TInput, TOutput> extends QueueActions<TInput, TOutput> {
 	config: QueueConfig<TInput, TOutput>;
 	items: TInput[];
-	children?: (output: Partial<TOutput>) => React.ReactNode;
+	children?: (inspectedId: string, defaults: Partial<TOutput>) => React.ReactNode;
 }
 
 export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 	config,
 	items,
-	children = (_output) => <div>No content defined.</div>,
+	children = (_inspectedId, _defaults) => <div>No content defined.</div>,
 	handleSearch,
 	handleCreate,
 	handleLink,
@@ -34,10 +34,67 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 	const { itemId: inspectedItemId } = useSearch({ from: '/queue' });
 	const allIds = useMemo(() => new Set(items.map((item) => config.getInputId(item))), [items]);
 
+	// Add helper functions for navigation
+	const navigateToItem = (itemId: string) => {
+		navigate({ to: '.', search: { itemId } });
+	};
+
+	const getAdjacentItemId = (direction: 'prev' | 'next') => {
+		const currentIndex = items.findIndex((item) => config.getInputId(item) === inspectedItemId);
+		if (currentIndex === -1) return null;
+
+		const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+		if (targetIndex < 0 || targetIndex >= items.length) return null;
+
+		// We know this is safe because we checked the bounds
+		const targetItem = items[targetIndex]!;
+		return config.getInputId(targetItem);
+	};
+
+	// Add keyboard event handling
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Ignore if focus is in an input or contenteditable element
+			if (
+				e.target instanceof HTMLInputElement ||
+				e.target instanceof HTMLTextAreaElement ||
+				(e.target instanceof HTMLElement && e.target.isContentEditable)
+			) {
+				return;
+			}
+
+			switch (e.key) {
+				case 'ArrowDown': {
+					e.preventDefault();
+					const nextId = getAdjacentItemId('next');
+					if (nextId) navigateToItem(nextId);
+					break;
+				}
+				case 'ArrowUp': {
+					e.preventDefault();
+					const prevId = getAdjacentItemId('prev');
+					if (prevId) navigateToItem(prevId);
+					break;
+				}
+				case ' ': {
+					e.preventDefault();
+					if (inspectedItemId) {
+						toggleSelection(inspectedItemId);
+					}
+					break;
+				}
+			}
+		};
+
+		window.addEventListener('keydown', handleKeyDown);
+		return () => window.removeEventListener('keydown', handleKeyDown);
+	}, [inspectedItemId, items, navigate, toggleSelection]); // Added missing dependencies
+
 	const inspectedItem = useMemo(() => {
 		if (!inspectedItemId) return undefined;
-		return items.find((item) => config.getInputId(item) === inspectedItemId);
-	}, [items, inspectedItemId]);
+		const item = items.find((item) => config.getInputId(item) === inspectedItemId);
+		return item || undefined;
+	}, [items, inspectedItemId, config]);
 
 	const inspectedQueueItem = useMemo(() => {
 		if (!inspectedItem) return undefined;
@@ -46,7 +103,7 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 
 	return (
 		<main className="flex grow overflow-hidden">
-			<div className="flex max-w-xs flex-col gap-4 border-r border-divider py-4">
+			<div className="flex shrink-0 grow-0 basis-xs flex-col gap-4 border-r border-divider py-4">
 				<header className="flex flex-col gap-2 px-3">
 					<Heading size="3" as="h2">
 						{config.name}
@@ -70,31 +127,24 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 												selectedIds.forEach(async (id) => {
 													const selectedItem = items.find((item) => config.getInputId(item) === id);
 													if (!selectedItem) return;
-													console.log('Searching for', config.getInputTitle(selectedItem));
-													const search = await handleSearch(config.getInputTitle(selectedItem));
-													if (search && search.length > 0 && search[0]) {
-														console.log(
-															'Mapping found, linking',
-															id,
-															'to',
-															config.getOutputId(search[0])
-														);
-														handleLink(id, config.getOutputId(search[0]));
+													const queueData = config.mapToQueueItem(selectedItem);
+													if (queueData.mappedId) {
+														console.log(`Already mapped, skipping ${queueData.title}`);
+														return;
+													}
+
+													const newEntry = await handleCreate(selectedItem);
+													if (newEntry) {
+														console.log('New entry created:', newEntry);
+														console.log('Linking', id, 'to', config.getOutputId(newEntry));
+														handleLink(id, config.getOutputId(newEntry));
 													} else {
-														console.log('No mapping found, creating new entry.');
-														const newEntry = await handleCreate(selectedItem);
-														if (newEntry) {
-															console.log('New entry created:', newEntry);
-															console.log('Linking', id, 'to', config.getOutputId(newEntry));
-															handleLink(id, config.getOutputId(newEntry));
-														} else {
-															console.log('No new entry created.');
-														}
+														console.log('No new entry created.');
 													}
 												});
 											}}
 										>
-											Link or Create Entries
+											Create Entries
 										</DropdownMenu.Item>
 										<DropdownMenu.Item
 											onClick={() => {
@@ -109,6 +159,7 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 											onClick={() => {
 												console.log('Archiving', Array.from(selectedIds));
 												handleArchive(Array.from(selectedIds));
+												clearSelection();
 											}}
 										>
 											Archive Selected
@@ -139,9 +190,24 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 								</IconButton>
 							</>
 						) : (
-							<Button size="1" variant="soft" onClick={() => selectAll()}>
-								Select All
-							</Button>
+							<>
+								<Button size="1" variant="soft" onClick={() => selectAll()}>
+									Select All
+								</Button>
+								<Button
+									size="1"
+									variant="soft"
+									onClick={() => {
+										const unmappedIds = items
+											.filter((item) => !config.mapToQueueItem(item).mappedId)
+											.map((item) => config.getInputId(item));
+										clearSelection();
+										toggleSelection(unmappedIds);
+									}}
+								>
+									Select Unmapped
+								</Button>
+							</>
 						)}
 					</div>
 				</header>
@@ -169,17 +235,48 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 			<div className="flex grow overflow-hidden p-3">
 				{inspectedItem ? (
 					<div className="flex grow gap-3">
-						<div className="flex w-1/2 flex-col gap-3">
-							<Heading size="3" as="h2">
-								{config.getInputTitle(inspectedItem)}
-							</Heading>
+						<div className="flex shrink-0 grow-0 basis-1/2 flex-col gap-3">
+							<header className="flex flex-col gap-2">
+								<Heading size="3" as="h2">
+									{config.getInputTitle(inspectedItem)}
+								</Heading>
+								<div role="toolbar" className="flex items-center gap-2">
+									<Button
+										size="1"
+										variant="soft"
+										className="flex-1"
+										onClick={() => {
+											const id = config.getInputId(inspectedItem);
+											if (inspectedQueueItem?.archivedAt) {
+												handleUnarchive([id]);
+											} else {
+												handleArchive([id]);
+											}
+										}}
+									>
+										{inspectedQueueItem?.archivedAt ? 'Unarchive' : 'Archive'}
+									</Button>
+									<Button
+										size="1"
+										variant="soft"
+										className="flex-1"
+										disabled={!inspectedQueueItem?.mappedId}
+										onClick={() => {
+											const id = config.getInputId(inspectedItem);
+											handleUnlink([id]);
+										}}
+									>
+										Unlink
+									</Button>
+								</div>
+							</header>
 							<ScrollArea scrollbars="vertical">
 								<MetadataList metadata={inspectedItem} className="gap-3" />
 							</ScrollArea>
 						</div>
-						<div className="flex grow flex-col gap-3">
-							{inspectedQueueItem?.mapped ? (
-								children(config.getOutputDefaults(inspectedItem))
+						<div className="flex shrink-0 grow-0 basis-1/2 flex-col gap-3">
+							{inspectedQueueItem?.mappedId ? (
+								children(inspectedQueueItem.mappedId, config.getOutputDefaults(inspectedItem))
 							) : inspectedQueueItem ? (
 								<MappingHandler
 									config={config}

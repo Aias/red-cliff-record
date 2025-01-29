@@ -4,8 +4,8 @@ export interface QueueItem {
 	avatarUrl?: string | null;
 	externalUrl?: string | null;
 	description?: string | null;
-	mapped?: boolean;
-	archivedAt?: Date | null;
+	mappedId: string | null;
+	archivedAt: Date | null;
 }
 
 export interface QueueConfig<TInput, TOutput, TOutputCreate = Partial<TOutput>> {

@@ -90,3 +90,8 @@
 	--font-weight-medium: 500;
 	--font-weight-bold: 700;
 }
+
+pre,
+code {
+	font-family: var(--font-family-mono);
+}

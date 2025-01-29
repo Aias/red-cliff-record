@@ -5,6 +5,7 @@ import type { AirtableCreatorSelect } from '~/server/db/schema/integrations';
 import type { IndicesInsert, IndicesSelect } from '~/server/db/schema/main';
 import { QueueLayout } from './-components/QueueLayout';
 import type { QueueConfig } from './-components/types';
+import { IndexEntryForm } from './-forms/IndexEntryForm';
 
 export const Route = createFileRoute('/queue/index/airtable-creators')({
 	loader: async ({ context: { queryClient, trpc } }) => {
@@ -24,6 +25,8 @@ const config: QueueConfig<AirtableCreatorSelect, IndicesSelect, IndicesInsert> =
 			creator.nationalities ?? undefined
 		),
 		externalUrl: creator.website,
+		archivedAt: creator.archivedAt,
+		mappedId: creator?.indexEntryId?.toString() ?? null,
 	}),
 	getOutputDefaults: (creator) => ({
 		mainType: 'entity',
@@ -46,22 +49,43 @@ function RouteComponent() {
 
 	const handleSearch = utils.indices.search.fetch;
 
-	const createMutation = trpc.indices.createIndexEntry.useMutation();
+	const createMutation = trpc.indices.createIndexEntry.useMutation({
+		onSuccess: () => {
+			utils.airtable.getCreators.invalidate();
+			utils.indices.search.invalidate();
+		},
+	});
 	const handleCreate = (creator: AirtableCreatorSelect) =>
 		createMutation.mutateAsync(config.getOutputDefaults(creator));
 
-	const linkMutation = trpc.airtable.linkCreatorToIndexEntry.useMutation();
+	const linkMutation = trpc.airtable.linkCreatorToIndexEntry.useMutation({
+		onSuccess: () => {
+			utils.airtable.getCreators.invalidate();
+		},
+	});
 	const handleLink = (creatorId: string, indexEntryId: string) =>
 		linkMutation.mutateAsync({ creatorId, indexEntryId: Number(indexEntryId) });
 
-	const unlinkMutation = trpc.airtable.unlinkCreatorsFromIndices.useMutation();
+	const unlinkMutation = trpc.airtable.unlinkCreatorsFromIndices.useMutation({
+		onSuccess: () => {
+			utils.airtable.getCreators.invalidate();
+		},
+	});
 	const handleUnlink = (creatorIds: string[]) => unlinkMutation.mutateAsync(creatorIds);
 
-	const archiveMutation = trpc.airtable.setCreatorsArchiveStatus.useMutation();
+	const archiveMutation = trpc.airtable.setCreatorsArchiveStatus.useMutation({
+		onSuccess: () => {
+			utils.airtable.getCreators.invalidate();
+		},
+	});
 	const handleArchive = (creatorIds: string[]) =>
 		archiveMutation.mutateAsync({ creatorIds, shouldArchive: true });
 
-	const unarchiveMutation = trpc.airtable.setCreatorsArchiveStatus.useMutation();
+	const unarchiveMutation = trpc.airtable.setCreatorsArchiveStatus.useMutation({
+		onSuccess: () => {
+			utils.airtable.getCreators.invalidate();
+		},
+	});
 	const handleUnarchive = (creatorIds: string[]) =>
 		unarchiveMutation.mutateAsync({ creatorIds, shouldArchive: false });
 
@@ -75,6 +99,17 @@ function RouteComponent() {
 			handleUnlink={handleUnlink}
 			handleArchive={handleArchive}
 			handleUnarchive={handleUnarchive}
-		/>
+		>
+			{(mappedId, defaults) => (
+				<IndexEntryForm
+					defaults={defaults}
+					indexEntryId={mappedId}
+					updateCallback={async () => {
+						utils.airtable.getCreators.invalidate();
+						utils.indices.search.invalidate();
+					}}
+				/>
+			)}
+		</QueueLayout>
 	);
 }

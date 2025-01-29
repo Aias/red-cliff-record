@@ -1,21 +1,21 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { githubCommits, githubRepositories, githubUsers } from '~/server/db/schema/integrations';
 import { summarizeCommit } from '~/server/services/ai/summarize-commit';
 import { createTRPCRouter, publicProcedure } from '../init';
-import { DEFAULT_LIMIT } from './common';
+import { buildWhereClause, RequestParamsSchema } from './common';
 import { CommitSummaryInputSchema } from './github.types';
 
 export const githubRouter = createTRPCRouter({
-	getCommits: publicProcedure.query(({ ctx: { db } }) => {
+	getCommits: publicProcedure.input(RequestParamsSchema).query(({ ctx: { db }, input }) => {
 		return db.query.githubCommits.findMany({
 			with: {
 				repository: true,
 				commitChanges: true,
 			},
 			orderBy: [desc(githubCommits.committedAt)],
-			limit: DEFAULT_LIMIT,
+			limit: input.limit,
 		});
 	}),
 
@@ -66,27 +66,29 @@ export const githubRouter = createTRPCRouter({
 			}
 		}),
 
-	getStars: publicProcedure.query(async ({ ctx: { db } }) => {
+	getStars: publicProcedure.input(RequestParamsSchema).query(async ({ ctx: { db }, input }) => {
 		const stars = await db.query.githubRepositories.findMany({
 			with: {
 				owner: true,
 			},
-			where: and(isNotNull(githubRepositories.starredAt), isNull(githubRepositories.recordId)),
+			where: buildWhereClause(input, githubRepositories.archivedAt, githubRepositories.recordId, [
+				isNotNull(githubRepositories.starredAt),
+			]),
 			orderBy: [desc(githubRepositories.archivedAt), desc(githubRepositories.starredAt)],
-			limit: DEFAULT_LIMIT,
+			limit: input.limit,
 		});
 
 		return stars;
 	}),
 
-	getUsers: publicProcedure.query(async ({ ctx: { db } }) => {
+	getUsers: publicProcedure.input(RequestParamsSchema).query(async ({ ctx: { db }, input }) => {
 		const users = await db.query.githubUsers.findMany({
 			with: {
 				repositories: true,
 			},
-			where: isNull(githubUsers.indexEntryId),
+			where: buildWhereClause(input, githubUsers.archivedAt, githubUsers.indexEntryId),
 			orderBy: [desc(githubUsers.archivedAt), desc(githubUsers.contentCreatedAt)],
-			limit: DEFAULT_LIMIT,
+			limit: input.limit,
 		});
 		return users;
 	}),

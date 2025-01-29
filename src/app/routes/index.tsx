@@ -165,7 +165,9 @@ const AdobeSection = () => {
 const AirtableSection = () => {
 	const { data: airtableSpaces } = trpc.airtable.getSpaces.useQuery();
 	const { data: airtableCreators } = trpc.airtable.getCreators.useQuery();
-	const { data: airtableExtracts } = trpc.airtable.getExtracts.useQuery();
+	const { data: airtableExtracts } = trpc.airtable.getExtracts.useQuery({
+		limit: 100,
+	});
 	const { data: airtableAttachments } = trpc.airtable.getAttachments.useQuery();
 
 	const spacesConfig: IntegrationListConfig<SingleRecord<typeof airtableSpaces>>[] = useMemo(

@@ -7,16 +7,16 @@ import {
 	airtableSpaces,
 } from '~/server/db/schema/integrations';
 import { createTRPCRouter, mergeRouters, publicProcedure } from '../init';
-import { DEFAULT_LIMIT } from './common';
+import { buildWhereClause, RequestParamsSchema } from './common';
 
 const spacesRouter = createTRPCRouter({
-	getSpaces: publicProcedure.query(({ ctx: { db } }) => {
+	getSpaces: publicProcedure.input(RequestParamsSchema).query(({ ctx: { db }, input }) => {
 		return db.query.airtableSpaces.findMany({
 			with: {
 				indexEntry: true,
 			},
-			limit: DEFAULT_LIMIT,
-			where: isNull(airtableSpaces.indexEntryId),
+			limit: input.limit,
+			where: buildWhereClause(input, airtableSpaces.archivedAt, airtableSpaces.indexEntryId),
 			orderBy: [
 				desc(airtableSpaces.archivedAt),
 				airtableSpaces.contentCreatedAt,
@@ -72,12 +72,13 @@ const spacesRouter = createTRPCRouter({
 });
 
 const creatorsRouter = createTRPCRouter({
-	getCreators: publicProcedure.query(({ ctx: { db } }) => {
+	getCreators: publicProcedure.input(RequestParamsSchema).query(({ ctx: { db }, input }) => {
 		return db.query.airtableCreators.findMany({
 			with: {
 				indexEntry: true,
 			},
-			limit: DEFAULT_LIMIT,
+			limit: input.limit,
+			where: buildWhereClause(input, airtableCreators.archivedAt, airtableCreators.indexEntryId),
 			orderBy: [
 				desc(airtableCreators.archivedAt),
 				airtableCreators.contentCreatedAt,
@@ -133,29 +134,29 @@ const creatorsRouter = createTRPCRouter({
 });
 
 const extractsRouter = createTRPCRouter({
-	getExtracts: publicProcedure.query(({ ctx: { db } }) => {
+	getExtracts: publicProcedure.input(RequestParamsSchema).query(({ ctx: { db }, input }) => {
 		return db.query.airtableExtracts.findMany({
-			where: isNull(airtableExtracts.recordId),
+			where: buildWhereClause(input, airtableExtracts.archivedAt, airtableExtracts.recordId),
 			orderBy: [
 				desc(airtableExtracts.archivedAt),
 				airtableExtracts.contentCreatedAt,
 				airtableExtracts.title,
 			],
-			limit: DEFAULT_LIMIT,
+			limit: input.limit,
 		});
 	}),
 });
 
 const attachmentsRouter = createTRPCRouter({
-	getAttachments: publicProcedure.query(({ ctx: { db } }) => {
+	getAttachments: publicProcedure.input(RequestParamsSchema).query(({ ctx: { db }, input }) => {
 		return db.query.airtableAttachments.findMany({
-			where: isNull(airtableAttachments.mediaId),
+			where: buildWhereClause(input, airtableAttachments.archivedAt, airtableAttachments.mediaId),
 			orderBy: [
 				desc(airtableAttachments.archivedAt),
 				airtableAttachments.createdAt,
 				airtableAttachments.filename,
 			],
-			limit: DEFAULT_LIMIT,
+			limit: input.limit,
 		});
 	}),
 });

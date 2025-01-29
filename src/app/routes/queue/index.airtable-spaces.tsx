@@ -5,10 +5,11 @@ import type { AirtableSpaceSelect } from '~/server/db/schema/integrations';
 import type { IndicesInsert, IndicesSelect } from '~/server/db/schema/main';
 import { QueueLayout } from './-components/QueueLayout';
 import type { QueueConfig } from './-components/types';
+import { IndexEntryForm } from './-forms/IndexEntryForm';
 
 export const Route = createFileRoute('/queue/index/airtable-spaces')({
 	loader: async ({ context: { queryClient, trpc } }) => {
-		await queryClient.ensureQueryData(trpc.airtable.getSpaces.queryOptions());
+		queryClient.ensureQueryData(trpc.airtable.getSpaces.queryOptions());
 	},
 	component: RouteComponent,
 });
@@ -19,12 +20,15 @@ const config: QueueConfig<AirtableSpaceSelect, IndicesSelect, IndicesInsert> = {
 		id: space.id,
 		title: space.name,
 		description: space.fullName,
+		archivedAt: space.archivedAt,
+		mappedId: space?.indexEntryId?.toString() ?? null,
 	}),
 	getOutputDefaults: (space) => ({
 		mainType: 'category',
-		name: space.name,
+		name: toTitleCase(space.name),
 		createdAt: space.contentCreatedAt ?? space.createdAt,
 		updatedAt: space.contentUpdatedAt ?? space.updatedAt,
+		notes: space.fullName,
 	}),
 	getInputId: (space) => space.id,
 	getOutputId: (index) => index.id.toString(),
@@ -38,22 +42,43 @@ function RouteComponent() {
 
 	const handleSearch = utils.indices.search.fetch;
 
-	const createMutation = trpc.indices.createIndexEntry.useMutation();
+	const createMutation = trpc.indices.createIndexEntry.useMutation({
+		onSuccess: () => {
+			utils.airtable.getSpaces.invalidate();
+			utils.indices.search.invalidate();
+		},
+	});
 	const handleCreate = (space: AirtableSpaceSelect) =>
 		createMutation.mutateAsync(config.getOutputDefaults(space));
 
-	const linkMutation = trpc.airtable.linkSpaceToIndexEntry.useMutation();
+	const linkMutation = trpc.airtable.linkSpaceToIndexEntry.useMutation({
+		onSuccess: () => {
+			utils.airtable.getSpaces.invalidate();
+		},
+	});
 	const handleLink = (spaceId: string, indexEntryId: string) =>
 		linkMutation.mutateAsync({ spaceId, indexEntryId: Number(indexEntryId) });
 
-	const unlinkMutation = trpc.airtable.unlinkSpacesFromIndices.useMutation();
+	const unlinkMutation = trpc.airtable.unlinkSpacesFromIndices.useMutation({
+		onSuccess: () => {
+			utils.airtable.getSpaces.invalidate();
+		},
+	});
 	const handleUnlink = (spaceIds: string[]) => unlinkMutation.mutateAsync(spaceIds);
 
-	const archiveMutation = trpc.airtable.setSpacesArchiveStatus.useMutation();
+	const archiveMutation = trpc.airtable.setSpacesArchiveStatus.useMutation({
+		onSuccess: () => {
+			utils.airtable.getSpaces.invalidate();
+		},
+	});
 	const handleArchive = (spaceIds: string[]) =>
 		archiveMutation.mutateAsync({ spaceIds, shouldArchive: true });
 
-	const unarchiveMutation = trpc.airtable.setSpacesArchiveStatus.useMutation();
+	const unarchiveMutation = trpc.airtable.setSpacesArchiveStatus.useMutation({
+		onSuccess: () => {
+			utils.airtable.getSpaces.invalidate();
+		},
+	});
 	const handleUnarchive = (spaceIds: string[]) =>
 		unarchiveMutation.mutateAsync({ spaceIds, shouldArchive: false });
 
@@ -67,6 +92,17 @@ function RouteComponent() {
 			handleUnlink={handleUnlink}
 			handleArchive={handleArchive}
 			handleUnarchive={handleUnarchive}
-		/>
+		>
+			{(mappedId, defaults) => (
+				<IndexEntryForm
+					defaults={defaults}
+					indexEntryId={mappedId}
+					updateCallback={async () => {
+						utils.airtable.getSpaces.invalidate();
+						utils.indices.search.invalidate();
+					}}
+				/>
+			)}
+		</QueueLayout>
 	);
 }

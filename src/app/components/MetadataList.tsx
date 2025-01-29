@@ -15,7 +15,11 @@ export const MetadataList = ({ metadata, className = '', ...props }: MetadataLis
 							value instanceof Date ? (
 								value.toLocaleString()
 							) : value instanceof Object ? (
-								JSON.stringify(value)
+								<pre className="block break-all whitespace-pre-wrap">
+									<Text as="span" color="gray" size="1">
+										{JSON.stringify(value, null, 2)}
+									</Text>
+								</pre>
 							) : value instanceof Array ? (
 								value.join(', ')
 							) : (

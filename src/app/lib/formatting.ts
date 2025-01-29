@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const toTitleCase = (str: string) => str.replace(/\b\w/g, (char) => char.toUpperCase());
 
 export const formatNumber = (num: number) => new Intl.NumberFormat().format(Math.round(num));
@@ -38,4 +40,13 @@ export const formatCreatorDescription = (
 	const article = toTitleCase(getArticle(firstWord));
 
 	return `${article} ${nationalityString}${professionString}.`;
+};
+
+const urlSchema = z.string().url();
+
+export const validateAndFormatUrl = (url: string): string => {
+	// Add https:// if no protocol is present
+	const formattedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
+
+	return urlSchema.parse(formattedUrl);
 };
