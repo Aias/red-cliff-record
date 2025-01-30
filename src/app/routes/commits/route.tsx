@@ -109,7 +109,7 @@ function CommitList() {
 		commits.map((commit) => ({ id: commit.sha }))
 	);
 
-	const batchSummarizeCommits = trpc.github.batchSummarize.useMutation({
+	const batchSummarizeCommits = trpc.github.summarizeCommits.useMutation({
 		onSuccess: async () => {
 			await commitsQuery.refetch();
 			trpcUtils.github.getCommitBySha.invalidate();

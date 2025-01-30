@@ -33,7 +33,7 @@ function CommitView() {
 	const { data: related } = trpc.github.getRelatedCommits.useQuery(commit.id);
 	const trpcUtils = trpc.useUtils();
 
-	const updateCommitSummary = trpc.github.batchSummarize.useMutation({
+	const updateCommitSummary = trpc.github.summarizeCommits.useMutation({
 		onSuccess: async () => {
 			await commitQuery.refetch();
 			trpcUtils.github.getCommits.invalidate();
@@ -155,7 +155,7 @@ function CommitView() {
 						) : (
 							<Card>
 								<Text color="gray" align="center" as="p">
-									No related commits found
+									{commit.embeddingId ? 'No related commits found.' : 'No embedding for commit.'}
 								</Text>
 							</Card>
 						)}

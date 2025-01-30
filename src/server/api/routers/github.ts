@@ -32,13 +32,13 @@ export const githubRouter = createTRPCRouter({
 					},
 					extras: {
 						similarity: sql<number>`
-							1 - (
+							COALESCE(1 - (
 								SELECT (e1.embedding <=> e2.embedding)
 								FROM ${embeddings} e1, ${embeddings} e2
 								JOIN ${githubCommits} gc ON e2.id = gc.embedding_id
 								WHERE e1.id = ${githubCommits.embeddingId}
 								AND gc.id = ${commitId}
-							)
+							), 0)
 						`.as('similarity'),
 					},
 					where: and(ne(githubCommits.id, commitId), isNotNull(githubCommits.embeddingId)),
@@ -46,7 +46,8 @@ export const githubRouter = createTRPCRouter({
 					limit: 10,
 				});
 
-				return relatedCommits;
+				// Filter out results where similarity is 0 (was NULL)
+				return relatedCommits.filter((commit) => commit.similarity > 0);
 			} catch (error) {
 				console.error(error);
 				throw new TRPCError({
@@ -73,7 +74,7 @@ export const githubRouter = createTRPCRouter({
 		return commit;
 	}),
 
-	batchSummarize: publicProcedure
+	summarizeCommits: publicProcedure
 		.input(z.array(CommitSummaryInputSchema))
 		.mutation(async ({ ctx: { db }, input }) => {
 			try {
