@@ -22,18 +22,30 @@ export const MappingHandler = <TInput, TOutput>({
 	const [error, setError] = useState<string>();
 
 	useEffect(() => {
+		let mounted = true;
+
 		const searchForMatches = async () => {
 			try {
 				setIsLoading(true);
 				const results = await handleSearch(config.getInputTitle(inspectedItem));
-				setMatches(results);
+				if (mounted) {
+					setMatches(results);
+				}
 			} catch (err) {
-				setError(err instanceof Error ? err.message : 'Failed to search for matches');
+				if (mounted) {
+					setError(err instanceof Error ? err.message : 'Failed to search for matches');
+				}
 			} finally {
-				setIsLoading(false);
+				if (mounted) {
+					setIsLoading(false);
+				}
 			}
 		};
+
 		searchForMatches();
+		return () => {
+			mounted = false;
+		};
 	}, [inspectedItem, config, handleSearch]);
 
 	const handleCreateAndLink = async () => {
@@ -47,7 +59,7 @@ export const MappingHandler = <TInput, TOutput>({
 		}
 	};
 
-	if (isLoading) {
+	if (isLoading && matches.length === 0) {
 		return (
 			<div className="flex items-center justify-center p-8">
 				<Text size="2" color="gray">

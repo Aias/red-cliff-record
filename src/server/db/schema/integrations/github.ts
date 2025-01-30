@@ -260,6 +260,10 @@ export const githubCommitsRelations = relations(githubCommits, ({ many, one }) =
 		fields: [githubCommits.integrationRunId],
 		references: [integrationRuns.id],
 	}),
+	embedding: one(embeddings, {
+		fields: [githubCommits.embeddingId],
+		references: [embeddings.id],
+	}),
 }));
 
 export const githubCommitChangesRelations = relations(githubCommitChanges, ({ one }) => ({

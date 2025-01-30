@@ -1,6 +1,14 @@
-import { useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import { Button, DropdownMenu, Heading, IconButton, ScrollArea, Text } from '@radix-ui/themes';
+import {
+	Button,
+	DropdownMenu,
+	Heading,
+	IconButton,
+	ScrollArea,
+	Spinner,
+	Text,
+} from '@radix-ui/themes';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { IconWrapper } from '~/app/components/IconWrapper';
 import { MetadataList } from '~/app/components/MetadataList';
@@ -211,91 +219,107 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 						)}
 					</div>
 				</header>
-				<ScrollArea scrollbars="vertical">
-					<ol className="flex flex-col gap-1 px-3">
-						{items.map((item) => {
-							const itemId = config.getInputId(item);
-							const queueItem = config.mapToQueueItem(item);
-							return (
-								<li key={itemId}>
-									<QueueListItem
-										{...queueItem}
-										className="selectable card"
-										handleClick={() => navigate({ to: '.', search: { itemId } })}
-										selected={selectedIds.has(itemId)}
-										active={inspectedItemId === itemId}
-										handleSelect={() => toggleSelection(itemId)}
-									/>
-								</li>
-							);
-						})}
-					</ol>
-				</ScrollArea>
+				<Suspense
+					fallback={
+						<Placeholder>
+							<Spinner />
+						</Placeholder>
+					}
+				>
+					<ScrollArea scrollbars="vertical">
+						<ol className="flex flex-col gap-1 px-3">
+							{items.map((item) => {
+								const itemId = config.getInputId(item);
+								const queueItem = config.mapToQueueItem(item);
+								return (
+									<li key={itemId}>
+										<QueueListItem
+											{...queueItem}
+											className="selectable card"
+											handleClick={() => navigate({ to: '.', search: { itemId } })}
+											selected={selectedIds.has(itemId)}
+											active={inspectedItemId === itemId}
+											handleSelect={() => toggleSelection(itemId)}
+										/>
+									</li>
+								);
+							})}
+						</ol>
+					</ScrollArea>
+				</Suspense>
 			</div>
 			<div className="flex grow overflow-hidden p-3">
-				{inspectedItem ? (
-					<div className="flex grow gap-3">
-						<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-3">
-							<header className="flex flex-col gap-2">
-								<Heading size="3" as="h2">
-									{config.getInputTitle(inspectedItem)}
-								</Heading>
-								<div role="toolbar" className="flex items-center gap-2">
-									<Button
-										size="1"
-										variant="soft"
-										className="flex-1"
-										onClick={() => {
-											const id = config.getInputId(inspectedItem);
-											if (inspectedQueueItem?.archivedAt) {
-												handleUnarchive([id]);
-											} else {
-												handleArchive([id]);
-											}
-										}}
-									>
-										{inspectedQueueItem?.archivedAt ? 'Unarchive' : 'Archive'}
-									</Button>
-									<Button
-										size="1"
-										variant="soft"
-										className="flex-1"
-										disabled={!inspectedQueueItem?.mappedId}
-										onClick={() => {
-											const id = config.getInputId(inspectedItem);
-											handleUnlink([id]);
-										}}
-									>
-										Unlink
-									</Button>
-								</div>
-							</header>
-							<ScrollArea scrollbars="vertical">
-								<MetadataList metadata={inspectedItem} className="gap-3" />
-							</ScrollArea>
+				<Suspense
+					fallback={
+						<Placeholder>
+							<Spinner />
+						</Placeholder>
+					}
+				>
+					{inspectedItem ? (
+						<div className="flex grow gap-3">
+							<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-3">
+								<header className="flex flex-col gap-2">
+									<Heading size="3" as="h2">
+										{config.getInputTitle(inspectedItem)}
+									</Heading>
+									<div role="toolbar" className="flex items-center gap-2">
+										<Button
+											size="1"
+											variant="soft"
+											className="flex-1"
+											onClick={() => {
+												const id = config.getInputId(inspectedItem);
+												if (inspectedQueueItem?.archivedAt) {
+													handleUnarchive([id]);
+												} else {
+													handleArchive([id]);
+												}
+											}}
+										>
+											{inspectedQueueItem?.archivedAt ? 'Unarchive' : 'Archive'}
+										</Button>
+										<Button
+											size="1"
+											variant="soft"
+											className="flex-1"
+											disabled={!inspectedQueueItem?.mappedId}
+											onClick={() => {
+												const id = config.getInputId(inspectedItem);
+												handleUnlink([id]);
+											}}
+										>
+											Unlink
+										</Button>
+									</div>
+								</header>
+								<ScrollArea scrollbars="vertical">
+									<MetadataList metadata={inspectedItem} className="gap-3" />
+								</ScrollArea>
+							</div>
+							<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-3">
+								{inspectedQueueItem?.mappedId ? (
+									children(inspectedQueueItem.mappedId, config.getOutputDefaults(inspectedItem))
+								) : inspectedQueueItem ? (
+									<MappingHandler
+										config={config}
+										inspectedItem={inspectedItem}
+										inspectedQueueItem={inspectedQueueItem}
+										handleSearch={handleSearch}
+										handleCreate={handleCreate}
+										handleLink={handleLink}
+									/>
+								) : undefined}
+							</div>
 						</div>
-						<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-3">
-							{inspectedQueueItem?.mappedId ? (
-								children(inspectedQueueItem.mappedId, config.getOutputDefaults(inspectedItem))
-							) : inspectedQueueItem ? (
-								<MappingHandler
-									config={config}
-									inspectedItem={inspectedItem}
-									inspectedQueueItem={inspectedQueueItem}
-									handleSearch={handleSearch}
-									handleCreate={handleCreate}
-									handleLink={handleLink}
-								/>
-							) : undefined}
-						</div>
-					</div>
-				) : (
-					<Placeholder>
-						<Text size="3" color="gray">
-							Select an item to map.
-						</Text>
-					</Placeholder>
-				)}
+					) : (
+						<Placeholder>
+							<Text size="3" color="gray">
+								Select an item to map.
+							</Text>
+						</Placeholder>
+					)}
+				</Suspense>
 			</div>
 		</main>
 	);

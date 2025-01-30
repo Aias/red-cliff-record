@@ -1,7 +1,8 @@
 import { TRPCError } from '@trpc/server';
-import { desc, eq, inArray, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { githubCommits, githubRepositories, githubUsers } from '~/server/db/schema/integrations';
+import { embeddings } from '~/server/db/schema/main';
 import { summarizeCommit } from '~/server/services/ai/summarize-commit';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { buildWhereClause, RequestParamsSchema } from './common';
@@ -18,6 +19,43 @@ export const githubRouter = createTRPCRouter({
 			limit: input.limit,
 		});
 	}),
+
+	getRelatedCommits: publicProcedure
+		.input(z.string())
+		.query(async ({ ctx: { db }, input: commitId }) => {
+			try {
+				const relatedCommits = await db.query.githubCommits.findMany({
+					with: {
+						repository: true,
+						commitChanges: true,
+						embedding: true,
+					},
+					extras: {
+						similarity: sql<number>`
+							1 - (
+								SELECT (e1.embedding <=> e2.embedding)
+								FROM ${embeddings} e1, ${embeddings} e2
+								JOIN ${githubCommits} gc ON e2.id = gc.embedding_id
+								WHERE e1.id = ${githubCommits.embeddingId}
+								AND gc.id = ${commitId}
+							)
+						`.as('similarity'),
+					},
+					where: and(ne(githubCommits.id, commitId), isNotNull(githubCommits.embeddingId)),
+					orderBy: (_commits, { desc }) => [desc(sql`similarity`)],
+					limit: 10,
+				});
+
+				return relatedCommits;
+			} catch (error) {
+				console.error(error);
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: 'Failed to find related commits',
+					cause: error,
+				});
+			}
+		}),
 
 	getCommitBySha: publicProcedure.input(z.string()).query(async ({ ctx: { db }, input }) => {
 		const commit = await db.query.githubCommits.findFirst({

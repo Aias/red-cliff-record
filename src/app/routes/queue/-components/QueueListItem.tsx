@@ -30,7 +30,7 @@ export function QueueListItem({
 		<section
 			data-archived={archivedAt ? true : undefined}
 			data-mapped={mappedId ? true : undefined}
-			className={`flex flex-col gap-2 ${className} data-archived:opacity-75`}
+			className={`flex flex-col gap-2 transition-opacity duration-200 ${className} data-archived:opacity-75`}
 			{...props}
 			onClick={handleClick}
 		>
