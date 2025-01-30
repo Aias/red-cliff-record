@@ -2,10 +2,9 @@ import { TRPCError } from '@trpc/server';
 import { and, desc, eq, inArray, isNotNull, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { githubCommits, githubRepositories, githubUsers } from '~/server/db/schema/integrations';
-import { embeddings } from '~/server/db/schema/main';
 import { summarizeCommit } from '~/server/services/ai/summarize-commit';
 import { createTRPCRouter, publicProcedure } from '../init';
-import { buildWhereClause, RequestParamsSchema } from './common';
+import { buildWhereClause, RequestParamsSchema, similarity } from './common';
 import { CommitSummaryInputSchema } from './github.types';
 
 export const githubRouter = createTRPCRouter({
@@ -24,29 +23,28 @@ export const githubRouter = createTRPCRouter({
 		.input(z.string())
 		.query(async ({ ctx: { db }, input: commitId }) => {
 			try {
+				const sourceCommit = await db.query.githubCommits.findFirst({
+					where: eq(githubCommits.id, commitId),
+					columns: { embedding: true },
+				});
+
+				if (!sourceCommit?.embedding) {
+					return [];
+				}
+
 				const relatedCommits = await db.query.githubCommits.findMany({
 					with: {
 						repository: true,
 						commitChanges: true,
-						embedding: true,
 					},
 					extras: {
-						similarity: sql<number>`
-							COALESCE(1 - (
-								SELECT (e1.embedding <=> e2.embedding)
-								FROM ${embeddings} e1, ${embeddings} e2
-								JOIN ${githubCommits} gc ON e2.id = gc.embedding_id
-								WHERE e1.id = ${githubCommits.embeddingId}
-								AND gc.id = ${commitId}
-							), 0)
-						`.as('similarity'),
+						similarity: similarity(githubCommits.embedding, sourceCommit.embedding),
 					},
-					where: and(ne(githubCommits.id, commitId), isNotNull(githubCommits.embeddingId)),
+					where: and(ne(githubCommits.id, commitId), isNotNull(githubCommits.embedding)),
 					orderBy: (_commits, { desc }) => [desc(sql`similarity`)],
 					limit: 10,
 				});
 
-				// Filter out results where similarity is 0 (was NULL)
 				return relatedCommits.filter((commit) => commit.similarity > 0);
 			} catch (error) {
 				console.error(error);

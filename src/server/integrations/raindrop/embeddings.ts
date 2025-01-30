@@ -1,33 +1,24 @@
+import { eq, isNull } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
 import {
-	type raindropBookmarks,
-	type raindropCollections,
+	raindropBookmarks,
+	raindropCollections,
+	type RaindropBookmarkSelect,
+	type RaindropCollectionSelect,
 } from '~/server/db/schema/integrations/raindrop';
-import { syncEmbeddings, type EmbeddableDocument } from '../common/embeddings';
+import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 import { runIntegration } from '../common/run-integration';
 
 // Collection implementation
-class RaindropCollection implements EmbeddableDocument {
+class RaindropCollection implements EmbeddingType {
 	constructor(
-		private collection: typeof raindropCollections.$inferSelect & {
+		private collection: RaindropCollectionSelect & {
 			raindrops?: {
 				title: string | null;
 				linkUrl: string | null;
 			}[];
 		}
 	) {}
-
-	get id() {
-		return this.collection.id;
-	}
-
-	get tableName() {
-		return 'integrations.raindrop_collections';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -53,27 +44,15 @@ class RaindropCollection implements EmbeddableDocument {
 }
 
 // Bookmark implementation
-class RaindropBookmark implements EmbeddableDocument {
+class RaindropBookmark implements EmbeddingType {
 	constructor(
-		private bookmark: typeof raindropBookmarks.$inferSelect & {
+		private bookmark: RaindropBookmarkSelect & {
 			collection?: {
 				title: string | null;
 				parentId: number | null;
 			} | null;
 		}
 	) {}
-
-	get id() {
-		return this.bookmark.id;
-	}
-
-	get tableName() {
-		return 'integrations.raindrop_bookmarks';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -101,8 +80,8 @@ class RaindropBookmark implements EmbeddableDocument {
 	}
 }
 
-// Fetch functions
-async function getCollectionsWithoutEmbeddings() {
+// Fetch and update functions
+async function updateCollectionEmbeddings() {
 	const collections = await db.query.raindropCollections.findMany({
 		with: {
 			raindrops: {
@@ -114,12 +93,23 @@ async function getCollectionsWithoutEmbeddings() {
 				orderBy: (fields, { desc }) => [desc(fields.contentCreatedAt)],
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return collections.map((collection) => new RaindropCollection(collection));
+
+	let count = 0;
+	for (const collection of collections) {
+		const embeddingText = new RaindropCollection(collection).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db
+			.update(raindropCollections)
+			.set({ embedding })
+			.where(eq(raindropCollections.id, collection.id));
+		count++;
+	}
+	return count;
 }
 
-async function getBookmarksWithoutEmbeddings() {
+async function updateBookmarkEmbeddings() {
 	const bookmarks = await db.query.raindropBookmarks.findMany({
 		with: {
 			collection: {
@@ -129,9 +119,20 @@ async function getBookmarksWithoutEmbeddings() {
 				},
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return bookmarks.map((bookmark) => new RaindropBookmark(bookmark));
+
+	let count = 0;
+	for (const bookmark of bookmarks) {
+		const embeddingText = new RaindropBookmark(bookmark).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db
+			.update(raindropBookmarks)
+			.set({ embedding })
+			.where(eq(raindropBookmarks.id, bookmark.id));
+		count++;
+	}
+	return count;
 }
 
 // Sync function
@@ -139,10 +140,10 @@ async function syncRaindropEmbeddings(): Promise<number> {
 	let totalCount = 0;
 
 	// Sync collections
-	totalCount += await syncEmbeddings(getCollectionsWithoutEmbeddings, 'raindrop-collections');
+	totalCount += await updateCollectionEmbeddings();
 
 	// Sync bookmarks
-	totalCount += await syncEmbeddings(getBookmarksWithoutEmbeddings, 'raindrop-bookmarks');
+	totalCount += await updateBookmarkEmbeddings();
 
 	return totalCount;
 }

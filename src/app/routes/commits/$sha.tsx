@@ -155,7 +155,7 @@ function CommitView() {
 						) : (
 							<Card>
 								<Text color="gray" align="center" as="p">
-									{commit.embeddingId ? 'No related commits found.' : 'No embedding for commit.'}
+									{commit.embedding ? 'No related commits found.' : 'No embedding for commit.'}
 								</Text>
 							</Card>
 						)}

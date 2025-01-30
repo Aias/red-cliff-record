@@ -1,4 +1,4 @@
-import { and, isNull, or, type Column, type SQL } from 'drizzle-orm';
+import { and, cosineDistance, isNull, or, sql, type Column, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const DEFAULT_LIMIT = 50;
@@ -31,4 +31,8 @@ export const buildWhereClause = (
 		conditions.push(...additionalClauses);
 	}
 	return and(or(...conditions), ...additionalClauses);
+};
+
+export const similarity = (column: Column, vector: number[]) => {
+	return sql<number>`1 - (${cosineDistance(column, vector)})`.as('similarity');
 };

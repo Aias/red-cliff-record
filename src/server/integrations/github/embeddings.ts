@@ -1,16 +1,20 @@
+import { eq, isNull } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
 import {
-	type githubCommits,
-	type githubRepositories,
-	type githubUsers,
+	githubCommits,
+	githubRepositories,
+	githubUsers,
+	type GithubCommitSelect,
+	type GithubRepositorySelect,
+	type GithubUserSelect,
 } from '~/server/db/schema/integrations/github';
-import { syncEmbeddings, type EmbeddableDocument } from '../common/embeddings';
+import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 import { runIntegration } from '../common/run-integration';
 
 // Repository implementation
-class GithubRepository implements EmbeddableDocument {
+class GithubRepository implements EmbeddingType {
 	constructor(
-		private repo: typeof githubRepositories.$inferSelect & {
+		private repo: GithubRepositorySelect & {
 			owner?: {
 				login: string | null;
 				name: string | null;
@@ -18,18 +22,6 @@ class GithubRepository implements EmbeddableDocument {
 			} | null;
 		}
 	) {}
-
-	get id() {
-		return this.repo.id;
-	}
-
-	get tableName() {
-		return 'integrations.github_repositories';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -60,9 +52,9 @@ class GithubRepository implements EmbeddableDocument {
 }
 
 // User implementation
-class GithubUser implements EmbeddableDocument {
+class GithubUser implements EmbeddingType {
 	constructor(
-		private user: typeof githubUsers.$inferSelect & {
+		private user: GithubUserSelect & {
 			repositories?: {
 				name: string | null;
 				fullName: string | null;
@@ -70,18 +62,6 @@ class GithubUser implements EmbeddableDocument {
 			}[];
 		}
 	) {}
-
-	get id() {
-		return this.user.id;
-	}
-
-	get tableName() {
-		return 'integrations.github_users';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -113,9 +93,9 @@ class GithubUser implements EmbeddableDocument {
 	}
 }
 
-class GithubCommit implements EmbeddableDocument {
+class GithubCommit implements EmbeddingType {
 	constructor(
-		private commit: typeof githubCommits.$inferSelect & {
+		private commit: GithubCommitSelect & {
 			repository?: {
 				fullName: string | null;
 			} | null;
@@ -126,18 +106,6 @@ class GithubCommit implements EmbeddableDocument {
 			}[];
 		}
 	) {}
-
-	get id() {
-		return this.commit.id;
-	}
-
-	get tableName() {
-		return 'integrations.github_commits';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -174,8 +142,8 @@ class GithubCommit implements EmbeddableDocument {
 	}
 }
 
-// Fetch functions
-async function getRepositoriesWithoutEmbeddings() {
+// Fetch and update functions
+async function updateRepositoryEmbeddings() {
 	const repos = await db.query.githubRepositories.findMany({
 		with: {
 			owner: {
@@ -186,12 +154,23 @@ async function getRepositoriesWithoutEmbeddings() {
 				},
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return repos.map((repo) => new GithubRepository(repo));
+
+	let count = 0;
+	for (const repo of repos) {
+		const embeddingText = new GithubRepository(repo).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db
+			.update(githubRepositories)
+			.set({ embedding })
+			.where(eq(githubRepositories.id, repo.id));
+		count++;
+	}
+	return count;
 }
 
-async function getUsersWithoutEmbeddings() {
+async function updateUserEmbeddings() {
 	const users = await db.query.githubUsers.findMany({
 		with: {
 			repositories: {
@@ -204,12 +183,20 @@ async function getUsersWithoutEmbeddings() {
 				orderBy: (fields, { desc }) => [desc(fields.contentCreatedAt)],
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return users.map((user) => new GithubUser(user));
+
+	let count = 0;
+	for (const user of users) {
+		const embeddingText = new GithubUser(user).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db.update(githubUsers).set({ embedding }).where(eq(githubUsers.id, user.id));
+		count++;
+	}
+	return count;
 }
 
-async function getCommitsWithoutEmbeddings() {
+async function updateCommitEmbeddings() {
 	const commits = await db.query.githubCommits.findMany({
 		with: {
 			repository: {
@@ -225,9 +212,17 @@ async function getCommitsWithoutEmbeddings() {
 				},
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return commits.map((commit) => new GithubCommit(commit));
+
+	let count = 0;
+	for (const commit of commits) {
+		const embeddingText = new GithubCommit(commit).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db.update(githubCommits).set({ embedding }).where(eq(githubCommits.id, commit.id));
+		count++;
+	}
+	return count;
 }
 
 // Sync function
@@ -235,13 +230,13 @@ async function syncGithubEmbeddings(): Promise<number> {
 	let totalCount = 0;
 
 	// Sync repositories
-	totalCount += await syncEmbeddings(getRepositoriesWithoutEmbeddings, 'github-repositories');
+	totalCount += await updateRepositoryEmbeddings();
 
 	// Sync users
-	totalCount += await syncEmbeddings(getUsersWithoutEmbeddings, 'github-users');
+	totalCount += await updateUserEmbeddings();
 
 	// Sync commits
-	totalCount += await syncEmbeddings(getCommitsWithoutEmbeddings, 'github-commits');
+	totalCount += await updateCommitEmbeddings();
 
 	return totalCount;
 }

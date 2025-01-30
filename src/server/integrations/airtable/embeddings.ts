@@ -1,48 +1,40 @@
+import { eq, isNull } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
 import {
-	type airtableCreators,
-	type airtableExtracts,
-	type airtableSpaces,
+	airtableCreators,
+	airtableExtracts,
+	airtableSpaces,
+	type AirtableCreatorSelect,
+	type AirtableExtractSelect,
+	type AirtableSpaceSelect,
 } from '~/server/db/schema/integrations/airtable';
-import { syncEmbeddings, type EmbeddableDocument } from '../common/embeddings';
+import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 import { runIntegration } from '../common/run-integration';
 
-type CreatorWithExtracts = typeof airtableCreators.$inferSelect & {
+type CreatorWithExtracts = AirtableCreatorSelect & {
 	creatorExtracts?: {
-		extract: Pick<typeof airtableExtracts.$inferSelect, 'title'>;
+		extract: Pick<AirtableExtractSelect, 'title'>;
 	}[];
 };
 
-type SpaceWithExtracts = typeof airtableSpaces.$inferSelect & {
+type SpaceWithExtracts = AirtableSpaceSelect & {
 	spaceExtracts?: {
-		extract: Pick<typeof airtableExtracts.$inferSelect, 'title'>;
+		extract: Pick<AirtableExtractSelect, 'title'>;
 	}[];
 };
 
-type ExtractWithRelations = typeof airtableExtracts.$inferSelect & {
+type ExtractWithRelations = AirtableExtractSelect & {
 	extractCreators?: {
-		creator: Pick<typeof airtableCreators.$inferSelect, 'name'>;
+		creator: Pick<AirtableCreatorSelect, 'name'>;
 	}[];
 	extractSpaces?: {
-		space: Pick<typeof airtableSpaces.$inferSelect, 'name'>;
+		space: Pick<AirtableSpaceSelect, 'name'>;
 	}[];
 };
 
 // Creator implementation
-class AirtableCreator implements EmbeddableDocument {
+class AirtableCreator implements EmbeddingType {
 	constructor(private creator: CreatorWithExtracts) {}
-
-	get id() {
-		return this.creator.id;
-	}
-
-	get tableName() {
-		return 'integrations.airtable_creators';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -72,20 +64,8 @@ class AirtableCreator implements EmbeddableDocument {
 }
 
 // Space implementation
-class AirtableSpace implements EmbeddableDocument {
+class AirtableSpace implements EmbeddingType {
 	constructor(private space: SpaceWithExtracts) {}
-
-	get id() {
-		return this.space.id;
-	}
-
-	get tableName() {
-		return 'integrations.airtable_spaces';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -111,20 +91,8 @@ class AirtableSpace implements EmbeddableDocument {
 }
 
 // Extract implementation
-class AirtableExtract implements EmbeddableDocument {
+class AirtableExtract implements EmbeddingType {
 	constructor(private extract: ExtractWithRelations) {}
-
-	get id() {
-		return this.extract.id;
-	}
-
-	get tableName() {
-		return 'integrations.airtable_extracts';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -161,8 +129,8 @@ class AirtableExtract implements EmbeddableDocument {
 	}
 }
 
-// Fetch functions
-async function getCreatorsWithoutEmbeddings() {
+// Fetch and update functions
+async function updateCreatorEmbeddings() {
 	const creators = await db.query.airtableCreators.findMany({
 		with: {
 			creatorExtracts: {
@@ -176,12 +144,20 @@ async function getCreatorsWithoutEmbeddings() {
 				},
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return creators.map((creator) => new AirtableCreator(creator));
+
+	let count = 0;
+	for (const creator of creators) {
+		const embeddingText = new AirtableCreator(creator).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db.update(airtableCreators).set({ embedding }).where(eq(airtableCreators.id, creator.id));
+		count++;
+	}
+	return count;
 }
 
-async function getSpacesWithoutEmbeddings() {
+async function updateSpaceEmbeddings() {
 	const spaces = await db.query.airtableSpaces.findMany({
 		with: {
 			spaceExtracts: {
@@ -195,12 +171,20 @@ async function getSpacesWithoutEmbeddings() {
 				},
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return spaces.map((space) => new AirtableSpace(space));
+
+	let count = 0;
+	for (const space of spaces) {
+		const embeddingText = new AirtableSpace(space).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db.update(airtableSpaces).set({ embedding }).where(eq(airtableSpaces.id, space.id));
+		count++;
+	}
+	return count;
 }
 
-async function getExtractsWithoutEmbeddings() {
+async function updateExtractEmbeddings() {
 	const extracts = await db.query.airtableExtracts.findMany({
 		with: {
 			extractCreators: {
@@ -224,23 +208,31 @@ async function getExtractsWithoutEmbeddings() {
 				},
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return extracts.map((extract) => new AirtableExtract(extract));
+
+	let count = 0;
+	for (const extract of extracts) {
+		const embeddingText = new AirtableExtract(extract).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db.update(airtableExtracts).set({ embedding }).where(eq(airtableExtracts.id, extract.id));
+		count++;
+	}
+	return count;
 }
 
-// Sync functions
+// Sync function
 async function syncAirtableEmbeddings(): Promise<number> {
 	let totalCount = 0;
 
 	// Sync creators
-	totalCount += await syncEmbeddings(getCreatorsWithoutEmbeddings, 'airtable-creators');
+	totalCount += await updateCreatorEmbeddings();
 
 	// Sync spaces
-	totalCount += await syncEmbeddings(getSpacesWithoutEmbeddings, 'airtable-spaces');
+	totalCount += await updateSpaceEmbeddings();
 
 	// Sync extracts
-	totalCount += await syncEmbeddings(getExtractsWithoutEmbeddings, 'airtable-extracts');
+	totalCount += await updateExtractEmbeddings();
 
 	return totalCount;
 }

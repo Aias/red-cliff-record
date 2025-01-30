@@ -162,6 +162,13 @@
       "when": 1738202885328,
       "tag": "0022_magenta_nighthawk",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1738277252246,
+      "tag": "0023_charming_rick_jones",
+      "breakpoints": true
     }
   ]
 }

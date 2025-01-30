@@ -1,10 +1,17 @@
 import { relations } from 'drizzle-orm';
-import { foreignKey, index, integer, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+	foreignKey,
+	index,
+	integer,
+	primaryKey,
+	text,
+	timestamp,
+	vector,
+} from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { type z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { indices, records } from '../main';
-import { embeddings } from '../main/embeddings';
 import { media } from '../main/media';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
@@ -37,10 +44,7 @@ export const airtableExtracts = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embeddingId: integer('embedding_id').references(() => embeddings.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
+		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [
 		foreignKey({
@@ -49,7 +53,6 @@ export const airtableExtracts = integrationSchema.table(
 		}),
 		index().on(table.archivedAt),
 		index().on(table.recordId),
-		index().on(table.embeddingId),
 	]
 );
 
@@ -149,16 +152,9 @@ export const airtableCreators = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embeddingId: integer('embedding_id').references(() => embeddings.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
+		embedding: vector('embedding', { dimensions: 768 }),
 	},
-	(table) => [
-		index().on(table.archivedAt),
-		index().on(table.indexEntryId),
-		index().on(table.embeddingId),
-	]
+	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
 
 export const AirtableCreatorSelectSchema = createSelectSchema(airtableCreators);
@@ -200,16 +196,9 @@ export const airtableSpaces = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embeddingId: integer('embedding_id').references(() => embeddings.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
+		embedding: vector('embedding', { dimensions: 768 }),
 	},
-	(table) => [
-		index().on(table.archivedAt),
-		index().on(table.indexEntryId),
-		index().on(table.embeddingId),
-	]
+	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
 
 export const AirtableSpaceSelectSchema = createSelectSchema(airtableSpaces);

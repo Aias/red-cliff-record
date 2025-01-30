@@ -1,30 +1,24 @@
+import { eq, isNull } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
-import { type twitterTweets, type twitterUsers } from '~/server/db/schema/integrations/twitter';
-import { syncEmbeddings, type EmbeddableDocument } from '../common/embeddings';
+import {
+	twitterTweets,
+	twitterUsers,
+	type TwitterTweetSelect,
+	type TwitterUserSelect,
+} from '~/server/db/schema/integrations/twitter';
+import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 import { runIntegration } from '../common/run-integration';
 
 // Tweet implementation
-class TwitterTweet implements EmbeddableDocument {
+class TwitterTweet implements EmbeddingType {
 	constructor(
-		private tweet: typeof twitterTweets.$inferSelect & {
+		private tweet: TwitterTweetSelect & {
 			user?: {
 				username: string | null;
 				displayName: string | null;
 			} | null;
 		}
 	) {}
-
-	get id() {
-		return this.tweet.id;
-	}
-
-	get tableName() {
-		return 'integrations.twitter_tweets';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -47,26 +41,14 @@ class TwitterTweet implements EmbeddableDocument {
 }
 
 // User implementation
-class TwitterUser implements EmbeddableDocument {
+class TwitterUser implements EmbeddingType {
 	constructor(
-		private user: typeof twitterUsers.$inferSelect & {
+		private user: TwitterUserSelect & {
 			tweets?: {
 				text: string | null;
 			}[];
 		}
 	) {}
-
-	get id() {
-		return this.user.id;
-	}
-
-	get tableName() {
-		return 'integrations.twitter_users';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
 
 	getEmbeddingText(): string {
 		const textParts = [
@@ -91,8 +73,8 @@ class TwitterUser implements EmbeddableDocument {
 	}
 }
 
-// Fetch functions
-async function getTweetsWithoutEmbeddings() {
+// Fetch and update functions
+async function updateTweetEmbeddings() {
 	const tweets = await db.query.twitterTweets.findMany({
 		with: {
 			user: {
@@ -102,12 +84,20 @@ async function getTweetsWithoutEmbeddings() {
 				},
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return tweets.map((tweet) => new TwitterTweet(tweet));
+
+	let count = 0;
+	for (const tweet of tweets) {
+		const embeddingText = new TwitterTweet(tweet).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db.update(twitterTweets).set({ embedding }).where(eq(twitterTweets.id, tweet.id));
+		count++;
+	}
+	return count;
 }
 
-async function getUsersWithoutEmbeddings() {
+async function updateUserEmbeddings() {
 	const users = await db.query.twitterUsers.findMany({
 		with: {
 			tweets: {
@@ -118,9 +108,17 @@ async function getUsersWithoutEmbeddings() {
 				orderBy: (fields, { desc }) => [desc(fields.contentCreatedAt)],
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.embeddingId),
+		where: (fields) => isNull(fields.embedding),
 	});
-	return users.map((user) => new TwitterUser(user));
+
+	let count = 0;
+	for (const user of users) {
+		const embeddingText = new TwitterUser(user).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db.update(twitterUsers).set({ embedding }).where(eq(twitterUsers.id, user.id));
+		count++;
+	}
+	return count;
 }
 
 // Sync function
@@ -128,10 +126,10 @@ async function syncTwitterEmbeddings(): Promise<number> {
 	let totalCount = 0;
 
 	// Sync tweets
-	totalCount += await syncEmbeddings(getTweetsWithoutEmbeddings, 'twitter-tweets');
+	totalCount += await updateTweetEmbeddings();
 
 	// Sync users
-	totalCount += await syncEmbeddings(getUsersWithoutEmbeddings, 'twitter-users');
+	totalCount += await updateUserEmbeddings();
 
 	return totalCount;
 }

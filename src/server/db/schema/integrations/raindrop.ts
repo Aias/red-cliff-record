@@ -1,10 +1,18 @@
 import { relations } from 'drizzle-orm';
-import { boolean, foreignKey, index, integer, text, timestamp, unique } from 'drizzle-orm/pg-core';
+import {
+	boolean,
+	foreignKey,
+	index,
+	integer,
+	text,
+	timestamp,
+	unique,
+	vector,
+} from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { type z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { indices, records } from '../main';
-import { embeddings } from '../main/embeddings';
 import { media } from '../main/media';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
@@ -42,10 +50,7 @@ export const raindropBookmarks = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embeddingId: integer('embedding_id').references(() => embeddings.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
+		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [
 		unique().on(table.linkUrl, table.createdAt),
@@ -55,7 +60,6 @@ export const raindropBookmarks = integrationSchema.table(
 		index().on(table.archivedAt),
 		index().on(table.recordId),
 		index().on(table.mediaId),
-		index().on(table.embeddingId),
 	]
 );
 
@@ -106,17 +110,13 @@ export const raindropCollections = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embeddingId: integer('embedding_id').references(() => embeddings.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
+		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [
 		index().on(table.parentId),
 		foreignKey({ columns: [table.parentId], foreignColumns: [table.id] }),
 		index().on(table.archivedAt),
 		index().on(table.indexEntryId),
-		index().on(table.embeddingId),
 	]
 );
 

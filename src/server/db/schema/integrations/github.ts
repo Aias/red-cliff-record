@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { boolean, index, integer, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, serial, text, timestamp, vector } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import {
@@ -9,7 +9,6 @@ import {
 	databaseTimestampsNonUpdatable,
 } from '../common';
 import { indices, records } from '../main';
-import { embeddings } from '../main';
 import { integrationRuns } from '../operations';
 import { integrationSchema } from './schema';
 
@@ -50,17 +49,9 @@ export const githubUsers = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embeddingId: integer('embedding_id').references(() => embeddings.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
+		embedding: vector('embedding', { dimensions: 768 }),
 	},
-	(table) => [
-		index().on(table.login),
-		index().on(table.archivedAt),
-		index().on(table.indexEntryId),
-		index().on(table.embeddingId),
-	]
+	(table) => [index().on(table.login), index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
 
 export const GithubUserSelectSchema = createSelectSchema(githubUsers);
@@ -104,10 +95,7 @@ export const githubRepositories = integrationSchema.table(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embeddingId: integer('embedding_id').references(() => embeddings.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
+		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [
 		index().on(table.ownerId),
@@ -173,10 +161,7 @@ export const githubCommits = integrationSchema.table(
 			.references(() => integrationRuns.id)
 			.notNull(),
 		...githubStats,
-		embeddingId: integer('embedding_id').references(() => embeddings.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
+		embedding: vector('embedding', { dimensions: 768 }),
 		committedAt: timestamp('committed_at', { withTimezone: true }),
 		...contentTimestampsNonUpdatable,
 		...databaseTimestampsNonUpdatable,
@@ -259,10 +244,6 @@ export const githubCommitsRelations = relations(githubCommits, ({ many, one }) =
 	integrationRun: one(integrationRuns, {
 		fields: [githubCommits.integrationRunId],
 		references: [integrationRuns.id],
-	}),
-	embedding: one(embeddings, {
-		fields: [githubCommits.embeddingId],
-		references: [embeddings.id],
 	}),
 }));
 

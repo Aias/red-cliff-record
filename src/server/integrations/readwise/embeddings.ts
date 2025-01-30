@@ -1,29 +1,21 @@
+import { eq } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
-import { type readwiseDocuments } from '~/server/db/schema/integrations/readwise';
-import { syncEmbeddings, type EmbeddableDocument } from '../common/embeddings';
+import {
+	readwiseDocuments,
+	type ReadwiseDocumentSelect,
+} from '~/server/db/schema/integrations/readwise';
+import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 import { runIntegration } from '../common/run-integration';
 
 // Document implementation
-class ReadwiseDocument implements EmbeddableDocument {
+class ReadwiseDocument implements EmbeddingType {
 	constructor(
-		private doc: typeof readwiseDocuments.$inferSelect & {
-			children?: (typeof readwiseDocuments.$inferSelect)[];
+		private doc: ReadwiseDocumentSelect & {
+			children?: ReadwiseDocumentSelect[];
 		}
 	) {}
 
-	get id() {
-		return this.doc.id;
-	}
-
-	get tableName() {
-		return 'integrations.readwise_documents';
-	}
-
-	get embeddingIdColumn() {
-		return 'embedding_id';
-	}
-
-	private formatDocument(doc: Partial<typeof readwiseDocuments.$inferSelect>) {
+	private formatDocument(doc: Partial<ReadwiseDocumentSelect>) {
 		return [
 			`Title: ${doc.title || '—'}`,
 			`Author: ${doc.author || '—'}`,
@@ -53,23 +45,29 @@ class ReadwiseDocument implements EmbeddableDocument {
 	}
 }
 
-// Fetch function
-async function getDocumentsWithoutEmbeddings() {
+// Fetch and update function
+async function updateDocumentEmbeddings() {
 	const docs = await db.query.readwiseDocuments.findMany({
 		with: {
 			children: true,
 		},
-		where: (fields, { isNull, and }) => and(isNull(fields.embeddingId), isNull(fields.parentId)),
+		where: (fields, { isNull, and }) => and(isNull(fields.embedding), isNull(fields.parentId)),
 		orderBy: (fields, { asc }) => [asc(fields.contentCreatedAt)],
 	});
-	return docs.map((doc) => new ReadwiseDocument(doc));
+
+	let count = 0;
+	for (const doc of docs) {
+		const embeddingText = new ReadwiseDocument(doc).getEmbeddingText();
+		const embedding = await createEmbedding(embeddingText);
+		await db.update(readwiseDocuments).set({ embedding }).where(eq(readwiseDocuments.id, doc.id));
+		count++;
+	}
+	return count;
 }
 
 // Sync function
 async function syncReadwiseEmbeddings(): Promise<number> {
-	const finalCount = await syncEmbeddings(getDocumentsWithoutEmbeddings, 'readwise-documents');
-
-	return finalCount;
+	return await updateDocumentEmbeddings();
 }
 
 const main = async () => {

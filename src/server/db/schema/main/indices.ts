@@ -9,6 +9,7 @@ import {
 	serial,
 	text,
 	unique,
+	vector,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -16,7 +17,6 @@ import { databaseTimestamps } from '../common';
 import { airtableCreators, airtableSpaces } from '../integrations/airtable';
 import { githubUsers } from '../integrations/github';
 import { twitterUsers } from '../integrations/twitter';
-import { embeddings } from './embeddings';
 import { media } from './media';
 import { sources } from './sources';
 
@@ -56,10 +56,7 @@ export const indices = pgTable(
 		canonicalMediaUrl: text('canonical_media_url'),
 		aliasOf: integer('alias_of'),
 		private: boolean('private').notNull().default(false),
-		embeddingId: integer('embedding_id').references(() => embeddings.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
+		embedding: vector('embedding', { dimensions: 768 }),
 		...databaseTimestamps,
 	},
 	(table) => [
@@ -138,10 +135,6 @@ export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
 	}),
 	incomingRelations: many(indexRelations, {
 		relationName: 'target',
-	}),
-	embedding: one(embeddings, {
-		fields: [indices.embeddingId],
-		references: [embeddings.id],
 	}),
 	airtableCreators: many(airtableCreators, {
 		relationName: 'indexEntry',

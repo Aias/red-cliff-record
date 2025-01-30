@@ -1,4 +1,3 @@
-export * from './embeddings';
 export * from './indices';
 export * from './locations';
 export * from './media';
