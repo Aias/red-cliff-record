@@ -102,10 +102,17 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 					integrationRunId,
 				};
 
-				await db.insert(githubRepositories).values(newRepo).onConflictDoUpdate({
-					target: githubRepositories.id,
-					set: newRepo,
-				});
+				await db
+					.insert(githubRepositories)
+					.values(newRepo)
+					.onConflictDoUpdate({
+						target: githubRepositories.id,
+						set: {
+							...newRepo,
+							embedding: null,
+							updatedAt: new Date(),
+						},
+					});
 
 				totalStars++;
 			}

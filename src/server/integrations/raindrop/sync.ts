@@ -171,7 +171,7 @@ async function syncRaindrops(integrationRunId: number) {
 				.values(raindrop)
 				.onConflictDoUpdate({
 					target: raindropBookmarks.id,
-					set: { ...raindrop, updatedAt: new Date() },
+					set: { ...raindrop, embedding: null, updatedAt: new Date() },
 				});
 			successCount++;
 			if (successCount % 10 === 0) {
