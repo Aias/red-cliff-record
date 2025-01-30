@@ -452,7 +452,7 @@ const TwitterSection = () => {
 			{twitterUsers ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/airtable-creators',
+						to: '/queue/index/twitter-users',
 					}}
 					label="Users"
 					data={twitterUsers}

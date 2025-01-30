@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ExternalLinkIcon, ImageIcon } from '@radix-ui/react-icons';
-import { Button, SegmentedControl, Text, TextArea, TextField } from '@radix-ui/themes';
+import { Button, ScrollArea, SegmentedControl, Text, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
@@ -52,7 +52,7 @@ export const IndexEntryForm = ({
 	}, [indexEntry]);
 
 	return (
-		<>
+		<div className="flex basis-full flex-col gap-3 overflow-hidden">
 			<form
 				className="flex flex-col gap-2"
 				onSubmit={(e) => {
@@ -192,6 +192,7 @@ export const IndexEntryForm = ({
 								Notes
 							</Text>
 							<TextArea
+								rows={4}
 								value={field.state.value || ''}
 								onChange={(e) => field.handleChange(e.target.value)}
 							/>
@@ -221,7 +222,9 @@ export const IndexEntryForm = ({
 					)}
 				/>
 			</form>
-			<MetadataList metadata={indexEntry} />
-		</>
+			<ScrollArea scrollbars="vertical">
+				<MetadataList metadata={indexEntry} />
+			</ScrollArea>
+		</div>
 	);
 };

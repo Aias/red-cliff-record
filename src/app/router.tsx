@@ -50,6 +50,7 @@ export function createRouter() {
 			routeTree,
 			context: { queryClient, trpc: serverHelpers },
 			defaultPreload: 'intent',
+			scrollRestoration: true,
 			defaultErrorComponent: DefaultCatchBoundary,
 			defaultNotFoundComponent: () => <NotFound />,
 			Wrap: (props) => {

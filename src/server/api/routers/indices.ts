@@ -32,7 +32,15 @@ export const indicesRouter = createTRPCRouter({
 	getIndexEntry: publicProcedure
 		.input(z.number().int().positive())
 		.query(async ({ ctx: { db }, input }) => {
-			const entry = await db.query.indices.findFirst({ where: eq(indices.id, input) });
+			const entry = await db.query.indices.findFirst({
+				with: {
+					airtableCreators: true,
+					airtableSpaces: true,
+					githubUsers: true,
+					twitterUsers: true,
+				},
+				where: eq(indices.id, input),
+			});
 			if (!entry) {
 				throw new Error('Index entry not found');
 			}

@@ -1,4 +1,4 @@
-import { and, isNull, type Column, type SQL } from 'drizzle-orm';
+import { and, isNull, or, type Column, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const DEFAULT_LIMIT = 50;
@@ -18,7 +18,7 @@ export const buildWhereClause = (
 	params: RequestParams,
 	archivedColumn: Column,
 	mappedColumn: Column,
-	additionalClauses?: SQL[]
+	additionalClauses: SQL[] = []
 ): SQL | undefined => {
 	const conditions: SQL[] = [];
 	if (!params.includeArchived) {
@@ -30,5 +30,5 @@ export const buildWhereClause = (
 	if (additionalClauses) {
 		conditions.push(...additionalClauses);
 	}
-	return and(...conditions);
+	return and(or(...conditions), ...additionalClauses);
 };

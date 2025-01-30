@@ -125,8 +125,8 @@ export const twitterUsers = integrationSchema.table(
 	'twitter_users',
 	{
 		id: text('id').primaryKey(),
-		username: text('username'),
-		displayName: text('display_name'),
+		username: text('username').notNull(),
+		displayName: text('display_name').notNull(),
 		description: text('description'),
 		location: text('location'),
 		url: text('url'),
@@ -171,6 +171,7 @@ export const twitterUsersRelations = relations(twitterUsers, ({ many, one }) => 
 		references: [integrationRuns.id],
 	}),
 	indexEntry: one(indices, {
+		relationName: 'indexEntry',
 		fields: [twitterUsers.indexEntryId],
 		references: [indices.id],
 	}),

@@ -16,6 +16,7 @@ import { Route as CommitsRouteImport } from './routes/commits/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as HistoryDateImport } from './routes/history/$date'
 import { Route as CommitsShaImport } from './routes/commits/$sha'
+import { Route as QueueIndexTwitterUsersImport } from './routes/queue/index.twitter-users'
 import { Route as QueueIndexGithubUsersImport } from './routes/queue/index.github-users'
 import { Route as QueueIndexAirtableSpacesImport } from './routes/queue/index.airtable-spaces'
 import { Route as QueueIndexAirtableCreatorsImport } from './routes/queue/index.airtable-creators'
@@ -50,6 +51,12 @@ const CommitsShaRoute = CommitsShaImport.update({
   id: '/$sha',
   path: '/$sha',
   getParentRoute: () => CommitsRouteRoute,
+} as any)
+
+const QueueIndexTwitterUsersRoute = QueueIndexTwitterUsersImport.update({
+  id: '/index/twitter-users',
+  path: '/index/twitter-users',
+  getParentRoute: () => QueueRouteRoute,
 } as any)
 
 const QueueIndexGithubUsersRoute = QueueIndexGithubUsersImport.update({
@@ -132,6 +139,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QueueIndexGithubUsersImport
       parentRoute: typeof QueueRouteImport
     }
+    '/queue/index/twitter-users': {
+      id: '/queue/index/twitter-users'
+      path: '/index/twitter-users'
+      fullPath: '/queue/index/twitter-users'
+      preLoaderRoute: typeof QueueIndexTwitterUsersImport
+      parentRoute: typeof QueueRouteImport
+    }
   }
 }
 
@@ -153,12 +167,14 @@ interface QueueRouteRouteChildren {
   QueueIndexAirtableCreatorsRoute: typeof QueueIndexAirtableCreatorsRoute
   QueueIndexAirtableSpacesRoute: typeof QueueIndexAirtableSpacesRoute
   QueueIndexGithubUsersRoute: typeof QueueIndexGithubUsersRoute
+  QueueIndexTwitterUsersRoute: typeof QueueIndexTwitterUsersRoute
 }
 
 const QueueRouteRouteChildren: QueueRouteRouteChildren = {
   QueueIndexAirtableCreatorsRoute: QueueIndexAirtableCreatorsRoute,
   QueueIndexAirtableSpacesRoute: QueueIndexAirtableSpacesRoute,
   QueueIndexGithubUsersRoute: QueueIndexGithubUsersRoute,
+  QueueIndexTwitterUsersRoute: QueueIndexTwitterUsersRoute,
 }
 
 const QueueRouteRouteWithChildren = QueueRouteRoute._addFileChildren(
@@ -174,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
   '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
   '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
+  '/queue/index/twitter-users': typeof QueueIndexTwitterUsersRoute
 }
 
 export interface FileRoutesByTo {
@@ -185,6 +202,7 @@ export interface FileRoutesByTo {
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
   '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
   '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
+  '/queue/index/twitter-users': typeof QueueIndexTwitterUsersRoute
 }
 
 export interface FileRoutesById {
@@ -197,6 +215,7 @@ export interface FileRoutesById {
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
   '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
   '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
+  '/queue/index/twitter-users': typeof QueueIndexTwitterUsersRoute
 }
 
 export interface FileRouteTypes {
@@ -210,6 +229,7 @@ export interface FileRouteTypes {
     | '/queue/index/airtable-creators'
     | '/queue/index/airtable-spaces'
     | '/queue/index/github-users'
+    | '/queue/index/twitter-users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -220,6 +240,7 @@ export interface FileRouteTypes {
     | '/queue/index/airtable-creators'
     | '/queue/index/airtable-spaces'
     | '/queue/index/github-users'
+    | '/queue/index/twitter-users'
   id:
     | '__root__'
     | '/'
@@ -230,6 +251,7 @@ export interface FileRouteTypes {
     | '/queue/index/airtable-creators'
     | '/queue/index/airtable-spaces'
     | '/queue/index/github-users'
+    | '/queue/index/twitter-users'
   fileRoutesById: FileRoutesById
 }
 
@@ -277,7 +299,8 @@ export const routeTree = rootRoute
       "children": [
         "/queue/index/airtable-creators",
         "/queue/index/airtable-spaces",
-        "/queue/index/github-users"
+        "/queue/index/github-users",
+        "/queue/index/twitter-users"
       ]
     },
     "/commits/$sha": {
@@ -297,6 +320,10 @@ export const routeTree = rootRoute
     },
     "/queue/index/github-users": {
       "filePath": "queue/index.github-users.tsx",
+      "parent": "/queue"
+    },
+    "/queue/index/twitter-users": {
+      "filePath": "queue/index.twitter-users.tsx",
       "parent": "/queue"
     }
   }

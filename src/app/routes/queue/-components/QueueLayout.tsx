@@ -235,7 +235,7 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 			<div className="flex grow overflow-hidden p-3">
 				{inspectedItem ? (
 					<div className="flex grow gap-3">
-						<div className="flex shrink-0 grow-0 basis-1/2 flex-col gap-3">
+						<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-3">
 							<header className="flex flex-col gap-2">
 								<Heading size="3" as="h2">
 									{config.getInputTitle(inspectedItem)}
@@ -274,7 +274,7 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 								<MetadataList metadata={inspectedItem} className="gap-3" />
 							</ScrollArea>
 						</div>
-						<div className="flex shrink-0 grow-0 basis-1/2 flex-col gap-3">
+						<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-3">
 							{inspectedQueueItem?.mappedId ? (
 								children(inspectedQueueItem.mappedId, config.getOutputDefaults(inspectedItem))
 							) : inspectedQueueItem ? (

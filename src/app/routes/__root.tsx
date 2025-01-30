@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { type QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet, ScrollRestoration } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { Meta, Scripts } from '@tanstack/start';
 import { AppLayout } from '../components/AppLayout';
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
@@ -124,7 +124,6 @@ function RootDocument({ children, theme }: Readonly<{ children: ReactNode; theme
 			</head>
 			<body>
 				{children}
-				<ScrollRestoration />
 				<Scripts />
 			</body>
 		</html>

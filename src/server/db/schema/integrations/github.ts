@@ -229,6 +229,7 @@ export const githubUsersRelations = relations(githubUsers, ({ one, many }) => ({
 		references: [integrationRuns.id],
 	}),
 	indexEntry: one(indices, {
+		relationName: 'indexEntry',
 		fields: [githubUsers.indexEntryId],
 		references: [indices.id],
 	}),

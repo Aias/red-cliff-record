@@ -174,6 +174,7 @@ export const airtableCreatorsRelations = relations(airtableCreators, ({ one, man
 		references: [integrationRuns.id],
 	}),
 	indexEntry: one(indices, {
+		relationName: 'indexEntry',
 		fields: [airtableCreators.indexEntryId],
 		references: [indices.id],
 	}),
@@ -224,6 +225,7 @@ export const airtableSpacesRelations = relations(airtableSpaces, ({ one, many })
 		references: [integrationRuns.id],
 	}),
 	indexEntry: one(indices, {
+		relationName: 'indexEntry',
 		fields: [airtableSpaces.indexEntryId],
 		references: [indices.id],
 	}),
