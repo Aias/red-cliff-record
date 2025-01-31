@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { foreignKey, index, integer, text, timestamp, vector } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
-import { type z } from 'zod';
+import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { indices, records } from '../main';
 import { media } from '../main/media';
@@ -71,13 +71,21 @@ export const twitterTweetsRelations = relations(twitterTweets, ({ one, many }) =
 	}),
 }));
 
+export const TwitterMediaType = z.enum(['photo', 'video', 'animated_gif']);
+export type TwitterMediaType = z.infer<typeof TwitterMediaType>;
+
+export const twitterMediaTypeEnum = integrationSchema.enum(
+	'twitter_media_type',
+	TwitterMediaType.options
+);
+
 export const twitterMedia = integrationSchema.table(
 	'twitter_media',
 	{
 		id: text('id').primaryKey(),
-		type: text('type'),
-		url: text('url'),
-		mediaUrl: text('media_url'),
+		type: twitterMediaTypeEnum('type').notNull(),
+		url: text('url').notNull().unique(),
+		mediaUrl: text('media_url').notNull().unique(),
 		tweetId: text('tweet_id')
 			.references(() => twitterTweets.id, {
 				onDelete: 'cascade',
