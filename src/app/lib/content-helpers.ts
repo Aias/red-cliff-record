@@ -5,7 +5,7 @@ import { FLAGS, MediaFormat, type Flag } from '~/server/db/schema/main';
 export const getMediaFormat = (contentTypeOrExtension: string): MediaFormat => {
 	const fullMimeType = mime.lookup(contentTypeOrExtension);
 	if (!fullMimeType) {
-		return MediaFormat.enum.unknown;
+		return MediaFormat.enum.application;
 	}
 	const type = fullMimeType.split('/')[0];
 	switch (type) {
@@ -18,9 +18,8 @@ export const getMediaFormat = (contentTypeOrExtension: string): MediaFormat => {
 		case 'text':
 			return MediaFormat.enum.text;
 		case 'application':
-			return MediaFormat.enum.application;
 		default:
-			return MediaFormat.enum.unknown;
+			return MediaFormat.enum.application;
 	}
 };
 

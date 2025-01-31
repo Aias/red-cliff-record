@@ -9,17 +9,22 @@ import {
 	serial,
 	text,
 } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createUpdateSchema } from 'drizzle-zod';
+import { createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { databaseTimestamps } from '../common';
 import { sources } from './sources';
 
 export const MediaFormat = z.enum([
-	'image', // images (jpg, png, etc)
-	'video', // video files
+	'application', // application or binary data
 	'audio', // audio files
-	'text', // plain text, markdown
-	'application', // binary data, PDFs, etc
-	'unknown', // unknown format
+	'font', // font/typeface files
+	'image', // images (jpg, png, etc)
+	'message', // message data
+	'model', // 3D models
+	'multipart', // multipart files
+	'text', // plain text, markdown, etc.
+	'video', // video files
 ]);
 export type MediaFormat = z.infer<typeof MediaFormat>;
 
@@ -30,7 +35,7 @@ export const media = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		url: text('url').notNull().unique(),
-		format: mediaFormatEnum('format').notNull(),
+		format: mediaFormatEnum('format').notNull().default('application'),
 		mimeType: text('mime_type').notNull(),
 		title: text('title'),
 		altText: text('alt_text'),
@@ -72,3 +77,14 @@ export const mediaRelations = relations(media, ({ one, many }) => ({
 		relationName: 'versionOf',
 	}),
 }));
+
+export const MediaSelectSchema = createSelectSchema(media);
+export type MediaSelect = z.infer<typeof MediaSelectSchema>;
+export const MediaInsertSchema = createInsertSchema(media).extend({
+	url: z.string().url(),
+});
+export type MediaInsert = z.infer<typeof MediaInsertSchema>;
+export const MediaUpdateSchema = createUpdateSchema(media).extend({
+	url: z.string().url().optional(),
+});
+export type MediaUpdate = z.infer<typeof MediaUpdateSchema>;

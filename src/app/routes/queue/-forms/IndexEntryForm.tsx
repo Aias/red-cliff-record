@@ -23,14 +23,12 @@ export const IndexEntryForm = ({
 	defaults: _defaults,
 	updateCallback,
 }: IndexEntryFormProps) => {
-	const [indexEntry] = trpc.indices.getIndexEntry.useSuspenseQuery(
-		z.coerce.number().parse(indexEntryId)
-	);
+	const [indexEntry] = trpc.indices.get.useSuspenseQuery(z.coerce.number().parse(indexEntryId));
 	const utils = trpc.useUtils();
 
-	const updateIndexEntryMutation = trpc.indices.updateIndexEntry.useMutation({
+	const updateIndexEntryMutation = trpc.indices.update.useMutation({
 		onSuccess: async () => {
-			utils.indices.getIndexEntry.invalidate();
+			utils.indices.get.invalidate();
 			if (updateCallback) {
 				await updateCallback(form.state.values);
 			}

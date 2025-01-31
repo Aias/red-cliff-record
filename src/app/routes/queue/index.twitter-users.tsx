@@ -50,7 +50,7 @@ function RouteComponent() {
 
 	const handleSearch = utils.indices.search.fetch;
 
-	const createMutation = trpc.indices.createIndexEntry.useMutation({
+	const createMutation = trpc.indices.create.useMutation({
 		onSuccess: () => {
 			utils.twitter.getUsers.invalidate();
 			utils.indices.search.invalidate();

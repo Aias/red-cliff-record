@@ -8,6 +8,7 @@ import {
 	serial,
 	text,
 	unique,
+	vector,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -132,6 +133,8 @@ export const records = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		url: text('url'),
+		embedding: vector('embedding', { dimensions: 768 }),
 		...databaseTimestamps,
 	},
 	(table) => [index().on(table.type), index().on(table.formatId), index().on(table.locationId)]
@@ -139,9 +142,13 @@ export const records = pgTable(
 
 export const RecordSelectSchema = createSelectSchema(records);
 export type RecordSelect = z.infer<typeof RecordSelectSchema>;
-export const RecordInsertSchema = createInsertSchema(records);
+export const RecordInsertSchema = createInsertSchema(records).extend({
+	url: z.string().url().optional().nullable(),
+});
 export type RecordInsert = z.infer<typeof RecordInsertSchema>;
-export const RecordUpdateSchema = createUpdateSchema(records);
+export const RecordUpdateSchema = createUpdateSchema(records).extend({
+	url: z.string().url().optional().nullable(),
+});
 export type RecordUpdate = z.infer<typeof RecordUpdateSchema>;
 
 // Combined hierarchy/relations table
@@ -366,7 +373,7 @@ export const recordCreatorsRelations = relations(recordCreators, ({ one }) => ({
 		fields: [recordCreators.recordId],
 		references: [records.id],
 	}),
-	entity: one(indices, {
+	creator: one(indices, {
 		fields: [recordCreators.entityId],
 		references: [indices.id],
 	}),

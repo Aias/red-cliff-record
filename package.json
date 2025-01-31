@@ -21,11 +21,11 @@
 		"@radix-ui/themes": "^3.2.0",
 		"@tailwindcss/vite": "^4.0.1",
 		"@tanstack/react-form": "^0.41.3",
-		"@tanstack/react-query": "^5.65.1",
+		"@tanstack/react-query": "^5.66.0",
 		"@tanstack/react-router": "^1.98.4",
 		"@tanstack/react-router-with-query": "^1.98.4",
 		"@tanstack/react-table": "^8.20.6",
-		"@tanstack/start": "^1.98.4",
+		"@tanstack/start": "^1.98.6",
 		"@trpc/client": "^11.0.0-rc.730",
 		"@trpc/react-query": "^11.0.0-rc.730",
 		"@trpc/server": "^11.0.0-rc.730",
@@ -45,7 +45,7 @@
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {
-		"@octokit/types": "^13.7.0",
+		"@octokit/types": "^13.8.0",
 		"@types/bun": "^1.2.1",
 		"@types/eslint": "9.6.1",
 		"@types/mime-types": "^2.1.4",

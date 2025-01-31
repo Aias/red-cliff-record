@@ -49,7 +49,7 @@ function RouteComponent() {
 
 	const handleSearch = utils.indices.search.fetch;
 
-	const createMutation = trpc.indices.createIndexEntry.useMutation({
+	const createMutation = trpc.indices.create.useMutation({
 		onSuccess: () => {
 			utils.airtable.getCreators.invalidate();
 			utils.indices.search.invalidate();

@@ -169,6 +169,20 @@
       "when": 1738277252246,
       "tag": "0023_charming_rick_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1738341197230,
+      "tag": "0024_unknown_killmonger",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1738342181739,
+      "tag": "0025_overrated_grandmaster",
+      "breakpoints": true
     }
   ]
 }
