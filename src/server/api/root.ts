@@ -5,8 +5,10 @@ import { airtableRouter } from './routers/airtable';
 import { githubRouter } from './routers/github';
 import { historyRouter } from './routers/history';
 import { indicesRouter } from './routers/indices';
+import { mediaRouter } from './routers/media';
 import { raindropRouter } from './routers/raindrop';
 import { readwiseRouter } from './routers/readwise';
+import { recordsRouter } from './routers/records';
 import { twitterRouter } from './routers/twitter';
 
 export const appRouter = createTRPCRouter({
@@ -15,8 +17,10 @@ export const appRouter = createTRPCRouter({
 	github: githubRouter,
 	history: historyRouter,
 	indices: indicesRouter,
+	media: mediaRouter,
 	raindrop: raindropRouter,
 	readwise: readwiseRouter,
+	records: recordsRouter,
 	twitter: twitterRouter,
 });
 
