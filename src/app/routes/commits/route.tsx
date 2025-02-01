@@ -15,7 +15,7 @@ import {
 	type GithubRepositorySelect,
 } from '~/server/db/schema/integrations';
 
-type CommitSelect = GithubCommitSelect & {
+type CommitSelect = Omit<GithubCommitSelect, 'embedding'> & {
 	repository: GithubRepositorySelect;
 	commitChanges: GithubCommitChangeSelect[];
 };
@@ -52,7 +52,7 @@ export const Route = createFileRoute('/commits')({
 	component: CommitList,
 });
 
-const columns: ColumnDef<GithubCommitSelect>[] = [
+const columns: ColumnDef<CommitSelect>[] = [
 	{
 		accessorKey: 'sha',
 		header: 'SHA',

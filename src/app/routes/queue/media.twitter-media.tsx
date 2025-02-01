@@ -1,11 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { getMediaFormatFromURL, getMimeTypeFromURL } from '~/app/lib/content-helpers';
 import { trpc } from '~/app/trpc';
-import type { TwitterMediaSelect } from '~/server/db/schema/integrations/twitter';
+import type {
+	TwitterMediaSelect,
+	TwitterTweetSelect,
+} from '~/server/db/schema/integrations/twitter';
 import { type MediaInsert, type MediaSelect } from '~/server/db/schema/main/media';
 import { QueueLayout } from './-components/QueueLayout';
 import type { QueueConfig } from './-components/types';
-import { MediaForm } from './-forms/MediaEntryForm';
+import { MediaEntryForm } from './-forms/MediaEntryForm';
+
+type TwitterMediaWithTweet = TwitterMediaSelect & {
+	tweet?: TwitterTweetSelect;
+};
 
 export const Route = createFileRoute('/queue/media/twitter-media')({
 	loader: async ({ context: { queryClient, trpc } }) => {
@@ -15,25 +21,19 @@ export const Route = createFileRoute('/queue/media/twitter-media')({
 	component: RouteComponent,
 });
 
-const config: QueueConfig<TwitterMediaSelect, MediaSelect, MediaInsert> = {
+const config: QueueConfig<TwitterMediaWithTweet, MediaSelect, MediaInsert> = {
 	name: 'Twitter Media',
 	mapToQueueItem: (media) => ({
 		id: media.id,
-		title: media.type,
-		description: media.url,
-		externalUrl: media.mediaUrl,
+		title: `#${media.tweet?.id}`,
+		description: media.tweet?.text?.slice(0, 100),
+		avatarUrl: media.mediaUrl,
+		externalUrl: media.tweetUrl,
 		archivedAt: media.archivedAt,
 		mappedId: media.mediaId ? media.mediaId.toString() : null,
 	}),
 	getOutputDefaults: (media) => ({
 		url: media.mediaUrl,
-		format: getMediaFormatFromURL(media.mediaUrl),
-		mimeType: getMimeTypeFromURL(media.mediaUrl),
-		title: undefined,
-		altText: undefined,
-		fileSize: undefined,
-		width: undefined,
-		height: undefined,
 		createdAt: media.createdAt,
 		updatedAt: media.updatedAt,
 	}),
@@ -45,7 +45,7 @@ const config: QueueConfig<TwitterMediaSelect, MediaSelect, MediaInsert> = {
 
 function RouteComponent() {
 	// Fetch Twitter media with a fixed limit (using the same query parameters as the loader)
-	const mediaItems = trpc.twitter.getMedia.useSuspenseQuery({ limit: 50 });
+	const [mediaItems] = trpc.twitter.getMedia.useSuspenseQuery({ limit: 50 });
 	const utils = trpc.useUtils();
 
 	const createMutation = trpc.media.create.useMutation({
@@ -54,8 +54,39 @@ function RouteComponent() {
 			// Invalidate search or list query for media if you have one
 		},
 	});
-	const handleCreate = (media: TwitterMediaSelect) =>
+	const handleCreate = (media: TwitterMediaWithTweet) =>
 		createMutation.mutateAsync(config.getOutputDefaults(media));
+
+	const linkMutation = trpc.twitter.linkMedia.useMutation({
+		onSuccess: () => {
+			utils.twitter.getMedia.invalidate();
+		},
+	});
+	const handleLink = (twitterId: string, mediaId: string) =>
+		linkMutation.mutateAsync({ twitterId, mediaId: Number(mediaId) });
+
+	const unlinkMutation = trpc.twitter.unlinkMedia.useMutation({
+		onSuccess: () => {
+			utils.twitter.getMedia.invalidate();
+		},
+	});
+	const handleUnlink = (twitterIds: string[]) => unlinkMutation.mutateAsync(twitterIds);
+
+	const archiveMutation = trpc.twitter.setMediaArchiveStatus.useMutation({
+		onSuccess: () => {
+			utils.twitter.getMedia.invalidate();
+		},
+	});
+	const handleArchive = (twitterMediaIds: string[]) =>
+		archiveMutation.mutateAsync({ twitterMediaIds, shouldArchive: true });
+
+	const unarchiveMutation = trpc.twitter.setMediaArchiveStatus.useMutation({
+		onSuccess: () => {
+			utils.twitter.getMedia.invalidate();
+		},
+	});
+	const handleUnarchive = (twitterMediaIds: string[]) =>
+		unarchiveMutation.mutateAsync({ twitterMediaIds, shouldArchive: false });
 
 	return (
 		<QueueLayout
@@ -63,15 +94,13 @@ function RouteComponent() {
 			config={config}
 			handleSearch={utils.media.search.fetch}
 			handleCreate={handleCreate}
-			// For media we’re just creating new records via the form.
-			// No link/unlink, archive/unarchive operations are implemented here.
-			handleLink={null}
-			handleUnlink={null}
-			handleArchive={null}
-			handleUnarchive={null}
+			handleLink={handleLink}
+			handleUnlink={handleUnlink}
+			handleArchive={handleArchive}
+			handleUnarchive={handleUnarchive}
 		>
 			{(mappedId, defaults) => (
-				<MediaForm
+				<MediaEntryForm
 					defaults={defaults}
 					mediaId={mappedId}
 					updateCallback={async () => {

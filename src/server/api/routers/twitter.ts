@@ -36,7 +36,11 @@ export const twitterRouter = createTRPCRouter({
 	getMedia: publicProcedure.input(RequestParamsSchema).query(async ({ ctx: { db }, input }) => {
 		const media = await db.query.twitterMedia.findMany({
 			with: {
-				tweet: true,
+				tweet: {
+					columns: {
+						embedding: false,
+					},
+				},
 			},
 			where: buildWhereClause(input, twitterMedia.archivedAt, twitterMedia.mediaId),
 			orderBy: [desc(twitterMedia.archivedAt), desc(twitterMedia.contentCreatedAt)],
@@ -57,6 +61,17 @@ export const twitterRouter = createTRPCRouter({
 			return updatedUser;
 		}),
 
+	linkMedia: publicProcedure
+		.input(z.object({ twitterId: z.string(), mediaId: z.number().int().positive() }))
+		.mutation(async ({ ctx: { db }, input: { twitterId, mediaId } }) => {
+			const [updatedMedia] = await db
+				.update(twitterMedia)
+				.set({ mediaId, updatedAt: new Date() })
+				.where(eq(twitterMedia.id, twitterId))
+				.returning();
+			return updatedMedia;
+		}),
+
 	unlinkUsersFromIndices: publicProcedure
 		.input(z.array(z.string()))
 		.mutation(async ({ ctx: { db }, input: userIds }) => {
@@ -67,6 +82,16 @@ export const twitterRouter = createTRPCRouter({
 				.returning();
 		}),
 
+	unlinkMedia: publicProcedure
+		.input(z.array(z.string()))
+		.mutation(async ({ ctx: { db }, input: twitterMediaIds }) => {
+			return db
+				.update(twitterMedia)
+				.set({ mediaId: null, updatedAt: new Date() })
+				.where(inArray(twitterMedia.id, twitterMediaIds))
+				.returning();
+		}),
+
 	setUsersArchiveStatus: publicProcedure
 		.input(z.object({ userIds: z.array(z.string()), shouldArchive: z.boolean() }))
 		.mutation(async ({ ctx: { db }, input: { userIds, shouldArchive } }) => {
@@ -74,6 +99,16 @@ export const twitterRouter = createTRPCRouter({
 				.update(twitterUsers)
 				.set({ archivedAt: shouldArchive ? new Date() : null })
 				.where(inArray(twitterUsers.id, userIds))
+				.returning();
+		}),
+
+	setMediaArchiveStatus: publicProcedure
+		.input(z.object({ twitterMediaIds: z.array(z.string()), shouldArchive: z.boolean() }))
+		.mutation(async ({ ctx: { db }, input: { twitterMediaIds, shouldArchive } }) => {
+			return db
+				.update(twitterMedia)
+				.set({ archivedAt: shouldArchive ? new Date() : null })
+				.where(inArray(twitterMedia.id, twitterMediaIds))
 				.returning();
 		}),
 });

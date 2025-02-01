@@ -1,122 +1,134 @@
-import React, { useState } from 'react';
+import { useEffect } from 'react';
+import { Button, ScrollArea, Text, TextField } from '@radix-ui/themes';
+import { useForm } from '@tanstack/react-form';
+import { z } from 'zod';
+import { MetadataList } from '~/app/components/MetadataList';
 import { trpc } from '~/app/trpc';
-import { Text, Button, TextField } from '@radix-ui/themes';
+import { MediaSelectSchema, type MediaSelect } from '~/server/db/schema/main';
 
-interface MediaDefaults {
-	url: string;
-	format: string;
-	mimeType: string;
-	title: string;
-	altText: string;
-	fileSize?: number;
-	width?: number;
-	height?: number;
-	createdAt: string;
-	updatedAt: string;
-}
+type MediaEntryFormProps = {
+	mediaId: string | number;
+	defaults: Partial<MediaSelect>;
+	updateCallback?: (data: MediaSelect) => Promise<void>;
+};
 
-interface MediaFormProps {
-	defaults: MediaDefaults;
-	mediaId: string | null;
-	updateCallback: () => Promise<void>;
-}
-
-export const MediaForm: React.FC<MediaFormProps> = ({
-	defaults,
+export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 	mediaId,
+	defaults: _defaults,
 	updateCallback,
 }) => {
-	const [formData, setFormData] = useState<MediaDefaults>(defaults);
-	const createMedia = trpc.media.create.useMutation();
+	// Coerce the provided id to a number before querying.
+	const id = z.coerce.number().parse(mediaId);
+	const [mediaItem] = trpc.media.get.useSuspenseQuery(id);
+	const utils = trpc.useUtils();
 
-	const handleChange = (field: keyof MediaDefaults) => (
-		e: React.ChangeEvent<HTMLTextField.RootElement>
-	) => {
-		const value =
-			field === 'fileSize' || field === 'width' || field === 'height'
-				? Number(e.target.value)
-				: e.target.value;
-		setFormData((prev) => ({ ...prev, [field]: value }));
-	};
+	const updateMediaMutation = trpc.media.update.useMutation({
+		onSuccess: async () => {
+			utils.media.get.invalidate();
+			if (updateCallback) {
+				await updateCallback(form.state.values);
+			}
+		},
+	});
 
-	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		try {
-			await createMedia.mutateAsync(formData);
-			await updateCallback();
-		} catch (error) {
-			console.error('Error creating media record:', error);
-		}
-	};
+	const form = useForm({
+		defaultValues: mediaItem,
+		onSubmit: async ({ value }) => {
+			updateMediaMutation.mutate(value);
+		},
+		validators: {
+			onChange: MediaSelectSchema,
+		},
+	});
+
+	useEffect(() => {
+		form.reset(mediaItem);
+	}, [mediaItem]);
+
+	let mediaPreview;
+	if (mediaItem.mimeType.startsWith('image')) {
+		mediaPreview = (
+			<img
+				src={mediaItem.url}
+				alt={mediaItem.altText || mediaItem.title || undefined}
+				className="w-full rounded shadow"
+			/>
+		);
+	} else if (mediaItem.mimeType.startsWith('video')) {
+		mediaPreview = <video controls src={mediaItem.url} className="w-full rounded shadow" />;
+	} else {
+		mediaPreview = <div className="bg-muted rounded p-4">Preview not available</div>;
+	}
 
 	return (
-		<form onSubmit={handleSubmit} className="grid gap-4 p-4">
-			<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-				<label htmlFor="url">URL</label>
-				<TextField.Root
-					id="url"
-					type="text"
-					value={formData.url}
-					onChange={handleChange('url')}
-				/>
-
-				<label htmlFor="format">Format</label>
-				<TextField.Root
-					id="format"
-					type="text"
-					value={formData.format}
-					onChange={handleChange('format')}
-				/>
-
-				<label htmlFor="mimeType">MIME Type</label>
-				<TextField.Root
-					id="mimeType"
-					type="text"
-					value={formData.mimeType}
-					onChange={handleChange('mimeType')}
-				/>
-
-				<label htmlFor="title">Title</label>
-				<TextField.Root
-					id="title"
-					type="text"
-					value={formData.title}
-					onChange={handleChange('title')}
-				/>
-
-				<label htmlFor="altText">Alt Text</label>
-				<TextField.Root
-					id="altText"
-					type="text"
-					value={formData.altText}
-					onChange={handleChange('altText')}
-				/>
-
-				<label htmlFor="fileSize">File Size</label>
-				<TextField.Root
-					id="fileSize"
-					type="number"
-					value={formData.fileSize ?? ''}
-					onChange={handleChange('fileSize')}
-				/>
-
-				<label htmlFor="width">Width</label>
-				<TextField.Root
-					id="width"
-					type="number"
-					value={formData.width ?? ''}
-					onChange={handleChange('width')}
-				/>
-
-				<label htmlFor="height">Height</label>
-				<TextField.Root
-					id="height"
-					type="number"
-					value={formData.height ?? ''}
-					onChange={handleChange('height')}
-				/>
-			</div>
-			<Button type="submit">Submit</Button>
-		</form>
+		<div className="flex basis-full flex-col gap-4 overflow-hidden">
+			{/* Display the actual media preview above the edit form */}
+			<div className="mb-4">{mediaPreview}</div>
+			<form
+				className="flex flex-col gap-4"
+				onSubmit={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					form.handleSubmit();
+				}}
+			>
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<form.Field name="url">
+						{(field) => (
+							<label className="flex flex-col gap-1">
+								<Text size="2" color="gray">
+									URL
+								</Text>
+								<TextField.Root
+									type="text"
+									value={field.state.value}
+									onChange={(e) => field.handleChange(e.target.value)}
+								/>
+							</label>
+						)}
+					</form.Field>
+					<form.Field name="title">
+						{(field) => (
+							<label className="flex flex-col gap-1">
+								<Text size="2" color="gray">
+									Title
+								</Text>
+								<TextField.Root
+									type="text"
+									value={field.state.value || ''}
+									onChange={(e) => field.handleChange(e.target.value)}
+								/>
+							</label>
+						)}
+					</form.Field>
+					<form.Field name="altText">
+						{(field) => (
+							<label className="flex flex-col gap-1">
+								<Text size="2" color="gray">
+									Alt Text
+								</Text>
+								<TextField.Root
+									type="text"
+									value={field.state.value || ''}
+									onChange={(e) => field.handleChange(e.target.value)}
+								/>
+							</label>
+						)}
+					</form.Field>
+				</div>
+				<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+					{([canSubmit, isSubmitting]) => (
+						<div className="mt-4 border-t border-divider pt-4">
+							<Button type="submit" disabled={!canSubmit}>
+								{isSubmitting ? '...Saving' : 'Save Changes'}
+							</Button>
+						</div>
+					)}
+				</form.Subscribe>
+			</form>
+			<ScrollArea scrollbars="vertical">
+				<MetadataList metadata={mediaItem} />
+			</ScrollArea>
+		</div>
 	);
 };

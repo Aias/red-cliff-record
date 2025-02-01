@@ -2,7 +2,6 @@ import { randomUUID } from 'crypto';
 import { mkdirSync } from 'fs';
 import { S3Client } from 'bun';
 import { extension as mimeExtension, lookup as mimeLookup } from 'mime-types';
-import sharp from 'sharp';
 
 // Create the S3 client for Cloudflare R2 (or any S3-compatible endpoint).
 // Ensure you have these environment variables set: S3_REGION, S3_ACCESS_KEY_ID,
@@ -91,44 +90,4 @@ export async function deleteMediaFromR2(assetId: string): Promise<void> {
 			`Failed to delete asset ${assetId}: ${error instanceof Error ? error.message : 'Unknown error'}`
 		);
 	}
-}
-
-export type MediaMetadata = {
-	contentType: string;
-	size: number;
-	width?: number;
-	height?: number;
-	format?: string;
-	hasAlpha?: boolean;
-};
-
-export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
-	// Start with a HEAD request
-	const headResponse = await fetch(url, { method: 'HEAD' });
-	const contentType =
-		headResponse.headers.get('content-type') ||
-		mimeLookup(new URL(url).pathname) ||
-		'application/octet-stream';
-
-	// If it's an image, get more details
-	if (contentType.startsWith('image/')) {
-		const response = await fetch(url);
-		const buffer = await response.arrayBuffer();
-		const metadata = await sharp(buffer).metadata();
-
-		return {
-			contentType,
-			size: Number(headResponse.headers.get('content-length')),
-			width: metadata.width,
-			height: metadata.height,
-			format: metadata.format,
-			hasAlpha: metadata.hasAlpha,
-		};
-	}
-
-	// For non-images, return basic info
-	return {
-		contentType,
-		size: Number(headResponse.headers.get('content-length')),
-	};
 }

@@ -84,7 +84,7 @@ export const twitterMedia = integrationSchema.table(
 	{
 		id: text('id').primaryKey(),
 		type: twitterMediaTypeEnum('type').notNull(),
-		url: text('url').notNull().unique(),
+		tweetUrl: text('tweet_url').notNull(),
 		mediaUrl: text('media_url').notNull().unique(),
 		tweetId: text('tweet_id')
 			.references(() => twitterTweets.id, {

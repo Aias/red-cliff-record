@@ -428,7 +428,7 @@ const TwitterSection = () => {
 
 	const mediaConfig: IntegrationListConfig<SingleRecord<typeof twitterMedia>>[] = useMemo(
 		() => [
-			{ label: 'URL', accessor: (item) => item.url, href: (item) => item.url },
+			{ label: 'URL', accessor: (item) => item.tweetUrl, href: (item) => item.tweetUrl },
 			{ label: 'Media URL', accessor: (item) => item.mediaUrl, href: (item) => item.mediaUrl },
 			{ label: 'Tweet', accessor: (item) => item.tweet?.text },
 		],
@@ -464,7 +464,7 @@ const TwitterSection = () => {
 			{twitterMedia ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/airtable-creators',
+						to: '/queue/media/twitter-media',
 					}}
 					label="Media"
 					data={twitterMedia}
