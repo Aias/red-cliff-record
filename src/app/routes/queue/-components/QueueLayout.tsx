@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useCallback, useEffect, useMemo } from 'react';
 import { Cross1Icon } from '@radix-ui/react-icons';
 import {
 	Button,
@@ -42,22 +42,27 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 	const { itemId: inspectedItemId } = useSearch({ from: '/queue' });
 	const allIds = useMemo(() => new Set(items.map((item) => config.getInputId(item))), [items]);
 
-	// Add helper functions for navigation
-	const navigateToItem = (itemId: string) => {
-		navigate({ to: '.', search: { itemId } });
-	};
+	const navigateToItem = useCallback(
+		(itemId: string) => {
+			navigate({ to: '.', search: { itemId } });
+		},
+		[navigate]
+	);
 
-	const getAdjacentItemId = (direction: 'prev' | 'next') => {
-		const currentIndex = items.findIndex((item) => config.getInputId(item) === inspectedItemId);
-		if (currentIndex === -1) return null;
+	const getAdjacentItemId = useCallback(
+		(direction: 'prev' | 'next') => {
+			const currentIndex = items.findIndex((item) => config.getInputId(item) === inspectedItemId);
+			if (currentIndex === -1) return null;
 
-		const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
-		if (targetIndex < 0 || targetIndex >= items.length) return null;
+			const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+			if (targetIndex < 0 || targetIndex >= items.length) return null;
 
-		// We know this is safe because we checked the bounds
-		const targetItem = items[targetIndex]!;
-		return config.getInputId(targetItem);
-	};
+			// We know this is safe because we checked the bounds
+			const targetItem = items[targetIndex]!;
+			return config.getInputId(targetItem);
+		},
+		[items, inspectedItemId, config]
+	);
 
 	// Add keyboard event handling
 	useEffect(() => {
