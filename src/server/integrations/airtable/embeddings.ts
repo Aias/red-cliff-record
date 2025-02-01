@@ -9,7 +9,6 @@ import {
 	type AirtableSpaceSelect,
 } from '~/server/db/schema/integrations/airtable';
 import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
-import { runIntegration } from '../common/run-integration';
 
 type CreatorWithExtracts = AirtableCreatorSelect & {
 	creatorExtracts?: {
@@ -235,20 +234,6 @@ async function syncAirtableEmbeddings(): Promise<number> {
 	totalCount += await updateExtractEmbeddings();
 
 	return totalCount;
-}
-
-const main = async () => {
-	try {
-		await runIntegration('embeddings', syncAirtableEmbeddings);
-		process.exit();
-	} catch (err) {
-		console.error('Error in main:', err);
-		process.exit(1);
-	}
-};
-
-if (import.meta.url === import.meta.resolve('./embeddings.ts')) {
-	main();
 }
 
 export { syncAirtableEmbeddings };

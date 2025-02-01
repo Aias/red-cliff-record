@@ -18,6 +18,7 @@ import {
 } from '~/server/db/schema/integrations';
 import { deleteMediaFromR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
+import { syncAirtableEmbeddings } from './embeddings';
 import { airtableBase, storeMedia } from './helpers';
 import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
 
@@ -257,14 +258,19 @@ async function seedRelations() {
 	}
 }
 
+const CLEAR_BEFORE_SYNC = false;
+
 async function syncAirtableData(integrationRunId: number): Promise<number> {
-	await cleanupExistingRecords();
+	if (CLEAR_BEFORE_SYNC) {
+		await cleanupExistingRecords();
+	}
 
 	await seedCreators(integrationRunId);
 	await seedSpaces(integrationRunId);
 	await seedExtracts(integrationRunId);
 	await seedAttachments();
 	await seedRelations();
+	await syncAirtableEmbeddings();
 
 	const count = await db.$count(
 		airtableExtracts,

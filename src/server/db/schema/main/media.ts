@@ -1,14 +1,5 @@
 import { relations } from 'drizzle-orm';
-import {
-	foreignKey,
-	index,
-	integer,
-	json,
-	pgEnum,
-	pgTable,
-	serial,
-	text,
-} from 'drizzle-orm/pg-core';
+import { foreignKey, index, integer, pgEnum, pgTable, serial, text } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createUpdateSchema } from 'drizzle-zod';
 import { createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -36,7 +27,7 @@ export const media = pgTable(
 		id: serial('id').primaryKey(),
 		url: text('url').notNull().unique(),
 		format: mediaFormatEnum('format').notNull().default('application'),
-		mimeType: text('mime_type').notNull(),
+		mimeType: text('mime_type').notNull().default('application/octet-stream'),
 		title: text('title'),
 		altText: text('alt_text'),
 		fileSize: integer('file_size'),
@@ -47,7 +38,6 @@ export const media = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		metadata: json('metadata'),
 		...databaseTimestamps,
 	},
 	(table) => [

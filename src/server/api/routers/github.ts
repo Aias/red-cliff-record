@@ -10,6 +10,9 @@ import { CommitSummaryInputSchema } from './github.types';
 export const githubRouter = createTRPCRouter({
 	getCommits: publicProcedure.input(RequestParamsSchema).query(({ ctx: { db }, input }) => {
 		return db.query.githubCommits.findMany({
+			columns: {
+				embedding: false,
+			},
 			with: {
 				repository: true,
 				commitChanges: true,

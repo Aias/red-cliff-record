@@ -4,6 +4,7 @@ import { resolve } from 'path';
 import { db } from '~/server/db/connections';
 import {
 	twitterMedia as mediaTable,
+	TwitterMediaType,
 	twitterTweets as tweetsTable,
 	twitterUsers as usersTable,
 } from '~/server/db/schema/integrations';
@@ -170,8 +171,8 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				.values(
 					processedMedia.map((mediaItem) => ({
 						id: mediaItem.id,
-						type: mediaItem.type,
-						url: mediaItem.shortUrl,
+						type: TwitterMediaType.parse(mediaItem.type),
+						tweetUrl: mediaItem.shortUrl,
 						mediaUrl: mediaItem.mediaUrl,
 						tweetId: mediaItem.tweetId,
 					}))
