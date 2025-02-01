@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { ExternalLinkIcon, Link2Icon } from '@radix-ui/react-icons';
 import { Avatar, Button, Checkbox, Heading, Link, Text } from '@radix-ui/themes';
 import type { QueueItem } from './types';
@@ -11,7 +12,7 @@ type QueueListItemProps = Omit<QueueItem, 'id'> &
 		active?: boolean;
 	};
 
-export function QueueListItem({
+export const QueueListItem = memo(function QueueListItem({
 	title,
 	avatarUrl,
 	externalUrl,
@@ -92,4 +93,4 @@ export function QueueListItem({
 			)}
 		</section>
 	);
-}
+});
