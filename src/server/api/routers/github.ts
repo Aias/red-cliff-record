@@ -95,6 +95,7 @@ export const githubRouter = createTRPCRouter({
 
 				return summaries;
 			} catch (error) {
+				console.error(error);
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
 					message: 'Failed to summarize commits',
