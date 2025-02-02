@@ -34,6 +34,7 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 	handleUnlink,
 	handleArchive,
 	handleUnarchive,
+	handleDeleteOutput,
 }: QueueLayoutProps<TInput, TOutput>) => {
 	const navigate = useNavigate();
 	const { selectedIds, toggleSelection, selectAll, clearSelection } = useSelection(
@@ -114,6 +115,31 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 		return config.mapToQueueItem(inspectedItem);
 	}, [inspectedItem]);
 
+	const handleArchiveAndNavigate = useCallback(
+		(ids: string[]) => {
+			// If we're inspecting an item that's being archived, get its current index
+			const currentIndex = inspectedItemId
+				? items.findIndex((item) => config.getInputId(item) === inspectedItemId)
+				: -1;
+
+			// Perform the archive
+			handleArchive(ids);
+
+			// If we were inspecting an item, navigate to the new item at the same index
+			if (currentIndex !== -1) {
+				// Small delay to allow for state updates
+				setTimeout(() => {
+					const newItems = items.filter((item) => !ids.includes(config.getInputId(item)));
+					const newItem = newItems[currentIndex] || newItems[newItems.length - 1];
+					if (newItem) {
+						navigateToItem(config.getInputId(newItem));
+					}
+				}, 0);
+			}
+		},
+		[items, inspectedItemId, handleArchive, navigateToItem, config]
+	);
+
 	return (
 		<main className="flex grow overflow-hidden">
 			<div className="flex shrink-0 grow-0 basis-xs flex-col gap-4 border-r border-divider py-4">
@@ -170,8 +196,7 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 										<DropdownMenu.Separator />
 										<DropdownMenu.Item
 											onClick={() => {
-												console.log('Archiving', Array.from(selectedIds));
-												handleArchive(Array.from(selectedIds));
+												handleArchiveAndNavigate(Array.from(selectedIds));
 												clearSelection();
 											}}
 										>
@@ -263,7 +288,7 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 				>
 					{inspectedItem ? (
 						<div className="flex grow gap-3">
-							<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-3">
+							<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-4">
 								<header className="flex flex-col gap-2">
 									<Heading size="3" as="h2">
 										{config.getInputTitle(inspectedItem)}
@@ -278,7 +303,7 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 												if (inspectedQueueItem?.archivedAt) {
 													handleUnarchive([id]);
 												} else {
-													handleArchive([id]);
+													handleArchiveAndNavigate([id]);
 												}
 											}}
 										>
@@ -296,10 +321,32 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 										>
 											Unlink
 										</Button>
+										{handleDeleteOutput && inspectedQueueItem?.mappedId && (
+											<Button
+												size="1"
+												variant="soft"
+												color="red"
+												className="flex-1"
+												onClick={() => {
+													if (typeof inspectedQueueItem.mappedId === 'string') {
+														handleDeleteOutput(inspectedQueueItem.mappedId);
+													}
+												}}
+											>
+												Delete Entry
+											</Button>
+										)}
 									</div>
 								</header>
 								<ScrollArea scrollbars="vertical">
 									<MetadataList metadata={inspectedItem} className="gap-3" />
+									{inspectedQueueItem?.avatarUrl && (
+										<img
+											src={inspectedQueueItem.avatarUrl}
+											alt={inspectedQueueItem.title}
+											className="mt-4 w-full overflow-hidden rounded-md"
+										/>
+									)}
 								</ScrollArea>
 							</div>
 							<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-3">

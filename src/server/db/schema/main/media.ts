@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { databaseTimestamps } from '../common';
 import { sources } from './sources';
 
-export const MediaFormat = z.enum([
+export const MediaType = z.enum([
 	'application', // application or binary data
 	'audio', // audio files
 	'font', // font/typeface files
@@ -17,17 +17,18 @@ export const MediaFormat = z.enum([
 	'text', // plain text, markdown, etc.
 	'video', // video files
 ]);
-export type MediaFormat = z.infer<typeof MediaFormat>;
+export type MediaType = z.infer<typeof MediaType>;
 
-export const mediaFormatEnum = pgEnum('media_format', MediaFormat.options);
+export const mediaTypeEnum = pgEnum('media_type', MediaType.options);
 
 export const media = pgTable(
 	'media',
 	{
 		id: serial('id').primaryKey(),
 		url: text('url').notNull().unique(),
-		format: mediaFormatEnum('format').notNull().default('application'),
-		mimeType: text('mime_type').notNull().default('application/octet-stream'),
+		type: mediaTypeEnum('type').notNull().default('application'),
+		format: text('format').notNull().default('octet-stream'),
+		contentTypeString: text('content_type_string').notNull().default('application/octet-stream'),
 		title: text('title'),
 		altText: text('alt_text'),
 		fileSize: integer('file_size'),
@@ -45,8 +46,8 @@ export const media = pgTable(
 			columns: [table.versionOfMediaId],
 			foreignColumns: [table.id],
 		}),
+		index().on(table.type),
 		index().on(table.format),
-		index().on(table.mimeType),
 		index().on(table.sourcePageId),
 		index().on(table.versionOfMediaId),
 	]

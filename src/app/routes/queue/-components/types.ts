@@ -25,4 +25,5 @@ export interface QueueActions<TInput, TOutput> {
 	handleUnlink: (inputIds: string[]) => Promise<TInput[]>;
 	handleArchive: (inputIds: string[]) => Promise<TInput[]>;
 	handleUnarchive: (inputIds: string[]) => Promise<TInput[]>;
+	handleDeleteOutput?: (outputId: string) => Promise<TOutput | undefined>;
 }

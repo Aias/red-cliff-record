@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Button, ScrollArea, Text, TextField } from '@radix-ui/themes';
+import { Button, Heading, ScrollArea, Text, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { MetadataList } from '~/app/components/MetadataList';
@@ -46,7 +46,7 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 	}, [mediaItem]);
 
 	let mediaPreview;
-	if (mediaItem.mimeType.startsWith('image')) {
+	if (mediaItem.type === 'image') {
 		mediaPreview = (
 			<img
 				src={mediaItem.url}
@@ -54,7 +54,7 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 				className="w-full rounded shadow"
 			/>
 		);
-	} else if (mediaItem.mimeType.startsWith('video')) {
+	} else if (mediaItem.type === 'video') {
 		mediaPreview = <video controls src={mediaItem.url} className="w-full rounded shadow" />;
 	} else {
 		mediaPreview = <div className="bg-muted rounded p-4">Preview not available</div>;
@@ -62,7 +62,9 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 
 	return (
 		<div className="flex basis-full flex-col gap-4 overflow-hidden">
-			{/* Display the actual media preview above the edit form */}
+			<Heading size="3" as="h2">
+				Edit Media Entry
+			</Heading>
 			<div className="mb-4">{mediaPreview}</div>
 			<form
 				className="flex flex-col gap-4"
@@ -72,50 +74,47 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 					form.handleSubmit();
 				}}
 			>
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<form.Field name="url">
-						{(field) => (
-							<label className="flex flex-col gap-1">
-								<Text size="2" color="gray">
-									URL
-								</Text>
-								<TextField.Root
-									type="text"
-									value={field.state.value}
-									onChange={(e) => field.handleChange(e.target.value)}
-								/>
-							</label>
-						)}
-					</form.Field>
-					<form.Field name="title">
-						{(field) => (
-							<label className="flex flex-col gap-1">
-								<Text size="2" color="gray">
-									Title
-								</Text>
-								<TextField.Root
-									type="text"
-									value={field.state.value || ''}
-									onChange={(e) => field.handleChange(e.target.value)}
-								/>
-							</label>
-						)}
-					</form.Field>
-					<form.Field name="altText">
-						{(field) => (
-							<label className="flex flex-col gap-1">
-								<Text size="2" color="gray">
-									Alt Text
-								</Text>
-								<TextField.Root
-									type="text"
-									value={field.state.value || ''}
-									onChange={(e) => field.handleChange(e.target.value)}
-								/>
-							</label>
-						)}
-					</form.Field>
-				</div>
+				<form.Field name="url">
+					{(field) => (
+						<label className="flex flex-col gap-1">
+							<Text size="2" color="gray">
+								URL
+							</Text>
+							<TextField.Root
+								type="url"
+								value={field.state.value}
+								onChange={(e) => field.handleChange(e.target.value)}
+							/>
+						</label>
+					)}
+				</form.Field>
+				<form.Field name="title">
+					{(field) => (
+						<label className="flex flex-col gap-1">
+							<Text size="2" color="gray">
+								Title
+							</Text>
+							<TextField.Root
+								type="text"
+								value={field.state.value || ''}
+								onChange={(e) => field.handleChange(e.target.value)}
+							/>
+						</label>
+					)}
+				</form.Field>
+				<form.Field name="altText">
+					{(field) => (
+						<label className="flex flex-col gap-1">
+							<Text size="2" color="gray">
+								Alt Text
+							</Text>
+							<TextArea
+								value={field.state.value || ''}
+								onChange={(e) => field.handleChange(e.target.value)}
+							/>
+						</label>
+					)}
+				</form.Field>
 				<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
 					{([canSubmit, isSubmitting]) => (
 						<div className="mt-4 border-t border-divider pt-4">

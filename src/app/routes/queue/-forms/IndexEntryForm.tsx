@@ -1,6 +1,14 @@
 import { useEffect } from 'react';
 import { ExternalLinkIcon, ImageIcon } from '@radix-ui/react-icons';
-import { Button, ScrollArea, SegmentedControl, Text, TextArea, TextField } from '@radix-ui/themes';
+import {
+	Button,
+	Heading,
+	ScrollArea,
+	SegmentedControl,
+	Text,
+	TextArea,
+	TextField,
+} from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
@@ -51,6 +59,9 @@ export const IndexEntryForm = ({
 
 	return (
 		<div className="flex basis-full flex-col gap-3 overflow-hidden">
+			<Heading size="3" as="h2">
+				Edit Index Entry
+			</Heading>
 			<form
 				className="flex flex-col gap-2"
 				onSubmit={(e) => {

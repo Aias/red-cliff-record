@@ -34,13 +34,13 @@ const config: QueueConfig<TwitterMediaWithTweet, MediaSelect, MediaInsert> = {
 	}),
 	getOutputDefaults: (media) => ({
 		url: media.mediaUrl,
-		createdAt: media.createdAt,
-		updatedAt: media.updatedAt,
+		createdAt: media.tweet?.contentCreatedAt ?? media.createdAt,
+		updatedAt: media.tweet?.contentUpdatedAt ?? media.updatedAt,
 	}),
 	getInputId: (media) => media.id,
 	getOutputId: (mediaRecord) => mediaRecord.id.toString(),
-	getInputTitle: (media) => media.type,
-	getOutputTitle: (mediaRecord) => `${mediaRecord.title} (${mediaRecord.mimeType})`,
+	getInputTitle: (media) => `Media from Tweet: #${media.tweet?.id}`,
+	getOutputTitle: (mediaRecord) => `${mediaRecord.title} (${mediaRecord.type})`,
 };
 
 function RouteComponent() {
@@ -88,6 +88,13 @@ function RouteComponent() {
 	const handleUnarchive = (twitterMediaIds: string[]) =>
 		unarchiveMutation.mutateAsync({ twitterMediaIds, shouldArchive: false });
 
+	const deleteOutputMutation = trpc.media.delete.useMutation({
+		onSuccess: () => {
+			utils.twitter.getMedia.invalidate();
+		},
+	});
+	const handleDeleteOutput = (mediaId: string) => deleteOutputMutation.mutateAsync(Number(mediaId));
+
 	return (
 		<QueueLayout
 			items={mediaItems}
@@ -98,6 +105,7 @@ function RouteComponent() {
 			handleUnlink={handleUnlink}
 			handleArchive={handleArchive}
 			handleUnarchive={handleUnarchive}
+			handleDeleteOutput={handleDeleteOutput}
 		>
 			{(mappedId, defaults) => (
 				<MediaEntryForm
