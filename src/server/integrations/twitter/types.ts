@@ -130,7 +130,7 @@ export type TweetLegacy = {
 		user_mentions?: any[];
 	};
 	extended_entities?: {
-		media?: any[];
+		media?: Media[];
 	};
 	favorite_count: number;
 	favorited: boolean;
@@ -151,6 +151,20 @@ export type TweetLegacy = {
 	id_str: string;
 };
 
+export type VideoVariant = {
+	bitrate?: number;
+	content_type: string;
+	url: string;
+};
+
+export type VideoInfo = {
+	aspect_ratio: [number, number];
+	duration_millis: number;
+	variants: VideoVariant[];
+};
+
+export type TwitterMediaType = 'photo' | 'video' | 'animated_gif';
+
 export type Media = {
 	display_url: string;
 	expanded_url: string;
@@ -158,8 +172,9 @@ export type Media = {
 	indices: number[];
 	media_key: string;
 	media_url_https: string;
-	type: string;
+	type: TwitterMediaType;
 	url: string;
+	video_info?: VideoInfo;
 };
 
 export type TwitterBookmarksArray = TwitterBookmarkResponse[];

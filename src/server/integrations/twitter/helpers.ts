@@ -44,11 +44,34 @@ export const processTweet = (tweet: TweetData) => {
 };
 
 export const processMedia = (media: Media, tweet: TweetData) => {
-	const { display_url, expanded_url, id_str, type, url, media_key, media_url_https } = media;
+	const { display_url, expanded_url, id_str, type, url, media_key, media_url_https, video_info } =
+		media;
+
+	let finalMediaUrl = media_url_https;
+
+	// When the media is a video or an animated GIF, attempt to select an mp4 variant.
+	if (
+		(type === 'video' || type === 'animated_gif') &&
+		video_info &&
+		Array.isArray(video_info.variants)
+	) {
+		// Filter for mp4 variants (animated_gif variants often include a bitrate of 0).
+		const mp4Variants = video_info.variants.filter(
+			(variant) => variant.content_type === 'video/mp4'
+		);
+		if (mp4Variants.length > 0) {
+			if (type === 'video') {
+				// For videos, sort descending by bitrate.
+				mp4Variants.sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0));
+			}
+			// For animated GIFs, just take the (only) variant provided.
+			finalMediaUrl = mp4Variants[0]?.url ?? media_url_https;
+		}
+	}
 
 	return {
 		id: id_str,
-		mediaUrl: media_url_https,
+		mediaUrl: finalMediaUrl,
 		displayUrl: display_url,
 		expandedUrl: expanded_url,
 		type,
