@@ -63,7 +63,6 @@ function RouteComponent() {
 		},
 	});
 	const handleLink = (userId: string, indexEntryId: string) => {
-		console.log(`Linking ${userId} to ${indexEntryId}`);
 		return linkMutation.mutateAsync({ userId: Number(userId), indexEntryId: Number(indexEntryId) });
 	};
 

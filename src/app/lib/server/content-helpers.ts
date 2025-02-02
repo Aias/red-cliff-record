@@ -1,10 +1,10 @@
 import mime from 'mime-types';
 import sharp from 'sharp';
 import { z } from 'zod';
-import { FLAGS, MediaFormat, type Flag } from '~/server/db/schema/main';
+import { FLAGS, MediaType, type Flag } from '~/server/db/schema/main';
 
 const urlSchema = z.string().url();
-const DEFAULT_MEDIA_FORMAT = MediaFormat.enum.application;
+const DEFAULT_MEDIA_TYPE = MediaType.enum.application;
 const DEFAULT_MIME_TYPE = 'application/octet-stream';
 
 // -----------------------------------------------------------------
@@ -14,14 +14,14 @@ const DEFAULT_MIME_TYPE = 'application/octet-stream';
 //              type component (e.g., "image", "video"), and validates it against the
 //              MediaFormat schema. Defaults to MediaFormat.enum.application on failure.
 // -----------------------------------------------------------------
-export const getMediaFormat = (filenameOrExt: string): MediaFormat => {
+export const getMediaType = (filenameOrExt: string): MediaType => {
 	const fullMimeType = mime.lookup(filenameOrExt);
 	if (!fullMimeType) {
-		return DEFAULT_MEDIA_FORMAT;
+		return DEFAULT_MEDIA_TYPE;
 	}
 	const type = fullMimeType.split('/')[0];
-	const parsed = MediaFormat.safeParse(type);
-	return parsed.success ? parsed.data : DEFAULT_MEDIA_FORMAT;
+	const parsed = MediaType.safeParse(type);
+	return parsed.success ? parsed.data : DEFAULT_MEDIA_TYPE;
 };
 
 // -----------------------------------------------------------------
@@ -47,22 +47,23 @@ export const getMimeTypeFromURL = (url: string): string => {
 };
 
 // -----------------------------------------------------------------
-// Function: getMediaFormatFromURL
-// Description: Validates the URL using zod and returns the MediaFormat based on the
-//              pathname of the URL. If the URL is invalid, returns the default media format.
+// Function: getMediaTypeFromURL
+// Description: Validates the URL using zod and returns the MediaType based on the
+//              pathname of the URL. If the URL is invalid, returns the default media type.
 // -----------------------------------------------------------------
-export const getMediaFormatFromURL = (url: string): MediaFormat => {
+export const getMediaTypeFromURL = (url: string): MediaType => {
 	const parsedUrl = urlSchema.safeParse(url);
 	if (!parsedUrl.success) {
-		return DEFAULT_MEDIA_FORMAT;
+		return DEFAULT_MEDIA_TYPE;
 	}
 	const { pathname } = new URL(parsedUrl.data);
-	return getMediaFormat(pathname);
+	return getMediaType(pathname);
 };
 
 export type MediaMetadata = {
-	mediaFormat: MediaFormat;
-	mimeType: string;
+	mediaType: MediaType;
+	mediaFormat: string;
+	contentTypeString: string;
 	size: number;
 	width?: number;
 	height?: number;
@@ -71,33 +72,31 @@ export type MediaMetadata = {
 };
 
 export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
-	// Validate URL using zod
-	const validUrl = z.string().url().parse(url);
-	const pathname = new URL(validUrl).pathname;
+	const validatedUrl = z.string().url().parse(url);
 
 	// Start with a HEAD request
-	const headResponse = await fetch(validUrl, { method: 'HEAD' });
-	let mediaFormat: MediaFormat;
-	const { data: formatFromHeaders } = MediaFormat.safeParse(
-		headResponse.headers.get('content-type') || ''
-	);
-	if (formatFromHeaders) {
-		mediaFormat = formatFromHeaders;
+	const headResponse = await fetch(validatedUrl, { method: 'HEAD' });
+	let mediaType: MediaType;
+	const contentTypeHeader = headResponse.headers.get('content-type')?.split('/')[0];
+	const { data: typeFromHeaders } = MediaType.safeParse(contentTypeHeader || '');
+	if (typeFromHeaders) {
+		mediaType = typeFromHeaders;
 	} else {
-		mediaFormat = getMediaFormatFromURL(pathname);
+		mediaType = getMediaTypeFromURL(validatedUrl);
 	}
-	const mimeType = getMimeTypeFromURL(pathname); // Get base MIME type without parameters
+	const mimeType = getMimeTypeFromURL(validatedUrl); // Get base MIME type without parameters
 
 	// If it's an image, get more details
-	if (mediaFormat === 'image') {
-		const response = await fetch(validUrl);
+	if (mediaType === 'image') {
+		const response = await fetch(validatedUrl);
 		const buffer = await response.arrayBuffer();
 		const metadata = await sharp(buffer).metadata();
 
 		return {
-			mediaFormat,
-			mimeType,
-			size: Number(headResponse.headers.get('content-length') ?? 0),
+			mediaType: mediaType,
+			mediaFormat: metadata.format ?? 'octet-stream',
+			contentTypeString: mimeType,
+			size: Number(headResponse.headers.get('content-length') ?? metadata.size ?? 0),
 			width: metadata.width,
 			height: metadata.height,
 			format: metadata.format,
@@ -107,8 +106,9 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 
 	// For non-images, return basic info
 	return {
-		mediaFormat,
-		mimeType,
+		mediaType,
+		mediaFormat: 'octet-stream',
+		contentTypeString: mimeType,
 		size: Number(headResponse.headers.get('content-length') ?? 0),
 	};
 }

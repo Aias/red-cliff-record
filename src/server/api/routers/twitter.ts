@@ -13,7 +13,7 @@ export const twitterRouter = createTRPCRouter({
 				quotedTweet: true,
 			},
 			where: buildWhereClause(input, twitterTweets.archivedAt, twitterTweets.recordId),
-			orderBy: [desc(twitterTweets.archivedAt), desc(twitterTweets.contentCreatedAt)],
+			orderBy: [desc(twitterTweets.archivedAt), twitterTweets.contentCreatedAt],
 			limit: input.limit,
 		});
 
@@ -26,7 +26,7 @@ export const twitterRouter = createTRPCRouter({
 				tweets: true,
 			},
 			where: buildWhereClause(input, twitterUsers.archivedAt, twitterUsers.indexEntryId),
-			orderBy: [desc(twitterUsers.archivedAt), desc(twitterUsers.contentCreatedAt)],
+			orderBy: [desc(twitterUsers.archivedAt), twitterUsers.createdAt],
 			limit: input.limit,
 		});
 
@@ -43,7 +43,7 @@ export const twitterRouter = createTRPCRouter({
 				},
 			},
 			where: buildWhereClause(input, twitterMedia.archivedAt, twitterMedia.mediaId),
-			orderBy: [desc(twitterMedia.archivedAt), desc(twitterMedia.contentCreatedAt)],
+			orderBy: [desc(twitterMedia.archivedAt), twitterMedia.createdAt],
 			limit: input.limit,
 		});
 
