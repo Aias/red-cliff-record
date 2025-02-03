@@ -1,13 +1,13 @@
 import { relations } from 'drizzle-orm';
 import {
 	boolean,
-	foreignKey,
 	index,
 	integer,
 	text,
 	timestamp,
 	unique,
 	vector,
+	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { type z } from 'zod';
@@ -94,7 +94,10 @@ export const raindropCollections = integrationSchema.table(
 	{
 		id: integer('id').primaryKey(),
 		title: text('title').notNull(),
-		parentId: integer('parent_id'),
+		parentId: integer('parent_id').references((): AnyPgColumn => raindropCollections.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		colorHex: text('color_hex'),
 		coverUrl: text('cover_url'),
 		raindropCount: integer('raindrop_count'),
@@ -114,7 +117,6 @@ export const raindropCollections = integrationSchema.table(
 	},
 	(table) => [
 		index().on(table.parentId),
-		foreignKey({ columns: [table.parentId], foreignColumns: [table.id] }),
 		index().on(table.archivedAt),
 		index().on(table.indexEntryId),
 	]

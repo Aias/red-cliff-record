@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { foreignKey, index, integer, text, timestamp, vector } from 'drizzle-orm/pg-core';
+import { index, integer, text, timestamp, vector, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
@@ -12,12 +12,17 @@ export const twitterTweets = integrationSchema.table(
 	'twitter_tweets',
 	{
 		id: text('id').primaryKey(),
-		userId: text('user_id').references(() => twitterUsers.id, {
+		userId: text('user_id')
+			.notNull()
+			.references(() => twitterUsers.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			}),
+		text: text('text'),
+		quotedTweetId: text('quoted_tweet_id').references((): AnyPgColumn => twitterTweets.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		text: text('text'),
-		quotedTweetId: text('quoted_tweet_id'),
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
@@ -34,10 +39,6 @@ export const twitterTweets = integrationSchema.table(
 	},
 	(table) => [
 		index().on(table.integrationRunId),
-		foreignKey({
-			columns: [table.quotedTweetId],
-			foreignColumns: [table.id],
-		}),
 		index().on(table.archivedAt),
 		index().on(table.recordId),
 	]

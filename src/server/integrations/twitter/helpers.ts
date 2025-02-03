@@ -1,6 +1,11 @@
+import type {
+	TwitterMediaInsert,
+	TwitterTweetInsert,
+	TwitterUserInsert,
+} from '~/server/db/schema/integrations';
 import type { Media, TweetData, User } from './types';
 
-export const processUser = (user: User) => {
+export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRunId'> => {
 	const { rest_id, legacy } = user;
 	const {
 		created_at,
@@ -14,7 +19,11 @@ export const processUser = (user: User) => {
 		url,
 	} = legacy;
 
-	const userExternalLink = entities?.url?.urls?.[0];
+	// First try entities.url.urls then fallback to entities.description.urls
+	let userExternalLinkEntry = entities?.url?.urls?.[0];
+	if (!userExternalLinkEntry) {
+		userExternalLinkEntry = entities?.description?.urls?.[0];
+	}
 
 	return {
 		id: rest_id,
@@ -24,13 +33,13 @@ export const processUser = (user: User) => {
 		location,
 		profileImageUrl: profile_image_url_https,
 		profileBannerUrl: profile_banner_url,
-		twitterUrl: url,
-		userExternalLink,
-		createdAt: new Date(created_at),
+		url: url,
+		externalUrl: userExternalLinkEntry?.expanded_url,
+		contentCreatedAt: new Date(created_at),
 	};
 };
 
-export const processTweet = (tweet: TweetData) => {
+export const processTweet = (tweet: TweetData): Omit<TwitterTweetInsert, 'integrationRunId'> => {
 	const { rest_id, legacy, note_tweet, isQuoted, quotedTweetId } = tweet;
 	const { created_at, full_text, user_id_str } = legacy;
 
@@ -39,13 +48,15 @@ export const processTweet = (tweet: TweetData) => {
 		userId: user_id_str,
 		text: note_tweet ? note_tweet.note_tweet_results.result.text : full_text,
 		quotedTweetId: isQuoted ? undefined : quotedTweetId,
-		createdAt: new Date(created_at),
+		contentCreatedAt: new Date(created_at),
 	};
 };
 
-export const processMedia = (media: Media, tweet: TweetData) => {
-	const { display_url, expanded_url, id_str, type, url, media_key, media_url_https, video_info } =
-		media;
+export const processMedia = (
+	media: Media,
+	tweet: TweetData
+): Omit<TwitterMediaInsert, 'integrationRunId'> => {
+	const { display_url, id_str, type, media_url_https, video_info } = media;
 
 	let finalMediaUrl = media_url_https;
 
@@ -71,12 +82,10 @@ export const processMedia = (media: Media, tweet: TweetData) => {
 
 	return {
 		id: id_str,
-		mediaUrl: finalMediaUrl,
-		displayUrl: display_url,
-		expandedUrl: expanded_url,
 		type,
-		shortUrl: url,
-		mediaKey: media_key,
+		mediaUrl: finalMediaUrl,
+		tweetUrl: display_url,
 		tweetId: tweet.rest_id,
+		contentCreatedAt: new Date(tweet.legacy.created_at),
 	};
 };
