@@ -1,7 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
 	boolean,
-	foreignKey,
 	index,
 	integer,
 	pgEnum,
@@ -10,6 +9,7 @@ import {
 	text,
 	unique,
 	vector,
+	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -54,16 +54,15 @@ export const indices = pgTable(
 			onUpdate: 'cascade',
 		}),
 		canonicalMediaUrl: text('canonical_media_url'),
-		aliasOf: integer('alias_of'),
+		aliasOf: integer('alias_of').references((): AnyPgColumn => indices.id, {
+			onDelete: 'cascade',
+			onUpdate: 'cascade',
+		}),
 		private: boolean('private').notNull().default(false),
 		embedding: vector('embedding', { dimensions: 768 }),
 		...databaseTimestamps,
 	},
 	(table) => [
-		foreignKey({
-			columns: [table.aliasOf],
-			foreignColumns: [table.id],
-		}),
 		unique().on(table.name, table.sense, table.mainType),
 		index().on(table.mainType, table.subType),
 		index().on(table.canonicalPageId),

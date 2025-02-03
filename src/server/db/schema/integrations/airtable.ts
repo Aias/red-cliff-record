@@ -1,12 +1,12 @@
 import { relations } from 'drizzle-orm';
 import {
-	foreignKey,
 	index,
 	integer,
 	primaryKey,
 	text,
 	timestamp,
 	vector,
+	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { type z } from 'zod';
@@ -27,7 +27,10 @@ export const airtableExtracts = integrationSchema.table(
 		content: text('content'),
 		notes: text('notes'),
 		attachmentCaption: text('attachment_caption'),
-		parentId: text('parent_id'),
+		parentId: text('parent_id').references((): AnyPgColumn => airtableExtracts.id, {
+			onDelete: 'cascade',
+			onUpdate: 'cascade',
+		}),
 		lexicographicalOrder: text('lexicographical_order').notNull().default('a0'),
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
@@ -46,14 +49,7 @@ export const airtableExtracts = integrationSchema.table(
 		}),
 		embedding: vector('embedding', { dimensions: 768 }),
 	},
-	(table) => [
-		foreignKey({
-			columns: [table.parentId],
-			foreignColumns: [table.id],
-		}),
-		index().on(table.archivedAt),
-		index().on(table.recordId),
-	]
+	(table) => [index().on(table.archivedAt), index().on(table.recordId)]
 );
 
 export const AirtableExtractSelectSchema = createSelectSchema(airtableExtracts);

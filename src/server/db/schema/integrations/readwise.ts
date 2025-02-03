@@ -1,13 +1,13 @@
 import { relations } from 'drizzle-orm';
 import {
 	date,
-	foreignKey,
 	index,
 	integer,
 	numeric,
 	text,
 	timestamp,
 	vector,
+	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -61,7 +61,10 @@ export const readwiseDocuments = integrationSchema.table(
 		notes: text('notes'),
 		summary: text('summary'),
 		imageUrl: text('image_url'),
-		parentId: text('parent_id'),
+		parentId: text('parent_id').references((): AnyPgColumn => readwiseDocuments.id, {
+			onDelete: 'cascade',
+			onUpdate: 'cascade',
+		}),
 		readingProgress: numeric('reading_progress'),
 		publishedDate: date('published_date'),
 		firstOpenedAt: timestamp('first_opened_at', {
@@ -102,10 +105,6 @@ export const readwiseDocuments = integrationSchema.table(
 		index().on(table.archivedAt),
 		index().on(table.recordId),
 		index().on(table.mediaId),
-		foreignKey({
-			columns: [table.parentId],
-			foreignColumns: [table.id],
-		}),
 	]
 );
 

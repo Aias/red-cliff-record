@@ -88,6 +88,9 @@ export type UserLegacy = {
 		url?: {
 			urls?: UserUrl[];
 		};
+		description?: {
+			urls?: UserUrl[];
+		};
 	};
 };
 

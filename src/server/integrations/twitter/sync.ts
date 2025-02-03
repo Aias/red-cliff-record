@@ -4,9 +4,11 @@ import { resolve } from 'path';
 import { db } from '~/server/db/connections';
 import {
 	twitterMedia as mediaTable,
-	TwitterMediaType,
 	twitterTweets as tweetsTable,
 	twitterUsers as usersTable,
+	type TwitterMediaInsert,
+	type TwitterTweetInsert,
+	type TwitterUserInsert,
 } from '~/server/db/schema/integrations';
 import { runIntegration } from '../common/run-integration';
 import { processMedia, processTweet, processUser } from './helpers';
@@ -49,10 +51,6 @@ export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 	}
 }
 
-type ProcessedTweet = ReturnType<typeof processTweet>;
-type ProcessedUser = ReturnType<typeof processUser>;
-type ProcessedMedia = ReturnType<typeof processMedia>;
-
 const filteredTypes = ['TimelineTimelineCursor', 'TweetTombstone'];
 
 async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
@@ -89,95 +87,78 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 		}
 	});
 
-	const processedUsers: ProcessedUser[] = [];
-	const processedMedia: ProcessedMedia[] = [];
-	const processedTweets: ProcessedTweet[] = [];
-	const processedQuoteTweets: ProcessedTweet[] = [];
+	const processedUsers: TwitterUserInsert[] = [];
+	const processedMedia: TwitterMediaInsert[] = [];
+	const processedTweets: TwitterTweetInsert[] = [];
+	const processedQuoteTweets: TwitterTweetInsert[] = [];
 
 	tweets.forEach((t) => {
 		const tweet = processTweet(t);
 		if (tweet.quotedTweetId) {
-			processedQuoteTweets.push(tweet);
+			processedQuoteTweets.push({ ...tweet, integrationRunId });
 		} else {
-			processedTweets.push(tweet);
+			processedTweets.push({ ...tweet, integrationRunId });
 		}
 		const user = processUser(t.core.user_results.result);
-		processedUsers.push(user);
+		processedUsers.push({ ...user, integrationRunId });
 		t.legacy.entities.media?.forEach((m) => {
 			const mediaData = processMedia(m, t);
-			processedMedia.push(mediaData);
+			processedMedia.push({ ...mediaData });
 		});
 	});
 
 	return await db.transaction(
 		async (tx) => {
-			// 1. Insert Users in bulk
+			// 1. Insert Users
 			console.log(`Inserting ${processedUsers.length} users...`);
-			await tx
-				.insert(usersTable)
-				.values(
-					processedUsers.map((user) => ({
-						id: user.id,
-						username: user.username,
-						displayName: user.displayName,
-						description: user.description,
-						location: user.location,
-						url: user.twitterUrl,
-						externalUrl: user.userExternalLink?.expanded_url,
-						profileImageUrl: user.profileImageUrl,
-						profileBannerUrl: user.profileBannerUrl,
-						contentCreatedAt: user.createdAt,
-						integrationRunId: integrationRunId,
-					}))
-				)
-				.onConflictDoNothing({ target: usersTable.id });
+			processedUsers.forEach(async (user) => {
+				await tx
+					.insert(usersTable)
+					.values(user)
+					.onConflictDoUpdate({
+						target: [usersTable.id],
+						set: {
+							...user,
+							updatedAt: new Date(),
+						},
+					});
+			});
 
-			// 2. Insert Regular Tweets in bulk
+			// 2. Insert Regular Tweets
 			console.log(`Inserting ${processedTweets.length} regular tweets...`);
-			await tx
-				.insert(tweetsTable)
-				.values(
-					processedTweets.map((tweet) => ({
-						id: tweet.id,
-						userId: tweet.userId,
-						text: tweet.text,
-						quotedTweetId: tweet.quotedTweetId,
-						integrationRunId: integrationRunId,
-						contentCreatedAt: tweet.createdAt,
-					}))
-				)
-				.onConflictDoNothing({ target: tweetsTable.id });
+			processedTweets.forEach(async (tweet) => {
+				await tx
+					.insert(tweetsTable)
+					.values(tweet)
+					.onConflictDoUpdate({
+						target: tweetsTable.id,
+						set: { ...tweet, updatedAt: new Date() },
+					});
+			});
 
-			// 3. Insert Quoted Tweets in bulk
+			// 3. Insert Quoted Tweets
 			console.log(`Inserting ${processedQuoteTweets.length} tweets with quotes...`);
-			await tx
-				.insert(tweetsTable)
-				.values(
-					processedQuoteTweets.map((tweet) => ({
-						id: tweet.id,
-						userId: tweet.userId,
-						text: tweet.text,
-						quotedTweetId: tweet.quotedTweetId,
-						integrationRunId: integrationRunId,
-						contentCreatedAt: tweet.createdAt,
-					}))
-				)
-				.onConflictDoNothing({ target: tweetsTable.id });
+			processedQuoteTweets.forEach(async (tweet) => {
+				await tx
+					.insert(tweetsTable)
+					.values(tweet)
+					.onConflictDoUpdate({
+						target: tweetsTable.id,
+						set: { ...tweet, updatedAt: new Date() },
+					});
+			});
 
-			// 4. Insert Media in bulk
+			// 4. Insert Media
 			console.log(`Inserting ${processedMedia.length} media items...`);
-			await tx
-				.insert(mediaTable)
-				.values(
-					processedMedia.map((mediaItem) => ({
-						id: mediaItem.id,
-						type: TwitterMediaType.parse(mediaItem.type),
-						tweetUrl: mediaItem.shortUrl,
-						mediaUrl: mediaItem.mediaUrl,
-						tweetId: mediaItem.tweetId,
-					}))
-				)
-				.onConflictDoNothing({ target: mediaTable.id });
+			processedMedia.forEach(async (mediaItem) => {
+				await tx
+					.insert(mediaTable)
+					.values(mediaItem)
+					.onConflictDoUpdate({
+						target: mediaTable.id,
+						set: { ...mediaItem, updatedAt: new Date() },
+					});
+			});
 
 			const totalTweets = processedTweets.length + processedQuoteTweets.length;
 			console.log(`Successfully processed ${totalTweets} tweets`);

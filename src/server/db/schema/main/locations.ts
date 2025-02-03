@@ -1,6 +1,5 @@
 import { relations } from 'drizzle-orm';
 import {
-	foreignKey,
 	index,
 	integer,
 	json,
@@ -8,6 +7,7 @@ import {
 	serial,
 	text,
 	unique,
+	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { databaseTimestamps } from '../common';
 import { media } from './media';
@@ -34,7 +34,10 @@ export const locations = pgTable(
 		timezone: text('timezone'),
 		population: integer('population'),
 		elevation: integer('elevation'),
-		parentLocationId: integer('parent_location_id'),
+		parentLocationId: integer('parent_location_id').references((): AnyPgColumn => locations.id, {
+			onDelete: 'cascade',
+			onUpdate: 'cascade',
+		}),
 		...databaseTimestamps,
 	},
 	(table) => [
@@ -42,10 +45,6 @@ export const locations = pgTable(
 		index().on(table.mapImageId),
 		index().on(table.locationType),
 		index().on(table.parentLocationId),
-		foreignKey({
-			columns: [table.parentLocationId],
-			foreignColumns: [table.id],
-		}),
 		unique().on(table.name, table.locationType, table.parentLocationId),
 	]
 );
