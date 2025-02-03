@@ -36,6 +36,9 @@ export const githubRouter = createTRPCRouter({
 				}
 
 				const relatedCommits = await db.query.githubCommits.findMany({
+					columns: {
+						embedding: false,
+					},
 					with: {
 						repository: true,
 						commitChanges: true,

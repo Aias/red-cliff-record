@@ -6,6 +6,9 @@ import { DEFAULT_LIMIT } from './common';
 export const raindropRouter = createTRPCRouter({
 	getCollections: publicProcedure.query(async ({ ctx }) => {
 		const collections = await ctx.db.query.raindropCollections.findMany({
+			columns: {
+				embedding: false,
+			},
 			with: {
 				parent: true,
 				children: true,
@@ -20,6 +23,9 @@ export const raindropRouter = createTRPCRouter({
 
 	getBookmarks: publicProcedure.query(async ({ ctx }) => {
 		const bookmarks = await ctx.db.query.raindropBookmarks.findMany({
+			columns: {
+				embedding: false,
+			},
 			with: {
 				collection: true,
 			},

@@ -87,6 +87,7 @@ export const twitterMedia = integrationSchema.table(
 		type: twitterMediaTypeEnum('type').notNull(),
 		tweetUrl: text('tweet_url').notNull(),
 		mediaUrl: text('media_url').notNull().unique(),
+		thumbnailUrl: text('thumbnail_url').unique(),
 		tweetId: text('tweet_id')
 			.references(() => twitterTweets.id, {
 				onDelete: 'cascade',

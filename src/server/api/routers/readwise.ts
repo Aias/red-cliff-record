@@ -6,6 +6,9 @@ import { DEFAULT_LIMIT } from './common';
 export const readwiseRouter = createTRPCRouter({
 	getDocuments: publicProcedure.query(async ({ ctx }) => {
 		const documents = await ctx.db.query.readwiseDocuments.findMany({
+			columns: {
+				embedding: false,
+			},
 			with: {
 				children: true,
 			},

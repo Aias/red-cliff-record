@@ -56,9 +56,10 @@ export const processMedia = (
 	media: Media,
 	tweet: TweetData
 ): Omit<TwitterMediaInsert, 'integrationRunId'> => {
-	const { display_url, id_str, type, media_url_https, video_info } = media;
+	const { display_url: tweetUrl, id_str: id, type, media_url_https, video_info } = media;
 
 	let finalMediaUrl = media_url_https;
+	const thumbnailUrl = media_url_https;
 
 	// When the media is a video or an animated GIF, attempt to select an mp4 variant.
 	if (
@@ -81,10 +82,11 @@ export const processMedia = (
 	}
 
 	return {
-		id: id_str,
+		id,
 		type,
+		tweetUrl,
 		mediaUrl: finalMediaUrl,
-		tweetUrl: display_url,
+		thumbnailUrl,
 		tweetId: tweet.rest_id,
 		contentCreatedAt: new Date(tweet.legacy.created_at),
 	};

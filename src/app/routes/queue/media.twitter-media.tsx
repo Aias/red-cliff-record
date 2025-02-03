@@ -27,7 +27,7 @@ const config: QueueConfig<TwitterMediaWithTweet, MediaSelect, MediaInsert> = {
 		id: media.id,
 		title: `#${media.tweet?.id}`,
 		description: media.tweet?.text?.slice(0, 100),
-		avatarUrl: media.mediaUrl,
+		avatarUrl: media.thumbnailUrl ?? media.mediaUrl,
 		externalUrl: media.tweetUrl,
 		archivedAt: media.archivedAt,
 		mappedId: media.mediaId ? media.mediaId.toString() : null,

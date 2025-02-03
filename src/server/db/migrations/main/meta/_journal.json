@@ -218,6 +218,13 @@
       "when": 1738592074739,
       "tag": "0030_windy_tana_nile",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1738596682201,
+      "tag": "0031_steady_mandrill",
+      "breakpoints": true
     }
   ]
 }

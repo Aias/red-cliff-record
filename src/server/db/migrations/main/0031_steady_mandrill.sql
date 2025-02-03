@@ -1,0 +1,2 @@
+ALTER TABLE "integrations"."twitter_media" ADD COLUMN "thumbnail_url" text;--> statement-breakpoint
+ALTER TABLE "integrations"."twitter_media" ADD CONSTRAINT "twitter_media_thumbnail_url_unique" UNIQUE("thumbnail_url");
