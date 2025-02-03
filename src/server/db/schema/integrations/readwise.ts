@@ -9,7 +9,7 @@ import {
 	vector,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { media, records } from '../main';
@@ -132,11 +132,9 @@ export const readwiseDocumentsRelations = relations(readwiseDocuments, ({ one, m
 }));
 
 export const ReadwiseDocumentSelectSchema = createSelectSchema(readwiseDocuments);
-export type ReadwiseDocumentSelect = z.infer<typeof ReadwiseDocumentSelectSchema>;
+export type ReadwiseDocumentSelect = typeof readwiseDocuments.$inferSelect;
 export const ReadwiseDocumentInsertSchema = createInsertSchema(readwiseDocuments);
-export type ReadwiseDocumentInsert = z.infer<typeof ReadwiseDocumentInsertSchema>;
-export const ReadwiseDocumentUpdateSchema = createUpdateSchema(readwiseDocuments);
-export type ReadwiseDocumentUpdate = z.infer<typeof ReadwiseDocumentUpdateSchema>;
+export type ReadwiseDocumentInsert = typeof readwiseDocuments.$inferInsert;
 
 export const readwiseIntegrationRelations = relations(integrationRuns, ({ many }) => ({
 	readwiseDocuments: many(readwiseDocuments),

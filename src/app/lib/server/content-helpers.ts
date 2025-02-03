@@ -90,7 +90,7 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 		mediaType = getMediaTypeFromURL(validatedUrl);
 		mediaFormat = new URL(validatedUrl).pathname.split('.').pop() ?? DEFAULT_MEDIA_FORMAT;
 	}
-	const mimeType = getMimeTypeFromURL(validatedUrl); // Get base MIME type without parameters
+	const mimeType = `${mediaType}/${mediaFormat}`;
 
 	// If it's an image, get more details
 	if (mediaType === 'image') {

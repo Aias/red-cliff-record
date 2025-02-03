@@ -1,7 +1,12 @@
 import { relations } from 'drizzle-orm';
 import { index, integer, json, text, timestamp } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
-import { type z } from 'zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import type {
+	LightroomAesthetics,
+	LightroomAssetExif,
+	LightroomAssetLinks,
+	LightroomLocation,
+} from '~/server/integrations/adobe/types';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { records } from '../main';
 import { media } from '../main/media';
@@ -13,7 +18,7 @@ export const adobeLightroomImages = integrationSchema.table(
 	{
 		id: text('id').primaryKey(),
 		url2048: text('url_2048').notNull(),
-		links: json('links').notNull(),
+		links: json('links').$type<LightroomAssetLinks>().notNull(),
 		fileName: text('file_name').notNull(),
 		contentType: text('content_type').notNull(),
 		sourceDevice: text('source_device'),
@@ -25,9 +30,9 @@ export const adobeLightroomImages = integrationSchema.table(
 		fileSize: integer('file_size').notNull(),
 		croppedWidth: integer('cropped_width').notNull(),
 		croppedHeight: integer('cropped_height').notNull(),
-		aesthetics: json('aesthetics'),
-		exif: json('exif'),
-		location: json('location'),
+		aesthetics: json('aesthetics').$type<LightroomAesthetics>(),
+		exif: json('exif').$type<LightroomAssetExif>(),
+		location: json('location').$type<LightroomLocation>(),
 		rating: integer('rating'),
 		autoTags: text('auto_tags').array(),
 		integrationRunId: integer('integration_run_id')
@@ -57,11 +62,9 @@ export const adobeLightroomImages = integrationSchema.table(
 );
 
 export const AdobeLightroomImageSelectSchema = createSelectSchema(adobeLightroomImages);
-export type AdobeLightroomImageSelect = z.infer<typeof AdobeLightroomImageSelectSchema>;
+export type AdobeLightroomImageSelect = typeof adobeLightroomImages.$inferSelect;
 export const AdobeLightroomImageInsertSchema = createInsertSchema(adobeLightroomImages);
-export type AdobeLightroomImageInsert = z.infer<typeof AdobeLightroomImageInsertSchema>;
-export const AdobeLightroomImageUpdateSchema = createUpdateSchema(adobeLightroomImages);
-export type AdobeLightroomImageUpdate = z.infer<typeof AdobeLightroomImageUpdateSchema>;
+export type AdobeLightroomImageInsert = typeof adobeLightroomImages.$inferInsert;
 
 export const adobeLightroomImagesRelations = relations(adobeLightroomImages, ({ one }) => ({
 	integrationRun: one(integrationRuns, {

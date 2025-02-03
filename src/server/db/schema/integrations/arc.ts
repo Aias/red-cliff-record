@@ -1,6 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { bigint, index, integer, serial, text, timestamp } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { databaseTimestamps, databaseTimestampsNonUpdatable } from '../common';
 import { integrationRuns } from '../operations';
@@ -42,11 +42,9 @@ export const arcBrowsingHistory = integrationSchema.table(
 );
 
 export const ArcBrowsingHistorySelectSchema = createSelectSchema(arcBrowsingHistory);
-export type ArcBrowsingHistorySelect = z.infer<typeof ArcBrowsingHistorySelectSchema>;
+export type ArcBrowsingHistorySelect = typeof arcBrowsingHistory.$inferSelect;
 export const ArcBrowsingHistoryInsertSchema = createInsertSchema(arcBrowsingHistory);
-export type ArcBrowsingHistoryInsert = z.infer<typeof ArcBrowsingHistoryInsertSchema>;
-export const ArcBrowsingHistoryUpdateSchema = createUpdateSchema(arcBrowsingHistory);
-export type ArcBrowsingHistoryUpdate = z.infer<typeof ArcBrowsingHistoryUpdateSchema>;
+export type ArcBrowsingHistoryInsert = typeof arcBrowsingHistory.$inferInsert;
 
 export const arcBrowsingHistoryOmitList = integrationSchema.table(
 	'arc_browsing_history_omit_list',
@@ -59,21 +57,11 @@ export const arcBrowsingHistoryOmitList = integrationSchema.table(
 export const ArcBrowsingHistoryOmitListSelectSchema = createSelectSchema(
 	arcBrowsingHistoryOmitList
 );
-export type ArcBrowsingHistoryOmitListSelect = z.infer<
-	typeof ArcBrowsingHistoryOmitListSelectSchema
->;
+export type ArcBrowsingHistoryOmitListSelect = typeof arcBrowsingHistoryOmitList.$inferSelect;
 export const ArcBrowsingHistoryOmitListInsertSchema = createInsertSchema(
 	arcBrowsingHistoryOmitList
 );
-export type ArcBrowsingHistoryOmitListInsert = z.infer<
-	typeof ArcBrowsingHistoryOmitListInsertSchema
->;
-export const ArcBrowsingHistoryOmitListUpdateSchema = createUpdateSchema(
-	arcBrowsingHistoryOmitList
-);
-export type ArcBrowsingHistoryOmitListUpdate = z.infer<
-	typeof ArcBrowsingHistoryOmitListUpdateSchema
->;
+export type ArcBrowsingHistoryOmitListInsert = typeof arcBrowsingHistoryOmitList.$inferInsert;
 
 export const arcBrowsingHistoryRelations = relations(arcBrowsingHistory, ({ one }) => ({
 	integrationRun: one(integrationRuns, {

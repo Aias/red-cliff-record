@@ -1,16 +1,61 @@
-import { desc, isNull } from 'drizzle-orm';
+import { desc, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { adobeLightroomImages } from '~/server/db/schema/integrations';
 import { createTRPCRouter, publicProcedure } from '../init';
-import { DEFAULT_LIMIT } from './common';
+import { buildWhereClause, RequestParamsSchema } from './common';
 
 export const adobeRouter = createTRPCRouter({
-	getLightroomImages: publicProcedure.query(async ({ ctx }) => {
+	getLightroomImages: publicProcedure.input(RequestParamsSchema).query(async ({ ctx, input }) => {
 		const lightroomImages = await ctx.db.query.adobeLightroomImages.findMany({
-			where: isNull(adobeLightroomImages.mediaId),
-			orderBy: [desc(adobeLightroomImages.archivedAt), desc(adobeLightroomImages.contentCreatedAt)],
-			limit: DEFAULT_LIMIT,
+			where: buildWhereClause(input, adobeLightroomImages.archivedAt, adobeLightroomImages.mediaId),
+			orderBy: [desc(adobeLightroomImages.archivedAt), adobeLightroomImages.captureDate],
+			limit: input.limit,
 		});
 
 		return lightroomImages;
 	}),
+
+	linkMedia: publicProcedure
+		.input(
+			z.object({
+				lightroomImageId: z.string(),
+				mediaId: z.number().int().positive(),
+			})
+		)
+		.mutation(async ({ ctx: { db }, input: { lightroomImageId, mediaId } }) => {
+			const [updatedImage] = await db
+				.update(adobeLightroomImages)
+				.set({ mediaId, updatedAt: new Date() })
+				.where(eq(adobeLightroomImages.id, lightroomImageId))
+				.returning();
+			return updatedImage;
+		}),
+
+	unlinkMedia: publicProcedure
+		.input(z.array(z.string()))
+		.mutation(async ({ ctx: { db }, input: imageIds }) => {
+			return db
+				.update(adobeLightroomImages)
+				.set({ mediaId: null, updatedAt: new Date() })
+				.where(inArray(adobeLightroomImages.id, imageIds))
+				.returning();
+		}),
+
+	setLightroomImageArchiveStatus: publicProcedure
+		.input(
+			z.object({
+				lightroomImageIds: z.array(z.string()),
+				shouldArchive: z.boolean(),
+			})
+		)
+		.mutation(async ({ ctx: { db }, input: { lightroomImageIds, shouldArchive } }) => {
+			return db
+				.update(adobeLightroomImages)
+				.set({
+					archivedAt: shouldArchive ? new Date() : null,
+					updatedAt: new Date(),
+				})
+				.where(inArray(adobeLightroomImages.id, lightroomImageIds))
+				.returning();
+		}),
 });

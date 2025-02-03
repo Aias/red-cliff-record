@@ -8,8 +8,7 @@ import {
 	text,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createUpdateSchema } from 'drizzle-zod';
-import { createSelectSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { databaseTimestamps } from '../common';
 import { sources } from './sources';
@@ -77,12 +76,8 @@ export const mediaRelations = relations(media, ({ one, many }) => ({
 }));
 
 export const MediaSelectSchema = createSelectSchema(media);
-export type MediaSelect = z.infer<typeof MediaSelectSchema>;
+export type MediaSelect = typeof media.$inferSelect;
 export const MediaInsertSchema = createInsertSchema(media).extend({
 	url: z.string().url(),
 });
-export type MediaInsert = z.infer<typeof MediaInsertSchema>;
-export const MediaUpdateSchema = createUpdateSchema(media).extend({
-	url: z.string().url().optional(),
-});
-export type MediaUpdate = z.infer<typeof MediaUpdateSchema>;
+export type MediaInsert = typeof media.$inferInsert;

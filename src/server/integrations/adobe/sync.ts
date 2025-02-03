@@ -1,6 +1,5 @@
 import { db } from '~/server/db/connections';
 import { adobeLightroomImages } from '~/server/db/schema/integrations';
-import type { AdobeLightroomImageInsert } from '~/server/db/schema/integrations';
 import { runIntegration } from '../common/run-integration';
 import { LightroomJsonResponseSchema } from './types';
 
@@ -33,7 +32,7 @@ async function syncLightroomImages(integrationRunId: number) {
 	let successCount = 0;
 	for (const resource of jsonData.resources) {
 		const asset = resource.asset;
-		const { payload, created, updated } = asset;
+		const { payload, created, updated, links, id } = asset;
 		const {
 			importSource,
 			autoTags,
@@ -50,10 +49,10 @@ async function syncLightroomImages(integrationRunId: number) {
 		const firstRatingKey = ratings ? Object.keys(ratings)[0] : undefined;
 		const rating = firstRatingKey && ratings ? (ratings[firstRatingKey]?.rating ?? 0) : 0;
 
-		const imageToInsert: AdobeLightroomImageInsert = {
-			id: asset.id,
+		const imageToInsert = {
+			id: id,
 			url2048,
-			links: asset.links,
+			links: links,
 			fileName: importSource.fileName,
 			contentType: importSource.contentType,
 			sourceDevice: changedOnDevice ?? importSource.importedOnDevice ?? develop.device,

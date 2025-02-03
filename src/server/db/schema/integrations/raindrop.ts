@@ -9,8 +9,7 @@ import {
 	vector,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
-import { type z } from 'zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { indices, records } from '../main';
 import { media } from '../main/media';
@@ -64,11 +63,9 @@ export const raindropBookmarks = integrationSchema.table(
 );
 
 export const RaindropBookmarkSelectSchema = createSelectSchema(raindropBookmarks);
-export type RaindropBookmarkSelect = z.infer<typeof RaindropBookmarkSelectSchema>;
+export type RaindropBookmarkSelect = typeof raindropBookmarks.$inferSelect;
 export const RaindropBookmarkInsertSchema = createInsertSchema(raindropBookmarks);
-export type RaindropBookmarkInsert = z.infer<typeof RaindropBookmarkInsertSchema>;
-export const RaindropBookmarkUpdateSchema = createUpdateSchema(raindropBookmarks);
-export type RaindropBookmarkUpdate = z.infer<typeof RaindropBookmarkUpdateSchema>;
+export type RaindropBookmarkInsert = typeof raindropBookmarks.$inferInsert;
 
 export const raindropBookmarksRelations = relations(raindropBookmarks, ({ one }) => ({
 	collection: one(raindropCollections, {
@@ -123,11 +120,9 @@ export const raindropCollections = integrationSchema.table(
 );
 
 export const RaindropCollectionSelectSchema = createSelectSchema(raindropCollections);
-export type RaindropCollectionSelect = z.infer<typeof RaindropCollectionSelectSchema>;
+export type RaindropCollectionSelect = typeof raindropCollections.$inferSelect;
 export const RaindropCollectionInsertSchema = createInsertSchema(raindropCollections);
-export type RaindropCollectionInsert = z.infer<typeof RaindropCollectionInsertSchema>;
-export const RaindropCollectionUpdateSchema = createUpdateSchema(raindropCollections);
-export type RaindropCollectionUpdate = z.infer<typeof RaindropCollectionUpdateSchema>;
+export type RaindropCollectionInsert = typeof raindropCollections.$inferInsert;
 
 export const raindropCollectionsRelations = relations(raindropCollections, ({ one, many }) => ({
 	raindrops: many(raindropBookmarks),

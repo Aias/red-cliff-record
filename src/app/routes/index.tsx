@@ -152,7 +152,7 @@ const AdobeSection = () => {
 					data={adobeLightroomImages}
 					config={config}
 					linkOptions={{
-						to: '/queue/index/airtable-creators',
+						to: '/queue/media/lightroom-images',
 					}}
 				/>
 			) : (

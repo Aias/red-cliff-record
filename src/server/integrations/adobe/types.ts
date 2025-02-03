@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const LightroomAssetLinksSchema = z.object({
+export const LightroomAssetLinksSchema = z.object({
 	self: z.object({ href: z.string() }),
 	'/rels/comments': z.object({ href: z.string(), count: z.number() }),
 	'/rels/favorites': z.object({ href: z.string(), count: z.number() }),
@@ -11,6 +11,7 @@ const LightroomAssetLinksSchema = z.object({
 	'/rels/rendition_generate/fullsize': z.object({ href: z.string(), templated: z.boolean() }),
 	'/rels/profiles/camera': z.object({ filename: z.string(), href: z.string() }).optional(),
 });
+export type LightroomAssetLinks = z.infer<typeof LightroomAssetLinksSchema>;
 
 const LightroomAssetDevelopSchema = z.object({
 	croppedWidth: z.number(),
@@ -30,7 +31,7 @@ const LightroomAssetDevelopSchema = z.object({
 	userUpdated: z.string().optional(),
 });
 
-const LightroomAssetExifSchema = z.object({
+export const LightroomAssetExifSchema = z.object({
 	ApertureValue: z.tuple([z.number(), z.number()]),
 	FNumber: z.tuple([z.number(), z.number()]),
 	MaxApertureValue: z.tuple([z.number(), z.number()]).optional(),
@@ -50,6 +51,7 @@ const LightroomAssetExifSchema = z.object({
 	FlashReturn: z.string().optional(),
 	FlashMode: z.string().optional(),
 });
+export type LightroomAssetExif = z.infer<typeof LightroomAssetExifSchema>;
 
 const LightroomAssetXmpSchema = z.object({
 	dng: z.object({ IsAppleProRAW: z.boolean() }).optional(),
@@ -73,7 +75,7 @@ const LightroomAssetXmpSchema = z.object({
 	photoshop: z.object({ DateCreated: z.string() }),
 });
 
-const AestheticsSchema = z.object({
+export const LightroomAestheticsSchema = z.object({
 	application: z.string(),
 	balancing: z.number(),
 	content: z.number(),
@@ -89,8 +91,8 @@ const AestheticsSchema = z.object({
 	version: z.number(),
 	vivid: z.number(),
 });
-
-const AutoTagsSchema = z.object({
+export type LightroomAesthetics = z.infer<typeof LightroomAestheticsSchema>;
+export const LightroomAutoTagsSchema = z.object({
 	tags: z.record(z.number().min(0).max(100)),
 	application: z.string(),
 	version: z.number(),
@@ -112,6 +114,18 @@ const LightroomAssetPayloadImportSourceSchema = z.object({
 	uniqueDeviceId: z.string().optional(),
 });
 
+export const LightroomLocationSchema = z.object({
+	latitude: z.number(),
+	longitude: z.number(),
+	altitude: z.number(),
+	country: z.string(),
+	isoCountryCode: z.string(),
+	state: z.string(),
+	city: z.string().optional(),
+	sublocation: z.array(z.string()).optional(),
+});
+export type LightroomLocation = z.infer<typeof LightroomLocationSchema>;
+
 const LightroomAssetPayloadSchema = z.object({
 	develop: LightroomAssetDevelopSchema,
 	userUpdated: z.coerce.date(),
@@ -127,18 +141,9 @@ const LightroomAssetPayloadSchema = z.object({
 			})
 		)
 		.optional(),
-	location: z
-		.object({
-			longitude: z.number(),
-			latitude: z.number(),
-			altitude: z.number(),
-			city: z.string().optional(),
-			country: z.string(),
-			isoCountryCode: z.string(),
-			state: z.string(),
-			sublocation: z.array(z.string()).optional(),
-		})
-		.optional(),
+	aesthetics: LightroomAestheticsSchema,
+	autoTags: LightroomAutoTagsSchema,
+	location: LightroomLocationSchema.optional(),
 	importSource: LightroomAssetPayloadImportSourceSchema,
 	changedOnDevice: z.string().optional(),
 	order: z.string().optional(),
@@ -152,8 +157,6 @@ const LightroomAssetPayloadSchema = z.object({
 			})
 		)
 		.optional(),
-	aesthetics: AestheticsSchema,
-	autoTags: AutoTagsSchema,
 });
 
 const LightroomAssetSchema = z.object({

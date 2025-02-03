@@ -1,6 +1,6 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { RecordInsertSchema, records, RecordUpdateSchema } from '~/server/db/schema/main';
+import { RecordInsertSchema, records } from '~/server/db/schema/main';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { SIMILARITY_THRESHOLD } from './common';
 
@@ -42,7 +42,7 @@ export const recordsRouter = createTRPCRouter({
 	}),
 
 	update: publicProcedure
-		.input(RecordUpdateSchema.extend({ id: z.number().int().positive() }))
+		.input(RecordInsertSchema.partial().extend({ id: z.number().int().positive() }))
 		.mutation(async ({ ctx: { db }, input }) => {
 			const { id, ...updateData } = input;
 			const [updatedRecord] = await db

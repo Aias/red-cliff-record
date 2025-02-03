@@ -1,12 +1,7 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getSmartMetadata } from '~/app/lib/server/content-helpers';
-import {
-	media,
-	MediaInsertSchema,
-	MediaUpdateSchema,
-	type MediaInsert,
-} from '~/server/db/schema/main';
+import { media, MediaInsertSchema, type MediaInsert } from '~/server/db/schema/main';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { SIMILARITY_THRESHOLD } from './common';
 
@@ -54,7 +49,7 @@ export const mediaRouter = createTRPCRouter({
 	}),
 
 	update: publicProcedure
-		.input(MediaUpdateSchema.extend({ id: z.number().int().positive() }))
+		.input(MediaInsertSchema.partial().extend({ id: z.number().int().positive() }))
 		.mutation(async ({ ctx: { db }, input }) => {
 			const { id, ...updateData } = input;
 			const [updatedMedia] = await db

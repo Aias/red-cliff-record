@@ -1,4 +1,5 @@
 import { index, integer, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { databaseTimestampsNonUpdatable } from '../common';
 import { operationsSchema } from './schema';
@@ -63,3 +64,8 @@ export const integrationRuns = operationsSchema.table(
 	},
 	(table) => [index().on(table.integrationType)]
 );
+
+export const IntegrationRunSelectSchema = createSelectSchema(integrationRuns);
+export type IntegrationRunSelect = typeof integrationRuns.$inferSelect;
+export const IntegrationRunInsertSchema = createInsertSchema(integrationRuns);
+export type IntegrationRunInsert = typeof integrationRuns.$inferInsert;

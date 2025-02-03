@@ -11,7 +11,7 @@ import {
 	vector,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { databaseTimestamps } from '../common';
 import { airtableCreators, airtableSpaces } from '../integrations/airtable';
@@ -70,17 +70,13 @@ export const indices = pgTable(
 	]
 );
 
-const indicesExtensions = {
+export const IndicesSelectSchema = createSelectSchema(indices);
+export type IndicesSelect = typeof indices.$inferSelect;
+export const IndicesInsertSchema = createInsertSchema(indices).extend({
 	canonicalUrl: z.string().url().nullable().optional(),
 	canonicalMediaUrl: z.string().url().nullable().optional(),
-};
-
-export const IndicesSelectSchema = createSelectSchema(indices).extend(indicesExtensions);
-export type IndicesSelect = z.infer<typeof IndicesSelectSchema>;
-export const IndicesInsertSchema = createInsertSchema(indices).extend(indicesExtensions);
-export type IndicesInsert = z.infer<typeof IndicesInsertSchema>;
-export const IndicesUpdateSchema = createUpdateSchema(indices).extend(indicesExtensions);
-export type IndicesUpdate = z.infer<typeof IndicesUpdateSchema>;
+});
+export type IndicesInsert = typeof indices.$inferInsert;
 
 export const indexRelations = pgTable(
 	'index_relations',
@@ -105,11 +101,9 @@ export const indexRelations = pgTable(
 );
 
 export const IndexRelationSelectSchema = createSelectSchema(indexRelations);
-export type IndexRelationSelect = z.infer<typeof IndexRelationSelectSchema>;
+export type IndexRelationSelect = typeof indexRelations.$inferSelect;
 export const IndexRelationInsertSchema = createInsertSchema(indexRelations);
-export type IndexRelationInsert = z.infer<typeof IndexRelationInsertSchema>;
-export const IndexRelationUpdateSchema = createUpdateSchema(indexRelations);
-export type IndexRelationUpdate = z.infer<typeof IndexRelationUpdateSchema>;
+export type IndexRelationInsert = typeof indexRelations.$inferInsert;
 
 // Relations
 export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
