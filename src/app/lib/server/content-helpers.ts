@@ -5,7 +5,8 @@ import { FLAGS, MediaType, type Flag } from '~/server/db/schema/main';
 
 const urlSchema = z.string().url();
 const DEFAULT_MEDIA_TYPE = MediaType.enum.application;
-const DEFAULT_MIME_TYPE = 'application/octet-stream';
+const DEFAULT_MEDIA_FORMAT = 'octet-stream';
+const DEFAULT_MIME_TYPE = `${DEFAULT_MEDIA_TYPE}/${DEFAULT_MEDIA_FORMAT}`;
 
 // -----------------------------------------------------------------
 // Function: getMediaFormat
@@ -64,7 +65,7 @@ export type MediaMetadata = {
 	mediaType: MediaType;
 	mediaFormat: string;
 	contentTypeString: string;
-	size: number;
+	size?: number;
 	width?: number;
 	height?: number;
 	format?: string;
@@ -76,13 +77,18 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 
 	// Start with a HEAD request
 	const headResponse = await fetch(validatedUrl, { method: 'HEAD' });
-	let mediaType: MediaType;
-	const contentTypeHeader = headResponse.headers.get('content-type')?.split('/')[0];
-	const { data: typeFromHeaders } = MediaType.safeParse(contentTypeHeader || '');
-	if (typeFromHeaders) {
-		mediaType = typeFromHeaders;
+	let mediaType: MediaType = DEFAULT_MEDIA_TYPE;
+	let mediaFormat: string = DEFAULT_MEDIA_FORMAT;
+	console.log('Headers:', headResponse);
+	const contentTypeHeader = headResponse.headers.get('content-type');
+	const contentLengthHeader = headResponse.headers.get('content-length');
+	if (contentTypeHeader) {
+		const { data: typeFromHeaders } = MediaType.safeParse(contentTypeHeader?.split('/')[0] || '');
+		mediaType = typeFromHeaders ?? getMediaTypeFromURL(validatedUrl);
+		mediaFormat = contentTypeHeader?.split('/')[1] ?? DEFAULT_MEDIA_FORMAT;
 	} else {
 		mediaType = getMediaTypeFromURL(validatedUrl);
+		mediaFormat = new URL(validatedUrl).pathname.split('.').pop() ?? DEFAULT_MEDIA_FORMAT;
 	}
 	const mimeType = getMimeTypeFromURL(validatedUrl); // Get base MIME type without parameters
 
@@ -94,9 +100,9 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 
 		return {
 			mediaType: mediaType,
-			mediaFormat: metadata.format ?? 'octet-stream',
+			mediaFormat: metadata.format ?? mediaFormat,
 			contentTypeString: mimeType,
-			size: Number(headResponse.headers.get('content-length') ?? metadata.size ?? 0),
+			size: contentLengthHeader ? Number(contentLengthHeader) : metadata.size,
 			width: metadata.width,
 			height: metadata.height,
 			format: metadata.format,
@@ -107,8 +113,8 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 	// For non-images, return basic info
 	return {
 		mediaType,
-		mediaFormat: 'octet-stream',
+		mediaFormat,
 		contentTypeString: mimeType,
-		size: Number(headResponse.headers.get('content-length') ?? 0),
+		size: contentLengthHeader ? Number(contentLengthHeader) : undefined,
 	};
 }

@@ -18,34 +18,40 @@ export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 	const twitterDataDir = resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');
 
 	try {
-		// Get all json files and sort in reverse order (newest first)
-		const files = readdirSync(twitterDataDir)
-			.filter((file) => file.startsWith('bookmarks-') && file.endsWith('.json'))
-			.sort()
-			.reverse();
+		// Read the directory entries with file types.
+		const entries = readdirSync(twitterDataDir, { withFileTypes: true });
+		// Filter for files that start with "bookmarks-" and end with ".json"
+		const bookmarkFiles = entries
+			.filter(
+				(entry) =>
+					entry.isFile() && entry.name.startsWith('bookmarks-') && entry.name.endsWith('.json')
+			)
+			.map((entry) => entry.name)
+			.sort(); // Ascending order since the filenames are in ISO format
 
-		if (files.length === 0) {
+		if (bookmarkFiles.length === 0) {
 			console.log('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');
 			return [];
 		}
 
-		const firstFile = files[0];
-		if (!firstFile) {
-			console.log('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');
-			return [];
+		const combinedData: TwitterBookmarksArray = [];
+		// Process each file in ascending order
+		for (const fileName of bookmarkFiles) {
+			const filePath = resolve(twitterDataDir, fileName);
+			console.log(`Processing Twitter bookmarks file: ${filePath}`);
+			const fileContent = readFileSync(filePath, 'utf-8');
+			// Assuming each JSON file parses into an array of bookmark responses
+			const parsedData = JSON.parse(fileContent);
+			combinedData.push(...parsedData);
 		}
 
-		const mostRecentFile = resolve(twitterDataDir, firstFile);
-		console.log(`Using Twitter bookmarks file: ${mostRecentFile}`);
-
-		const data = readFileSync(mostRecentFile, 'utf-8');
-		return JSON.parse(data);
+		return combinedData;
 	} catch (err) {
 		if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
 			console.log(`Twitter data directory not found at: ${twitterDataDir}`);
 			return [];
 		}
-		// If it's any other error (like JSON parsing), we should still throw
+		// If it's any other error (e.g. issues with JSON parsing), we throw
 		console.error('Error loading Twitter bookmarks data:', err);
 		throw err;
 	}

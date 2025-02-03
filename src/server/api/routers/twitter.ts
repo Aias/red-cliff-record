@@ -43,7 +43,7 @@ export const twitterRouter = createTRPCRouter({
 				},
 			},
 			where: buildWhereClause(input, twitterMedia.archivedAt, twitterMedia.mediaId),
-			orderBy: [desc(twitterMedia.archivedAt), twitterMedia.createdAt],
+			orderBy: [desc(twitterMedia.archivedAt), twitterMedia.contentCreatedAt],
 			limit: input.limit,
 		});
 

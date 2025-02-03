@@ -31,9 +31,9 @@ export const mediaRouter = createTRPCRouter({
 		const newData: MediaInsert = {
 			...input,
 			fileSize: size,
-			type: mediaType || 'application',
-			format: mediaFormat || 'octet-stream',
-			contentTypeString: contentTypeString || 'application/octet-stream',
+			type: mediaType,
+			format: mediaFormat,
+			contentTypeString: contentTypeString,
 			width,
 			height,
 		};
