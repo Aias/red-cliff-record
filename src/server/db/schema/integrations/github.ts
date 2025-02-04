@@ -1,5 +1,15 @@
 import { relations } from 'drizzle-orm';
-import { boolean, index, integer, serial, text, timestamp, vector } from 'drizzle-orm/pg-core';
+import {
+	boolean,
+	index,
+	integer,
+	pgEnum,
+	pgTable,
+	serial,
+	text,
+	timestamp,
+	vector,
+} from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import {
@@ -10,7 +20,6 @@ import {
 } from '../common';
 import { indices, records } from '../main';
 import { integrationRuns } from '../operations';
-import { integrationSchema } from './schema';
 
 const githubStats = {
 	changes: integer('changes'),
@@ -18,7 +27,7 @@ const githubStats = {
 	deletions: integer('deletions'),
 };
 
-export const githubUsers = integrationSchema.table(
+export const githubUsers = pgTable(
 	'github_users',
 	{
 		id: integer('id').primaryKey(),
@@ -59,7 +68,7 @@ export type GithubUserSelect = typeof githubUsers.$inferSelect;
 export const GithubUserInsertSchema = createInsertSchema(githubUsers);
 export type GithubUserInsert = typeof githubUsers.$inferInsert;
 
-export const githubRepositories = integrationSchema.table(
+export const githubRepositories = pgTable(
 	'github_repositories',
 	{
 		id: integer('id').primaryKey(),
@@ -132,12 +141,9 @@ export const GithubCommitChangeStatus = z.enum([
 ]);
 export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatus>;
 
-export const githubCommitTypesEnum = integrationSchema.enum(
-	'github_commit_types',
-	GithubCommitType.options
-);
+export const githubCommitTypesEnum = pgEnum('github_commit_types', GithubCommitType.options);
 
-export const githubCommits = integrationSchema.table(
+export const githubCommits = pgTable(
 	'github_commits',
 	{
 		id: text('id').primaryKey(),
@@ -170,12 +176,12 @@ export type GithubCommitSelect = typeof githubCommits.$inferSelect;
 export const GithubCommitInsertSchema = createInsertSchema(githubCommits);
 export type GithubCommitInsert = typeof githubCommits.$inferInsert;
 
-export const githubCommitChangeStatusEnum = integrationSchema.enum(
+export const githubCommitChangeStatusEnum = pgEnum(
 	'github_commit_change_status',
 	GithubCommitChangeStatus.options
 );
 
-export const githubCommitChanges = integrationSchema.table(
+export const githubCommitChanges = pgTable(
 	'github_commit_changes',
 	{
 		id: serial('id').primaryKey(),

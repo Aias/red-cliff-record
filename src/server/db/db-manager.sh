@@ -80,8 +80,6 @@ do_backup() {
             --no-privileges \
             --no-comments \
             --schema 'public' \
-            --schema 'integrations' \
-            --schema 'operations' \
             --schema 'drizzle' \
             "$DATABASE_NAME" > "$backup_file"
     else
@@ -92,8 +90,6 @@ do_backup() {
             --no-privileges \
             --no-comments \
             --schema 'public' \
-            --schema 'integrations' \
-            --schema 'operations' \
             --schema 'drizzle' \
             > "$backup_file"
     fi

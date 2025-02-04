@@ -1,5 +1,3 @@
-export * from './schema';
-
 export * from './adobe';
 export * from './airtable';
 export * from './arc';

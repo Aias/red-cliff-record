@@ -4,6 +4,8 @@ import {
 	index,
 	integer,
 	numeric,
+	pgEnum,
+	pgTable,
 	text,
 	timestamp,
 	vector,
@@ -14,7 +16,6 @@ import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { media, records } from '../main';
 import { integrationRuns } from '../operations';
-import { integrationSchema } from './schema';
 
 export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);
 export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;
@@ -32,17 +33,11 @@ export const ReadwiseCategory = z.enum([
 ]);
 export type ReadwiseCategory = z.infer<typeof ReadwiseCategory>;
 
-export const readwiseLocationEnum = integrationSchema.enum(
-	'readwise_location',
-	ReadwiseLocation.options
-);
+export const readwiseLocationEnum = pgEnum('readwise_location', ReadwiseLocation.options);
 
-export const readwiseCategoryEnum = integrationSchema.enum(
-	'readwise_category',
-	ReadwiseCategory.options
-);
+export const readwiseCategoryEnum = pgEnum('readwise_category', ReadwiseCategory.options);
 
-export const readwiseDocuments = integrationSchema.table(
+export const readwiseDocuments = pgTable(
 	'readwise_documents',
 	{
 		id: text('id').primaryKey(),
