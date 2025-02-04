@@ -4,7 +4,9 @@
 CREATE SCHEMA IF NOT EXISTS "extensions";
 
 CREATE EXTENSION IF NOT EXISTS "vector" SCHEMA "extensions";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm" SCHEMA "extensions";
+
+ALTER DATABASE "redcliffrecord" SET search_path = public, extensions;
 
 -----------------------------------
 -- 2. TYPES (wrapped in DO blocks)
