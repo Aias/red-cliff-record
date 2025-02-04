@@ -22,6 +22,7 @@ import { Route as QueueIndexAirtableSpacesImport } from './routes/queue/index.ai
 import { Route as QueueIndexAirtableCreatorsImport } from './routes/queue/index.airtable-creators'
 import { Route as QueueMediaTwitterMediaImport } from './routes/queue/media.twitter-media'
 import { Route as QueueMediaLightroomImagesImport } from './routes/queue/media.lightroom-images'
+import { Route as QueueMediaAirtableAttachmentsImport } from './routes/queue/media.airtable-attachments'
 
 // Create/Update Routes
 
@@ -93,6 +94,13 @@ const QueueMediaLightroomImagesRoute = QueueMediaLightroomImagesImport.update({
   getParentRoute: () => QueueRouteRoute,
 } as any)
 
+const QueueMediaAirtableAttachmentsRoute =
+  QueueMediaAirtableAttachmentsImport.update({
+    id: '/media/airtable-attachments',
+    path: '/media/airtable-attachments',
+    getParentRoute: () => QueueRouteRoute,
+  } as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -131,6 +139,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/history/$date'
       preLoaderRoute: typeof HistoryDateImport
       parentRoute: typeof rootRoute
+    }
+    '/queue/media/airtable-attachments': {
+      id: '/queue/media/airtable-attachments'
+      path: '/media/airtable-attachments'
+      fullPath: '/queue/media/airtable-attachments'
+      preLoaderRoute: typeof QueueMediaAirtableAttachmentsImport
+      parentRoute: typeof QueueRouteImport
     }
     '/queue/media/lightroom-images': {
       id: '/queue/media/lightroom-images'
@@ -192,6 +207,7 @@ const CommitsRouteRouteWithChildren = CommitsRouteRoute._addFileChildren(
 )
 
 interface QueueRouteRouteChildren {
+  QueueMediaAirtableAttachmentsRoute: typeof QueueMediaAirtableAttachmentsRoute
   QueueMediaLightroomImagesRoute: typeof QueueMediaLightroomImagesRoute
   QueueMediaTwitterMediaRoute: typeof QueueMediaTwitterMediaRoute
   QueueIndexAirtableCreatorsRoute: typeof QueueIndexAirtableCreatorsRoute
@@ -201,6 +217,7 @@ interface QueueRouteRouteChildren {
 }
 
 const QueueRouteRouteChildren: QueueRouteRouteChildren = {
+  QueueMediaAirtableAttachmentsRoute: QueueMediaAirtableAttachmentsRoute,
   QueueMediaLightroomImagesRoute: QueueMediaLightroomImagesRoute,
   QueueMediaTwitterMediaRoute: QueueMediaTwitterMediaRoute,
   QueueIndexAirtableCreatorsRoute: QueueIndexAirtableCreatorsRoute,
@@ -219,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/queue': typeof QueueRouteRouteWithChildren
   '/commits/$sha': typeof CommitsShaRoute
   '/history/$date': typeof HistoryDateRoute
+  '/queue/media/airtable-attachments': typeof QueueMediaAirtableAttachmentsRoute
   '/queue/media/lightroom-images': typeof QueueMediaLightroomImagesRoute
   '/queue/media/twitter-media': typeof QueueMediaTwitterMediaRoute
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
@@ -233,6 +251,7 @@ export interface FileRoutesByTo {
   '/queue': typeof QueueRouteRouteWithChildren
   '/commits/$sha': typeof CommitsShaRoute
   '/history/$date': typeof HistoryDateRoute
+  '/queue/media/airtable-attachments': typeof QueueMediaAirtableAttachmentsRoute
   '/queue/media/lightroom-images': typeof QueueMediaLightroomImagesRoute
   '/queue/media/twitter-media': typeof QueueMediaTwitterMediaRoute
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
@@ -248,6 +267,7 @@ export interface FileRoutesById {
   '/queue': typeof QueueRouteRouteWithChildren
   '/commits/$sha': typeof CommitsShaRoute
   '/history/$date': typeof HistoryDateRoute
+  '/queue/media/airtable-attachments': typeof QueueMediaAirtableAttachmentsRoute
   '/queue/media/lightroom-images': typeof QueueMediaLightroomImagesRoute
   '/queue/media/twitter-media': typeof QueueMediaTwitterMediaRoute
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
@@ -264,6 +284,7 @@ export interface FileRouteTypes {
     | '/queue'
     | '/commits/$sha'
     | '/history/$date'
+    | '/queue/media/airtable-attachments'
     | '/queue/media/lightroom-images'
     | '/queue/media/twitter-media'
     | '/queue/index/airtable-creators'
@@ -277,6 +298,7 @@ export interface FileRouteTypes {
     | '/queue'
     | '/commits/$sha'
     | '/history/$date'
+    | '/queue/media/airtable-attachments'
     | '/queue/media/lightroom-images'
     | '/queue/media/twitter-media'
     | '/queue/index/airtable-creators'
@@ -290,6 +312,7 @@ export interface FileRouteTypes {
     | '/queue'
     | '/commits/$sha'
     | '/history/$date'
+    | '/queue/media/airtable-attachments'
     | '/queue/media/lightroom-images'
     | '/queue/media/twitter-media'
     | '/queue/index/airtable-creators'
@@ -341,6 +364,7 @@ export const routeTree = rootRoute
     "/queue": {
       "filePath": "queue/route.tsx",
       "children": [
+        "/queue/media/airtable-attachments",
         "/queue/media/lightroom-images",
         "/queue/media/twitter-media",
         "/queue/index/airtable-creators",
@@ -355,6 +379,10 @@ export const routeTree = rootRoute
     },
     "/history/$date": {
       "filePath": "history/$date.tsx"
+    },
+    "/queue/media/airtable-attachments": {
+      "filePath": "queue/media.airtable-attachments.tsx",
+      "parent": "/queue"
     },
     "/queue/media/lightroom-images": {
       "filePath": "queue/media.lightroom-images.tsx",

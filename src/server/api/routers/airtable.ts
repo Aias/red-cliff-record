@@ -159,6 +159,47 @@ const attachmentsRouter = createTRPCRouter({
 			limit: input.limit,
 		});
 	}),
+
+	linkMedia: publicProcedure
+		.input(
+			z.object({
+				attachmentId: z.string(),
+				mediaId: z.number().int().positive(),
+			})
+		)
+		.mutation(async ({ ctx: { db }, input: { attachmentId, mediaId } }) => {
+			const [updatedAttachment] = await db
+				.update(airtableAttachments)
+				.set({ mediaId, updatedAt: new Date() })
+				.where(eq(airtableAttachments.id, attachmentId))
+				.returning();
+			return updatedAttachment;
+		}),
+
+	unlinkMedia: publicProcedure
+		.input(z.array(z.string()))
+		.mutation(async ({ ctx: { db }, input: attachmentIds }) => {
+			return db
+				.update(airtableAttachments)
+				.set({ mediaId: null, updatedAt: new Date() })
+				.where(inArray(airtableAttachments.id, attachmentIds))
+				.returning();
+		}),
+
+	setAttachmentsArchiveStatus: publicProcedure
+		.input(
+			z.object({
+				attachmentIds: z.array(z.string()),
+				shouldArchive: z.boolean(),
+			})
+		)
+		.mutation(async ({ ctx: { db }, input: { attachmentIds, shouldArchive } }) => {
+			return db
+				.update(airtableAttachments)
+				.set({ archivedAt: shouldArchive ? new Date() : null, updatedAt: new Date() })
+				.where(inArray(airtableAttachments.id, attachmentIds))
+				.returning();
+		}),
 });
 
 export const airtableRouter = mergeRouters(

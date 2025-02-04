@@ -255,7 +255,7 @@ const AirtableSection = () => {
 			{airtableAttachments ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/airtable-creators',
+						to: '/queue/media/airtable-attachments',
 					}}
 					label="Images"
 					data={airtableAttachments}
