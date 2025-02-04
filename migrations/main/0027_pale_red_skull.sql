@@ -1,1 +1,0 @@
-ALTER TABLE "media" ALTER COLUMN "mime_type" SET DEFAULT 'application/octet-stream';

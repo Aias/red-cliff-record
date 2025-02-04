@@ -19,4 +19,5 @@ export default defineConfig({
 		url: databaseUrl!,
 	},
 	casing: 'snake_case',
+	strict: true,
 });
