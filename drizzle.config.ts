@@ -8,7 +8,7 @@ const databaseUrl = process.env.DATABASE_URL?.replace(
 );
 
 export default defineConfig({
-	out: './src/server/db/migrations/main',
+	out: './migrations/main',
 	schema: [
 		'./src/server/db/schema/main/index.ts',
 		'./src/server/db/schema/integrations/index.ts',

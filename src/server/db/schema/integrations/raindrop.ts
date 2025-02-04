@@ -3,6 +3,7 @@ import {
 	boolean,
 	index,
 	integer,
+	pgTable,
 	text,
 	timestamp,
 	unique,
@@ -14,9 +15,8 @@ import { contentTimestamps, databaseTimestamps } from '../common';
 import { indices, records } from '../main';
 import { media } from '../main/media';
 import { integrationRuns } from '../operations';
-import { integrationSchema } from './schema';
 
-export const raindropBookmarks = integrationSchema.table(
+export const raindropBookmarks = pgTable(
 	'raindrop_bookmarks',
 	{
 		id: integer('id').primaryKey(),
@@ -86,7 +86,7 @@ export const raindropBookmarksRelations = relations(raindropBookmarks, ({ one })
 	}),
 }));
 
-export const raindropCollections = integrationSchema.table(
+export const raindropCollections = pgTable(
 	'raindrop_collections',
 	{
 		id: integer('id').primaryKey(),

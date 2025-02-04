@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { index, integer, json, text, timestamp } from 'drizzle-orm/pg-core';
+import { index, integer, json, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import type {
 	LightroomAesthetics,
@@ -11,9 +11,8 @@ import { contentTimestamps, databaseTimestamps } from '../common';
 import { records } from '../main';
 import { media } from '../main/media';
 import { integrationRuns } from '../operations';
-import { integrationSchema } from './schema';
 
-export const adobeLightroomImages = integrationSchema.table(
+export const adobeLightroomImages = pgTable(
 	'adobe_lightroom_images',
 	{
 		id: text('id').primaryKey(),

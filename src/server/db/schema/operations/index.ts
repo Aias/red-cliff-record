@@ -1,18 +1,12 @@
-import { index, integer, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { index, integer, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { databaseTimestampsNonUpdatable } from '../common';
-import { operationsSchema } from './schema';
-
-export { operationsSchema };
 
 export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
 export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
 
-export const integrationStatusEnum = operationsSchema.enum(
-	'integration_status',
-	IntegrationStatus.options
-);
+export const integrationStatusEnum = pgEnum('integration_status', IntegrationStatus.options);
 
 export const IntegrationType = z.enum([
 	'ai_chat',
@@ -28,10 +22,7 @@ export const IntegrationType = z.enum([
 	'twitter',
 ]);
 export type IntegrationType = z.infer<typeof IntegrationType>;
-export const integrationTypeEnum = operationsSchema.enum(
-	'integration_type',
-	IntegrationType.options
-);
+export const integrationTypeEnum = pgEnum('integration_type', IntegrationType.options);
 export type IntegrationService =
 	| 'adobe'
 	| 'airtable'
@@ -43,9 +34,9 @@ export type IntegrationService =
 
 export const RunType = z.enum(['seed', 'sync']);
 export type RunType = z.infer<typeof RunType>;
-export const runTypeEnum = operationsSchema.enum('run_type', RunType.options);
+export const runTypeEnum = pgEnum('run_type', RunType.options);
 
-export const integrationRuns = operationsSchema.table(
+export const integrationRuns = pgTable(
 	'integration_runs',
 	{
 		id: serial('id').primaryKey(),

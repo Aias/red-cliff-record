@@ -1,14 +1,22 @@
 import { relations } from 'drizzle-orm';
-import { index, integer, text, timestamp, vector, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import {
+	index,
+	integer,
+	pgEnum,
+	pgTable,
+	text,
+	timestamp,
+	vector,
+	type AnyPgColumn,
+} from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from '../common';
 import { indices, records } from '../main';
 import { media } from '../main/media';
 import { integrationRuns } from '../operations';
-import { integrationSchema } from './schema';
 
-export const twitterTweets = integrationSchema.table(
+export const twitterTweets = pgTable(
 	'twitter_tweets',
 	{
 		id: text('id').primaryKey(),
@@ -73,12 +81,9 @@ export const twitterTweetsRelations = relations(twitterTweets, ({ one, many }) =
 export const TwitterMediaType = z.enum(['photo', 'video', 'animated_gif']);
 export type TwitterMediaType = z.infer<typeof TwitterMediaType>;
 
-export const twitterMediaTypeEnum = integrationSchema.enum(
-	'twitter_media_type',
-	TwitterMediaType.options
-);
+export const twitterMediaTypeEnum = pgEnum('twitter_media_type', TwitterMediaType.options);
 
-export const twitterMedia = integrationSchema.table(
+export const twitterMedia = pgTable(
 	'twitter_media',
 	{
 		id: text('id').primaryKey(),
@@ -122,7 +127,7 @@ export const twitterMediaRelations = relations(twitterMedia, ({ one }) => ({
 	}),
 }));
 
-export const twitterUsers = integrationSchema.table(
+export const twitterUsers = pgTable(
 	'twitter_users',
 	{
 		id: text('id').primaryKey(),

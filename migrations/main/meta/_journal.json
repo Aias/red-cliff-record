@@ -225,6 +225,13 @@
       "when": 1738596682201,
       "tag": "0031_steady_mandrill",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1738687440847,
+      "tag": "0032_rare_iceman",
+      "breakpoints": true
     }
   ]
 }

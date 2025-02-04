@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import {
 	index,
 	integer,
+	pgTable,
 	primaryKey,
 	text,
 	timestamp,
@@ -13,9 +14,8 @@ import { contentTimestamps, databaseTimestamps } from '../common';
 import { indices, records } from '../main';
 import { media } from '../main/media';
 import { integrationRuns } from '../operations';
-import { integrationSchema } from './schema';
 
-export const airtableExtracts = integrationSchema.table(
+export const airtableExtracts = pgTable(
 	'airtable_extracts',
 	{
 		id: text('id').primaryKey(),
@@ -80,7 +80,7 @@ export const airtableExtractsRelations = relations(airtableExtracts, ({ many, on
 	}),
 }));
 
-export const airtableAttachments = integrationSchema.table('airtable_attachments', {
+export const airtableAttachments = pgTable('airtable_attachments', {
 	id: text('id').primaryKey(),
 	url: text('url').notNull(),
 	filename: text('filename').notNull(),
@@ -120,7 +120,7 @@ export const airtableAttachmentsRelations = relations(airtableAttachments, ({ on
 	}),
 }));
 
-export const airtableCreators = integrationSchema.table(
+export const airtableCreators = pgTable(
 	'airtable_creators',
 	{
 		id: text('id').primaryKey(),
@@ -166,7 +166,7 @@ export const airtableCreatorsRelations = relations(airtableCreators, ({ one, man
 	creatorExtracts: many(airtableExtractCreators, { relationName: 'creatorToExtract' }),
 }));
 
-export const airtableSpaces = integrationSchema.table(
+export const airtableSpaces = pgTable(
 	'airtable_spaces',
 	{
 		id: text('id').primaryKey(),
@@ -208,7 +208,7 @@ export const airtableSpacesRelations = relations(airtableSpaces, ({ one, many })
 	spaceExtracts: many(airtableExtractSpaces, { relationName: 'spaceToExtract' }),
 }));
 
-export const airtableExtractCreators = integrationSchema.table(
+export const airtableExtractCreators = pgTable(
 	'airtable_extract_creators',
 	{
 		extractId: text('extract_id')
@@ -246,7 +246,7 @@ export const airtableExtractCreatorsRelations = relations(airtableExtractCreator
 	}),
 }));
 
-export const airtableExtractSpaces = integrationSchema.table(
+export const airtableExtractSpaces = pgTable(
 	'airtable_extract_spaces',
 	{
 		extractId: text('extract_id')
@@ -284,7 +284,7 @@ export const airtableExtractSpacesRelations = relations(airtableExtractSpaces, (
 	}),
 }));
 
-export const airtableExtractConnections = integrationSchema.table(
+export const airtableExtractConnections = pgTable(
 	'airtable_extract_connections',
 	{
 		fromExtractId: text('from_extract_id')

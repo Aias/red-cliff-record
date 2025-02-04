@@ -1,17 +1,25 @@
 import { relations } from 'drizzle-orm';
-import { bigint, index, integer, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+	bigint,
+	index,
+	integer,
+	pgEnum,
+	pgTable,
+	serial,
+	text,
+	timestamp,
+} from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { databaseTimestamps, databaseTimestampsNonUpdatable } from '../common';
 import { integrationRuns } from '../operations';
-import { integrationSchema } from './schema';
 
 export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
 export type Browser = z.infer<typeof Browser>;
 
-export const browserEnum = integrationSchema.enum('browser', Browser.options);
+export const browserEnum = pgEnum('browser', Browser.options);
 
-export const arcBrowsingHistory = integrationSchema.table(
+export const arcBrowsingHistory = pgTable(
 	'arc_browsing_history',
 	{
 		id: serial('id').primaryKey(),
@@ -46,13 +54,10 @@ export type ArcBrowsingHistorySelect = typeof arcBrowsingHistory.$inferSelect;
 export const ArcBrowsingHistoryInsertSchema = createInsertSchema(arcBrowsingHistory);
 export type ArcBrowsingHistoryInsert = typeof arcBrowsingHistory.$inferInsert;
 
-export const arcBrowsingHistoryOmitList = integrationSchema.table(
-	'arc_browsing_history_omit_list',
-	{
-		pattern: text('pattern').primaryKey().notNull(),
-		...databaseTimestamps,
-	}
-);
+export const arcBrowsingHistoryOmitList = pgTable('arc_browsing_history_omit_list', {
+	pattern: text('pattern').primaryKey().notNull(),
+	...databaseTimestamps,
+});
 
 export const ArcBrowsingHistoryOmitListSelectSchema = createSelectSchema(
 	arcBrowsingHistoryOmitList
