@@ -1,2 +1,0 @@
-ALTER TABLE "indices" ADD COLUMN "embedding_id" integer;--> statement-breakpoint
-ALTER TABLE "indices" ADD CONSTRAINT "indices_embedding_id_embeddings_id_fk" FOREIGN KEY ("embedding_id") REFERENCES "public"."embeddings"("id") ON DELETE set null ON UPDATE cascade;

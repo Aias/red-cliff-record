@@ -1,1 +1,0 @@
-ALTER TABLE "integrations"."airtable_spaces" DROP COLUMN "description";
