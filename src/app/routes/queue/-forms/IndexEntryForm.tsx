@@ -70,7 +70,7 @@ export const IndexEntryForm = ({
 					form.handleSubmit();
 				}}
 			>
-				<div className="flex gap-4">
+				<div className="flex gap-3">
 					<form.Field name="mainType">
 						{(field) => (
 							<label className="flex grow flex-col gap-1">

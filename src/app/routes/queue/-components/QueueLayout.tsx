@@ -339,14 +339,16 @@ export const QueueLayout = <TInput extends Record<string, unknown>, TOutput>({
 									</div>
 								</header>
 								<ScrollArea scrollbars="vertical">
-									<MetadataList metadata={inspectedItem} className="gap-3" />
 									{inspectedQueueItem?.avatarUrl && (
-										<img
-											src={inspectedQueueItem.avatarUrl}
-											alt={inspectedQueueItem.title}
-											className="mt-4 w-full overflow-hidden rounded-md"
-										/>
+										<div className="mb-3 h-100 w-full bg-tint">
+											<img
+												src={inspectedQueueItem.avatarUrl}
+												alt={inspectedQueueItem.title}
+												className="h-full w-full rounded-md object-contain"
+											/>
+										</div>
 									)}
+									<MetadataList metadata={inspectedItem} className="gap-3" />
 								</ScrollArea>
 							</div>
 							<div className="flex shrink-1 grow-0 basis-1/2 flex-col gap-3">

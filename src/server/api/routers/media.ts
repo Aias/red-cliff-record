@@ -73,16 +73,16 @@ export const mediaRouter = createTRPCRouter({
 	search: publicProcedure.input(z.string()).query(({ ctx: { db }, input }) => {
 		return db.query.media.findMany({
 			where: sql`(
-				${media.title} <-> ${input} < ${SIMILARITY_THRESHOLD} OR
-				${media.altText} <-> ${input} < ${SIMILARITY_THRESHOLD} OR
-				${media.url} <-> ${input} < ${SIMILARITY_THRESHOLD}
+				(${media.title} IS NOT NULL AND ${media.title} <-> ${input} < ${SIMILARITY_THRESHOLD}) OR
+				(${media.altText} IS NOT NULL AND ${media.altText} <-> ${input} < ${SIMILARITY_THRESHOLD}) OR
+				(${media.url} IS NOT NULL AND ${media.url} <-> ${input} < ${SIMILARITY_THRESHOLD})
 			)`,
 			limit: 10,
 			orderBy: [
 				sql`LEAST(
-					${media.title} <-> ${input},
-					${media.altText} <-> ${input},
-					${media.url} <-> ${input}
+					(CASE WHEN ${media.title} IS NOT NULL THEN ${media.title} <-> ${input} ELSE 9999 END),
+					(CASE WHEN ${media.altText} IS NOT NULL THEN ${media.altText} <-> ${input} ELSE 9999 END),
+					(CASE WHEN ${media.url} IS NOT NULL THEN ${media.url} <-> ${input} ELSE 9999 END)
 				)`,
 				desc(media.updatedAt),
 			],

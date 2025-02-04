@@ -67,7 +67,7 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 			</Heading>
 			<div className="mb-4">{mediaPreview}</div>
 			<form
-				className="flex flex-col gap-4"
+				className="flex flex-col gap-3"
 				onSubmit={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
