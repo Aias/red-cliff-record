@@ -1,5 +1,5 @@
 import { desc, isNull } from 'drizzle-orm';
-import { raindropBookmarks, raindropCollections } from '~/server/db/schema/integrations';
+import { raindropBookmarks, raindropCollections } from '~/server/db/schema/raindrop';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { DEFAULT_LIMIT } from './common';
 

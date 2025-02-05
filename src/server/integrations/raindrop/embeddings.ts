@@ -5,7 +5,7 @@ import {
 	raindropCollections,
 	type RaindropBookmarkSelect,
 	type RaindropCollectionSelect,
-} from '~/server/db/schema/integrations/raindrop';
+} from '~/server/db/schema/raindrop';
 import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 import { runIntegration } from '../common/run-integration';
 

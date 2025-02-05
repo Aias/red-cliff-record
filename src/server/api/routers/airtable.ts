@@ -5,7 +5,7 @@ import {
 	airtableCreators,
 	airtableExtracts,
 	airtableSpaces,
-} from '~/server/db/schema/integrations';
+} from '~/server/db/schema/airtable';
 import { createTRPCRouter, mergeRouters, publicProcedure } from '../init';
 import { buildWhereClause, RequestParamsSchema } from './common';
 

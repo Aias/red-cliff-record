@@ -1,6 +1,6 @@
 import { desc } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
-import { readwiseDocuments, type ReadwiseDocumentInsert } from '~/server/db/schema/integrations';
+import { readwiseDocuments, type ReadwiseDocumentInsert } from '~/server/db/schema/readwise';
 import { runIntegration } from '../common/run-integration';
 import {
 	ReadwiseArticlesResponseSchema,

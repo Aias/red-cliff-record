@@ -7,7 +7,7 @@ import {
 	type AirtableCreatorSelect,
 	type AirtableExtractSelect,
 	type AirtableSpaceSelect,
-} from '~/server/db/schema/integrations/airtable';
+} from '~/server/db/schema/airtable';
 import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 
 type CreatorWithExtracts = AirtableCreatorSelect & {

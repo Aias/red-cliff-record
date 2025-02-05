@@ -11,16 +11,16 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { databaseTimestamps, databaseTimestampsNonUpdatable } from '../common';
-import { integrationRuns } from '../operations';
+import { databaseTimestamps, databaseTimestampsNonUpdatable } from './common';
+import { integrationRuns } from './operations';
 
 export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
 export type Browser = z.infer<typeof Browser>;
 
 export const browserEnum = pgEnum('browser', Browser.options);
 
-export const arcBrowsingHistory = pgTable(
-	'arc_browsing_history',
+export const browsingHistory = pgTable(
+	'browsing_history',
 	{
 		id: serial('id').primaryKey(),
 		viewTime: timestamp('view_time', {
@@ -43,38 +43,34 @@ export const arcBrowsingHistory = pgTable(
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.viewTime),
-		index('arc_browsing_history_url_idx').on(table.url),
+		index('browsing_history_url_idx').on(table.url),
 		index().on(table.viewEpochMicroseconds),
 		index().on(table.hostname),
 	]
 );
 
-export const ArcBrowsingHistorySelectSchema = createSelectSchema(arcBrowsingHistory);
-export type ArcBrowsingHistorySelect = typeof arcBrowsingHistory.$inferSelect;
-export const ArcBrowsingHistoryInsertSchema = createInsertSchema(arcBrowsingHistory);
-export type ArcBrowsingHistoryInsert = typeof arcBrowsingHistory.$inferInsert;
+export const BrowsingHistorySelectSchema = createSelectSchema(browsingHistory);
+export type BrowsingHistorySelect = typeof browsingHistory.$inferSelect;
+export const BrowsingHistoryInsertSchema = createInsertSchema(browsingHistory);
+export type BrowsingHistoryInsert = typeof browsingHistory.$inferInsert;
 
-export const arcBrowsingHistoryOmitList = pgTable('arc_browsing_history_omit_list', {
+export const browsingHistoryOmitList = pgTable('browsing_history_omit_list', {
 	pattern: text('pattern').primaryKey().notNull(),
 	...databaseTimestamps,
 });
 
-export const ArcBrowsingHistoryOmitListSelectSchema = createSelectSchema(
-	arcBrowsingHistoryOmitList
-);
-export type ArcBrowsingHistoryOmitListSelect = typeof arcBrowsingHistoryOmitList.$inferSelect;
-export const ArcBrowsingHistoryOmitListInsertSchema = createInsertSchema(
-	arcBrowsingHistoryOmitList
-);
-export type ArcBrowsingHistoryOmitListInsert = typeof arcBrowsingHistoryOmitList.$inferInsert;
+export const BrowsingHistoryOmitListSelectSchema = createSelectSchema(browsingHistoryOmitList);
+export type BrowsingHistoryOmitListSelect = typeof browsingHistoryOmitList.$inferSelect;
+export const BrowsingHistoryOmitListInsertSchema = createInsertSchema(browsingHistoryOmitList);
+export type BrowsingHistoryOmitListInsert = typeof browsingHistoryOmitList.$inferInsert;
 
-export const arcBrowsingHistoryRelations = relations(arcBrowsingHistory, ({ one }) => ({
+export const browsingHistoryRelations = relations(browsingHistory, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
-		fields: [arcBrowsingHistory.integrationRunId],
+		fields: [browsingHistory.integrationRunId],
 		references: [integrationRuns.id],
 	}),
 }));
 
-export const arcIntegrationRelations = relations(integrationRuns, ({ many }) => ({
-	arcBrowsingHistory: many(arcBrowsingHistory),
+export const integrationRelations = relations(integrationRuns, ({ many }) => ({
+	browsingHistory: many(browsingHistory),
 }));

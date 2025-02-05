@@ -10,7 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { databaseTimestamps } from '../common';
+import { databaseTimestamps } from './common';
 import { sources } from './sources';
 
 export const MediaType = z.enum([

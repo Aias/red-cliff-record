@@ -4,8 +4,8 @@ import type {
 	GithubCommitChangeSelect,
 	GithubCommitSelect,
 	GithubRepositorySelect,
-} from '~/server/db/schema/integrations';
-import { githubCommits } from '~/server/db/schema/integrations/github';
+} from '~/server/db/schema/github';
+import { githubCommits } from '~/server/db/schema/github';
 import { summarizeCommit } from '../../services/ai/summarize-commit';
 import { runIntegration } from '../common/run-integration';
 

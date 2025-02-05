@@ -5,7 +5,7 @@ import {
 	twitterUsers,
 	type TwitterTweetSelect,
 	type TwitterUserSelect,
-} from '~/server/db/schema/integrations/twitter';
+} from '~/server/db/schema/twitter';
 import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 import { runIntegration } from '../common/run-integration';
 

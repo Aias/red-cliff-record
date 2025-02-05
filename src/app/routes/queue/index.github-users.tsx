@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { toTitleCase, validateAndFormatUrl } from '~/app/lib/formatting';
 import { trpc } from '~/app/trpc';
-import type { GithubUserSelect } from '~/server/db/schema/integrations';
-import type { IndicesInsert, IndicesSelect } from '~/server/db/schema/main';
+import type { GithubUserSelect } from '~/server/db/schema/github';
+import type { IndicesInsert, IndicesSelect } from '~/server/db/schema/indices';
 import { QueueLayout } from './-components/QueueLayout';
 import type { QueueConfig } from './-components/types';
 import { IndexEntryForm } from './-forms/IndexEntryForm';

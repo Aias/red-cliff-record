@@ -17,9 +17,10 @@ import {
 	contentTimestampsNonUpdatable,
 	databaseTimestamps,
 	databaseTimestampsNonUpdatable,
-} from '../common';
-import { indices, records } from '../main';
-import { integrationRuns } from '../operations';
+} from './common';
+import { indices } from './indices';
+import { integrationRuns } from './operations';
+import { records } from './records';
 
 const githubStats = {
 	changes: integer('changes'),

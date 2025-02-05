@@ -2,11 +2,8 @@ import Airtable from 'airtable';
 import 'dotenv/config';
 import { eq, notIlike } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
-import type {
-	AirtableAttachmentSelect,
-	AirtableExtractSelect,
-} from '~/server/db/schema/integrations';
-import { airtableAttachments } from '~/server/db/schema/integrations';
+import type { AirtableAttachmentSelect, AirtableExtractSelect } from '~/server/db/schema/airtable';
+import { airtableAttachments } from '~/server/db/schema/airtable';
 import { uploadMediaToR2 } from '../common/media-helpers';
 import { AirtableAttachmentSchema } from './types';
 

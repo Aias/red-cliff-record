@@ -1,9 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
-import {
-	readwiseDocuments,
-	type ReadwiseDocumentSelect,
-} from '~/server/db/schema/integrations/readwise';
+import { readwiseDocuments, type ReadwiseDocumentSelect } from '~/server/db/schema/readwise';
 import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 import { runIntegration } from '../common/run-integration';
 

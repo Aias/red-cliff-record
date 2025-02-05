@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { trpc } from '~/app/trpc';
-import type { AdobeLightroomImageSelect } from '~/server/db/schema/integrations';
-import { type MediaInsert, type MediaSelect } from '~/server/db/schema/main/media';
+import type { AdobeLightroomImageSelect } from '~/server/db/schema/adobe';
+import { type MediaInsert, type MediaSelect } from '~/server/db/schema/media';
 import { QueueLayout } from './-components/QueueLayout';
 import type { QueueConfig } from './-components/types';
 import { MediaEntryForm } from './-forms/MediaEntryForm';

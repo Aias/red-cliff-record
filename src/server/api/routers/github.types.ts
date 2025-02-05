@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { GithubCommitType } from '~/server/db/schema/integrations/github';
+import { GithubCommitType } from '~/server/db/schema/github';
 
 export const CommitSummaryInputSchema = z.object({
 	message: z.string(),

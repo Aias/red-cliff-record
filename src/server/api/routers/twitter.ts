@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { twitterMedia, twitterTweets, twitterUsers } from '~/server/db/schema/integrations';
+import { twitterMedia, twitterTweets, twitterUsers } from '~/server/db/schema/twitter';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { buildWhereClause, RequestParamsSchema } from './common';
 

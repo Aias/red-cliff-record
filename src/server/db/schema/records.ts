@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { databaseTimestamps } from '../common';
+import { databaseTimestamps } from './common';
 import { indices } from './indices';
 import { locations } from './locations';
 import { media } from './media';

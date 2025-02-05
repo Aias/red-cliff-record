@@ -9,7 +9,7 @@ import {
 	unique,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import { databaseTimestamps } from '../common';
+import { databaseTimestamps } from './common';
 import { media } from './media';
 import { sources } from './sources';
 

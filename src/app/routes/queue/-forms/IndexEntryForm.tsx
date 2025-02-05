@@ -18,7 +18,7 @@ import {
 	IndicesSelectSchema,
 	type IndexMainType,
 	type IndicesSelect,
-} from '~/server/db/schema/main';
+} from '~/server/db/schema/indices';
 
 type IndexEntryFormProps = {
 	indexEntryId: string | number;

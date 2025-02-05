@@ -7,7 +7,7 @@ import {
 	type GithubCommitSelect,
 	type GithubRepositorySelect,
 	type GithubUserSelect,
-} from '~/server/db/schema/integrations/github';
+} from '~/server/db/schema/github';
 import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
 import { runIntegration } from '../common/run-integration';
 

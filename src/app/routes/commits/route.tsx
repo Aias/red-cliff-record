@@ -13,7 +13,7 @@ import {
 	type GithubCommitChangeSelect,
 	type GithubCommitSelect,
 	type GithubRepositorySelect,
-} from '~/server/db/schema/integrations';
+} from '~/server/db/schema/github';
 
 type CommitSelect = Omit<GithubCommitSelect, 'embedding'> & {
 	repository: GithubRepositorySelect;

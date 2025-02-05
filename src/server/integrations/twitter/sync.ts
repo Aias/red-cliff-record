@@ -9,7 +9,7 @@ import {
 	type TwitterMediaInsert,
 	type TwitterTweetInsert,
 	type TwitterUserInsert,
-} from '~/server/db/schema/integrations';
+} from '~/server/db/schema/twitter';
 import { runIntegration } from '../common/run-integration';
 import { processMedia, processTweet, processUser } from './helpers';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';

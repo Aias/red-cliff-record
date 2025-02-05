@@ -1,6 +1,6 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { RecordInsertSchema, records } from '~/server/db/schema/main';
+import { RecordInsertSchema, records } from '~/server/db/schema/records';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { SIMILARITY_THRESHOLD } from './common';
 

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { trpc } from '~/app/trpc';
-import type { AirtableAttachmentSelect } from '~/server/db/schema/integrations/airtable';
-import type { MediaInsert, MediaSelect } from '~/server/db/schema/main/media';
+import type { AirtableAttachmentSelect } from '~/server/db/schema/airtable';
+import type { MediaInsert, MediaSelect } from '~/server/db/schema/media';
 import { QueueLayout } from './-components/QueueLayout';
 import type { QueueConfig } from './-components/types';
 import { MediaEntryForm } from './-forms/MediaEntryForm';

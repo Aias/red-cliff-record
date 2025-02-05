@@ -5,7 +5,7 @@ import {
 	raindropCollections,
 	type RaindropBookmarkInsert,
 	type RaindropCollectionInsert,
-} from '~/server/db/schema/integrations';
+} from '~/server/db/schema/raindrop';
 import { runIntegration } from '../common/run-integration';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';

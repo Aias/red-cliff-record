@@ -15,7 +15,7 @@ import {
 	type AirtableExtractInsert,
 	type AirtableExtractSpaceInsert,
 	type AirtableSpaceInsert,
-} from '~/server/db/schema/integrations';
+} from '~/server/db/schema/airtable';
 import { deleteMediaFromR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
 import { syncAirtableEmbeddings } from './embeddings';

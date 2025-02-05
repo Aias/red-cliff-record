@@ -13,9 +13,10 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { contentTimestamps, databaseTimestamps } from '../common';
-import { media, records } from '../main';
-import { integrationRuns } from '../operations';
+import { contentTimestamps, databaseTimestamps } from './common';
+import { media } from './media';
+import { integrationRuns } from './operations';
+import { records } from './records';
 
 export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);
 export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;

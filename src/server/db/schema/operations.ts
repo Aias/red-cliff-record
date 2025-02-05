@@ -1,7 +1,7 @@
 import { index, integer, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { databaseTimestampsNonUpdatable } from '../common';
+import { databaseTimestampsNonUpdatable } from './common';
 
 export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
 export type IntegrationStatus = z.infer<typeof IntegrationStatus>;

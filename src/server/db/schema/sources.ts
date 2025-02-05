@@ -11,9 +11,9 @@ import {
 	unique,
 } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
-import { databaseTimestamps } from '../common';
-import { IntegrationType, integrationTypeEnum } from '../operations';
+import { databaseTimestamps } from './common';
 import { media } from './media';
+import { IntegrationType, integrationTypeEnum } from './operations';
 
 export const LinkMetadataSchema = z
 	.object({

@@ -4,7 +4,7 @@ import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { MetadataList } from '~/app/components/MetadataList';
 import { trpc } from '~/app/trpc';
-import { MediaSelectSchema, type MediaSelect } from '~/server/db/schema/main';
+import { MediaSelectSchema, type MediaSelect } from '~/server/db/schema/media';
 
 type MediaEntryFormProps = {
 	mediaId: string | number;

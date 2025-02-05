@@ -1,6 +1,6 @@
 import { eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { arcBrowsingHistory, arcBrowsingHistoryOmitList } from '~/server/db/schema/integrations';
+import { browsingHistory, browsingHistoryOmitList } from '~/server/db/schema/history';
 import { createTRPCRouter, mergeRouters, publicProcedure } from '../init';
 
 const browserHistoryRouter = createTRPCRouter({
@@ -12,23 +12,23 @@ const browserHistoryRouter = createTRPCRouter({
 
 			return db
 				.select({
-					hostname: arcBrowsingHistory.hostname,
-					url: arcBrowsingHistory.url,
-					pageTitle: arcBrowsingHistory.pageTitle,
-					totalDuration: sql<number>`sum(${arcBrowsingHistory.viewDuration})`,
+					hostname: browsingHistory.hostname,
+					url: browsingHistory.url,
+					pageTitle: browsingHistory.pageTitle,
+					totalDuration: sql<number>`sum(${browsingHistory.viewDuration})`,
 					visitCount: sql<number>`count(*)`,
-					firstVisit: sql<string>`min(${arcBrowsingHistory.viewTime})`,
-					lastVisit: sql<string>`max(${arcBrowsingHistory.viewTime})`,
+					firstVisit: sql<string>`min(${browsingHistory.viewTime})`,
+					lastVisit: sql<string>`max(${browsingHistory.viewTime})`,
 				})
-				.from(arcBrowsingHistory)
+				.from(browsingHistory)
 				.where(
-					sql`DATE(${arcBrowsingHistory.viewTime} + INTERVAL ${sql.raw(`'${adjustedOffset} MINUTES'`)}) = to_date(${date}, 'YYYY-MM-DD') AND NOT EXISTS (
-					SELECT 1 FROM ${arcBrowsingHistoryOmitList}
-					WHERE ${arcBrowsingHistory.url} LIKE ${arcBrowsingHistoryOmitList.pattern}
+					sql`DATE(${browsingHistory.viewTime} + INTERVAL ${sql.raw(`'${adjustedOffset} MINUTES'`)}) = to_date(${date}, 'YYYY-MM-DD') AND NOT EXISTS (
+					SELECT 1 FROM ${browsingHistoryOmitList}
+					WHERE ${browsingHistory.url} LIKE ${browsingHistoryOmitList.pattern}
 				)`
 				)
-				.groupBy(arcBrowsingHistory.hostname, arcBrowsingHistory.url, arcBrowsingHistory.pageTitle)
-				.orderBy(sql`min(${arcBrowsingHistory.viewTime})`);
+				.groupBy(browsingHistory.hostname, browsingHistory.url, browsingHistory.pageTitle)
+				.orderBy(sql`min(${browsingHistory.viewTime})`);
 		}),
 });
 
@@ -36,40 +36,40 @@ const omitListRouter = createTRPCRouter({
 	getOmitList: publicProcedure.query(({ ctx: { db } }) => {
 		return db
 			.select({
-				pattern: arcBrowsingHistoryOmitList.pattern,
-				createdAt: arcBrowsingHistoryOmitList.createdAt,
-				updatedAt: arcBrowsingHistoryOmitList.updatedAt,
+				pattern: browsingHistoryOmitList.pattern,
+				createdAt: browsingHistoryOmitList.createdAt,
+				updatedAt: browsingHistoryOmitList.updatedAt,
 			})
-			.from(arcBrowsingHistoryOmitList)
-			.orderBy(arcBrowsingHistoryOmitList.pattern);
+			.from(browsingHistoryOmitList)
+			.orderBy(browsingHistoryOmitList.pattern);
 	}),
 
 	getOmittedCounts: publicProcedure.query(({ ctx: { db } }) => {
 		return db
 			.select({
-				pattern: arcBrowsingHistoryOmitList.pattern,
+				pattern: browsingHistoryOmitList.pattern,
 				matchCount: db.$count(
-					arcBrowsingHistory,
-					ilike(arcBrowsingHistory.url, sql`${arcBrowsingHistoryOmitList.pattern}`)
+					browsingHistory,
+					ilike(browsingHistory.url, sql`${browsingHistoryOmitList.pattern}`)
 				),
 			})
-			.from(arcBrowsingHistoryOmitList)
-			.orderBy(arcBrowsingHistoryOmitList.pattern);
+			.from(browsingHistoryOmitList)
+			.orderBy(browsingHistoryOmitList.pattern);
 	}),
 
 	createOmitPattern: publicProcedure
 		.input(z.string())
 		.mutation(({ ctx: { db }, input: pattern }) => {
-			return db.insert(arcBrowsingHistoryOmitList).values({ pattern }).returning();
+			return db.insert(browsingHistoryOmitList).values({ pattern }).returning();
 		}),
 
 	updateOmitPattern: publicProcedure
 		.input(z.object({ oldPattern: z.string(), newPattern: z.string() }))
 		.mutation(({ ctx: { db }, input: { oldPattern, newPattern } }) => {
 			return db
-				.update(arcBrowsingHistoryOmitList)
+				.update(browsingHistoryOmitList)
 				.set({ pattern: newPattern, updatedAt: new Date() })
-				.where(eq(arcBrowsingHistoryOmitList.pattern, oldPattern))
+				.where(eq(browsingHistoryOmitList.pattern, oldPattern))
 				.returning();
 		}),
 
@@ -77,8 +77,8 @@ const omitListRouter = createTRPCRouter({
 		.input(z.string())
 		.mutation(({ ctx: { db }, input: pattern }) => {
 			return db
-				.delete(arcBrowsingHistoryOmitList)
-				.where(eq(arcBrowsingHistoryOmitList.pattern, pattern))
+				.delete(browsingHistoryOmitList)
+				.where(eq(browsingHistoryOmitList.pattern, pattern))
 				.returning();
 		}),
 });

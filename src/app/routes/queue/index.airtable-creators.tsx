@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { formatCreatorDescription, toTitleCase } from '~/app/lib/formatting';
 import { trpc } from '~/app/trpc';
-import type { AirtableCreatorSelect } from '~/server/db/schema/integrations';
-import type { IndicesInsert, IndicesSelect } from '~/server/db/schema/main';
+import type { AirtableCreatorSelect } from '~/server/db/schema/airtable';
+import type { IndicesInsert, IndicesSelect } from '~/server/db/schema/indices';
 import { QueueLayout } from './-components/QueueLayout';
 import type { QueueConfig } from './-components/types';
 import { IndexEntryForm } from './-forms/IndexEntryForm';

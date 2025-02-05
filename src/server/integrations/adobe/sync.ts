@@ -1,5 +1,5 @@
 import { db } from '~/server/db/connections';
-import { adobeLightroomImages } from '~/server/db/schema/integrations';
+import { adobeLightroomImages } from '~/server/db/schema/adobe';
 import { runIntegration } from '../common/run-integration';
 import { LightroomJsonResponseSchema } from './types';
 

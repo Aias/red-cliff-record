@@ -13,12 +13,12 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { databaseTimestamps } from '../common';
-import { airtableCreators, airtableSpaces } from '../integrations/airtable';
-import { githubUsers } from '../integrations/github';
-import { twitterUsers } from '../integrations/twitter';
+import { airtableCreators, airtableSpaces } from './airtable';
+import { databaseTimestamps } from './common';
+import { githubUsers } from './github';
 import { media } from './media';
 import { sources } from './sources';
+import { twitterUsers } from './twitter';
 
 export const IndexMainType = z.enum([
 	'entity', // who/what created something

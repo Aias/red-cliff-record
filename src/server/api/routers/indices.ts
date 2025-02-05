@@ -1,6 +1,6 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { indices, IndicesInsertSchema } from '~/server/db/schema/main';
+import { indices, IndicesInsertSchema } from '~/server/db/schema/indices';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { SIMILARITY_THRESHOLD } from './common';
 

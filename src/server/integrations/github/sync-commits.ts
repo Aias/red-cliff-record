@@ -10,8 +10,8 @@ import {
 	type GithubCommitChangeInsert,
 	type GithubCommitInsert,
 	type GithubRepositoryInsert,
-} from '~/server/db/schema/integrations';
-import { logRateLimitInfo } from './helpers';
+} from '~/server/db/schema/github';
+import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { ensureGithubUserExists } from './sync-users';
 
 type GithubRepository = Endpoints['GET /repos/{owner}/{repo}']['response']['data'];

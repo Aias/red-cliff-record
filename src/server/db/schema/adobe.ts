@@ -7,10 +7,10 @@ import type {
 	LightroomAssetLinks,
 	LightroomLocation,
 } from '~/server/integrations/adobe/types';
-import { contentTimestamps, databaseTimestamps } from '../common';
-import { records } from '../main';
-import { media } from '../main/media';
-import { integrationRuns } from '../operations';
+import { contentTimestamps, databaseTimestamps } from './common';
+import { media } from './media';
+import { integrationRuns } from './operations';
+import { records } from './records';
 
 export const adobeLightroomImages = pgTable(
 	'adobe_lightroom_images',

@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { adobeLightroomImages } from '~/server/db/schema/integrations';
+import { adobeLightroomImages } from '~/server/db/schema/adobe';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { buildWhereClause, RequestParamsSchema } from './common';
 

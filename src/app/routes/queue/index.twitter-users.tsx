@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { toTitleCase, validateAndFormatUrl } from '~/app/lib/formatting';
 import { trpc } from '~/app/trpc';
-import type { TwitterUserSelect } from '~/server/db/schema/integrations';
-import type { IndicesInsert, IndicesSelect } from '~/server/db/schema/main';
+import type { IndicesInsert, IndicesSelect } from '~/server/db/schema/indices';
+import type { TwitterUserSelect } from '~/server/db/schema/twitter';
 import { QueueLayout } from './-components/QueueLayout';
 import type { QueueConfig } from './-components/types';
 import { IndexEntryForm } from './-forms/IndexEntryForm';

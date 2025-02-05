@@ -11,8 +11,8 @@ import {
 	timestamp,
 } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
-import { databaseTimestamps } from '../common';
-import { records } from '.';
+import { databaseTimestamps } from './common';
+import { records } from './records';
 
 export const TimepointType = z.enum([
 	'instant',

@@ -11,10 +11,11 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { contentTimestamps, databaseTimestamps } from '../common';
-import { indices, records } from '../main';
-import { media } from '../main/media';
-import { integrationRuns } from '../operations';
+import { contentTimestamps, databaseTimestamps } from './common';
+import { indices } from './indices';
+import { media } from './media';
+import { integrationRuns } from './operations';
+import { records } from './records';
 
 export const twitterTweets = pgTable(
 	'twitter_tweets',
