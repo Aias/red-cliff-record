@@ -129,7 +129,12 @@ export const githubRouter = createTRPCRouter({
 					or(isNotNull(githubRepositories.starredAt), eq(githubRepositories.private, false)) ??
 						sql`true`,
 				]),
-				orderBy: [desc(githubRepositories.archivedAt), desc(githubRepositories.starredAt)],
+				orderBy: [
+					desc(githubRepositories.archivedAt),
+					desc(githubRepositories.starredAt),
+					githubRepositories.contentCreatedAt,
+					githubRepositories.createdAt,
+				],
 				limit: input.limit,
 			});
 

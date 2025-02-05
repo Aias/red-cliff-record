@@ -33,6 +33,7 @@ const config: QueueConfig<RepoWithOwner, RecordSelect, RecordInsert> = {
 		title: repository.fullName,
 		content: repository.description,
 		url: repository.htmlUrl,
+		needsCuration: false,
 	}),
 	getInputId: (repository) => repository.id.toString(),
 	getOutputId: (record) => record.id.toString(),
