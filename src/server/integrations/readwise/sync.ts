@@ -163,7 +163,12 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 				.values(mappedDoc)
 				.onConflictDoUpdate({
 					target: readwiseDocuments.id,
-					set: { ...mappedDoc, embedding: null, updatedAt: new Date() },
+					set: {
+						...mappedDoc,
+						embedding: null,
+						archivedAt: null,
+						updatedAt: new Date(),
+					},
 				});
 
 			successCount++;

@@ -13,12 +13,51 @@ export const Route = createFileRoute('/queue/media/lightroom-images')({
 	component: RouteComponent,
 });
 
+const generateImageDescription = (image: AdobeLightroomImageSelect): string => {
+	const parts: string[] = [];
+
+	// Assemble camera information
+	const cameraInfo: string[] = [];
+	if (image.cameraMake) {
+		cameraInfo.push(image.cameraMake);
+	}
+	if (image.cameraModel) {
+		cameraInfo.push(image.cameraModel);
+	}
+	if (image.cameraLens) {
+		cameraInfo.push(image.cameraLens);
+	}
+	cameraInfo.push(image.captureDate.toLocaleDateString());
+	parts.push(cameraInfo.join(', '));
+
+	// Assemble location information (assuming LightroomLocation has country, city, and sublocation)
+	if (image.location) {
+		const { country, city, sublocation } = image.location;
+		const locParts: string[] = [];
+		if (city) {
+			locParts.push(city);
+		}
+		if (sublocation) {
+			locParts.push(sublocation.join(', '));
+		}
+		if (country) {
+			locParts.push(country);
+		}
+		if (locParts.length > 0) {
+			parts.push(`\n${locParts.join(', ')}`);
+		}
+	}
+
+	// Join all parts into one alt text; add a period at the end.
+	return parts.join('. ') + '.';
+};
+
 const config: QueueConfig<AdobeLightroomImageSelect, MediaSelect, MediaInsert> = {
 	name: 'Lightroom Images',
 	mapToQueueItem: (image) => ({
 		id: image.id,
-		title: `${image.fileName}`,
-		description: `${image.cameraMake}, ${image.cameraModel}, ${image.cameraLens}. ${image.location}`,
+		title: image.fileName,
+		description: generateImageDescription(image),
 		avatarUrl: image.url2048,
 		externalUrl: image.url2048,
 		archivedAt: image.archivedAt,
@@ -28,11 +67,13 @@ const config: QueueConfig<AdobeLightroomImageSelect, MediaSelect, MediaInsert> =
 		url: image.url2048,
 		createdAt: image.captureDate,
 		updatedAt: image.updatedAt,
-		altText: image.autoTags?.join(', '),
+		altText:
+			generateImageDescription(image) +
+			(image.autoTags ? `\n\nAesthetics: ${image.autoTags.join(', ')}` : ''),
 	}),
 	getInputId: (image) => image.id,
 	getOutputId: (mediaRecord) => mediaRecord.id.toString(),
-	getInputTitle: (image) => `${image.cameraMake} ${image.cameraModel} ${image.location}`,
+	getInputTitle: (image) => image.fileName,
 	getOutputTitle: (mediaRecord) => `${mediaRecord.title} (${mediaRecord.type})`,
 };
 

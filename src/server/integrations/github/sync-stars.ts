@@ -110,6 +110,7 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 						set: {
 							...newRepo,
 							embedding: null,
+							archivedAt: null,
 							updatedAt: new Date(),
 						},
 					});

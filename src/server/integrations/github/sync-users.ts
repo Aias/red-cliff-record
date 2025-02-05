@@ -28,7 +28,18 @@ export async function ensureGithubUserExists(
 		integrationRunId,
 	};
 
-	await db.insert(githubUsers).values(user).onConflictDoNothing();
+	await db
+		.insert(githubUsers)
+		.values(user)
+		.onConflictDoUpdate({
+			target: githubUsers.id,
+			set: {
+				...user,
+				archivedAt: null,
+				embedding: null,
+				updatedAt: new Date(),
+			},
+		});
 	return userData.id;
 }
 
