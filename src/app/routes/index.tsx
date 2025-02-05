@@ -269,10 +269,10 @@ const AirtableSection = () => {
 };
 
 const GithubSection = () => {
-	const { data: githubStars } = trpc.github.getStars.useQuery();
+	const { data: githubRepos } = trpc.github.getRepositories.useQuery();
 	const { data: githubUsers } = trpc.github.getUsers.useQuery();
 
-	const starsConfig: IntegrationListConfig<SingleRecord<typeof githubStars>>[] = useMemo(
+	const reposConfig: IntegrationListConfig<SingleRecord<typeof githubRepos>>[] = useMemo(
 		() => [
 			{ label: 'Name', accessor: (item) => item.name, href: (item) => item.htmlUrl },
 			{ label: 'Owner', accessor: (item) => item.owner.login },
@@ -292,14 +292,14 @@ const GithubSection = () => {
 
 	return (
 		<IntegrationQueueSection service="github">
-			{githubStars ? (
+			{githubRepos ? (
 				<IntegrationList
 					linkOptions={{
-						to: '/queue/index/airtable-creators',
+						to: '/queue/records/github-repositories',
 					}}
-					label="Stars"
-					data={githubStars}
-					config={starsConfig}
+					label="Repos"
+					data={githubRepos}
+					config={reposConfig}
 				/>
 			) : (
 				<LoadingPlaceholder />

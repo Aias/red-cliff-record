@@ -38,7 +38,7 @@
 		"drizzle-orm": "^0.39.1",
 		"drizzle-zod": "^0.7.0",
 		"mime-types": "^2.1.35",
-		"openai": "^4.82.0",
+		"openai": "^4.83.0",
 		"postgres": "^3.4.5",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",

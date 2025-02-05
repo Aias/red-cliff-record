@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { trpc } from '~/app/trpc';
-import type { TwitterMediaSelect, TwitterTweetSelect } from '~/server/db/schema/twitter';
 import { type MediaInsert, type MediaSelect } from '~/server/db/schema/media';
+import type { TwitterMediaSelect, TwitterTweetSelect } from '~/server/db/schema/twitter';
 import { QueueLayout } from './-components/QueueLayout';
 import type { QueueConfig } from './-components/types';
 import { MediaEntryForm } from './-forms/MediaEntryForm';
@@ -88,6 +88,7 @@ function RouteComponent() {
 	const deleteOutputMutation = trpc.media.delete.useMutation({
 		onSuccess: () => {
 			utils.twitter.getMedia.invalidate();
+			utils.media.search.invalidate();
 		},
 	});
 	const handleDeleteOutput = (mediaId: string) => deleteOutputMutation.mutateAsync(Number(mediaId));

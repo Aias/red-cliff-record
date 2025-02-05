@@ -20,6 +20,7 @@ import { Route as QueueIndexTwitterUsersImport } from './routes/queue/index.twit
 import { Route as QueueIndexGithubUsersImport } from './routes/queue/index.github-users'
 import { Route as QueueIndexAirtableSpacesImport } from './routes/queue/index.airtable-spaces'
 import { Route as QueueIndexAirtableCreatorsImport } from './routes/queue/index.airtable-creators'
+import { Route as QueueRecordsGithubRepositoriesImport } from './routes/queue/records.github-repositories'
 import { Route as QueueMediaTwitterMediaImport } from './routes/queue/media.twitter-media'
 import { Route as QueueMediaLightroomImagesImport } from './routes/queue/media.lightroom-images'
 import { Route as QueueMediaAirtableAttachmentsImport } from './routes/queue/media.airtable-attachments'
@@ -81,6 +82,13 @@ const QueueIndexAirtableCreatorsRoute = QueueIndexAirtableCreatorsImport.update(
     getParentRoute: () => QueueRouteRoute,
   } as any,
 )
+
+const QueueRecordsGithubRepositoriesRoute =
+  QueueRecordsGithubRepositoriesImport.update({
+    id: '/records/github-repositories',
+    path: '/records/github-repositories',
+    getParentRoute: () => QueueRouteRoute,
+  } as any)
 
 const QueueMediaTwitterMediaRoute = QueueMediaTwitterMediaImport.update({
   id: '/media/twitter-media',
@@ -161,6 +169,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QueueMediaTwitterMediaImport
       parentRoute: typeof QueueRouteImport
     }
+    '/queue/records/github-repositories': {
+      id: '/queue/records/github-repositories'
+      path: '/records/github-repositories'
+      fullPath: '/queue/records/github-repositories'
+      preLoaderRoute: typeof QueueRecordsGithubRepositoriesImport
+      parentRoute: typeof QueueRouteImport
+    }
     '/queue/index/airtable-creators': {
       id: '/queue/index/airtable-creators'
       path: '/index/airtable-creators'
@@ -210,6 +225,7 @@ interface QueueRouteRouteChildren {
   QueueMediaAirtableAttachmentsRoute: typeof QueueMediaAirtableAttachmentsRoute
   QueueMediaLightroomImagesRoute: typeof QueueMediaLightroomImagesRoute
   QueueMediaTwitterMediaRoute: typeof QueueMediaTwitterMediaRoute
+  QueueRecordsGithubRepositoriesRoute: typeof QueueRecordsGithubRepositoriesRoute
   QueueIndexAirtableCreatorsRoute: typeof QueueIndexAirtableCreatorsRoute
   QueueIndexAirtableSpacesRoute: typeof QueueIndexAirtableSpacesRoute
   QueueIndexGithubUsersRoute: typeof QueueIndexGithubUsersRoute
@@ -220,6 +236,7 @@ const QueueRouteRouteChildren: QueueRouteRouteChildren = {
   QueueMediaAirtableAttachmentsRoute: QueueMediaAirtableAttachmentsRoute,
   QueueMediaLightroomImagesRoute: QueueMediaLightroomImagesRoute,
   QueueMediaTwitterMediaRoute: QueueMediaTwitterMediaRoute,
+  QueueRecordsGithubRepositoriesRoute: QueueRecordsGithubRepositoriesRoute,
   QueueIndexAirtableCreatorsRoute: QueueIndexAirtableCreatorsRoute,
   QueueIndexAirtableSpacesRoute: QueueIndexAirtableSpacesRoute,
   QueueIndexGithubUsersRoute: QueueIndexGithubUsersRoute,
@@ -239,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/queue/media/airtable-attachments': typeof QueueMediaAirtableAttachmentsRoute
   '/queue/media/lightroom-images': typeof QueueMediaLightroomImagesRoute
   '/queue/media/twitter-media': typeof QueueMediaTwitterMediaRoute
+  '/queue/records/github-repositories': typeof QueueRecordsGithubRepositoriesRoute
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
   '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
   '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
@@ -254,6 +272,7 @@ export interface FileRoutesByTo {
   '/queue/media/airtable-attachments': typeof QueueMediaAirtableAttachmentsRoute
   '/queue/media/lightroom-images': typeof QueueMediaLightroomImagesRoute
   '/queue/media/twitter-media': typeof QueueMediaTwitterMediaRoute
+  '/queue/records/github-repositories': typeof QueueRecordsGithubRepositoriesRoute
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
   '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
   '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
@@ -270,6 +289,7 @@ export interface FileRoutesById {
   '/queue/media/airtable-attachments': typeof QueueMediaAirtableAttachmentsRoute
   '/queue/media/lightroom-images': typeof QueueMediaLightroomImagesRoute
   '/queue/media/twitter-media': typeof QueueMediaTwitterMediaRoute
+  '/queue/records/github-repositories': typeof QueueRecordsGithubRepositoriesRoute
   '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
   '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
   '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
@@ -287,6 +307,7 @@ export interface FileRouteTypes {
     | '/queue/media/airtable-attachments'
     | '/queue/media/lightroom-images'
     | '/queue/media/twitter-media'
+    | '/queue/records/github-repositories'
     | '/queue/index/airtable-creators'
     | '/queue/index/airtable-spaces'
     | '/queue/index/github-users'
@@ -301,6 +322,7 @@ export interface FileRouteTypes {
     | '/queue/media/airtable-attachments'
     | '/queue/media/lightroom-images'
     | '/queue/media/twitter-media'
+    | '/queue/records/github-repositories'
     | '/queue/index/airtable-creators'
     | '/queue/index/airtable-spaces'
     | '/queue/index/github-users'
@@ -315,6 +337,7 @@ export interface FileRouteTypes {
     | '/queue/media/airtable-attachments'
     | '/queue/media/lightroom-images'
     | '/queue/media/twitter-media'
+    | '/queue/records/github-repositories'
     | '/queue/index/airtable-creators'
     | '/queue/index/airtable-spaces'
     | '/queue/index/github-users'
@@ -367,6 +390,7 @@ export const routeTree = rootRoute
         "/queue/media/airtable-attachments",
         "/queue/media/lightroom-images",
         "/queue/media/twitter-media",
+        "/queue/records/github-repositories",
         "/queue/index/airtable-creators",
         "/queue/index/airtable-spaces",
         "/queue/index/github-users",
@@ -390,6 +414,10 @@ export const routeTree = rootRoute
     },
     "/queue/media/twitter-media": {
       "filePath": "queue/media.twitter-media.tsx",
+      "parent": "/queue"
+    },
+    "/queue/records/github-repositories": {
+      "filePath": "queue/records.github-repositories.tsx",
       "parent": "/queue"
     },
     "/queue/index/airtable-creators": {

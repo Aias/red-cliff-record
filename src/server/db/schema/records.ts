@@ -122,6 +122,7 @@ export const records = pgTable(
 		title: text('title'),
 		content: text('content'),
 		type: recordTypeEnum('type').notNull(),
+		url: text('url'),
 		formatId: integer('format_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
@@ -133,7 +134,6 @@ export const records = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		url: text('url'),
 		embedding: vector('embedding', { dimensions: 768 }),
 		...databaseTimestamps,
 	},
@@ -335,12 +335,12 @@ export const recordsRelations = relations(records, ({ one, many }) => ({
 		references: [locations.id],
 	}),
 	timepoints: many(recordTimepoints),
-	creators: many(recordCreators),
-	categories: many(recordCategories),
-	media: many(recordMedia),
-	sources: many(recordSources),
-	outgoingRelations: many(recordRelations, { relationName: 'source' }),
-	incomingRelations: many(recordRelations, { relationName: 'target' }),
+	recordCreators: many(recordCreators),
+	recordCategories: many(recordCategories),
+	recordMedia: many(recordMedia),
+	recordSources: many(recordSources),
+	recordOutgoingRelations: many(recordRelations, { relationName: 'source' }),
+	recordIncomingRelations: many(recordRelations, { relationName: 'target' }),
 }));
 
 export const recordTimepointsRelations = relations(recordTimepoints, ({ one }) => ({

@@ -10,17 +10,17 @@ export const recordsRouter = createTRPCRouter({
 			where: eq(records.id, input),
 			with: {
 				format: true,
-				creators: {
+				recordCreators: {
 					with: {
 						creator: true,
 					},
 				},
-				categories: {
+				recordCategories: {
 					with: {
 						category: true,
 					},
 				},
-				media: {
+				recordMedia: {
 					with: {
 						media: true,
 					},
@@ -79,17 +79,17 @@ export const recordsRouter = createTRPCRouter({
 			],
 			with: {
 				format: true,
-				creators: {
+				recordCreators: {
 					with: {
 						creator: true,
 					},
 				},
-				categories: {
+				recordCategories: {
 					with: {
 						category: true,
 					},
 				},
-				media: {
+				recordMedia: {
 					with: {
 						media: true,
 					},

@@ -1,4 +1,4 @@
-import { and, cosineDistance, isNull, or, sql, type Column, type SQL } from 'drizzle-orm';
+import { and, cosineDistance, isNull, sql, type Column, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const DEFAULT_LIMIT = 50;
@@ -8,7 +8,7 @@ export const RequestParamsSchema = z
 	.object({
 		limit: z.number().default(DEFAULT_LIMIT),
 		includeArchived: z.boolean().default(false),
-		includeMapped: z.boolean().default(false),
+		includeMapped: z.boolean().default(true),
 	})
 	.default({});
 
@@ -30,7 +30,7 @@ export const buildWhereClause = (
 	if (additionalClauses) {
 		conditions.push(...additionalClauses);
 	}
-	return and(or(...conditions), ...additionalClauses);
+	return and(...conditions, ...additionalClauses);
 };
 
 export const similarity = (column: Column, vector: number[]) => {

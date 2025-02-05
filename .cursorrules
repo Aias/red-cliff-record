@@ -10,7 +10,7 @@
 - When writing drizzle queries that read data from the database, prefer the `db.query.<table>` syntax (relational queries) over `db.select().from(<table>)`. Updates, inserts, and deletes should be done via `db.update`, `db.insert`, and `db.delete`.
 - tRPC is built on Tanstack Query (React Query) – make sure to use the React tRPC client, hooks, and utilities from `/src/app/trpc.ts` wherever possible. For loading route data, the query client and tRPC client are provided in the `context` object within the `loader` function.
 - Make sure to invalidate, refetch, or update query data as needed when interacting with the database or after mutations.
-- Typescript is not optional, the application must be fully typed.Use existing types wherever possible rather than duplicating them, e.g. import existing zod schemas or drizzle types directly when reading from / writing to the database.
+- Typescript is not optional, the application must be fully typed.Use existing types wherever possible rather than duplicating them, e.g. import existing zod schemas or drizzle types directly when reading from / writing to the database. Never use the keyword `any` and only use `unknown` when necessary – the app should be fully typed.
 - When writing new code, focus on modularity and reusability. Always keep in mind the current context and file structure, and look for opportunities to abstract and reuse components.
 - Performance is critical. Any opportunity to optimize performance should be taken.
 
