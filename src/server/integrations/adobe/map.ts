@@ -57,7 +57,6 @@ const mapLightroomImageToMedia = async (image: LightroomImageSelect): Promise<Me
 
 const mapLightroomImageToRecord = (image: LightroomImageSelect): RecordInsert => {
 	return {
-		type: 'media',
 		title: image.fileName,
 		content: generateImageDescription(image),
 		needsCuration: true,

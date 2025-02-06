@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { TEXT_EMBEDDING_DIMENSIONS } from '~/server/db/schema/common';
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
@@ -27,11 +28,10 @@ export interface EmbeddingType {
  * @throws Error if the OpenAI API call fails or returns no embedding
  */
 export async function createEmbedding(text: string): Promise<number[]> {
-	console.log('Creating embedding for text:', text);
 	const response = await openai.embeddings.create({
 		input: text,
 		model: 'text-embedding-3-large',
-		dimensions: 768,
+		dimensions: TEXT_EMBEDDING_DIMENSIONS,
 	});
 
 	if (!response.data?.[0]?.embedding) {

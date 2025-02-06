@@ -3,6 +3,7 @@ import { db } from '~/server/db/connections';
 import {
 	raindropBookmarks,
 	raindropCollections,
+	RaindropType,
 	type RaindropBookmarkInsert,
 	type RaindropCollectionInsert,
 } from '~/server/db/schema/raindrop';
@@ -150,7 +151,7 @@ async function syncRaindrops(integrationRunId: number) {
 		title: raindrop.title,
 		excerpt: raindrop.excerpt,
 		note: raindrop.note,
-		type: raindrop.type,
+		type: RaindropType.parse(raindrop.type),
 		coverImageUrl: raindrop.cover,
 		tags: raindrop.tags.length > 0 ? raindrop.tags : null,
 		important: raindrop.important,

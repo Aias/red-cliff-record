@@ -75,7 +75,6 @@ export async function createEntitiesFromGithubUsers() {
 
 const mapGithubRepositoryToRecord = (repository: GithubRepositorySelect): RecordInsert => {
 	return {
-		type: 'resource',
 		title: repository.fullName,
 		content: repository.description,
 		url: repository.htmlUrl,
