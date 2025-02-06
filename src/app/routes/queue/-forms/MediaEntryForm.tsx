@@ -50,7 +50,7 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 		mediaPreview = (
 			<img
 				src={mediaItem.url}
-				alt={mediaItem.altText || mediaItem.title || undefined}
+				alt={mediaItem.altText || undefined}
 				className="w-full rounded shadow"
 			/>
 		);
@@ -83,20 +83,6 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 							<TextField.Root
 								type="url"
 								value={field.state.value}
-								onChange={(e) => field.handleChange(e.target.value)}
-							/>
-						</label>
-					)}
-				</form.Field>
-				<form.Field name="title">
-					{(field) => (
-						<label className="flex flex-col gap-1">
-							<Text size="2" color="gray">
-								Title
-							</Text>
-							<TextField.Root
-								type="text"
-								value={field.state.value || ''}
 								onChange={(e) => field.handleChange(e.target.value)}
 							/>
 						</label>

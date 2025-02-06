@@ -1,6 +1,7 @@
 import { db } from '~/server/db/connections';
-import { adobeLightroomImages } from '~/server/db/schema/adobe';
+import { lightroomImages } from '~/server/db/schema/adobe';
 import { runIntegration } from '../common/run-integration';
+import { createMediaFromLightroomImages } from './map';
 import { LightroomJsonResponseSchema } from './types';
 
 // TODO: Fix this sync, the photo URLs stop working if the image is removed from the album.
@@ -76,10 +77,10 @@ async function syncLightroomImages(integrationRunId: number) {
 
 		try {
 			await db
-				.insert(adobeLightroomImages)
+				.insert(lightroomImages)
 				.values(imageToInsert)
 				.onConflictDoUpdate({
-					target: adobeLightroomImages.id,
+					target: lightroomImages.id,
 					set: { ...imageToInsert, recordUpdatedAt: new Date() },
 				});
 			successCount++;
@@ -94,6 +95,7 @@ async function syncLightroomImages(integrationRunId: number) {
 	console.log(
 		`✅ Successfully processed ${successCount} out of ${jsonData.resources.length} images`
 	);
+	await createMediaFromLightroomImages();
 	return successCount;
 }
 

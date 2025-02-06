@@ -12,8 +12,8 @@ import { media } from './media';
 import { integrationRuns } from './operations';
 import { records } from './records';
 
-export const adobeLightroomImages = pgTable(
-	'adobe_lightroom_images',
+export const lightroomImages = pgTable(
+	'lightroom_images',
 	{
 		id: text('id').primaryKey(),
 		url2048: text('url_2048').notNull(),
@@ -56,26 +56,26 @@ export const adobeLightroomImages = pgTable(
 	]
 );
 
-export const AdobeLightroomImageSelectSchema = createSelectSchema(adobeLightroomImages);
-export type AdobeLightroomImageSelect = typeof adobeLightroomImages.$inferSelect;
-export const AdobeLightroomImageInsertSchema = createInsertSchema(adobeLightroomImages);
-export type AdobeLightroomImageInsert = typeof adobeLightroomImages.$inferInsert;
+export const LightroomImageSelectSchema = createSelectSchema(lightroomImages);
+export type LightroomImageSelect = typeof lightroomImages.$inferSelect;
+export const LightroomImageInsertSchema = createInsertSchema(lightroomImages);
+export type LightroomImageInsert = typeof lightroomImages.$inferInsert;
 
-export const adobeLightroomImagesRelations = relations(adobeLightroomImages, ({ one }) => ({
+export const lightroomImagesRelations = relations(lightroomImages, ({ one }) => ({
 	integrationRun: one(integrationRuns, {
-		fields: [adobeLightroomImages.integrationRunId],
+		fields: [lightroomImages.integrationRunId],
 		references: [integrationRuns.id],
 	}),
 	record: one(records, {
-		fields: [adobeLightroomImages.recordId],
+		fields: [lightroomImages.recordId],
 		references: [records.id],
 	}),
 	media: one(media, {
-		fields: [adobeLightroomImages.mediaId],
+		fields: [lightroomImages.mediaId],
 		references: [media.id],
 	}),
 }));
 
-export const adobeIntegrationRelations = relations(integrationRuns, ({ many }) => ({
-	adobeLightroomImages: many(adobeLightroomImages),
+export const lightroomIntegrationRelations = relations(integrationRuns, ({ many }) => ({
+	lightroomImages: many(lightroomImages),
 }));

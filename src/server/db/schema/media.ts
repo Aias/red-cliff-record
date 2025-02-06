@@ -35,7 +35,6 @@ export const media = pgTable(
 		type: mediaTypeEnum('type').notNull().default('application'),
 		format: text('format').notNull().default('octet-stream'),
 		contentTypeString: text('content_type_string').notNull().default('application/octet-stream'),
-		title: text('title'),
 		altText: text('alt_text'),
 		fileSize: integer('file_size'),
 		width: integer('width'),
