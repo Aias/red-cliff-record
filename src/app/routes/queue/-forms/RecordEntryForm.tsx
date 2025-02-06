@@ -137,7 +137,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 
 					{/* Checkboxes for "private" and "needsCuration" */}
 					<div className="mt-3 flex flex-wrap gap-4">
-						<form.Field name="private">
+						<form.Field name="isPrivate">
 							{(field) => (
 								<CheckboxWithLabel
 									label="Private"

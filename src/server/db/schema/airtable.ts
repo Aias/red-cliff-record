@@ -40,16 +40,12 @@ export const airtableExtracts = pgTable(
 		}),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
-	(table) => [index().on(table.archivedAt), index().on(table.recordId)]
+	(table) => [index().on(table.recordId)]
 );
 
 export const AirtableExtractSelectSchema = createSelectSchema(airtableExtracts);

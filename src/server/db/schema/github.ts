@@ -8,7 +8,6 @@ import {
 	serial,
 	text,
 	timestamp,
-	vector,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -17,6 +16,7 @@ import {
 	contentTimestampsNonUpdatable,
 	databaseTimestamps,
 	databaseTimestampsNonUpdatable,
+	textEmbeddingColumns,
 } from './common';
 import { indices } from './indices';
 import { integrationRuns } from './operations';
@@ -59,7 +59,6 @@ export const githubUsers = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [index().on(table.login), index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
@@ -96,21 +95,12 @@ export const githubRepositories = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
-	(table) => [
-		index().on(table.ownerId),
-		index().on(table.nodeId),
-		index().on(table.archivedAt),
-		index().on(table.recordId),
-	]
+	(table) => [index().on(table.ownerId), index().on(table.nodeId), index().on(table.recordId)]
 );
 
 export const GithubRepositorySelectSchema = createSelectSchema(githubRepositories);
@@ -164,10 +154,10 @@ export const githubCommits = pgTable(
 			.references(() => integrationRuns.id)
 			.notNull(),
 		...githubStats,
-		embedding: vector('embedding', { dimensions: 768 }),
 		committedAt: timestamp('committed_at', { withTimezone: true }),
 		...contentTimestampsNonUpdatable,
 		...databaseTimestampsNonUpdatable,
+		...textEmbeddingColumns,
 	},
 	(table) => [index().on(table.repositoryId), index().on(table.sha)]
 );

@@ -35,8 +35,6 @@ export async function ensureGithubUserExists(
 			target: githubUsers.id,
 			set: {
 				...user,
-				archivedAt: null,
-				embedding: null,
 				recordUpdatedAt: new Date(),
 			},
 		});
@@ -93,9 +91,6 @@ export async function updatePartialUsers(): Promise<number> {
 
 			updatedCount++;
 			console.log(`Updated user ${user.login}`);
-
-			// Add delay between requests
-			// await new Promise((resolve) => setTimeout(resolve, 1000));
 		} catch (error) {
 			if (error instanceof RequestError) {
 				console.error(`Error fetching user ${user.login}:`, {

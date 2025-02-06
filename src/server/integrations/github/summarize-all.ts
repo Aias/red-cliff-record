@@ -7,7 +7,6 @@ import type {
 } from '~/server/db/schema/github';
 import { githubCommits } from '~/server/db/schema/github';
 import { summarizeCommit } from '../../services/ai/summarize-commit';
-import { runIntegration } from '../common/run-integration';
 
 type CommitWithRelations = GithubCommitSelect & {
 	repository: GithubRepositorySelect;
@@ -113,7 +112,7 @@ async function processBatch(
 	return results;
 }
 
-async function syncCommitSummaries(): Promise<number> {
+export async function syncCommitSummaries(): Promise<number> {
 	let totalProcessed = 0;
 	let commits;
 	let batchNumber = 0;
@@ -151,19 +150,3 @@ async function syncCommitSummaries(): Promise<number> {
 	);
 	return totalProcessed;
 }
-
-const main = async () => {
-	try {
-		await runIntegration('github', syncCommitSummaries);
-		process.exit();
-	} catch (err) {
-		console.error('Error in main:', err);
-		process.exit(1);
-	}
-};
-
-if (import.meta.url === import.meta.resolve('./summarize-all.ts')) {
-	main();
-}
-
-export { syncCommitSummaries };

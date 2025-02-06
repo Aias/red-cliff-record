@@ -109,8 +109,6 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 						target: githubRepositories.id,
 						set: {
 							...newRepo,
-							embedding: null,
-							archivedAt: null,
 							recordUpdatedAt: new Date(),
 						},
 					});

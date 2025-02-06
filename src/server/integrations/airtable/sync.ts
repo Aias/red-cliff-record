@@ -18,7 +18,6 @@ import {
 } from '~/server/db/schema/airtable';
 import { deleteMediaFromR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
-import { syncAirtableEmbeddings } from './embeddings';
 import { airtableBase, storeMedia } from './helpers';
 import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
 
@@ -270,7 +269,6 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 	await seedExtracts(integrationRunId);
 	await seedAttachments();
 	await seedRelations();
-	await syncAirtableEmbeddings();
 
 	const count = await db.$count(
 		airtableExtracts,

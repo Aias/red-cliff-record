@@ -15,6 +15,13 @@
       "when": 1738764463113,
       "tag": "0001_chubby_shockwave",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1738856598793,
+      "tag": "0002_breezy_mongu",
+      "breakpoints": true
     }
   ]
 }

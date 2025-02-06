@@ -37,9 +37,6 @@ export const adobeLightroomImages = pgTable(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
@@ -54,7 +51,6 @@ export const adobeLightroomImages = pgTable(
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.captureDate),
-		index().on(table.archivedAt),
 		index().on(table.recordId),
 		index().on(table.mediaId),
 	]

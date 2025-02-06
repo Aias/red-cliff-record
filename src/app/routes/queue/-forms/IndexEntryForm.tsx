@@ -209,7 +209,7 @@ export const IndexEntryForm = ({
 					)}
 				</form.Field>
 
-				<form.Field name="private">
+				<form.Field name="isPrivate">
 					{(field) => (
 						<CheckboxWithLabel
 							className="mt-2"

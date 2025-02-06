@@ -15,7 +15,7 @@ import {
 	type GithubRepositorySelect,
 } from '~/server/db/schema/github';
 
-type CommitSelect = Omit<GithubCommitSelect, 'embedding'> & {
+type CommitSelect = Omit<GithubCommitSelect, 'textEmbedding'> & {
 	repository: GithubRepositorySelect;
 	commitChanges: GithubCommitChangeSelect[];
 };
