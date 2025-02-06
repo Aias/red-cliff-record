@@ -133,7 +133,7 @@ export const githubRouter = createTRPCRouter({
 					desc(githubRepositories.archivedAt),
 					desc(githubRepositories.starredAt),
 					githubRepositories.contentCreatedAt,
-					githubRepositories.createdAt,
+					githubRepositories.recordCreatedAt,
 				],
 				limit: input.limit,
 			});
@@ -266,7 +266,7 @@ export const githubRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { userId, indexEntryId } }) => {
 			const [updatedUser] = await db
 				.update(githubUsers)
-				.set({ indexEntryId, updatedAt: new Date() })
+				.set({ indexEntryId, recordUpdatedAt: new Date() })
 				.where(eq(githubUsers.id, userId))
 				.returning();
 			return updatedUser;
@@ -277,7 +277,7 @@ export const githubRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: userIds }) => {
 			return db
 				.update(githubUsers)
-				.set({ indexEntryId: null, updatedAt: new Date() })
+				.set({ indexEntryId: null, recordUpdatedAt: new Date() })
 				.where(inArray(githubUsers.id, userIds))
 				.returning();
 		}),

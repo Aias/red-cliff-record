@@ -125,7 +125,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 						target: [usersTable.id],
 						set: {
 							...user,
-							updatedAt: new Date(),
+							recordUpdatedAt: new Date(),
 						},
 					});
 			});
@@ -138,7 +138,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 					.values(tweet)
 					.onConflictDoUpdate({
 						target: tweetsTable.id,
-						set: { ...tweet, updatedAt: new Date() },
+						set: { ...tweet, recordUpdatedAt: new Date() },
 					});
 			});
 
@@ -150,7 +150,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 					.values(tweet)
 					.onConflictDoUpdate({
 						target: tweetsTable.id,
-						set: { ...tweet, updatedAt: new Date() },
+						set: { ...tweet, recordUpdatedAt: new Date() },
 					});
 			});
 
@@ -162,7 +162,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 					.values(mediaItem)
 					.onConflictDoUpdate({
 						target: mediaTable.id,
-						set: { ...mediaItem, updatedAt: new Date() },
+						set: { ...mediaItem, recordUpdatedAt: new Date() },
 					});
 			});
 

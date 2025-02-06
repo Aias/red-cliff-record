@@ -26,8 +26,8 @@ const config: QueueConfig<AirtableAttachmentSelect, MediaSelect, MediaInsert> = 
 	}),
 	getOutputDefaults: (attachment) => ({
 		url: attachment.url,
-		createdAt: attachment.createdAt,
-		updatedAt: attachment.updatedAt,
+		recordCreatedAt: attachment.recordCreatedAt,
+		recordUpdatedAt: attachment.recordUpdatedAt,
 		altText: attachment.filename,
 	}),
 	getInputId: (attachment) => attachment.id,

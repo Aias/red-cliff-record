@@ -63,7 +63,7 @@ async function syncCollections(integrationRunId: number) {
 				.values(collectionToInsert)
 				.onConflictDoUpdate({
 					target: raindropCollections.id,
-					set: { ...collectionToInsert, updatedAt: new Date() },
+					set: { ...collectionToInsert, recordUpdatedAt: new Date() },
 				});
 
 			successCount++;
@@ -171,7 +171,7 @@ async function syncRaindrops(integrationRunId: number) {
 				.values(raindrop)
 				.onConflictDoUpdate({
 					target: raindropBookmarks.id,
-					set: { ...raindrop, embedding: null, archivedAt: null, updatedAt: new Date() },
+					set: { ...raindrop, embedding: null, archivedAt: null, recordUpdatedAt: new Date() },
 				});
 			successCount++;
 			if (successCount % 10 === 0) {

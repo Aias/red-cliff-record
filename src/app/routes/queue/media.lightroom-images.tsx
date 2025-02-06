@@ -65,8 +65,8 @@ const config: QueueConfig<AdobeLightroomImageSelect, MediaSelect, MediaInsert> =
 	}),
 	getOutputDefaults: (image) => ({
 		url: image.url2048,
-		createdAt: image.captureDate,
-		updatedAt: image.updatedAt,
+		recordCreatedAt: image.captureDate,
+		recordUpdatedAt: image.recordUpdatedAt,
 		altText:
 			generateImageDescription(image) +
 			(image.autoTags ? `\n\nAesthetics: ${image.autoTags.join(', ')}` : ''),

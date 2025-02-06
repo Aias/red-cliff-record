@@ -37,8 +37,8 @@ const omitListRouter = createTRPCRouter({
 		return db
 			.select({
 				pattern: browsingHistoryOmitList.pattern,
-				createdAt: browsingHistoryOmitList.createdAt,
-				updatedAt: browsingHistoryOmitList.updatedAt,
+				recordCreatedAt: browsingHistoryOmitList.recordCreatedAt,
+				recordUpdatedAt: browsingHistoryOmitList.recordUpdatedAt,
 			})
 			.from(browsingHistoryOmitList)
 			.orderBy(browsingHistoryOmitList.pattern);
@@ -68,7 +68,7 @@ const omitListRouter = createTRPCRouter({
 		.mutation(({ ctx: { db }, input: { oldPattern, newPattern } }) => {
 			return db
 				.update(browsingHistoryOmitList)
-				.set({ pattern: newPattern, updatedAt: new Date() })
+				.set({ pattern: newPattern, recordUpdatedAt: new Date() })
 				.where(eq(browsingHistoryOmitList.pattern, oldPattern))
 				.returning();
 		}),

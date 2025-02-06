@@ -80,7 +80,7 @@ async function syncLightroomImages(integrationRunId: number) {
 				.values(imageToInsert)
 				.onConflictDoUpdate({
 					target: adobeLightroomImages.id,
-					set: { ...imageToInsert, updatedAt: new Date() },
+					set: { ...imageToInsert, recordUpdatedAt: new Date() },
 				});
 			successCount++;
 		} catch (error) {

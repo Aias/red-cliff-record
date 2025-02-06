@@ -38,7 +38,7 @@ export const mediaRouter = createTRPCRouter({
 			.values(newData)
 			.onConflictDoUpdate({
 				target: [media.url],
-				set: { ...newData, updatedAt: new Date() },
+				set: { ...newData, recordUpdatedAt: new Date() },
 			})
 			.returning();
 
@@ -54,7 +54,7 @@ export const mediaRouter = createTRPCRouter({
 			const { id, ...updateData } = input;
 			const [updatedMedia] = await db
 				.update(media)
-				.set({ ...updateData, updatedAt: new Date() })
+				.set({ ...updateData, recordUpdatedAt: new Date() })
 				.where(eq(media.id, id))
 				.returning();
 			if (!updatedMedia) {
@@ -84,7 +84,7 @@ export const mediaRouter = createTRPCRouter({
 					(CASE WHEN ${media.altText} IS NOT NULL THEN ${media.altText} <-> ${input} ELSE 9999 END),
 					(CASE WHEN ${media.url} IS NOT NULL THEN ${media.url} <-> ${input} ELSE 9999 END)
 				)`,
-				desc(media.updatedAt),
+				desc(media.recordUpdatedAt),
 			],
 		});
 	}),

@@ -1,24 +1,24 @@
 import { timestamp } from 'drizzle-orm/pg-core';
 
-const createdAt = timestamp('created_at', {
+const recordCreatedAt = timestamp('created_at', {
 	withTimezone: true,
 })
 	.defaultNow()
 	.notNull();
 
-const updatedAt = timestamp('updated_at', {
+const recordUpdatedAt = timestamp('updated_at', {
 	withTimezone: true,
 })
 	.defaultNow()
 	.notNull();
 
 export const databaseTimestamps = {
-	createdAt,
-	updatedAt,
+	recordCreatedAt,
+	recordUpdatedAt,
 };
 
 export const databaseTimestampsNonUpdatable = {
-	createdAt,
+	recordCreatedAt,
 };
 
 const contentCreatedAt = timestamp('content_created_at', {

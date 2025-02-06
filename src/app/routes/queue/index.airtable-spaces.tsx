@@ -26,8 +26,8 @@ const config: QueueConfig<AirtableSpaceSelect, IndicesSelect, IndicesInsert> = {
 	getOutputDefaults: (space) => ({
 		mainType: 'category',
 		name: toTitleCase(space.name),
-		createdAt: space.contentCreatedAt ?? space.createdAt,
-		updatedAt: space.contentUpdatedAt ?? space.updatedAt,
+		recordCreatedAt: space.contentCreatedAt ?? space.recordCreatedAt,
+		recordUpdatedAt: space.contentUpdatedAt ?? space.recordUpdatedAt,
 		notes: space.fullName,
 	}),
 	getInputId: (space) => space.id,

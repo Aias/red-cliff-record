@@ -35,7 +35,7 @@ async function processAttachment(attachment: AttachmentWithExtract) {
 					.update(airtableAttachments)
 					.set({
 						url: r2Url,
-						updatedAt: new Date(),
+						recordUpdatedAt: new Date(),
 					})
 					.where(eq(airtableAttachments.id, attachment.id))
 					.returning();

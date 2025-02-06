@@ -29,10 +29,10 @@ const config: QueueConfig<TwitterMediaWithTweet, MediaSelect, MediaInsert> = {
 		archivedAt: media.archivedAt,
 		mappedId: media.mediaId ? media.mediaId.toString() : null,
 	}),
-	getOutputDefaults: (media) => ({
-		url: media.mediaUrl,
-		createdAt: media.tweet?.contentCreatedAt ?? media.createdAt,
-		updatedAt: media.tweet?.contentUpdatedAt ?? media.updatedAt,
+	getOutputDefaults: (twitterMedia) => ({
+		url: twitterMedia.mediaUrl,
+		recordCreatedAt: twitterMedia.tweet?.contentCreatedAt ?? twitterMedia.recordCreatedAt,
+		recordUpdatedAt: twitterMedia.tweet?.contentUpdatedAt ?? twitterMedia.recordUpdatedAt,
 	}),
 	getInputId: (media) => media.id,
 	getOutputId: (mediaRecord) => mediaRecord.id.toString(),
