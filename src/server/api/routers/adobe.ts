@@ -25,7 +25,7 @@ export const adobeRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { lightroomImageId, mediaId } }) => {
 			const [updatedImage] = await db
 				.update(adobeLightroomImages)
-				.set({ mediaId, updatedAt: new Date() })
+				.set({ mediaId, recordUpdatedAt: new Date() })
 				.where(eq(adobeLightroomImages.id, lightroomImageId))
 				.returning();
 			return updatedImage;
@@ -36,7 +36,7 @@ export const adobeRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: imageIds }) => {
 			return db
 				.update(adobeLightroomImages)
-				.set({ mediaId: null, updatedAt: new Date() })
+				.set({ mediaId: null, recordUpdatedAt: new Date() })
 				.where(inArray(adobeLightroomImages.id, imageIds))
 				.returning();
 		}),
@@ -53,7 +53,7 @@ export const adobeRouter = createTRPCRouter({
 				.update(adobeLightroomImages)
 				.set({
 					archivedAt: shouldArchive ? new Date() : null,
-					updatedAt: new Date(),
+					recordUpdatedAt: new Date(),
 				})
 				.where(inArray(adobeLightroomImages.id, lightroomImageIds))
 				.returning();

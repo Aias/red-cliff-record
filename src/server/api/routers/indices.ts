@@ -34,7 +34,7 @@ export const indicesRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input }) => {
 			const [updatedEntry] = await db
 				.update(indices)
-				.set({ ...input, updatedAt: new Date() })
+				.set({ ...input, recordUpdatedAt: new Date() })
 				.where(eq(indices.id, input.id))
 				.returning();
 			if (!updatedEntry) {
@@ -64,7 +64,7 @@ export const indicesRouter = createTRPCRouter({
             ${indices.shortName} <-> ${input},
             ${indices.notes} <-> ${input}
           )`,
-				desc(indices.updatedAt),
+				desc(indices.recordUpdatedAt),
 			],
 		});
 		return matches;

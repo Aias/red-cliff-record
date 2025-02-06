@@ -26,7 +26,7 @@ export const twitterRouter = createTRPCRouter({
 				tweets: true,
 			},
 			where: buildWhereClause(input, twitterUsers.archivedAt, twitterUsers.indexEntryId),
-			orderBy: [desc(twitterUsers.archivedAt), twitterUsers.createdAt],
+			orderBy: [desc(twitterUsers.archivedAt), twitterUsers.recordCreatedAt],
 			limit: input.limit,
 		});
 
@@ -55,7 +55,7 @@ export const twitterRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { userId, indexEntryId } }) => {
 			const [updatedUser] = await db
 				.update(twitterUsers)
-				.set({ indexEntryId, updatedAt: new Date() })
+				.set({ indexEntryId, recordUpdatedAt: new Date() })
 				.where(eq(twitterUsers.id, userId))
 				.returning();
 			return updatedUser;
@@ -66,7 +66,7 @@ export const twitterRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { twitterId, mediaId } }) => {
 			const [updatedMedia] = await db
 				.update(twitterMedia)
-				.set({ mediaId, updatedAt: new Date() })
+				.set({ mediaId, recordUpdatedAt: new Date() })
 				.where(eq(twitterMedia.id, twitterId))
 				.returning();
 			return updatedMedia;
@@ -77,7 +77,7 @@ export const twitterRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: userIds }) => {
 			return db
 				.update(twitterUsers)
-				.set({ indexEntryId: null, updatedAt: new Date() })
+				.set({ indexEntryId: null, recordUpdatedAt: new Date() })
 				.where(inArray(twitterUsers.id, userIds))
 				.returning();
 		}),
@@ -87,7 +87,7 @@ export const twitterRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: twitterMediaIds }) => {
 			return db
 				.update(twitterMedia)
-				.set({ mediaId: null, updatedAt: new Date() })
+				.set({ mediaId: null, recordUpdatedAt: new Date() })
 				.where(inArray(twitterMedia.id, twitterMediaIds))
 				.returning();
 		}),

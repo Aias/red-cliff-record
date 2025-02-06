@@ -39,7 +39,7 @@ const spacesRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { spaceId, indexEntryId } }) => {
 			const [updatedSpace] = await db
 				.update(airtableSpaces)
-				.set({ indexEntryId, updatedAt: new Date() })
+				.set({ indexEntryId, recordUpdatedAt: new Date() })
 				.where(eq(airtableSpaces.id, spaceId))
 				.returning();
 			return updatedSpace;
@@ -50,7 +50,7 @@ const spacesRouter = createTRPCRouter({
 		.mutation(({ ctx: { db }, input: spaceIds }) => {
 			return db
 				.update(airtableSpaces)
-				.set({ indexEntryId: null, updatedAt: new Date() })
+				.set({ indexEntryId: null, recordUpdatedAt: new Date() })
 				.where(inArray(airtableSpaces.id, spaceIds))
 				.returning();
 		}),
@@ -101,7 +101,7 @@ const creatorsRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { creatorId, indexEntryId } }) => {
 			const [updatedCreator] = await db
 				.update(airtableCreators)
-				.set({ indexEntryId, updatedAt: new Date() })
+				.set({ indexEntryId, recordUpdatedAt: new Date() })
 				.where(eq(airtableCreators.id, creatorId))
 				.returning();
 			return updatedCreator;
@@ -112,7 +112,7 @@ const creatorsRouter = createTRPCRouter({
 		.mutation(({ ctx: { db }, input: creatorIds }) => {
 			return db
 				.update(airtableCreators)
-				.set({ indexEntryId: null, updatedAt: new Date() })
+				.set({ indexEntryId: null, recordUpdatedAt: new Date() })
 				.where(inArray(airtableCreators.id, creatorIds))
 				.returning();
 		}),
@@ -153,7 +153,7 @@ const attachmentsRouter = createTRPCRouter({
 			where: buildWhereClause(input, airtableAttachments.archivedAt, airtableAttachments.mediaId),
 			orderBy: [
 				desc(airtableAttachments.archivedAt),
-				airtableAttachments.createdAt,
+				airtableAttachments.recordCreatedAt,
 				airtableAttachments.filename,
 			],
 			limit: input.limit,
@@ -170,7 +170,7 @@ const attachmentsRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { attachmentId, mediaId } }) => {
 			const [updatedAttachment] = await db
 				.update(airtableAttachments)
-				.set({ mediaId, updatedAt: new Date() })
+				.set({ mediaId, recordUpdatedAt: new Date() })
 				.where(eq(airtableAttachments.id, attachmentId))
 				.returning();
 			return updatedAttachment;
@@ -181,7 +181,7 @@ const attachmentsRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: attachmentIds }) => {
 			return db
 				.update(airtableAttachments)
-				.set({ mediaId: null, updatedAt: new Date() })
+				.set({ mediaId: null, recordUpdatedAt: new Date() })
 				.where(inArray(airtableAttachments.id, attachmentIds))
 				.returning();
 		}),
@@ -196,7 +196,7 @@ const attachmentsRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { attachmentIds, shouldArchive } }) => {
 			return db
 				.update(airtableAttachments)
-				.set({ archivedAt: shouldArchive ? new Date() : null, updatedAt: new Date() })
+				.set({ archivedAt: shouldArchive ? new Date() : null, recordUpdatedAt: new Date() })
 				.where(inArray(airtableAttachments.id, attachmentIds))
 				.returning();
 		}),

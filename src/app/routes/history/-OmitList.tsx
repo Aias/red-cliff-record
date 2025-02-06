@@ -9,8 +9,8 @@ import { trpc } from '~/app/trpc';
 
 type OmitPattern = {
 	pattern: string;
-	createdAt: Date;
-	updatedAt: Date | null;
+	recordCreatedAt: Date;
+	recordUpdatedAt: Date | null;
 	matchCount: number;
 };
 
@@ -83,12 +83,12 @@ export const OmitList = ({ className = '', ...props }: HTMLAttributes<HTMLDivEle
 				},
 			},
 			{
-				accessorKey: 'createdAt',
+				accessorKey: 'recordCreatedAt',
 				header: 'Created',
 				cell: ({ getValue }) => new Date(getValue() as string).toLocaleString(),
 			},
 			{
-				accessorKey: 'updatedAt',
+				accessorKey: 'recordUpdatedAt',
 				header: 'Last Updated',
 				cell: ({ getValue }) => {
 					const value = getValue() as string | null;

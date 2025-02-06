@@ -37,7 +37,7 @@ export async function ensureGithubUserExists(
 				...user,
 				archivedAt: null,
 				embedding: null,
-				updatedAt: new Date(),
+				recordUpdatedAt: new Date(),
 			},
 		});
 	return userData.id;

@@ -47,7 +47,7 @@ export const recordsRouter = createTRPCRouter({
 			const { id, ...updateData } = input;
 			const [updatedRecord] = await db
 				.update(records)
-				.set({ ...updateData, updatedAt: new Date() })
+				.set({ ...updateData, recordUpdatedAt: new Date() })
 				.where(eq(records.id, id))
 				.returning();
 			if (!updatedRecord) {
@@ -75,7 +75,7 @@ export const recordsRouter = createTRPCRouter({
           ${records.title} <-> ${input},
           ${records.content} <-> ${input}
         )`,
-				desc(records.updatedAt),
+				desc(records.recordUpdatedAt),
 			],
 			with: {
 				format: true,

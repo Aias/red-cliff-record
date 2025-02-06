@@ -53,10 +53,10 @@ export const raindropBookmarks = pgTable(
 		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [
-		unique().on(table.linkUrl, table.createdAt),
+		unique().on(table.linkUrl, table.recordCreatedAt),
 		index().on(table.integrationRunId),
 		index().on(table.linkUrl),
-		index().on(table.createdAt),
+		index().on(table.recordCreatedAt),
 		index().on(table.archivedAt),
 		index().on(table.recordId),
 		index().on(table.mediaId),

@@ -35,8 +35,8 @@ const config: QueueConfig<TwitterUserSelect, IndicesSelect, IndicesInsert> = {
 			? validateAndFormatUrl(user.profileImageUrl)
 			: undefined,
 		notes: user.description,
-		createdAt: user.contentCreatedAt ?? user.createdAt,
-		updatedAt: user.contentUpdatedAt ?? user.updatedAt,
+		recordCreatedAt: user.contentCreatedAt ?? user.recordCreatedAt,
+		recordUpdatedAt: user.contentUpdatedAt ?? user.recordUpdatedAt,
 	}),
 	getInputId: (user) => user.id,
 	getOutputId: (index) => index.id.toString(),

@@ -96,7 +96,7 @@ export const readwiseDocuments = pgTable(
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.url),
-		index().on(table.createdAt),
+		index().on(table.recordCreatedAt),
 		index().on(table.parentId),
 		index().on(table.archivedAt),
 		index().on(table.recordId),
