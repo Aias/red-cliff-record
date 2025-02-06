@@ -12,6 +12,8 @@ import {
 	type GithubRepositoryInsert,
 } from '~/server/db/schema/github';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
+import { syncGithubEmbeddings } from './embeddings';
+import { syncCommitSummaries } from './summarize-all';
 import { ensureGithubUserExists } from './sync-users';
 
 type GithubRepository = Endpoints['GET /repos/{owner}/{repo}']['response']['data'];
@@ -231,6 +233,10 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 	}
 
 	console.log(`Successfully synced ${totalCommits} new commits`);
+
+	await syncCommitSummaries();
+	await syncGithubEmbeddings();
+
 	return totalCommits;
 }
 

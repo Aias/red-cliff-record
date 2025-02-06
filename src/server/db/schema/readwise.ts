@@ -8,7 +8,6 @@ import {
 	pgTable,
 	text,
 	timestamp,
-	vector,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
@@ -80,9 +79,6 @@ export const readwiseDocuments = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
@@ -91,14 +87,12 @@ export const readwiseDocuments = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.url),
 		index().on(table.recordCreatedAt),
 		index().on(table.parentId),
-		index().on(table.archivedAt),
 		index().on(table.recordId),
 		index().on(table.mediaId),
 	]

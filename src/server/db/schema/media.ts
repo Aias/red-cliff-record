@@ -10,8 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { databaseTimestamps } from './common';
-import { sources } from './sources';
+import { commonColumns, contentTimestamps, databaseTimestamps } from './common';
 
 export const MediaType = z.enum([
 	'application', // application or binary data
@@ -45,26 +44,14 @@ export const media = pgTable(
 			onDelete: 'cascade',
 			onUpdate: 'cascade',
 		}),
-		sourcePageId: integer('source_page_id').references(() => sources.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
 		...databaseTimestamps,
+		...contentTimestamps,
+		...commonColumns,
 	},
-	(table) => [
-		index().on(table.type),
-		index().on(table.format),
-		index().on(table.sourcePageId),
-		index().on(table.versionOfMediaId),
-	]
+	(table) => [index().on(table.type), index().on(table.format), index().on(table.versionOfMediaId)]
 );
 
 export const mediaRelations = relations(media, ({ one, many }) => ({
-	source: one(sources, {
-		fields: [media.sourcePageId],
-		references: [sources.id],
-		relationName: 'sourceMedia',
-	}),
 	versionOf: one(media, {
 		fields: [media.versionOfMediaId],
 		references: [media.id],

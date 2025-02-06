@@ -1,14 +1,5 @@
 import { relations } from 'drizzle-orm';
-import {
-	index,
-	integer,
-	pgEnum,
-	pgTable,
-	text,
-	timestamp,
-	vector,
-	type AnyPgColumn,
-} from 'drizzle-orm/pg-core';
+import { index, integer, pgEnum, pgTable, text, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps } from './common';
@@ -37,20 +28,12 @@ export const twitterTweets = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
-	(table) => [
-		index().on(table.integrationRunId),
-		index().on(table.archivedAt),
-		index().on(table.recordId),
-	]
+	(table) => [index().on(table.integrationRunId), index().on(table.recordId)]
 );
 
 export const TwitterTweetSelectSchema = createSelectSchema(twitterTweets);
@@ -98,9 +81,6 @@ export const twitterMedia = pgTable(
 				onUpdate: 'cascade',
 			})
 			.notNull(),
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
 		mediaId: integer('media_id').references(() => media.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
@@ -108,7 +88,7 @@ export const twitterMedia = pgTable(
 		...contentTimestamps,
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.archivedAt), index().on(table.mediaId)]
+	(table) => [index().on(table.mediaId)]
 );
 
 export const TwitterMediaSelectSchema = createSelectSchema(twitterMedia);
@@ -145,16 +125,12 @@ export const twitterUsers = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
 		indexEntryId: integer('index_entry_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
-	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
+	(table) => [index().on(table.indexEntryId)]
 );
 
 export const TwitterUserSelectSchema = createSelectSchema(twitterUsers);

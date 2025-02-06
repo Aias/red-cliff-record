@@ -1,6 +1,5 @@
 import { relations } from 'drizzle-orm';
 import {
-	boolean,
 	index,
 	integer,
 	pgEnum,
@@ -8,16 +7,19 @@ import {
 	serial,
 	text,
 	unique,
-	vector,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { airtableCreators, airtableSpaces } from './airtable';
-import { databaseTimestamps } from './common';
+import {
+	commonColumns,
+	contentTimestamps,
+	databaseTimestamps,
+	textEmbeddingColumns,
+} from './common';
 import { githubUsers } from './github';
 import { media } from './media';
-import { sources } from './sources';
 import { twitterUsers } from './twitter';
 
 export const IndexMainType = z.enum([
@@ -44,10 +46,6 @@ export const indices = pgTable(
 		shortName: text('short_name'),
 		sense: text('sense'),
 		notes: text('notes'),
-		canonicalPageId: integer('canonical_page_id').references(() => sources.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
 		canonicalUrl: text('canonical_url'),
 		canonicalMediaId: integer('canonical_media_id').references(() => media.id, {
 			onDelete: 'set null',
@@ -58,14 +56,14 @@ export const indices = pgTable(
 			onDelete: 'cascade',
 			onUpdate: 'cascade',
 		}),
-		private: boolean('private').notNull().default(false),
-		embedding: vector('embedding', { dimensions: 768 }),
 		...databaseTimestamps,
+		...contentTimestamps,
+		...commonColumns,
+		...textEmbeddingColumns,
 	},
 	(table) => [
 		unique().on(table.name, table.sense, table.mainType),
 		index().on(table.mainType, table.subType),
-		index().on(table.canonicalPageId),
 		index().on(table.canonicalMediaId),
 	]
 );
@@ -107,10 +105,6 @@ export type IndexRelationInsert = typeof indexRelations.$inferInsert;
 
 // Relations
 export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
-	canonicalPage: one(sources, {
-		fields: [indices.canonicalPageId],
-		references: [sources.id],
-	}),
 	canonicalMedia: one(media, {
 		fields: [indices.canonicalMediaId],
 		references: [media.id],

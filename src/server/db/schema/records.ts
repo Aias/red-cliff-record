@@ -8,16 +8,17 @@ import {
 	serial,
 	text,
 	unique,
-	vector,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { databaseTimestamps } from './common';
+import {
+	commonColumns,
+	contentTimestamps,
+	databaseTimestamps,
+	textEmbeddingColumns,
+} from './common';
 import { indices } from './indices';
-import { locations } from './locations';
 import { media } from './media';
-import { sources } from './sources';
-import { recordTimepoints, timepoints } from './timepoints';
 
 export const FLAGS = {
 	important: {
@@ -127,17 +128,13 @@ export const records = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		private: boolean('private').notNull().default(false),
 		flags: flagEnum('flags').array(),
-		needsCuration: boolean('needs_curation').notNull().default(true),
-		locationId: integer('location_id').references(() => locations.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 		...databaseTimestamps,
+		...contentTimestamps,
+		...commonColumns,
+		...textEmbeddingColumns,
 	},
-	(table) => [index().on(table.type), index().on(table.formatId), index().on(table.locationId)]
+	(table) => [index().on(table.type), index().on(table.formatId)]
 );
 
 export const RecordSelectSchema = createSelectSchema(records);
@@ -292,66 +289,18 @@ export type RecordMediaSelect = typeof recordMedia.$inferSelect;
 export const RecordMediaInsertSchema = createInsertSchema(recordMedia);
 export type RecordMediaInsert = typeof recordMedia.$inferInsert;
 
-// Page links
-export const recordSources = pgTable(
-	'record_sources',
-	{
-		id: serial('id').primaryKey(),
-		recordId: integer('record_id')
-			.references(() => records.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
-		sourceId: integer('source_id')
-			.references(() => sources.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
-		order: text('order').notNull().default('a0'),
-		...databaseTimestamps,
-	},
-	(table) => [
-		index().on(table.recordId),
-		index().on(table.sourceId),
-		unique().on(table.recordId, table.sourceId),
-	]
-);
-
-export const RecordSourceSelectSchema = createSelectSchema(recordSources);
-export type RecordSourceSelect = typeof recordSources.$inferSelect;
-export const RecordSourceInsertSchema = createInsertSchema(recordSources);
-export type RecordSourceInsert = typeof recordSources.$inferInsert;
-
 // Relations
 export const recordsRelations = relations(records, ({ one, many }) => ({
 	format: one(indices, {
 		fields: [records.formatId],
 		references: [indices.id],
 	}),
-	location: one(locations, {
-		fields: [records.locationId],
-		references: [locations.id],
-	}),
-	timepoints: many(recordTimepoints),
+
 	recordCreators: many(recordCreators),
 	recordCategories: many(recordCategories),
 	recordMedia: many(recordMedia),
-	recordSources: many(recordSources),
 	recordOutgoingRelations: many(recordRelations, { relationName: 'source' }),
 	recordIncomingRelations: many(recordRelations, { relationName: 'target' }),
-}));
-
-export const recordTimepointsRelations = relations(recordTimepoints, ({ one }) => ({
-	record: one(records, {
-		fields: [recordTimepoints.recordId],
-		references: [records.id],
-	}),
-	timepoint: one(timepoints, {
-		fields: [recordTimepoints.timepointId],
-		references: [timepoints.id],
-	}),
 }));
 
 export const recordCreatorsRelations = relations(recordCreators, ({ one }) => ({
@@ -386,16 +335,5 @@ export const recordMediaRelations = relations(recordMedia, ({ one }) => ({
 	media: one(media, {
 		fields: [recordMedia.mediaId],
 		references: [media.id],
-	}),
-}));
-
-export const recordPagesRelations = relations(recordSources, ({ one }) => ({
-	record: one(records, {
-		fields: [recordSources.recordId],
-		references: [records.id],
-	}),
-	page: one(sources, {
-		fields: [recordSources.sourceId],
-		references: [sources.id],
 	}),
 }));

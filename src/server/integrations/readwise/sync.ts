@@ -165,8 +165,6 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 					target: readwiseDocuments.id,
 					set: {
 						...mappedDoc,
-						embedding: null,
-						archivedAt: null,
 						recordUpdatedAt: new Date(),
 					},
 				});

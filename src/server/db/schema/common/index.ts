@@ -1,4 +1,4 @@
-import { timestamp } from 'drizzle-orm/pg-core';
+import { boolean, timestamp, vector } from 'drizzle-orm/pg-core';
 
 const recordCreatedAt = timestamp('created_at', {
 	withTimezone: true,
@@ -36,4 +36,18 @@ export const contentTimestamps = {
 
 export const contentTimestampsNonUpdatable = {
 	contentCreatedAt,
+};
+
+const needsCuration = boolean('needs_curation').notNull().default(true);
+const isPrivate = boolean('is_private').notNull().default(false);
+
+export const commonColumns = {
+	needsCuration,
+	isPrivate,
+};
+
+const textEmbedding = vector('text_embedding', { dimensions: 768 });
+
+export const textEmbeddingColumns = {
+	textEmbedding: textEmbedding,
 };

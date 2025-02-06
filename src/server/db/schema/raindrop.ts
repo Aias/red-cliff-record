@@ -5,9 +5,7 @@ import {
 	integer,
 	pgTable,
 	text,
-	timestamp,
 	unique,
-	vector,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
@@ -39,9 +37,6 @@ export const raindropBookmarks = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
@@ -50,14 +45,12 @@ export const raindropBookmarks = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [
 		unique().on(table.linkUrl, table.recordCreatedAt),
 		index().on(table.integrationRunId),
 		index().on(table.linkUrl),
 		index().on(table.recordCreatedAt),
-		index().on(table.archivedAt),
 		index().on(table.recordId),
 		index().on(table.mediaId),
 	]
@@ -104,20 +97,12 @@ export const raindropCollections = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
 		indexEntryId: integer('index_entry_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
-	(table) => [
-		index().on(table.parentId),
-		index().on(table.archivedAt),
-		index().on(table.indexEntryId),
-	]
+	(table) => [index().on(table.parentId), index().on(table.indexEntryId)]
 );
 
 export const RaindropCollectionSelectSchema = createSelectSchema(raindropCollections);
