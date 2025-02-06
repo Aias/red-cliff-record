@@ -29,6 +29,27 @@
       "when": 1738862914109,
       "tag": "0003_pale_terror",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1738870937523,
+      "tag": "0004_curvy_joseph",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1738872620899,
+      "tag": "0005_sleepy_shadow_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1738875612918,
+      "tag": "0006_zippy_silver_sable",
+      "breakpoints": true
     }
   ]
 }

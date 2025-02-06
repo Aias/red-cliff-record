@@ -46,7 +46,8 @@ export const commonColumns = {
 	isPrivate,
 };
 
-const textEmbedding = vector('text_embedding', { dimensions: 768 });
+export const TEXT_EMBEDDING_DIMENSIONS = 768;
+const textEmbedding = vector('text_embedding', { dimensions: TEXT_EMBEDDING_DIMENSIONS });
 
 export const textEmbeddingColumns = {
 	textEmbedding: textEmbedding,

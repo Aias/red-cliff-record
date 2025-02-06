@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
-import { Button, Heading, ScrollArea, Select, Text, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Heading, ScrollArea, Text, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
 import { MetadataList } from '~/app/components/MetadataList';
-import { toTitleCase } from '~/app/lib/formatting';
 import { trpc } from '~/app/trpc';
-import { RecordSelectSchema, RecordType, type RecordSelect } from '~/server/db/schema/records';
+import { RecordSelectSchema, type RecordSelect } from '~/server/db/schema/records';
 
 type RecordEntryFormProps = {
 	recordId: string | number;
@@ -62,30 +61,6 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 				}}
 			>
 				<div className="grid grid-cols-1 gap-3">
-					{/* Record Type as a Select */}
-					<form.Field name="type">
-						{(field) => (
-							<label className="flex flex-col gap-1">
-								<Text size="2" color="gray">
-									Type
-								</Text>
-								<Select.Root
-									value={field.state.value || 'bookmark'}
-									onValueChange={(value) => field.handleChange(value as RecordType)}
-								>
-									<Select.Trigger />
-									<Select.Content>
-										{RecordType.options.map((option) => (
-											<Select.Item key={option} value={option}>
-												{toTitleCase(option)}
-											</Select.Item>
-										))}
-									</Select.Content>
-								</Select.Root>
-							</label>
-						)}
-					</form.Field>
-
 					{/* Title Text Field */}
 					<form.Field name="title">
 						{(field) => (

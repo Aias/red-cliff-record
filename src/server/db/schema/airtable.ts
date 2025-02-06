@@ -6,7 +6,6 @@ import {
 	primaryKey,
 	text,
 	timestamp,
-	vector,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
@@ -23,7 +22,7 @@ export const airtableExtracts = pgTable(
 		title: text('title').notNull(),
 		format: text('format').notNull().default('Fragment'),
 		source: text('source'),
-		michelinStars: integer('michelin_stars'),
+		michelinStars: integer('michelin_stars').notNull().default(0),
 		content: text('content'),
 		notes: text('notes'),
 		attachmentCaption: text('attachment_caption'),
@@ -140,7 +139,6 @@ export const airtableCreators = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
 );
@@ -182,7 +180,6 @@ export const airtableSpaces = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		embedding: vector('embedding', { dimensions: 768 }),
 	},
 	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
 );

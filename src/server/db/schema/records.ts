@@ -62,18 +62,6 @@ export type Flag = z.infer<typeof Flag>;
 export type FlagData = typeof FLAGS;
 export type FlagKey = keyof FlagData;
 
-export const RecordType = z.enum([
-	'resource', // reference material, tools, techniques
-	'bookmark', // interesting but not reference material
-	'object', // physical or digital object
-	'document', // text-heavy content
-	'media', // image, video, audio, etc.
-	'abstraction', // concept or idea
-	'extracted', // quote or excerpt
-	'event', // point in time or occurrence of an event
-]);
-export type RecordType = z.infer<typeof RecordType>;
-
 export const CreatorRoleType = z.enum([
 	'creator', // primary creator
 	'author', // specifically wrote/authored
@@ -90,11 +78,11 @@ export type CreatorRoleType = z.infer<typeof CreatorRoleType>;
 
 export const RecordRelationType = z.enum([
 	// Hierarchical
+	'part_of',
 	'primary_source',
 	'quoted_from',
 	'copied_from',
 	'derived_from',
-	'part_of',
 	// Non-hierarchical
 	'references',
 	'similar_to',
@@ -110,7 +98,6 @@ export const CategorizationType = z.enum([
 ]);
 export type CategorizationType = z.infer<typeof CategorizationType>;
 
-export const recordTypeEnum = pgEnum('record_type', RecordType.options);
 export const creatorRoleTypeEnum = pgEnum('creator_role_type', CreatorRoleType.options);
 export const recordRelationTypeEnum = pgEnum('record_relation_type', RecordRelationType.options);
 export const categorizationTypeEnum = pgEnum('categorization_type', CategorizationType.options);
@@ -123,19 +110,20 @@ export const records = pgTable(
 		id: serial('id').primaryKey(),
 		title: text('title'),
 		content: text('content'),
-		type: recordTypeEnum('type').notNull(),
 		url: text('url'),
 		formatId: integer('format_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		notes: text('notes'),
+		mediaCaption: text('media_caption'),
 		flags: flagEnum('flags').array(),
 		...databaseTimestamps,
 		...contentTimestamps,
 		...commonColumns,
 		...textEmbeddingColumns,
 	},
-	(table) => [index().on(table.type), index().on(table.formatId)]
+	(table) => [index().on(table.title), index().on(table.url), index().on(table.formatId)]
 );
 
 export const RecordSelectSchema = createSelectSchema(records);
