@@ -67,6 +67,7 @@ export const RecordType = z.enum([
 	'bookmark', // interesting but not reference material
 	'object', // physical or digital object
 	'document', // text-heavy content
+	'media', // image, video, audio, etc.
 	'abstraction', // concept or idea
 	'extracted', // quote or excerpt
 	'event', // point in time or occurrence of an event
