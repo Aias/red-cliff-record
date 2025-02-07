@@ -12,14 +12,14 @@ import {
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { airtableCreators, airtableSpaces } from './airtable';
+import { githubUsers } from './github';
+import { media } from './media';
 import {
 	commonColumns,
 	contentTimestamps,
 	databaseTimestamps,
 	textEmbeddingColumns,
-} from './common';
-import { githubUsers } from './github';
-import { media } from './media';
+} from './operations';
 import { twitterUsers } from './twitter';
 
 export const IndexMainType = z.enum([

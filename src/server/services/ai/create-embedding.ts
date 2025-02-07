@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { TEXT_EMBEDDING_DIMENSIONS } from '~/server/db/schema/common';
+import { TEXT_EMBEDDING_DIMENSIONS } from '~/server/db/schema/operations';
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,

@@ -80,7 +80,6 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 	const headResponse = await fetch(validatedUrl, { method: 'HEAD' });
 	let mediaType: MediaType = DEFAULT_MEDIA_TYPE;
 	let mediaFormat: string = DEFAULT_MEDIA_FORMAT;
-	console.log('Headers:', headResponse);
 	const contentTypeHeader = headResponse.headers.get('content-type');
 	const contentLengthHeader = headResponse.headers.get('content-length');
 	if (contentTypeHeader) {

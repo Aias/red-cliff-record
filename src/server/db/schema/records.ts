@@ -11,14 +11,14 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
+import { indices } from './indices';
+import { media } from './media';
 import {
 	commonColumns,
 	contentTimestamps,
 	databaseTimestamps,
 	textEmbeddingColumns,
-} from './common';
-import { indices } from './indices';
-import { media } from './media';
+} from './operations';
 
 export const FLAGS = {
 	important: {
@@ -109,15 +109,16 @@ export const records = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		title: text('title'),
-		content: text('content'),
 		url: text('url'),
+		content: text('content'),
+		summary: text('summary'),
+		notes: text('notes'),
+		mediaCaption: text('media_caption'),
+		flags: flagEnum('flags').array(),
 		formatId: integer('format_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		notes: text('notes'),
-		mediaCaption: text('media_caption'),
-		flags: flagEnum('flags').array(),
 		...databaseTimestamps,
 		...contentTimestamps,
 		...commonColumns,
