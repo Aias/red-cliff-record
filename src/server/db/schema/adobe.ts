@@ -7,8 +7,8 @@ import type {
 	LightroomAssetLinks,
 	LightroomLocation,
 } from '~/server/integrations/adobe/types';
-import { contentTimestamps, databaseTimestamps } from './common';
 import { media } from './media';
+import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
 

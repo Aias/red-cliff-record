@@ -12,9 +12,9 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { contentTimestamps, databaseTimestamps } from './common';
 import { indices } from './indices';
 import { media } from './media';
+import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
 
@@ -93,15 +93,32 @@ export const RaindropBookmarkInsertSchema = createInsertSchema(raindropBookmarks
 });
 export type RaindropBookmarkInsert = typeof raindropBookmarks.$inferInsert;
 
-export const raindropTags = pgTable('raindrop_tags', {
-	id: serial('id').primaryKey(),
-	tag: text('tag').notNull().unique(),
-	...databaseTimestamps,
-});
+export const raindropTags = pgTable(
+	'raindrop_tags',
+	{
+		id: serial('id').primaryKey(),
+		tag: text('tag').notNull().unique(),
+		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		...databaseTimestamps,
+	},
+	(table) => [index().on(table.tag), index().on(table.indexEntryId)]
+);
 
-export const raindropTagsRelations = relations(raindropTags, ({ many }) => ({
-	bookmarkTags: many(raindropBookmarkTags, {
-		relationName: 'bookmarkTags',
+export const RaindropTagSelectSchema = createSelectSchema(raindropTags);
+export type RaindropTagSelect = typeof raindropTags.$inferSelect;
+export const RaindropTagInsertSchema = createInsertSchema(raindropTags);
+export type RaindropTagInsert = typeof raindropTags.$inferInsert;
+
+export const raindropTagsRelations = relations(raindropTags, ({ one, many }) => ({
+	tagBookmarks: many(raindropBookmarkTags, {
+		relationName: 'tagBookmarks',
+	}),
+	indexEntry: one(indices, {
+		fields: [raindropTags.indexEntryId],
+		references: [indices.id],
 	}),
 }));
 
@@ -109,14 +126,18 @@ export const raindropBookmarkTags = pgTable(
 	'raindrop_bookmark_tags',
 	{
 		id: serial('id').primaryKey(),
-		bookmarkId: integer('bookmark_id').references(() => raindropBookmarks.id, {
-			onDelete: 'cascade',
-			onUpdate: 'cascade',
-		}),
-		tagId: integer('tag_id').references(() => raindropTags.id, {
-			onDelete: 'cascade',
-			onUpdate: 'cascade',
-		}),
+		bookmarkId: integer('bookmark_id')
+			.notNull()
+			.references(() => raindropBookmarks.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			}),
+		tagId: integer('tag_id')
+			.notNull()
+			.references(() => raindropTags.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			}),
 		...databaseTimestamps,
 	},
 	(table) => [
@@ -130,10 +151,12 @@ export const raindropBookmarkTagsRelations = relations(raindropBookmarkTags, ({ 
 	bookmark: one(raindropBookmarks, {
 		fields: [raindropBookmarkTags.bookmarkId],
 		references: [raindropBookmarks.id],
+		relationName: 'bookmarkTags',
 	}),
 	tag: one(raindropTags, {
 		fields: [raindropBookmarkTags.tagId],
 		references: [raindropTags.id],
+		relationName: 'tagBookmarks',
 	}),
 }));
 

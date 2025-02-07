@@ -2,9 +2,9 @@ import { relations } from 'drizzle-orm';
 import { index, integer, pgEnum, pgTable, text, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { contentTimestamps, databaseTimestamps } from './common';
 import { indices } from './indices';
 import { media } from './media';
+import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
 

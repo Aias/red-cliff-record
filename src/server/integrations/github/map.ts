@@ -22,6 +22,7 @@ const mapGithubUserToEntity = (user: GithubUserSelect): IndicesInsert => {
 		canonicalUrl: user.blog ? validateAndFormatUrl(user.blog) : user.htmlUrl,
 		canonicalMediaUrl: user.avatarUrl,
 		notes: user.bio,
+		sources: ['github'],
 		needsCuration: true,
 		isPrivate: false,
 		recordCreatedAt: user.recordCreatedAt,
@@ -49,6 +50,7 @@ export async function createEntitiesFromGithubUsers() {
 		const [newEntity] = await db
 			.insert(indices)
 			.values(newEntityDefaults)
+			.onConflictDoNothing()
 			.returning({ id: indices.id });
 		if (!newEntity) {
 			throw new Error('Failed to create entity');
@@ -80,6 +82,7 @@ const mapGithubRepositoryToRecord = (repository: GithubRepositorySelect): Record
 		url: repository.htmlUrl,
 		needsCuration: true,
 		isPrivate: repository.private,
+		sources: ['github'],
 		recordCreatedAt: repository.recordCreatedAt,
 		recordUpdatedAt: repository.recordUpdatedAt,
 		contentCreatedAt: repository.contentCreatedAt,

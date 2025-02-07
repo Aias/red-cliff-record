@@ -11,14 +11,14 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
+import { indices } from './indices';
 import {
 	contentTimestamps,
 	contentTimestampsNonUpdatable,
 	databaseTimestamps,
 	databaseTimestampsNonUpdatable,
 	textEmbeddingColumns,
-} from './common';
-import { indices } from './indices';
+} from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
 

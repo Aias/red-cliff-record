@@ -14,9 +14,9 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { contentTimestamps, databaseTimestamps } from './common';
 import { indices } from './indices';
 import { media } from './media';
+import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
 
@@ -190,8 +190,8 @@ export const readwiseTags = pgTable('readwise_tags', {
 });
 
 export const readwiseTagsRelations = relations(readwiseTags, ({ one, many }) => ({
-	documentTags: many(readwiseDocumentTags, {
-		relationName: 'documentTags',
+	tagDocuments: many(readwiseDocumentTags, {
+		relationName: 'tagDocuments',
 	}),
 	indexEntry: one(indices, {
 		fields: [readwiseTags.indexEntryId],
@@ -205,17 +205,18 @@ export const readwiseDocumentTags = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		documentId: text('document_id')
+			.notNull()
 			.references(() => readwiseDocuments.id, {
 				onDelete: 'cascade',
 				onUpdate: 'cascade',
 			})
 			.notNull(),
 		tagId: integer('tag_id')
+			.notNull()
 			.references(() => readwiseTags.id, {
 				onDelete: 'cascade',
 				onUpdate: 'cascade',
-			})
-			.notNull(),
+			}),
 		...databaseTimestamps,
 	},
 	(table) => [
@@ -229,10 +230,12 @@ export const readwiseDocumentTagsRelations = relations(readwiseDocumentTags, ({ 
 	document: one(readwiseDocuments, {
 		fields: [readwiseDocumentTags.documentId],
 		references: [readwiseDocuments.id],
+		relationName: 'documentTags',
 	}),
 	tag: one(readwiseTags, {
 		fields: [readwiseDocumentTags.tagId],
 		references: [readwiseTags.id],
+		relationName: 'tagDocuments',
 	}),
 }));
 

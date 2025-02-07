@@ -11,7 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { databaseTimestamps, databaseTimestampsNonUpdatable } from './common';
+import { databaseTimestamps, databaseTimestampsNonUpdatable } from './operations';
 import { integrationRuns } from './operations';
 
 export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
