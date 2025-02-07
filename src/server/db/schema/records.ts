@@ -80,7 +80,7 @@ export const RecordRelationType = z.enum([
 	// Hierarchical
 	'part_of',
 	'primary_source',
-	'quoted_from',
+	'quotes',
 	'copied_from',
 	'derived_from',
 	// Non-hierarchical
