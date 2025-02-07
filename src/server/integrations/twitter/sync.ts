@@ -12,6 +12,7 @@ import {
 } from '~/server/db/schema/twitter';
 import { runIntegration } from '../common/run-integration';
 import { processMedia, processTweet, processUser } from './helpers';
+import { createEntitiesFromUsers, createMediaFromTweets, createRecordsFromTweets } from './map';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
 
 export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
@@ -113,7 +114,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 		});
 	});
 
-	return await db.transaction(
+	const updatedCount = await db.transaction(
 		async (tx) => {
 			// 1. Insert Users
 			console.log(`Inserting ${processedUsers.length} users...`);
@@ -174,6 +175,11 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 			isolationLevel: 'read committed',
 		}
 	);
+	await createEntitiesFromUsers();
+	await createRecordsFromTweets();
+	await createMediaFromTweets();
+
+	return updatedCount;
 }
 
 const main = async () => {

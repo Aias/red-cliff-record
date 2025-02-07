@@ -124,6 +124,11 @@ export async function createRecordsFromRaindropBookmarks() {
 		},
 	});
 
+	if (unmappedBookmarks.length === 0) {
+		console.log('No new or updated bookmarks to process.');
+		return;
+	}
+
 	for (const bookmark of unmappedBookmarks) {
 		const newRecordDefaults = mapRaindropBookmarkToRecord(bookmark);
 		const [newRecord] = await db
@@ -204,7 +209,14 @@ export async function createMediaFromRaindropBookmarks() {
 
 	for (const bookmark of unmappedBookmarks) {
 		const newMedia = await mapRaindropBookmarkToMedia(bookmark);
-		if (!newMedia) continue;
+		if (!newMedia) {
+			console.log(`Invalid image for bookmark ${bookmark.id}, setting cover image to null`);
+			await db
+				.update(raindropBookmarks)
+				.set({ coverImageUrl: null })
+				.where(eq(raindropBookmarks.id, bookmark.id));
+			continue;
+		}
 
 		console.log(
 			`Creating media for bookmark ${bookmark.id}`,
@@ -214,13 +226,13 @@ export async function createMediaFromRaindropBookmarks() {
 		const [newMediaRecord] = await db
 			.insert(media)
 			.values(newMedia)
-			.returning({ id: media.id })
 			.onConflictDoUpdate({
 				target: [media.url],
 				set: {
 					recordUpdatedAt: new Date(),
 				},
-			});
+			})
+			.returning({ id: media.id });
 		if (!newMediaRecord) {
 			throw new Error('Failed to create media');
 		}
@@ -232,10 +244,13 @@ export async function createMediaFromRaindropBookmarks() {
 
 		if (bookmark.recordId) {
 			console.log(`Linking associated record to media ${bookmark.recordId}`);
-			await db.insert(recordMedia).values({
-				recordId: bookmark.recordId,
-				mediaId: newMediaRecord.id,
-			});
+			await db
+				.insert(recordMedia)
+				.values({
+					recordId: bookmark.recordId,
+					mediaId: newMediaRecord.id,
+				})
+				.onConflictDoNothing();
 		}
 	}
 }
