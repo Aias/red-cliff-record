@@ -4,6 +4,7 @@ import {
 	integer,
 	pgTable,
 	primaryKey,
+	serial,
 	text,
 	timestamp,
 	type AnyPgColumn,
@@ -20,7 +21,11 @@ export const airtableExtracts = pgTable(
 	{
 		id: text('id').primaryKey(),
 		title: text('title').notNull(),
-		format: text('format').notNull().default('Fragment'),
+		formatString: text('format_string').notNull().default('Fragment'),
+		formatId: integer('format_id').references(() => airtableFormats.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
 		source: text('source'),
 		michelinStars: integer('michelin_stars').notNull().default(0),
 		content: text('content'),
@@ -74,6 +79,45 @@ export const airtableExtractsRelations = relations(airtableExtracts, ({ many, on
 		fields: [airtableExtracts.recordId],
 		references: [records.id],
 	}),
+	format: one(airtableFormats, {
+		fields: [airtableExtracts.formatId],
+		references: [airtableFormats.id],
+	}),
+}));
+
+export const airtableFormats = pgTable(
+	'airtable_formats',
+	{
+		id: serial('id').primaryKey(),
+		name: text('name').notNull().unique(),
+		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		integrationRunId: integer('integration_run_id')
+			.references(() => integrationRuns.id)
+			.notNull(),
+		...databaseTimestamps,
+	},
+	(table) => [index().on(table.indexEntryId)]
+);
+
+export const AirtableFormatSelectSchema = createSelectSchema(airtableFormats);
+export type AirtableFormatSelect = typeof airtableFormats.$inferSelect;
+export const AirtableFormatInsertSchema = createInsertSchema(airtableFormats);
+export type AirtableFormatInsert = typeof airtableFormats.$inferInsert;
+
+export const airtableFormatsRelations = relations(airtableFormats, ({ one, many }) => ({
+	integrationRun: one(integrationRuns, {
+		fields: [airtableFormats.integrationRunId],
+		references: [integrationRuns.id],
+	}),
+	indexEntry: one(indices, {
+		relationName: 'indexEntry',
+		fields: [airtableFormats.indexEntryId],
+		references: [indices.id],
+	}),
+	extracts: many(airtableExtracts),
 }));
 
 export const airtableAttachments = pgTable('airtable_attachments', {

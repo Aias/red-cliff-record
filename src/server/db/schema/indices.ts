@@ -11,7 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { airtableCreators, airtableSpaces } from './airtable';
+import { airtableCreators, airtableFormats, airtableSpaces } from './airtable';
 import { githubUsers } from './github';
 import { media } from './media';
 import {
@@ -105,6 +105,9 @@ export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
 		relationName: 'indexEntry',
 	}),
 	twitterUsers: many(twitterUsers, {
+		relationName: 'indexEntry',
+	}),
+	airtableFormats: many(airtableFormats, {
 		relationName: 'indexEntry',
 	}),
 }));

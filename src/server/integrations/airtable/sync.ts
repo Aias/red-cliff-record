@@ -1,4 +1,4 @@
-import { desc, eq, ilike, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, ilike, isNotNull, isNull } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
 import {
 	airtableAttachments,
@@ -7,6 +7,7 @@ import {
 	airtableExtractCreators,
 	airtableExtracts,
 	airtableExtractSpaces,
+	airtableFormats,
 	airtableSpaces,
 	type AirtableAttachmentInsert,
 	type AirtableCreatorInsert,
@@ -14,6 +15,7 @@ import {
 	type AirtableExtractCreatorInsert,
 	type AirtableExtractInsert,
 	type AirtableExtractSpaceInsert,
+	type AirtableFormatInsert,
 	type AirtableSpaceInsert,
 } from '~/server/db/schema/airtable';
 import { deleteMediaFromR2 } from '../common/media-helpers';
@@ -23,6 +25,7 @@ import {
 	createCategoriesFromAirtableSpaces,
 	createConnectionsBetweenRecords,
 	createEntitiesFromAirtableCreators,
+	createFormatsFromAirtableFormats,
 	createMediaFromAirtableAttachments,
 	createRecordsFromAirtableExtracts,
 } from './map';
@@ -242,7 +245,7 @@ async function syncExtracts(integrationRunId: number): Promise<{
 			const newExtract: AirtableExtractInsert = {
 				id: record.id,
 				title: fields.title,
-				format: fields.format,
+				formatString: fields.format,
 				source: fields.source,
 				michelinStars: fields.michelinStars,
 				content: fields.extract,
@@ -334,6 +337,59 @@ async function syncExtracts(integrationRunId: number): Promise<{
 	return { updatedExtractIds: parsedRecords.map((record) => record.id) };
 }
 
+async function syncFormats(integrationRunId: number) {
+	console.log('Syncing formats...');
+	const unlinkedExtracts = await db.query.airtableExtracts.findMany({
+		where: and(isNull(airtableExtracts.formatId), isNotNull(airtableExtracts.formatString)),
+		orderBy: airtableExtracts.contentUpdatedAt,
+	});
+	if (unlinkedExtracts.length === 0) {
+		console.log('No new formats to sync');
+		return;
+	}
+
+	console.log(`Syncing ${unlinkedExtracts.length} formats`, unlinkedExtracts);
+
+	await db.transaction(async (tx) => {
+		for (const extract of unlinkedExtracts) {
+			const format = await tx.query.airtableFormats.findFirst({
+				where: eq(airtableFormats.name, extract.formatString),
+			});
+			if (format) {
+				await tx
+					.update(airtableExtracts)
+					.set({ formatId: format.id })
+					.where(eq(airtableExtracts.id, extract.id));
+			} else {
+				console.log(`Format ${extract.formatString} not found, creating new format...`);
+				const formatPayload: AirtableFormatInsert = {
+					name: extract.formatString,
+					integrationRunId,
+					recordUpdatedAt: new Date(),
+				};
+				const [newFormat] = await tx
+					.insert(airtableFormats)
+					.values(formatPayload)
+					.onConflictDoUpdate({
+						target: [airtableFormats.name],
+						set: {
+							...formatPayload,
+						},
+					})
+					.returning();
+				if (!newFormat) {
+					console.error(`Failed to create new format ${extract.formatString}`);
+					continue;
+				}
+				await tx
+					.update(airtableExtracts)
+					.set({ formatId: newFormat.id })
+					.where(eq(airtableExtracts.id, extract.id));
+			}
+		}
+	});
+}
+
 const CLEAR_BEFORE_SYNC = false;
 
 async function syncAirtableData(integrationRunId: number): Promise<number> {
@@ -344,6 +400,7 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 	await syncCreators(integrationRunId);
 	await syncSpaces(integrationRunId);
 	const { updatedExtractIds } = await syncExtracts(integrationRunId);
+	await syncFormats(integrationRunId);
 
 	const count = await db.$count(
 		airtableExtracts,
@@ -354,6 +411,7 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 
 	console.log(`Updated ${updatedMediaCount} media records`);
 
+	await createFormatsFromAirtableFormats();
 	await createEntitiesFromAirtableCreators();
 	await createCategoriesFromAirtableSpaces();
 	await createMediaFromAirtableAttachments();

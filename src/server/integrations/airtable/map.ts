@@ -8,6 +8,7 @@ import {
 	airtableExtractConnections,
 	// Airtable integration (staging) tables
 	airtableExtracts,
+	airtableFormats,
 	airtableSpaces,
 	// Main tables
 	indices,
@@ -22,15 +23,72 @@ import {
 	type AirtableAttachmentSelect,
 	type AirtableCreatorSelect,
 	type AirtableExtractSelect,
+	type AirtableFormatSelect,
 	type AirtableSpaceSelect,
 	type IndicesInsert,
 	type MediaInsert,
 	type RecordInsert,
 } from '~/server/db/schema';
 
-/* ----------------------------------------------------------------------------
-   1. Create index entities from Airtable Creators
----------------------------------------------------------------------------- */
+const mapFormatToIndexEntry = (format: AirtableFormatSelect): IndicesInsert => {
+	return {
+		name: format.name,
+		mainType: 'format',
+		needsCuration: false,
+		isPrivate: false,
+		sources: ['airtable'],
+		recordCreatedAt: format.recordCreatedAt,
+		recordUpdatedAt: format.recordUpdatedAt,
+	};
+};
+
+export async function createFormatsFromAirtableFormats() {
+	const formats = await db.query.airtableFormats.findMany({
+		where: isNull(airtableFormats.indexEntryId),
+		with: {
+			extracts: {
+				columns: {
+					recordId: true,
+				},
+			},
+		},
+	});
+	if (formats.length === 0) {
+		console.log('No new Airtable formats to process.');
+		return;
+	}
+	console.log(`Processing ${formats.length} Airtable formats into index entities...`);
+	for (const format of formats) {
+		const indexEntry = mapFormatToIndexEntry(format);
+		console.log(`Creating index entity for format ${format.name}`);
+		const [newIndexEntry] = await db
+			.insert(indices)
+			.values(indexEntry)
+			.onConflictDoUpdate({
+				target: [indices.mainType, indices.name, indices.sense],
+				set: { recordUpdatedAt: new Date() },
+			})
+			.returning({ id: indices.id });
+		if (!newIndexEntry) {
+			console.log(`Failed to create index entity for format ${format.name}`);
+			continue;
+		}
+		await db
+			.update(airtableFormats)
+			.set({ indexEntryId: newIndexEntry.id })
+			.where(eq(airtableFormats.id, format.id));
+		console.log(`Linked format ${format.name} to index entity ${newIndexEntry.id}`);
+		format.extracts.forEach(async (extract) => {
+			if (extract.recordId) {
+				await db
+					.update(records)
+					.set({ formatId: newIndexEntry.id })
+					.where(eq(records.id, extract.recordId));
+			}
+		});
+	}
+}
+
 const mapAirtableCreatorToIndexEntry = (creator: AirtableCreatorSelect): IndicesInsert => {
 	return {
 		name: creator.name,
@@ -80,9 +138,6 @@ export async function createEntitiesFromAirtableCreators() {
 	}
 }
 
-/* ----------------------------------------------------------------------------
-   2. Create index categories from Airtable Spaces
----------------------------------------------------------------------------- */
 const mapAirtableSpaceToIndexEntry = (space: AirtableSpaceSelect): IndicesInsert => {
 	return {
 		name: space.name,
@@ -131,9 +186,6 @@ export async function createCategoriesFromAirtableSpaces() {
 	}
 }
 
-/* ----------------------------------------------------------------------------
-   3. Create media from Airtable Attachments
----------------------------------------------------------------------------- */
 const mapAirtableAttachmentToMedia = async (
 	attachment: AirtableAttachmentSelect,
 	extract?: AirtableExtractSelect
@@ -206,14 +258,14 @@ export async function createMediaFromAirtableAttachments() {
 	}
 }
 
-/* ----------------------------------------------------------------------------
-   4. Create records from Airtable Extracts and link to related data via record_relations
----------------------------------------------------------------------------- */
-const mapAirtableExtractToRecord = (extract: AirtableExtractSelect): RecordInsert => {
+const mapAirtableExtractToRecord = (
+	extract: AirtableExtractSelect & { format: AirtableFormatSelect | null }
+): RecordInsert => {
 	return {
 		title: extract.title,
 		content: extract.content,
 		url: extract.source,
+		formatId: extract.format?.indexEntryId,
 		flags:
 			extract.michelinStars > 2
 				? ['favorite']
@@ -236,6 +288,7 @@ export async function createRecordsFromAirtableExtracts() {
 	const extracts = await db.query.airtableExtracts.findMany({
 		where: isNull(airtableExtracts.recordId),
 		with: {
+			format: true,
 			attachments: true,
 			extractCreators: {
 				with: {
