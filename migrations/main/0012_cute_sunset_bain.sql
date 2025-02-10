@@ -1,0 +1,1 @@
+ALTER TYPE "public"."flag" ADD VALUE 'disagree';

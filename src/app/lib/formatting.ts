@@ -44,9 +44,14 @@ export const formatCreatorDescription = (
 
 const urlSchema = z.string().url();
 
-export const validateAndFormatUrl = (url: string): string => {
+export function validateAndFormatUrl(url: string): string;
+export function validateAndFormatUrl(
+	url: string,
+	safe: true
+): z.SafeParseReturnType<string, string>;
+export function validateAndFormatUrl(url: string, safe?: boolean) {
 	// Add https:// if no protocol is present
 	const formattedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
 
-	return urlSchema.parse(formattedUrl);
-};
+	return safe ? urlSchema.safeParse(formattedUrl) : urlSchema.parse(formattedUrl);
+}

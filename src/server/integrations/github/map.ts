@@ -33,6 +33,7 @@ const mapGithubUserToEntity = (user: GithubUserSelect): IndicesInsert => {
 };
 
 export async function createEntitiesFromGithubUsers() {
+	console.log('Creating entities from Github users');
 	const unmappedUsers = await db.query.githubUsers.findMany({
 		where: isNull(githubUsers.indexEntryId),
 		with: {
@@ -50,7 +51,10 @@ export async function createEntitiesFromGithubUsers() {
 		const [newEntity] = await db
 			.insert(indices)
 			.values(newEntityDefaults)
-			.onConflictDoNothing()
+			.onConflictDoUpdate({
+				target: [indices.mainType, indices.name, indices.sense],
+				set: { recordUpdatedAt: new Date() },
+			})
 			.returning({ id: indices.id });
 		if (!newEntity) {
 			throw new Error('Failed to create entity');
@@ -91,6 +95,7 @@ const mapGithubRepositoryToRecord = (repository: GithubRepositorySelect): Record
 };
 
 export async function createRecordsFromGithubRepositories() {
+	console.log('Creating records from Github repositories');
 	const unmappedRepositories = await db.query.githubRepositories.findMany({
 		where: isNull(githubRepositories.recordId),
 		with: {

@@ -112,6 +112,7 @@ export const mapRaindropBookmarkToRecord = (bookmark: RaindropBookmarkSelect): R
 };
 
 export async function createRecordsFromRaindropBookmarks() {
+	console.log('Creating records from Raindrop bookmarks');
 	const unmappedBookmarks = await db.query.raindropBookmarks.findMany({
 		where: isNull(raindropBookmarks.recordId),
 		with: {
@@ -155,6 +156,13 @@ export async function createRecordsFromRaindropBookmarks() {
 					.onConflictDoNothing();
 			}
 		}
+		if (bookmark.mediaId) {
+			console.log(`Linking media ${bookmark.mediaId} to record ${newRecord.id}`);
+			await db
+				.insert(recordMedia)
+				.values({ recordId: newRecord.id, mediaId: bookmark.mediaId })
+				.onConflictDoNothing();
+		}
 	}
 }
 
@@ -195,6 +203,7 @@ const mapRaindropBookmarkToMedia = async (
 };
 
 export async function createMediaFromRaindropBookmarks() {
+	console.log('Creating media from Raindrop bookmarks');
 	const unmappedBookmarks = await db.query.raindropBookmarks.findMany({
 		where: and(
 			isNotNull(raindropBookmarks.coverImageUrl),
@@ -268,6 +277,7 @@ export const mapRaindropTagToCategory = (tag: RaindropTagSelect): IndicesInsert 
 };
 
 export async function createCategoriesFromRaindropTags() {
+	console.log('Creating categories from Raindrop tags');
 	const unmappedTags = await db.query.raindropTags.findMany({
 		where: isNull(raindropTags.indexEntryId),
 		with: {
@@ -291,7 +301,7 @@ export async function createCategoriesFromRaindropTags() {
 			.values(newCategoryDefaults)
 			.returning({ id: indices.id })
 			.onConflictDoUpdate({
-				target: [indices.name, indices.sense, indices.mainType],
+				target: [indices.mainType, indices.name, indices.sense],
 				set: {
 					recordUpdatedAt: new Date(),
 					needsCuration: true,

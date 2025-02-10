@@ -149,8 +149,8 @@ export const readwiseAuthors = pgTable(
 	'readwise_authors',
 	{
 		id: serial('id').primaryKey(),
-		name: text('name'),
-		domain: text('domain'),
+		name: text('name').notNull(),
+		siteName: text('site_name'),
 		indexEntryId: integer('index_entry_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
@@ -159,8 +159,8 @@ export const readwiseAuthors = pgTable(
 	},
 	(table) => [
 		index().on(table.name),
-		index().on(table.domain),
-		unique().on(table.name, table.domain),
+		index().on(table.siteName),
+		unique().on(table.name, table.siteName),
 	]
 );
 
@@ -181,7 +181,7 @@ export type ReadwiseAuthorInsert = typeof readwiseAuthors.$inferInsert;
 
 export const readwiseTags = pgTable('readwise_tags', {
 	id: serial('id').primaryKey(),
-	tag: text('tag').unique(),
+	tag: text('tag').unique().notNull(),
 	indexEntryId: integer('index_entry_id').references(() => indices.id, {
 		onDelete: 'set null',
 		onUpdate: 'cascade',
@@ -198,6 +198,11 @@ export const readwiseTagsRelations = relations(readwiseTags, ({ one, many }) => 
 		references: [indices.id],
 	}),
 }));
+
+export const ReadwiseTagSelectSchema = createSelectSchema(readwiseTags);
+export type ReadwiseTagSelect = typeof readwiseTags.$inferSelect;
+export const ReadwiseTagInsertSchema = createInsertSchema(readwiseTags);
+export type ReadwiseTagInsert = typeof readwiseTags.$inferInsert;
 
 // Combined hierarchy/relations table
 export const readwiseDocumentTags = pgTable(

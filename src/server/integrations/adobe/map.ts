@@ -33,26 +33,33 @@ const generateImageDescription = (image: LightroomImageSelect): string => {
 	return description;
 };
 
-const mapLightroomImageToMedia = async (image: LightroomImageSelect): Promise<MediaInsert> => {
-	const { size, width, height, mediaFormat, mediaType, contentTypeString } = await getSmartMetadata(
-		image.url2048
-	);
+const mapLightroomImageToMedia = async (
+	image: LightroomImageSelect
+): Promise<MediaInsert | null> => {
+	try {
+		const { size, width, height, mediaFormat, mediaType, contentTypeString } =
+			await getSmartMetadata(image.url2048);
 
-	return {
-		url: image.url2048,
-		type: mediaType,
-		format: mediaFormat,
-		contentTypeString,
-		fileSize: size,
-		width,
-		height,
-		isPrivate: false,
-		needsCuration: true,
-		recordCreatedAt: image.recordCreatedAt,
-		recordUpdatedAt: image.recordUpdatedAt,
-		contentCreatedAt: image.captureDate,
-		contentUpdatedAt: image.userUpdatedDate,
-	};
+		return {
+			url: image.url2048,
+			type: mediaType,
+			format: mediaFormat,
+			contentTypeString,
+			fileSize: size,
+			width,
+			height,
+			isPrivate: false,
+			needsCuration: true,
+			sources: ['lightroom'],
+			recordCreatedAt: image.recordCreatedAt,
+			recordUpdatedAt: image.recordUpdatedAt,
+			contentCreatedAt: image.captureDate,
+			contentUpdatedAt: image.userUpdatedDate,
+		};
+	} catch (error) {
+		console.error('Error getting smart metadata for media', image.url2048, error);
+		return null;
+	}
 };
 
 const mapLightroomImageToRecord = (image: LightroomImageSelect): RecordInsert => {
@@ -61,6 +68,7 @@ const mapLightroomImageToRecord = (image: LightroomImageSelect): RecordInsert =>
 		content: generateImageDescription(image),
 		needsCuration: true,
 		isPrivate: false,
+		sources: ['lightroom'],
 		recordCreatedAt: image.recordCreatedAt,
 		recordUpdatedAt: image.recordUpdatedAt,
 		contentCreatedAt: image.contentCreatedAt,
@@ -69,6 +77,7 @@ const mapLightroomImageToRecord = (image: LightroomImageSelect): RecordInsert =>
 };
 
 export const createMediaFromLightroomImages = async () => {
+	console.log('Creating media from Lightroom images');
 	const unmappedImages = await db.query.lightroomImages.findMany({
 		where: or(isNull(lightroomImages.mediaId), isNull(lightroomImages.recordId)),
 		with: {
@@ -89,7 +98,12 @@ export const createMediaFromLightroomImages = async () => {
 		let mediaId: number | undefined;
 		let recordId: number | undefined;
 		if (!image.media) {
+			console.log(`Creating media for ${image.fileName}`);
 			const newMediaDefaults = await mapLightroomImageToMedia(image);
+			if (!newMediaDefaults) {
+				console.log(`Failed to create media for ${image.fileName}`);
+				continue;
+			}
 			const [newMedia] = await db
 				.insert(media)
 				.values(newMediaDefaults)
@@ -101,6 +115,7 @@ export const createMediaFromLightroomImages = async () => {
 			await db.update(lightroomImages).set({ mediaId }).where(eq(lightroomImages.id, image.id));
 		}
 		if (!image.record) {
+			console.log(`Creating record for ${image.fileName}`);
 			const newRecordDefaults = mapLightroomImageToRecord(image);
 			const [newRecord] = await db
 				.insert(records)
@@ -129,6 +144,7 @@ export const createMediaFromLightroomImages = async () => {
 			}
 		}
 		if (mediaId && recordId) {
+			console.log(`Linking media ${mediaId} to record ${recordId}`);
 			await db
 				.insert(recordMedia)
 				.values({
