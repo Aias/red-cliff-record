@@ -1,7 +1,11 @@
 import { randomUUID } from 'crypto';
 import { mkdirSync } from 'fs';
 import { S3Client } from 'bun';
+import { eq } from 'drizzle-orm';
+import { ilike } from 'drizzle-orm';
 import { extension as mimeExtension, lookup as mimeLookup } from 'mime-types';
+import { db } from '~/server/db/connections/postgres';
+import { media } from '~/server/db/schema/media';
 
 // Create the S3 client for Cloudflare R2 (or any S3-compatible endpoint).
 // Ensure you have these environment variables set: S3_REGION, S3_ACCESS_KEY_ID,
@@ -89,5 +93,20 @@ export async function deleteMediaFromR2(assetId: string): Promise<void> {
 		throw new Error(
 			`Failed to delete asset ${assetId}: ${error instanceof Error ? error.message : 'Unknown error'}`
 		);
+	}
+}
+
+export async function transferMediaToR2(searchTerm: string) {
+	const mediaToTransfer = await db.query.media.findMany({
+		where: ilike(media.url, searchTerm),
+	});
+	for (const m of mediaToTransfer) {
+		console.log(`Transferring ${m.url}`);
+		const r2Url = await uploadMediaToR2(m.url);
+		console.log(`Uploaded to R2: ${r2Url}`);
+		await db
+			.update(media)
+			.set({ url: r2Url, recordUpdatedAt: new Date() })
+			.where(eq(media.id, m.id));
 	}
 }
