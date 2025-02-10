@@ -21,14 +21,26 @@ type GithubRepository = Endpoints['GET /repos/{owner}/{repo}']['response']['data
 const MAX_PATCH_LENGTH = 2048;
 
 async function getMostRecentCommitDate(): Promise<Date | null> {
-	const result = await db.query.githubCommits.findFirst({
-		columns: {
-			contentCreatedAt: true,
-		},
+	// Get latest commit based on committer date (reflects push/merge activity)
+	const latestByCommitter = await db.query.githubCommits.findFirst({
+		columns: { committedAt: true },
+		orderBy: desc(githubCommits.committedAt),
+	});
+
+	// Get latest commit based on content created date (author date)
+	const latestByAuthor = await db.query.githubCommits.findFirst({
+		columns: { contentCreatedAt: true },
 		orderBy: desc(githubCommits.contentCreatedAt),
 	});
 
-	return result?.contentCreatedAt ?? null;
+	const latestCommitterTime = latestByCommitter?.committedAt
+		? latestByCommitter.committedAt.getTime()
+		: 0;
+	const latestAuthorTime = latestByAuthor?.contentCreatedAt
+		? latestByAuthor.contentCreatedAt.getTime()
+		: 0;
+	const lastActivityTime = Math.max(latestCommitterTime, latestAuthorTime);
+	return lastActivityTime ? new Date(lastActivityTime) : null;
 }
 
 async function ensureRepositoryExists(
@@ -89,7 +101,9 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 	const mostRecentCommitDate = await getMostRecentCommitDate();
 	if (mostRecentCommitDate) {
-		console.log(`Most recent commit in database: ${mostRecentCommitDate.toLocaleString()}`);
+		console.log(
+			`Most recent commit activity in database: ${mostRecentCommitDate.toLocaleString()}`
+		);
 	} else {
 		console.log('No existing commits in database');
 	}
@@ -102,11 +116,16 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 	while (hasMore) {
 		try {
 			console.log(`Fetching page ${page}...`);
+
+			// Use the committer-date qualifier so that any push/merge update (reflected by committer date)
+			// after our mostRecentCommitDate will be included
+			const queryStr = mostRecentCommitDate
+				? `author:@me committer-date:>=${mostRecentCommitDate.toISOString().split('T')[0]}`
+				: 'author:@me';
+
 			const response = await octokit.rest.search.commits({
-				q: mostRecentCommitDate
-					? `author:@me author-date:>=${mostRecentCommitDate.toISOString().split('T')[0]}`
-					: 'author:@me',
-				sort: 'author-date',
+				q: queryStr,
+				sort: 'committer-date',
 				order: 'asc',
 				per_page: PER_PAGE,
 				page,
