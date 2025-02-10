@@ -10,7 +10,7 @@
 		"moduleDetection": "force",
 		"isolatedModules": true,
 		"types": ["bun", "vite/client"],
-		"noErrorTruncation": true, // Toggle comment to see full Intellisense errors and types.
+		// "noErrorTruncation": true, // Toggle comment to see full Intellisense errors and types.
 
 		/* Strictness */
 		"strict": true,

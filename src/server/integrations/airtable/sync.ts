@@ -1,4 +1,4 @@
-import { eq, ilike } from 'drizzle-orm';
+import { desc, eq, ilike, isNotNull } from 'drizzle-orm';
 import { db } from '~/server/db/connections';
 import {
 	airtableAttachments,
@@ -19,9 +19,14 @@ import {
 import { deleteMediaFromR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
 import { airtableBase, storeMedia } from './helpers';
+import {
+	createCategoriesFromAirtableSpaces,
+	createConnectionsBetweenRecords,
+	createEntitiesFromAirtableCreators,
+	createMediaFromAirtableAttachments,
+	createRecordsFromAirtableExtracts,
+} from './map';
 import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
-
-const CHUNK_SIZE = 100;
 
 async function cleanupExistingRecords() {
 	console.log('Cleaning up existing Airtable records...');
@@ -84,72 +89,157 @@ async function cleanupExistingRecords() {
 	console.log('Cleanup complete');
 }
 
-async function seedCreators(integrationRunId: number) {
-	console.log('Seeding creators...');
-	const records = await airtableBase('Creators').select().all();
+async function syncCreators(integrationRunId: number) {
+	console.log('Syncing creators...');
+	const lastUpdatedCreator = await db.query.airtableCreators.findFirst({
+		orderBy: desc(airtableCreators.contentUpdatedAt),
+		where: isNotNull(airtableCreators.contentUpdatedAt),
+	});
+	const lastUpdatedTime = lastUpdatedCreator?.contentUpdatedAt;
+	console.log(`Last updated creator: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
 
-	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
-		const chunk = records.slice(i, i + CHUNK_SIZE);
-		const creatorsToInsert: AirtableCreatorInsert[] = chunk.map((record) => {
-			const fields = CreatorFieldSetSchema.parse(record.fields);
-			return {
-				id: record.id,
-				name: fields.name,
-				type: fields.type,
-				primaryProject: fields.primaryProject,
-				website: fields.site,
-				professions: fields.professions,
-				organizations: fields.organizations,
-				nationalities: fields.nationality,
-				contentCreatedAt: fields.createdTime,
-				contentUpdatedAt: fields.lastUpdated,
-				integrationRunId,
-			};
-		});
+	console.log(
+		`Filter formula: ${lastUpdatedTime ? `lastUpdated > ${lastUpdatedTime.toISOString()}` : undefined}`
+	);
 
-		await db.insert(airtableCreators).values(creatorsToInsert);
-		console.log(
-			`Inserted creators chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(records.length / CHUNK_SIZE)}`
-		);
+	const updatedRecords = await airtableBase('Creators')
+		.select({
+			filterByFormula: lastUpdatedTime
+				? `lastUpdated > '${lastUpdatedTime.toISOString()}'`
+				: undefined,
+		})
+		.all();
+
+	if (updatedRecords.length === 0) {
+		console.log('No new creators to sync');
+		return;
 	}
+
+	const creatorsToSync: AirtableCreatorInsert[] = updatedRecords.map((record) => {
+		const fields = CreatorFieldSetSchema.parse(record.fields);
+		return {
+			id: record.id,
+			name: fields.name,
+			type: fields.type,
+			primaryProject: fields.primaryProject,
+			website: fields.site,
+			professions: fields.professions,
+			organizations: fields.organizations,
+			nationalities: fields.nationality,
+			contentCreatedAt: fields.createdTime,
+			contentUpdatedAt: fields.lastUpdated,
+			integrationRunId,
+		};
+	});
+
+	console.log(`Syncing ${creatorsToSync.length} creators`, creatorsToSync);
+
+	await db.transaction(async (tx) => {
+		for (const creator of creatorsToSync) {
+			console.log(`Syncing creator ${creator.name}`);
+			await tx
+				.insert(airtableCreators)
+				.values(creator)
+				.onConflictDoUpdate({
+					target: [airtableCreators.id],
+					set: {
+						...creator,
+					},
+				});
+		}
+	});
 }
 
-async function seedSpaces(integrationRunId: number) {
-	console.log('Seeding spaces...');
-	const records = await airtableBase('Spaces').select().all();
+async function syncSpaces(integrationRunId: number) {
+	console.log('Syncing spaces...');
+	const lastUpdatedSpace = await db.query.airtableSpaces.findFirst({
+		orderBy: desc(airtableSpaces.contentUpdatedAt),
+		where: isNotNull(airtableSpaces.contentUpdatedAt),
+	});
+	const lastUpdatedTime = lastUpdatedSpace?.contentUpdatedAt;
+	console.log(`Last updated space: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
 
-	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
-		const chunk = records.slice(i, i + CHUNK_SIZE);
-		const spacesToInsert: AirtableSpaceInsert[] = chunk.map((record) => {
-			const fields = SpaceFieldSetSchema.parse(record.fields);
-			return {
-				id: record.id,
-				name: fields.topic,
-				fullName: fields.title,
-				icon: fields.icon,
-				description: fields.description,
-				contentCreatedAt: fields.createdTime,
-				contentUpdatedAt: fields.lastUpdated,
-				integrationRunId,
-			};
-		});
+	const updatedRecords = await airtableBase('Spaces')
+		.select({
+			filterByFormula: lastUpdatedTime
+				? `lastUpdated > '${lastUpdatedTime.toISOString()}'`
+				: undefined,
+		})
+		.all();
 
-		await db.insert(airtableSpaces).values(spacesToInsert);
-		console.log(
-			`Inserted spaces chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(records.length / CHUNK_SIZE)}`
-		);
+	if (updatedRecords.length === 0) {
+		console.log('No new spaces to sync');
+		return;
 	}
+
+	const spacesToSync: AirtableSpaceInsert[] = updatedRecords.map((record) => {
+		const fields = SpaceFieldSetSchema.parse(record.fields);
+		return {
+			id: record.id,
+			name: fields.topic,
+			fullName: fields.title,
+			icon: fields.icon,
+			description: fields.description,
+			contentCreatedAt: fields.createdTime,
+			contentUpdatedAt: fields.lastUpdated,
+			integrationRunId,
+		};
+	});
+
+	console.log(`Syncing ${spacesToSync.length} spaces`, spacesToSync);
+
+	await db.transaction(async (tx) => {
+		for (const space of spacesToSync) {
+			console.log(`Syncing space ${space.name}`);
+			await tx
+				.insert(airtableSpaces)
+				.values(space)
+				.onConflictDoUpdate({
+					target: [airtableSpaces.id],
+					set: {
+						...space,
+					},
+				});
+		}
+	});
 }
 
-async function seedExtracts(integrationRunId: number) {
-	console.log('Seeding extracts...');
-	const records = await airtableBase('Extracts').select().all();
+async function syncExtracts(integrationRunId: number): Promise<{
+	updatedExtractIds: string[];
+}> {
+	console.log('Syncing extracts...');
+	const lastUpdatedExtract = await db.query.airtableExtracts.findFirst({
+		orderBy: desc(airtableExtracts.contentUpdatedAt),
+		where: isNotNull(airtableExtracts.contentUpdatedAt),
+	});
+	const lastUpdatedTime = lastUpdatedExtract?.contentUpdatedAt;
+	console.log(`Last updated extract: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
 
-	for (let i = 0; i < records.length; i += CHUNK_SIZE) {
-		const chunk = records.slice(i, i + CHUNK_SIZE);
-		const extractsToInsert: AirtableExtractInsert[] = chunk.map((record) => {
-			const fields = ExtractFieldSetSchema.parse(record.fields);
-			return {
+	const updatedRecords = await airtableBase('Extracts')
+		.select({
+			filterByFormula: lastUpdatedTime
+				? `lastUpdated > '${lastUpdatedTime.toISOString()}'`
+				: undefined,
+		})
+		.all();
+
+	if (updatedRecords.length === 0) {
+		console.log('No new extracts to sync');
+		return { updatedExtractIds: [] };
+	}
+
+	const parsedRecords = updatedRecords.map((record) => ({
+		id: record.id,
+		fields: ExtractFieldSetSchema.parse(record.fields),
+	}));
+
+	console.log(`Syncing ${parsedRecords.length} extracts`, parsedRecords);
+
+	// First pass: Upsert extracts and attachments
+	await db.transaction(async (tx) => {
+		for (const record of parsedRecords) {
+			const fields = record.fields;
+			const newExtract: AirtableExtractInsert = {
 				id: record.id,
 				title: fields.title,
 				format: fields.format,
@@ -165,96 +255,83 @@ async function seedExtracts(integrationRunId: number) {
 				contentUpdatedAt: fields.lastUpdated,
 				integrationRunId,
 			};
-		});
-
-		await db.insert(airtableExtracts).values(extractsToInsert);
-		console.log(
-			`Inserted extracts chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(records.length / CHUNK_SIZE)}`
-		);
-	}
-
-	// Second pass: Update parent references
-	for (const record of records) {
-		const fields = ExtractFieldSetSchema.parse(record.fields);
-		if (fields.parentId?.[0]) {
-			await db
-				.update(airtableExtracts)
-				.set({ parentId: fields.parentId[0] })
-				.where(eq(airtableExtracts.id, record.id));
-		}
-	}
-}
-
-async function seedAttachments() {
-	console.log('Seeding attachments...');
-	const records = await airtableBase('Extracts').select().all();
-
-	for (const record of records) {
-		const fields = ExtractFieldSetSchema.parse(record.fields);
-		const images = fields.images;
-		if (!images) continue;
-
-		for (let i = 0; i < images.length; i += CHUNK_SIZE) {
-			const chunk = images.slice(i, i + CHUNK_SIZE);
-			const attachmentsToInsert: AirtableAttachmentInsert[] = chunk.map((attachment) => ({
-				id: attachment.id,
-				url: attachment.url,
-				filename: attachment.filename,
-				size: attachment.size,
-				width: attachment.width,
-				height: attachment.height,
-				type: attachment.type,
-				extractId: record.id,
-			}));
-
-			await db.insert(airtableAttachments).values(attachmentsToInsert);
-		}
-	}
-}
-
-async function seedRelations() {
-	console.log('Seeding relations...');
-	const records = await airtableBase('Extracts').select().all();
-
-	for (const record of records) {
-		const fields = ExtractFieldSetSchema.parse(record.fields);
-
-		// Insert creator relations
-		if (fields.creatorIds?.length) {
-			for (let i = 0; i < fields.creatorIds.length; i += CHUNK_SIZE) {
-				const chunk = fields.creatorIds.slice(i, i + CHUNK_SIZE);
-				const relations: AirtableExtractCreatorInsert[] = chunk.map((creatorId) => ({
-					extractId: record.id,
-					creatorId,
-				}));
-				await db.insert(airtableExtractCreators).values(relations);
+			console.log(`Syncing extract ${newExtract.title}`);
+			await tx
+				.insert(airtableExtracts)
+				.values(newExtract)
+				.onConflictDoUpdate({
+					target: [airtableExtracts.id],
+					set: {
+						...newExtract,
+					},
+				});
+			// Link attachments
+			if (fields.images) {
+				for (const image of fields.images) {
+					const attachment: AirtableAttachmentInsert = {
+						id: image.id,
+						url: image.url,
+						filename: image.filename,
+						size: image.size,
+						width: image.width,
+						height: image.height,
+						type: image.type,
+						extractId: record.id,
+					};
+					await tx
+						.insert(airtableAttachments)
+						.values(attachment)
+						.onConflictDoUpdate({
+							target: [airtableAttachments.id],
+							set: {
+								...attachment,
+							},
+						});
+				}
+			}
+			// Link creators
+			if (fields.creatorIds) {
+				for (const creatorId of fields.creatorIds) {
+					const link: AirtableExtractCreatorInsert = {
+						extractId: record.id,
+						creatorId,
+					};
+					await tx.insert(airtableExtractCreators).values(link).onConflictDoNothing();
+				}
+			}
+			// Link spaces
+			if (fields.spaceIds) {
+				for (const spaceId of fields.spaceIds) {
+					const link: AirtableExtractSpaceInsert = {
+						extractId: record.id,
+						spaceId,
+					};
+					await tx.insert(airtableExtractSpaces).values(link).onConflictDoNothing();
+				}
+			}
+			// Link connections
+			if (fields.connectionIds) {
+				for (const connectionId of fields.connectionIds) {
+					const link: AirtableExtractConnectionInsert = {
+						fromExtractId: record.id,
+						toExtractId: connectionId,
+					};
+					await tx.insert(airtableExtractConnections).values(link).onConflictDoNothing();
+				}
 			}
 		}
+	});
 
-		// Insert space relations
-		if (fields.spaceIds?.length) {
-			for (let i = 0; i < fields.spaceIds.length; i += CHUNK_SIZE) {
-				const chunk = fields.spaceIds.slice(i, i + CHUNK_SIZE);
-				const relations: AirtableExtractSpaceInsert[] = chunk.map((spaceId) => ({
-					extractId: record.id,
-					spaceId,
-				}));
-				await db.insert(airtableExtractSpaces).values(relations);
-			}
-		}
-
-		// Insert connections
-		if (fields.connectionIds?.length) {
-			for (let i = 0; i < fields.connectionIds.length; i += CHUNK_SIZE) {
-				const chunk = fields.connectionIds.slice(i, i + CHUNK_SIZE);
-				const relations: AirtableExtractConnectionInsert[] = chunk.map((toExtractId) => ({
-					fromExtractId: record.id,
-					toExtractId,
-				}));
-				await db.insert(airtableExtractConnections).values(relations);
-			}
+	// Second pass: Update parent-child relationships
+	for (const record of parsedRecords) {
+		const fields = record.fields;
+		const parentId = fields.parentId?.[0];
+		if (parentId) {
+			await db.update(airtableExtracts).set({ parentId }).where(eq(airtableExtracts.id, record.id));
 		}
 	}
+
+	return { updatedExtractIds: parsedRecords.map((record) => record.id) };
 }
 
 const CLEAR_BEFORE_SYNC = false;
@@ -264,11 +341,9 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 		await cleanupExistingRecords();
 	}
 
-	await seedCreators(integrationRunId);
-	await seedSpaces(integrationRunId);
-	await seedExtracts(integrationRunId);
-	await seedAttachments();
-	await seedRelations();
+	await syncCreators(integrationRunId);
+	await syncSpaces(integrationRunId);
+	const { updatedExtractIds } = await syncExtracts(integrationRunId);
 
 	const count = await db.$count(
 		airtableExtracts,
@@ -278,6 +353,12 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 	const updatedMediaCount = await storeMedia();
 
 	console.log(`Updated ${updatedMediaCount} media records`);
+
+	await createEntitiesFromAirtableCreators();
+	await createCategoriesFromAirtableSpaces();
+	await createMediaFromAirtableAttachments();
+	await createRecordsFromAirtableExtracts();
+	await createConnectionsBetweenRecords(updatedExtractIds);
 
 	return count;
 }

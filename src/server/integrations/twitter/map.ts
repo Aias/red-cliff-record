@@ -6,7 +6,6 @@ import {
 	media,
 	recordCreators,
 	recordMedia,
-	recordRelations,
 	records,
 	twitterMedia,
 	twitterTweets,
@@ -37,6 +36,7 @@ export const mapTwitterUserToEntity = (user: TwitterUserSelect): IndicesInsert =
 };
 
 export async function createEntitiesFromUsers() {
+	console.log('Creating entities from Twitter users');
 	const users = await db.query.twitterUsers.findMany({
 		where: isNull(twitterUsers.indexEntryId),
 	});
@@ -53,9 +53,7 @@ export async function createEntitiesFromUsers() {
 			.values(entity)
 			.onConflictDoUpdate({
 				target: [indices.mainType, indices.name, indices.sense],
-				set: {
-					recordUpdatedAt: new Date(),
-				},
+				set: { recordUpdatedAt: new Date() },
 			})
 			.returning({ id: indices.id });
 		if (!newEntity) {
@@ -87,11 +85,10 @@ export const mapTwitterTweetToRecord = (tweet: TweetWithUser): RecordInsert => {
 };
 
 export async function createRecordsFromTweets() {
+	console.log('Creating records from Twitter tweets');
 	const tweets = await db.query.twitterTweets.findMany({
 		where: isNull(twitterTweets.recordId),
-		with: {
-			user: true,
-		},
+		with: { user: true, media: true },
 	});
 
 	if (tweets.length === 0) {
@@ -100,9 +97,12 @@ export async function createRecordsFromTweets() {
 	}
 
 	const updatedTweetIds: string[] = [];
+	// Map to store the new record IDs keyed by the corresponding Twitter tweet ID.
+	const recordMap = new Map<string, number>();
 
 	for (const tweet of tweets) {
 		const record = mapTwitterTweetToRecord(tweet);
+		// Insert the record with parentId set to null (to be updated later if this is a quote).
 		const [newRecord] = await db.insert(records).values(record).returning({ id: records.id });
 		if (!newRecord) {
 			throw new Error('Failed to create record');
@@ -112,6 +112,8 @@ export async function createRecordsFromTweets() {
 			.set({ recordId: newRecord.id })
 			.where(eq(twitterTweets.id, tweet.id));
 		updatedTweetIds.push(tweet.id);
+		recordMap.set(tweet.id, newRecord.id);
+		// Link the tweet creator via recordCreators.
 		if (tweet.user.indexEntryId) {
 			await db
 				.insert(recordCreators)
@@ -122,22 +124,28 @@ export async function createRecordsFromTweets() {
 				})
 				.onConflictDoUpdate({
 					target: [recordCreators.recordId, recordCreators.entityId, recordCreators.role],
-					set: {
-						recordUpdatedAt: new Date(),
-					},
+					set: { recordUpdatedAt: new Date() },
 				});
 		}
+		// Link the tweet media via recordMedia.
+		tweet.media.forEach(async (mediaItem) => {
+			if (mediaItem.mediaId) {
+				await db
+					.insert(recordMedia)
+					.values({ recordId: newRecord.id, mediaId: mediaItem.mediaId })
+					.onConflictDoNothing();
+			}
+		});
 	}
 
+	// Update parent-child relationships for tweets that are quoting another tweet.
 	await linkQuotedTweets(updatedTweetIds);
 }
 
 export async function linkQuotedTweets(tweetIds: string[]) {
 	const tweetsWithQuotes = await db.query.twitterTweets.findMany({
 		where: and(inArray(twitterTweets.id, tweetIds), isNotNull(twitterTweets.quotedTweetId)),
-		with: {
-			quotedTweet: true,
-		},
+		with: { quotedTweet: true },
 	});
 
 	if (tweetsWithQuotes.length === 0) {
@@ -148,20 +156,20 @@ export async function linkQuotedTweets(tweetIds: string[]) {
 	console.log(`Linking ${tweetsWithQuotes.length} tweets with quotes to records`);
 
 	for (const tweet of tweetsWithQuotes) {
+		// The quoted tweet should already have been processed.
 		const quotedTweet = tweet.quotedTweet!;
 		if (!tweet.recordId || !quotedTweet.recordId) {
 			console.log(`Quoted tweet ${tweet.id} not linked to record`);
 			continue;
 		}
-		console.log(`Linking ${tweet.id} to ${quotedTweet.id}`);
+		// Update the tweet's record with the parent's record id.
+		console.log(
+			`Setting parentId of tweet record ${tweet.recordId} to quoted tweet record ${quotedTweet.recordId}`
+		);
 		await db
-			.insert(recordRelations)
-			.values({
-				sourceId: tweet.recordId,
-				targetId: quotedTweet.recordId,
-				type: 'quotes',
-			})
-			.onConflictDoNothing();
+			.update(records)
+			.set({ parentId: quotedTweet.recordId, childType: 'quotes' })
+			.where(eq(records.id, tweet.recordId));
 	}
 }
 
@@ -198,6 +206,7 @@ export const mapTwitterMediaToMedia = async (
 };
 
 export async function createMediaFromTweets() {
+	console.log('Creating media from Twitter tweets');
 	const mediaWithTweets = await db.query.twitterMedia.findMany({
 		where: isNull(twitterMedia.mediaId),
 		with: {

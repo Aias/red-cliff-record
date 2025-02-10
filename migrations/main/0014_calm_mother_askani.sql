@@ -1,0 +1,1 @@
+ALTER TYPE "public"."creator_role_type" ADD VALUE 'owner' BEFORE 'author';

@@ -62,7 +62,7 @@ export const indices = pgTable(
 		...textEmbeddingColumns,
 	},
 	(table) => [
-		unique().on(table.name, table.sense, table.mainType),
+		unique().on(table.mainType, table.name, table.sense),
 		index().on(table.mainType, table.subType),
 		index().on(table.canonicalMediaId),
 	]
@@ -76,34 +76,6 @@ export const IndicesInsertSchema = createInsertSchema(indices).extend({
 });
 export type IndicesInsert = typeof indices.$inferInsert;
 
-export const indexRelations = pgTable(
-	'index_relations',
-	{
-		id: serial('id').primaryKey(),
-		sourceId: integer('source_id')
-			.references(() => indices.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
-		targetId: integer('target_id')
-			.references(() => indices.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
-		type: indexRelationTypeEnum('type').notNull().default('related_to'),
-		...databaseTimestamps,
-	},
-	(table) => [unique().on(table.sourceId, table.targetId, table.type)]
-);
-
-export const IndexRelationSelectSchema = createSelectSchema(indexRelations);
-export type IndexRelationSelect = typeof indexRelations.$inferSelect;
-export const IndexRelationInsertSchema = createInsertSchema(indexRelations);
-export type IndexRelationInsert = typeof indexRelations.$inferInsert;
-
-// Relations
 export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
 	canonicalMedia: one(media, {
 		fields: [indices.canonicalMediaId],
@@ -112,10 +84,10 @@ export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
 	alias: one(indices, {
 		fields: [indices.aliasOf],
 		references: [indices.id],
-		relationName: 'aliasRelation',
+		relationName: 'alias',
 	}),
 	aliases: many(indices, {
-		relationName: 'aliasRelation',
+		relationName: 'alias',
 	}),
 	outgoingRelations: many(indexRelations, {
 		relationName: 'source',
@@ -136,6 +108,33 @@ export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
 		relationName: 'indexEntry',
 	}),
 }));
+
+export const indexRelations = pgTable(
+	'index_relations',
+	{
+		id: serial('id').primaryKey(),
+		type: indexRelationTypeEnum('type').notNull().default('related_to'),
+		sourceId: integer('source_id')
+			.references(() => indices.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
+			.notNull(),
+		targetId: integer('target_id')
+			.references(() => indices.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
+			.notNull(),
+		...databaseTimestamps,
+	},
+	(table) => [unique().on(table.sourceId, table.targetId, table.type)]
+);
+
+export const IndexRelationSelectSchema = createSelectSchema(indexRelations);
+export type IndexRelationSelect = typeof indexRelations.$inferSelect;
+export const IndexRelationInsertSchema = createInsertSchema(indexRelations);
+export type IndexRelationInsert = typeof indexRelations.$inferInsert;
 
 export const indexRelationsRelations = relations(indexRelations, ({ one }) => ({
 	source: one(indices, {
