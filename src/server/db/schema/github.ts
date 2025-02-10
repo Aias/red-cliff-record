@@ -209,7 +209,7 @@ export const githubUsersRelations = relations(githubUsers, ({ one, many }) => ({
 	}),
 }));
 
-export const githubRepositoriesRelations = relations(githubRepositories, ({ one }) => ({
+export const githubRepositoriesRelations = relations(githubRepositories, ({ one, many }) => ({
 	owner: one(githubUsers, {
 		fields: [githubRepositories.ownerId],
 		references: [githubUsers.id],
@@ -222,6 +222,7 @@ export const githubRepositoriesRelations = relations(githubRepositories, ({ one 
 		fields: [githubRepositories.recordId],
 		references: [records.id],
 	}),
+	commits: many(githubCommits),
 }));
 
 export const githubCommitsRelations = relations(githubCommits, ({ many, one }) => ({

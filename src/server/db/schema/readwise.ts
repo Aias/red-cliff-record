@@ -169,6 +169,7 @@ export const readwiseAuthorsRelations = relations(readwiseAuthors, ({ one, many 
 	indexEntry: one(indices, {
 		fields: [readwiseAuthors.indexEntryId],
 		references: [indices.id],
+		relationName: 'indexEntry',
 	}),
 }));
 
@@ -196,6 +197,7 @@ export const readwiseTagsRelations = relations(readwiseTags, ({ one, many }) => 
 	indexEntry: one(indices, {
 		fields: [readwiseTags.indexEntryId],
 		references: [indices.id],
+		relationName: 'indexEntry',
 	}),
 }));
 

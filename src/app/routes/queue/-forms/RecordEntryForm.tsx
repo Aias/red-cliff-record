@@ -23,7 +23,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 	const [record] = trpc.records.get.useSuspenseQuery(id);
 	const utils = trpc.useUtils();
 
-	const updateRecordMutation = trpc.records.update.useMutation({
+	const updateRecordMutation = trpc.records.upsert.useMutation({
 		onSuccess: async () => {
 			utils.records.get.invalidate();
 			if (updateCallback) {

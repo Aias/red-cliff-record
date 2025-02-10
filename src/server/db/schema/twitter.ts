@@ -50,7 +50,10 @@ export const twitterTweetsRelations = relations(twitterTweets, ({ one, many }) =
 	quotedTweet: one(twitterTweets, {
 		fields: [twitterTweets.quotedTweetId],
 		references: [twitterTweets.id],
-		relationName: 'quotedTweet',
+		relationName: 'quotes',
+	}),
+	quotedBy: many(twitterTweets, {
+		relationName: 'quotes',
 	}),
 	integrationRun: one(integrationRuns, {
 		fields: [twitterTweets.integrationRunId],

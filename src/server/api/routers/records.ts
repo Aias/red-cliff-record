@@ -33,28 +33,22 @@ export const recordsRouter = createTRPCRouter({
 		return record;
 	}),
 
-	create: publicProcedure.input(RecordInsertSchema).mutation(async ({ ctx: { db }, input }) => {
-		const [newRecord] = await db.insert(records).values(input).returning();
-		if (!newRecord) {
-			throw new Error('Failed to create record');
+	upsert: publicProcedure.input(RecordInsertSchema).mutation(async ({ ctx: { db }, input }) => {
+		const { id, ...values } = input;
+		const [record] = await db
+			.insert(records)
+			.values(input)
+			.onConflictDoUpdate({
+				target: records.id,
+				where: id ? eq(records.id, id) : undefined,
+				set: { ...values, recordUpdatedAt: new Date() },
+			})
+			.returning();
+		if (!record) {
+			throw new Error('Failed to upsert record');
 		}
-		return newRecord;
+		return record;
 	}),
-
-	update: publicProcedure
-		.input(RecordInsertSchema.partial().extend({ id: z.number().int().positive() }))
-		.mutation(async ({ ctx: { db }, input }) => {
-			const { id, ...updateData } = input;
-			const [updatedRecord] = await db
-				.update(records)
-				.set({ ...updateData, recordUpdatedAt: new Date() })
-				.where(eq(records.id, id))
-				.returning();
-			if (!updatedRecord) {
-				throw new Error('Failed to update record');
-			}
-			return updatedRecord;
-		}),
 
 	delete: publicProcedure
 		.input(z.number().int().positive())

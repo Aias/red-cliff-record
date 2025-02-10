@@ -34,7 +34,7 @@ export const IndexEntryForm = ({
 	const [indexEntry] = trpc.indices.get.useSuspenseQuery(z.coerce.number().parse(indexEntryId));
 	const utils = trpc.useUtils();
 
-	const updateIndexEntryMutation = trpc.indices.update.useMutation({
+	const updateIndexEntryMutation = trpc.indices.upsert.useMutation({
 		onSuccess: async () => {
 			utils.indices.get.invalidate();
 			if (updateCallback) {

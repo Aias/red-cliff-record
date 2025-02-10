@@ -20,6 +20,12 @@ import {
 	databaseTimestamps,
 	textEmbeddingColumns,
 } from './operations';
+import { raindropCollections, raindropTags } from './raindrop';
+import { readwiseAuthors } from './readwise';
+import { readwiseTags } from './readwise';
+import { recordCreators } from './records';
+import { recordCategories } from './records';
+import { records } from './records';
 import { twitterUsers } from './twitter';
 
 export const IndexMainType = z.enum([
@@ -95,6 +101,11 @@ export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
 	incomingRelations: many(indexRelations, {
 		relationName: 'target',
 	}),
+	recordCreators: many(recordCreators),
+	recordCategories: many(recordCategories),
+	recordFormats: many(records, {
+		relationName: 'format',
+	}),
 	airtableCreators: many(airtableCreators, {
 		relationName: 'indexEntry',
 	}),
@@ -108,6 +119,18 @@ export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
 		relationName: 'indexEntry',
 	}),
 	airtableFormats: many(airtableFormats, {
+		relationName: 'indexEntry',
+	}),
+	raindropTags: many(raindropTags, {
+		relationName: 'indexEntry',
+	}),
+	raindropCollections: many(raindropCollections, {
+		relationName: 'indexEntry',
+	}),
+	readwiseAuthors: many(readwiseAuthors, {
+		relationName: 'indexEntry',
+	}),
+	readwiseTags: many(readwiseTags, {
 		relationName: 'indexEntry',
 	}),
 }));

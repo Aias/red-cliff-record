@@ -8,10 +8,17 @@ export const indicesRouter = createTRPCRouter({
 	get: publicProcedure.input(z.number().int().positive()).query(async ({ ctx: { db }, input }) => {
 		const entry = await db.query.indices.findFirst({
 			with: {
-				airtableCreators: true,
-				airtableSpaces: true,
-				githubUsers: true,
-				twitterUsers: true,
+				recordCategories: {
+					with: {
+						record: true,
+					},
+				},
+				recordCreators: {
+					with: {
+						record: true,
+					},
+				},
+				recordFormats: true,
 			},
 			where: eq(indices.id, input),
 		});
@@ -21,27 +28,46 @@ export const indicesRouter = createTRPCRouter({
 		return entry;
 	}),
 
-	create: publicProcedure.input(IndicesInsertSchema).mutation(async ({ ctx: { db }, input }) => {
-		const [newEntry] = await db.insert(indices).values(input).returning();
-		if (!newEntry) {
-			throw new Error('Failed to create index entry');
-		}
-		return newEntry;
-	}),
-
-	update: publicProcedure
-		.input(IndicesInsertSchema.partial().extend({ id: z.number().int().positive() }))
-		.mutation(async ({ ctx: { db }, input }) => {
-			const [updatedEntry] = await db
-				.update(indices)
-				.set({ ...input, recordUpdatedAt: new Date() })
-				.where(eq(indices.id, input.id))
-				.returning();
-			if (!updatedEntry) {
-				throw new Error('Failed to update index entry');
+	getSources: publicProcedure
+		.input(z.number().int().positive())
+		.query(async ({ ctx: { db }, input }) => {
+			const entry = await db.query.indices.findFirst({
+				with: {
+					airtableCreators: true,
+					airtableFormats: true,
+					airtableSpaces: true,
+					githubUsers: true,
+					raindropCollections: true,
+					raindropTags: true,
+					readwiseAuthors: true,
+					readwiseTags: true,
+					twitterUsers: true,
+				},
+				where: eq(indices.id, input),
+			});
+			if (!entry) {
+				throw new Error('Index entry not found');
 			}
-			return updatedEntry;
+			return entry;
 		}),
+
+	upsert: publicProcedure.input(IndicesInsertSchema).mutation(async ({ ctx: { db }, input }) => {
+		const { id, ...values } = input;
+		const [entry] = await db
+			.insert(indices)
+			.values(input)
+			.onConflictDoUpdate({
+				target: indices.id,
+				where: id ? eq(indices.id, id) : undefined,
+				set: { ...values, recordUpdatedAt: new Date() },
+			})
+			.returning();
+
+		if (!entry) {
+			throw new Error('Failed to upsert index entry');
+		}
+		return entry;
+	}),
 
 	delete: publicProcedure
 		.input(z.number().int().positive())

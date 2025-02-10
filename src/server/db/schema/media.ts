@@ -10,7 +10,14 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
+import { lightroomImages } from './adobe';
+import { airtableAttachments } from './airtable';
+import { indices } from './indices';
 import { commonColumns, contentTimestamps, databaseTimestamps } from './operations';
+import { raindropBookmarks } from './raindrop';
+import { readwiseDocuments } from './readwise';
+import { recordMedia } from './records';
+import { twitterMedia } from './twitter';
 
 export const MediaType = z.enum([
 	'application', // application or binary data
@@ -59,6 +66,13 @@ export const mediaRelations = relations(media, ({ one, many }) => ({
 	versions: many(media, {
 		relationName: 'versionOf',
 	}),
+	recordMedia: many(recordMedia),
+	indicesCanonical: many(indices),
+	airtableAttachments: many(airtableAttachments),
+	lightroomImages: many(lightroomImages),
+	raindropBookmarks: many(raindropBookmarks),
+	readwiseDocuments: many(readwiseDocuments),
+	twitterMedia: many(twitterMedia),
 }));
 
 export const MediaSelectSchema = createSelectSchema(media);

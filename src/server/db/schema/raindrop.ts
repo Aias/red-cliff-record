@@ -119,6 +119,7 @@ export const raindropTagsRelations = relations(raindropTags, ({ one, many }) => 
 	indexEntry: one(indices, {
 		fields: [raindropTags.indexEntryId],
 		references: [indices.id],
+		relationName: 'indexEntry',
 	}),
 }));
 
@@ -207,6 +208,7 @@ export const raindropCollectionsRelations = relations(raindropCollections, ({ on
 	indexEntry: one(indices, {
 		fields: [raindropCollections.indexEntryId],
 		references: [indices.id],
+		relationName: 'indexEntry',
 	}),
 }));
 

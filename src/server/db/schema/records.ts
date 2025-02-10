@@ -11,6 +11,9 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
+import { lightroomImages } from './adobe';
+import { airtableExtracts } from './airtable';
+import { githubRepositories } from './github';
 import { indices } from './indices';
 import { media } from './media';
 import {
@@ -19,6 +22,9 @@ import {
 	databaseTimestamps,
 	textEmbeddingColumns,
 } from './operations';
+import { raindropBookmarks } from './raindrop';
+import { readwiseDocuments } from './readwise';
+import { twitterTweets } from './twitter';
 
 export const FLAGS = {
 	important: {
@@ -124,6 +130,7 @@ export const recordsRelations = relations(records, ({ one, many }) => ({
 	format: one(indices, {
 		fields: [records.formatId],
 		references: [indices.id],
+		relationName: 'format',
 	}),
 	parent: one(records, {
 		fields: [records.parentId],
@@ -136,6 +143,20 @@ export const recordsRelations = relations(records, ({ one, many }) => ({
 	recordMedia: many(recordMedia),
 	recordOutgoingRelations: many(recordRelations, { relationName: 'source' }),
 	recordIncomingRelations: many(recordRelations, { relationName: 'target' }),
+	transcludes: one(records, {
+		fields: [records.transcludeId],
+		references: [records.id],
+		relationName: 'transcludes',
+	}),
+	transcludedBy: many(records, {
+		relationName: 'transcludes',
+	}),
+	airtableExtracts: many(airtableExtracts),
+	githubRepositories: many(githubRepositories),
+	raindropBookmarks: many(raindropBookmarks),
+	readwiseDocuments: many(readwiseDocuments),
+	lightroomImages: many(lightroomImages),
+	twitterTweets: many(twitterTweets),
 }));
 
 // Non-hierarchical relationships

@@ -367,4 +367,5 @@ export const airtableIntegrationRelations = relations(integrationRuns, ({ many }
 	airtableExtracts: many(airtableExtracts),
 	airtableCreators: many(airtableCreators),
 	airtableSpaces: many(airtableSpaces),
+	airtableFormats: many(airtableFormats),
 }));

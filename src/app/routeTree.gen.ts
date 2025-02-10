@@ -16,14 +16,6 @@ import { Route as CommitsRouteImport } from './routes/commits/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as HistoryDateImport } from './routes/history/$date'
 import { Route as CommitsShaImport } from './routes/commits/$sha'
-import { Route as QueueIndexTwitterUsersImport } from './routes/queue/index.twitter-users'
-import { Route as QueueIndexGithubUsersImport } from './routes/queue/index.github-users'
-import { Route as QueueIndexAirtableSpacesImport } from './routes/queue/index.airtable-spaces'
-import { Route as QueueIndexAirtableCreatorsImport } from './routes/queue/index.airtable-creators'
-import { Route as QueueRecordsGithubRepositoriesImport } from './routes/queue/records.github-repositories'
-import { Route as QueueMediaTwitterMediaImport } from './routes/queue/media.twitter-media'
-import { Route as QueueMediaLightroomImagesImport } from './routes/queue/media.lightroom-images'
-import { Route as QueueMediaAirtableAttachmentsImport } from './routes/queue/media.airtable-attachments'
 
 // Create/Update Routes
 
@@ -56,58 +48,6 @@ const CommitsShaRoute = CommitsShaImport.update({
   path: '/$sha',
   getParentRoute: () => CommitsRouteRoute,
 } as any)
-
-const QueueIndexTwitterUsersRoute = QueueIndexTwitterUsersImport.update({
-  id: '/index/twitter-users',
-  path: '/index/twitter-users',
-  getParentRoute: () => QueueRouteRoute,
-} as any)
-
-const QueueIndexGithubUsersRoute = QueueIndexGithubUsersImport.update({
-  id: '/index/github-users',
-  path: '/index/github-users',
-  getParentRoute: () => QueueRouteRoute,
-} as any)
-
-const QueueIndexAirtableSpacesRoute = QueueIndexAirtableSpacesImport.update({
-  id: '/index/airtable-spaces',
-  path: '/index/airtable-spaces',
-  getParentRoute: () => QueueRouteRoute,
-} as any)
-
-const QueueIndexAirtableCreatorsRoute = QueueIndexAirtableCreatorsImport.update(
-  {
-    id: '/index/airtable-creators',
-    path: '/index/airtable-creators',
-    getParentRoute: () => QueueRouteRoute,
-  } as any,
-)
-
-const QueueRecordsGithubRepositoriesRoute =
-  QueueRecordsGithubRepositoriesImport.update({
-    id: '/records/github-repositories',
-    path: '/records/github-repositories',
-    getParentRoute: () => QueueRouteRoute,
-  } as any)
-
-const QueueMediaTwitterMediaRoute = QueueMediaTwitterMediaImport.update({
-  id: '/media/twitter-media',
-  path: '/media/twitter-media',
-  getParentRoute: () => QueueRouteRoute,
-} as any)
-
-const QueueMediaLightroomImagesRoute = QueueMediaLightroomImagesImport.update({
-  id: '/media/lightroom-images',
-  path: '/media/lightroom-images',
-  getParentRoute: () => QueueRouteRoute,
-} as any)
-
-const QueueMediaAirtableAttachmentsRoute =
-  QueueMediaAirtableAttachmentsImport.update({
-    id: '/media/airtable-attachments',
-    path: '/media/airtable-attachments',
-    getParentRoute: () => QueueRouteRoute,
-  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -148,62 +88,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryDateImport
       parentRoute: typeof rootRoute
     }
-    '/queue/media/airtable-attachments': {
-      id: '/queue/media/airtable-attachments'
-      path: '/media/airtable-attachments'
-      fullPath: '/queue/media/airtable-attachments'
-      preLoaderRoute: typeof QueueMediaAirtableAttachmentsImport
-      parentRoute: typeof QueueRouteImport
-    }
-    '/queue/media/lightroom-images': {
-      id: '/queue/media/lightroom-images'
-      path: '/media/lightroom-images'
-      fullPath: '/queue/media/lightroom-images'
-      preLoaderRoute: typeof QueueMediaLightroomImagesImport
-      parentRoute: typeof QueueRouteImport
-    }
-    '/queue/media/twitter-media': {
-      id: '/queue/media/twitter-media'
-      path: '/media/twitter-media'
-      fullPath: '/queue/media/twitter-media'
-      preLoaderRoute: typeof QueueMediaTwitterMediaImport
-      parentRoute: typeof QueueRouteImport
-    }
-    '/queue/records/github-repositories': {
-      id: '/queue/records/github-repositories'
-      path: '/records/github-repositories'
-      fullPath: '/queue/records/github-repositories'
-      preLoaderRoute: typeof QueueRecordsGithubRepositoriesImport
-      parentRoute: typeof QueueRouteImport
-    }
-    '/queue/index/airtable-creators': {
-      id: '/queue/index/airtable-creators'
-      path: '/index/airtable-creators'
-      fullPath: '/queue/index/airtable-creators'
-      preLoaderRoute: typeof QueueIndexAirtableCreatorsImport
-      parentRoute: typeof QueueRouteImport
-    }
-    '/queue/index/airtable-spaces': {
-      id: '/queue/index/airtable-spaces'
-      path: '/index/airtable-spaces'
-      fullPath: '/queue/index/airtable-spaces'
-      preLoaderRoute: typeof QueueIndexAirtableSpacesImport
-      parentRoute: typeof QueueRouteImport
-    }
-    '/queue/index/github-users': {
-      id: '/queue/index/github-users'
-      path: '/index/github-users'
-      fullPath: '/queue/index/github-users'
-      preLoaderRoute: typeof QueueIndexGithubUsersImport
-      parentRoute: typeof QueueRouteImport
-    }
-    '/queue/index/twitter-users': {
-      id: '/queue/index/twitter-users'
-      path: '/index/twitter-users'
-      fullPath: '/queue/index/twitter-users'
-      preLoaderRoute: typeof QueueIndexTwitterUsersImport
-      parentRoute: typeof QueueRouteImport
-    }
   }
 }
 
@@ -221,112 +105,36 @@ const CommitsRouteRouteWithChildren = CommitsRouteRoute._addFileChildren(
   CommitsRouteRouteChildren,
 )
 
-interface QueueRouteRouteChildren {
-  QueueMediaAirtableAttachmentsRoute: typeof QueueMediaAirtableAttachmentsRoute
-  QueueMediaLightroomImagesRoute: typeof QueueMediaLightroomImagesRoute
-  QueueMediaTwitterMediaRoute: typeof QueueMediaTwitterMediaRoute
-  QueueRecordsGithubRepositoriesRoute: typeof QueueRecordsGithubRepositoriesRoute
-  QueueIndexAirtableCreatorsRoute: typeof QueueIndexAirtableCreatorsRoute
-  QueueIndexAirtableSpacesRoute: typeof QueueIndexAirtableSpacesRoute
-  QueueIndexGithubUsersRoute: typeof QueueIndexGithubUsersRoute
-  QueueIndexTwitterUsersRoute: typeof QueueIndexTwitterUsersRoute
-}
-
-const QueueRouteRouteChildren: QueueRouteRouteChildren = {
-  QueueMediaAirtableAttachmentsRoute: QueueMediaAirtableAttachmentsRoute,
-  QueueMediaLightroomImagesRoute: QueueMediaLightroomImagesRoute,
-  QueueMediaTwitterMediaRoute: QueueMediaTwitterMediaRoute,
-  QueueRecordsGithubRepositoriesRoute: QueueRecordsGithubRepositoriesRoute,
-  QueueIndexAirtableCreatorsRoute: QueueIndexAirtableCreatorsRoute,
-  QueueIndexAirtableSpacesRoute: QueueIndexAirtableSpacesRoute,
-  QueueIndexGithubUsersRoute: QueueIndexGithubUsersRoute,
-  QueueIndexTwitterUsersRoute: QueueIndexTwitterUsersRoute,
-}
-
-const QueueRouteRouteWithChildren = QueueRouteRoute._addFileChildren(
-  QueueRouteRouteChildren,
-)
-
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/commits': typeof CommitsRouteRouteWithChildren
-  '/queue': typeof QueueRouteRouteWithChildren
+  '/queue': typeof QueueRouteRoute
   '/commits/$sha': typeof CommitsShaRoute
   '/history/$date': typeof HistoryDateRoute
-  '/queue/media/airtable-attachments': typeof QueueMediaAirtableAttachmentsRoute
-  '/queue/media/lightroom-images': typeof QueueMediaLightroomImagesRoute
-  '/queue/media/twitter-media': typeof QueueMediaTwitterMediaRoute
-  '/queue/records/github-repositories': typeof QueueRecordsGithubRepositoriesRoute
-  '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
-  '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
-  '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
-  '/queue/index/twitter-users': typeof QueueIndexTwitterUsersRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/commits': typeof CommitsRouteRouteWithChildren
-  '/queue': typeof QueueRouteRouteWithChildren
+  '/queue': typeof QueueRouteRoute
   '/commits/$sha': typeof CommitsShaRoute
   '/history/$date': typeof HistoryDateRoute
-  '/queue/media/airtable-attachments': typeof QueueMediaAirtableAttachmentsRoute
-  '/queue/media/lightroom-images': typeof QueueMediaLightroomImagesRoute
-  '/queue/media/twitter-media': typeof QueueMediaTwitterMediaRoute
-  '/queue/records/github-repositories': typeof QueueRecordsGithubRepositoriesRoute
-  '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
-  '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
-  '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
-  '/queue/index/twitter-users': typeof QueueIndexTwitterUsersRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/commits': typeof CommitsRouteRouteWithChildren
-  '/queue': typeof QueueRouteRouteWithChildren
+  '/queue': typeof QueueRouteRoute
   '/commits/$sha': typeof CommitsShaRoute
   '/history/$date': typeof HistoryDateRoute
-  '/queue/media/airtable-attachments': typeof QueueMediaAirtableAttachmentsRoute
-  '/queue/media/lightroom-images': typeof QueueMediaLightroomImagesRoute
-  '/queue/media/twitter-media': typeof QueueMediaTwitterMediaRoute
-  '/queue/records/github-repositories': typeof QueueRecordsGithubRepositoriesRoute
-  '/queue/index/airtable-creators': typeof QueueIndexAirtableCreatorsRoute
-  '/queue/index/airtable-spaces': typeof QueueIndexAirtableSpacesRoute
-  '/queue/index/github-users': typeof QueueIndexGithubUsersRoute
-  '/queue/index/twitter-users': typeof QueueIndexTwitterUsersRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/commits'
-    | '/queue'
-    | '/commits/$sha'
-    | '/history/$date'
-    | '/queue/media/airtable-attachments'
-    | '/queue/media/lightroom-images'
-    | '/queue/media/twitter-media'
-    | '/queue/records/github-repositories'
-    | '/queue/index/airtable-creators'
-    | '/queue/index/airtable-spaces'
-    | '/queue/index/github-users'
-    | '/queue/index/twitter-users'
+  fullPaths: '/' | '/commits' | '/queue' | '/commits/$sha' | '/history/$date'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/commits'
-    | '/queue'
-    | '/commits/$sha'
-    | '/history/$date'
-    | '/queue/media/airtable-attachments'
-    | '/queue/media/lightroom-images'
-    | '/queue/media/twitter-media'
-    | '/queue/records/github-repositories'
-    | '/queue/index/airtable-creators'
-    | '/queue/index/airtable-spaces'
-    | '/queue/index/github-users'
-    | '/queue/index/twitter-users'
+  to: '/' | '/commits' | '/queue' | '/commits/$sha' | '/history/$date'
   id:
     | '__root__'
     | '/'
@@ -334,28 +142,20 @@ export interface FileRouteTypes {
     | '/queue'
     | '/commits/$sha'
     | '/history/$date'
-    | '/queue/media/airtable-attachments'
-    | '/queue/media/lightroom-images'
-    | '/queue/media/twitter-media'
-    | '/queue/records/github-repositories'
-    | '/queue/index/airtable-creators'
-    | '/queue/index/airtable-spaces'
-    | '/queue/index/github-users'
-    | '/queue/index/twitter-users'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CommitsRouteRoute: typeof CommitsRouteRouteWithChildren
-  QueueRouteRoute: typeof QueueRouteRouteWithChildren
+  QueueRouteRoute: typeof QueueRouteRoute
   HistoryDateRoute: typeof HistoryDateRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CommitsRouteRoute: CommitsRouteRouteWithChildren,
-  QueueRouteRoute: QueueRouteRouteWithChildren,
+  QueueRouteRoute: QueueRouteRoute,
   HistoryDateRoute: HistoryDateRoute,
 }
 
@@ -385,17 +185,7 @@ export const routeTree = rootRoute
       ]
     },
     "/queue": {
-      "filePath": "queue/route.tsx",
-      "children": [
-        "/queue/media/airtable-attachments",
-        "/queue/media/lightroom-images",
-        "/queue/media/twitter-media",
-        "/queue/records/github-repositories",
-        "/queue/index/airtable-creators",
-        "/queue/index/airtable-spaces",
-        "/queue/index/github-users",
-        "/queue/index/twitter-users"
-      ]
+      "filePath": "queue/route.tsx"
     },
     "/commits/$sha": {
       "filePath": "commits/$sha.tsx",
@@ -403,38 +193,6 @@ export const routeTree = rootRoute
     },
     "/history/$date": {
       "filePath": "history/$date.tsx"
-    },
-    "/queue/media/airtable-attachments": {
-      "filePath": "queue/media.airtable-attachments.tsx",
-      "parent": "/queue"
-    },
-    "/queue/media/lightroom-images": {
-      "filePath": "queue/media.lightroom-images.tsx",
-      "parent": "/queue"
-    },
-    "/queue/media/twitter-media": {
-      "filePath": "queue/media.twitter-media.tsx",
-      "parent": "/queue"
-    },
-    "/queue/records/github-repositories": {
-      "filePath": "queue/records.github-repositories.tsx",
-      "parent": "/queue"
-    },
-    "/queue/index/airtable-creators": {
-      "filePath": "queue/index.airtable-creators.tsx",
-      "parent": "/queue"
-    },
-    "/queue/index/airtable-spaces": {
-      "filePath": "queue/index.airtable-spaces.tsx",
-      "parent": "/queue"
-    },
-    "/queue/index/github-users": {
-      "filePath": "queue/index.github-users.tsx",
-      "parent": "/queue"
-    },
-    "/queue/index/twitter-users": {
-      "filePath": "queue/index.twitter-users.tsx",
-      "parent": "/queue"
     }
   }
 }
