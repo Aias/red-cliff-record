@@ -76,6 +76,7 @@ function IndexEntryContent() {
 										<AppLink
 											to="/queue/indices/$indexEntryId"
 											params={{ indexEntryId: entry.id.toString() }}
+											search={{ type }}
 										>
 											{entry.name}
 										</AppLink>

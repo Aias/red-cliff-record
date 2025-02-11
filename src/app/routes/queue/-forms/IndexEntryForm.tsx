@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ExternalLinkIcon, ImageIcon } from '@radix-ui/react-icons';
 import {
 	Button,
@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
 import { MetadataList } from '~/app/components/MetadataList';
 import { trpc } from '~/app/trpc';
+import type { RecordSelect } from '~/server/db/schema';
 import {
 	IndicesSelectSchema,
 	type IndexMainType,
@@ -31,8 +32,24 @@ export const IndexEntryForm = ({
 	defaults: _defaults,
 	updateCallback,
 }: IndexEntryFormProps) => {
-	const [indexEntry] = trpc.indices.get.useSuspenseQuery(z.coerce.number().parse(indexEntryId));
 	const utils = trpc.useUtils();
+	const [indexEntry] = trpc.indices.get.useSuspenseQuery(z.coerce.number().parse(indexEntryId));
+	const relatedRecords: RecordSelect[] = useMemo(() => {
+		const { recordsByCreator, recordsWithFormat, recordsInCategory } = indexEntry;
+		return [
+			...recordsByCreator.map((record) => record.record),
+			...recordsWithFormat,
+			...recordsInCategory.map((record) => record.record),
+		];
+	}, [indexEntry]);
+	const associatedDomains = useMemo(() => {
+		const uniqueDomains = new Set(
+			relatedRecords
+				.map((r) => (r.url ? new URL(r.url).origin : null))
+				.filter((origin): origin is string => origin !== null)
+		);
+		return Array.from(uniqueDomains).map((origin) => new URL(origin));
+	}, [relatedRecords]);
 
 	const updateIndexEntryMutation = trpc.indices.upsert.useMutation({
 		onSuccess: async () => {
@@ -99,7 +116,7 @@ export const IndexEntryForm = ({
 									type="text"
 									placeholder="e.g., 'Company'"
 									value={field.state.value || ''}
-									onChange={(e) => field.handleChange(e.target.value)}
+									onChange={(e) => field.handleChange(e.target.value || null)}
 								/>
 							</label>
 						)}
@@ -131,7 +148,7 @@ export const IndexEntryForm = ({
 									type="text"
 									placeholder="e.g., 'ABC'"
 									value={field.state.value || ''}
-									onChange={(e) => field.handleChange(e.target.value)}
+									onChange={(e) => field.handleChange(e.target.value || null)}
 								/>
 							</label>
 						)}
@@ -148,7 +165,7 @@ export const IndexEntryForm = ({
 								type="text"
 								placeholder="Differentiate between homonyms"
 								value={field.state.value || ''}
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={(e) => field.handleChange(e.target.value || null)}
 							/>
 						</label>
 					)}
@@ -164,12 +181,27 @@ export const IndexEntryForm = ({
 								type="url"
 								placeholder="e.g., https://www.example.com"
 								value={field.state.value || ''}
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={(e) => field.handleChange(e.target.value || null)}
 							>
 								<TextField.Slot>
 									<ExternalLinkIcon className="text-hint" />
 								</TextField.Slot>
 							</TextField.Root>
+							{associatedDomains.length > 0 && (
+								<div className="mt-2 flex flex-wrap gap-2">
+									{associatedDomains.map((url) => (
+										<Button
+											key={url.origin}
+											size="1"
+											variant="soft"
+											type="button"
+											onClick={() => field.handleChange(url.origin)}
+										>
+											{url.hostname}
+										</Button>
+									))}
+								</div>
+							)}
 						</label>
 					)}
 				</form.Field>
@@ -184,7 +216,7 @@ export const IndexEntryForm = ({
 								type="url"
 								placeholder="e.g., https://www.example.com/image.jpg"
 								value={field.state.value || ''}
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={(e) => field.handleChange(e.target.value || null)}
 							>
 								<TextField.Slot>
 									<ImageIcon className="text-hint" />
@@ -203,8 +235,18 @@ export const IndexEntryForm = ({
 							<TextArea
 								rows={4}
 								value={field.state.value || ''}
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={(e) => field.handleChange(e.target.value || null)}
 							/>
+							{field.state.value && (
+								<Button
+									size="1"
+									variant="soft"
+									className="mt-1"
+									onClick={() => field.handleChange(null)}
+								>
+									Clear
+								</Button>
+							)}
 						</label>
 					)}
 				</form.Field>
