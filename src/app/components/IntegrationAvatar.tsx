@@ -1,5 +1,5 @@
 import { Avatar, useThemeContext, type AvatarProps } from '@radix-ui/themes';
-import { type IntegrationService } from '~/server/db/schema/operations';
+import { type IntegrationType } from '~/server/db/schema/operations';
 import adobeLogo from './logos/adobe.svg?url';
 import airtableLogo from './logos/airtable.svg?url';
 import arcLogo from './logos/arc.svg?url';
@@ -11,7 +11,7 @@ import xLogoDark from './logos/x_dark.svg?url';
 import xLogoLight from './logos/x_light.svg?url';
 
 interface ServiceAvatarProps extends Omit<AvatarProps, 'src' | 'fallback'> {
-	service: IntegrationService;
+	service: IntegrationType;
 }
 
 export function ServiceAvatar({ service, className = '', ...props }: ServiceAvatarProps) {
@@ -19,13 +19,13 @@ export function ServiceAvatar({ service, className = '', ...props }: ServiceAvat
 
 	let logoUrl;
 	switch (service) {
-		case 'adobe':
+		case 'lightroom':
 			logoUrl = adobeLogo;
 			break;
 		case 'airtable':
 			logoUrl = airtableLogo;
 			break;
-		case 'arc':
+		case 'browser_history':
 			logoUrl = arcLogo;
 			break;
 		case 'github':

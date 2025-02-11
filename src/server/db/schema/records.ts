@@ -116,7 +116,12 @@ export const records = pgTable(
 		...commonColumns,
 		...textEmbeddingColumns,
 	},
-	(table) => [index().on(table.title), index().on(table.url), index().on(table.formatId)]
+	(table) => [
+		index().on(table.title),
+		index().on(table.url),
+		index().on(table.formatId),
+		index().on(table.needsCuration),
+	]
 );
 
 export const RecordSelectSchema = createSelectSchema(records);

@@ -85,6 +85,7 @@
 	--code-font-family: var(--font-family-mono);
 	--strong-font-family: var(--font-family-sans);
 	--em-font-family: var(--font-family-sans);
+	--em-font-size-adjust: 1;
 	--quote-font-family: var(--font-family-serif);
 
 	--font-weight-light: 300;

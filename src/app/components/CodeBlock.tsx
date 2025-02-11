@@ -1,13 +1,14 @@
-import { Code } from '@radix-ui/themes';
+import { Code, type CodeProps } from '@radix-ui/themes';
 
-interface CodeBlockProps {
+interface CodeBlockProps extends CodeProps {
 	children: string;
+	language?: string;
 }
 
-export function CodeBlock({ children }: CodeBlockProps) {
+export function CodeBlock({ children, language, ...props }: CodeBlockProps) {
 	return (
-		<pre className="rounded-3 border border-gray-4 bg-surface p-3 whitespace-pre-wrap">
-			<Code size="2" variant="ghost" color="gray">
+		<pre className="rounded-3 border border-divider bg-surface p-3 whitespace-pre-wrap">
+			<Code size="2" variant="ghost" color="gray" data-language={language} {...props}>
 				{children}
 			</Code>
 		</pre>

@@ -209,16 +209,28 @@ export const IndexEntryForm = ({
 					)}
 				</form.Field>
 
-				<form.Field name="isPrivate">
-					{(field) => (
-						<CheckboxWithLabel
-							className="mt-2"
-							label="Private"
-							checked={field.state.value || false}
-							onCheckedChange={(checked) => field.handleChange(!!checked)}
-						/>
-					)}
-				</form.Field>
+				<div className="mt-2 flex gap-4">
+					<form.Field name="isPrivate">
+						{(field) => (
+							<CheckboxWithLabel
+								className="mt-2"
+								label="Private"
+								checked={field.state.value || false}
+								onCheckedChange={(checked) => field.handleChange(!!checked)}
+							/>
+						)}
+					</form.Field>
+					<form.Field name="needsCuration">
+						{(field) => (
+							<CheckboxWithLabel
+								className="mt-2"
+								label="Needs Curation"
+								checked={field.state.value || false}
+								onCheckedChange={(checked) => field.handleChange(!!checked)}
+							/>
+						)}
+					</form.Field>
+				</div>
 
 				<form.Subscribe
 					selector={(state) => [state.canSubmit, state.isSubmitting]}

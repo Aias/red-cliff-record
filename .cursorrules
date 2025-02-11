@@ -20,3 +20,12 @@
 - If you are unsure of an answer, say so and ask the questioner to clarify.
 - If an existing pattern or library feature is unfamiliar, search the web for documentation and examples. This project is built on a number of cutting-edge libraries which may not be in your knowledge base.
 - Consider alternate solutions to problems and push back on assumptions. Do not be afraid to say "no" or "not possible" if it is not possible to do what is being asked. Do not be afraid to call out invalid assumptions, non-optimal solutions, or other constraints.
+
+**Project structure:**
+
+- `src/app/routes`: Tanstack React Router routes.
+- `src/app/components`: Reusable front-end components.
+- `src/app/lib`: Utility functions.
+- `src/server/api`: tRPC API routes.
+- `src/server/db`: Drizzle database schema.
+- `src/server/integrations`: External API integrations and sync scripts.

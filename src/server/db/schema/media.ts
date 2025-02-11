@@ -54,7 +54,12 @@ export const media = pgTable(
 		...contentTimestamps,
 		...commonColumns,
 	},
-	(table) => [index().on(table.type), index().on(table.format), index().on(table.versionOfMediaId)]
+	(table) => [
+		index().on(table.type),
+		index().on(table.format),
+		index().on(table.versionOfMediaId),
+		index().on(table.needsCuration),
+	]
 );
 
 export const mediaRelations = relations(media, ({ one, many }) => ({

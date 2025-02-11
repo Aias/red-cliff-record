@@ -71,6 +71,7 @@ export const indices = pgTable(
 		unique().on(table.mainType, table.name, table.sense),
 		index().on(table.mainType, table.subType),
 		index().on(table.canonicalMediaId),
+		index().on(table.needsCuration),
 	]
 );
 
@@ -101,24 +102,21 @@ export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
 	incomingRelations: many(indexRelations, {
 		relationName: 'target',
 	}),
-	recordCreators: many(recordCreators),
-	recordCategories: many(recordCategories),
-	recordFormats: many(records, {
+	recordsByCreator: many(recordCreators),
+	recordsInCategory: many(recordCategories),
+	recordsWithFormat: many(records, {
 		relationName: 'format',
 	}),
 	airtableCreators: many(airtableCreators, {
+		relationName: 'indexEntry',
+	}),
+	airtableFormats: many(airtableFormats, {
 		relationName: 'indexEntry',
 	}),
 	airtableSpaces: many(airtableSpaces, {
 		relationName: 'indexEntry',
 	}),
 	githubUsers: many(githubUsers, {
-		relationName: 'indexEntry',
-	}),
-	twitterUsers: many(twitterUsers, {
-		relationName: 'indexEntry',
-	}),
-	airtableFormats: many(airtableFormats, {
 		relationName: 'indexEntry',
 	}),
 	raindropTags: many(raindropTags, {
@@ -131,6 +129,9 @@ export const indexEntriesRelations = relations(indices, ({ one, many }) => ({
 		relationName: 'indexEntry',
 	}),
 	readwiseTags: many(readwiseTags, {
+		relationName: 'indexEntry',
+	}),
+	twitterUsers: many(twitterUsers, {
 		relationName: 'indexEntry',
 	}),
 }));
