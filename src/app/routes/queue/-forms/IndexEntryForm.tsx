@@ -286,7 +286,7 @@ export const IndexEntryForm = ({
 				)}
 			</form.Field>
 
-			<div className="mt-2 flex gap-4">
+			<div className="mt-1 flex gap-4">
 				<form.Field name="isPrivate">
 					{(field) => (
 						<CheckboxWithLabel
@@ -312,7 +312,7 @@ export const IndexEntryForm = ({
 			<form.Subscribe
 				selector={(state) => [state.canSubmit, state.isSubmitting]}
 				children={([canSubmit, isSubmitting]) => (
-					<div className="mt-4 border-t border-divider pt-4">
+					<div className="mt-2 border-t border-divider pt-4">
 						<Button type="submit" disabled={!canSubmit}>
 							{isSubmitting ? '...Saving' : 'Save Changes'}
 						</Button>

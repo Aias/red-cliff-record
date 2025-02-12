@@ -1,12 +1,13 @@
 import { Suspense, useMemo } from 'react';
 import { Link2Icon } from '@radix-ui/react-icons';
-import { Avatar, Heading, IconButton, Spinner } from '@radix-ui/themes';
+import { Avatar, Card, Heading, IconButton, Spinner } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { AppLink } from '~/app/components/AppLink';
-import { ServiceAvatar } from '~/app/components/IntegrationAvatar';
+import { IntegrationAvatar } from '~/app/components/IntegrationAvatar';
 import { MetadataDialogButton } from '~/app/components/MetadataList';
 import { Placeholder } from '~/app/components/Placeholder';
 import { trpc } from '~/app/trpc';
+import { RecordCategories, RecordCreators } from './-components/AssociationLists';
 import { IndexEntryForm } from './-forms/IndexEntryForm';
 import { IndexTypeIcon } from './indices';
 
@@ -48,6 +49,9 @@ function IndexEntryContent() {
 			utils.indices.search.invalidate();
 			utils.indices.getQueue.invalidate();
 			utils.indices.getQueueCount.invalidate();
+			utils.indices.getRecordsForCategory.invalidate(data.newEntry.id);
+			utils.indices.getRecordsByCreator.invalidate(data.newEntry.id);
+			utils.indices.getRecordsWithFormat.invalidate(data.newEntry.id);
 			navigate({
 				to: '/queue/indices/$indexEntryId',
 				params: { indexEntryId: data.newEntry.id.toString() },
@@ -57,7 +61,7 @@ function IndexEntryContent() {
 	});
 
 	return (
-		<div className="flex basis-full flex-col gap-3 p-3">
+		<div className="flex basis-full flex-col gap-3 overflow-auto p-3">
 			<div className="flex items-center gap-2">
 				<Avatar
 					size="2"
@@ -71,7 +75,7 @@ function IndexEntryContent() {
 				{indexEntry.sources && indexEntry.sources.length > 0 ? (
 					<div className="flex flex-wrap gap-2">
 						{indexEntry.sources.map((source) => (
-							<ServiceAvatar key={source} service={source} size="1" className="size-5" />
+							<IntegrationAvatar key={source} integration={source} size="1" className="size-5" />
 						))}
 					</div>
 				) : null}
@@ -103,7 +107,12 @@ function IndexEntryContent() {
 									{entry.sources && entry.sources.length > 0 ? (
 										<div className="flex flex-wrap gap-1">
 											{entry.sources.map((source) => (
-												<ServiceAvatar key={source} service={source} size="1" className="size-4" />
+												<IntegrationAvatar
+													key={source}
+													integration={source}
+													size="1"
+													className="size-4"
+												/>
 											))}
 										</div>
 									) : null}
@@ -121,14 +130,35 @@ function IndexEntryContent() {
 						))}
 				</ol>
 			) : null}
-			<IndexEntryForm
-				indexEntryId={indexEntryId}
-				defaults={indexEntry}
-				updateCallback={async () => {
-					utils.indices.getQueue.invalidate();
-					utils.indices.getQueueCount.invalidate();
-				}}
-			/>
+			<Card className="shrink-0">
+				<IndexEntryForm
+					indexEntryId={indexEntryId}
+					defaults={indexEntry}
+					updateCallback={async () => {
+						utils.indices.getQueue.invalidate();
+						utils.indices.getQueueCount.invalidate();
+					}}
+				/>
+			</Card>
+			<Heading size="4" as="h3">
+				Associated records
+			</Heading>
+			{indexEntry.recordsInCategory.length > 0 ? (
+				<>
+					<Heading size="3" as="h4" weight="medium">
+						Records in Category
+					</Heading>
+					<RecordCategories categoryId={indexEntry.id} />
+				</>
+			) : null}
+			{indexEntry.recordsByCreator.length > 0 ? (
+				<>
+					<Heading size="3" as="h4" weight="medium">
+						Records by Creator
+					</Heading>
+					<RecordCreators creatorId={indexEntry.id} />
+				</>
+			) : null}
 		</div>
 	);
 }

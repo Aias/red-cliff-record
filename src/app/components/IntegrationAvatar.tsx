@@ -11,10 +11,14 @@ import xLogoDark from './logos/x_dark.svg?url';
 import xLogoLight from './logos/x_light.svg?url';
 
 interface ServiceAvatarProps extends Omit<AvatarProps, 'src' | 'fallback'> {
-	service: IntegrationType;
+	integration: IntegrationType;
 }
 
-export function ServiceAvatar({ service, className = '', ...props }: ServiceAvatarProps) {
+export function IntegrationAvatar({
+	integration: service,
+	className = '',
+	...props
+}: ServiceAvatarProps) {
 	const { appearance } = useThemeContext();
 
 	let logoUrl;
