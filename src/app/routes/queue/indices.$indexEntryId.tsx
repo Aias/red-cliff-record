@@ -1,9 +1,10 @@
 import { Suspense, useMemo } from 'react';
 import { Link2Icon } from '@radix-ui/react-icons';
-import { Heading, IconButton, Spinner } from '@radix-ui/themes';
+import { Avatar, Heading, IconButton, Spinner } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { AppLink } from '~/app/components/AppLink';
 import { ServiceAvatar } from '~/app/components/IntegrationAvatar';
+import { MetadataDialogButton } from '~/app/components/MetadataList';
 import { Placeholder } from '~/app/components/Placeholder';
 import { trpc } from '~/app/trpc';
 import { IndexEntryForm } from './-forms/IndexEntryForm';
@@ -57,9 +58,27 @@ function IndexEntryContent() {
 
 	return (
 		<div className="flex basis-full flex-col gap-3 p-3">
-			<Heading size="5" as="h2">
-				{indexEntry.name}
-			</Heading>
+			<div className="flex items-center gap-2">
+				<Avatar
+					size="2"
+					src={indexEntry.canonicalMediaUrl ?? undefined}
+					fallback={indexEntry.name[0]!.toUpperCase()}
+					className="shrink-0"
+				/>
+				<Heading size="5" as="h2">
+					{indexEntry.name}
+				</Heading>
+				{indexEntry.sources && indexEntry.sources.length > 0 ? (
+					<div className="flex flex-wrap gap-2">
+						{indexEntry.sources.map((source) => (
+							<ServiceAvatar key={source} service={source} size="1" className="size-5" />
+						))}
+					</div>
+				) : null}
+				<div className="flex-1 text-right">
+					<MetadataDialogButton metadata={indexEntry} />
+				</div>
+			</div>
 			{relatedEntries ? (
 				<ol className="flex flex-col border-b border-border">
 					{relatedEntries

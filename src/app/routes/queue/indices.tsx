@@ -29,7 +29,7 @@ function RouteComponent() {
 		strict: false,
 	});
 	const [results] = trpc.indices.getQueue.useSuspenseQuery({ type });
-	const { data: queueCount } = trpc.indices.getQueueCount.useQuery();
+	const { data: queueCount } = trpc.indices.getQueueCount.useQuery({ type });
 
 	return (
 		<div className="flex basis-full overflow-hidden">

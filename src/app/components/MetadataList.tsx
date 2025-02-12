@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CopyIcon } from '@radix-ui/react-icons';
-import { DataList, IconButton, Link, Text } from '@radix-ui/themes';
+import { Button, DataList, Dialog, IconButton, Link, ScrollArea, Text } from '@radix-ui/themes';
 import { z } from 'zod';
 
 interface MetadataListProps extends DataList.RootProps {
@@ -80,5 +80,38 @@ export const MetadataList = ({ metadata, className = '', ...props }: MetadataLis
 				</DataList.Item>
 			))}
 		</DataList.Root>
+	);
+};
+
+interface MetadataDialogButtonProps {
+	metadata: Record<string, unknown>;
+	buttonText?: string;
+	buttonProps?: Omit<React.ComponentProps<typeof Button>, 'onClick'>;
+	description?: string;
+}
+
+export const MetadataDialogButton: React.FC<MetadataDialogButtonProps> = ({
+	metadata,
+	buttonText = 'Metadata',
+	buttonProps,
+	description = 'Metadata inspector',
+}) => {
+	return (
+		<Dialog.Root>
+			<Dialog.Trigger>
+				<Button variant="soft" size="1" {...buttonProps}>
+					{buttonText}
+				</Button>
+			</Dialog.Trigger>
+			<Dialog.Content className="flex max-h-[90vh] max-w-[75vw] flex-col overflow-hidden p-5">
+				<div className="mb-2 border-b border-divider pb-2">
+					<Dialog.Title className="mb-2">Metadata</Dialog.Title>
+					<Dialog.Description color="gray">{description}</Dialog.Description>
+				</div>
+				<ScrollArea scrollbars="vertical">
+					<MetadataList metadata={metadata} />
+				</ScrollArea>
+			</Dialog.Content>
+		</Dialog.Root>
 	);
 };

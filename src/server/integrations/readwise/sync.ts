@@ -68,34 +68,62 @@ async function fetchReadwiseDocuments(
 const mapReadwiseArticleToDocument = (
 	article: ReadwiseArticle,
 	integrationRunId: number
-): ReadwiseDocumentInsert => ({
-	id: article.id,
-	parentId: article.parent_id,
-	url: article.url,
-	title: article.title || null,
-	author: article.author || null,
-	source: article.source,
-	category: article.category,
-	location: article.location,
-	tags: article.tags,
-	siteName: article.site_name || null,
-	wordCount: article.word_count,
-	summary: article.summary || null,
-	content: article.content || null,
-	htmlContent: article.html_content || null,
-	notes: article.notes || null,
-	imageUrl: article.image_url,
-	sourceUrl: article.source_url,
-	readingProgress: article.reading_progress.toString(),
-	firstOpenedAt: article.first_opened_at,
-	lastOpenedAt: article.last_opened_at,
-	savedAt: article.saved_at,
-	lastMovedAt: article.last_moved_at,
-	publishedDate: article.published_date ? article.published_date.toISOString().split('T')[0] : null,
-	contentCreatedAt: article.created_at,
-	contentUpdatedAt: article.updated_at,
-	integrationRunId,
-});
+): ReadwiseDocumentInsert => {
+	let validSourceUrl: string | null = null;
+	if (article.source_url) {
+		try {
+			if (/^https?:\/\//.test(article.source_url)) {
+				new URL(article.source_url);
+				validSourceUrl = article.source_url;
+			}
+		} catch {
+			console.log(`Skipping invalid source_url: ${article.source_url}`);
+		}
+	}
+
+	let validImageUrl: string | null = null;
+	if (article.image_url) {
+		try {
+			if (/^https?:\/\//.test(article.image_url)) {
+				new URL(article.image_url);
+				validImageUrl = article.image_url;
+			}
+		} catch {
+			console.log(`Skipping invalid image_url: ${article.image_url}`);
+		}
+	}
+
+	return {
+		id: article.id,
+		parentId: article.parent_id,
+		url: article.url,
+		title: article.title || null,
+		author: article.author || null,
+		source: article.source,
+		category: article.category,
+		location: article.location,
+		tags: article.tags,
+		siteName: article.site_name || null,
+		wordCount: article.word_count,
+		summary: article.summary || null,
+		content: article.content || null,
+		htmlContent: article.html_content || null,
+		notes: article.notes || null,
+		imageUrl: validImageUrl,
+		sourceUrl: validSourceUrl,
+		readingProgress: article.reading_progress.toString(),
+		firstOpenedAt: article.first_opened_at,
+		lastOpenedAt: article.last_opened_at,
+		savedAt: article.saved_at,
+		lastMovedAt: article.last_moved_at,
+		publishedDate: article.published_date
+			? article.published_date.toISOString().split('T')[0]
+			: null,
+		contentCreatedAt: article.created_at,
+		contentUpdatedAt: article.updated_at,
+		integrationRunId,
+	};
+};
 
 function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle[] {
 	// Create a map of id to document for quick lookup

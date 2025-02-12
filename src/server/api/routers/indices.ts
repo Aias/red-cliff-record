@@ -1,10 +1,14 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
 	airtableCreators,
 	airtableFormats,
 	airtableSpaces,
 	githubUsers,
+	IndexMainType,
+	indexRelations,
+	indices,
+	IndicesInsertSchema,
 	raindropCollections,
 	raindropTags,
 	readwiseAuthors,
@@ -13,14 +17,11 @@ import {
 	recordCreators,
 	records,
 	twitterUsers,
-} from '~/server/db/schema';
-import {
-	IndexMainType,
-	indexRelations,
-	indices,
-	IndicesInsertSchema,
+	type IndexRelationInsert,
 	type IndicesInsert,
-} from '~/server/db/schema/indices';
+	type RecordCategoryInsert,
+	type RecordCreatorInsert,
+} from '~/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { DEFAULT_LIMIT, SIMILARITY_THRESHOLD } from './common';
 
@@ -92,10 +93,22 @@ export const indicesRouter = createTRPCRouter({
 			return entries;
 		}),
 
-	getQueueCount: publicProcedure.query(async ({ ctx: { db } }) => {
-		const count = await db.$count(indices, eq(indices.needsCuration, true));
-		return count;
-	}),
+	getQueueCount: publicProcedure
+		.input(
+			z.object({
+				type: IndexMainType.optional(),
+			})
+		)
+		.query(async ({ ctx: { db }, input }) => {
+			const count = await db.$count(
+				indices,
+				and(
+					eq(indices.needsCuration, true),
+					input.type ? eq(indices.mainType, input.type) : undefined
+				)
+			);
+			return count;
+		}),
 
 	upsert: publicProcedure.input(IndicesInsertSchema).mutation(async ({ ctx: { db }, input }) => {
 		const { id, ...values } = input;
@@ -199,10 +212,10 @@ export const indicesRouter = createTRPCRouter({
 
 						const newId = newEntry.id;
 
-						// Update all relationships referencing the old sourceId to point to the updated target record
+						// First, update mapping tables to point to the new index.
 						await tx
 							.update(airtableCreators)
-							.set({ indexEntryId: newId })
+							.set({ indexEntryId: newId, recordUpdatedAt: new Date() })
 							.where(eq(airtableCreators.indexEntryId, sourceId))
 							.returning()
 							.then((data) => {
@@ -210,7 +223,7 @@ export const indicesRouter = createTRPCRouter({
 							});
 						await tx
 							.update(airtableFormats)
-							.set({ indexEntryId: newId })
+							.set({ indexEntryId: newId, recordUpdatedAt: new Date() })
 							.where(eq(airtableFormats.indexEntryId, sourceId))
 							.returning()
 							.then((data) => {
@@ -218,7 +231,7 @@ export const indicesRouter = createTRPCRouter({
 							});
 						await tx
 							.update(airtableSpaces)
-							.set({ indexEntryId: newId })
+							.set({ indexEntryId: newId, recordUpdatedAt: new Date() })
 							.where(eq(airtableSpaces.indexEntryId, sourceId))
 							.returning()
 							.then((data) => {
@@ -226,7 +239,7 @@ export const indicesRouter = createTRPCRouter({
 							});
 						await tx
 							.update(githubUsers)
-							.set({ indexEntryId: newId })
+							.set({ indexEntryId: newId, recordUpdatedAt: new Date() })
 							.where(eq(githubUsers.indexEntryId, sourceId))
 							.returning()
 							.then((data) => {
@@ -234,7 +247,7 @@ export const indicesRouter = createTRPCRouter({
 							});
 						await tx
 							.update(raindropCollections)
-							.set({ indexEntryId: newId })
+							.set({ indexEntryId: newId, recordUpdatedAt: new Date() })
 							.where(eq(raindropCollections.indexEntryId, sourceId))
 							.returning()
 							.then((data) => {
@@ -242,7 +255,7 @@ export const indicesRouter = createTRPCRouter({
 							});
 						await tx
 							.update(raindropTags)
-							.set({ indexEntryId: newId })
+							.set({ indexEntryId: newId, recordUpdatedAt: new Date() })
 							.where(eq(raindropTags.indexEntryId, sourceId))
 							.returning()
 							.then((data) => {
@@ -250,7 +263,7 @@ export const indicesRouter = createTRPCRouter({
 							});
 						await tx
 							.update(readwiseAuthors)
-							.set({ indexEntryId: newId })
+							.set({ indexEntryId: newId, recordUpdatedAt: new Date() })
 							.where(eq(readwiseAuthors.indexEntryId, sourceId))
 							.returning()
 							.then((data) => {
@@ -258,7 +271,7 @@ export const indicesRouter = createTRPCRouter({
 							});
 						await tx
 							.update(readwiseTags)
-							.set({ indexEntryId: newId })
+							.set({ indexEntryId: newId, recordUpdatedAt: new Date() })
 							.where(eq(readwiseTags.indexEntryId, sourceId))
 							.returning()
 							.then((data) => {
@@ -266,61 +279,179 @@ export const indicesRouter = createTRPCRouter({
 							});
 						await tx
 							.update(twitterUsers)
-							.set({ indexEntryId: newId })
+							.set({ indexEntryId: newId, recordUpdatedAt: new Date() })
 							.where(eq(twitterUsers.indexEntryId, sourceId))
 							.returning()
 							.then((data) => {
 								console.log('Updated twitterUsers', data);
 							});
 
-						await tx
-							.update(indexRelations)
-							.set({ sourceId: newId })
-							.where(eq(indexRelations.sourceId, sourceId))
-							.returning()
-							.then((data) => {
-								console.log('Updated indexRelations source', data);
-							});
-						await tx
-							.update(indexRelations)
-							.set({ targetId: newId })
-							.where(eq(indexRelations.targetId, sourceId))
-							.returning()
-							.then((data) => {
-								console.log('Updated indexRelations target', data);
-							});
-						await tx
-							.update(recordCreators)
-							.set({ entityId: newId })
-							.where(eq(recordCreators.entityId, sourceId))
-							.returning()
-							.then((data) => {
-								console.log('Updated recordCreators', data);
-							});
-						await tx
-							.update(recordCategories)
-							.set({ categoryId: newId })
-							.where(eq(recordCategories.categoryId, sourceId))
-							.returning()
-							.then((data) => {
-								console.log('Updated recordCategories', data);
-							});
+						// === Update direct references to outdated index ===
 						await tx
 							.update(records)
-							.set({ formatId: newId })
+							.set({
+								formatId: newId,
+								recordUpdatedAt: new Date(),
+							})
 							.where(eq(records.formatId, sourceId))
 							.returning()
 							.then((data) => {
-								console.log('Updated records', data);
+								console.log('Updated records with formatId', data);
 							});
 						await tx
 							.update(indices)
-							.set({ aliasOf: newId })
+							.set({
+								aliasOf: newId,
+								recordUpdatedAt: new Date(),
+							})
 							.where(eq(indices.aliasOf, sourceId))
 							.returning()
 							.then((data) => {
-								console.log('Updated indices aliases', data);
+								console.log('Updated indices with aliasOf', data);
 							});
+
+						// === Merge many-to-many relationships for indexRelations ===
+
+						// Query all indexRelations where the outdated ID (sourceId) or the new record (targetId) appears.
+						const indexRelationsRows = await tx.query.indexRelations.findMany({
+							where: or(
+								eq(indexRelations.sourceId, sourceId),
+								eq(indexRelations.targetId, sourceId),
+								eq(indexRelations.sourceId, targetId),
+								eq(indexRelations.targetId, targetId)
+							),
+						});
+
+						console.log('indexRelationsRows to be processed:', indexRelationsRows);
+
+						// Delete all rows referencing the outdated record's ID.
+						if (indexRelationsRows.length > 0) {
+							await tx.delete(indexRelations).where(
+								inArray(
+									indexRelations.id,
+									indexRelationsRows.map((row) => row.id)
+								)
+							);
+						}
+
+						// Update in memory: change any occurrence of the outdated ID (sourceId) to the new ID (newId).
+						const updatedIndexRelations: IndexRelationInsert[] = indexRelationsRows.map((row) => ({
+							...row,
+							sourceId: row.sourceId === sourceId ? newId : row.sourceId,
+							targetId: row.targetId === sourceId ? newId : row.targetId,
+							recordUpdatedAt: new Date(),
+						}));
+
+						// Deduplicate based on the composite key (sourceId, targetId, type).
+						const dedupedIndexRelations: typeof updatedIndexRelations = [];
+						const seenIndexRelationKeys = new Set<string>();
+						updatedIndexRelations.forEach((row) => {
+							const key = `${row.sourceId}-${row.targetId}-${row.type}`;
+							if (!seenIndexRelationKeys.has(key)) {
+								seenIndexRelationKeys.add(key);
+								dedupedIndexRelations.push(row);
+							}
+						});
+
+						console.log('dedupedIndexRelations to be inserted:', dedupedIndexRelations);
+
+						if (dedupedIndexRelations.length > 0) {
+							await tx.insert(indexRelations).values(dedupedIndexRelations);
+						}
+
+						// === Merge many-to-many relationships for recordCreators ===
+
+						// Get all recordCreators where the entity is the outdated index.
+						const recordCreatorsRows = await tx.query.recordCreators.findMany({
+							where: or(
+								eq(recordCreators.entityId, sourceId),
+								eq(recordCreators.entityId, targetId)
+							),
+						});
+
+						console.log('recordCreatorsRows to be processed:', recordCreatorsRows);
+
+						// Delete the rows that reference the outdated index.
+						if (recordCreatorsRows.length > 0) {
+							await tx.delete(recordCreators).where(
+								inArray(
+									recordCreators.id,
+									recordCreatorsRows.map((row) => row.id)
+								)
+							);
+						}
+
+						// Update in memory: set entityId to the new ID.
+						const updatedRecordCreators: RecordCreatorInsert[] = recordCreatorsRows.map((row) => ({
+							...row,
+							entityId: newId,
+							recordUpdatedAt: new Date(),
+						}));
+
+						// Deduplicate based on (recordId, entityId, role).
+						const dedupedRecordCreators: typeof updatedRecordCreators = [];
+						const seenRecordCreatorKeys = new Set<string>();
+						updatedRecordCreators.forEach((row) => {
+							const key = `${row.recordId}-${row.entityId}-${row.role}`;
+							if (!seenRecordCreatorKeys.has(key)) {
+								seenRecordCreatorKeys.add(key);
+								dedupedRecordCreators.push(row);
+							}
+						});
+
+						console.log('dedupedRecordCreators to be inserted:', dedupedRecordCreators);
+
+						if (dedupedRecordCreators.length > 0) {
+							await tx.insert(recordCreators).values(dedupedRecordCreators);
+						}
+
+						// === Merge many-to-many relationships for recordCategories ===
+
+						// Get all recordCategories where the category is the outdated index.
+						const recordCategoriesRows = await tx.query.recordCategories.findMany({
+							where: or(
+								eq(recordCategories.categoryId, sourceId),
+								eq(recordCategories.categoryId, targetId)
+							),
+						});
+
+						console.log('recordCategoriesRows to be processed:', recordCategoriesRows);
+
+						// Delete rows referencing the outdated index.
+						if (recordCategoriesRows.length > 0) {
+							await tx.delete(recordCategories).where(
+								inArray(
+									recordCategories.id,
+									recordCategoriesRows.map((row) => row.id)
+								)
+							);
+						}
+
+						// Update in memory: set categoryId to the new ID.
+						const updatedRecordCategories: RecordCategoryInsert[] = recordCategoriesRows.map(
+							(row) => ({
+								...row,
+								categoryId: newId,
+								recordUpdatedAt: new Date(),
+							})
+						);
+
+						// Deduplicate based on (recordId, categoryId, type).
+						const dedupedRecordCategories: typeof updatedRecordCategories = [];
+						const seenRecordCategoryKeys = new Set<string>();
+						updatedRecordCategories.forEach((row) => {
+							const key = `${row.recordId}-${row.categoryId}-${row.type}`;
+							if (!seenRecordCategoryKeys.has(key)) {
+								seenRecordCategoryKeys.add(key);
+								dedupedRecordCategories.push(row);
+							}
+						});
+
+						console.log('dedupedRecordCategories to be inserted:', dedupedRecordCategories);
+
+						if (dedupedRecordCategories.length > 0) {
+							await tx.insert(recordCategories).values(dedupedRecordCategories);
+						}
 
 						// Delete the old source record after merging
 						await tx

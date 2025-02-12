@@ -48,14 +48,26 @@ export async function createReadwiseAuthors() {
 			continue;
 		}
 
+		let origin: string | null = null;
+
+		try {
+			if (document.sourceUrl) {
+				const url = new URL(document.sourceUrl);
+				origin = url.origin;
+			}
+		} catch {
+			console.log(`Skipping invalid author: ${document.author}`);
+			continue;
+		}
+
 		const [newRecord] = await db
 			.insert(readwiseAuthors)
 			.values({
 				name: document.author,
-				siteName: document.siteName,
+				origin,
 			})
 			.onConflictDoUpdate({
-				target: [readwiseAuthors.name, readwiseAuthors.siteName],
+				target: [readwiseAuthors.name, readwiseAuthors.origin],
 				set: {
 					recordUpdatedAt: new Date(),
 				},
@@ -74,19 +86,18 @@ export async function createReadwiseAuthors() {
 }
 
 const mapReadwiseAuthorToEntity = (author: ReadwiseAuthorSelect): IndicesInsert => {
-	let site;
-	if (author.siteName) {
-		const { success, data } = validateAndFormatUrl(author.siteName, true);
+	let canonicalUrl: string | null = null;
+	if (author.origin) {
+		const { success, data } = validateAndFormatUrl(author.origin, true);
 		if (success) {
-			site = data;
+			canonicalUrl = data;
 		}
 	}
 	return {
 		name: author.name,
 		mainType: 'entity',
 		sources: ['readwise'],
-		canonicalUrl: site,
-		notes: site ? null : author.siteName,
+		canonicalUrl,
 		needsCuration: true,
 		isPrivate: false,
 		recordCreatedAt: author.recordCreatedAt,

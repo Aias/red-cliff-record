@@ -150,7 +150,7 @@ export const readwiseAuthors = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		name: text('name').notNull(),
-		siteName: text('site_name'),
+		origin: text('origin'),
 		indexEntryId: integer('index_entry_id').references(() => indices.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
@@ -159,8 +159,8 @@ export const readwiseAuthors = pgTable(
 	},
 	(table) => [
 		index().on(table.name),
-		index().on(table.siteName),
-		unique().on(table.name, table.siteName),
+		index().on(table.origin),
+		unique().on(table.name, table.origin),
 	]
 );
 
@@ -176,7 +176,7 @@ export const readwiseAuthorsRelations = relations(readwiseAuthors, ({ one, many 
 export const ReadwiseAuthorSelectSchema = createSelectSchema(readwiseAuthors);
 export type ReadwiseAuthorSelect = typeof readwiseAuthors.$inferSelect;
 export const ReadwiseAuthorInsertSchema = createInsertSchema(readwiseAuthors).extend({
-	domain: z.string().url().optional().nullable(),
+	origin: z.string().url().optional().nullable(),
 });
 export type ReadwiseAuthorInsert = typeof readwiseAuthors.$inferInsert;
 

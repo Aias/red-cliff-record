@@ -1,18 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { ExternalLinkIcon, ImageIcon } from '@radix-ui/react-icons';
-import {
-	Button,
-	Heading,
-	ScrollArea,
-	SegmentedControl,
-	Text,
-	TextArea,
-	TextField,
-} from '@radix-ui/themes';
+import { Button, Link, SegmentedControl, Text, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
-import { MetadataList } from '~/app/components/MetadataList';
 import { trpc } from '~/app/trpc';
 import type { RecordSelect } from '~/server/db/schema';
 import {
@@ -42,13 +33,33 @@ export const IndexEntryForm = ({
 			...recordsInCategory.map((record) => record.record),
 		];
 	}, [indexEntry]);
+
 	const associatedDomains = useMemo(() => {
-		const uniqueDomains = new Set(
-			relatedRecords
-				.map((r) => (r.url ? new URL(r.url).origin : null))
-				.filter((origin): origin is string => origin !== null)
-		);
-		return Array.from(uniqueDomains).map((origin) => new URL(origin));
+		const uniqueDomains = new Set<string>();
+		relatedRecords.forEach((r) => {
+			if (r.url) {
+				try {
+					if (!/^https?:\/\//.test(r.url)) {
+						return;
+					}
+					const url = new URL(r.url);
+					uniqueDomains.add(url.origin);
+				} catch (error) {
+					console.error('Invalid URL:', r.url, error);
+				}
+			}
+		});
+		return Array.from(uniqueDomains)
+			.filter((origin): origin is string => typeof origin === 'string')
+			.map((origin) => {
+				try {
+					return new URL(origin);
+				} catch (error) {
+					console.error('Invalid URL:', origin, error);
+					return null;
+				}
+			})
+			.filter((url): url is URL => url !== null);
 	}, [relatedRecords]);
 
 	const updateIndexEntryMutation = trpc.indices.upsert.useMutation({
@@ -75,219 +86,239 @@ export const IndexEntryForm = ({
 	}, [indexEntry]);
 
 	return (
-		<div className="flex basis-full flex-col gap-3 overflow-hidden">
-			<Heading size="3" as="h2">
-				Edit Index Entry
-			</Heading>
-			<form
-				className="flex flex-col gap-2"
-				onSubmit={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-					form.handleSubmit();
-				}}
-			>
-				<div className="flex gap-3">
-					<form.Field name="mainType">
-						{(field) => (
-							<label className="flex grow flex-col gap-1">
-								<Text size="2" color="gray">
-									Main Type
-								</Text>
-								<SegmentedControl.Root
-									variant="classic"
-									value={field.state.value}
-									onValueChange={(value) => field.handleChange(value as IndexMainType)}
-								>
-									<SegmentedControl.Item value="entity">Entity</SegmentedControl.Item>
-									<SegmentedControl.Item value="category">Category</SegmentedControl.Item>
-									<SegmentedControl.Item value="format">Format</SegmentedControl.Item>
-								</SegmentedControl.Root>
-							</label>
-						)}
-					</form.Field>
-					<form.Field name="subType">
-						{(field) => (
-							<label className="shrink-0 basis-1/4">
-								<Text size="2" color="gray">
-									Subtype
-								</Text>
-								<TextField.Root
-									type="text"
-									placeholder="e.g., 'Company'"
-									value={field.state.value || ''}
-									onChange={(e) => field.handleChange(e.target.value || null)}
-								/>
-							</label>
-						)}
-					</form.Field>
-				</div>
-
-				<div className="flex gap-4">
-					<form.Field name="name">
-						{(field) => (
-							<label className="grow">
-								<Text size="2" color="gray">
-									Name (Required)
-								</Text>
-								<TextField.Root
-									type="text"
-									value={field.state.value}
-									onChange={(e) => field.handleChange(e.target.value)}
-								/>
-							</label>
-						)}
-					</form.Field>
-					<form.Field name="shortName">
-						{(field) => (
-							<label className="shrink-0 basis-1/4">
-								<Text size="2" color="gray">
-									Short Name
-								</Text>
-								<TextField.Root
-									type="text"
-									placeholder="e.g., 'ABC'"
-									value={field.state.value || ''}
-									onChange={(e) => field.handleChange(e.target.value || null)}
-								/>
-							</label>
-						)}
-					</form.Field>
-				</div>
-
-				<form.Field name="sense">
+		<form
+			className="flex flex-col gap-2"
+			onSubmit={(e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				form.handleSubmit();
+			}}
+		>
+			<div className="flex gap-3">
+				<form.Field name="mainType">
 					{(field) => (
-						<label>
+						<label className="flex grow flex-col gap-1">
 							<Text size="2" color="gray">
-								Sense
+								Main Type
+							</Text>
+							<SegmentedControl.Root
+								variant="classic"
+								value={field.state.value}
+								onValueChange={(value) => field.handleChange(value as IndexMainType)}
+							>
+								<SegmentedControl.Item value="entity">Entity</SegmentedControl.Item>
+								<SegmentedControl.Item value="category">Category</SegmentedControl.Item>
+								<SegmentedControl.Item value="format">Format</SegmentedControl.Item>
+							</SegmentedControl.Root>
+						</label>
+					)}
+				</form.Field>
+				<form.Field name="subType">
+					{(field) => (
+						<label className="shrink-0 basis-1/4">
+							<Text size="2" color="gray">
+								Subtype
 							</Text>
 							<TextField.Root
 								type="text"
-								placeholder="Differentiate between homonyms"
+								placeholder="e.g., 'Company'"
 								value={field.state.value || ''}
 								onChange={(e) => field.handleChange(e.target.value || null)}
 							/>
 						</label>
 					)}
 				</form.Field>
+			</div>
 
-				<form.Field name="canonicalUrl">
+			<div className="flex gap-4">
+				<form.Field name="name">
 					{(field) => (
-						<label>
+						<label className="grow">
 							<Text size="2" color="gray">
+								Name (Required)
+							</Text>
+							<TextField.Root
+								type="text"
+								value={field.state.value}
+								onChange={(e) => field.handleChange(e.target.value)}
+							/>
+						</label>
+					)}
+				</form.Field>
+				<form.Field name="shortName">
+					{(field) => (
+						<label className="shrink-0 basis-1/4">
+							<Text size="2" color="gray">
+								Short Name
+							</Text>
+							<TextField.Root
+								type="text"
+								placeholder="e.g., 'ABC'"
+								value={field.state.value || ''}
+								onChange={(e) => field.handleChange(e.target.value || null)}
+							/>
+						</label>
+					)}
+				</form.Field>
+			</div>
+
+			<form.Field name="sense">
+				{(field) => (
+					<label>
+						<Text size="2" color="gray">
+							Sense
+						</Text>
+						<TextField.Root
+							type="text"
+							placeholder="Differentiate between homonyms"
+							value={field.state.value || ''}
+							onChange={(e) => field.handleChange(e.target.value || null)}
+						/>
+					</label>
+				)}
+			</form.Field>
+
+			<form.Field name="canonicalUrl">
+				{(field) => (
+					<label>
+						<div className="flex items-center gap-2">
+							<Text size="2" color="gray" className="flex-1">
 								Canonical URL
 							</Text>
-							<TextField.Root
-								type="url"
-								placeholder="e.g., https://www.example.com"
-								value={field.state.value || ''}
-								onChange={(e) => field.handleChange(e.target.value || null)}
-							>
-								<TextField.Slot>
-									<ExternalLinkIcon className="text-hint" />
-								</TextField.Slot>
-							</TextField.Root>
-							{associatedDomains.length > 0 && (
-								<div className="mt-2 flex flex-wrap gap-2">
-									{associatedDomains.map((url) => (
-										<Button
-											key={url.origin}
-											size="1"
-											variant="soft"
-											type="button"
-											onClick={() => field.handleChange(url.origin)}
-										>
-											{url.hostname}
-										</Button>
-									))}
-								</div>
+							{field.state.value && (
+								<Link
+									href={field.state.value}
+									target="_blank"
+									rel="noopener noreferrer"
+									size="1"
+									className="flex items-center gap-1"
+								>
+									<ExternalLinkIcon className="size-3.5" />
+									Open
+								</Link>
 							)}
-						</label>
-					)}
-				</form.Field>
+						</div>
+						<TextField.Root
+							type="url"
+							placeholder="e.g., https://www.example.com"
+							value={field.state.value || ''}
+							onChange={(e) => field.handleChange(e.target.value || null)}
+						>
+							<TextField.Slot>
+								<ExternalLinkIcon className="text-hint" />
+							</TextField.Slot>
+						</TextField.Root>
+						{associatedDomains.length > 0 && (
+							<div className="mt-2 flex flex-wrap gap-2">
+								{associatedDomains.map((url) => (
+									<Button
+										key={url.origin}
+										size="1"
+										variant="soft"
+										type="button"
+										onClick={() => field.handleChange(url.origin)}
+									>
+										{url.hostname}
+									</Button>
+								))}
+							</div>
+						)}
+					</label>
+				)}
+			</form.Field>
 
-				<form.Field name="canonicalMediaUrl">
-					{(field) => (
-						<label>
-							<Text size="2" color="gray">
+			<form.Field name="canonicalMediaUrl">
+				{(field) => (
+					<label>
+						<div className="flex items-center gap-2">
+							<Text size="2" color="gray" className="flex-1">
 								Image URL
 							</Text>
-							<TextField.Root
-								type="url"
-								placeholder="e.g., https://www.example.com/image.jpg"
-								value={field.state.value || ''}
-								onChange={(e) => field.handleChange(e.target.value || null)}
-							>
-								<TextField.Slot>
-									<ImageIcon className="text-hint" />
-								</TextField.Slot>
-							</TextField.Root>
-						</label>
-					)}
-				</form.Field>
-
-				<form.Field name="notes">
-					{(field) => (
-						<label>
-							<Text size="2" color="gray">
-								Notes
-							</Text>
-							<TextArea
-								rows={4}
-								value={field.state.value || ''}
-								onChange={(e) => field.handleChange(e.target.value || null)}
-							/>
 							{field.state.value && (
-								<Button
+								<Link
+									href={field.state.value}
+									target="_blank"
+									rel="noopener noreferrer"
 									size="1"
-									variant="soft"
-									className="mt-1"
-									onClick={() => field.handleChange(null)}
+									className="flex items-center gap-1"
 								>
-									Clear
-								</Button>
+									<ExternalLinkIcon className="size-3.5" />
+									Open
+								</Link>
 							)}
-						</label>
+						</div>
+						<TextField.Root
+							type="url"
+							placeholder="e.g., https://www.example.com/image.jpg"
+							value={field.state.value || ''}
+							onChange={(e) => field.handleChange(e.target.value || null)}
+						>
+							<TextField.Slot>
+								<ImageIcon className="text-hint" />
+							</TextField.Slot>
+						</TextField.Root>
+					</label>
+				)}
+			</form.Field>
+
+			<form.Field name="notes">
+				{(field) => (
+					<label>
+						<Text size="2" color="gray">
+							Notes
+						</Text>
+						<TextArea
+							rows={4}
+							value={field.state.value || ''}
+							onChange={(e) => field.handleChange(e.target.value || null)}
+						/>
+						{field.state.value && (
+							<Button
+								size="1"
+								variant="soft"
+								className="mt-1"
+								onClick={() => field.handleChange(null)}
+							>
+								Clear
+							</Button>
+						)}
+					</label>
+				)}
+			</form.Field>
+
+			<div className="mt-2 flex gap-4">
+				<form.Field name="isPrivate">
+					{(field) => (
+						<CheckboxWithLabel
+							className="mt-2"
+							label="Private"
+							checked={field.state.value || false}
+							onCheckedChange={(checked) => field.handleChange(!!checked)}
+						/>
 					)}
 				</form.Field>
-
-				<div className="mt-2 flex gap-4">
-					<form.Field name="isPrivate">
-						{(field) => (
-							<CheckboxWithLabel
-								className="mt-2"
-								label="Private"
-								checked={field.state.value || false}
-								onCheckedChange={(checked) => field.handleChange(!!checked)}
-							/>
-						)}
-					</form.Field>
-					<form.Field name="needsCuration">
-						{(field) => (
-							<CheckboxWithLabel
-								className="mt-2"
-								label="Needs Curation"
-								checked={field.state.value || false}
-								onCheckedChange={(checked) => field.handleChange(!!checked)}
-							/>
-						)}
-					</form.Field>
-				</div>
-
-				<form.Subscribe
-					selector={(state) => [state.canSubmit, state.isSubmitting]}
-					children={([canSubmit, isSubmitting]) => (
-						<div className="mt-4 border-t border-divider pt-4">
-							<Button type="submit" disabled={!canSubmit}>
-								{isSubmitting ? '...Saving' : 'Save Changes'}
-							</Button>
-						</div>
+				<form.Field name="needsCuration">
+					{(field) => (
+						<CheckboxWithLabel
+							className="mt-2"
+							label="Needs Curation"
+							checked={field.state.value || false}
+							onCheckedChange={(checked) => field.handleChange(!!checked)}
+						/>
 					)}
-				/>
-			</form>
-			<ScrollArea scrollbars="vertical">
-				<MetadataList metadata={indexEntry} />
-			</ScrollArea>
-		</div>
+				</form.Field>
+			</div>
+
+			<form.Subscribe
+				selector={(state) => [state.canSubmit, state.isSubmitting]}
+				children={([canSubmit, isSubmitting]) => (
+					<div className="mt-4 border-t border-divider pt-4">
+						<Button type="submit" disabled={!canSubmit}>
+							{isSubmitting ? '...Saving' : 'Save Changes'}
+						</Button>
+					</div>
+				)}
+			/>
+		</form>
 	);
 };
