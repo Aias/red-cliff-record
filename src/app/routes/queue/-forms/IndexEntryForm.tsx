@@ -1,16 +1,25 @@
 import { useEffect, useMemo } from 'react';
 import { ExternalLinkIcon, ImageIcon } from '@radix-ui/react-icons';
-import { Button, Link, SegmentedControl, Text, TextArea, TextField } from '@radix-ui/themes';
+import {
+	Button,
+	CheckboxCards,
+	Link,
+	SegmentedControl,
+	Text,
+	TextArea,
+	TextField,
+} from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
 import { trpc } from '~/app/trpc';
-import type { RecordSelect } from '~/server/db/schema';
+import { Flag, type RecordSelect } from '~/server/db/schema';
 import {
+	FLAGS,
 	IndicesSelectSchema,
 	type IndexMainType,
 	type IndicesSelect,
-} from '~/server/db/schema/indices';
+} from '~/server/db/schema';
 
 type IndexEntryFormProps = {
 	indexEntryId: string | number;
@@ -210,7 +219,7 @@ export const IndexEntryForm = ({
 						</TextField.Root>
 						{associatedDomains.length > 0 && (
 							<div className="mt-2 flex flex-wrap gap-2">
-								{associatedDomains.map((url) => (
+								{associatedDomains.slice(0, 5).map((url) => (
 									<Button
 										key={url.origin}
 										size="1"
@@ -277,11 +286,37 @@ export const IndexEntryForm = ({
 								size="1"
 								variant="soft"
 								className="mt-1"
+								type="button"
 								onClick={() => field.handleChange(null)}
 							>
 								Clear
 							</Button>
 						)}
+					</label>
+				)}
+			</form.Field>
+
+			<form.Field name="flags">
+				{(field) => (
+					<label className="flex flex-col justify-start gap-1">
+						<Text size="2" color="gray">
+							Flags
+						</Text>
+						<CheckboxCards.Root
+							size="1"
+							onValueChange={(values) => {
+								field.handleChange(Flag.array().parse(values));
+							}}
+							columns="4"
+							value={field.state.value ?? []}
+							gap="1"
+						>
+							{Object.entries(FLAGS).map(([key, flag]) => (
+								<CheckboxCards.Item key={key} value={key as Flag}>
+									{flag.emoji} {flag.name}
+								</CheckboxCards.Item>
+							))}
+						</CheckboxCards.Root>
 					</label>
 				)}
 			</form.Field>

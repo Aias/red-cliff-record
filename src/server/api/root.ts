@@ -5,6 +5,7 @@ import { historyRouter } from './routers/history';
 import { indicesRouter } from './routers/indices';
 import { mediaRouter } from './routers/media';
 import { recordsRouter } from './routers/records';
+import { relationsRouter } from './routers/relations';
 
 export const appRouter = createTRPCRouter({
 	github: githubRouter,
@@ -12,6 +13,7 @@ export const appRouter = createTRPCRouter({
 	indices: indicesRouter,
 	media: mediaRouter,
 	records: recordsRouter,
+	relations: relationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

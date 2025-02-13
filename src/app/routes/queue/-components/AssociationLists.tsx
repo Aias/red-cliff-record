@@ -60,7 +60,7 @@ const RecordListItem = ({
 );
 
 export const RecordCategories = ({ categoryId }: RecordCategoriesProps) => {
-	const { data: records } = trpc.indices.getRecordsForCategory.useQuery(categoryId);
+	const { data: records } = trpc.relations.getRecordsForCategory.useQuery(categoryId);
 
 	return records ? (
 		records.length > 0 ? (
@@ -70,7 +70,7 @@ export const RecordCategories = ({ categoryId }: RecordCategoriesProps) => {
 						key={record.record.id}
 						badge={record.type.replaceAll('_', ' ')}
 						title={record.record.title}
-						content={record.record.content}
+						content={record.record.content ?? record.record.summary ?? ' '}
 						sources={record.record.sources}
 					/>
 				))}
@@ -88,7 +88,7 @@ interface RecordCreatorsProps {
 }
 
 export const RecordCreators = ({ creatorId }: RecordCreatorsProps) => {
-	const { data: records } = trpc.indices.getRecordsByCreator.useQuery(creatorId);
+	const { data: records } = trpc.relations.getRecordsByCreator.useQuery(creatorId);
 
 	return records ? (
 		records.length > 0 ? (

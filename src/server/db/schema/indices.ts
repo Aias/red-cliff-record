@@ -23,7 +23,7 @@ import {
 import { raindropCollections, raindropTags } from './raindrop';
 import { readwiseAuthors } from './readwise';
 import { readwiseTags } from './readwise';
-import { recordCreators } from './records';
+import { flagEnum, recordCreators } from './records';
 import { recordCategories } from './records';
 import { records } from './records';
 import { twitterUsers } from './twitter';
@@ -62,6 +62,7 @@ export const indices = pgTable(
 			onDelete: 'cascade',
 			onUpdate: 'cascade',
 		}),
+		flags: flagEnum('flags').array(),
 		...databaseTimestamps,
 		...contentTimestamps,
 		...commonColumns,

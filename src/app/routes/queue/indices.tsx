@@ -51,7 +51,7 @@ function RouteComponent() {
 						))}
 					</TabNav.Root>
 					<Badge size="2" className="mr-3">
-						{queueCount ? queueCount : <Spinner />}
+						{typeof queueCount === 'number' ? queueCount : <Spinner />}
 					</Badge>
 				</div>
 

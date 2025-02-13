@@ -49,9 +49,9 @@ function IndexEntryContent() {
 			utils.indices.search.invalidate();
 			utils.indices.getQueue.invalidate();
 			utils.indices.getQueueCount.invalidate();
-			utils.indices.getRecordsForCategory.invalidate(data.newEntry.id);
-			utils.indices.getRecordsByCreator.invalidate(data.newEntry.id);
-			utils.indices.getRecordsWithFormat.invalidate(data.newEntry.id);
+			utils.relations.getRecordsForCategory.invalidate(data.newEntry.id);
+			utils.relations.getRecordsByCreator.invalidate(data.newEntry.id);
+			utils.relations.getRecordsWithFormat.invalidate(data.newEntry.id);
 			navigate({
 				to: '/queue/indices/$indexEntryId',
 				params: { indexEntryId: data.newEntry.id.toString() },
