@@ -61,13 +61,17 @@ export const recordsRouter = createTRPCRouter({
 		return db.query.records.findMany({
 			where: sql`(
         ${records.title} <-> ${input} < ${SIMILARITY_THRESHOLD} OR
-        ${records.content} <-> ${input} < ${SIMILARITY_THRESHOLD}
+        ${records.content} <-> ${input} < ${SIMILARITY_THRESHOLD} OR
+        ${records.notes} <-> ${input} < ${SIMILARITY_THRESHOLD} OR
+        ${records.summary} <-> ${input} < ${SIMILARITY_THRESHOLD}
       )`,
 			limit: 10,
 			orderBy: [
 				sql`LEAST(
           ${records.title} <-> ${input},
-          ${records.content} <-> ${input}
+          ${records.content} <-> ${input},
+          ${records.notes} <-> ${input},
+          ${records.summary} <-> ${input}
         )`,
 				desc(records.recordUpdatedAt),
 			],
@@ -85,7 +89,11 @@ export const recordsRouter = createTRPCRouter({
 				},
 				recordMedia: {
 					with: {
-						media: true,
+						media: {
+							columns: {
+								url: true,
+							},
+						},
 					},
 				},
 			},

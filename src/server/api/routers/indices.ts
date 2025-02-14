@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
 	airtableCreators,
@@ -110,6 +110,20 @@ export const indicesRouter = createTRPCRouter({
 			return count;
 		}),
 
+	getSubtypes: publicProcedure.query(async ({ ctx: { db } }) => {
+		const subtypes = await db
+			.selectDistinct({
+				subType: indices.subType,
+			})
+			.from(indices)
+			.where(isNotNull(indices.subType))
+			.orderBy(indices.subType);
+		const uniqueSubtypes = new Set(
+			subtypes.map((row) => row.subType).filter((subtype): subtype is string => subtype !== null)
+		);
+		return Array.from(uniqueSubtypes);
+	}),
+
 	upsert: publicProcedure.input(IndicesInsertSchema).mutation(async ({ ctx: { db }, input }) => {
 		const { id, ...values } = input;
 		const [entry] = await db
@@ -152,6 +166,13 @@ export const indicesRouter = createTRPCRouter({
 				indices.needsCuration,
 				desc(indices.recordUpdatedAt),
 			],
+			with: {
+				canonicalMedia: {
+					columns: {
+						url: true,
+					},
+				},
+			},
 		});
 		return matches;
 	}),

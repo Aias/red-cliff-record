@@ -30,3 +30,7 @@ ol,
 menu {
 	list-style: none;
 }
+
+input[type='text']::-webkit-calendar-picker-indicator {
+	display: none !important; /* https://stackoverflow.com/questions/23177409/remove-arrow-in-chrome-for-input-with-attribute-list */
+}

@@ -34,6 +34,7 @@ export const IndexEntryForm = ({
 }: IndexEntryFormProps) => {
 	const utils = trpc.useUtils();
 	const [indexEntry] = trpc.indices.get.useSuspenseQuery(z.coerce.number().parse(indexEntryId));
+	const { data: subTypes } = trpc.indices.getSubtypes.useQuery();
 	const relatedRecords: RecordSelect[] = useMemo(() => {
 		const { recordsByCreator, recordsWithFormat, recordsInCategory } = indexEntry;
 		return [
@@ -103,6 +104,15 @@ export const IndexEntryForm = ({
 				form.handleSubmit();
 			}}
 		>
+			{subTypes && (
+				<datalist id="index-subtypes">
+					{subTypes.map((subType) => (
+						<option key={subType} value={subType}>
+							{subType}
+						</option>
+					))}
+				</datalist>
+			)}
 			<div className="flex gap-3">
 				<form.Field name="mainType">
 					{(field) => (
@@ -130,6 +140,7 @@ export const IndexEntryForm = ({
 							</Text>
 							<TextField.Root
 								type="text"
+								list="index-subtypes"
 								placeholder="e.g., 'Company'"
 								value={field.state.value || ''}
 								onChange={(e) => field.handleChange(e.target.value || null)}

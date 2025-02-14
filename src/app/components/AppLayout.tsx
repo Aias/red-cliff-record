@@ -64,6 +64,15 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 							>
 								Github Commits
 							</DropdownMenu.Item>
+							<DropdownMenu.Item
+								onClick={() =>
+									navigate({
+										to: '/queue/indices',
+									})
+								}
+							>
+								Queue
+							</DropdownMenu.Item>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 				</li>

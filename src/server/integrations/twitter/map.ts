@@ -21,10 +21,10 @@ import {
 export const mapTwitterUserToEntity = (user: TwitterUserSelect): IndicesInsert => {
 	return {
 		name: user.displayName,
-		shortName: user.username,
+		shortName: `@${user.username}`,
 		mainType: 'entity',
 		sources: ['twitter'],
-		canonicalUrl: user.externalUrl,
+		canonicalUrl: user.externalUrl ?? `https://x.com/${user.username}`,
 		canonicalMediaUrl: user.profileImageUrl,
 		needsCuration: true,
 		isPrivate: false,
