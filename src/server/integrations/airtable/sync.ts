@@ -312,25 +312,26 @@ async function syncExtracts(integrationRunId: number): Promise<{
 					await tx.insert(airtableExtractSpaces).values(link).onConflictDoNothing();
 				}
 			}
-			// Link connections
-			if (fields.connectionIds) {
-				for (const connectionId of fields.connectionIds) {
-					const link: AirtableExtractConnectionInsert = {
-						fromExtractId: record.id,
-						toExtractId: connectionId,
-					};
-					await tx.insert(airtableExtractConnections).values(link).onConflictDoNothing();
-				}
-			}
 		}
 	});
 
 	// Second pass: Update parent-child relationships
 	for (const record of parsedRecords) {
-		const fields = record.fields;
-		const parentId = fields.parentId?.[0];
-		if (parentId) {
-			await db.update(airtableExtracts).set({ parentId }).where(eq(airtableExtracts.id, record.id));
+		const { parentId, connectionIds } = record.fields;
+		if (parentId?.[0]) {
+			await db
+				.update(airtableExtracts)
+				.set({ parentId: parentId[0] })
+				.where(eq(airtableExtracts.id, record.id));
+		}
+		if (connectionIds) {
+			for (const connectionId of connectionIds) {
+				const link: AirtableExtractConnectionInsert = {
+					fromExtractId: record.id,
+					toExtractId: connectionId,
+				};
+				await db.insert(airtableExtractConnections).values(link).onConflictDoNothing();
+			}
 		}
 	}
 
