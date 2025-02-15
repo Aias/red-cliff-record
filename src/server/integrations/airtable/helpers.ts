@@ -85,7 +85,7 @@ export async function storeMedia() {
 		with: {
 			extract: true,
 		},
-		where: notIlike(airtableAttachments.url, '%assets.barnsworthburning.net%'),
+		where: notIlike(airtableAttachments.url, `%${process.env.ASSETS_DOMAIN}%`),
 	});
 
 	if (attachments.length === 0) {
