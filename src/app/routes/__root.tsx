@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { type QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
-import { Meta, Scripts } from '@tanstack/start';
+import { HeadContent, Scripts } from '@tanstack/react-router';
 import { AppLayout } from '../components/AppLayout';
 import { DefaultCatchBoundary } from '../components/DefaultCatchBoundary';
 import { NotFound } from '../components/NotFound';
@@ -109,7 +109,7 @@ function RootDocument({ children, theme }: Readonly<{ children: ReactNode; theme
 			data-scaling={scaling}
 		>
 			<head>
-				<Meta />
+				<HeadContent />
 			</head>
 			<body>
 				{children}
