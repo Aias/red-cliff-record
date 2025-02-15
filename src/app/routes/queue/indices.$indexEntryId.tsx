@@ -1,6 +1,6 @@
 import { Suspense, useMemo } from 'react';
 import { Link2Icon } from '@radix-ui/react-icons';
-import { Avatar, Card, Heading, IconButton, Spinner } from '@radix-ui/themes';
+import { Avatar, Card, Em, Heading, IconButton, Spinner, Text } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { AppLink } from '~/app/components/AppLink';
 import { IntegrationAvatar } from '~/app/components/IntegrationAvatar';
@@ -93,7 +93,7 @@ function IndexEntryContent() {
 								key={entry.id}
 								className="flex items-center gap-3 border-t border-border px-2 py-1 hover:bg-tint"
 							>
-								<div className="flex grow gap-2">
+								<div className="flex grow items-center gap-2">
 									<IndexTypeIcon type={entry.mainType} />
 									<Heading size="2" as="h4" weight="medium">
 										<AppLink
@@ -104,6 +104,11 @@ function IndexEntryContent() {
 											{entry.name}
 										</AppLink>
 									</Heading>
+									{entry.sense && (
+										<Text size="2" color="gray">
+											<Em>{entry.sense}</Em>
+										</Text>
+									)}
 									{entry.sources && entry.sources.length > 0 ? (
 										<div className="flex flex-wrap gap-1">
 											{entry.sources.map((source) => (
