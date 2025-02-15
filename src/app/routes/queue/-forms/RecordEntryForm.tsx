@@ -25,6 +25,10 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 	const updateRecordMutation = trpc.records.upsert.useMutation({
 		onSuccess: async () => {
 			utils.records.get.invalidate();
+			utils.records.getQueue.invalidate();
+			utils.records.getQueueCount.invalidate();
+			utils.records.search.invalidate();
+
 			if (updateCallback) {
 				await updateCallback(form.state.values);
 			}

@@ -1,7 +1,10 @@
+import { Cross2Icon } from '@radix-ui/react-icons';
 import {
 	Avatar,
 	Badge,
 	Button,
+	Checkbox,
+	DropdownMenu,
 	Heading,
 	Select,
 	Spinner,
@@ -12,6 +15,7 @@ import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
 import { IntegrationAvatar } from '~/app/components/IntegrationAvatar';
 import { Placeholder } from '~/app/components/Placeholder';
+import { useSelection } from '~/app/lib/useSelection';
 import { trpc } from '~/app/trpc';
 import {
 	IntegrationType,
@@ -43,6 +47,7 @@ const selectOptions: { label: string; value: IntegrationType }[] = [
 ];
 
 function RouteComponent() {
+	const utils = trpc.useUtils();
 	const { source } = Route.useSearch();
 	const params = useParams({
 		strict: false,
@@ -50,7 +55,24 @@ function RouteComponent() {
 	const navigate = Route.useNavigate();
 	const [results] = trpc.records.getQueue.useSuspenseQuery({ source });
 	const { data: queueCount } = trpc.records.getQueueCount.useQuery({ source });
-
+	const { selectedIds, toggleSelection, clearSelection, selectAll } = useSelection(
+		results.map((r) => ({ id: r.id.toString() }))
+	);
+	const { mutate: setCurationStatus } = trpc.records.setCurationStatus.useMutation({
+		onSuccess: () => {
+			utils.records.getQueue.invalidate({ source });
+			utils.records.getQueueCount.invalidate({ source });
+			utils.records.get.invalidate();
+			utils.records.search.invalidate();
+		},
+	});
+	const { mutate: setPrivacy } = trpc.records.setPrivacy.useMutation({
+		onSuccess: () => {
+			utils.records.getQueue.invalidate({ source });
+			utils.records.getQueueCount.invalidate({ source });
+			utils.records.get.invalidate();
+		},
+	});
 	return (
 		<div className="flex basis-full overflow-hidden">
 			<div className="flex max-w-md grow-0 basis-full flex-col gap-1 overflow-hidden border-r border-divider">
@@ -83,6 +105,78 @@ function RouteComponent() {
 					</Badge>
 				</div>
 				<div className="grow-0 basis-full overflow-y-auto">
+					<div role="toolbar" className="flex items-center gap-2 px-3 py-2">
+						{selectedIds.size > 0 ? (
+							<>
+								<Text size="2" color="gray" className="grow">
+									{selectedIds.size} selected
+								</Text>
+								<DropdownMenu.Root>
+									<DropdownMenu.Trigger>
+										<Button variant="surface" size="1" className="mr-2">
+											Actions
+											<DropdownMenu.TriggerIcon />
+										</Button>
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content>
+										<DropdownMenu.Item
+											onClick={() => {
+												setCurationStatus({
+													recordIds: Array.from(selectedIds).map(Number),
+													needsCuration: false,
+												});
+											}}
+										>
+											Mark as Reviewed
+										</DropdownMenu.Item>
+										<DropdownMenu.Item
+											onClick={() => {
+												setCurationStatus({
+													recordIds: Array.from(selectedIds).map(Number),
+													needsCuration: true,
+												});
+											}}
+										>
+											Mark as Needs Curation
+										</DropdownMenu.Item>
+										<DropdownMenu.Item
+											onClick={() => {
+												setPrivacy({
+													recordIds: Array.from(selectedIds).map(Number),
+													isPrivate: true,
+												});
+											}}
+										>
+											Mark as Private
+										</DropdownMenu.Item>
+										<DropdownMenu.Item
+											onClick={() => {
+												setPrivacy({
+													recordIds: Array.from(selectedIds).map(Number),
+													isPrivate: false,
+												});
+											}}
+										>
+											Mark as Public
+										</DropdownMenu.Item>
+									</DropdownMenu.Content>
+								</DropdownMenu.Root>
+								<Button variant="ghost" size="1" onClick={() => clearSelection()}>
+									<Cross2Icon className="size-4" />
+									Clear All
+								</Button>
+							</>
+						) : (
+							<>
+								<Text size="2" color="gray" className="grow">
+									No entries selected
+								</Text>
+								<Button variant="soft" size="1" onClick={() => selectAll()}>
+									Select All
+								</Button>
+							</>
+						)}
+					</div>
 					{results.length === 0 ? (
 						<Placeholder>No Entries in Queue</Placeholder>
 					) : (
@@ -92,6 +186,10 @@ function RouteComponent() {
 									key={entry.id}
 									entry={entry}
 									selected={params.recordId === entry.id.toString()}
+									checked={selectedIds.has(entry.id.toString())}
+									onCheckToggle={() => {
+										toggleSelection(entry.id.toString());
+									}}
 									onClick={() => {
 										navigate({
 											to: '/queue/records/$recordId',
@@ -124,6 +222,8 @@ type RecordQueueItemProps = {
 		children: RecordSelect[];
 	};
 	selected: boolean;
+	checked: boolean;
+	onCheckToggle: () => void;
 	onClick: () => void;
 };
 
@@ -136,7 +236,13 @@ const NoCreatorAvatar = ({ ...props }: Partial<AvatarProps>) => (
 	/>
 );
 
-const RecordQueueItem = ({ entry, selected, onClick }: RecordQueueItemProps) => {
+const RecordQueueItem = ({
+	entry,
+	selected,
+	onClick,
+	checked,
+	onCheckToggle,
+}: RecordQueueItemProps) => {
 	const firstCreator = entry.recordCreators[0]?.creator;
 	const firstMedia = entry.recordMedia[0]?.media;
 	const childRecords = entry.children;
@@ -150,6 +256,13 @@ const RecordQueueItem = ({ entry, selected, onClick }: RecordQueueItemProps) => 
 			<div className="flex gap-3">
 				<div className="flex grow flex-col gap-1 overflow-hidden">
 					<div className="flex items-center gap-2 overflow-hidden">
+						<Checkbox
+							checked={checked}
+							onClick={(e) => {
+								e.stopPropagation();
+							}}
+							onCheckedChange={onCheckToggle}
+						/>
 						{firstCreator ? (
 							<Avatar
 								size="1"

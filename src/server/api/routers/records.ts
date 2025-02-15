@@ -1,4 +1,4 @@
-import { and, arrayContained, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, arrayContained, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { IntegrationType, RecordInsertSchema, records } from '~/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
@@ -62,7 +62,7 @@ export const recordsRouter = createTRPCRouter({
 					isNull(records.parentId)
 				),
 				orderBy: [records.recordCreatedAt, records.childOrder, records.recordUpdatedAt],
-				limit: 100,
+				limit: 50,
 			});
 			return entries;
 		}),
@@ -106,6 +106,33 @@ export const recordsRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input }) => {
 			const [deletedRecord] = await db.delete(records).where(eq(records.id, input)).returning();
 			return deletedRecord;
+		}),
+
+	setCurationStatus: publicProcedure
+		.input(
+			z.object({
+				recordIds: z.array(z.number().int().positive()),
+				needsCuration: z.boolean(),
+			})
+		)
+		.mutation(async ({ ctx: { db }, input: { recordIds, needsCuration } }) => {
+			const updatedRecords = await db
+				.update(records)
+				.set({ needsCuration })
+				.where(inArray(records.id, recordIds))
+				.returning();
+			return updatedRecords;
+		}),
+
+	setPrivacy: publicProcedure
+		.input(z.object({ recordIds: z.array(z.number().int().positive()), isPrivate: z.boolean() }))
+		.mutation(async ({ ctx: { db }, input: { recordIds, isPrivate } }) => {
+			const updatedRecords = await db
+				.update(records)
+				.set({ isPrivate })
+				.where(inArray(records.id, recordIds))
+				.returning();
+			return updatedRecords;
 		}),
 
 	search: publicProcedure.input(z.string()).query(({ ctx: { db }, input }) => {
