@@ -143,7 +143,7 @@ export async function createEntitiesFromReadwiseAuthors() {
 // ------------------------------------------------------------------------
 
 export async function createReadwiseTags(integrationRunId?: number) {
-	console.log('Processing document tags...');
+	console.log('Processing document tags for integration run', integrationRunId);
 	const documents = await db.query.readwiseDocuments.findMany({
 		where: and(
 			isNotNull(readwiseDocuments.tags),
@@ -151,7 +151,7 @@ export async function createReadwiseTags(integrationRunId?: number) {
 		),
 	});
 	if (documents.length === 0) {
-		console.log('No new or updated documents to process.');
+		console.log('No new or updated tags to process.');
 		return;
 	}
 
@@ -183,8 +183,8 @@ export async function createReadwiseTags(integrationRunId?: number) {
 			`Deleted ${deletedDocumentTags.length} document tags for ${documents.length} documents in integration run ${integrationRunId}.`
 		);
 	} else {
+		console.log(`No integration run id provided, deleting all document tags.`);
 		await db.delete(readwiseDocumentTags);
-		console.log(`Deleted all document tags.`);
 	}
 
 	const documentTagPromises = documents.flatMap((document) => {
@@ -230,6 +230,13 @@ const mapReadwiseTagToCategory = (tag: ReadwiseTagSelect): IndicesInsert => {
 export async function createCategoriesFromReadwiseTags() {
 	const tags = await db.query.readwiseTags.findMany({
 		where: isNull(readwiseTags.indexEntryId),
+		with: {
+			tagDocuments: {
+				with: {
+					document: true,
+				},
+			},
+		},
 	});
 	if (tags.length === 0) {
 		console.log('No new or updated tags to process.');
@@ -248,14 +255,29 @@ export async function createCategoriesFromReadwiseTags() {
 			})
 			.returning({ id: indices.id });
 		if (!newCategory) {
-			console.log(`Failed to create index category for tag ${tag.tag}`);
+			console.error(`Failed to create index category for tag ${tag.tag}`);
 			continue;
 		}
-		await db
+		const [updatedTag] = await db
 			.update(readwiseTags)
 			.set({ indexEntryId: newCategory.id })
-			.where(eq(readwiseTags.id, tag.id));
+			.where(eq(readwiseTags.id, tag.id))
+			.returning();
+		if (!updatedTag) {
+			console.error(`Failed to update tag ${tag.tag} with index category ${newCategory.id}`);
+			continue;
+		}
 		console.log(`Linked tag ${tag.tag} to index category ${newCategory.id}`);
+		for (const tagDocument of tag.tagDocuments) {
+			if (tagDocument.document.recordId) {
+				console.log(`Linking tag ${tag.tag} to record ${tagDocument.document.recordId}`);
+				await db.insert(recordCategories).values({
+					recordId: tagDocument.document.recordId,
+					categoryId: newCategory.id,
+					type: 'file_under',
+				});
+			}
+		}
 	}
 }
 

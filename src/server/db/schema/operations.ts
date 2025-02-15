@@ -37,6 +37,53 @@ export const RunType = z.enum(['seed', 'sync']);
 export type RunType = z.infer<typeof RunType>;
 export const runTypeEnum = pgEnum('run_type', RunType.options);
 
+export const FLAGS = {
+	important: {
+		name: 'Important',
+		emoji: '⭐',
+		description: 'Important content',
+	},
+	favorite: {
+		name: 'Favorite',
+		emoji: '💖',
+		description: 'Favorite content',
+	},
+	draft: {
+		name: 'Draft',
+		emoji: '📝',
+		description: 'Work in progress',
+	},
+	follow_up: {
+		name: 'Follow-up',
+		emoji: '🚩',
+		description: 'Needs further action',
+	},
+	review: {
+		name: 'Review',
+		emoji: '⏲️',
+		description: 'Marked for later review',
+	},
+	outdated: {
+		name: 'Outdated',
+		emoji: '📅',
+		description: 'Content needs updating',
+	},
+	disagree: {
+		name: 'Disagree',
+		emoji: '👎',
+		description: "Does not reflect the curator's views or beliefs",
+	},
+} as const;
+
+export const Flag = z.enum(
+	Object.keys(FLAGS) as [keyof typeof FLAGS, ...Array<keyof typeof FLAGS>]
+);
+export type Flag = z.infer<typeof Flag>;
+export const flagEnum = pgEnum('flag', Flag.options);
+
+export type FlagData = typeof FLAGS;
+export type FlagKey = keyof FlagData;
+
 const recordCreatedAt = timestamp('created_at', {
 	withTimezone: true,
 })

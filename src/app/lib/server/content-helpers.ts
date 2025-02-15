@@ -2,7 +2,7 @@ import mime from 'mime-types';
 import sharp from 'sharp';
 import { z } from 'zod';
 import { MediaType } from '~/server/db/schema/media';
-import { FLAGS, type Flag } from '~/server/db/schema/records';
+import { FLAGS, type Flag } from '~/server/db/schema/operations';
 
 const urlSchema = z.string().url();
 const DEFAULT_MEDIA_TYPE = MediaType.enum.application;

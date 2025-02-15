@@ -18,12 +18,13 @@ import {
 	commonColumns,
 	contentTimestamps,
 	databaseTimestamps,
+	flagEnum,
 	textEmbeddingColumns,
 } from './operations';
 import { raindropCollections, raindropTags } from './raindrop';
 import { readwiseAuthors } from './readwise';
 import { readwiseTags } from './readwise';
-import { flagEnum, recordCreators } from './records';
+import { recordCreators } from './records';
 import { recordCategories } from './records';
 import { records } from './records';
 import { twitterUsers } from './twitter';
