@@ -14,9 +14,11 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as QueueRouteImport } from './routes/queue/route'
 import { Route as CommitsRouteImport } from './routes/commits/route'
 import { Route as IndexImport } from './routes/index'
+import { Route as QueueRecordsImport } from './routes/queue/records'
 import { Route as QueueIndicesImport } from './routes/queue/indices'
 import { Route as HistoryDateImport } from './routes/history/$date'
 import { Route as CommitsShaImport } from './routes/commits/$sha'
+import { Route as QueueRecordsRecordIdImport } from './routes/queue/records.$recordId'
 import { Route as QueueIndicesIndexEntryIdImport } from './routes/queue/indices.$indexEntryId'
 
 // Create/Update Routes
@@ -39,6 +41,12 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const QueueRecordsRoute = QueueRecordsImport.update({
+  id: '/records',
+  path: '/records',
+  getParentRoute: () => QueueRouteRoute,
+} as any)
+
 const QueueIndicesRoute = QueueIndicesImport.update({
   id: '/indices',
   path: '/indices',
@@ -55,6 +63,12 @@ const CommitsShaRoute = CommitsShaImport.update({
   id: '/$sha',
   path: '/$sha',
   getParentRoute: () => CommitsRouteRoute,
+} as any)
+
+const QueueRecordsRecordIdRoute = QueueRecordsRecordIdImport.update({
+  id: '/$recordId',
+  path: '/$recordId',
+  getParentRoute: () => QueueRecordsRoute,
 } as any)
 
 const QueueIndicesIndexEntryIdRoute = QueueIndicesIndexEntryIdImport.update({
@@ -109,12 +123,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QueueIndicesImport
       parentRoute: typeof QueueRouteImport
     }
+    '/queue/records': {
+      id: '/queue/records'
+      path: '/records'
+      fullPath: '/queue/records'
+      preLoaderRoute: typeof QueueRecordsImport
+      parentRoute: typeof QueueRouteImport
+    }
     '/queue/indices/$indexEntryId': {
       id: '/queue/indices/$indexEntryId'
       path: '/$indexEntryId'
       fullPath: '/queue/indices/$indexEntryId'
       preLoaderRoute: typeof QueueIndicesIndexEntryIdImport
       parentRoute: typeof QueueIndicesImport
+    }
+    '/queue/records/$recordId': {
+      id: '/queue/records/$recordId'
+      path: '/$recordId'
+      fullPath: '/queue/records/$recordId'
+      preLoaderRoute: typeof QueueRecordsRecordIdImport
+      parentRoute: typeof QueueRecordsImport
     }
   }
 }
@@ -145,12 +173,26 @@ const QueueIndicesRouteWithChildren = QueueIndicesRoute._addFileChildren(
   QueueIndicesRouteChildren,
 )
 
+interface QueueRecordsRouteChildren {
+  QueueRecordsRecordIdRoute: typeof QueueRecordsRecordIdRoute
+}
+
+const QueueRecordsRouteChildren: QueueRecordsRouteChildren = {
+  QueueRecordsRecordIdRoute: QueueRecordsRecordIdRoute,
+}
+
+const QueueRecordsRouteWithChildren = QueueRecordsRoute._addFileChildren(
+  QueueRecordsRouteChildren,
+)
+
 interface QueueRouteRouteChildren {
   QueueIndicesRoute: typeof QueueIndicesRouteWithChildren
+  QueueRecordsRoute: typeof QueueRecordsRouteWithChildren
 }
 
 const QueueRouteRouteChildren: QueueRouteRouteChildren = {
   QueueIndicesRoute: QueueIndicesRouteWithChildren,
+  QueueRecordsRoute: QueueRecordsRouteWithChildren,
 }
 
 const QueueRouteRouteWithChildren = QueueRouteRoute._addFileChildren(
@@ -164,7 +206,9 @@ export interface FileRoutesByFullPath {
   '/commits/$sha': typeof CommitsShaRoute
   '/history/$date': typeof HistoryDateRoute
   '/queue/indices': typeof QueueIndicesRouteWithChildren
+  '/queue/records': typeof QueueRecordsRouteWithChildren
   '/queue/indices/$indexEntryId': typeof QueueIndicesIndexEntryIdRoute
+  '/queue/records/$recordId': typeof QueueRecordsRecordIdRoute
 }
 
 export interface FileRoutesByTo {
@@ -174,7 +218,9 @@ export interface FileRoutesByTo {
   '/commits/$sha': typeof CommitsShaRoute
   '/history/$date': typeof HistoryDateRoute
   '/queue/indices': typeof QueueIndicesRouteWithChildren
+  '/queue/records': typeof QueueRecordsRouteWithChildren
   '/queue/indices/$indexEntryId': typeof QueueIndicesIndexEntryIdRoute
+  '/queue/records/$recordId': typeof QueueRecordsRecordIdRoute
 }
 
 export interface FileRoutesById {
@@ -185,7 +231,9 @@ export interface FileRoutesById {
   '/commits/$sha': typeof CommitsShaRoute
   '/history/$date': typeof HistoryDateRoute
   '/queue/indices': typeof QueueIndicesRouteWithChildren
+  '/queue/records': typeof QueueRecordsRouteWithChildren
   '/queue/indices/$indexEntryId': typeof QueueIndicesIndexEntryIdRoute
+  '/queue/records/$recordId': typeof QueueRecordsRecordIdRoute
 }
 
 export interface FileRouteTypes {
@@ -197,7 +245,9 @@ export interface FileRouteTypes {
     | '/commits/$sha'
     | '/history/$date'
     | '/queue/indices'
+    | '/queue/records'
     | '/queue/indices/$indexEntryId'
+    | '/queue/records/$recordId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -206,7 +256,9 @@ export interface FileRouteTypes {
     | '/commits/$sha'
     | '/history/$date'
     | '/queue/indices'
+    | '/queue/records'
     | '/queue/indices/$indexEntryId'
+    | '/queue/records/$recordId'
   id:
     | '__root__'
     | '/'
@@ -215,7 +267,9 @@ export interface FileRouteTypes {
     | '/commits/$sha'
     | '/history/$date'
     | '/queue/indices'
+    | '/queue/records'
     | '/queue/indices/$indexEntryId'
+    | '/queue/records/$recordId'
   fileRoutesById: FileRoutesById
 }
 
@@ -261,7 +315,8 @@ export const routeTree = rootRoute
     "/queue": {
       "filePath": "queue/route.tsx",
       "children": [
-        "/queue/indices"
+        "/queue/indices",
+        "/queue/records"
       ]
     },
     "/commits/$sha": {
@@ -278,9 +333,20 @@ export const routeTree = rootRoute
         "/queue/indices/$indexEntryId"
       ]
     },
+    "/queue/records": {
+      "filePath": "queue/records.tsx",
+      "parent": "/queue",
+      "children": [
+        "/queue/records/$recordId"
+      ]
+    },
     "/queue/indices/$indexEntryId": {
       "filePath": "queue/indices.$indexEntryId.tsx",
       "parent": "/queue/indices"
+    },
+    "/queue/records/$recordId": {
+      "filePath": "queue/records.$recordId.tsx",
+      "parent": "/queue/records"
     }
   }
 }

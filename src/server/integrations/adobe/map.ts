@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull, or } from 'drizzle-orm';
 import { getSmartMetadata } from '~/app/lib/server/content-helpers';
 import { db } from '~/server/db/connections/postgres';
 import {
@@ -153,5 +153,26 @@ export const createMediaFromLightroomImages = async () => {
 				})
 				.onConflictDoNothing();
 		}
+	}
+};
+
+export const createRecordMediaLinks = async () => {
+	const images = await db.query.lightroomImages.findMany({
+		where: and(isNotNull(lightroomImages.recordId), isNotNull(lightroomImages.mediaId)),
+		columns: {
+			id: true,
+			recordId: true,
+			mediaId: true,
+		},
+	});
+
+	for (const image of images) {
+		await db
+			.insert(recordMedia)
+			.values({
+				recordId: image.recordId!,
+				mediaId: image.mediaId!,
+			})
+			.onConflictDoNothing();
 	}
 };

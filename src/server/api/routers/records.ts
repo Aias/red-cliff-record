@@ -1,6 +1,6 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, arrayContained, desc, eq, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { RecordInsertSchema, records } from '~/server/db/schema/records';
+import { IntegrationType, RecordInsertSchema, records } from '~/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { SIMILARITY_THRESHOLD } from './common';
 
@@ -32,6 +32,57 @@ export const recordsRouter = createTRPCRouter({
 		}
 		return record;
 	}),
+
+	getQueue: publicProcedure
+		.input(z.object({ source: IntegrationType.optional() }))
+		.query(async ({ ctx: { db }, input: { source } }) => {
+			const entries = await db.query.records.findMany({
+				with: {
+					recordCreators: {
+						with: {
+							creator: true,
+						},
+					},
+					recordCategories: {
+						with: {
+							category: true,
+						},
+					},
+					recordMedia: {
+						with: {
+							media: true,
+						},
+					},
+					format: true,
+					children: true,
+				},
+				where: and(
+					source ? arrayContained(records.sources, [source]) : undefined,
+					eq(records.needsCuration, true),
+					isNull(records.parentId)
+				),
+				orderBy: [records.recordCreatedAt, records.childOrder, records.recordUpdatedAt],
+				limit: 100,
+			});
+			return entries;
+		}),
+
+	getQueueCount: publicProcedure
+		.input(
+			z.object({
+				source: IntegrationType.optional(),
+			})
+		)
+		.query(async ({ ctx: { db }, input: { source } }) => {
+			const count = await db.$count(
+				records,
+				and(
+					eq(records.needsCuration, true),
+					source ? arrayContained(records.sources, [source]) : undefined
+				)
+			);
+			return count;
+		}),
 
 	upsert: publicProcedure.input(RecordInsertSchema).mutation(async ({ ctx: { db }, input }) => {
 		const { id, ...values } = input;

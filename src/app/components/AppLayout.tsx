@@ -71,7 +71,16 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 									})
 								}
 							>
-								Queue
+								Index Queue
+							</DropdownMenu.Item>
+							<DropdownMenu.Item
+								onClick={() =>
+									navigate({
+										to: '/queue/records',
+									})
+								}
+							>
+								Records Queue
 							</DropdownMenu.Item>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>

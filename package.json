@@ -37,6 +37,7 @@
 		"dotenv": "^16.4.7",
 		"drizzle-orm": "^0.39.3",
 		"drizzle-zod": "^0.7.0",
+		"marked": "^15.0.7",
 		"mime-types": "^2.1.35",
 		"openai": "^4.85.1",
 		"postgres": "^3.4.5",
