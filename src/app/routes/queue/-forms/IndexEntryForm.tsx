@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from 'react';
-import { ExternalLinkIcon, ImageIcon } from '@radix-ui/react-icons';
 import {
 	Button,
 	CheckboxCards,
@@ -12,6 +11,7 @@ import {
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
+import { ExternalLinkIcon, ImageIcon } from '~/app/components/icons';
 import { trpc } from '~/app/trpc';
 import { Flag, type RecordSelect } from '~/server/db/schema';
 import {
@@ -262,7 +262,7 @@ export const IndexEntryForm = ({
 									size="1"
 									className="flex items-center gap-1"
 								>
-									<ExternalLinkIcon className="size-3.5" />
+									<ExternalLinkIcon />
 									Open
 								</Link>
 							)}

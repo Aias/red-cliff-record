@@ -5,7 +5,7 @@
 }
 
 html {
-	min-height: 100dvh;
+	height: 100dvh;
 	scrollbar-width: thin;
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
@@ -14,23 +14,67 @@ html {
 
 body {
 	margin: 0;
-	min-height: 100dvh;
+	height: 100dvh;
 }
 
-ul,
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
 ol,
+ul,
 menu,
-pre {
+figure,
+figcaption,
+blockquote,
+dl,
+dd {
 	margin: 0;
 	padding: 0;
 }
 
-ul,
-ol,
+ul[role='list'],
+ol[role='list'],
 menu {
 	list-style: none;
 }
 
 input[type='text']::-webkit-calendar-picker-indicator {
 	display: none !important; /* https://stackoverflow.com/questions/23177409/remove-arrow-in-chrome-for-input-with-attribute-list */
+}
+
+img,
+picture {
+	max-width: 100%;
+	display: block;
+}
+
+input,
+button,
+textarea,
+select {
+	font-family: inherit;
+}
+
+video {
+	outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html:focus-within {
+		scroll-behavior: auto;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }

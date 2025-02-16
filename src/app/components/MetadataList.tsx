@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { CopyIcon } from '@radix-ui/react-icons';
-import { Button, DataList, Dialog, IconButton, Link, ScrollArea, Text } from '@radix-ui/themes';
+import { Button, DataList, Dialog, IconButton, Link, ScrollArea } from '@radix-ui/themes';
 import { z } from 'zod';
+import { CopyIcon } from './icons';
 
 interface MetadataListProps extends DataList.RootProps {
 	metadata: Record<string, unknown>;
@@ -29,9 +29,7 @@ export const MetadataList = ({ metadata, className = '', ...props }: MetadataLis
 		if (value instanceof Object) {
 			return (
 				<pre className="block break-all whitespace-pre-wrap">
-					<Text as="span" color="gray" size="1">
-						{JSON.stringify(value, null, 2)}
-					</Text>
+					<span className="text-sm text-secondary">{JSON.stringify(value, null, 2)}</span>
 				</pre>
 			);
 		}
@@ -69,9 +67,7 @@ export const MetadataList = ({ metadata, className = '', ...props }: MetadataLis
 								</IconButton>
 							</div>
 						) : (
-							<Text color="gray" className="text-hint">
-								—
-							</Text>
+							<span className="text-hint">—</span>
 						)}
 						{copiedKey === key && (
 							<div className="absolute top-0 right-0 text-xs text-hint">Copied!</div>

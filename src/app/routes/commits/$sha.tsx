@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
-import { Cross1Icon } from '@radix-ui/react-icons';
-import { Button, Card, Code, Heading, IconButton, ScrollArea, Text } from '@radix-ui/themes';
+import { Button, Code, IconButton } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
+import { CloseIcon } from '~/app/components/icons';
 import { trpc } from '~/app/trpc';
 import { AppLink } from '../../components/AppLink';
 import { CodeBlock } from '../../components/CodeBlock';
@@ -45,123 +45,105 @@ function CommitView() {
 	}, [commit]);
 
 	return (
-		<Card className="flex grow basis-full flex-col gap-4 overflow-hidden @max-[799px]:basis-full">
+		<div className="flex grow basis-full flex-col gap-4 overflow-hidden card @max-[799px]:basis-full">
 			<header className="flex items-center justify-between gap-2">
-				<Heading size="6">Commit {commit.sha.slice(0, 7)}</Heading>
+				<h2>Commit {commit.sha.slice(0, 7)}</h2>
 				<AppLink to={'/commits'} asChild>
 					<IconButton size="1" variant="soft">
-						<Cross1Icon />
+						<CloseIcon />
 					</IconButton>
 				</AppLink>
 			</header>
-			<ScrollArea scrollbars="vertical">
-				<div className="flex flex-col gap-4">
-					<Text as="p">{commit.message}</Text>
-					<Text as="p">
-						Repository: <Code>{commit.repository.fullName}</Code>
-					</Text>
-					<Text as="p">
-						Changes: +{commit.additions} -{commit.deletions} ({commit.changes} total)
-					</Text>
+			<div className="flex flex-col gap-4 overflow-auto">
+				<p className="font-medium">{commit.message}</p>
+				<p>
+					Repository: <Code>{commit.repository.fullName}</Code>
+				</p>
+				<p>
+					Changes: +{commit.additions} -{commit.deletions} ({commit.changes} total)
+				</p>
 
-					<section>
-						<header className="mb-3 flex items-center justify-between gap-2">
-							<Heading size="4">Analysis</Heading>
-							<Button
-								onClick={handleAnalyze}
-								disabled={updateCommitSummary.isPending}
-								variant="soft"
-							>
-								{updateCommitSummary.isPending ? 'Analyzing...' : 'Analyze Commit'}
-							</Button>
-						</header>
+				<section>
+					<header className="mb-3 flex items-center justify-between gap-2">
+						<h3>Analysis</h3>
+						<Button onClick={handleAnalyze} disabled={updateCommitSummary.isPending} variant="soft">
+							{updateCommitSummary.isPending ? 'Analyzing...' : 'Analyze Commit'}
+						</Button>
+					</header>
 
-						{updateCommitSummary.error && (
-							<Card>
-								<Text color="red" as="p">
-									{updateCommitSummary.error.message}
-								</Text>
-							</Card>
-						)}
+					{updateCommitSummary.error && (
+						<p className="text-error card">{updateCommitSummary.error.message}</p>
+					)}
 
-						{commit.summary ? (
-							<CodeBlock>
-								{JSON.stringify(
-									{
-										type: commit.commitType,
-										summary: commit.summary,
-										technologies: commit.technologies,
-									},
-									null,
-									2
-								)}
-							</CodeBlock>
-						) : (
-							<Card>
-								<Text color="gray" align="center" as="p">
-									No Summary Generated
-								</Text>
-							</Card>
-						)}
-					</section>
+					{commit.summary ? (
+						<CodeBlock>
+							{JSON.stringify(
+								{
+									type: commit.commitType,
+									summary: commit.summary,
+									technologies: commit.technologies,
+								},
+								null,
+								2
+							)}
+						</CodeBlock>
+					) : (
+						<p className="card text-center text-secondary">No Summary Generated</p>
+					)}
+				</section>
 
-					<section>
-						<header className="mb-3 flex items-center justify-between gap-2">
-							<Heading size="4">Changed Files</Heading>
-						</header>
-						<ul className="flex list-none flex-col gap-2 p-0">
-							{commit.commitChanges.map((change) => (
-								<li key={change.id}>
-									<Code variant="ghost">{change.filename}</Code>
+				<section>
+					<header className="mb-3 flex items-center justify-between gap-2">
+						<h3>Changed Files</h3>
+					</header>
+					<ul className="flex list-none flex-col gap-2 p-0">
+						{commit.commitChanges.map((change) => (
+							<li key={change.id}>
+								<Code variant="ghost">{change.filename}</Code>
+							</li>
+						))}
+					</ul>
+				</section>
+
+				<section>
+					<header className="mb-3">
+						<h3>Related Commits</h3>
+					</header>
+					{related && related.length > 0 ? (
+						<ol className="flex flex-col gap-3">
+							{related.map((relatedCommit) => (
+								<li key={relatedCommit.id} className="card">
+									<div className="flex flex-col gap-2">
+										<div className="flex items-baseline justify-between gap-2">
+											<AppLink size="2" to="/commits/$sha" params={{ sha: relatedCommit.sha }}>
+												<Code variant="ghost" weight="medium">
+													{relatedCommit.repository.fullName}:
+												</Code>
+												<span>#{relatedCommit.sha.slice(0, 7)}</span>
+											</AppLink>
+											<span className="text-sm text-secondary">
+												Score: {relatedCommit.similarity.toFixed(3)}
+											</span>
+										</div>
+										<p>{relatedCommit.message}</p>
+										{relatedCommit.summary && (
+											<p className="text-sm text-secondary">
+												{relatedCommit.summary.length > 200
+													? `${relatedCommit.summary.slice(0, 350)}...`
+													: relatedCommit.summary}
+											</p>
+										)}
+									</div>
 								</li>
 							))}
-						</ul>
-					</section>
-
-					<section>
-						<header className="mb-3">
-							<Heading size="4">Related Commits</Heading>
-						</header>
-						{related && related.length > 0 ? (
-							<ol className="flex flex-col gap-3">
-								{related.map((relatedCommit) => (
-									<li key={relatedCommit.id} className="card">
-										<div className="flex flex-col gap-2">
-											<div className="flex items-baseline justify-between gap-2">
-												<AppLink size="2" to="/commits/$sha" params={{ sha: relatedCommit.sha }}>
-													<Code variant="ghost" weight="medium">
-														{relatedCommit.repository.fullName}:
-													</Code>
-													<Text as="span">#{relatedCommit.sha.slice(0, 7)}</Text>
-												</AppLink>
-												<Text size="1" color="gray">
-													Score: {relatedCommit.similarity.toFixed(3)}
-												</Text>
-											</div>
-											<Text as="p" size="2">
-												{relatedCommit.message}
-											</Text>
-											{relatedCommit.summary && (
-												<Text size="1" color="gray" as="p">
-													{relatedCommit.summary.length > 200
-														? `${relatedCommit.summary.slice(0, 350)}...`
-														: relatedCommit.summary}
-												</Text>
-											)}
-										</div>
-									</li>
-								))}
-							</ol>
-						) : (
-							<Card>
-								<Text color="gray" align="center" as="p">
-									{commit.textEmbedding ? 'No related commits found.' : 'No embedding for commit.'}
-								</Text>
-							</Card>
-						)}
-					</section>
-				</div>
-			</ScrollArea>
-		</Card>
+						</ol>
+					) : (
+						<p className="card text-center text-secondary">
+							{commit.textEmbedding ? 'No related commits found.' : 'No embedding for commit.'}
+						</p>
+					)}
+				</section>
+			</div>
+		</div>
 	);
 }

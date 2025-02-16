@@ -1,5 +1,3 @@
-import { Box } from '@radix-ui/themes';
-
 export const Placeholder = ({
 	children,
 	className = '',
@@ -8,10 +6,10 @@ export const Placeholder = ({
 	className?: string;
 }) => {
 	return (
-		<Box
+		<div
 			className={`flex h-full shrink-0 grow flex-col items-center justify-center gap-2 rounded-2 border border-divider bg-tint p-4 ${className}`}
 		>
 			{children}
-		</Box>
+		</div>
 	);
 };

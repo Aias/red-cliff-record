@@ -1,8 +1,13 @@
-import { ArchiveIcon, CubeIcon, PersonIcon, QuestionMarkCircledIcon } from '@radix-ui/react-icons';
-import { Badge, Em, Heading, Link, Spinner, TabNav, Text, type TextProps } from '@radix-ui/themes';
+import { Badge, Em, Heading, Link, Spinner, TabNav, Text } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
-import { IconWrapper } from '~/app/components/IconWrapper';
+import {
+	CategoryIcon,
+	EntityIcon,
+	FormatIcon,
+	UnknownIcon,
+	type IconProps,
+} from '~/app/components/icons';
 import { Placeholder } from '~/app/components/Placeholder';
 import { TabNavLink } from '~/app/components/TabNavLink';
 import { toTitleCase } from '~/app/lib/formatting';
@@ -171,24 +176,20 @@ const IndexEntryCard = ({ entry, onClick, selected }: IndexEntryCardProps) => {
 	);
 };
 
-export const IndexTypeIcon = ({ type, ...props }: { type: IndexMainType } & TextProps) => {
+export const IndexTypeIcon = ({ type, ...props }: { type: IndexMainType } & IconProps) => {
 	let icon;
 	switch (type) {
 		case 'entity':
-			icon = <PersonIcon />;
+			icon = <EntityIcon {...props} />;
 			break;
 		case 'category':
-			icon = <ArchiveIcon />;
+			icon = <CategoryIcon {...props} />;
 			break;
 		case 'format':
-			icon = <CubeIcon />;
+			icon = <FormatIcon {...props} />;
 			break;
 		default:
-			icon = <QuestionMarkCircledIcon />;
+			icon = <UnknownIcon {...props} />;
 	}
-	return (
-		<IconWrapper color="gray" size="2" {...props}>
-			{icon}
-		</IconWrapper>
-	);
+	return icon;
 };

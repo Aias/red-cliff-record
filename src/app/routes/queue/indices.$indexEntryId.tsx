@@ -1,8 +1,8 @@
 import { Suspense, useMemo } from 'react';
-import { Link2Icon } from '@radix-ui/react-icons';
-import { Avatar, Card, Em, Heading, IconButton, Spinner, Text } from '@radix-ui/themes';
+import { Avatar, Em, Heading, IconButton, Spinner, Text } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { AppLink } from '~/app/components/AppLink';
+import { ConnectIcon } from '~/app/components/icons';
 import { IntegrationAvatar } from '~/app/components/IntegrationAvatar';
 import { MetadataDialogButton } from '~/app/components/MetadataList';
 import { Placeholder } from '~/app/components/Placeholder';
@@ -129,13 +129,13 @@ function IndexEntryContent() {
 										mergeMutation.mutate({ sourceId: indexEntry.id, targetId: entry.id })
 									}
 								>
-									<Link2Icon className="size-4" />
+									<ConnectIcon />
 								</IconButton>
 							</li>
 						))}
 				</ol>
 			) : null}
-			<Card className="shrink-0">
+			<div className="card shrink-0">
 				<IndexEntryForm
 					indexEntryId={indexEntryId}
 					defaults={indexEntry}
@@ -144,7 +144,7 @@ function IndexEntryContent() {
 						utils.indices.getQueueCount.invalidate();
 					}}
 				/>
-			</Card>
+			</div>
 			<Heading size="4" as="h3">
 				Associated records
 			</Heading>

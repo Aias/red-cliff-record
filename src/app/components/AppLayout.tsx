@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react';
-import { ArchiveIcon, MoonIcon, SunIcon } from '@radix-ui/react-icons';
-import { Button, DropdownMenu, IconButton, Separator, Text } from '@radix-ui/themes';
+import { Button, DropdownMenu, IconButton } from '@radix-ui/themes';
 import { useNavigate } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/start';
+import { ArchiveIcon, DayModeIcon, NightModeIcon } from '~/app/components/icons';
 import { setTheme } from '../lib/server/setTheme';
 import { AppLink } from './AppLink';
-import { IconWrapper } from './IconWrapper';
 
 interface AppLayoutProps {
 	children: ReactNode;
@@ -27,12 +26,8 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 			<menu className="z-100 flex items-center justify-between gap-4 border-b border-border surface px-4 py-2">
 				<AppLink to={'/'} asChild>
 					<li className="flex grow cursor-pointer items-center gap-3">
-						<IconWrapper>
-							<ArchiveIcon />
-						</IconWrapper>
-						<Text className="font-mono uppercase" weight="medium" size="2">
-							The Red Cliff Record
-						</Text>
+						<ArchiveIcon />
+						<span className="font-mono text-sm font-medium uppercase">The Red Cliff Record</span>
 					</li>
 				</AppLink>
 
@@ -85,11 +80,9 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 				</li>
-				<li>
-					<Separator orientation="vertical" />
-				</li>
+				<li className="vr py-1" />
 				<IconButton asChild variant="ghost" size="2" onClick={toggleTheme}>
-					<li>{currentTheme === 'light' ? <MoonIcon /> : <SunIcon />}</li>
+					<li>{currentTheme === 'light' ? <DayModeIcon /> : <NightModeIcon />}</li>
 				</IconButton>
 			</menu>
 			{children}

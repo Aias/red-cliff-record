@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { Button, Dialog, Heading, Link as RadixLink, ScrollArea, Text } from '@radix-ui/themes';
+import { Button, Dialog, Heading, Link as RadixLink, ScrollArea } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataGrid } from '~/app/components/DataGrid';
+import { NextIcon, PreviousIcon } from '~/app/components/icons';
 import { formatISODate, formatNumber, formatTime } from '~/app/lib/formatting';
 import { OmitList } from './-OmitList';
 
@@ -36,9 +36,9 @@ function DailyActivityPage() {
 				accessorKey: 'hostname',
 				header: 'Source',
 				cell: ({ row }) => (
-					<Text wrap="nowrap">
+					<span className="text-nowrap">
 						{row.original.hostname.replaceAll('.local', '').replaceAll('-', ' ')}
-					</Text>
+					</span>
 				),
 			},
 			{
@@ -117,14 +117,14 @@ function DailyActivityPage() {
 				<nav className="flex gap-2">
 					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
 						<Link to="/history/$date" params={{ date: formatISODate(prevDate) }}>
-							<ChevronLeftIcon />
+							<PreviousIcon />
 							Previous Day
 						</Link>
 					</Button>
 					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
 						<Link to="/history/$date" params={{ date: formatISODate(nextDate) }}>
 							Next Day
-							<ChevronRightIcon />
+							<NextIcon />
 						</Link>
 					</Button>
 				</nav>

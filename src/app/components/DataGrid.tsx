@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Checkbox, Table, Text, TextField } from '@radix-ui/themes';
+import { Checkbox, Table, TextField } from '@radix-ui/themes';
 import type { ColumnDef, RowData } from '@tanstack/react-table';
 import {
 	flexRender,
@@ -165,7 +165,7 @@ export function DataGrid<T>({
 				) : (
 					<Table.Row>
 						<Table.Cell colSpan={table.getAllColumns().length} align="center">
-							<Text color="gray">No Rows</Text>
+							<p className="text-secondary">No Rows</p>
 						</Table.Cell>
 					</Table.Row>
 				)}

@@ -1,11 +1,10 @@
 import { useCallback } from 'react';
-import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
-import { Button, Card, Heading, ScrollArea } from '@radix-ui/themes';
+import { Button, Heading, ScrollArea } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { AppLink } from '~/app/components/AppLink';
 import { DataGrid } from '~/app/components/DataGrid';
-import { IconWrapper } from '~/app/components/IconWrapper';
+import { CompleteIcon, IncompleteIcon } from '~/app/components/icons';
 import { useSelection } from '~/app/lib/useSelection';
 import { trpc } from '~/app/trpc';
 import { type CommitSummaryInput } from '~/server/api/routers/github.types';
@@ -88,14 +87,10 @@ const columns: ColumnDef<CommitSelect>[] = [
 		},
 		cell: ({ getValue }) => {
 			const summary = getValue();
-			return summary ? (
-				<IconWrapper color="grass">
-					<CheckCircledIcon />
-				</IconWrapper>
-			) : (
-				<IconWrapper>
-					<CircleIcon />
-				</IconWrapper>
+			return (
+				<span className="text-sm">
+					{summary ? <CompleteIcon className="themed" /> : <IncompleteIcon />}
+				</span>
 			);
 		},
 	},
@@ -128,7 +123,7 @@ function CommitList() {
 
 	return (
 		<main className="@container flex h-full gap-2 overflow-hidden p-3">
-			<Card className="min-w-[max(420px,50%)] grow basis-0 @max-[799px]:hidden">
+			<div className="min-w-[max(420px,50%)] grow basis-0 card @max-[799px]:hidden">
 				<header className="mb-4 flex items-center justify-between gap-2">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedIds.size > 0 && (
@@ -156,7 +151,7 @@ function CommitList() {
 						}}
 					/>
 				</ScrollArea>
-			</Card>
+			</div>
 			<Outlet />
 		</main>
 	);

@@ -26,7 +26,7 @@
 	--color-hint: var(--gray-a10);
 	--color-symbol: var(--gray-a11);
 	--color-ghost: var(--gray-a6);
-	--color-theme-text: var(--accent-a11);
+	--color-accent: var(--accent-11);
 
 	--color-main: var(--accent-9);
 	--color-main-active: var(--accent-10);
@@ -78,35 +78,35 @@
 	--color-gray-track: var(--gray-track);
 	--color-gray: var(--gray-9);
 
-	--color-accent-1: var(--accent-1);
-	--color-accent-2: var(--accent-2);
-	--color-accent-3: var(--accent-3);
-	--color-accent-4: var(--accent-4);
-	--color-accent-5: var(--accent-5);
-	--color-accent-6: var(--accent-6);
-	--color-accent-7: var(--accent-7);
-	--color-accent-8: var(--accent-8);
-	--color-accent-9: var(--accent-9);
-	--color-accent-10: var(--accent-10);
-	--color-accent-11: var(--accent-11);
-	--color-accent-12: var(--accent-12);
-	--color-accent-a1: var(--accent-a1);
-	--color-accent-a2: var(--accent-a2);
-	--color-accent-a3: var(--accent-a3);
-	--color-accent-a4: var(--accent-a4);
-	--color-accent-a5: var(--accent-a5);
-	--color-accent-a6: var(--accent-a6);
-	--color-accent-a7: var(--accent-a7);
-	--color-accent-a8: var(--accent-a8);
-	--color-accent-a9: var(--accent-a9);
-	--color-accent-a10: var(--accent-a10);
-	--color-accent-a11: var(--accent-a11);
-	--color-accent-a12: var(--accent-a12);
-	--color-accent-contrast: var(--accent-contrast);
-	--color-accent-surface: var(--accent-surface);
-	--color-accent-indicator: var(--accent-indicator);
-	--color-accent-track: var(--accent-track);
-	--color-accent: var(--accent-9);
+	--color-theme-1: var(--accent-1);
+	--color-theme-2: var(--accent-2);
+	--color-theme-3: var(--accent-3);
+	--color-theme-4: var(--accent-4);
+	--color-theme-5: var(--accent-5);
+	--color-theme-6: var(--accent-6);
+	--color-theme-7: var(--accent-7);
+	--color-theme-8: var(--accent-8);
+	--color-theme-9: var(--accent-9);
+	--color-theme-10: var(--accent-10);
+	--color-theme-11: var(--accent-11);
+	--color-theme-12: var(--accent-12);
+	--color-theme-a1: var(--accent-a1);
+	--color-theme-a2: var(--accent-a2);
+	--color-theme-a3: var(--accent-a3);
+	--color-theme-a4: var(--accent-a4);
+	--color-theme-a5: var(--accent-a5);
+	--color-theme-a6: var(--accent-a6);
+	--color-theme-a7: var(--accent-a7);
+	--color-theme-a8: var(--accent-a8);
+	--color-theme-a9: var(--accent-a9);
+	--color-theme-a10: var(--accent-a10);
+	--color-theme-a11: var(--accent-a11);
+	--color-theme-a12: var(--accent-a12);
+	--color-theme-contrast: var(--accent-contrast);
+	--color-theme-surface: var(--accent-surface);
+	--color-theme-indicator: var(--accent-indicator);
+	--color-theme-track: var(--accent-track);
+	--color-theme: var(--accent-9);
 
 	--color-focus-1: var(--focus-1);
 	--color-focus-2: var(--focus-2);
@@ -161,7 +161,12 @@
 }
 
 @utility card {
-	@apply rounded-md border border-border-subtle surface p-3;
+	@apply relative block overflow-hidden rounded-md border border-border-subtle p-3 contain-paint;
+	&::before {
+		@apply pointer-events-none absolute inset-0 z-[-1] rounded-md surface;
+		content: '';
+		transition: inherit;
+	}
 }
 
 @utility selectable {
@@ -178,5 +183,84 @@
 	&:is(.selected, [data-status='active'], :has([data-status='active'])):hover,
 	&:is(.selected, [data-status='active'], :has([data-status='active'])):active {
 		@apply border-border-selected bg-selected-hovered;
+	}
+}
+
+@utility icon {
+	@apply inline-flex aspect-square h-[1em] w-[1em] leading-none text-current;
+}
+
+@utility themed {
+	--color-display: var(--accent-12);
+	--color-primary: var(--accent-a12);
+	--color-secondary: var(--accent-a11);
+	--color-hint: var(--accent-a10);
+	--color-symbol: var(--accent-a11);
+	--color-ghost: var(--accent-a6);
+
+	--color-main: var(--accent-9);
+	--color-main-active: var(--accent-10);
+	--color-main-contrast: var(--accent-contrast);
+
+	--color-tint: var(--accent-a2);
+	--color-stain: var(--accent-a3);
+	--color-dye: var(--accent-a4);
+
+	--color-hovered: color-mix(in oklch, var(--accent-a1), var(--accent-a2));
+	--color-active: color-mix(in oklch, var(--accent-a2), var(--accent-a3));
+	--color-selected: color-mix(in oklch, var(--accent-a2), var(--accent-a3));
+	--color-selected-hovered: color-mix(in oklch, var(--accent-a3), var(--accent-a4));
+	--color-divider: var(--accent-a4);
+	--color-border-subtle: var(--accent-4);
+	--color-border: var(--accent-5);
+	--color-border-selected: var(--accent-a5);
+	--color-border-active: var(--accent-6);
+	--color-edge: var(--accent-8);
+
+	color: var(--color-accent);
+}
+
+@layer base {
+	h1,
+	.h1 {
+		@apply text-2xl font-medium;
+	}
+
+	h2,
+	.h2 {
+		@apply text-xl font-medium;
+	}
+
+	h3,
+	.h3 {
+		@apply text-lg font-medium;
+	}
+
+	h4,
+	.h4 {
+		@apply text-base font-bold;
+	}
+
+	h5,
+	.h5,
+	h6,
+	.h6 {
+		@apply text-base font-medium;
+	}
+
+	html {
+		@apply font-sans text-base;
+	}
+
+	hr {
+		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-divider;
+	}
+}
+
+@utility vr {
+	@apply block h-full w-[1px] self-center border-0 border-none border-transparent;
+	&::before {
+		content: '';
+		@apply block h-full bg-divider;
 	}
 }

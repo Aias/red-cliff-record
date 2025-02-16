@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ExternalLinkIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
-import { Avatar, Heading, Link, Separator, Text, TextField } from '@radix-ui/themes';
+import { Avatar, Link, TextField } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
+import { ExternalLinkIcon, SearchIcon } from '~/app/components/icons';
 import { trpc } from '../trpc';
 
 const SearchSchema = z.object({
@@ -41,15 +41,6 @@ function SearchResult({
 	subType?: string | null;
 	onClick?: () => void;
 }) {
-	const TitleComponent = url ? Link : Text;
-	const titleProps = url
-		? {
-				href: url,
-				target: '_blank',
-				rel: 'noopener noreferrer',
-			}
-		: {};
-
 	return (
 		<div className="flex w-full items-start gap-3 p-2 text-left">
 			<Avatar
@@ -61,25 +52,24 @@ function SearchResult({
 			<div className="flex flex-1 flex-col items-start gap-1">
 				<div className="flex w-full items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
-						<TitleComponent size="2" weight="medium" {...titleProps}>
-							{title}
-							{url && <ExternalLinkIcon className="ml-1 inline-block size-3" />}
-						</TitleComponent>
-						{subType && (
-							<Text size="1" color="gray">
-								{subType}
-							</Text>
+						{url ? (
+							<Link
+								href={url}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="gap-1 text-sm font-medium"
+							>
+								{title}
+								<ExternalLinkIcon className="ml-1.5" />
+							</Link>
+						) : (
+							<span className="text-sm font-medium">{title}</span>
 						)}
+						{subType && <span className="text-sm text-secondary">{subType}</span>}
 					</div>
-					<Text size="1" color="gray">
-						{type}
-					</Text>
+					<span className="text-sm text-secondary">{type}</span>
 				</div>
-				{description && (
-					<Text size="1" color="gray" className="line-clamp-2">
-						{description}
-					</Text>
-				)}
+				{description && <span className="line-clamp-2 text-sm text-secondary">{description}</span>}
 			</div>
 		</div>
 	);
@@ -96,14 +86,12 @@ function SearchSection({
 }) {
 	return (
 		<section className="flex w-full flex-col gap-1">
-			<div className="flex items-baseline justify-between">
-				<Heading size="3" mb="2">
-					{title}
-				</Heading>
-				<Text size="1" color="gray">
+			<header className="mb-2 flex items-baseline justify-between">
+				<h2>{title}</h2>
+				<span className="text-secondary">
 					{count} result{count === 1 ? '' : 's'}
-				</Text>
-			</div>
+				</span>
+			</header>
 			{children}
 		</section>
 	);
@@ -147,9 +135,7 @@ function Home() {
 	return (
 		<main className="flex basis-full flex-col items-center gap-4 overflow-hidden p-3">
 			<div className="flex w-full max-w-2xl flex-col items-center gap-8 pt-12">
-				<Heading size="8" align="center">
-					The Red Cliff Record
-				</Heading>
+				<h1 className="text-center text-4xl font-medium text-balance">The Red Cliff Record</h1>
 
 				<TextField.Root
 					className="w-full"
@@ -159,20 +145,16 @@ function Home() {
 					onChange={handleChange}
 				>
 					<TextField.Slot>
-						<MagnifyingGlassIcon height="16" width="16" />
+						<SearchIcon />
 					</TextField.Slot>
 				</TextField.Root>
 
 				{debouncedValue.length > 0 && (
 					<div className="flex w-full flex-col gap-6">
 						{isLoading ? (
-							<Text align="center" color="gray">
-								Searching...
-							</Text>
+							<span className="text-center text-secondary">Searching...</span>
 						) : !hasResults ? (
-							<Text align="center" color="gray">
-								No results found
-							</Text>
+							<span className="text-center text-secondary">No results found</span>
 						) : (
 							<>
 								{(recordsQuery.data?.length ?? 0) > 0 && (
@@ -192,7 +174,7 @@ function Home() {
 
 								{(indicesQuery.data?.length ?? 0) > 0 && (
 									<>
-										{(recordsQuery.data?.length ?? 0) > 0 && <Separator size="4" />}
+										{(recordsQuery.data?.length ?? 0) > 0 && <hr />}
 										<SearchSection title="Indices" count={indicesQuery.data?.length ?? 0}>
 											{indicesQuery.data?.map((index) => (
 												<SearchResult

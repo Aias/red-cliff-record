@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Card, Heading, Spinner } from '@radix-ui/themes';
+import { Heading, Spinner } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { Placeholder } from '~/app/components/Placeholder';
 import { trpc } from '~/app/trpc';
@@ -38,7 +38,7 @@ function RecordContent() {
 					{record?.title}
 				</Heading>
 			</div>
-			<Card className="shrink-0">
+			<div className="card shrink-0">
 				<RecordEntryForm
 					recordId={recordId}
 					defaults={record}
@@ -47,7 +47,7 @@ function RecordContent() {
 						utils.records.getQueueCount.invalidate();
 					}}
 				/>
-			</Card>
+			</div>
 		</div>
 	);
 }
