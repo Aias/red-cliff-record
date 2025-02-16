@@ -27,6 +27,7 @@
 	--color-symbol: var(--gray-a11);
 	--color-ghost: var(--gray-a6);
 	--color-accent: var(--accent-11);
+	--color-accent-active: color-mix(in oklch, var(--accent-11), var(--accent-12));
 
 	--color-main: var(--accent-9);
 	--color-main-active: var(--accent-10);
@@ -134,10 +135,6 @@
 	--color-focus-a12: var(--focus-a12);
 	--color-focus: var(--focus-9);
 
-	--spacing: calc(
-		0.25rem * var(--scaling, 1)
-	); /* Default Tailwind spacing * Radix UI scaling factor. */
-
 	--radius-1: var(--radius-1);
 	--radius-2: var(--radius-2);
 	--radius-3: var(--radius-3);
@@ -186,10 +183,6 @@
 	}
 }
 
-@utility icon {
-	@apply inline-flex aspect-square h-[1em] w-[1em] leading-none text-current;
-}
-
 @utility themed {
 	--color-display: var(--accent-12);
 	--color-primary: var(--accent-a12);
@@ -220,7 +213,12 @@
 	color: var(--color-accent);
 }
 
-@layer base {
+@layer reset {
+	html {
+		@apply font-sans;
+		font-size: calc(1rem * var(--scaling, 1)); /* Scale by Radix UI scaling factor. */
+	}
+
 	h1,
 	.h1 {
 		@apply text-2xl font-medium;
@@ -233,27 +231,42 @@
 
 	h3,
 	.h3 {
-		@apply text-lg font-medium;
+		@apply text-lg font-bold;
 	}
 
 	h4,
 	.h4 {
-		@apply text-base font-bold;
+		@apply text-base font-medium;
 	}
 
 	h5,
 	.h5,
 	h6,
 	.h6 {
-		@apply text-base font-medium;
+		@apply text-sm font-bold;
 	}
 
-	html {
-		@apply font-sans text-base;
+	em {
+		letter-spacing: var(--em-letter-spacing, 0);
 	}
 
 	hr {
 		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-divider;
+	}
+
+	.icon {
+		@apply inline-flex aspect-square h-[1em] w-[1em] leading-none text-current;
+	}
+
+	a:where(:any-link, button),
+	.link {
+		@apply inline-flex items-center gap-1 text-accent hover:text-accent-active hover:underline;
+		text-decoration-line: none;
+		text-decoration-style: solid;
+		text-decoration-thickness: min(2px, max(1px, 0.05em));
+		text-underline-offset: calc(0.025em + 2px);
+		text-decoration-skip-ink: auto;
+		text-decoration-color: var(--color-theme-4);
 	}
 }
 

@@ -1,11 +1,7 @@
 import { useCallback } from 'react';
 import { Button, Heading, ScrollArea } from '@radix-ui/themes';
-import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { AppLink } from '~/app/components/AppLink';
-import { DataGrid } from '~/app/components/DataGrid';
-import { CompleteIcon, IncompleteIcon } from '~/app/components/icons';
-import { useSelection } from '~/app/lib/useSelection';
 import { trpc } from '~/app/trpc';
 import { type CommitSummaryInput } from '~/server/api/routers/github.types';
 import {
@@ -13,6 +9,8 @@ import {
 	type GithubCommitSelect,
 	type GithubRepositorySelect,
 } from '~/server/db/schema/github';
+import { CompleteIcon, DataGrid, IncompleteIcon } from '~/components';
+import { useSelection } from '~/lib/useSelection';
 
 type CommitSelect = Omit<GithubCommitSelect, 'textEmbedding'> & {
 	repository: GithubRepositorySelect;
@@ -56,9 +54,9 @@ const columns: ColumnDef<CommitSelect>[] = [
 		accessorKey: 'sha',
 		header: 'SHA',
 		cell: ({ row }) => (
-			<AppLink to={`/commits/$sha`} params={{ sha: row.original.sha }}>
+			<Link to={`/commits/$sha`} params={{ sha: row.original.sha }}>
 				{row.original.sha.slice(0, 7)}
-			</AppLink>
+			</Link>
 		),
 	},
 	{
@@ -123,7 +121,7 @@ function CommitList() {
 
 	return (
 		<main className="@container flex h-full gap-2 overflow-hidden p-3">
-			<div className="min-w-[max(420px,50%)] grow basis-0 card @max-[799px]:hidden">
+			<div className="card min-w-[max(420px,50%)] grow basis-0 @max-[799px]:hidden">
 				<header className="mb-4 flex items-center justify-between gap-2">
 					<Heading size="6">Recent Commits</Heading>
 					{selectedIds.size > 0 && (

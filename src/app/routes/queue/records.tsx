@@ -5,15 +5,10 @@ import {
 	Checkbox,
 	Select,
 	Spinner,
-	Text,
 	type AvatarProps,
 } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
-import { IntegrationAvatar } from '~/app/components/IntegrationAvatar';
-import { Placeholder } from '~/app/components/Placeholder';
-import { SelectionActions } from '~/app/components/SelectionToolbar';
-import { useSelection } from '~/app/lib/useSelection';
 import { trpc } from '~/app/trpc';
 import {
 	IntegrationType,
@@ -21,6 +16,8 @@ import {
 	type MediaSelect,
 	type RecordSelect,
 } from '~/server/db/schema';
+import { IntegrationAvatar, Placeholder, SelectionActions } from '~/components';
+import { useSelection } from '~/lib/useSelection';
 
 const SearchSchema = z.object({
 	source: IntegrationType.optional(),
@@ -258,12 +255,12 @@ const RecordQueueItem = ({
 								/>
 							))}
 					</div>
-					<Text as="p" size="1" color="gray" className="line-clamp-1">
+					<p className="line-clamp-1 text-xs">
 						{entry.content ??
 							entry.summary ??
 							entry.notes ??
 							`(Synced on ${entry.recordCreatedAt.toLocaleString()})`}
-					</Text>
+					</p>
 				</div>
 				{firstMedia && firstMedia.type === 'image' && (
 					<div className="relative w-16 shrink-0 self-stretch overflow-hidden rounded bg-tint">
@@ -278,17 +275,9 @@ const RecordQueueItem = ({
 			{childRecords && childRecords.length > 0 && (
 				<ol className="flex flex-col gap-2 overflow-hidden">
 					{childRecords.map((child) => (
-						<Text
-							key={child.id}
-							weight="medium"
-							size="1"
-							className="py-1 pl-4"
-							wrap="nowrap"
-							truncate
-							asChild
-						>
-							<li>— {child.title ?? child.content ?? child.summary ?? child.notes}</li>
-						</Text>
+						<li key={child.id} className="truncate py-1 pl-4 text-xs font-medium text-secondary">
+							— {child.title ?? child.content ?? child.summary ?? child.notes}
+						</li>
 					))}
 				</ol>
 			)}

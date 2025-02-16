@@ -1,10 +1,9 @@
 import { type PropsWithChildren } from 'react';
-import { Badge, Spinner, Text } from '@radix-ui/themes';
-import { IntegrationAvatar } from '~/app/components/IntegrationAvatar';
-import { Placeholder } from '~/app/components/Placeholder';
-import { toTitleCase } from '~/app/lib/formatting';
+import { Badge, Spinner } from '@radix-ui/themes';
 import { trpc } from '~/app/trpc';
 import type { IntegrationType } from '~/server/db/schema';
+import { IntegrationAvatar, Placeholder } from '~/components';
+import { toTitleCase } from '~/lib/formatting';
 
 interface RecordCategoriesProps {
 	categoryId: number;
@@ -18,7 +17,7 @@ const Loader = () => (
 
 const Empty = ({ label }: { label: string }) => (
 	<div className="flex shrink-0 grow-0 justify-center overflow-hidden rounded border border-divider bg-tint p-2 align-middle opacity-75">
-		<Text>{label}</Text>
+		{label}
 	</div>
 );
 
@@ -41,13 +40,13 @@ const RecordListItem = ({
 		<Badge color="gray" size="1" className="capitalize">
 			{badge}
 		</Badge>
-		<Text size="2" weight="medium" wrap="nowrap" truncate>
+		<span className="truncate text-sm font-medium">
 			{title ? title : sources ? sources.map(toTitleCase).join(', ') : 'Untitled'}
-		</Text>
+		</span>
 		{content && (
-			<Text size="2" color="gray" truncate wrap="nowrap" className="shrink-1 grow-1 basis-0">
+			<span className="shrink-1 grow-1 basis-0 truncate text-sm text-nowrap text-secondary">
 				{content}
-			</Text>
+			</span>
 		)}
 		{sources && sources.length > 0 ? (
 			<div className="flex shrink grow-0 basis-auto items-center justify-end gap-2">

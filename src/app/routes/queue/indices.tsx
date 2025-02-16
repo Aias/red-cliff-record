@@ -1,18 +1,18 @@
-import { Badge, Em, Heading, Link, Spinner, TabNav, Text } from '@radix-ui/themes';
+import { Badge, Spinner, TabNav } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
+import { trpc } from '~/app/trpc';
+import { IndexMainType, type IndicesSelect } from '~/server/db/schema';
 import {
 	CategoryIcon,
 	EntityIcon,
 	FormatIcon,
+	Placeholder,
+	TabNavLink,
 	UnknownIcon,
 	type IconProps,
-} from '~/app/components/icons';
-import { Placeholder } from '~/app/components/Placeholder';
-import { TabNavLink } from '~/app/components/TabNavLink';
-import { toTitleCase } from '~/app/lib/formatting';
-import { trpc } from '~/app/trpc';
-import { IndexMainType, type IndicesSelect } from '~/server/db/schema';
+} from '~/components';
+import { toTitleCase } from '~/lib/formatting';
 
 const SearchSchema = z.object({
 	type: IndexMainType.optional(),
@@ -98,30 +98,29 @@ const IndexEntryCard = ({ entry, onClick, selected }: IndexEntryCardProps) => {
 	const extras = [];
 	if (entry.subType) {
 		extras.push(
-			<Text key="subtype" size="1" truncate wrap="nowrap">
+			<span key="subtype" className="truncate text-xs">
 				{toTitleCase(entry.subType)}
-			</Text>
+			</span>
 		);
 	}
 	if (entry.shortName) {
 		extras.push(
-			<Text key="short-name" size="1" truncate wrap="nowrap">
+			<span key="short-name" className="truncate text-xs">
 				{entry.shortName}
-			</Text>
+			</span>
 		);
 	}
 	if (entry.canonicalUrl) {
 		extras.push(
-			<Link
+			<a
 				key="canonical-url"
-				size="1"
 				href={entry.canonicalUrl}
 				target="_blank"
-				truncate
-				wrap="nowrap"
+				rel="noopener noreferrer"
+				className="truncate text-xs"
 			>
 				{new URL(entry.canonicalUrl).hostname}
-			</Link>
+			</a>
 		);
 	}
 
@@ -133,14 +132,12 @@ const IndexEntryCard = ({ entry, onClick, selected }: IndexEntryCardProps) => {
 		>
 			<div className="flex shrink-1 basis-full flex-col gap-0.5 overflow-hidden">
 				<div className="flex items-center gap-1.5">
-					<IndexTypeIcon type={entry.mainType} />
-					<Heading size="2" as="h4" wrap="nowrap" truncate>
-						{entry.name}
-					</Heading>
+					<IndexTypeIcon type={entry.mainType} className="text-symbol" />
+					<h4 className="truncate text-sm">{entry.name}</h4>
 					{entry.sense && (
-						<Text size="2" color="gray" wrap="nowrap" truncate>
-							<Em>({entry.sense})</Em>
-						</Text>
+						<span className="truncate text-sm text-secondary">
+							<em>({entry.sense})</em>
+						</span>
 					)}
 				</div>
 				{extras.length > 0 && (
@@ -149,19 +146,15 @@ const IndexEntryCard = ({ entry, onClick, selected }: IndexEntryCardProps) => {
 							i === 0
 								? [extra]
 								: [
-										<Text size="1" key={`bullet-${i}`} className="text-hint">
+										<span key={`bullet-${i}`} className="text-xs text-hint">
 											•
-										</Text>,
+										</span>,
 										extra,
 									]
 						)}
 					</div>
 				)}
-				{entry.notes && (
-					<Text size="1" color="gray" className="line-clamp-1">
-						{entry.notes}
-					</Text>
-				)}
+				{entry.notes && <span className="line-clamp-1 text-xs text-secondary">{entry.notes}</span>}
 			</div>
 			{entry.canonicalMediaUrl && (
 				<div className="relative w-16 self-stretch overflow-hidden rounded bg-tint">

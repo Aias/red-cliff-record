@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataList, Dialog, IconButton, Link, ScrollArea } from '@radix-ui/themes';
+import { Button, DataList, Dialog, IconButton, ScrollArea } from '@radix-ui/themes';
 import { z } from 'zod';
 import { CopyIcon } from './icons';
 
@@ -39,9 +39,9 @@ export const MetadataList = ({ metadata, className = '', ...props }: MetadataLis
 		const urlResult = urlSchema.safeParse(stringValue);
 		if (urlResult.success) {
 			return (
-				<Link href={urlResult.data} target="_blank" rel="noopener noreferrer">
+				<a href={urlResult.data} target="_blank" rel="noopener noreferrer">
 					{stringValue}
-				</Link>
+				</a>
 			);
 		}
 		return stringValue;

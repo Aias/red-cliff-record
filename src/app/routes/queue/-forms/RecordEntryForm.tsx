@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react';
 import { Button, Text, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
-import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
 import { trpc } from '~/app/trpc';
 import { RecordSelectSchema, type RecordSelect } from '~/server/db/schema/records';
+import { CheckboxWithLabel } from '~/components';
 
 type RecordEntryFormProps = {
 	recordId: string | number;

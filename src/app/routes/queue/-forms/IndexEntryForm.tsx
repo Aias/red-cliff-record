@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react';
 import {
 	Button,
 	CheckboxCards,
-	Link,
 	SegmentedControl,
 	Text,
 	TextArea,
@@ -10,8 +9,6 @@ import {
 } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
-import { CheckboxWithLabel } from '~/app/components/CheckboxWithLabel';
-import { ExternalLinkIcon, ImageIcon } from '~/app/components/icons';
 import { trpc } from '~/app/trpc';
 import { Flag, type RecordSelect } from '~/server/db/schema';
 import {
@@ -20,6 +17,7 @@ import {
 	type IndexMainType,
 	type IndicesSelect,
 } from '~/server/db/schema';
+import { CheckboxWithLabel, ExternalLink, ExternalLinkIcon, ImageIcon } from '~/components';
 
 type IndexEntryFormProps = {
 	indexEntryId: string | number;
@@ -205,18 +203,7 @@ export const IndexEntryForm = ({
 							<Text size="2" color="gray" className="flex-1">
 								Canonical URL
 							</Text>
-							{field.state.value && (
-								<Link
-									href={field.state.value}
-									target="_blank"
-									rel="noopener noreferrer"
-									size="1"
-									className="flex items-center gap-1"
-								>
-									<ExternalLinkIcon className="size-3.5" />
-									Open
-								</Link>
-							)}
+							{field.state.value && <ExternalLink href={field.state.value} />}
 						</div>
 						<TextField.Root
 							type="url"
@@ -254,18 +241,7 @@ export const IndexEntryForm = ({
 							<Text size="2" color="gray" className="flex-1">
 								Image URL
 							</Text>
-							{field.state.value && (
-								<Link
-									href={field.state.value}
-									target="_blank"
-									rel="noopener noreferrer"
-									size="1"
-									className="flex items-center gap-1"
-								>
-									<ExternalLinkIcon />
-									Open
-								</Link>
-							)}
+							{field.state.value && <ExternalLink href={field.state.value} />}
 						</div>
 						<TextField.Root
 							type="url"

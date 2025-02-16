@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
 import { Heading, Spinner } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
-import { Placeholder } from '~/app/components/Placeholder';
 import { trpc } from '~/app/trpc';
 import { RecordEntryForm } from './-forms/RecordEntryForm';
+import { Placeholder } from '~/components';
 
 export const Route = createFileRoute('/queue/records/$recordId')({
 	component: RouteComponent,

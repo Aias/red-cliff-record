@@ -1,15 +1,11 @@
 import { Suspense, useMemo } from 'react';
-import { Avatar, Em, Heading, IconButton, Spinner, Text } from '@radix-ui/themes';
-import { createFileRoute } from '@tanstack/react-router';
-import { AppLink } from '~/app/components/AppLink';
-import { ConnectIcon } from '~/app/components/icons';
-import { IntegrationAvatar } from '~/app/components/IntegrationAvatar';
-import { MetadataDialogButton } from '~/app/components/MetadataList';
-import { Placeholder } from '~/app/components/Placeholder';
+import { Avatar, IconButton, Spinner } from '@radix-ui/themes';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { trpc } from '~/app/trpc';
 import { RecordCategories, RecordCreators } from './-components/AssociationLists';
 import { IndexEntryForm } from './-forms/IndexEntryForm';
 import { IndexTypeIcon } from './indices';
+import { ConnectIcon, IntegrationAvatar, MetadataDialogButton, Placeholder } from '~/components';
 
 export const Route = createFileRoute('/queue/indices/$indexEntryId')({
 	component: RouteComponent,
@@ -69,9 +65,7 @@ function IndexEntryContent() {
 					fallback={indexEntry.name[0]!.toUpperCase()}
 					className="shrink-0"
 				/>
-				<Heading size="5" as="h2">
-					{indexEntry.name}
-				</Heading>
+				<h2>{indexEntry.name}</h2>
 				{indexEntry.sources && indexEntry.sources.length > 0 ? (
 					<div className="flex flex-wrap gap-2">
 						{indexEntry.sources.map((source) => (
@@ -94,21 +88,16 @@ function IndexEntryContent() {
 								className="flex items-center gap-3 border-t border-border px-2 py-1 hover:bg-tint"
 							>
 								<div className="flex grow items-center gap-2">
-									<IndexTypeIcon type={entry.mainType} />
-									<Heading size="2" as="h4" weight="medium">
-										<AppLink
-											to="/queue/indices/$indexEntryId"
-											params={{ indexEntryId: entry.id.toString() }}
-											search={{ type }}
-										>
-											{entry.name}
-										</AppLink>
-									</Heading>
-									{entry.sense && (
-										<Text size="2" color="gray">
-											<Em>{entry.sense}</Em>
-										</Text>
-									)}
+									<IndexTypeIcon type={entry.mainType} className="text-symbol" />
+									<Link
+										to="/queue/indices/$indexEntryId"
+										params={{ indexEntryId: entry.id.toString() }}
+										search={{ type }}
+										className="text-sm font-medium"
+									>
+										{entry.name}
+									</Link>
+									{entry.sense && <em className="text-sm text-secondary">({entry.sense})</em>}
 									{entry.sources && entry.sources.length > 0 ? (
 										<div className="flex flex-wrap gap-1">
 											{entry.sources.map((source) => (
@@ -145,22 +134,16 @@ function IndexEntryContent() {
 					}}
 				/>
 			</div>
-			<Heading size="4" as="h3">
-				Associated records
-			</Heading>
+			<h3>Associated records</h3>
 			{indexEntry.recordsInCategory.length > 0 ? (
 				<>
-					<Heading size="3" as="h4" weight="medium">
-						Records in Category
-					</Heading>
+					<h4>Records in Category</h4>
 					<RecordCategories categoryId={indexEntry.id} />
 				</>
 			) : null}
 			{indexEntry.recordsByCreator.length > 0 ? (
 				<>
-					<Heading size="3" as="h4" weight="medium">
-						Records by Creator
-					</Heading>
+					<h4>Records by Creator</h4>
 					<RecordCreators creatorId={indexEntry.id} />
 				</>
 			) : null}

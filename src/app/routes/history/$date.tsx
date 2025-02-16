@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
-import { Button, Dialog, Heading, Link as RadixLink, ScrollArea } from '@radix-ui/themes';
+import { Button, Dialog, Heading, ScrollArea } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { DataGrid } from '~/app/components/DataGrid';
-import { NextIcon, PreviousIcon } from '~/app/components/icons';
-import { formatISODate, formatNumber, formatTime } from '~/app/lib/formatting';
 import { OmitList } from './-OmitList';
+import { DataGrid, NextIcon, PreviousIcon } from '~/components';
+import { formatISODate, formatNumber, formatTime } from '~/lib/formatting';
 
 export const Route = createFileRoute('/history/$date')({
 	loader: ({ params: { date }, context: { queryClient, trpc } }) =>
@@ -45,9 +44,9 @@ function DailyActivityPage() {
 				accessorKey: 'url',
 				header: 'URL',
 				cell: ({ row }) => (
-					<RadixLink href={row.original.url.href} target="_blank" rel="noopener noreferrer">
+					<a href={row.original.url.href} target="_blank" rel="noopener noreferrer">
 						{`${row.original.url.hostname}${row.original.url.pathname}`}
-					</RadixLink>
+					</a>
 				),
 				meta: {
 					columnProps: {

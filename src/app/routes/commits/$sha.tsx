@@ -1,11 +1,9 @@
 import { useCallback } from 'react';
 import { Button, Code, IconButton } from '@radix-ui/themes';
-import { createFileRoute } from '@tanstack/react-router';
-import { CloseIcon } from '~/app/components/icons';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { trpc } from '~/app/trpc';
-import { AppLink } from '../../components/AppLink';
-import { CodeBlock } from '../../components/CodeBlock';
 import { mapCommitToInput } from './route';
+import { CloseIcon, CodeBlock } from '~/components';
 
 export const Route = createFileRoute('/commits/$sha')({
 	loader: async ({ context: { queryClient, trpc }, params: { sha } }) => {
@@ -45,14 +43,14 @@ function CommitView() {
 	}, [commit]);
 
 	return (
-		<div className="flex grow basis-full flex-col gap-4 overflow-hidden card @max-[799px]:basis-full">
+		<div className="card flex grow basis-full flex-col gap-4 overflow-hidden @max-[799px]:basis-full">
 			<header className="flex items-center justify-between gap-2">
 				<h2>Commit {commit.sha.slice(0, 7)}</h2>
-				<AppLink to={'/commits'} asChild>
+				<Link to={'/commits'}>
 					<IconButton size="1" variant="soft">
 						<CloseIcon />
 					</IconButton>
-				</AppLink>
+				</Link>
 			</header>
 			<div className="flex flex-col gap-4 overflow-auto">
 				<p className="font-medium">{commit.message}</p>
@@ -115,12 +113,16 @@ function CommitView() {
 								<li key={relatedCommit.id} className="card">
 									<div className="flex flex-col gap-2">
 										<div className="flex items-baseline justify-between gap-2">
-											<AppLink size="2" to="/commits/$sha" params={{ sha: relatedCommit.sha }}>
+											<Link
+												className="text-sm"
+												to="/commits/$sha"
+												params={{ sha: relatedCommit.sha }}
+											>
 												<Code variant="ghost" weight="medium">
 													{relatedCommit.repository.fullName}:
 												</Code>
 												<span>#{relatedCommit.sha.slice(0, 7)}</span>
-											</AppLink>
+											</Link>
 											<span className="text-sm text-secondary">
 												Score: {relatedCommit.similarity.toFixed(3)}
 											</span>

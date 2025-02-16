@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Avatar, Link, TextField } from '@radix-ui/themes';
+import { Avatar, TextField } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { ExternalLinkIcon, SearchIcon } from '~/app/components/icons';
@@ -42,7 +42,7 @@ function SearchResult({
 	onClick?: () => void;
 }) {
 	return (
-		<div className="flex w-full items-start gap-3 p-2 text-left">
+		<div className="flex w-full items-start gap-3 py-2 text-sm">
 			<Avatar
 				size="2"
 				src={imageUrl ?? undefined}
@@ -53,23 +53,18 @@ function SearchResult({
 				<div className="flex w-full items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
 						{url ? (
-							<Link
-								href={url}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="gap-1 text-sm font-medium"
-							>
+							<a href={url} target="_blank" rel="noopener noreferrer" className="font-medium">
 								{title}
-								<ExternalLinkIcon className="ml-1.5" />
-							</Link>
+								<ExternalLinkIcon className="opacity-75" />
+							</a>
 						) : (
-							<span className="text-sm font-medium">{title}</span>
+							<span className="font-medium">{title}</span>
 						)}
-						{subType && <span className="text-sm text-secondary">{subType}</span>}
+						{subType && <span className="text-secondary">{subType}</span>}
 					</div>
-					<span className="text-sm text-secondary">{type}</span>
+					<span className="text-secondary capitalize">{type}</span>
 				</div>
-				{description && <span className="line-clamp-2 text-sm text-secondary">{description}</span>}
+				{description && <span className="line-clamp-2 text-secondary">{description}</span>}
 			</div>
 		</div>
 	);
@@ -88,7 +83,7 @@ function SearchSection({
 		<section className="flex w-full flex-col gap-1">
 			<header className="mb-2 flex items-baseline justify-between">
 				<h2>{title}</h2>
-				<span className="text-secondary">
+				<span>
 					{count} result{count === 1 ? '' : 's'}
 				</span>
 			</header>
