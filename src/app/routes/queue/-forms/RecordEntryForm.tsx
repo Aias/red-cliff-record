@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button, Text, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
@@ -10,6 +10,105 @@ type RecordEntryFormProps = {
 	recordId: string | number;
 	defaults?: Partial<RecordSelect>;
 	updateCallback?: (data: RecordSelect) => Promise<void>;
+};
+
+const MarkdownTextArea = ({
+	label,
+	value,
+	onChange,
+	rows = 4,
+}: {
+	label: string;
+	value: string | null;
+	onChange: (value: string) => void;
+	rows?: number;
+}) => {
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+	// Auto-resize textarea based on content
+	useEffect(() => {
+		const textarea = textareaRef.current;
+		if (!textarea) return;
+
+		const adjustHeight = () => {
+			textarea.style.height = 'auto';
+			textarea.style.height = `${textarea.scrollHeight}px`;
+		};
+
+		adjustHeight();
+		// Also adjust on window resize in case text reflows
+		window.addEventListener('resize', adjustHeight);
+		return () => window.removeEventListener('resize', adjustHeight);
+	}, [value]);
+
+	// Handle special key combinations for markdown editing
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		// Auto-close markdown syntax pairs
+		const pairs: Record<string, string> = {
+			'*': '*',
+			_: '_',
+			'`': '`',
+			'[': ']',
+		};
+
+		if (e.key in pairs && !e.ctrlKey && !e.metaKey) {
+			const target = e.currentTarget;
+			const start = target.selectionStart;
+			const end = target.selectionEnd;
+
+			// Only auto-close if text is selected or we're not inside a word
+			const isSelection = start !== end;
+			const isWordBoundary = !value?.[start]?.match(/\w/);
+
+			if (isSelection || isWordBoundary) {
+				e.preventDefault();
+				const selectedText = value?.slice(start, end) || '';
+				const newValue =
+					(value?.slice(0, start) || '') +
+					e.key +
+					selectedText +
+					pairs[e.key] +
+					(value?.slice(end) || '');
+				onChange(newValue);
+				// Reset cursor position after React re-renders
+				requestAnimationFrame(() => {
+					if (isSelection) {
+						target.selectionStart = start + 1;
+						target.selectionEnd = end + 1;
+					} else {
+						target.selectionStart = target.selectionEnd = start + 1;
+					}
+				});
+			}
+		}
+	};
+
+	return (
+		<label className="flex flex-col gap-1">
+			<Text size="2" color="gray">
+				{label}
+			</Text>
+			<TextArea
+				ref={textareaRef}
+				rows={rows}
+				value={value || ''}
+				onChange={(e) => {
+					onChange(e.target.value);
+					// Ensure height is adjusted on every change
+					e.currentTarget.style.height = 'auto';
+					e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+				}}
+				onKeyDown={handleKeyDown}
+				className="min-h-[theme(spacing.24)] font-mono text-sm leading-relaxed tracking-tight"
+				style={{
+					resize: 'none',
+					overflow: 'hidden',
+					WebkitFontSmoothing: 'antialiased',
+				}}
+				placeholder={`Enter ${label.toLowerCase()} using markdown formatting...`}
+			/>
+		</label>
+	);
 };
 
 export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
@@ -76,19 +175,51 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 					)}
 				</form.Field>
 
-				{/* Content TextArea */}
+				{/* Summary TextArea with Markdown Support */}
+				<form.Field name="summary">
+					{(field) => (
+						<MarkdownTextArea
+							label="Summary"
+							value={field.state.value}
+							onChange={field.handleChange}
+							rows={2}
+						/>
+					)}
+				</form.Field>
+
+				{/* Content TextArea with Markdown Support */}
 				<form.Field name="content">
 					{(field) => (
-						<label className="flex flex-col gap-1">
-							<Text size="2" color="gray">
-								Content
-							</Text>
-							<TextArea
-								rows={4}
-								value={field.state.value || ''}
-								onChange={(e) => field.handleChange(e.target.value)}
-							/>
-						</label>
+						<MarkdownTextArea
+							label="Content"
+							value={field.state.value}
+							onChange={field.handleChange}
+							rows={4}
+						/>
+					)}
+				</form.Field>
+
+				{/* Notes TextArea with Markdown Support */}
+				<form.Field name="notes">
+					{(field) => (
+						<MarkdownTextArea
+							label="Notes"
+							value={field.state.value}
+							onChange={field.handleChange}
+							rows={2}
+						/>
+					)}
+				</form.Field>
+
+				{/* Media Caption with Markdown Support */}
+				<form.Field name="mediaCaption">
+					{(field) => (
+						<MarkdownTextArea
+							label="Media Caption"
+							value={field.state.value}
+							onChange={field.handleChange}
+							rows={2}
+						/>
 					)}
 				</form.Field>
 

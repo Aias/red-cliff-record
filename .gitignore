@@ -10,4 +10,5 @@
 /.vinxi
 *.tsbuildinfo
 
+# App uses paid fonts, don't commit to public repo
 public/fonts

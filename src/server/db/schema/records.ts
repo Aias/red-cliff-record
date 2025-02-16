@@ -73,7 +73,17 @@ export const records = pgTable(
 		index().on(table.title),
 		index().on(table.url),
 		index().on(table.formatId),
+		index().on(table.parentId),
+		index().on(table.transcludeId),
 		index().on(table.needsCuration),
+		index('idx_records_content_search').using(
+			'gin',
+			table.title,
+			table.content,
+			table.summary,
+			table.notes,
+			table.mediaCaption
+		),
 	]
 );
 
