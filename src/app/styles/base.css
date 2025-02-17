@@ -1,8 +1,7 @@
-@import '@radix-ui/themes/styles.css' layer(base);
+@layer reset, theme, base, components, utilities;
+@import '@radix-ui/themes/styles.css' layer(components);
 
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
-
-@layer reset, theme, base, components, utilities;
 
 @font-face {
 	font-family: 'Berkeley Mono';

@@ -1,3 +1,5 @@
+@layer reset, theme, base, components, utilities;
+
 @import './reset.css' layer(reset);
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
@@ -213,7 +215,7 @@
 	color: var(--color-accent);
 }
 
-@layer reset {
+@layer base {
 	html {
 		@apply font-sans;
 		font-size: calc(1rem * var(--scaling, 1)); /* Scale by Radix UI scaling factor. */
