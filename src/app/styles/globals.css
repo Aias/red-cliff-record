@@ -1,12 +1,78 @@
-@layer reset, theme, base, components, utilities;
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
 
-@import './reset.css' layer(reset);
-@import 'tailwindcss/theme' layer(theme);
-@import 'tailwindcss/utilities' layer(utilities);
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import '@radix-ui/themes/styles.css' layer(components);
+@import 'tailwindcss/utilities.css' layer(utilities);
 
 @source '../';
 
-@variant dark (&:where(.dark, .dark *));
+@font-face {
+	font-family: 'Berkeley Mono';
+	src: url('/fonts/BerkeleyMono-Light.woff2') format('woff2');
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Berkeley Mono';
+	src: url('/fonts/BerkeleyMono-Light-Oblique.woff2') format('woff2');
+	font-weight: 300;
+	font-style: italic;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Berkeley Mono';
+	src: url('/fonts/BerkeleyMono-Regular.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Berkeley Mono';
+	src: url('/fonts/BerkeleyMono-Oblique.woff2') format('woff2');
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Berkeley Mono';
+	src: url('/fonts/BerkeleyMono-Medium.woff2') format('woff2');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Berkeley Mono';
+	src: url('/fonts/BerkeleyMono-Medium-Oblique.woff2') format('woff2');
+	font-weight: 500;
+	font-style: italic;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Berkeley Mono';
+	src: url('/fonts/BerkeleyMono-Bold.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Berkeley Mono';
+	src: url('/fonts/BerkeleyMono-Bold-Oblique.woff2') format('woff2');
+	font-weight: 700;
+	font-style: italic;
+	font-display: swap;
+}
+
+@custom-variant data-checked (&[data-state~="checked"]);
 
 @theme {
 	--font-sans: var(--font-family-sans);
@@ -44,10 +110,10 @@
 	--color-selected: color-mix(in oklch, var(--accent-a2), var(--accent-a3));
 	--color-selected-hovered: color-mix(in oklch, var(--accent-a3), var(--accent-a4));
 	--color-divider: var(--gray-a4);
-	--color-border-subtle: var(--gray-4);
-	--color-border: var(--gray-5);
-	--color-border-selected: var(--accent-a5);
-	--color-border-active: var(--gray-6);
+	--color-border-subtle: var(--gray-5);
+	--color-border: var(--gray-6);
+	--color-border-selected: var(--accent-6);
+	--color-border-active: var(--gray-7);
 	--color-edge: var(--gray-8);
 	--color-indicator: var(--accent-9);
 
@@ -168,6 +234,21 @@
 	}
 }
 
+@utility icon {
+	@apply inline-flex aspect-square h-[1em] w-[1em] shrink-0 leading-none text-current;
+}
+
+@utility checkbox {
+	@apply size-[1.05em] shrink-0 rounded-xs border border-border focus-visible:ring-1 focus-visible:ring-focus focus-visible:outline-none;
+	&:checked,
+	&[data-state~='checked'] {
+		@apply border-theme bg-theme text-theme-contrast;
+	}
+	&:disabled {
+		@apply cursor-not-allowed border-border-subtle bg-stain text-symbol opacity-90;
+	}
+}
+
 @utility selectable {
 	@apply cursor-pointer border-border-subtle;
 	&:hover {
@@ -216,9 +297,44 @@
 }
 
 @layer base {
+	:root {
+		--font-family-sans:
+			'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI (Custom)', Roboto,
+			'Helvetica Neue', 'Open Sans (Custom)', system-ui, sans-serif, 'Apple Color Emoji',
+			'Segoe UI Emoji';
+		--font-family-mono:
+			'Berkeley Mono', ui-monospace, SFMono-Regular, 'Menlo', 'Consolas (Custom)',
+			'Bitstream Vera Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji';
+		--font-family-serif: ui-serif, 'Georgia', Cambria, 'Times New Roman', Times, serif;
+	}
+
+	.radix-themes {
+		--default-font-family: var(--font-family-sans);
+		--heading-font-family: var(--font-family-sans);
+		--code-font-family: var(--font-family-mono);
+		--strong-font-family: var(--font-family-sans);
+		--em-font-family: var(--font-family-sans);
+		--em-font-size-adjust: 1;
+		--quote-font-family: var(--font-family-serif);
+
+		--font-weight-light: 300;
+		--font-weight-normal: 400;
+		--font-weight-medium: 500;
+		--font-weight-bold: 700;
+	}
+
 	html {
 		@apply font-sans;
+		height: 100dvh;
+		scrollbar-width: thin;
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+		font-synthesis: none;
 		font-size: calc(1rem * var(--scaling, 1)); /* Scale by Radix UI scaling factor. */
+	}
+
+	body {
+		@apply m-0 h-[100dvh];
 	}
 
 	h1,
@@ -256,19 +372,24 @@
 		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-divider;
 	}
 
-	.icon {
-		@apply inline-flex aspect-square h-[1em] w-[1em] leading-none text-current;
+	pre,
+	code {
+		font-family: var(--font-family-mono);
 	}
 
 	a:where(:any-link, button),
 	.link {
-		@apply inline-flex items-center gap-1 text-accent hover:text-accent-active hover:underline;
+		@apply inline-flex items-center gap-1 font-medium text-accent hover:text-accent-active hover:underline;
 		text-decoration-line: none;
 		text-decoration-style: solid;
 		text-decoration-thickness: min(2px, max(1px, 0.05em));
 		text-underline-offset: calc(0.025em + 2px);
 		text-decoration-skip-ink: auto;
 		text-decoration-color: var(--color-theme-4);
+	}
+
+	input[type='text']::-webkit-calendar-picker-indicator {
+		display: none !important; /* https://stackoverflow.com/questions/23177409/remove-arrow-in-chrome-for-input-with-attribute-list */
 	}
 
 	@keyframes spinnerLeafFade {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Button, Text, TextArea, TextField } from '@radix-ui/themes';
+import { Button, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { trpc } from '~/app/trpc';
@@ -85,9 +85,7 @@ const MarkdownTextArea = ({
 
 	return (
 		<label className="flex flex-col gap-1">
-			<Text size="2" color="gray">
-				{label}
-			</Text>
+			<span className="text-secondary">{label}</span>
 			<TextArea
 				ref={textareaRef}
 				rows={rows}
@@ -147,7 +145,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 
 	return (
 		<form
-			className="flex flex-col gap-3"
+			className="flex flex-col gap-3 text-sm"
 			onSubmit={(e) => {
 				e.preventDefault();
 				e.stopPropagation();
@@ -159,9 +157,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 				<form.Field name="title">
 					{(field) => (
 						<label className="flex flex-col gap-1">
-							<Text size="2" color="gray">
-								Title
-							</Text>
+							<span className="text-secondary">Title</span>
 							<TextField.Root
 								type="text"
 								value={field.state.value || ''}
@@ -223,9 +219,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 				<form.Field name="url">
 					{(field) => (
 						<label className="flex flex-col gap-1">
-							<Text size="2" color="gray">
-								URL
-							</Text>
+							<span className="text-secondary">URL</span>
 							<TextField.Root
 								type="url"
 								placeholder="https://example.com"
@@ -237,7 +231,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 				</form.Field>
 
 				{/* Checkboxes for "private" and "needsCuration" */}
-				<div className="mt-3 flex flex-wrap gap-4">
+				<div className="mt-2 flex flex-wrap gap-4">
 					<form.Field name="isPrivate">
 						{(field) => (
 							<CheckboxWithLabel

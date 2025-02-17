@@ -2,6 +2,7 @@ import React from 'react';
 import {
 	ArchiveIcon as ArchiveIconRadix,
 	CheckCircledIcon as CheckCircledIconRadix,
+	CheckIcon as CheckIconRadix,
 	ChevronLeftIcon as ChevronLeftIconRadix,
 	ChevronRightIcon as ChevronRightIconRadix,
 	CircleIcon as CircleIconRadix,
@@ -32,6 +33,7 @@ function wrapIcon(IconComponent: React.ComponentType<IconProps>) {
 
 export const ArchiveIcon = wrapIcon(ArchiveIconRadix);
 export const CategoryIcon = wrapIcon(ArchiveIconRadix);
+export const CheckIcon = wrapIcon(CheckIconRadix);
 export const ClearIcon = wrapIcon(Cross1IconRadix);
 export const CloseIcon = wrapIcon(Cross1IconRadix);
 export const CompleteIcon = wrapIcon(CheckCircledIconRadix);

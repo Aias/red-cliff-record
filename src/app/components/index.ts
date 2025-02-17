@@ -2,7 +2,7 @@ export * from './icons';
 
 export * from './AppLayout';
 export * from './Badge';
-export * from './CheckboxWithLabel';
+export * from './Checkbox';
 export * from './CodeBlock';
 export * from './DataGrid';
 export * from './DefaultCatchBoundary';

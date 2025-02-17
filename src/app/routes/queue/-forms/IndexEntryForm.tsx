@@ -1,12 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import {
-	Button,
-	CheckboxCards,
-	SegmentedControl,
-	Text,
-	TextArea,
-	TextField,
-} from '@radix-ui/themes';
+import { Button, CheckboxCards, SegmentedControl, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { trpc } from '~/app/trpc';
@@ -95,7 +88,7 @@ export const IndexEntryForm = ({
 
 	return (
 		<form
-			className="flex flex-col gap-2"
+			className="flex flex-col gap-2 text-sm"
 			onSubmit={(e) => {
 				e.preventDefault();
 				e.stopPropagation();
@@ -115,9 +108,7 @@ export const IndexEntryForm = ({
 				<form.Field name="mainType">
 					{(field) => (
 						<label className="flex grow flex-col gap-1">
-							<Text size="2" color="gray">
-								Main Type
-							</Text>
+							<span className="text-secondary">Main Type</span>
 							<SegmentedControl.Root
 								variant="classic"
 								value={field.state.value}
@@ -133,9 +124,7 @@ export const IndexEntryForm = ({
 				<form.Field name="subType">
 					{(field) => (
 						<label className="shrink-0 basis-1/4">
-							<Text size="2" color="gray">
-								Subtype
-							</Text>
+							<span className="text-secondary">Subtype</span>
 							<TextField.Root
 								type="text"
 								list="index-subtypes"
@@ -152,9 +141,7 @@ export const IndexEntryForm = ({
 				<form.Field name="name">
 					{(field) => (
 						<label className="grow">
-							<Text size="2" color="gray">
-								Name (Required)
-							</Text>
+							<span className="text-secondary">Name (Required)</span>
 							<TextField.Root
 								type="text"
 								value={field.state.value}
@@ -166,9 +153,7 @@ export const IndexEntryForm = ({
 				<form.Field name="shortName">
 					{(field) => (
 						<label className="shrink-0 basis-1/4">
-							<Text size="2" color="gray">
-								Short Name
-							</Text>
+							<span className="text-secondary">Short Name</span>
 							<TextField.Root
 								type="text"
 								placeholder="e.g., 'ABC'"
@@ -183,9 +168,7 @@ export const IndexEntryForm = ({
 			<form.Field name="sense">
 				{(field) => (
 					<label>
-						<Text size="2" color="gray">
-							Sense
-						</Text>
+						<span className="text-secondary">Sense</span>
 						<TextField.Root
 							type="text"
 							placeholder="Differentiate between homonyms"
@@ -200,9 +183,7 @@ export const IndexEntryForm = ({
 				{(field) => (
 					<label>
 						<div className="flex items-center gap-2">
-							<Text size="2" color="gray" className="flex-1">
-								Canonical URL
-							</Text>
+							<span className="flex-1 text-secondary">Canonical URL</span>
 							{field.state.value && <ExternalLink href={field.state.value} />}
 						</div>
 						<TextField.Root
@@ -238,9 +219,7 @@ export const IndexEntryForm = ({
 				{(field) => (
 					<label>
 						<div className="flex items-center gap-2">
-							<Text size="2" color="gray" className="flex-1">
-								Image URL
-							</Text>
+							<span className="flex-1 text-secondary">Image URL</span>
 							{field.state.value && <ExternalLink href={field.state.value} />}
 						</div>
 						<TextField.Root
@@ -260,9 +239,7 @@ export const IndexEntryForm = ({
 			<form.Field name="notes">
 				{(field) => (
 					<label>
-						<Text size="2" color="gray">
-							Notes
-						</Text>
+						<span className="text-secondary">Notes</span>
 						<TextArea
 							rows={4}
 							value={field.state.value || ''}
@@ -286,9 +263,7 @@ export const IndexEntryForm = ({
 			<form.Field name="flags">
 				{(field) => (
 					<label className="flex flex-col justify-start gap-1">
-						<Text size="2" color="gray">
-							Flags
-						</Text>
+						<span className="text-secondary">Flags</span>
 						<CheckboxCards.Root
 							size="1"
 							onValueChange={(values) => {
@@ -308,11 +283,10 @@ export const IndexEntryForm = ({
 				)}
 			</form.Field>
 
-			<div className="mt-1 flex gap-4">
+			<div className="mt-2 flex gap-4">
 				<form.Field name="isPrivate">
 					{(field) => (
 						<CheckboxWithLabel
-							className="mt-2"
 							label="Private"
 							checked={field.state.value || false}
 							onCheckedChange={(checked) => field.handleChange(!!checked)}
@@ -322,7 +296,6 @@ export const IndexEntryForm = ({
 				<form.Field name="needsCuration">
 					{(field) => (
 						<CheckboxWithLabel
-							className="mt-2"
 							label="Needs Curation"
 							checked={field.state.value || false}
 							onCheckedChange={(checked) => field.handleChange(!!checked)}
