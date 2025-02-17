@@ -48,7 +48,7 @@ const RecordListItem = ({
 		{sources && sources.length > 0 ? (
 			<div className="flex shrink grow-0 basis-auto items-center justify-end gap-2">
 				{sources.map((source) => (
-					<IntegrationAvatar key={source} integration={source} size="1" className="size-4" />
+					<IntegrationAvatar key={source} integration={source} className="size-4" inline />
 				))}
 			</div>
 		) : null}

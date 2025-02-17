@@ -1,11 +1,12 @@
 import { Suspense, useMemo } from 'react';
-import { Avatar, IconButton } from '@radix-ui/themes';
+import { IconButton } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { trpc } from '~/app/trpc';
 import { RecordCategories, RecordCreators } from './-components/AssociationLists';
 import { IndexEntryForm } from './-forms/IndexEntryForm';
 import { IndexTypeIcon } from './indices';
 import {
+	Avatar,
 	ConnectIcon,
 	IntegrationAvatar,
 	MetadataDialogButton,
@@ -66,16 +67,16 @@ function IndexEntryContent() {
 		<div className="flex basis-full flex-col gap-3 overflow-auto p-3">
 			<div className="flex items-center gap-2">
 				<Avatar
-					size="2"
 					src={indexEntry.canonicalMediaUrl ?? undefined}
 					fallback={indexEntry.name[0]!.toUpperCase()}
 					className="shrink-0"
+					inline
 				/>
 				<h2>{indexEntry.name}</h2>
 				{indexEntry.sources && indexEntry.sources.length > 0 ? (
 					<div className="flex flex-wrap gap-2">
 						{indexEntry.sources.map((source) => (
-							<IntegrationAvatar key={source} integration={source} size="1" className="size-5" />
+							<IntegrationAvatar key={source} integration={source} className="size-5" inline />
 						))}
 					</div>
 				) : null}
@@ -107,12 +108,7 @@ function IndexEntryContent() {
 									{entry.sources && entry.sources.length > 0 ? (
 										<div className="flex flex-wrap gap-1">
 											{entry.sources.map((source) => (
-												<IntegrationAvatar
-													key={source}
-													integration={source}
-													size="1"
-													className="size-4"
-												/>
+												<IntegrationAvatar key={source} integration={source} className="size-4" />
 											))}
 										</div>
 									) : null}

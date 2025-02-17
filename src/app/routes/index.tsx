@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Avatar, TextField } from '@radix-ui/themes';
-import { Checkbox as RadixCheckbox } from '@radix-ui/themes';
+import { TextField } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { ExternalLinkIcon, SearchIcon } from '~/app/components/icons';
 import { trpc } from '../trpc';
-import { Checkbox } from '~/components';
+import { Avatar, ExternalLinkIcon, SearchIcon } from '~/components';
 
 const SearchSchema = z.object({
 	q: z.string().optional(),
@@ -45,12 +43,7 @@ function SearchResult({
 }) {
 	return (
 		<div className="flex w-full items-start gap-3 py-2 text-sm">
-			<Avatar
-				size="2"
-				src={imageUrl ?? undefined}
-				fallback={title[0]?.toUpperCase() ?? '?'}
-				color={type === 'record' ? 'blue' : 'purple'}
-			/>
+			<Avatar src={imageUrl ?? undefined} fallback={title[0]?.toUpperCase() ?? '?'} />
 			<div className="flex flex-1 flex-col items-start gap-1">
 				<div className="flex w-full items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
@@ -131,21 +124,6 @@ function Home() {
 
 	return (
 		<main className="flex basis-full flex-col items-center gap-4 overflow-hidden p-3">
-			<p className="flex gap-2">
-				<label className="inline-flex items-center gap-1.5 text-sm">
-					<Checkbox />
-					Checkbox label
-				</label>
-				<label className="1ext-base inline-flex items-center gap-1.5">
-					<Checkbox />
-					Checkbox label
-				</label>{' '}
-				<Checkbox checked /> <Checkbox disabled /> <Checkbox checked disabled />
-			</p>
-			<p className="flex gap-2">
-				<RadixCheckbox /> <RadixCheckbox checked /> <RadixCheckbox disabled />{' '}
-				<RadixCheckbox checked disabled />
-			</p>
 			<div className="flex w-full max-w-2xl flex-col items-center gap-8 pt-12">
 				<h1 className="text-center text-4xl font-medium text-balance">The Red Cliff Record</h1>
 

@@ -1,6 +1,7 @@
 export * from './icons';
 
 export * from './AppLayout';
+export * from './Avatar';
 export * from './Badge';
 export * from './Checkbox';
 export * from './CodeBlock';

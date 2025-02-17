@@ -1,4 +1,4 @@
-import { Avatar, Button, Select, type AvatarProps } from '@radix-ui/themes';
+import { Button, Select } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '~/app/trpc';
@@ -9,12 +9,14 @@ import {
 	type RecordSelect,
 } from '~/server/db/schema';
 import {
+	Avatar,
 	Badge,
 	Checkbox,
 	IntegrationAvatar,
 	Placeholder,
 	SelectionActions,
 	Spinner,
+	type AvatarProps,
 } from '~/components';
 import { useSelection } from '~/lib/useSelection';
 
@@ -194,7 +196,7 @@ type RecordQueueItemProps = {
 const NoCreatorAvatar = ({ ...props }: Partial<AvatarProps>) => (
 	<Avatar
 		className="border border-dashed border-edge opacity-50"
-		color="gray"
+		themed={false}
 		{...props}
 		fallback="?"
 	/>
@@ -228,13 +230,15 @@ const RecordQueueItem = ({
 							onCheckedChange={onCheckToggle}
 						/>
 						{firstCreator ? (
-							<Avatar
-								size="1"
-								src={firstCreator.canonicalMediaUrl ?? undefined}
-								fallback={firstCreator.name.slice(0, 1)}
-							/>
+							<>
+								<Avatar
+									src={firstCreator.canonicalMediaUrl ?? undefined}
+									fallback={firstCreator.name.slice(0, 1)}
+									inline
+								/>
+							</>
 						) : (
-							<NoCreatorAvatar size="1" />
+							<NoCreatorAvatar />
 						)}
 						<Button
 							variant="ghost"
@@ -249,7 +253,7 @@ const RecordQueueItem = ({
 								<IntegrationAvatar
 									key={source}
 									integration={source}
-									size="1"
+									inline
 									className="size-4 opacity-75"
 								/>
 							))}
