@@ -29,9 +29,9 @@
 	--color-accent: var(--accent-11);
 	--color-accent-active: color-mix(in oklch, var(--accent-11), var(--accent-12));
 
-	--color-main: var(--accent-9);
-	--color-main-active: var(--accent-10);
-	--color-main-contrast: var(--accent-contrast);
+	--color-main: var(--gray-9);
+	--color-main-active: var(--gray-10);
+	--color-main-contrast: var(--gray-contrast);
 
 	--color-tint: var(--gray-a2);
 	--color-stain: var(--gray-a3);
@@ -267,6 +267,15 @@
 		text-underline-offset: calc(0.025em + 2px);
 		text-decoration-skip-ink: auto;
 		text-decoration-color: var(--color-theme-4);
+	}
+
+	@keyframes spinnerLeafFade {
+		from {
+			opacity: 1;
+		}
+		to {
+			opacity: 0.25;
+		}
 	}
 }
 

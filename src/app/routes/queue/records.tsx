@@ -1,12 +1,4 @@
-import {
-	Avatar,
-	Badge,
-	Button,
-	Checkbox,
-	Select,
-	Spinner,
-	type AvatarProps,
-} from '@radix-ui/themes';
+import { Avatar, Button, Checkbox, Select, type AvatarProps } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '~/app/trpc';
@@ -16,7 +8,7 @@ import {
 	type MediaSelect,
 	type RecordSelect,
 } from '~/server/db/schema';
-import { IntegrationAvatar, Placeholder, SelectionActions } from '~/components';
+import { Badge, IntegrationAvatar, Placeholder, SelectionActions, Spinner } from '~/components';
 import { useSelection } from '~/lib/useSelection';
 
 const SearchSchema = z.object({
@@ -93,9 +85,9 @@ function RouteComponent() {
 							))}
 						</Select.Content>
 					</Select.Root>
-					<Badge size="2" className="mr-3">
-						{typeof queueCount === 'number' ? queueCount : <Spinner />}
-					</Badge>
+					<span className="text-sm">
+						<Badge>{typeof queueCount === 'number' ? queueCount : <Spinner />}</Badge>
+					</span>
 				</div>
 				<div className="grow-0 basis-full overflow-y-auto">
 					<SelectionActions

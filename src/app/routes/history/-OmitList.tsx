@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { HTMLAttributes } from 'react';
-import { Button, ScrollArea, Spinner, TextField } from '@radix-ui/themes';
+import { Button, ScrollArea, TextField } from '@radix-ui/themes';
 import type { ColumnDef } from '@tanstack/react-table';
 import { trpc } from '~/app/trpc';
-import { DataGrid, EditableCell, Placeholder } from '~/components';
+import { DataGrid, EditableCell, Placeholder, Spinner } from '~/components';
+import { cn } from '~/lib/utils';
 
 type OmitPattern = {
 	pattern: string;
@@ -71,7 +72,7 @@ export const OmitList = ({ className = '', ...props }: HTMLAttributes<HTMLDivEle
 				accessorKey: 'matchCount',
 				header: 'Matches',
 				cell: ({ row }) => {
-					if (isFetchingCounts) return <Spinner size="2" />;
+					if (isFetchingCounts) return <Spinner />;
 					return row.original.matchCount ?? 0;
 				},
 				meta: {
@@ -121,7 +122,7 @@ export const OmitList = ({ className = '', ...props }: HTMLAttributes<HTMLDivEle
 	}, [newPattern, addPatternMutation]);
 
 	return (
-		<div className={`flex flex-col ${className}`} {...props}>
+		<div className={cn('flex flex-col', className)} {...props}>
 			{!tableData ? (
 				<Placeholder>Loading patterns...</Placeholder>
 			) : (

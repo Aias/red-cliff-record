@@ -8,6 +8,7 @@ import globalStyles from '../styles/globals.css?url';
 import { AppLayout, DefaultCatchBoundary, NotFound } from '~/components';
 import { seo, SITE_NAME } from '~/lib/seo';
 import { defaultTheme, getThemeCookie, themeColor } from '~/lib/theme';
+import { cn } from '~/lib/utils';
 
 export interface RouterAppContext {
 	queryClient: QueryClient;
@@ -96,7 +97,7 @@ function RootDocument({ children, theme }: Readonly<{ children: ReactNode; theme
 	const { appearance, radius, scaling, grayColor, accentColor, panelBackground } = theme;
 	return (
 		<html
-			className={`radix-themes ${appearance}`}
+			className={cn('radix-themes', appearance)}
 			data-is-root-theme="true"
 			data-accent-color={accentColor}
 			data-gray-color={grayColor}

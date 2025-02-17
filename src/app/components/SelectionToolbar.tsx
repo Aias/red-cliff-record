@@ -1,6 +1,7 @@
 import type { HTMLAttributes } from 'react';
 import { Button, DropdownMenu, IconButton } from '@radix-ui/themes';
 import { ClearIcon } from './icons';
+import { cn } from '~/lib/utils';
 
 interface SelectionActionsProps extends HTMLAttributes<HTMLDivElement> {
 	selectedCount: number;
@@ -24,7 +25,7 @@ export function SelectionActions({
 	const firstAction = actions[0];
 
 	return (
-		<div role="toolbar" className={`flex items-center gap-2 ${className}`} {...props}>
+		<div role="toolbar" className={cn('flex items-center gap-2', className)} {...props}>
 			<span className="grow text-sm text-secondary">{selectedCount} selected</span>
 			{selectedCount === 0 ? (
 				<Button onClick={() => onSelectAll()} size="1" variant="soft">

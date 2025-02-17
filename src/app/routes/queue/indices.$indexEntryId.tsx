@@ -1,11 +1,17 @@
 import { Suspense, useMemo } from 'react';
-import { Avatar, IconButton, Spinner } from '@radix-ui/themes';
+import { Avatar, IconButton } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { trpc } from '~/app/trpc';
 import { RecordCategories, RecordCreators } from './-components/AssociationLists';
 import { IndexEntryForm } from './-forms/IndexEntryForm';
 import { IndexTypeIcon } from './indices';
-import { ConnectIcon, IntegrationAvatar, MetadataDialogButton, Placeholder } from '~/components';
+import {
+	ConnectIcon,
+	IntegrationAvatar,
+	MetadataDialogButton,
+	Placeholder,
+	Spinner,
+} from '~/components';
 
 export const Route = createFileRoute('/queue/indices/$indexEntryId')({
 	component: RouteComponent,
@@ -19,7 +25,7 @@ function RouteComponent() {
 		<Suspense
 			fallback={
 				<Placeholder>
-					<Spinner size="3" />
+					<Spinner />
 				</Placeholder>
 			}
 		>

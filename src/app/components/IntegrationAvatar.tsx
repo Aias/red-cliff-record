@@ -9,6 +9,7 @@ import raindropLogo from './logos/raindrop.svg?url';
 import readwiseLogo from './logos/readwise.svg?url';
 import xLogoDark from './logos/x_dark.svg?url';
 import xLogoLight from './logos/x_light.svg?url';
+import { cn } from '~/lib/utils';
 
 interface ServiceAvatarProps extends Omit<AvatarProps, 'src' | 'fallback'> {
 	integration: IntegrationType;
@@ -50,7 +51,7 @@ export function IntegrationAvatar({
 
 	return (
 		<Avatar
-			className={`${className} flex items-center justify-center`}
+			className={cn('flex items-center justify-center', className)}
 			src={logoUrl}
 			fallback={service.charAt(0).toUpperCase()}
 			{...props}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, DataList, Dialog, IconButton, ScrollArea } from '@radix-ui/themes';
 import { z } from 'zod';
 import { CopyIcon } from './icons';
+import { cn } from '~/lib/utils';
 
 interface MetadataListProps extends DataList.RootProps {
 	metadata: Record<string, unknown>;
@@ -48,7 +49,7 @@ export const MetadataList = ({ metadata, className = '', ...props }: MetadataLis
 	};
 
 	return (
-		<DataList.Root className={`gap-2 ${className}`} {...props}>
+		<DataList.Root className={cn('gap-2', className)} {...props}>
 			{Object.entries(metadata).map(([key, value]) => (
 				<DataList.Item key={key}>
 					<DataList.Label>{key}</DataList.Label>

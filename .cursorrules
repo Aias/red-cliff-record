@@ -1,7 +1,6 @@
 **Additional instructions for this project:**
 
 - Use Tailwind for styling and layout, except where Radix Themes supports the equivalent style props, e.g. `color` or `size` for Text, Button, etc.
-- Use Radix Themes for typographic components like <Text>, <Headings>, <Em>, <Link>, <Code>, etc.
 - Always use semantic HTML where appropriate for layout and structure. This includes using the correct HTML tags for sectioning elements, navigation, lists, and other content.
 - Use Radix Themes for functional and interactive components, especially for interactive components such as buttons, checkboxes, inputs, etc.
 - Use Tanstack Forms for form handling and validation, which can be integrated with Radix Themes, Tailwind, tRPC, and Tanstack Query.

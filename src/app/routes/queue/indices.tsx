@@ -1,13 +1,15 @@
-import { Badge, Spinner, TabNav } from '@radix-ui/themes';
+import { TabNav } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '~/app/trpc';
 import { IndexMainType, type IndicesSelect } from '~/server/db/schema';
 import {
+	Badge,
 	CategoryIcon,
 	EntityIcon,
 	FormatIcon,
 	Placeholder,
+	Spinner,
 	TabNavLink,
 	UnknownIcon,
 	type IconProps,
@@ -39,7 +41,7 @@ function RouteComponent() {
 	return (
 		<div className="flex basis-full overflow-hidden">
 			<div className="flex max-w-sm grow-0 basis-full flex-col gap-1 overflow-hidden border-r border-divider">
-				<div className="flex items-center justify-between border-b border-divider">
+				<div className="flex items-center justify-between border-b border-divider text-sm">
 					<TabNav.Root className="border-none shadow-none">
 						<TabNavLink to="/queue/indices" search={{ type: undefined }} active={!type}>
 							All
@@ -55,7 +57,7 @@ function RouteComponent() {
 							</TabNavLink>
 						))}
 					</TabNav.Root>
-					<Badge size="2" className="mr-3">
+					<Badge className="mr-3">
 						{typeof queueCount === 'number' ? queueCount : <Spinner />}
 					</Badge>
 				</div>
@@ -126,7 +128,7 @@ const IndexEntryCard = ({ entry, onClick, selected }: IndexEntryCardProps) => {
 
 	return (
 		<div
-			className={`flex selectable gap-2 rounded border border-divider px-2 py-1`}
+			className="flex selectable gap-2 rounded border border-divider px-2 py-1"
 			data-status={selected ? 'active' : undefined}
 			onClick={onClick}
 		>

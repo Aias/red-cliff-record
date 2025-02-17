@@ -1,8 +1,7 @@
 import { type PropsWithChildren } from 'react';
-import { Badge, Spinner } from '@radix-ui/themes';
 import { trpc } from '~/app/trpc';
 import type { IntegrationType } from '~/server/db/schema';
-import { IntegrationAvatar, Placeholder } from '~/components';
+import { Badge, IntegrationAvatar, Placeholder, Spinner } from '~/components';
 import { toTitleCase } from '~/lib/formatting';
 
 interface RecordCategoriesProps {
@@ -36,10 +35,8 @@ const RecordListItem = ({
 	content?: string | null;
 	sources?: IntegrationType[] | null;
 }) => (
-	<li className="flex items-center gap-2 border-b border-border px-2 py-1.5 last:border-b-0">
-		<Badge color="gray" size="1" className="capitalize">
-			{badge}
-		</Badge>
+	<li className="flex items-center gap-2 border-b border-border px-2 py-1.5 text-sm last:border-b-0">
+		<Badge className="capitalize">{badge}</Badge>
 		<span className="truncate text-sm font-medium">
 			{title ? title : sources ? sources.map(toTitleCase).join(', ') : 'Untitled'}
 		</span>

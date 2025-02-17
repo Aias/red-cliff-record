@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Button, Dialog, Heading, ScrollArea } from '@radix-ui/themes';
+import { Button, Dialog } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { OmitList } from './-OmitList';
@@ -105,14 +105,14 @@ function DailyActivityPage() {
 	return (
 		<main className="flex basis-full flex-col overflow-hidden p-3">
 			<header className="mb-4 flex flex-wrap items-center justify-between gap-4">
-				<Heading size="7" as="h1" className="min-w-200px">
+				<h1 className="min-w-200px">
 					{localDate.toLocaleDateString('en-US', {
 						weekday: 'long',
 						year: 'numeric',
 						month: 'long',
 						day: 'numeric',
 					})}
-				</Heading>
+				</h1>
 				<nav className="flex gap-2">
 					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
 						<Link to="/history/$date" params={{ date: formatISODate(prevDate) }}>
@@ -130,9 +130,7 @@ function DailyActivityPage() {
 			</header>
 
 			<div role="toolbar" className="mb-4 flex items-center gap-4">
-				<Heading size="5" as="h2">
-					Browser History
-				</Heading>
+				<h2>Browser History</h2>
 				<Dialog.Root>
 					<Dialog.Trigger>
 						<Button variant="outline">Modify Omit List</Button>
@@ -154,14 +152,14 @@ function DailyActivityPage() {
 					</Dialog.Content>
 				</Dialog.Root>
 			</div>
-			<ScrollArea>
+			<div className="h-full overflow-auto">
 				<DataGrid
 					data={history}
 					columns={columns}
 					sorting={true}
 					getRowId={(row) => `${row.hostname}-${row.url.href}-${row.firstVisit}`}
 				/>
-			</ScrollArea>
+			</div>
 		</main>
 	);
 }

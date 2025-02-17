@@ -8,6 +8,7 @@ import {
 	useReactTable,
 	type SortingState,
 } from '@tanstack/react-table';
+import { cn } from '~/lib/utils';
 
 // Add custom meta type for column alignment
 declare module '@tanstack/react-table' {
@@ -139,7 +140,7 @@ export function DataGrid<T>({
 								key={row.id}
 								data-active={selection?.selectedIds.has(getRowId(row.original))}
 								data-selectable={onRowClick !== undefined}
-								className={`data-active:active data-selectable:selectable ${customClass}`}
+								className={cn('data-active:active data-selectable:selectable', customClass)}
 								onClick={() => onRowClick?.(row.original)}
 								{...rest}
 							>

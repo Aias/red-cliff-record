@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Button, Heading, ScrollArea } from '@radix-ui/themes';
+import { Button } from '@radix-ui/themes';
 import { createFileRoute, Link, Outlet, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { trpc } from '~/app/trpc';
@@ -123,7 +123,7 @@ function CommitList() {
 		<main className="@container flex h-full gap-2 overflow-hidden p-3">
 			<div className="card min-w-[max(420px,50%)] grow basis-0 @max-[799px]:hidden">
 				<header className="mb-4 flex items-center justify-between gap-2">
-					<Heading size="6">Recent Commits</Heading>
+					<h1>Recent Commits</h1>
 					{selectedIds.size > 0 && (
 						<Button onClick={handleBatchSummarize} disabled={batchSummarizeCommits.isPending}>
 							{batchSummarizeCommits.isPending
@@ -132,7 +132,7 @@ function CommitList() {
 						</Button>
 					)}
 				</header>
-				<ScrollArea>
+				<div className="h-full overflow-auto">
 					<DataGrid
 						data={commits}
 						columns={columns}
@@ -148,7 +148,7 @@ function CommitList() {
 							variant: 'ghost',
 						}}
 					/>
-				</ScrollArea>
+				</div>
 			</div>
 			<Outlet />
 		</main>

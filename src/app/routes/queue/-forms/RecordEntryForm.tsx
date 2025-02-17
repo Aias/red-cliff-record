@@ -98,13 +98,9 @@ const MarkdownTextArea = ({
 					e.currentTarget.style.height = 'auto';
 					e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
 				}}
+				size="2"
 				onKeyDown={handleKeyDown}
-				className="min-h-[theme(spacing.24)] font-mono text-sm leading-relaxed tracking-tight"
-				style={{
-					resize: 'none',
-					overflow: 'hidden',
-					WebkitFontSmoothing: 'antialiased',
-				}}
+				className="min-h-[theme(spacing.24)] resize-none overflow-hidden font-mono text-xs leading-relaxed tracking-tight"
 				placeholder={`Enter ${label.toLowerCase()} using markdown formatting...`}
 			/>
 		</label>

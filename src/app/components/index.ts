@@ -1,6 +1,7 @@
 export * from './icons';
 
 export * from './AppLayout';
+export * from './Badge';
 export * from './CheckboxWithLabel';
 export * from './CodeBlock';
 export * from './DataGrid';
@@ -11,4 +12,5 @@ export * from './MetadataList';
 export * from './NotFound';
 export * from './Placeholder';
 export * from './SelectionToolbar';
+export * from './Spinner';
 export * from './TabNavLink';
