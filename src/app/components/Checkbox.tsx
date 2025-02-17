@@ -1,7 +1,7 @@
 import { type ComponentProps } from 'react';
 import * as React from 'react';
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
-import { CheckIcon } from './icons';
+import { CheckIcon } from '@radix-ui/react-icons';
 import { cn } from '~/lib/utils';
 
 const Checkbox = React.forwardRef<
@@ -10,9 +10,11 @@ const Checkbox = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<CheckboxPrimitive.Root ref={ref} className={cn('peer checkbox', className)} {...props}>
 		<CheckboxPrimitive.Indicator
-			className={cn('flex size-full items-center justify-center text-current')}
+			className={cn(
+				'relative flex size-full items-center justify-center overflow-hidden text-current'
+			)}
 		>
-			<CheckIcon className="size-[1.15em]" />
+			<CheckIcon className="absolute inset-1/2 size-[1.15em] -translate-x-1/2 -translate-y-[calc(50%+0.025em)]" />
 		</CheckboxPrimitive.Indicator>
 	</CheckboxPrimitive.Root>
 ));

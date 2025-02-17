@@ -239,7 +239,7 @@
 }
 
 @utility checkbox {
-	@apply size-[1.05em] shrink-0 rounded-xs border border-border focus-visible:ring-1 focus-visible:ring-focus focus-visible:outline-none;
+	@apply size-[1em] overflow-hidden rounded-xs border border-border text-[1.125em] focus-visible:ring-1 focus-visible:ring-focus focus-visible:outline-none;
 	&:checked,
 	&[data-state~='checked'] {
 		@apply border-theme bg-theme text-theme-contrast;

@@ -1,4 +1,4 @@
-import { Avatar, Button, Checkbox, Select, type AvatarProps } from '@radix-ui/themes';
+import { Avatar, Button, Select, type AvatarProps } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '~/app/trpc';
@@ -8,7 +8,14 @@ import {
 	type MediaSelect,
 	type RecordSelect,
 } from '~/server/db/schema';
-import { Badge, IntegrationAvatar, Placeholder, SelectionActions, Spinner } from '~/components';
+import {
+	Badge,
+	Checkbox,
+	IntegrationAvatar,
+	Placeholder,
+	SelectionActions,
+	Spinner,
+} from '~/components';
 import { useSelection } from '~/lib/useSelection';
 
 const SearchSchema = z.object({
@@ -206,13 +213,13 @@ const RecordQueueItem = ({
 
 	return (
 		<div
-			className="flex selectable flex-col border-b border-divider px-3 py-2"
+			className="flex selectable flex-col border-b border-divider px-3 py-2 text-sm"
 			data-status={selected ? 'active' : undefined}
 			onClick={onClick}
 		>
 			<div className="flex gap-3">
 				<div className="flex grow flex-col gap-1 overflow-hidden">
-					<div className="flex items-center gap-2 overflow-hidden">
+					<div className="flex items-center gap-2.5 overflow-hidden">
 						<Checkbox
 							checked={checked}
 							onClick={(e) => {

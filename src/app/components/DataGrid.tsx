@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Checkbox, Table, TextField } from '@radix-ui/themes';
+import { Table, TextField } from '@radix-ui/themes';
 import type { ColumnDef, RowData } from '@tanstack/react-table';
 import {
 	flexRender,
@@ -8,8 +8,8 @@ import {
 	useReactTable,
 	type SortingState,
 } from '@tanstack/react-table';
+import { Checkbox } from './Checkbox';
 import { cn } from '~/lib/utils';
-
 // Add custom meta type for column alignment
 declare module '@tanstack/react-table' {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
