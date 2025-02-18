@@ -1,0 +1,105 @@
+@layer components {
+	:root {
+		--font-family-sans:
+			'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI (Custom)', Roboto,
+			'Helvetica Neue', 'Open Sans (Custom)', system-ui, sans-serif, 'Apple Color Emoji',
+			'Segoe UI Emoji';
+		--font-family-mono:
+			'Berkeley Mono', ui-monospace, SFMono-Regular, 'Menlo', 'Consolas (Custom)',
+			'Bitstream Vera Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji';
+		--font-family-serif: ui-serif, 'Georgia', Cambria, 'Times New Roman', Times, serif;
+	}
+
+	.radix-themes {
+		--default-font-family: var(--font-family-sans);
+		--heading-font-family: var(--font-family-sans);
+		--code-font-family: var(--font-family-mono);
+		--strong-font-family: var(--font-family-sans);
+		--em-font-family: var(--font-family-sans);
+		--em-font-size-adjust: 1;
+		--quote-font-family: var(--font-family-serif);
+
+		--font-weight-light: 300;
+		--font-weight-normal: 400;
+		--font-weight-medium: 500;
+		--font-weight-bold: 700;
+	}
+
+	html {
+		@apply font-sans;
+		height: 100dvh;
+		scrollbar-width: thin;
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+		font-synthesis: none;
+		font-size: calc(1rem * var(--scaling, 1)); /* Scale by Radix UI scaling factor. */
+	}
+
+	body {
+		@apply m-0 h-[100dvh];
+	}
+
+	h1,
+	.h1 {
+		@apply text-2xl font-medium;
+	}
+
+	h2,
+	.h2 {
+		@apply text-xl font-medium;
+	}
+
+	h3,
+	.h3 {
+		@apply text-lg font-bold;
+	}
+
+	h4,
+	.h4 {
+		@apply text-base font-medium;
+	}
+
+	h5,
+	.h5,
+	h6,
+	.h6 {
+		@apply text-sm font-bold;
+	}
+
+	em {
+		letter-spacing: var(--em-letter-spacing, 0);
+	}
+
+	hr {
+		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-divider;
+	}
+
+	pre,
+	code {
+		font-family: var(--font-family-mono);
+	}
+
+	a:where(:any-link, button),
+	.link {
+		@apply inline-flex items-center gap-1 font-medium text-accent hover:text-accent-active hover:underline;
+		text-decoration-line: none;
+		text-decoration-style: solid;
+		text-decoration-thickness: min(2px, max(1px, 0.05em));
+		text-underline-offset: calc(0.025em + 2px);
+		text-decoration-skip-ink: auto;
+		text-decoration-color: var(--color-theme-4);
+	}
+
+	input[type='text']::-webkit-calendar-picker-indicator {
+		display: none !important; /* https://stackoverflow.com/questions/23177409/remove-arrow-in-chrome-for-input-with-attribute-list */
+	}
+
+	@keyframes spinnerLeafFade {
+		from {
+			opacity: 1;
+		}
+		to {
+			opacity: 0.25;
+		}
+	}
+}
