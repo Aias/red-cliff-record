@@ -166,7 +166,7 @@ export function DataGrid<T>({
 				) : (
 					<Table.Row>
 						<Table.Cell colSpan={table.getAllColumns().length} align="center">
-							<p className="text-secondary">No Rows</p>
+							<p className="text-rcr-secondary">No Rows</p>
 						</Table.Cell>
 					</Table.Row>
 				)}

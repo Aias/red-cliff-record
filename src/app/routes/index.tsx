@@ -55,11 +55,11 @@ function SearchResult({
 						) : (
 							<span className="font-medium">{title}</span>
 						)}
-						{subType && <span className="text-secondary">{subType}</span>}
+						{subType && <span className="text-rcr-secondary">{subType}</span>}
 					</div>
-					<span className="text-secondary capitalize">{type}</span>
+					<span className="text-rcr-secondary capitalize">{type}</span>
 				</div>
-				{description && <span className="line-clamp-2 text-secondary">{description}</span>}
+				{description && <span className="line-clamp-2 text-rcr-secondary">{description}</span>}
 			</div>
 		</div>
 	);
@@ -142,9 +142,9 @@ function Home() {
 				{debouncedValue.length > 0 && (
 					<div className="flex w-full flex-col gap-6">
 						{isLoading ? (
-							<span className="text-center text-secondary">Searching...</span>
+							<span className="text-center text-rcr-secondary">Searching...</span>
 						) : !hasResults ? (
-							<span className="text-center text-secondary">No results found</span>
+							<span className="text-center text-rcr-secondary">No results found</span>
 						) : (
 							<>
 								{(recordsQuery.data?.length ?? 0) > 0 && (

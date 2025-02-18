@@ -73,7 +73,7 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 				<form.Field name="url">
 					{(field) => (
 						<label className="flex flex-col gap-1">
-							<span className="text-sm text-secondary">URL</span>
+							<span className="text-sm text-rcr-secondary">URL</span>
 							<TextField.Root
 								type="url"
 								value={field.state.value}
@@ -85,7 +85,7 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 				<form.Field name="altText">
 					{(field) => (
 						<label className="flex flex-col gap-1">
-							<span className="text-sm text-secondary">Alt Text</span>
+							<span className="text-sm text-rcr-secondary">Alt Text</span>
 							<TextArea
 								value={field.state.value || ''}
 								onChange={(e) => field.handleChange(e.target.value)}
@@ -95,7 +95,7 @@ export const MediaEntryForm: React.FC<MediaEntryFormProps> = ({
 				</form.Field>
 				<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
 					{([canSubmit, isSubmitting]) => (
-						<div className="mt-4 border-t border-divider pt-4">
+						<div className="mt-4 border-t border-rcr-divider pt-4">
 							<Button type="submit" disabled={!canSubmit}>
 								{isSubmitting ? '...Saving' : 'Save Changes'}
 							</Button>

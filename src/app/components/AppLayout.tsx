@@ -22,7 +22,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 
 	return (
 		<div className="fixed inset-0 flex flex-col overflow-hidden">
-			<menu className="z-100 flex items-center justify-between gap-4 border-b border-border surface px-4 py-2">
+			<menu className="z-100 flex items-center justify-between gap-4 border-b border-rcr-border surface px-4 py-2">
 				<li className="flex grow">
 					<Link to={'/'} className="flex grow cursor-pointer items-center gap-3">
 						<ArchiveIcon />

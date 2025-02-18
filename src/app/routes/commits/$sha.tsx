@@ -86,7 +86,7 @@ function CommitView() {
 							)}
 						</CodeBlock>
 					) : (
-						<p className="card text-center text-secondary">No Summary Generated</p>
+						<p className="card text-center text-rcr-secondary">No Summary Generated</p>
 					)}
 				</section>
 
@@ -123,13 +123,13 @@ function CommitView() {
 												</Code>
 												<span>#{relatedCommit.sha.slice(0, 7)}</span>
 											</Link>
-											<span className="text-sm text-secondary">
+											<span className="text-sm text-rcr-secondary">
 												Score: {relatedCommit.similarity.toFixed(3)}
 											</span>
 										</div>
 										<p>{relatedCommit.message}</p>
 										{relatedCommit.summary && (
-											<p className="text-sm text-secondary">
+											<p className="text-sm text-rcr-secondary">
 												{relatedCommit.summary.length > 200
 													? `${relatedCommit.summary.slice(0, 350)}...`
 													: relatedCommit.summary}
@@ -140,7 +140,7 @@ function CommitView() {
 							))}
 						</ol>
 					) : (
-						<p className="card text-center text-secondary">
+						<p className="card text-center text-rcr-secondary">
 							{commit.textEmbedding ? 'No related commits found.' : 'No embedding for commit.'}
 						</p>
 					)}

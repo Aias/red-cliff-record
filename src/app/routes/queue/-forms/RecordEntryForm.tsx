@@ -85,7 +85,7 @@ const MarkdownTextArea = ({
 
 	return (
 		<label className="flex flex-col gap-1">
-			<span className="text-secondary">{label}</span>
+			<span className="text-rcr-secondary">{label}</span>
 			<TextArea
 				ref={textareaRef}
 				rows={rows}
@@ -157,7 +157,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 				<form.Field name="title">
 					{(field) => (
 						<label className="flex flex-col gap-1">
-							<span className="text-secondary">Title</span>
+							<span className="text-rcr-secondary">Title</span>
 							<TextField.Root
 								type="text"
 								value={field.state.value || ''}
@@ -219,7 +219,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 				<form.Field name="url">
 					{(field) => (
 						<label className="flex flex-col gap-1">
-							<span className="text-secondary">URL</span>
+							<span className="text-rcr-secondary">URL</span>
 							<TextField.Root
 								type="url"
 								placeholder="https://example.com"
@@ -256,7 +256,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 			{/* Form submit button */}
 			<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
 				{([canSubmit, isSubmitting]) => (
-					<div className="mt-4 border-t border-divider pt-4">
+					<div className="mt-4 border-t border-rcr-divider pt-4">
 						<Button type="submit" disabled={!canSubmit}>
 							{isSubmitting ? '...Saving' : 'Save Changes'}
 						</Button>

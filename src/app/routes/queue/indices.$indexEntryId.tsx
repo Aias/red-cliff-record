@@ -85,17 +85,17 @@ function IndexEntryContent() {
 				</div>
 			</div>
 			{relatedEntries ? (
-				<ol className="flex flex-col border-b border-border">
+				<ol className="flex flex-col border-b border-rcr-border">
 					{relatedEntries
 						.filter((entry) => entry.id !== indexEntry.id)
 						.slice(0, 3)
 						.map((entry) => (
 							<li
 								key={entry.id}
-								className="flex items-center gap-3 border-t border-border px-2 py-1 hover:bg-tint"
+								className="flex items-center gap-3 border-t border-rcr-border px-2 py-1 hover:bg-rcr-tint"
 							>
 								<div className="flex grow items-center gap-2">
-									<IndexTypeIcon type={entry.mainType} className="text-symbol" />
+									<IndexTypeIcon type={entry.mainType} className="text-rcr-symbol" />
 									<Link
 										to="/queue/indices/$indexEntryId"
 										params={{ indexEntryId: entry.id.toString() }}
@@ -104,7 +104,7 @@ function IndexEntryContent() {
 									>
 										{entry.name}
 									</Link>
-									{entry.sense && <em className="text-sm text-secondary">({entry.sense})</em>}
+									{entry.sense && <em className="text-sm text-rcr-secondary">({entry.sense})</em>}
 									{entry.sources && entry.sources.length > 0 ? (
 										<div className="flex flex-wrap gap-2">
 											{entry.sources.map((source) => (

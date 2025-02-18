@@ -3,7 +3,7 @@ import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { type QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import type { ServerHelpers } from '@/app/trpc';
-import '../styles/app.css';
+import stylesUrl from '../styles/app.css?url';
 import { AppLayout, DefaultCatchBoundary, NotFound } from '@/components';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { defaultTheme, getThemeCookie, themeColor } from '@/lib/theme';
@@ -31,6 +31,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			}),
 		],
 		links: [
+			{ rel: 'stylesheet', href: stylesUrl },
 			{
 				rel: 'apple-touch-icon',
 				sizes: '180x180',

@@ -108,7 +108,7 @@ export const IndexEntryForm = ({
 				<form.Field name="mainType">
 					{(field) => (
 						<label className="flex grow flex-col gap-1">
-							<span className="text-secondary">Main Type</span>
+							<span className="text-rcr-secondary">Main Type</span>
 							<SegmentedControl.Root
 								variant="classic"
 								value={field.state.value}
@@ -124,7 +124,7 @@ export const IndexEntryForm = ({
 				<form.Field name="subType">
 					{(field) => (
 						<label className="shrink-0 basis-1/4">
-							<span className="text-secondary">Subtype</span>
+							<span className="text-rcr-secondary">Subtype</span>
 							<TextField.Root
 								type="text"
 								list="index-subtypes"
@@ -141,7 +141,7 @@ export const IndexEntryForm = ({
 				<form.Field name="name">
 					{(field) => (
 						<label className="grow">
-							<span className="text-secondary">Name (Required)</span>
+							<span className="text-rcr-secondary">Name (Required)</span>
 							<TextField.Root
 								type="text"
 								value={field.state.value}
@@ -153,7 +153,7 @@ export const IndexEntryForm = ({
 				<form.Field name="shortName">
 					{(field) => (
 						<label className="shrink-0 basis-1/4">
-							<span className="text-secondary">Short Name</span>
+							<span className="text-rcr-secondary">Short Name</span>
 							<TextField.Root
 								type="text"
 								placeholder="e.g., 'ABC'"
@@ -168,7 +168,7 @@ export const IndexEntryForm = ({
 			<form.Field name="sense">
 				{(field) => (
 					<label>
-						<span className="text-secondary">Sense</span>
+						<span className="text-rcr-secondary">Sense</span>
 						<TextField.Root
 							type="text"
 							placeholder="Differentiate between homonyms"
@@ -183,7 +183,7 @@ export const IndexEntryForm = ({
 				{(field) => (
 					<label>
 						<div className="flex items-center gap-2">
-							<span className="flex-1 text-secondary">Canonical URL</span>
+							<span className="flex-1 text-rcr-secondary">Canonical URL</span>
 							{field.state.value && <ExternalLink href={field.state.value} />}
 						</div>
 						<TextField.Root
@@ -193,7 +193,7 @@ export const IndexEntryForm = ({
 							onChange={(e) => field.handleChange(e.target.value || null)}
 						>
 							<TextField.Slot>
-								<ExternalLinkIcon className="text-hint" />
+								<ExternalLinkIcon className="text-rcr-hint" />
 							</TextField.Slot>
 						</TextField.Root>
 						{associatedDomains.length > 0 && (
@@ -219,7 +219,7 @@ export const IndexEntryForm = ({
 				{(field) => (
 					<label>
 						<div className="flex items-center gap-2">
-							<span className="flex-1 text-secondary">Image URL</span>
+							<span className="flex-1 text-rcr-secondary">Image URL</span>
 							{field.state.value && <ExternalLink href={field.state.value} />}
 						</div>
 						<TextField.Root
@@ -229,7 +229,7 @@ export const IndexEntryForm = ({
 							onChange={(e) => field.handleChange(e.target.value || null)}
 						>
 							<TextField.Slot>
-								<ImageIcon className="text-hint" />
+								<ImageIcon className="text-rcr-hint" />
 							</TextField.Slot>
 						</TextField.Root>
 					</label>
@@ -239,7 +239,7 @@ export const IndexEntryForm = ({
 			<form.Field name="notes">
 				{(field) => (
 					<label>
-						<span className="text-secondary">Notes</span>
+						<span className="text-rcr-secondary">Notes</span>
 						<TextArea
 							rows={4}
 							value={field.state.value || ''}
@@ -263,7 +263,7 @@ export const IndexEntryForm = ({
 			<form.Field name="flags">
 				{(field) => (
 					<label className="flex flex-col justify-start gap-1">
-						<span className="text-secondary">Flags</span>
+						<span className="text-rcr-secondary">Flags</span>
 						<CheckboxCards.Root
 							size="1"
 							onValueChange={(values) => {
@@ -307,7 +307,7 @@ export const IndexEntryForm = ({
 			<form.Subscribe
 				selector={(state) => [state.canSubmit, state.isSubmitting]}
 				children={([canSubmit, isSubmitting]) => (
-					<div className="mt-2 border-t border-divider pt-4">
+					<div className="mt-2 border-t border-rcr-divider pt-4">
 						<Button type="submit" disabled={!canSubmit}>
 							{isSubmitting ? '...Saving' : 'Save Changes'}
 						</Button>
