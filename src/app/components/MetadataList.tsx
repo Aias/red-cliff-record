@@ -30,7 +30,7 @@ export const MetadataList = ({ metadata, className = '', ...props }: MetadataLis
 		if (value instanceof Object) {
 			return (
 				<pre className="block break-all whitespace-pre-wrap">
-					<span className="text-sm text-secondary">{JSON.stringify(value, null, 2)}</span>
+					<span className="text-sm text-rcr-secondary">{JSON.stringify(value, null, 2)}</span>
 				</pre>
 			);
 		}
@@ -64,14 +64,14 @@ export const MetadataList = ({ metadata, className = '', ...props }: MetadataLis
 									variant="ghost"
 									size="1"
 								>
-									<CopyIcon className="text-hint" />
+									<CopyIcon className="text-rcr-hint" />
 								</IconButton>
 							</div>
 						) : (
-							<span className="text-hint">—</span>
+							<span className="text-rcr-hint">—</span>
 						)}
 						{copiedKey === key && (
-							<div className="absolute top-0 right-0 text-xs text-hint">Copied!</div>
+							<div className="absolute top-0 right-0 text-xs text-rcr-hint">Copied!</div>
 						)}
 					</DataList.Value>
 				</DataList.Item>
@@ -101,7 +101,7 @@ export const MetadataDialogButton: React.FC<MetadataDialogButtonProps> = ({
 				</Button>
 			</Dialog.Trigger>
 			<Dialog.Content className="flex max-h-[90vh] max-w-[75vw] flex-col overflow-hidden p-5">
-				<div className="mb-2 border-b border-divider pb-2">
+				<div className="mb-2 border-b border-rcr-divider pb-2">
 					<Dialog.Title className="mb-2">Metadata</Dialog.Title>
 					<Dialog.Description color="gray">{description}</Dialog.Description>
 				</div>

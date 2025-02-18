@@ -15,13 +15,13 @@ const Loader = () => (
 );
 
 const Empty = ({ label }: { label: string }) => (
-	<div className="flex shrink-0 grow-0 justify-center overflow-hidden rounded border border-divider bg-tint p-2 align-middle opacity-75">
+	<div className="flex shrink-0 grow-0 justify-center overflow-hidden rounded border border-rcr-divider bg-rcr-tint p-2 align-middle opacity-75">
 		{label}
 	</div>
 );
 
 const RecordList = ({ children }: PropsWithChildren) => (
-	<ol className="flex flex-col rounded border border-border">{children}</ol>
+	<ol className="flex flex-col rounded border border-rcr-border">{children}</ol>
 );
 
 const RecordListItem = ({
@@ -35,13 +35,13 @@ const RecordListItem = ({
 	content?: string | null;
 	sources?: IntegrationType[] | null;
 }) => (
-	<li className="flex items-center gap-2 border-b border-border px-2 py-1.5 text-sm last:border-b-0">
+	<li className="flex items-center gap-2 border-b border-rcr-border px-2 py-1.5 text-sm last:border-b-0">
 		<Badge className="capitalize">{badge}</Badge>
 		<span className="truncate text-sm font-medium">
 			{title ? title : sources ? sources.map(toTitleCase).join(', ') : 'Untitled'}
 		</span>
 		{content && (
-			<span className="shrink-1 grow-1 basis-0 truncate text-sm text-nowrap text-secondary">
+			<span className="shrink-1 grow-1 basis-0 truncate text-sm text-nowrap text-rcr-secondary">
 				{content}
 			</span>
 		)}

@@ -16,9 +16,11 @@ const badgeVariants = cva(
 	{
 		variants: {
 			variant: {
-				solid: 'bg-main text-main-contrast ' + 'selection:bg-ghost selection:text-display',
-				soft: 'bg-stain text-secondary',
-				outline: 'border border-border text-secondary',
+				solid:
+					'bg-rcr-main text-rcr-main-contrast ' +
+					'selection:bg-rcr-hint selection:text-rcr-display',
+				soft: 'bg-rcr-stain text-rcr-secondary',
+				outline: 'border border-rcr-border text-rcr-secondary',
 			},
 		},
 		defaultVariants: {

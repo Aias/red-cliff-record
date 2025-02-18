@@ -71,8 +71,8 @@ function RouteComponent() {
 	});
 	return (
 		<div className="flex basis-full overflow-hidden">
-			<div className="flex max-w-md grow-0 basis-full flex-col gap-1 overflow-hidden border-r border-divider">
-				<div className="flex items-center gap-4 border-b border-divider px-3 py-2">
+			<div className="flex max-w-md grow-0 basis-full flex-col gap-1 overflow-hidden border-r border-rcr-divider">
+				<div className="flex items-center gap-4 border-b border-rcr-divider px-3 py-2">
 					<h1 className="h3">Records Queue</h1>
 					<Select.Root
 						value={source ?? 'all'}
@@ -195,7 +195,7 @@ type RecordQueueItemProps = {
 
 const NoCreatorAvatar = ({ ...props }: Partial<AvatarProps>) => (
 	<Avatar
-		className="border border-dashed border-edge opacity-50"
+		className="border border-dashed border-rcr-edge opacity-50"
 		themed={false}
 		{...props}
 		fallback="?"
@@ -215,7 +215,7 @@ const RecordQueueItem = ({
 
 	return (
 		<div
-			className="flex selectable flex-col border-b border-divider px-3 py-2 text-sm"
+			className="flex selectable flex-col border-b border-rcr-divider px-3 py-2 text-sm"
 			data-status={selected ? 'active' : undefined}
 			onClick={onClick}
 		>
@@ -234,6 +234,7 @@ const RecordQueueItem = ({
 								<Avatar
 									src={firstCreator.canonicalMediaUrl ?? undefined}
 									fallback={firstCreator.name.slice(0, 1)}
+									inline
 								/>
 							</>
 						) : (
@@ -249,7 +250,7 @@ const RecordQueueItem = ({
 						{entry.sources &&
 							entry.sources.length > 0 &&
 							entry.sources.map((source) => (
-								<IntegrationAvatar key={source} integration={source} />
+								<IntegrationAvatar key={source} integration={source} inline className="text-xs" />
 							))}
 					</div>
 					<p className="line-clamp-1 text-xs">
@@ -260,7 +261,7 @@ const RecordQueueItem = ({
 					</p>
 				</div>
 				{firstMedia && firstMedia.type === 'image' && (
-					<div className="relative w-16 shrink-0 self-stretch overflow-hidden rounded bg-tint">
+					<div className="relative w-16 shrink-0 self-stretch overflow-hidden rounded bg-rcr-tint">
 						<img
 							src={firstMedia.url}
 							alt=""
@@ -272,7 +273,10 @@ const RecordQueueItem = ({
 			{childRecords && childRecords.length > 0 && (
 				<ol className="flex flex-col gap-2 overflow-hidden">
 					{childRecords.map((child) => (
-						<li key={child.id} className="truncate py-1 pl-4 text-xs font-medium text-secondary">
+						<li
+							key={child.id}
+							className="truncate py-1 pl-4 text-xs font-medium text-rcr-secondary"
+						>
 							— {child.title ?? child.content ?? child.summary ?? child.notes}
 						</li>
 					))}

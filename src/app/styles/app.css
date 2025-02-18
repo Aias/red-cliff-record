@@ -6,9 +6,7 @@
 @import './theme.css' layer(theme);
 @import 'tailwindcss/preflight.css' layer(base);
 @import '@radix-ui/themes/styles.css' layer(components);
-@import './components.css' layer(components);
 @import 'tailwindcss/utilities.css' layer(utilities);
-@import './utilities.css';
 
 @plugin 'tailwindcss-animate';
 
@@ -16,3 +14,251 @@
 
 @custom-variant data-checked (&[data-state~="checked"]);
 @custom-variant dark (&:is(.dark *));
+
+@theme {
+	--font-sans: var(--font-family-sans);
+	--font-serif: var(--font-family-serif);
+	--font-mono: var(--font-family-mono);
+
+	--color-rcr-background: var(--clr-neutral-background);
+	--color-rcr-overlay: var(--clr-neutral-surface);
+	--color-rcr-surface: var(--clr-neutral-surface);
+	--color-rcr-panel: var(--clr-neutral-surface);
+
+	--color-rcr-display: var(--clr-neutral-display);
+	--color-rcr-primary: var(--clr-neutral-primary);
+	--color-rcr-secondary: var(--clr-neutral-secondary);
+	--color-rcr-hint: var(--clr-neutral-hint);
+	--color-rcr-symbol: var(--clr-neutral-symbol);
+
+	--color-rcr-accent: var(--clr-theme-primary);
+	--color-rcr-accent-active: var(--clr-theme-display);
+
+	--color-rcr-main: var(--clr-neutral-main);
+	--color-rcr-main-active: var(--clr-neutral-main-active);
+	--color-rcr-main-contrast: var(--clr-neutral-main-contrast);
+
+	--color-rcr-theme: var(--clr-theme-main);
+	--color-rcr-theme-active: var(--clr-theme-main-active);
+	--color-rcr-theme-contrast: var(--clr-neutral-main-contrast);
+
+	--color-rcr-tint: var(--clr-neutral-tint);
+	--color-rcr-stain: var(--clr-neutral-stain);
+	--color-rcr-dye: var(--clr-neutral-dye);
+
+	--color-rcr-hovered: var(--clr-neutral-hovered);
+	--color-rcr-active: var(--clr-neutral-active);
+	--color-rcr-selected: var(--clr-theme-active);
+	--color-rcr-selected-hovered: var(--clr-theme-pressed);
+
+	--color-rcr-divider: var(--clr-neutral-divider);
+	--color-rcr-border: var(--clr-neutral-border);
+	--color-rcr-border-selected: var(--clr-theme-border);
+	--color-rcr-border-active: var(--clr-neutral-edge);
+	--color-rcr-edge: var(--clr-neutral-edge);
+	--color-rcr-indicator: var(--clr-theme-main);
+	--color-rcr-focus: var(--clr-theme-main);
+}
+
+@layer components {
+	:root {
+		--font-family-sans:
+			'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI (Custom)', Roboto,
+			'Helvetica Neue', 'Open Sans (Custom)', system-ui, sans-serif, 'Apple Color Emoji',
+			'Segoe UI Emoji';
+		--font-family-mono:
+			'Berkeley Mono', ui-monospace, SFMono-Regular, 'Menlo', 'Consolas (Custom)',
+			'Bitstream Vera Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji';
+		--font-family-serif: ui-serif, 'Georgia', Cambria, 'Times New Roman', Times, serif;
+	}
+
+	.radix-themes {
+		@apply bg-rcr-background font-sans text-rcr-primary;
+		--default-font-family: var(--font-family-sans);
+		--heading-font-family: var(--font-family-sans);
+		--code-font-family: var(--font-family-mono);
+		--strong-font-family: var(--font-family-sans);
+		--em-font-family: var(--font-family-sans);
+		--em-font-size-adjust: 1;
+		--quote-font-family: var(--font-family-serif);
+
+		--font-weight-light: 300;
+		--font-weight-normal: 400;
+		--font-weight-medium: 500;
+		--font-weight-bold: 700;
+	}
+
+	html {
+		height: 100dvh;
+		scrollbar-width: thin;
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+		font-synthesis: none;
+		font-size: calc(1rem * var(--scaling, 1)); /* Scale by Radix UI scaling factor. */
+	}
+
+	body {
+		@apply m-0 h-[100dvh];
+	}
+
+	h1,
+	.h1 {
+		@apply text-2xl font-medium;
+	}
+
+	h2,
+	.h2 {
+		@apply text-xl font-medium;
+	}
+
+	h3,
+	.h3 {
+		@apply text-lg font-bold;
+	}
+
+	h4,
+	.h4 {
+		@apply text-base font-medium;
+	}
+
+	h5,
+	.h5,
+	h6,
+	.h6 {
+		@apply text-sm font-bold;
+	}
+
+	em {
+		letter-spacing: var(--em-letter-spacing, 0);
+	}
+
+	hr {
+		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-rcr-divider;
+	}
+
+	pre,
+	code {
+		font-family: var(--font-family-mono);
+	}
+
+	a:where(:any-link, button),
+	.link {
+		@apply inline-flex items-center gap-1 font-medium text-rcr-accent hover:text-rcr-accent-active hover:underline;
+		text-decoration-line: none;
+		text-decoration-style: solid;
+		text-decoration-thickness: min(2px, max(1px, 0.05em));
+		text-underline-offset: calc(0.025em + 2px);
+		text-decoration-skip-ink: auto;
+		text-decoration-color: var(--clr-theme-divider);
+	}
+
+	input[type='text']::-webkit-calendar-picker-indicator {
+		display: none !important; /* https://stackoverflow.com/questions/23177409/remove-arrow-in-chrome-for-input-with-attribute-list */
+	}
+
+	@keyframes spinnerLeafFade {
+		from {
+			opacity: 1;
+		}
+		to {
+			opacity: 0.25;
+		}
+	}
+}
+
+@utility surface {
+	@apply bg-rcr-panel;
+	backdrop-filter: var(--backdrop-filter-panel);
+}
+
+@utility card {
+	@apply relative block overflow-hidden rounded-md border border-rcr-divider p-3 contain-paint;
+	&::before {
+		@apply pointer-events-none absolute inset-0 z-[-1] rounded-md surface;
+		content: '';
+		transition: inherit;
+	}
+}
+
+@utility icon {
+	@apply inline-flex aspect-square h-[1em] w-[1em] shrink-0 leading-none text-current;
+}
+
+@utility checkbox {
+	@apply size-[1em] overflow-hidden rounded-xs border border-rcr-border text-[1.125em] focus-visible:ring-1 focus-visible:ring-rcr-focus focus-visible:outline-none;
+	&:checked,
+	&[data-state~='checked'] {
+		@apply border-rcr-theme bg-rcr-theme text-rcr-theme-contrast;
+	}
+	&:disabled {
+		@apply cursor-not-allowed border-rcr-divider bg-rcr-stain text-rcr-symbol opacity-90;
+	}
+}
+
+@utility vr {
+	@apply block h-full w-[1px] self-center border-0 border-none border-transparent;
+	&::before {
+		content: '';
+		@apply block h-full bg-rcr-divider;
+	}
+}
+
+@utility selectable {
+	@apply cursor-pointer border-rcr-divider;
+	&:hover {
+		@apply border-rcr-border bg-rcr-hovered;
+	}
+	&:is(.active, :active) {
+		@apply border-rcr-border-active bg-rcr-active;
+	}
+	&:is(.selected, [data-status='active'], :has([data-status='active'])) {
+		@apply border-rcr-border-selected bg-rcr-selected;
+	}
+	&:is(.selected, [data-status='active'], :has([data-status='active'])):hover,
+	&:is(.selected, [data-status='active'], :has([data-status='active'])):active {
+		@apply border-rcr-border-selected bg-rcr-selected-hovered;
+	}
+}
+
+@utility themed {
+	--color-rcr-background: var(--clr-theme-background);
+	--color-rcr-overlay: var(--clr-theme-surface);
+	--color-rcr-surface: var(--clr-theme-surface);
+	--color-rcr-panel: var(--clr-theme-surface);
+
+	--color-rcr-display: var(--clr-theme-display);
+	--color-rcr-primary: var(--clr-theme-primary);
+	--color-rcr-secondary: var(--clr-theme-secondary);
+	--color-rcr-hint: var(--clr-theme-hint);
+	--color-rcr-symbol: var(--clr-theme-symbol);
+
+	--color-rcr-accent: var(--clr-theme-primary);
+	--color-rcr-accent-active: var(--clr-theme-display);
+
+	--color-rcr-main: var(--clr-theme-main);
+	--color-rcr-main-active: var(--clr-theme-main-active);
+	--color-rcr-main-contrast: var(--clr-theme-main-contrast);
+
+	--color-rcr-theme: var(--clr-theme-main);
+	--color-rcr-theme-active: var(--clr-theme-main-active);
+	--color-rcr-theme-contrast: var(--clr-theme-main-contrast);
+
+	--color-rcr-tint: var(--clr-theme-tint);
+	--color-rcr-stain: var(--clr-theme-stain);
+	--color-rcr-dye: var(--clr-theme-dye);
+
+	--color-rcr-hovered: var(--clr-theme-hovered);
+	--color-rcr-active: var(--clr-theme-active);
+	--color-rcr-selected: var(--clr-theme-active);
+	--color-rcr-selected-hovered: var(--clr-theme-pressed);
+
+	--color-rcr-divider: var(--clr-theme-divider);
+	--color-rcr-border: var(--clr-theme-border);
+	--color-rcr-border-selected: var(--clr-theme-border);
+	--color-rcr-border-active: var(--clr-theme-edge);
+	--color-rcr-edge: var(--clr-theme-edge);
+	--color-rcr-indicator: var(--clr-theme-main);
+	--color-rcr-focus: var(--clr-theme-main);
+
+	color: var(--color-rcr-accent);
+}
