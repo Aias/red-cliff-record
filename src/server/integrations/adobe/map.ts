@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, isNull, or } from 'drizzle-orm';
-import { getSmartMetadata } from '~/app/lib/server/content-helpers';
-import { db } from '~/server/db/connections/postgres';
+import { getSmartMetadata } from '@/app/lib/server/content-helpers';
+import { db } from '@/server/db/connections/postgres';
 import {
 	indices,
 	lightroomImages,
@@ -11,7 +11,7 @@ import {
 	type LightroomImageSelect,
 	type MediaInsert,
 	type RecordInsert,
-} from '~/server/db/schema';
+} from '@/server/db/schema';
 
 const generateImageDescription = (image: LightroomImageSelect): string => {
 	let description = '';

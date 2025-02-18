@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm';
-import { db } from '~/server/db/connections';
+import { db } from '@/server/db/connections';
 import {
 	integrationRuns,
 	IntegrationStatus,
 	RunType,
 	type IntegrationType,
-} from '~/server/db/schema/operations';
+} from '@/server/db/schema/operations';
 
 type IntegrationFunction = (_integrationRunId: number) => Promise<number>;
 

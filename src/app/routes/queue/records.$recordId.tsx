@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { trpc } from '~/app/trpc';
+import { trpc } from '@/app/trpc';
 import { RecordEntryForm } from './-forms/RecordEntryForm';
-import { Placeholder, Spinner } from '~/components';
+import { Placeholder, Spinner } from '@/components';
 
 export const Route = createFileRoute('/queue/records/$recordId')({
 	component: RouteComponent,

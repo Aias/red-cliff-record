@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
-import { getSmartMetadata } from '~/app/lib/server/content-helpers';
-import { db } from '~/server/db/connections';
+import { getSmartMetadata } from '@/app/lib/server/content-helpers';
+import { db } from '@/server/db/connections';
 import {
 	indices,
 	media,
@@ -16,7 +16,7 @@ import {
 	type TwitterMediaSelect,
 	type TwitterTweetSelect,
 	type TwitterUserSelect,
-} from '~/server/db/schema';
+} from '@/server/db/schema';
 
 export const mapTwitterUserToEntity = (user: TwitterUserSelect): IndicesInsert => {
 	return {

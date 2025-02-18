@@ -2,12 +2,12 @@ import { useState, type ReactNode } from 'react';
 import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { type QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
-import type { ServerHelpers } from '~/app/trpc';
+import type { ServerHelpers } from '@/app/trpc';
 import '../styles/app.css';
-import { AppLayout, DefaultCatchBoundary, NotFound } from '~/components';
-import { seo, SITE_NAME } from '~/lib/seo';
-import { defaultTheme, getThemeCookie, themeColor } from '~/lib/theme';
-import { cn } from '~/lib/utils';
+import { AppLayout, DefaultCatchBoundary, NotFound } from '@/components';
+import { seo, SITE_NAME } from '@/lib/seo';
+import { defaultTheme, getThemeCookie, themeColor } from '@/lib/theme';
+import { cn } from '@/lib/utils';
 
 export interface RouterAppContext {
 	queryClient: QueryClient;

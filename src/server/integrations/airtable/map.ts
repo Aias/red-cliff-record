@@ -1,7 +1,7 @@
 import { eq, inArray, isNull, or } from 'drizzle-orm';
-import { validateAndFormatUrl } from '~/app/lib/formatting';
-import { getSmartMetadata } from '~/app/lib/server/content-helpers';
-import { db } from '~/server/db/connections/postgres';
+import { validateAndFormatUrl } from '@/app/lib/formatting';
+import { getSmartMetadata } from '@/app/lib/server/content-helpers';
+import { db } from '@/server/db/connections/postgres';
 import {
 	airtableAttachments,
 	airtableCreators,
@@ -28,7 +28,7 @@ import {
 	type IndicesInsert,
 	type MediaInsert,
 	type RecordInsert,
-} from '~/server/db/schema';
+} from '@/server/db/schema';
 
 const mapFormatToIndexEntry = (format: AirtableFormatSelect): IndicesInsert => {
 	return {

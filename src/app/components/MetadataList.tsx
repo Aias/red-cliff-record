@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, DataList, Dialog, IconButton, ScrollArea } from '@radix-ui/themes';
 import { z } from 'zod';
 import { CopyIcon } from './icons';
-import { cn } from '~/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface MetadataListProps extends DataList.RootProps {
 	metadata: Record<string, unknown>;

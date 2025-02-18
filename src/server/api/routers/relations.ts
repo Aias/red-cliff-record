@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { recordCategories, recordCreators, records } from '~/server/db/schema';
+import { recordCategories, recordCreators, records } from '@/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
 
 export const relationsRouter = createTRPCRouter({

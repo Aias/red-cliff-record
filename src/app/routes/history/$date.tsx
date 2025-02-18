@@ -3,8 +3,8 @@ import { Button, Dialog } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { OmitList } from './-OmitList';
-import { DataGrid, NextIcon, PreviousIcon } from '~/components';
-import { formatISODate, formatNumber, formatTime } from '~/lib/formatting';
+import { DataGrid, NextIcon, PreviousIcon } from '@/components';
+import { formatISODate, formatNumber, formatTime } from '@/lib/formatting';
 
 export const Route = createFileRoute('/history/$date')({
 	loader: ({ params: { date }, context: { queryClient, trpc } }) =>

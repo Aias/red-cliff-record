@@ -2,15 +2,15 @@ import { useCallback } from 'react';
 import { Button } from '@radix-ui/themes';
 import { createFileRoute, Link, Outlet, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { trpc } from '~/app/trpc';
-import { type CommitSummaryInput } from '~/server/api/routers/github.types';
+import { trpc } from '@/app/trpc';
+import { type CommitSummaryInput } from '@/server/api/routers/github.types';
 import {
 	type GithubCommitChangeSelect,
 	type GithubCommitSelect,
 	type GithubRepositorySelect,
-} from '~/server/db/schema/github';
-import { CompleteIcon, DataGrid, IncompleteIcon } from '~/components';
-import { useSelection } from '~/lib/useSelection';
+} from '@/server/db/schema/github';
+import { CompleteIcon, DataGrid, IncompleteIcon } from '@/components';
+import { useSelection } from '@/lib/useSelection';
 
 type CommitSelect = Omit<GithubCommitSelect, 'textEmbedding'> & {
 	repository: GithubRepositorySelect;

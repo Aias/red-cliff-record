@@ -50,12 +50,12 @@ export default tseslint.config(
 							position: 'before',
 						},
 						{
-							pattern: '~/app/**',
+							pattern: '@/app/**',
 							group: 'internal',
 							position: 'before',
 						},
 						{
-							pattern: '~/server/**',
+							pattern: '@/server/**',
 							group: 'internal',
 							position: 'before',
 						},

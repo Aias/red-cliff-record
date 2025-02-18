@@ -34,10 +34,10 @@
 		/* Path Aliases */
 		"baseUrl": ".",
 		"paths": {
-			"~/components": ["./src/app/components"],
-			"~/lib": ["./src/app/lib"],
-			"~/lib/*": ["./src/app/lib/*"],
-			"~/*": ["./src/*"]
+			"@/components": ["./src/app/components"],
+			"@/lib": ["./src/app/lib"],
+			"@/lib/*": ["./src/app/lib/*"],
+			"@/*": ["./src/*"]
 		}
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx", "./*.ts"],

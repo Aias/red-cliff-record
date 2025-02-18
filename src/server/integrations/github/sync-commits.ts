@@ -2,7 +2,7 @@ import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';
 import { desc, eq } from 'drizzle-orm';
-import { db } from '~/server/db/connections';
+import { db } from '@/server/db/connections';
 import {
 	githubCommitChanges,
 	githubCommits,
@@ -10,7 +10,7 @@ import {
 	type GithubCommitChangeInsert,
 	type GithubCommitInsert,
 	type GithubRepositoryInsert,
-} from '~/server/db/schema/github';
+} from '@/server/db/schema/github';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { syncGithubEmbeddings } from './embeddings';
 import { syncCommitSummaries } from './summarize-all';

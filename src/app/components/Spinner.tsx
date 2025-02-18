@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { cn } from '~/lib/utils';
+import { cn } from '@/lib/utils';
 
 // An internal copy of the Radix Spinner component
 // https://www.radix-ui.com/themes/docs/components/spinner

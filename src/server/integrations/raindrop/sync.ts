@@ -1,12 +1,12 @@
 import { desc } from 'drizzle-orm';
-import { db } from '~/server/db/connections';
+import { db } from '@/server/db/connections';
 import {
 	raindropBookmarks,
 	raindropCollections,
 	RaindropType,
 	type RaindropBookmarkInsert,
 	type RaindropCollectionInsert,
-} from '~/server/db/schema/raindrop';
+} from '@/server/db/schema/raindrop';
 import { runIntegration } from '../common/run-integration';
 import {
 	createCategoriesFromRaindropTags,

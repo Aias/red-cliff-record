@@ -1,6 +1,6 @@
 import { eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { browsingHistory, browsingHistoryOmitList } from '~/server/db/schema/history';
+import { browsingHistory, browsingHistoryOmitList } from '@/server/db/schema/history';
 import { createTRPCRouter, mergeRouters, publicProcedure } from '../init';
 
 const browserHistoryRouter = createTRPCRouter({

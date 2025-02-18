@@ -1,6 +1,6 @@
 import React, { type ReactNode } from 'react';
 import * as AvatarPrimitive from '@radix-ui/react-avatar';
-import { cn } from '~/lib/utils';
+import { cn } from '@/lib/utils';
 
 export type AvatarProps = React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> & {
 	src?: string | undefined;

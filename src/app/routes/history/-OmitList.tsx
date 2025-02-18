@@ -2,9 +2,9 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { HTMLAttributes } from 'react';
 import { Button, ScrollArea, TextField } from '@radix-ui/themes';
 import type { ColumnDef } from '@tanstack/react-table';
-import { trpc } from '~/app/trpc';
-import { DataGrid, EditableCell, Placeholder, Spinner } from '~/components';
-import { cn } from '~/lib/utils';
+import { trpc } from '@/app/trpc';
+import { DataGrid, EditableCell, Placeholder, Spinner } from '@/components';
+import { cn } from '@/lib/utils';
 
 type OmitPattern = {
 	pattern: string;

@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm';
-import { db } from '~/server/db/connections';
+import { db } from '@/server/db/connections';
 import type {
 	GithubCommitChangeSelect,
 	GithubCommitSelect,
 	GithubRepositorySelect,
-} from '~/server/db/schema/github';
-import { githubCommits } from '~/server/db/schema/github';
+} from '@/server/db/schema/github';
+import { githubCommits } from '@/server/db/schema/github';
 import { summarizeCommit } from '../../services/ai/summarize-commit';
 
 type CommitWithRelations = GithubCommitSelect & {

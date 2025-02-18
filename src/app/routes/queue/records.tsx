@@ -1,13 +1,13 @@
 import { Button, Select } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
-import { trpc } from '~/app/trpc';
+import { trpc } from '@/app/trpc';
 import {
 	IntegrationType,
 	type IndicesSelect,
 	type MediaSelect,
 	type RecordSelect,
-} from '~/server/db/schema';
+} from '@/server/db/schema';
 import {
 	Avatar,
 	Badge,
@@ -17,8 +17,8 @@ import {
 	SelectionActions,
 	Spinner,
 	type AvatarProps,
-} from '~/components';
-import { useSelection } from '~/lib/useSelection';
+} from '@/components';
+import { useSelection } from '@/lib/useSelection';
 
 const SearchSchema = z.object({
 	source: IntegrationType.optional(),
@@ -234,7 +234,6 @@ const RecordQueueItem = ({
 								<Avatar
 									src={firstCreator.canonicalMediaUrl ?? undefined}
 									fallback={firstCreator.name.slice(0, 1)}
-									inline
 								/>
 							</>
 						) : (
@@ -250,12 +249,7 @@ const RecordQueueItem = ({
 						{entry.sources &&
 							entry.sources.length > 0 &&
 							entry.sources.map((source) => (
-								<IntegrationAvatar
-									key={source}
-									integration={source}
-									inline
-									className="size-4 opacity-75"
-								/>
+								<IntegrationAvatar key={source} integration={source} />
 							))}
 					</div>
 					<p className="line-clamp-1 text-xs">

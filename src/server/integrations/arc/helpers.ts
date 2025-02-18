@@ -1,6 +1,6 @@
 import { asc, eq } from 'drizzle-orm';
-import { createArcConnection } from '~/server/db/connections/arc-sqlite';
-import { contentAnnotations, contextAnnotations, urls, visits } from '~/server/db/schema/arc';
+import { createArcConnection } from '@/server/db/connections/arc-sqlite';
+import { contentAnnotations, contextAnnotations, urls, visits } from '@/server/db/schema/arc';
 import type { DailyVisitsQueryRow } from './types';
 
 const arcDb = createArcConnection();

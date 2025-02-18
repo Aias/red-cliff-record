@@ -1,10 +1,10 @@
 import os from 'os';
 import readline from 'readline';
 import { and, desc, eq, gt, isNotNull, ne, notLike } from 'drizzle-orm';
-import { chromeEpochMicrosecondsToDatetime } from '~/app/lib/time-helpers';
-import { db } from '~/server/db/connections';
-import { urls, visits } from '~/server/db/schema/arc';
-import { Browser, browsingHistory, type BrowsingHistoryInsert } from '~/server/db/schema/history';
+import { chromeEpochMicrosecondsToDatetime } from '@/app/lib/time-helpers';
+import { db } from '@/server/db/connections';
+import { urls, visits } from '@/server/db/schema/arc';
+import { Browser, browsingHistory, type BrowsingHistoryInsert } from '@/server/db/schema/history';
 import { runIntegration } from '../common/run-integration';
 import { collapseSequentialVisits, dailyVisitsQuery } from './helpers';
 import { DailyVisitsQueryResultSchema } from './types';

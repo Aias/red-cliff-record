@@ -1,8 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, isNotNull, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { githubCommits } from '~/server/db/schema/github';
-import { summarizeCommit } from '~/server/services/ai/summarize-commit';
+import { githubCommits } from '@/server/db/schema/github';
+import { summarizeCommit } from '@/server/services/ai/summarize-commit';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { RequestParamsSchema, similarity } from './common';
 import { CommitSummaryInputSchema } from './github.types';

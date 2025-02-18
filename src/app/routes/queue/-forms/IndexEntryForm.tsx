@@ -2,15 +2,15 @@ import { useEffect, useMemo } from 'react';
 import { Button, CheckboxCards, SegmentedControl, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
-import { trpc } from '~/app/trpc';
-import { Flag, type RecordSelect } from '~/server/db/schema';
+import { trpc } from '@/app/trpc';
+import { Flag, type RecordSelect } from '@/server/db/schema';
 import {
 	FLAGS,
 	IndicesSelectSchema,
 	type IndexMainType,
 	type IndicesSelect,
-} from '~/server/db/schema';
-import { CheckboxWithLabel, ExternalLink, ExternalLinkIcon, ImageIcon } from '~/components';
+} from '@/server/db/schema';
+import { CheckboxWithLabel, ExternalLink, ExternalLinkIcon, ImageIcon } from '@/components';
 
 type IndexEntryFormProps = {
 	indexEntryId: string | number;

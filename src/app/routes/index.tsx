@@ -3,7 +3,7 @@ import { TextField } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '../trpc';
-import { Avatar, ExternalLinkIcon, SearchIcon } from '~/components';
+import { Avatar, ExternalLinkIcon, SearchIcon } from '@/components';
 
 const SearchSchema = z.object({
 	q: z.string().optional(),
