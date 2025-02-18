@@ -1,7 +1,7 @@
 import { eq, isNull } from 'drizzle-orm';
-import { db } from '~/server/db/connections';
-import { githubCommits, type GithubCommitSelect } from '~/server/db/schema/github';
-import { createEmbedding, type EmbeddingType } from '~/server/services/ai/create-embedding';
+import { db } from '@/server/db/connections';
+import { githubCommits, type GithubCommitSelect } from '@/server/db/schema/github';
+import { createEmbedding, type EmbeddingType } from '@/server/services/ai/create-embedding';
 
 class GithubCommit implements EmbeddingType {
 	constructor(

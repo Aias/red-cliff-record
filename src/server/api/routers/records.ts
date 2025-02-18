@@ -1,6 +1,6 @@
 import { and, arrayContained, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { IntegrationType, RecordInsertSchema, records } from '~/server/db/schema';
+import { IntegrationType, RecordInsertSchema, records } from '@/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { SIMILARITY_THRESHOLD } from './common';
 

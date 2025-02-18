@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'fs';
 import { homedir } from 'os';
 import { resolve } from 'path';
-import { db } from '~/server/db/connections';
+import { db } from '@/server/db/connections';
 import {
 	twitterMedia as mediaTable,
 	twitterTweets as tweetsTable,
@@ -9,7 +9,7 @@ import {
 	type TwitterMediaInsert,
 	type TwitterTweetInsert,
 	type TwitterUserInsert,
-} from '~/server/db/schema/twitter';
+} from '@/server/db/schema/twitter';
 import { runIntegration } from '../common/run-integration';
 import { processMedia, processTweet, processUser } from './helpers';
 import { createEntitiesFromUsers, createMediaFromTweets, createRecordsFromTweets } from './map';

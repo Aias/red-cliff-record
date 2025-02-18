@@ -9,7 +9,7 @@ import {
 	type SortingState,
 } from '@tanstack/react-table';
 import { Checkbox } from './Checkbox';
-import { cn } from '~/lib/utils';
+import { cn } from '@/lib/utils';
 // Add custom meta type for column alignment
 declare module '@tanstack/react-table' {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars

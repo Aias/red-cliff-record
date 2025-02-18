@@ -1,8 +1,8 @@
 import { type PropsWithChildren } from 'react';
-import { trpc } from '~/app/trpc';
-import type { IntegrationType } from '~/server/db/schema';
-import { Badge, IntegrationAvatar, Placeholder, Spinner } from '~/components';
-import { toTitleCase } from '~/lib/formatting';
+import { trpc } from '@/app/trpc';
+import type { IntegrationType } from '@/server/db/schema';
+import { Badge, IntegrationAvatar, Placeholder, Spinner } from '@/components';
+import { toTitleCase } from '@/lib/formatting';
 
 interface RecordCategoriesProps {
 	categoryId: number;

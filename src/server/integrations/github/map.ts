@@ -1,6 +1,6 @@
 import { eq, isNull } from 'drizzle-orm';
-import { validateAndFormatUrl } from '~/app/lib/formatting';
-import { db } from '~/server/db/connections';
+import { validateAndFormatUrl } from '@/app/lib/formatting';
+import { db } from '@/server/db/connections';
 import {
 	githubRepositories,
 	githubUsers,
@@ -11,7 +11,7 @@ import {
 	type GithubUserSelect,
 	type IndicesInsert,
 	type RecordInsert,
-} from '~/server/db/schema';
+} from '@/server/db/schema';
 
 const mapGithubUserToEntity = (user: GithubUserSelect): IndicesInsert => {
 	return {

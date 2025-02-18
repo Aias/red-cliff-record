@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ReadwiseCategory, ReadwiseLocation } from '~/server/db/schema/readwise';
+import { ReadwiseCategory, ReadwiseLocation } from '@/server/db/schema/readwise';
 import { emptyStringToNull } from '../common/validation-helpers';
 
 const ReadwiseTagSchema = z.object({

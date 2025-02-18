@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Button, DropdownMenu, IconButton } from '@radix-ui/themes';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/start';
-import { ArchiveIcon, DayModeIcon, NightModeIcon } from '~/app/components/icons';
+import { ArchiveIcon, DayModeIcon, NightModeIcon } from '@/app/components/icons';
 import { setTheme } from '../lib/server/setTheme';
 
 interface AppLayoutProps {

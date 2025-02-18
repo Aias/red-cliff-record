@@ -1,8 +1,8 @@
 import { TabNav } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
-import { trpc } from '~/app/trpc';
-import { IndexMainType, type IndicesSelect } from '~/server/db/schema';
+import { trpc } from '@/app/trpc';
+import { IndexMainType, type IndicesSelect } from '@/server/db/schema';
 import {
 	Badge,
 	CategoryIcon,
@@ -13,8 +13,8 @@ import {
 	TabNavLink,
 	UnknownIcon,
 	type IconProps,
-} from '~/components';
-import { toTitleCase } from '~/lib/formatting';
+} from '@/components';
+import { toTitleCase } from '@/lib/formatting';
 
 const SearchSchema = z.object({
 	type: IndexMainType.optional(),

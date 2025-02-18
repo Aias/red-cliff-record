@@ -6,7 +6,7 @@ import type {
 	LightroomAssetExif,
 	LightroomAssetLinks,
 	LightroomLocation,
-} from '~/server/integrations/adobe/types';
+} from '@/server/integrations/adobe/types';
 import { media } from './media';
 import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';

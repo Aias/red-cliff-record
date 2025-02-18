@@ -4,8 +4,8 @@ import { S3Client } from 'bun';
 import { eq } from 'drizzle-orm';
 import { ilike } from 'drizzle-orm';
 import { extension as mimeExtension, lookup as mimeLookup } from 'mime-types';
-import { db } from '~/server/db/connections/postgres';
-import { media } from '~/server/db/schema/media';
+import { db } from '@/server/db/connections/postgres';
+import { media } from '@/server/db/schema/media';
 
 // Create the S3 client for Cloudflare R2 (or any S3-compatible endpoint).
 // Ensure you have these environment variables set: S3_REGION, S3_ACCESS_KEY_ID,

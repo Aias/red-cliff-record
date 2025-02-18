@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import { Button, Code, IconButton } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { trpc } from '~/app/trpc';
+import { trpc } from '@/app/trpc';
 import { mapCommitToInput } from './route';
-import { CloseIcon, CodeBlock } from '~/components';
+import { CloseIcon, CodeBlock } from '@/components';
 
 export const Route = createFileRoute('/commits/$sha')({
 	loader: async ({ context: { queryClient, trpc }, params: { sha } }) => {

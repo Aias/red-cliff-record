@@ -1,7 +1,7 @@
 import { and, inArray, isNull } from 'drizzle-orm';
 import { eq, isNotNull } from 'drizzle-orm';
-import { getSmartMetadata } from '~/app/lib/server/content-helpers';
-import { db } from '~/server/db/connections';
+import { getSmartMetadata } from '@/app/lib/server/content-helpers';
+import { db } from '@/server/db/connections';
 import {
 	indices,
 	media,
@@ -11,14 +11,14 @@ import {
 	recordCategories,
 	recordMedia,
 	records,
-} from '~/server/db/schema';
+} from '@/server/db/schema';
 import type {
 	IndicesInsert,
 	MediaInsert,
 	RaindropBookmarkSelect,
 	RaindropTagSelect,
 	RecordInsert,
-} from '~/server/db/schema';
+} from '@/server/db/schema';
 
 export async function createRaindropTags(integrationRunId?: number) {
 	console.log('Processing bookmark tags...');

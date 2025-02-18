@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod.mjs';
-import { CommitSummaryResponseSchema } from '~/server/api/routers/github.types';
+import { CommitSummaryResponseSchema } from '@/server/api/routers/github.types';
 
 export const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,

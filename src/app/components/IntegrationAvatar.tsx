@@ -1,5 +1,5 @@
 import { useThemeContext } from '@radix-ui/themes';
-import { type IntegrationType } from '~/server/db/schema/operations';
+import { type IntegrationType } from '@/server/db/schema/operations';
 import { Avatar, type AvatarProps } from './Avatar';
 import adobeLogo from './logos/adobe.svg?url';
 import airtableLogo from './logos/airtable.svg?url';

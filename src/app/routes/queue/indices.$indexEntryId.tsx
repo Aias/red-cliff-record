@@ -1,7 +1,7 @@
 import { Suspense, useMemo } from 'react';
 import { IconButton } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { trpc } from '~/app/trpc';
+import { trpc } from '@/app/trpc';
 import { RecordCategories, RecordCreators } from './-components/AssociationLists';
 import { IndexEntryForm } from './-forms/IndexEntryForm';
 import { IndexTypeIcon } from './indices';
@@ -12,7 +12,7 @@ import {
 	MetadataDialogButton,
 	Placeholder,
 	Spinner,
-} from '~/components';
+} from '@/components';
 
 export const Route = createFileRoute('/queue/indices/$indexEntryId')({
 	component: RouteComponent,
@@ -106,9 +106,13 @@ function IndexEntryContent() {
 									</Link>
 									{entry.sense && <em className="text-sm text-secondary">({entry.sense})</em>}
 									{entry.sources && entry.sources.length > 0 ? (
-										<div className="flex flex-wrap gap-1">
+										<div className="flex flex-wrap gap-2">
 											{entry.sources.map((source) => (
-												<IntegrationAvatar key={source} integration={source} className="size-4" />
+												<IntegrationAvatar
+													key={source}
+													integration={source}
+													className="size-4 opacity-90"
+												/>
 											))}
 										</div>
 									) : null}

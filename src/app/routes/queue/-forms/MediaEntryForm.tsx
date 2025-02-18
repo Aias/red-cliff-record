@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { Button, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
-import { trpc } from '~/app/trpc';
-import { MediaSelectSchema, type MediaSelect } from '~/server/db/schema/media';
+import { trpc } from '@/app/trpc';
+import { MediaSelectSchema, type MediaSelect } from '@/server/db/schema/media';
 
 type MediaEntryFormProps = {
 	mediaId: string | number;

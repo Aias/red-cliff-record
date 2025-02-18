@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from 'react';
 import { Button, DropdownMenu, IconButton } from '@radix-ui/themes';
 import { ClearIcon } from './icons';
-import { cn } from '~/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface SelectionActionsProps extends HTMLAttributes<HTMLDivElement> {
 	selectedCount: number;

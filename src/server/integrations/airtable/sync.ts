@@ -1,5 +1,5 @@
 import { and, desc, eq, ilike, isNotNull, isNull } from 'drizzle-orm';
-import { db } from '~/server/db/connections';
+import { db } from '@/server/db/connections';
 import {
 	airtableAttachments,
 	airtableCreators,
@@ -17,7 +17,7 @@ import {
 	type AirtableExtractSpaceInsert,
 	type AirtableFormatInsert,
 	type AirtableSpaceInsert,
-} from '~/server/db/schema/airtable';
+} from '@/server/db/schema/airtable';
 import { deleteMediaFromR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
 import { airtableBase, storeMedia } from './helpers';

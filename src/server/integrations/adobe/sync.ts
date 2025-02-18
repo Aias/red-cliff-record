@@ -1,5 +1,5 @@
-import { db } from '~/server/db/connections';
-import { lightroomImages } from '~/server/db/schema/adobe';
+import { db } from '@/server/db/connections';
+import { lightroomImages } from '@/server/db/schema/adobe';
 import { transferMediaToR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
 import { createMediaFromLightroomImages } from './map';

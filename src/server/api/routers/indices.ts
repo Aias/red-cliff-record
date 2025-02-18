@@ -21,7 +21,7 @@ import {
 	type IndicesInsert,
 	type RecordCategoryInsert,
 	type RecordCreatorInsert,
-} from '~/server/db/schema';
+} from '@/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { DEFAULT_LIMIT, SIMILARITY_THRESHOLD } from './common';
 

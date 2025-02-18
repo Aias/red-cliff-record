@@ -1,9 +1,9 @@
 import { and, eq, inArray, ne } from 'drizzle-orm';
 import { isNotNull } from 'drizzle-orm';
 import { isNull } from 'drizzle-orm';
-import { validateAndFormatUrl } from '~/app/lib/formatting';
-import { getSmartMetadata } from '~/app/lib/server/content-helpers';
-import { db } from '~/server/db/connections';
+import { validateAndFormatUrl } from '@/app/lib/formatting';
+import { getSmartMetadata } from '@/app/lib/server/content-helpers';
+import { db } from '@/server/db/connections';
 import {
 	indices,
 	media,
@@ -24,7 +24,7 @@ import {
 	type RecordCategoryInsert,
 	type RecordCreatorInsert,
 	type RecordInsert,
-} from '~/server/db/schema';
+} from '@/server/db/schema';
 
 // ------------------------------------------------------------------------
 // 1. Create readwise authors and upsert corresponding index entities
