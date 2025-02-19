@@ -1,9 +1,8 @@
 import { useCallback } from 'react';
-import { Button, Code, IconButton } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
 import { mapCommitToInput } from './route';
-import { CloseIcon, CodeBlock } from '@/components';
+import { Button, CloseIcon, CodeBlock } from '@/components';
 
 export const Route = createFileRoute('/commits/$sha')({
 	loader: async ({ context: { queryClient, trpc }, params: { sha } }) => {
@@ -46,16 +45,16 @@ function CommitView() {
 		<div className="card flex grow basis-full flex-col gap-4 overflow-hidden @max-[799px]:basis-full">
 			<header className="flex items-center justify-between gap-2">
 				<h2>Commit {commit.sha.slice(0, 7)}</h2>
-				<Link to={'/commits'}>
-					<IconButton size="1" variant="soft">
+				<Button asChild>
+					<Link to={'/commits'}>
 						<CloseIcon />
-					</IconButton>
-				</Link>
+					</Link>
+				</Button>
 			</header>
 			<div className="flex flex-col gap-4 overflow-auto">
 				<p className="font-medium">{commit.message}</p>
 				<p>
-					Repository: <Code>{commit.repository.fullName}</Code>
+					Repository: <code className="code">{commit.repository.fullName}</code>
 				</p>
 				<p>
 					Changes: +{commit.additions} -{commit.deletions} ({commit.changes} total)
@@ -64,7 +63,7 @@ function CommitView() {
 				<section>
 					<header className="mb-3 flex items-center justify-between gap-2">
 						<h3>Analysis</h3>
-						<Button onClick={handleAnalyze} disabled={updateCommitSummary.isPending} variant="soft">
+						<Button onClick={handleAnalyze} disabled={updateCommitSummary.isPending}>
 							{updateCommitSummary.isPending ? 'Analyzing...' : 'Analyze Commit'}
 						</Button>
 					</header>
@@ -97,7 +96,7 @@ function CommitView() {
 					<ul className="flex list-none flex-col gap-2 p-0">
 						{commit.commitChanges.map((change) => (
 							<li key={change.id}>
-								<Code variant="ghost">{change.filename}</Code>
+								<code className="code">{change.filename}</code>
 							</li>
 						))}
 					</ul>
@@ -114,13 +113,11 @@ function CommitView() {
 									<div className="flex flex-col gap-2">
 										<div className="flex items-baseline justify-between gap-2">
 											<Link
-												className="text-sm"
+												className="font-mono text-sm themed"
 												to="/commits/$sha"
 												params={{ sha: relatedCommit.sha }}
 											>
-												<Code variant="ghost" weight="medium">
-													{relatedCommit.repository.fullName}:
-												</Code>
+												<span className="font-medium">{relatedCommit.repository.fullName}:</span>
 												<span>#{relatedCommit.sha.slice(0, 7)}</span>
 											</Link>
 											<span className="text-sm text-rcr-secondary">

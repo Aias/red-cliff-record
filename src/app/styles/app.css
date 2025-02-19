@@ -33,8 +33,8 @@
 	--color-rcr-hint: var(--clr-neutral-hint);
 	--color-rcr-symbol: var(--clr-neutral-symbol);
 
-	--color-rcr-accent: var(--clr-theme-primary);
-	--color-rcr-accent-active: var(--clr-theme-display);
+	--color-rcr-accent: var(--clr-theme-secondary);
+	--color-rcr-accent-active: var(--clr-theme-primary);
 
 	--color-rcr-main: var(--clr-neutral-main);
 	--color-rcr-main-active: var(--clr-neutral-main-active);
@@ -60,8 +60,6 @@
 	--color-rcr-edge: var(--clr-neutral-edge);
 	--color-rcr-indicator: var(--clr-theme-main);
 	--color-rcr-focus: var(--clr-theme-main);
-
-	--radius: 0.5rem;
 }
 
 @theme inline {
@@ -73,16 +71,16 @@
 	--color-popover-foreground: var(--color-rcr-primary);
 	--color-primary: var(--color-rcr-main);
 	--color-primary-foreground: var(--color-rcr-main-contrast);
-	--color-secondary: var(--color-rcr-tint);
-	--color-secondary-foreground: var(--color-rcr-secondary);
+	--color-secondary: var(--clr-theme-dye);
+	--color-secondary-foreground: var(--color-rcr-accent);
 	--color-muted: var(--color-rcr-stain);
 	--color-muted-foreground: var(--color-rcr-symbol);
-	--color-accent: var(--color-rcr-accent);
-	--color-accent-foreground: var(--color-rcr-accent-active);
-	--color-destructive: var(--color-rcr-accent);
-	--color-destructive-foreground: var(--color-rcr-accent-active);
-	--color-border: var(--color-rcr-border);
-	--color-input: var(--color-rcr-panel);
+	--color-accent: var(--color-rcr-stain);
+	--color-accent-foreground: var(--color-rcr-display);
+	--color-destructive: var(--flexoki-red-600);
+	--color-destructive-foreground: var(--white);
+	--color-border: var(--color-rcr-divider);
+	--color-input: var(--color-rcr-border);
 	--color-ring: var(--color-rcr-focus);
 	--color-chart-1: var(--color-rcr-main); /* TODO: Add flexoki categorical palette. */
 	--color-chart-2: var(--color-rcr-main);
@@ -90,10 +88,10 @@
 	--color-chart-4: var(--color-rcr-main);
 	--color-chart-5: var(--color-rcr-main);
 
-	--radius-sm: calc(var(--radius) - 4px);
-	--radius-md: calc(var(--radius) - 2px);
-	--radius-lg: var(--radius);
-	--radius-xl: calc(var(--radius) + 4px);
+	--radius-sm: 2px;
+	--radius-md: 4px;
+	--radius-lg: 6px;
+	--radius-xl: 8px;
 
 	--color-sidebar-ring: var(--color-rcr-focus);
 	--color-sidebar-border: var(--color-rcr-border);
@@ -229,6 +227,10 @@
 	@apply inline-flex aspect-square h-[1em] w-[1em] shrink-0 leading-none text-current;
 }
 
+@utility code {
+	@apply rounded-sm bg-rcr-stain px-1.25 font-mono text-[0.875em] themed;
+}
+
 @utility checkbox {
 	@apply size-[1em] overflow-hidden rounded-xs border border-rcr-border text-[1.125em] focus-visible:ring-1 focus-visible:ring-rcr-focus focus-visible:outline-none;
 	&:checked,
@@ -277,8 +279,8 @@
 	--color-rcr-hint: var(--clr-theme-hint);
 	--color-rcr-symbol: var(--clr-theme-symbol);
 
-	--color-rcr-accent: var(--clr-theme-primary);
-	--color-rcr-accent-active: var(--clr-theme-display);
+	--color-rcr-accent: var(--clr-theme-secondary);
+	--color-rcr-accent-active: var(--clr-theme-primary);
 
 	--color-rcr-main: var(--clr-theme-main);
 	--color-rcr-main-active: var(--clr-theme-main-active);

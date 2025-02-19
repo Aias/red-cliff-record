@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { Button } from '@radix-ui/themes';
 import { createFileRoute, Link, Outlet, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { trpc } from '@/app/trpc';
@@ -9,7 +8,7 @@ import {
 	type GithubCommitSelect,
 	type GithubRepositorySelect,
 } from '@/server/db/schema/github';
-import { CompleteIcon, DataGrid, IncompleteIcon } from '@/components';
+import { Button, CompleteIcon, DataGrid, IncompleteIcon } from '@/components';
 import { useSelection } from '@/lib/useSelection';
 
 type CommitSelect = Omit<GithubCommitSelect, 'textEmbedding'> & {
@@ -121,7 +120,7 @@ function CommitList() {
 
 	return (
 		<main className="@container flex h-full gap-2 overflow-hidden p-3">
-			<div className="card min-w-[max(420px,50%)] grow basis-0 @max-[799px]:hidden">
+			<div className="card min-w-[max(420px,50%)] grow basis-0">
 				<header className="mb-4 flex items-center justify-between gap-2">
 					<h1>Recent Commits</h1>
 					{selectedIds.size > 0 && (

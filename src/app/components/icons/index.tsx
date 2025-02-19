@@ -3,8 +3,10 @@ import {
 	ArchiveIcon as ArchiveIconRadix,
 	CheckCircledIcon as CheckCircledIconRadix,
 	CheckIcon as CheckIconRadix,
+	ChevronDownIcon as ChevronDownIconRadix,
 	ChevronLeftIcon as ChevronLeftIconRadix,
 	ChevronRightIcon as ChevronRightIconRadix,
+	ChevronUpIcon as ChevronUpIconRadix,
 	CircleIcon as CircleIconRadix,
 	CopyIcon as CopyIconRadix,
 	Cross1Icon as Cross1IconRadix,
@@ -36,11 +38,13 @@ export const CategoryIcon = wrapIcon(ArchiveIconRadix);
 export const CheckIcon = wrapIcon(CheckIconRadix);
 export const ClearIcon = wrapIcon(Cross1IconRadix);
 export const CloseIcon = wrapIcon(Cross1IconRadix);
+export const CollapseIcon = wrapIcon(ChevronUpIconRadix);
 export const CompleteIcon = wrapIcon(CheckCircledIconRadix);
 export const ConnectIcon = wrapIcon(Link2IconRadix);
 export const CopyIcon = wrapIcon(CopyIconRadix);
 export const DayModeIcon = wrapIcon(SunIconRadix);
 export const EntityIcon = wrapIcon(PersonIconRadix);
+export const ExpandIcon = wrapIcon(ChevronDownIconRadix);
 export const ExternalLinkIcon = wrapIcon(ExternalLinkIconRadix);
 export const FormatIcon = wrapIcon(CubeIconRadix);
 export const ImageIcon = wrapIcon(ImageIconRadix);

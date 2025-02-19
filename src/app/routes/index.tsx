@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { TextField } from '@radix-ui/themes';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '../trpc';
-import { Avatar, ExternalLinkIcon, SearchIcon } from '@/components';
+import { Avatar, ExternalLinkIcon, Input } from '@/components';
 
 const SearchSchema = z.object({
 	q: z.string().optional(),
@@ -127,17 +126,13 @@ function Home() {
 			<div className="flex w-full max-w-2xl flex-col items-center gap-8 pt-12">
 				<h1 className="text-center text-4xl font-medium text-balance">The Red Cliff Record</h1>
 
-				<TextField.Root
+				<Input
 					className="w-full"
-					size="3"
+					type="search"
 					placeholder="Search records and indices..."
 					value={inputValue}
 					onChange={handleChange}
-				>
-					<TextField.Slot>
-						<SearchIcon />
-					</TextField.Slot>
-				</TextField.Root>
+				/>
 
 				{debouncedValue.length > 0 && (
 					<div className="flex w-full flex-col gap-6">

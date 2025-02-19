@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { Button } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { OmitList } from './-OmitList';
 import {
+	Button,
 	DataGrid,
 	Dialog,
 	DialogContent,
@@ -124,13 +124,13 @@ function DailyActivityPage() {
 					})}
 				</h1>
 				<nav className="flex gap-2">
-					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
+					<Button asChild className="text-nowrap whitespace-nowrap">
 						<Link to="/history/$date" params={{ date: formatISODate(prevDate) }}>
 							<PreviousIcon />
 							Previous Day
 						</Link>
 					</Button>
-					<Button variant="soft" asChild className="text-nowrap whitespace-nowrap">
+					<Button asChild className="text-nowrap whitespace-nowrap">
 						<Link to="/history/$date" params={{ date: formatISODate(nextDate) }}>
 							Next Day
 							<NextIcon />
@@ -142,7 +142,7 @@ function DailyActivityPage() {
 			<div role="toolbar" className="mb-4 flex items-center gap-4">
 				<h2>Browser History</h2>
 				<Dialog>
-					<DialogTrigger>
+					<DialogTrigger asChild>
 						<Button variant="outline">Modify Omit List</Button>
 					</DialogTrigger>
 					<DialogContent className="flex h-[75dvh] max-h-[75dvh] w-[75dvw] max-w-[75dvw] flex-col gap-4">

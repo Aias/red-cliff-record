@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Button } from '@radix-ui/themes';
 import { z } from 'zod';
 import { CopyIcon } from './icons';
 import { ScrollArea } from './ui/scroll-area';
 import {
+	Button,
 	DataList,
 	Dialog,
 	DialogContent,
@@ -99,8 +99,8 @@ export const MetadataDialogButton: React.FC<MetadataDialogButtonProps> = ({
 }) => {
 	return (
 		<Dialog>
-			<DialogTrigger>
-				<Button variant="soft" size="1" {...buttonProps}>
+			<DialogTrigger asChild>
+				<Button size="sm" {...buttonProps}>
 					{buttonText}
 				</Button>
 			</DialogTrigger>

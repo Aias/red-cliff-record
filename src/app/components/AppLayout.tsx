@@ -1,9 +1,15 @@
 import type { ReactNode } from 'react';
-import { Button, DropdownMenu, IconButton } from '@radix-ui/themes';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/start';
-import { ArchiveIcon, DayModeIcon, NightModeIcon } from '@/app/components/icons';
+import { ArchiveIcon, DayModeIcon, ExpandIcon, NightModeIcon } from '@/app/components/icons';
 import { setTheme } from '../lib/server/setTheme';
+import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from './';
 
 interface AppLayoutProps {
 	children: ReactNode;
@@ -31,15 +37,15 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 				</li>
 
 				<li>
-					<DropdownMenu.Root>
-						<DropdownMenu.Trigger>
-							<Button variant="soft" size="2">
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button>
 								Activities
-								<DropdownMenu.TriggerIcon />
+								<ExpandIcon />
 							</Button>
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Content>
-							<DropdownMenu.Item
+						</DropdownMenuTrigger>
+						<DropdownMenuContent>
+							<DropdownMenuItem
 								onClick={() =>
 									navigate({
 										to: '/history/$date',
@@ -48,8 +54,8 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 								}
 							>
 								Browsing History
-							</DropdownMenu.Item>
-							<DropdownMenu.Item
+							</DropdownMenuItem>
+							<DropdownMenuItem
 								onClick={() =>
 									navigate({
 										to: '/commits',
@@ -57,8 +63,8 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 								}
 							>
 								Github Commits
-							</DropdownMenu.Item>
-							<DropdownMenu.Item
+							</DropdownMenuItem>
+							<DropdownMenuItem
 								onClick={() =>
 									navigate({
 										to: '/queue/indices',
@@ -66,8 +72,8 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 								}
 							>
 								Index Queue
-							</DropdownMenu.Item>
-							<DropdownMenu.Item
+							</DropdownMenuItem>
+							<DropdownMenuItem
 								onClick={() =>
 									navigate({
 										to: '/queue/records',
@@ -75,14 +81,14 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 								}
 							>
 								Records Queue
-							</DropdownMenu.Item>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
 				</li>
 				<li className="vr py-1" />
-				<IconButton asChild variant="ghost" size="2" onClick={toggleTheme}>
+				<Button asChild size="icon" variant="ghost" onClick={toggleTheme}>
 					<li>{currentTheme === 'light' ? <DayModeIcon /> : <NightModeIcon />}</li>
-				</IconButton>
+				</Button>
 			</menu>
 			{children}
 		</div>

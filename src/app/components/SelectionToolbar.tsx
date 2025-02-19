@@ -1,6 +1,12 @@
 import type { HTMLAttributes } from 'react';
-import { Button, DropdownMenu, IconButton } from '@radix-ui/themes';
-import { ClearIcon } from './icons';
+import { ClearIcon, ExpandIcon } from './icons';
+import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components';
 import { cn } from '@/lib/utils';
 
 interface SelectionActionsProps extends HTMLAttributes<HTMLDivElement> {
@@ -28,7 +34,7 @@ export function SelectionActions({
 		<div role="toolbar" className={cn('flex items-center gap-2', className)} {...props}>
 			<span className="grow text-sm text-rcr-secondary">{selectedCount} selected</span>
 			{selectedCount === 0 ? (
-				<Button onClick={() => onSelectAll()} size="1" variant="soft">
+				<Button onClick={() => onSelectAll()} size="sm">
 					Select All
 				</Button>
 			) : (
@@ -37,35 +43,35 @@ export function SelectionActions({
 						<Button
 							onClick={() => firstAction.onClick()}
 							disabled={firstAction.disabled}
-							size="1"
-							variant="soft"
+							size="sm"
+							variant="secondary"
 						>
 							{firstAction.label}
 						</Button>
 					) : (
-						<DropdownMenu.Root>
-							<DropdownMenu.Trigger>
-								<Button size="1" variant="surface">
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button size="sm" variant="secondary">
 									Actions
-									<DropdownMenu.TriggerIcon />
+									<ExpandIcon />
 								</Button>
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent>
 								{actions.map((action) => (
-									<DropdownMenu.Item
+									<DropdownMenuItem
 										key={action.label}
 										onClick={() => action.onClick()}
 										disabled={action.disabled}
 									>
 										{action.label}
-									</DropdownMenu.Item>
+									</DropdownMenuItem>
 								))}
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
+							</DropdownMenuContent>
+						</DropdownMenu>
 					)}
-					<IconButton variant="soft" onClick={() => onClear()} size="1" title="Clear selection">
+					<Button variant="secondary" size="sm" onClick={() => onClear()} title="Clear selection">
 						<ClearIcon />
-					</IconButton>
+					</Button>
 				</>
 			)}
 		</div>
