@@ -1,9 +1,19 @@
 import { useMemo } from 'react';
-import { Button, Dialog } from '@radix-ui/themes';
+import { Button } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { OmitList } from './-OmitList';
-import { DataGrid, NextIcon, PreviousIcon } from '@/components';
+import {
+	DataGrid,
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+	NextIcon,
+	PreviousIcon,
+} from '@/components';
 import { formatISODate, formatNumber, formatTime } from '@/lib/formatting';
 
 export const Route = createFileRoute('/history/$date')({
@@ -131,26 +141,20 @@ function DailyActivityPage() {
 
 			<div role="toolbar" className="mb-4 flex items-center gap-4">
 				<h2>Browser History</h2>
-				<Dialog.Root>
-					<Dialog.Trigger>
+				<Dialog>
+					<DialogTrigger>
 						<Button variant="outline">Modify Omit List</Button>
-					</Dialog.Trigger>
-					<Dialog.Content
-						width="75dvw"
-						maxWidth="75dvw"
-						height="75dvh"
-						maxHeight="75dvh"
-						className="flex flex-col gap-4"
-					>
-						<header>
-							<Dialog.Title>Omit List</Dialog.Title>
-							<Dialog.Description>
+					</DialogTrigger>
+					<DialogContent className="flex h-[75dvh] max-h-[75dvh] w-[75dvw] max-w-[75dvw] flex-col gap-4">
+						<DialogHeader>
+							<DialogTitle>Omit List</DialogTitle>
+							<DialogDescription>
 								URLs matching patterns in this list will not be publicly visible or indexed.
-							</Dialog.Description>
-						</header>
+							</DialogDescription>
+						</DialogHeader>
 						<OmitList className="grow overflow-hidden" />
-					</Dialog.Content>
-				</Dialog.Root>
+					</DialogContent>
+				</Dialog>
 			</div>
 			<div className="h-full overflow-auto">
 				<DataGrid

@@ -23,7 +23,9 @@
 	--color-rcr-background: var(--clr-neutral-background);
 	--color-rcr-overlay: var(--clr-neutral-surface);
 	--color-rcr-surface: var(--clr-neutral-surface);
-	--color-rcr-panel: var(--clr-neutral-surface);
+	--color-rcr-panel: var(
+		--clr-neutral-surface
+	); /* TODO: Differentiate surface and panel, i.e. for inputs. */
 
 	--color-rcr-display: var(--clr-neutral-display);
 	--color-rcr-primary: var(--clr-neutral-primary);
@@ -58,6 +60,49 @@
 	--color-rcr-edge: var(--clr-neutral-edge);
 	--color-rcr-indicator: var(--clr-theme-main);
 	--color-rcr-focus: var(--clr-theme-main);
+
+	--radius: 0.5rem;
+}
+
+@theme inline {
+	--color-background: var(--color-rcr-background);
+	--color-foreground: var(--color-rcr-primary);
+	--color-card: var(--color-rcr-panel);
+	--color-card-foreground: var(--color-rcr-display);
+	--color-popover: var(--color-rcr-overlay);
+	--color-popover-foreground: var(--color-rcr-primary);
+	--color-primary: var(--color-rcr-main);
+	--color-primary-foreground: var(--color-rcr-main-contrast);
+	--color-secondary: var(--color-rcr-tint);
+	--color-secondary-foreground: var(--color-rcr-secondary);
+	--color-muted: var(--color-rcr-stain);
+	--color-muted-foreground: var(--color-rcr-symbol);
+	--color-accent: var(--color-rcr-accent);
+	--color-accent-foreground: var(--color-rcr-accent-active);
+	--color-destructive: var(--color-rcr-accent);
+	--color-destructive-foreground: var(--color-rcr-accent-active);
+	--color-border: var(--color-rcr-border);
+	--color-input: var(--color-rcr-panel);
+	--color-ring: var(--color-rcr-focus);
+	--color-chart-1: var(--color-rcr-main); /* TODO: Add flexoki categorical palette. */
+	--color-chart-2: var(--color-rcr-main);
+	--color-chart-3: var(--color-rcr-main);
+	--color-chart-4: var(--color-rcr-main);
+	--color-chart-5: var(--color-rcr-main);
+
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+
+	--color-sidebar-ring: var(--color-rcr-focus);
+	--color-sidebar-border: var(--color-rcr-border);
+	--color-sidebar-accent-foreground: var(--color-rcr-accent);
+	--color-sidebar-accent: var(--color-rcr-panel);
+	--color-sidebar-primary-foreground: var(--color-rcr-main-contrast);
+	--color-sidebar-primary: var(--color-rcr-main);
+	--color-sidebar-foreground: var(--color-rcr-primary);
+	--color-sidebar: var(--color-rcr-panel);
 }
 
 @layer components {
@@ -261,4 +306,13 @@
 	--color-rcr-focus: var(--clr-theme-main);
 
 	color: var(--color-rcr-accent);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
 }

@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { HTMLAttributes } from 'react';
-import { Button, ScrollArea, TextField } from '@radix-ui/themes';
+import { Button, TextField } from '@radix-ui/themes';
 import type { ColumnDef } from '@tanstack/react-table';
 import { trpc } from '@/app/trpc';
-import { DataGrid, EditableCell, Placeholder, Spinner } from '@/components';
+import { DataGrid, EditableCell, Placeholder, ScrollArea, ScrollBar, Spinner } from '@/components';
 import { cn } from '@/lib/utils';
 
 type OmitPattern = {
@@ -159,6 +159,7 @@ export const OmitList = ({ className = '', ...props }: HTMLAttributes<HTMLDivEle
 								variant: 'ghost',
 							}}
 						/>
+						<ScrollBar orientation="horizontal" />
 					</ScrollArea>
 				</>
 			)}
