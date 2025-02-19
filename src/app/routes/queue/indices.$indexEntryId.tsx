@@ -1,5 +1,4 @@
 import { Suspense, useMemo } from 'react';
-import { IconButton } from '@radix-ui/themes';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
 import { RecordCategories, RecordCreators } from './-components/AssociationLists';
@@ -7,6 +6,7 @@ import { IndexEntryForm } from './-forms/IndexEntryForm';
 import { IndexTypeIcon } from './indices';
 import {
 	Avatar,
+	Button,
 	ConnectIcon,
 	IntegrationAvatar,
 	MetadataDialogButton,
@@ -117,15 +117,14 @@ function IndexEntryContent() {
 										</div>
 									) : null}
 								</div>
-								<IconButton
-									variant="soft"
-									size="1"
+								<Button
+									size="sm"
 									onClick={() =>
 										mergeMutation.mutate({ sourceId: indexEntry.id, targetId: entry.id })
 									}
 								>
 									<ConnectIcon />
-								</IconButton>
+								</Button>
 							</li>
 						))}
 				</ol>

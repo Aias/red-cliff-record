@@ -1,4 +1,3 @@
-import { Button, Select } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
@@ -14,7 +13,12 @@ import {
 	Checkbox,
 	IntegrationAvatar,
 	Placeholder,
+	Select,
+	SelectContent,
 	SelectionActions,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 	Spinner,
 	type AvatarProps,
 } from '@/components';
@@ -73,8 +77,8 @@ function RouteComponent() {
 		<div className="flex basis-full overflow-hidden">
 			<div className="flex max-w-md grow-0 basis-full flex-col gap-1 overflow-hidden border-r border-rcr-divider">
 				<div className="flex items-center gap-4 border-b border-rcr-divider px-3 py-2">
-					<h1 className="h3">Records Queue</h1>
-					<Select.Root
+					<h1 className="h3 whitespace-nowrap">Records Queue</h1>
+					<Select
 						value={source ?? 'all'}
 						onValueChange={(value) => {
 							if (value === 'all') {
@@ -84,16 +88,18 @@ function RouteComponent() {
 							}
 						}}
 					>
-						<Select.Trigger className="flex-grow" />
-						<Select.Content>
-							<Select.Item value="all">All</Select.Item>
+						<SelectTrigger className="flex-grow">
+							<SelectValue placeholder="Filter by source..." />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All</SelectItem>
 							{selectOptions.map((option) => (
-								<Select.Item key={option.value} value={option.value}>
+								<SelectItem key={option.value} value={option.value}>
 									{option.label}
-								</Select.Item>
+								</SelectItem>
 							))}
-						</Select.Content>
-					</Select.Root>
+						</SelectContent>
+					</Select>
 					<span className="text-sm">
 						<Badge>{typeof queueCount === 'number' ? queueCount : <Spinner />}</Badge>
 					</span>
@@ -240,13 +246,12 @@ const RecordQueueItem = ({
 						) : (
 							<NoCreatorAvatar />
 						)}
-						<Button
-							variant="ghost"
-							size="2"
-							className="inline-block shrink grow-0 cursor-pointer justify-start truncate font-medium overflow-ellipsis whitespace-nowrap hover:bg-transparent"
+						<span
+							role="button"
+							className="inline-block shrink grow-0 justify-start truncate font-medium overflow-ellipsis whitespace-nowrap"
 						>
 							{entry.title ?? firstCreator?.name ?? 'Untitled'}
-						</Button>
+						</span>
 						{entry.sources &&
 							entry.sources.length > 0 &&
 							entry.sources.map((source) => (

@@ -1,4 +1,4 @@
-import { useThemeContext } from '@radix-ui/themes';
+import { useLoaderData } from '@tanstack/react-router';
 import { type IntegrationType } from '@/server/db/schema/operations';
 import { Avatar, type AvatarProps } from './Avatar';
 import adobeLogo from './logos/adobe.svg?url';
@@ -20,7 +20,9 @@ export function IntegrationAvatar({
 	className,
 	...props
 }: ServiceAvatarProps) {
-	const { appearance } = useThemeContext();
+	const { theme } = useLoaderData({
+		from: '__root__',
+	});
 
 	let logoUrl;
 	switch (service) {
@@ -34,7 +36,7 @@ export function IntegrationAvatar({
 			logoUrl = arcLogo;
 			break;
 		case 'github':
-			logoUrl = appearance === 'light' ? githubLogoLight : githubLogoDark;
+			logoUrl = theme === 'light' ? githubLogoLight : githubLogoDark;
 			break;
 		case 'raindrop':
 			logoUrl = raindropLogo;
@@ -43,7 +45,7 @@ export function IntegrationAvatar({
 			logoUrl = readwiseLogo;
 			break;
 		case 'twitter':
-			logoUrl = appearance === 'light' ? xLogoLight : xLogoDark;
+			logoUrl = theme === 'light' ? xLogoLight : xLogoDark;
 			break;
 		default:
 			logoUrl = undefined;

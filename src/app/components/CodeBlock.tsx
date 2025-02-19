@@ -1,16 +1,20 @@
-import { Code, type CodeProps } from '@radix-ui/themes';
+import { cn } from '@/app/lib/utils';
 
-interface CodeBlockProps extends CodeProps {
+interface CodeBlockProps extends React.HTMLAttributes<HTMLPreElement> {
 	children: string;
 	language?: string;
 }
 
-export function CodeBlock({ children, language, ...props }: CodeBlockProps) {
+export function CodeBlock({ children, className, language, ...props }: CodeBlockProps) {
 	return (
-		<pre className="rounded-3 border border-rcr-divider bg-rcr-surface p-3 whitespace-pre-wrap">
-			<Code size="2" variant="ghost" color="gray" data-language={language} {...props}>
-				{children}
-			</Code>
+		<pre
+			className={cn(
+				'rounded-sm border border-rcr-divider bg-rcr-surface p-3 text-sm whitespace-pre-wrap text-rcr-secondary',
+				className
+			)}
+			{...props}
+		>
+			<code data-language={language}>{children}</code>
 		</pre>
 	);
 }

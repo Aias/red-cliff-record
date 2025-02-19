@@ -1,7 +1,6 @@
-import { Button } from '@radix-ui/themes';
 import { ErrorComponent, Link, rootRouteId, useMatch, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
-
+import { Button } from '@/components';
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 	const router = useRouter();
 	const isRoot = useMatch({
@@ -15,17 +14,16 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 		<div className="flex max-w-lg flex-col items-center justify-center gap-4 p-4">
 			<ErrorComponent error={error} />
 			<div className="flex flex-wrap items-center gap-2">
-				<Button variant="solid" color="gray" onClick={() => router.invalidate()}>
+				<Button variant="default" onClick={() => router.invalidate()}>
 					Try Again
 				</Button>
 				{isRoot ? (
-					<Button variant="solid" color="gray" asChild>
+					<Button variant="secondary" asChild>
 						<Link to="/">Home</Link>
 					</Button>
 				) : (
 					<Button
-						variant="solid"
-						color="gray"
+						variant="default"
 						asChild
 						onClick={(e) => {
 							e.preventDefault();

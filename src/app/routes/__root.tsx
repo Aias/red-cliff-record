@@ -66,7 +66,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 });
 
 function RootComponent() {
-	const { theme: initialTheme } = Route.useLoaderData() as { theme: 'light' | 'dark' };
+	const { theme: initialTheme } = Route.useLoaderData();
 	const [appearance, setAppearance] = useState<'light' | 'dark'>(initialTheme);
 
 	return (

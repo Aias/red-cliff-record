@@ -1,9 +1,17 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { HTMLAttributes } from 'react';
-import { Button, TextField } from '@radix-ui/themes';
 import type { ColumnDef } from '@tanstack/react-table';
 import { trpc } from '@/app/trpc';
-import { DataGrid, EditableCell, Placeholder, ScrollArea, ScrollBar, Spinner } from '@/components';
+import {
+	Button,
+	DataGrid,
+	EditableCell,
+	Input,
+	Placeholder,
+	ScrollArea,
+	ScrollBar,
+	Spinner,
+} from '@/components';
 import { cn } from '@/lib/utils';
 
 type OmitPattern = {
@@ -99,8 +107,7 @@ export const OmitList = ({ className = '', ...props }: HTMLAttributes<HTMLDivEle
 				header: 'Actions',
 				cell: ({ row }) => (
 					<Button
-						color="red"
-						variant="soft"
+						variant="destructive"
 						onClick={() => deletePatternMutation.mutate(row.original.pattern)}
 					>
 						Delete
@@ -128,7 +135,7 @@ export const OmitList = ({ className = '', ...props }: HTMLAttributes<HTMLDivEle
 			) : (
 				<>
 					<form className="mb-4 flex gap-2">
-						<TextField.Root
+						<Input
 							ref={inputRef}
 							className="flex-1"
 							type="text"

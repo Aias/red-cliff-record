@@ -1,5 +1,5 @@
-import { Button } from '@radix-ui/themes';
 import { Link } from '@tanstack/react-router';
+import { Button } from '@/components';
 
 export function NotFound() {
 	return (
@@ -7,10 +7,10 @@ export function NotFound() {
 			<section className="flex flex-col items-center gap-4">
 				<p className="text-rcr-secondary">The page you are looking for does not exist.</p>
 				<nav className="flex flex-wrap items-center gap-2">
-					<Button variant="solid" onClick={() => window.history.back()}>
+					<Button variant="default" onClick={() => window.history.back()}>
 						Go back
 					</Button>
-					<Button variant="solid" asChild>
+					<Button variant="secondary" asChild>
 						<Link to="/">Start Over</Link>
 					</Button>
 				</nav>
