@@ -38,6 +38,7 @@
 			"@/components/*": ["./src/app/components/*"],
 			"@/lib": ["./src/app/lib"],
 			"@/lib/*": ["./src/app/lib/*"],
+			"@/db/*": ["./src/server/db/*"],
 			"@/*": ["./src/*"]
 		}
 	},
