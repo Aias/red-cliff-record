@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Button, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
 import { RecordSelectSchema, type RecordSelect } from '@/server/db/schema/records';
-import { CheckboxWithLabel } from '@/components';
+import { Button, CheckboxWithLabel, Input, Textarea } from '@/components';
 
 type RecordEntryFormProps = {
 	recordId: string | number;
@@ -86,7 +85,7 @@ const MarkdownTextArea = ({
 	return (
 		<label className="flex flex-col gap-1">
 			<span className="text-rcr-secondary">{label}</span>
-			<TextArea
+			<Textarea
 				ref={textareaRef}
 				rows={rows}
 				value={value || ''}
@@ -96,7 +95,6 @@ const MarkdownTextArea = ({
 					e.currentTarget.style.height = 'auto';
 					e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
 				}}
-				size="2"
 				onKeyDown={handleKeyDown}
 				className="min-h-[theme(spacing.24)] resize-none overflow-hidden font-mono text-xs leading-relaxed tracking-tight"
 				placeholder={`Enter ${label.toLowerCase()} using markdown formatting...`}
@@ -158,7 +156,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 					{(field) => (
 						<label className="flex flex-col gap-1">
 							<span className="text-rcr-secondary">Title</span>
-							<TextField.Root
+							<Input
 								type="text"
 								value={field.state.value || ''}
 								onChange={(e) => field.handleChange(e.target.value)}
@@ -220,7 +218,7 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 					{(field) => (
 						<label className="flex flex-col gap-1">
 							<span className="text-rcr-secondary">URL</span>
-							<TextField.Root
+							<Input
 								type="url"
 								placeholder="https://example.com"
 								value={field.state.value || ''}

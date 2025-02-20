@@ -160,10 +160,7 @@ export const OmitList = ({ className = '', ...props }: HTMLAttributes<HTMLDivEle
 							sorting={true}
 							getRowId={(row) => row.pattern}
 							rowProps={{
-								align: 'center',
-							}}
-							rootProps={{
-								variant: 'ghost',
+								className: 'text-center',
 							}}
 						/>
 						<ScrollBar orientation="horizontal" />

@@ -30,4 +30,3 @@ export * from './NotFound';
 export * from './Placeholder';
 export * from './SelectionToolbar';
 export * from './Spinner';
-export * from './TabNavLink';

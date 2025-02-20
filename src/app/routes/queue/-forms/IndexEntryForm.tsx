@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from 'react';
-import { Button, CheckboxCards, SegmentedControl, TextArea, TextField } from '@radix-ui/themes';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
@@ -10,7 +9,15 @@ import {
 	type IndexMainType,
 	type IndicesSelect,
 } from '@/server/db/schema';
-import { CheckboxWithLabel, ExternalLink, ExternalLinkIcon, ImageIcon } from '@/components';
+import {
+	Button,
+	CheckboxWithLabel,
+	ExternalLink,
+	Input,
+	Textarea,
+	ToggleGroup,
+	ToggleGroupItem,
+} from '@/components';
 
 type IndexEntryFormProps = {
 	indexEntryId: string | number;
@@ -109,15 +116,15 @@ export const IndexEntryForm = ({
 					{(field) => (
 						<label className="flex grow flex-col gap-1">
 							<span className="text-rcr-secondary">Main Type</span>
-							<SegmentedControl.Root
-								variant="classic"
+							<ToggleGroup
+								type="single"
 								value={field.state.value}
 								onValueChange={(value) => field.handleChange(value as IndexMainType)}
 							>
-								<SegmentedControl.Item value="entity">Entity</SegmentedControl.Item>
-								<SegmentedControl.Item value="category">Category</SegmentedControl.Item>
-								<SegmentedControl.Item value="format">Format</SegmentedControl.Item>
-							</SegmentedControl.Root>
+								<ToggleGroupItem value="entity">Entity</ToggleGroupItem>
+								<ToggleGroupItem value="category">Category</ToggleGroupItem>
+								<ToggleGroupItem value="format">Format</ToggleGroupItem>
+							</ToggleGroup>
 						</label>
 					)}
 				</form.Field>
@@ -125,7 +132,7 @@ export const IndexEntryForm = ({
 					{(field) => (
 						<label className="shrink-0 basis-1/4">
 							<span className="text-rcr-secondary">Subtype</span>
-							<TextField.Root
+							<Input
 								type="text"
 								list="index-subtypes"
 								placeholder="e.g., 'Company'"
@@ -142,7 +149,7 @@ export const IndexEntryForm = ({
 					{(field) => (
 						<label className="grow">
 							<span className="text-rcr-secondary">Name (Required)</span>
-							<TextField.Root
+							<Input
 								type="text"
 								value={field.state.value}
 								onChange={(e) => field.handleChange(e.target.value)}
@@ -154,7 +161,7 @@ export const IndexEntryForm = ({
 					{(field) => (
 						<label className="shrink-0 basis-1/4">
 							<span className="text-rcr-secondary">Short Name</span>
-							<TextField.Root
+							<Input
 								type="text"
 								placeholder="e.g., 'ABC'"
 								value={field.state.value || ''}
@@ -169,7 +176,7 @@ export const IndexEntryForm = ({
 				{(field) => (
 					<label>
 						<span className="text-rcr-secondary">Sense</span>
-						<TextField.Root
+						<Input
 							type="text"
 							placeholder="Differentiate between homonyms"
 							value={field.state.value || ''}
@@ -186,23 +193,17 @@ export const IndexEntryForm = ({
 							<span className="flex-1 text-rcr-secondary">Canonical URL</span>
 							{field.state.value && <ExternalLink href={field.state.value} />}
 						</div>
-						<TextField.Root
+						<Input
 							type="url"
 							placeholder="e.g., https://www.example.com"
 							value={field.state.value || ''}
 							onChange={(e) => field.handleChange(e.target.value || null)}
-						>
-							<TextField.Slot>
-								<ExternalLinkIcon className="text-rcr-hint" />
-							</TextField.Slot>
-						</TextField.Root>
+						/>
 						{associatedDomains.length > 0 && (
 							<div className="mt-2 flex flex-wrap gap-2">
 								{associatedDomains.slice(0, 5).map((url) => (
 									<Button
 										key={url.origin}
-										size="1"
-										variant="soft"
 										type="button"
 										onClick={() => field.handleChange(url.origin)}
 									>
@@ -222,16 +223,12 @@ export const IndexEntryForm = ({
 							<span className="flex-1 text-rcr-secondary">Image URL</span>
 							{field.state.value && <ExternalLink href={field.state.value} />}
 						</div>
-						<TextField.Root
+						<Input
 							type="url"
 							placeholder="e.g., https://www.example.com/image.jpg"
 							value={field.state.value || ''}
 							onChange={(e) => field.handleChange(e.target.value || null)}
-						>
-							<TextField.Slot>
-								<ImageIcon className="text-rcr-hint" />
-							</TextField.Slot>
-						</TextField.Root>
+						/>
 					</label>
 				)}
 			</form.Field>
@@ -240,19 +237,13 @@ export const IndexEntryForm = ({
 				{(field) => (
 					<label>
 						<span className="text-rcr-secondary">Notes</span>
-						<TextArea
+						<Textarea
 							rows={4}
 							value={field.state.value || ''}
 							onChange={(e) => field.handleChange(e.target.value || null)}
 						/>
 						{field.state.value && (
-							<Button
-								size="1"
-								variant="soft"
-								className="mt-1"
-								type="button"
-								onClick={() => field.handleChange(null)}
-							>
+							<Button className="mt-1" type="button" onClick={() => field.handleChange(null)}>
 								Clear
 							</Button>
 						)}
@@ -264,21 +255,19 @@ export const IndexEntryForm = ({
 				{(field) => (
 					<label className="flex flex-col justify-start gap-1">
 						<span className="text-rcr-secondary">Flags</span>
-						<CheckboxCards.Root
-							size="1"
+						<ToggleGroup
+							type="multiple"
 							onValueChange={(values) => {
 								field.handleChange(Flag.array().parse(values));
 							}}
-							columns="4"
 							value={field.state.value ?? []}
-							gap="1"
 						>
 							{Object.entries(FLAGS).map(([key, flag]) => (
-								<CheckboxCards.Item key={key} value={key as Flag}>
+								<ToggleGroupItem key={key} value={key as Flag}>
 									{flag.emoji} {flag.name}
-								</CheckboxCards.Item>
+								</ToggleGroupItem>
 							))}
-						</CheckboxCards.Root>
+						</ToggleGroup>
 					</label>
 				)}
 			</form.Field>
