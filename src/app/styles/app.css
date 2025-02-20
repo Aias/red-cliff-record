@@ -1,11 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
 
 @layer tokens, theme, base, components, utilities;
+@import 'tailwindcss';
 @import './tokens.css' layer(tokens);
-@import 'tailwindcss/theme.css' layer(theme);
 @import './theme.css' layer(theme);
-@import 'tailwindcss/preflight.css' layer(base);
-@import 'tailwindcss/utilities.css' layer(utilities);
 
 @plugin 'tailwindcss-animate';
 
@@ -115,7 +113,7 @@
 	}
 
 	.radix-themes {
-		@apply bg-rcr-background font-sans text-rcr-primary;
+		@apply bg-rcr-background text-rcr-primary font-sans;
 		--default-font-family: var(--font-family-sans);
 		--heading-font-family: var(--font-family-sans);
 		--code-font-family: var(--font-family-mono);
@@ -130,17 +128,15 @@
 		--font-weight-bold: 700;
 	}
 
+	* {
+		@apply border-border outline-ring/50;
+	}
+
 	html {
-		height: 100dvh;
 		scrollbar-width: thin;
 		text-rendering: optimizeLegibility;
 		-webkit-font-smoothing: antialiased;
 		font-synthesis: none;
-		font-size: calc(1rem * var(--scaling, 1)); /* Scale by Radix UI scaling factor. */
-	}
-
-	body {
-		@apply m-0 h-[100dvh];
 	}
 
 	h1,
@@ -170,12 +166,8 @@
 		@apply text-sm font-bold;
 	}
 
-	em {
-		letter-spacing: var(--em-letter-spacing, 0);
-	}
-
 	hr {
-		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-rcr-divider;
+		@apply bg-rcr-divider m-0 block h-[1px] w-full border-0 border-none border-transparent;
 	}
 
 	pre,
@@ -185,7 +177,7 @@
 
 	a:where(:any-link, button),
 	.link {
-		@apply inline-flex items-center gap-1 font-medium text-rcr-accent hover:text-rcr-accent-active hover:underline;
+		@apply text-rcr-accent hover:text-rcr-accent-active inline-flex items-center gap-1 font-medium hover:underline;
 		text-decoration-line: none;
 		text-decoration-style: solid;
 		text-decoration-thickness: min(2px, max(1px, 0.05em));
@@ -208,15 +200,23 @@
 	}
 }
 
+@utility h-viewport {
+	@apply h-[100dvh];
+}
+
+@utility w-viewport {
+	@apply w-[100dvw];
+}
+
 @utility surface {
 	@apply bg-rcr-panel;
-	backdrop-filter: var(--backdrop-filter-panel);
+	backdrop-filter: var(--backdrop-filter-panel); /* TODO: Add support for backdrop-filter. */
 }
 
 @utility card {
-	@apply relative block overflow-hidden rounded-md border border-rcr-divider p-3 contain-paint;
+	@apply border-rcr-divider relative block overflow-hidden rounded-md border p-3 contain-paint;
 	&::before {
-		@apply pointer-events-none absolute inset-0 z-[-1] rounded-md surface;
+		@apply surface pointer-events-none absolute inset-0 z-[-1] rounded-md;
 		content: '';
 		transition: inherit;
 	}
@@ -227,17 +227,17 @@
 }
 
 @utility code {
-	@apply rounded-sm bg-rcr-stain px-1.25 font-mono text-[0.875em] themed;
+	@apply bg-rcr-stain px-1.25 themed rounded-sm font-mono text-[0.875em];
 }
 
 @utility checkbox {
-	@apply size-[1em] overflow-hidden rounded-xs border border-rcr-border text-[1.125em] focus-visible:ring-1 focus-visible:ring-rcr-focus focus-visible:outline-none;
+	@apply rounded-xs border-rcr-border focus-visible:ring-rcr-focus size-[1em] overflow-hidden border text-[1.125em] focus-visible:outline-none focus-visible:ring-1;
 	&:checked,
 	&[data-state~='checked'] {
 		@apply border-rcr-theme bg-rcr-theme text-rcr-theme-contrast;
 	}
 	&:disabled {
-		@apply cursor-not-allowed border-rcr-divider bg-rcr-stain text-rcr-symbol opacity-90;
+		@apply border-rcr-divider bg-rcr-stain text-rcr-symbol cursor-not-allowed opacity-90;
 	}
 }
 
@@ -245,12 +245,12 @@
 	@apply block h-full w-[1px] self-center border-0 border-none border-transparent;
 	&::before {
 		content: '';
-		@apply block h-full bg-rcr-divider;
+		@apply bg-rcr-divider block h-full;
 	}
 }
 
 @utility selectable {
-	@apply cursor-pointer border-rcr-divider;
+	@apply border-rcr-divider cursor-pointer;
 	&:hover {
 		@apply border-rcr-border bg-rcr-hovered;
 	}
@@ -307,13 +307,4 @@
 	--color-rcr-focus: var(--clr-theme-main);
 
 	color: var(--color-rcr-accent);
-}
-
-@layer base {
-	* {
-		@apply border-border outline-ring/50;
-	}
-	body {
-		@apply bg-background text-foreground;
-	}
 }
