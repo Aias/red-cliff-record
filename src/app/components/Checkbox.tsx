@@ -8,7 +8,7 @@ const Checkbox = React.forwardRef<
 	React.ComponentRef<typeof CheckboxPrimitive.Root>,
 	React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
 >(({ className, ...props }, ref) => (
-	<CheckboxPrimitive.Root ref={ref} className={cn('peer checkbox', className)} {...props}>
+	<CheckboxPrimitive.Root ref={ref} className={cn('peer checkbox shrink-0', className)} {...props}>
 		<CheckboxPrimitive.Indicator
 			className={cn(
 				'relative flex size-full items-center justify-center overflow-hidden text-current'

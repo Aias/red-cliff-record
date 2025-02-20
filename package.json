@@ -51,7 +51,7 @@
 		"drizzle-zod": "^0.7.0",
 		"marked": "^15.0.7",
 		"mime-types": "^2.1.35",
-		"openai": "^4.85.2",
+		"openai": "^4.85.3",
 		"postgres": "^3.4.5",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
