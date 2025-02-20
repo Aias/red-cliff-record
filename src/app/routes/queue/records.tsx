@@ -203,6 +203,7 @@ const NoCreatorAvatar = ({ ...props }: Partial<AvatarProps>) => (
 	<Avatar
 		className="border border-dashed border-rcr-edge opacity-50"
 		themed={false}
+		inline
 		{...props}
 		fallback="?"
 	/>
