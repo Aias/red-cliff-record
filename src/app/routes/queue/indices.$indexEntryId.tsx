@@ -92,7 +92,7 @@ function IndexEntryContent() {
 						.map((entry) => (
 							<li
 								key={entry.id}
-								className="flex items-center gap-3 border-t border-rcr-border px-2 py-1 hover:bg-rcr-tint"
+								className="flex items-center gap-3 border-t border-rcr-border px-2 py-1 text-sm hover:bg-rcr-tint"
 							>
 								<div className="flex grow items-center gap-2">
 									<IndexTypeIcon type={entry.mainType} className="text-rcr-symbol" />
@@ -100,11 +100,11 @@ function IndexEntryContent() {
 										to="/queue/indices/$indexEntryId"
 										params={{ indexEntryId: entry.id.toString() }}
 										search={{ type }}
-										className="text-sm font-medium"
+										className="font-medium"
 									>
 										{entry.name}
 									</Link>
-									{entry.sense && <em className="text-sm text-rcr-secondary">({entry.sense})</em>}
+									{entry.sense && <em className="text-rcr-secondary">({entry.sense})</em>}
 									{entry.sources && entry.sources.length > 0 ? (
 										<div className="flex flex-wrap gap-2">
 											{entry.sources.map((source) => (
@@ -118,7 +118,6 @@ function IndexEntryContent() {
 									) : null}
 								</div>
 								<Button
-									size="sm"
 									onClick={() =>
 										mergeMutation.mutate({ sourceId: indexEntry.id, targetId: entry.id })
 									}

@@ -86,7 +86,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 					</DropdownMenu>
 				</li>
 				<li className="vr py-1" />
-				<Button asChild size="icon" variant="ghost" onClick={toggleTheme}>
+				<Button asChild variant="ghost" onClick={toggleTheme}>
 					<li>{currentTheme === 'light' ? <DayModeIcon /> : <NightModeIcon />}</li>
 				</Button>
 			</menu>

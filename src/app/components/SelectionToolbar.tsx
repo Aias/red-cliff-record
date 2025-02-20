@@ -34,24 +34,17 @@ export function SelectionActions({
 		<div role="toolbar" className={cn('flex items-center gap-2', className)} {...props}>
 			<span className="grow text-sm text-rcr-secondary">{selectedCount} selected</span>
 			{selectedCount === 0 ? (
-				<Button onClick={() => onSelectAll()} size="sm">
-					Select All
-				</Button>
+				<Button onClick={() => onSelectAll()}>Select All</Button>
 			) : (
 				<>
 					{actions.length === 1 && firstAction ? (
-						<Button
-							onClick={() => firstAction.onClick()}
-							disabled={firstAction.disabled}
-							size="sm"
-							variant="secondary"
-						>
+						<Button onClick={() => firstAction.onClick()} disabled={firstAction.disabled}>
 							{firstAction.label}
 						</Button>
 					) : (
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<Button size="sm" variant="secondary">
+								<Button>
 									Actions
 									<ExpandIcon />
 								</Button>
@@ -69,7 +62,7 @@ export function SelectionActions({
 							</DropdownMenuContent>
 						</DropdownMenu>
 					)}
-					<Button variant="secondary" size="sm" onClick={() => onClear()} title="Clear selection">
+					<Button onClick={() => onClear()} title="Clear selection">
 						<ClearIcon />
 					</Button>
 				</>

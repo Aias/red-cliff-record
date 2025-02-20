@@ -100,9 +100,7 @@ export const MetadataDialogButton: React.FC<MetadataDialogButtonProps> = ({
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
-				<Button size="sm" {...buttonProps}>
-					{buttonText}
-				</Button>
+				<Button {...buttonProps}>{buttonText}</Button>
 			</DialogTrigger>
 			<DialogContent className="flex max-h-[90vh] max-w-[75vw] flex-col overflow-hidden px-0 py-5">
 				<DialogHeader className="mb-3 border-b border-rcr-divider px-5 pb-3">

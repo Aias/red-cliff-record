@@ -6,6 +6,7 @@ import stylesUrl from '../styles/app.css?url';
 import { AppLayout, DefaultCatchBoundary, NotFound } from '@/components';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getThemeCookie, type Theme } from '@/lib/theme';
+import { cn } from '@/lib/utils';
 
 export interface RouterAppContext {
 	queryClient: QueryClient;
@@ -81,11 +82,11 @@ function RootDocument({
 	appearance,
 }: Readonly<{ children: ReactNode; appearance: Theme }>) {
 	return (
-		<html className={appearance}>
+		<html className={cn('h-viewport w-full', appearance)}>
 			<head>
 				<HeadContent />
 			</head>
-			<body>
+			<body className="size-full bg-rcr-background text-rcr-primary">
 				{children}
 				<Scripts />
 			</body>
