@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react';
-import { Table, TextField } from '@radix-ui/themes';
 import type { ColumnDef, RowData } from '@tanstack/react-table';
 import {
 	flexRender,
@@ -9,12 +8,15 @@ import {
 	type SortingState,
 } from '@tanstack/react-table';
 import { Checkbox } from './Checkbox';
+import { Input } from './ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '@/lib/utils';
+
 // Add custom meta type for column alignment
 declare module '@tanstack/react-table' {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	interface ColumnMeta<TData extends RowData, TValue> {
-		columnProps?: React.ComponentProps<typeof Table.Cell>;
+		columnProps?: React.ComponentProps<typeof TableCell>;
 	}
 }
 
@@ -30,17 +32,17 @@ export type DataGridProps<T> = {
 	onRowClick?: (row: T) => void;
 	getRowId: (row: T) => string;
 	className?: string;
-	rootProps?: React.ComponentProps<typeof Table.Root>;
-	headerProps?: React.ComponentProps<typeof Table.Header>;
-	headerRowProps?: React.ComponentProps<typeof Table.Row>;
-	headerCellProps?: React.ComponentProps<typeof Table.ColumnHeaderCell>;
-	bodyProps?: React.ComponentProps<typeof Table.Body>;
+	rootProps?: React.ComponentProps<typeof Table>;
+	headerProps?: React.ComponentProps<typeof TableHeader>;
+	headerRowProps?: React.ComponentProps<typeof TableRow>;
+	headerCellProps?: React.ComponentProps<typeof TableHead>;
+	bodyProps?: React.ComponentProps<typeof TableBody>;
 	rowProps?:
-		| React.ComponentProps<typeof Table.Row>
-		| ((row: T) => React.ComponentProps<typeof Table.Row>);
+		| React.ComponentProps<typeof TableRow>
+		| ((row: T) => React.ComponentProps<typeof TableRow>);
 	cellProps?:
-		| React.ComponentProps<typeof Table.Cell>
-		| ((row: T, columnId: string) => React.ComponentProps<typeof Table.Cell>);
+		| React.ComponentProps<typeof TableCell>
+		| ((row: T, columnId: string) => React.ComponentProps<typeof TableCell>);
 };
 
 export function DataGrid<T>({
@@ -109,12 +111,12 @@ export function DataGrid<T>({
 	});
 
 	return (
-		<Table.Root variant="surface" className={className} {...rootProps}>
-			<Table.Header {...headerProps}>
+		<Table className={className} {...rootProps}>
+			<TableHeader {...headerProps}>
 				{table.getHeaderGroups().map((headerGroup) => (
-					<Table.Row key={headerGroup.id} {...headerRowProps}>
+					<TableRow key={headerGroup.id} {...headerRowProps}>
 						{headerGroup.headers.map((header) => (
-							<Table.ColumnHeaderCell
+							<TableHead
 								key={header.id}
 								onClick={
 									header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined
@@ -124,19 +126,19 @@ export function DataGrid<T>({
 								{...headerCellProps}
 							>
 								{flexRender(header.column.columnDef.header, header.getContext())}
-							</Table.ColumnHeaderCell>
+							</TableHead>
 						))}
-					</Table.Row>
+					</TableRow>
 				))}
-			</Table.Header>
-			<Table.Body {...bodyProps}>
+			</TableHeader>
+			<TableBody {...bodyProps}>
 				{table.getRowModel().rows.length > 0 ? (
 					table.getRowModel().rows.map((row) => {
 						const { className: customClass = '', ...rest } =
 							(typeof rowProps === 'function' ? rowProps(row.original) : rowProps) ?? {};
 
 						return (
-							<Table.Row
+							<TableRow
 								key={row.id}
 								data-active={selection?.selectedIds.has(getRowId(row.original))}
 								data-selectable={onRowClick !== undefined}
@@ -151,27 +153,27 @@ export function DataGrid<T>({
 											: cellProps;
 
 									return (
-										<Table.Cell
+										<TableCell
 											key={cell.id}
 											{...cell.column.columnDef.meta?.columnProps}
 											{...customCellProps}
 										>
 											{flexRender(cell.column.columnDef.cell, cell.getContext())}
-										</Table.Cell>
+										</TableCell>
 									);
 								})}
-							</Table.Row>
+							</TableRow>
 						);
 					})
 				) : (
-					<Table.Row>
-						<Table.Cell colSpan={table.getAllColumns().length} align="center">
+					<TableRow>
+						<TableCell colSpan={table.getAllColumns().length} align="center">
 							<p className="text-rcr-secondary">No Rows</p>
-						</Table.Cell>
-					</Table.Row>
+						</TableCell>
+					</TableRow>
 				)}
-			</Table.Body>
-		</Table.Root>
+			</TableBody>
+		</Table>
 	);
 }
 
@@ -208,7 +210,7 @@ export function EditableCell({
 	}
 
 	return (
-		<TextField.Root
+		<Input
 			ref={inputRef}
 			value={value}
 			onChange={(e) => setValue(e.target.value)}

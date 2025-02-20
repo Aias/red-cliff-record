@@ -143,9 +143,6 @@ function CommitList() {
 						}}
 						onRowClick={(commit) => navigate({ to: '/commits/$sha', params: { sha: commit.sha } })}
 						getRowId={(commit) => commit.sha}
-						rootProps={{
-							variant: 'ghost',
-						}}
 					/>
 				</div>
 			</div>

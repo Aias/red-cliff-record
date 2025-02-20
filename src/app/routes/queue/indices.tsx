@@ -1,4 +1,3 @@
-import { TabNav } from '@radix-ui/themes';
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
@@ -10,7 +9,6 @@ import {
 	FormatIcon,
 	Placeholder,
 	Spinner,
-	TabNavLink,
 	UnknownIcon,
 	type IconProps,
 } from '@/components';
@@ -41,25 +39,9 @@ function RouteComponent() {
 	return (
 		<div className="flex basis-full overflow-hidden">
 			<div className="flex max-w-sm grow-0 basis-full flex-col gap-1 overflow-hidden border-r border-rcr-divider">
-				<div className="flex items-center justify-between border-b border-rcr-divider text-sm">
-					<TabNav.Root className="border-none shadow-none">
-						<TabNavLink to="/queue/indices" search={{ type: undefined }} active={!type}>
-							All
-						</TabNavLink>
-						{IndexMainType.options.map((indexType) => (
-							<TabNavLink
-								key={indexType}
-								to="/queue/indices"
-								search={{ type: indexType }}
-								active={type === indexType}
-							>
-								{toTitleCase(indexType)}
-							</TabNavLink>
-						))}
-					</TabNav.Root>
-					<Badge className="mr-3">
-						{typeof queueCount === 'number' ? queueCount : <Spinner />}
-					</Badge>
+				<div className="flex items-center justify-between border-b border-rcr-divider px-3 py-1 text-sm">
+					<h2 className="grow">Index Queue</h2>
+					<Badge>{typeof queueCount === 'number' ? queueCount : <Spinner />}</Badge>
 				</div>
 
 				<div className="grow-0 basis-full overflow-y-auto p-2">

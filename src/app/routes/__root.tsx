@@ -1,13 +1,11 @@
 import { useState, type ReactNode } from 'react';
-import { Theme, type ThemeProps } from '@radix-ui/themes';
 import { type QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import type { ServerHelpers } from '@/app/trpc';
 import stylesUrl from '../styles/app.css?url';
 import { AppLayout, DefaultCatchBoundary, NotFound } from '@/components';
 import { seo, SITE_NAME } from '@/lib/seo';
-import { defaultTheme, getThemeCookie, themeColor } from '@/lib/theme';
-import { cn } from '@/lib/utils';
+import { getThemeCookie, type Theme } from '@/lib/theme';
 
 export interface RouterAppContext {
 	queryClient: QueryClient;
@@ -49,7 +47,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 				sizes: '16x16',
 				href: '/favicon-16x16.png',
 			},
-			{ rel: 'manifest', href: '/site.webmanifest', color: themeColor },
+			{ rel: 'manifest', href: '/site.webmanifest', color: '#000000' },
 			{ rel: 'icon', href: '/favicon.ico' },
 		],
 	}),
@@ -57,7 +55,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	errorComponent: (props) => {
 		const { theme: initialTheme } = Route.useLoaderData();
 		return (
-			<RootDocument theme={{ ...defaultTheme, appearance: initialTheme }}>
+			<RootDocument appearance={initialTheme}>
 				<DefaultCatchBoundary {...props} />
 			</RootDocument>
 		);
@@ -70,34 +68,20 @@ function RootComponent() {
 	const [appearance, setAppearance] = useState<'light' | 'dark'>(initialTheme);
 
 	return (
-		<RootDocument theme={{ ...defaultTheme, appearance: appearance }}>
-			<Theme
-				accentColor={defaultTheme.accentColor}
-				radius={defaultTheme.radius}
-				scaling={defaultTheme.scaling}
-				appearance={appearance}
-			>
-				<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
-					<Outlet />
-				</AppLayout>
-			</Theme>
+		<RootDocument appearance={appearance}>
+			<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
+				<Outlet />
+			</AppLayout>
 		</RootDocument>
 	);
 }
 
-function RootDocument({ children, theme }: Readonly<{ children: ReactNode; theme: ThemeProps }>) {
-	const { appearance, radius, scaling, grayColor, accentColor, panelBackground } = theme;
+function RootDocument({
+	children,
+	appearance,
+}: Readonly<{ children: ReactNode; appearance: Theme }>) {
 	return (
-		<html
-			className={cn('radix-themes', appearance)}
-			data-is-root-theme="true"
-			data-accent-color={accentColor}
-			data-gray-color={grayColor}
-			data-has-background="true"
-			data-panel-background={panelBackground}
-			data-radius={radius}
-			data-scaling={scaling}
-		>
+		<html className={appearance}>
 			<head>
 				<HeadContent />
 			</head>
