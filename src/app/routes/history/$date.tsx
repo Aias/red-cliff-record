@@ -11,6 +11,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
+	ExternalLink,
 	NextIcon,
 	PreviousIcon,
 } from '@/components';
@@ -54,9 +55,9 @@ function DailyActivityPage() {
 				accessorKey: 'url',
 				header: 'URL',
 				cell: ({ row }) => (
-					<a href={row.original.url.href} target="_blank" rel="noopener noreferrer">
+					<ExternalLink href={row.original.url.href}>
 						{`${row.original.url.hostname}${row.original.url.pathname}`}
-					</a>
+					</ExternalLink>
 				),
 				meta: {
 					columnProps: {

@@ -7,7 +7,7 @@ import {
 	useReactTable,
 	type SortingState,
 } from '@tanstack/react-table';
-import { Checkbox } from './Checkbox';
+import { Checkbox } from './checkbox';
 import { Input } from './ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '@/lib/utils';

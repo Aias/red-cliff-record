@@ -8,7 +8,7 @@ import {
 	Avatar,
 	Button,
 	ConnectIcon,
-	IntegrationAvatar,
+	IntegrationLogo,
 	MetadataDialogButton,
 	Placeholder,
 	Spinner,
@@ -76,7 +76,7 @@ function IndexEntryContent() {
 				{indexEntry.sources && indexEntry.sources.length > 0 ? (
 					<div className="flex flex-wrap gap-2">
 						{indexEntry.sources.map((source) => (
-							<IntegrationAvatar key={source} integration={source} className="size-5" inline />
+							<IntegrationLogo key={source} integration={source} className="size-5" inline />
 						))}
 					</div>
 				) : null}
@@ -108,7 +108,7 @@ function IndexEntryContent() {
 									{entry.sources && entry.sources.length > 0 ? (
 										<div className="flex flex-wrap gap-2">
 											{entry.sources.map((source) => (
-												<IntegrationAvatar
+												<IntegrationLogo
 													key={source}
 													integration={source}
 													className="size-4 opacity-90"

@@ -6,6 +6,7 @@ import {
 	Badge,
 	CategoryIcon,
 	EntityIcon,
+	ExternalLink,
 	FormatIcon,
 	Placeholder,
 	Spinner,
@@ -96,15 +97,9 @@ const IndexEntryCard = ({ entry, onClick, selected }: IndexEntryCardProps) => {
 	}
 	if (entry.canonicalUrl) {
 		extras.push(
-			<a
-				key="canonical-url"
-				href={entry.canonicalUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="truncate text-xs"
-			>
+			<ExternalLink key="canonical-url" href={entry.canonicalUrl} className="truncate text-xs">
 				{new URL(entry.canonicalUrl).hostname}
-			</a>
+			</ExternalLink>
 		);
 	}
 

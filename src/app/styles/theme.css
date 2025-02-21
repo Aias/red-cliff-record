@@ -1,4 +1,5 @@
 :root {
+	color-scheme: light dark;
 	--clr-neutral-1: var(--flexoki-base-50);
 	--clr-neutral-2: var(--flexoki-base-100);
 	--clr-neutral-3: var(--flexoki-base-150);
@@ -79,6 +80,7 @@
 }
 
 .dark {
+	color-scheme: dark;
 	--clr-neutral-1: var(--flexoki-base-950);
 	--clr-neutral-2: var(--flexoki-base-900);
 	--clr-neutral-3: var(--flexoki-base-850);

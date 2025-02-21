@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '../trpc';
-import { Avatar, ExternalLinkIcon, Input } from '@/components';
+import { Avatar, ExternalLink, Input } from '@/components';
+import { parseToSingleLine } from '@/lib/marked';
 
 const SearchSchema = z.object({
 	q: z.string().optional(),
@@ -26,14 +27,14 @@ function useDebounce<T>(value: T, delay: number): T {
 
 function SearchResult({
 	title,
-	description,
+	content,
 	type,
 	url,
 	imageUrl,
 	subType,
 }: {
 	title: string;
-	description?: string | null;
+	content?: string | null;
 	type: 'record' | 'index';
 	url?: string | null;
 	imageUrl?: string | null;
@@ -41,16 +42,15 @@ function SearchResult({
 	onClick?: () => void;
 }) {
 	return (
-		<div className="flex w-full items-start gap-3 py-2 text-sm">
+		<div className="flex gap-3 py-2 text-sm">
 			<Avatar src={imageUrl ?? undefined} fallback={title[0]?.toUpperCase() ?? '?'} />
-			<div className="flex flex-1 flex-col items-start gap-1">
-				<div className="flex w-full items-center justify-between gap-2">
+			<div className="flex flex-1 flex-col gap-1">
+				<div className="flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
 						{url ? (
-							<a href={url} target="_blank" rel="noopener noreferrer" className="font-medium">
+							<ExternalLink href={url} className="font-medium">
 								{title}
-								<ExternalLinkIcon className="opacity-75" />
-							</a>
+							</ExternalLink>
 						) : (
 							<span className="font-medium">{title}</span>
 						)}
@@ -58,7 +58,14 @@ function SearchResult({
 					</div>
 					<span className="text-rcr-secondary capitalize">{type}</span>
 				</div>
-				{description && <span className="line-clamp-2 text-rcr-secondary">{description}</span>}
+				{content && (
+					<span
+						className="line-clamp-2 text-rcr-secondary"
+						dangerouslySetInnerHTML={{
+							__html: parseToSingleLine(content),
+						}}
+					/>
+				)}
 			</div>
 		</div>
 	);
@@ -122,12 +129,12 @@ function Home() {
 	}, []);
 
 	return (
-		<main className="flex basis-full flex-col items-center gap-4 overflow-hidden p-3">
-			<div className="flex w-full max-w-2xl flex-col items-center gap-8 pt-12">
+		<main className="flex basis-full flex-col items-center gap-4 overflow-hidden">
+			<div className="flex w-full max-w-2xl basis-full flex-col items-center gap-8 overflow-hidden p-3 pt-12">
 				<h1 className="text-center text-4xl font-medium text-balance">The Red Cliff Record</h1>
 
 				<Input
-					className="w-full"
+					className="shrink-0"
 					type="search"
 					placeholder="Search records and indices..."
 					value={inputValue}
@@ -135,7 +142,7 @@ function Home() {
 				/>
 
 				{debouncedValue.length > 0 && (
-					<div className="flex w-full flex-col gap-6">
+					<div className="-mx-4 flex flex-col gap-6 overflow-y-auto px-4">
 						{isLoading ? (
 							<span className="text-center text-rcr-secondary">Searching...</span>
 						) : !hasResults ? (
@@ -147,8 +154,8 @@ function Home() {
 										{recordsQuery.data?.map((record) => (
 											<SearchResult
 												key={record.id}
-												title={record.title ?? ''}
-												description={record.summary ?? record.content}
+												title={record.title ?? 'Untitled'}
+												content={record.content || record.summary || record.notes || undefined}
 												type="record"
 												url={record.url}
 												imageUrl={record.recordMedia?.[0]?.media.url}
@@ -165,7 +172,7 @@ function Home() {
 												<SearchResult
 													key={index.id}
 													title={index.name}
-													description={index.notes}
+													content={index.notes || undefined}
 													type="index"
 													url={index.canonicalUrl}
 													imageUrl={

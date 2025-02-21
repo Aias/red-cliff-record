@@ -4,8 +4,8 @@ import { routerWithQueryClient } from '@tanstack/react-router-with-query';
 import { httpBatchLink } from '@trpc/client';
 import { createServerSideHelpers } from '@trpc/react-query/server';
 import superjson from 'superjson';
-import { DefaultCatchBoundary } from './components/DefaultCatchBoundary';
-import { NotFound } from './components/NotFound';
+import { DefaultCatchBoundary } from './components/catch-boundary';
+import { NotFound } from './components/not-found';
 import { routeTree } from './routeTree.gen';
 import { trpc } from './trpc';
 

@@ -1,6 +1,6 @@
 import { useLoaderData } from '@tanstack/react-router';
 import { type IntegrationType } from '@/server/db/schema/operations';
-import { Avatar, type AvatarProps } from './Avatar';
+import { Avatar, type AvatarProps } from './avatar';
 import adobeLogo from './logos/adobe.svg?url';
 import airtableLogo from './logos/airtable.svg?url';
 import arcLogo from './logos/arc.svg?url';
@@ -11,15 +11,15 @@ import readwiseLogo from './logos/readwise.svg?url';
 import xLogoDark from './logos/x_dark.svg?url';
 import xLogoLight from './logos/x_light.svg?url';
 
-interface ServiceAvatarProps extends Omit<AvatarProps, 'src' | 'fallback'> {
+interface IntegrationLogoProps extends Omit<AvatarProps, 'src' | 'fallback'> {
 	integration: IntegrationType;
 }
 
-export function IntegrationAvatar({
+export function IntegrationLogo({
 	integration: service,
 	className,
 	...props
-}: ServiceAvatarProps) {
+}: IntegrationLogoProps) {
 	const { theme } = useLoaderData({
 		from: '__root__',
 	});
