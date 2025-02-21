@@ -11,7 +11,7 @@ import {
 	Avatar,
 	Badge,
 	Checkbox,
-	IntegrationAvatar,
+	IntegrationLogo,
 	Placeholder,
 	Select,
 	SelectContent,
@@ -22,7 +22,7 @@ import {
 	Spinner,
 	type AvatarProps,
 } from '@/components';
-import { useSelection } from '@/lib/useSelection';
+import { useSelection } from '@/lib/hooks/useSelection';
 
 const SearchSchema = z.object({
 	source: IntegrationType.optional(),
@@ -256,7 +256,7 @@ const RecordQueueItem = ({
 						{entry.sources &&
 							entry.sources.length > 0 &&
 							entry.sources.map((source) => (
-								<IntegrationAvatar key={source} integration={source} inline className="text-xs" />
+								<IntegrationLogo key={source} integration={source} inline className="text-xs" />
 							))}
 					</div>
 					<p className="line-clamp-1 text-xs">

@@ -9,7 +9,7 @@ import {
 	type GithubRepositorySelect,
 } from '@/server/db/schema/github';
 import { Button, CompleteIcon, DataGrid, IncompleteIcon } from '@/components';
-import { useSelection } from '@/lib/useSelection';
+import { useSelection } from '@/lib/hooks/useSelection';
 
 type CommitSelect = Omit<GithubCommitSelect, 'textEmbedding'> & {
 	repository: GithubRepositorySelect;

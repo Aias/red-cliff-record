@@ -237,15 +237,5 @@ DataListValue.displayName = 'DataList.Value';
 //
 // 6) EXPORT
 //
-export type {
-	DataListItemProps as ItemProps,
-	DataListLabelProps as LabelProps,
-	DataListRootProps as RootProps,
-	DataListValueProps as ValueProps,
-};
-export {
-	DataListItem as Item,
-	DataListLabel as Label,
-	DataListRoot as Root,
-	DataListValue as Value,
-};
+export type { DataListItemProps, DataListLabelProps, DataListRootProps, DataListValueProps };
+export { DataListItem, DataListLabel, DataListRoot, DataListValue };

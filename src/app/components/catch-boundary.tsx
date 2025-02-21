@@ -18,7 +18,7 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 					Try Again
 				</Button>
 				{isRoot ? (
-					<Button variant="secondary" asChild>
+					<Button asChild>
 						<Link to="/">Home</Link>
 					</Button>
 				) : (

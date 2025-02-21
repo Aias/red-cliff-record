@@ -110,10 +110,7 @@
 			'Berkeley Mono', ui-monospace, SFMono-Regular, 'Menlo', 'Consolas (Custom)',
 			'Bitstream Vera Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji';
 		--font-family-serif: ui-serif, 'Georgia', Cambria, 'Times New Roman', Times, serif;
-	}
 
-	.radix-themes {
-		@apply bg-rcr-background text-rcr-primary font-sans;
 		--default-font-family: var(--font-family-sans);
 		--heading-font-family: var(--font-family-sans);
 		--code-font-family: var(--font-family-mono);
@@ -167,7 +164,7 @@
 	}
 
 	hr {
-		@apply bg-rcr-divider m-0 block h-[1px] w-full border-0 border-none border-transparent;
+		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-rcr-divider;
 	}
 
 	pre,
@@ -177,7 +174,7 @@
 
 	a:where(:any-link, button),
 	.link {
-		@apply text-rcr-accent hover:text-rcr-accent-active inline-flex items-center gap-1 font-medium hover:underline;
+		@apply inline-flex items-center gap-1 font-medium text-rcr-accent hover:text-rcr-accent-active hover:underline;
 		text-decoration-line: none;
 		text-decoration-style: solid;
 		text-decoration-thickness: min(2px, max(1px, 0.05em));
@@ -214,9 +211,9 @@
 }
 
 @utility card {
-	@apply border-rcr-divider relative block overflow-hidden rounded-md border p-3 contain-paint;
+	@apply relative block overflow-hidden rounded-md border border-rcr-divider p-3 contain-paint;
 	&::before {
-		@apply surface pointer-events-none absolute inset-0 z-[-1] rounded-md;
+		@apply pointer-events-none absolute inset-0 z-[-1] rounded-md surface;
 		content: '';
 		transition: inherit;
 	}
@@ -227,17 +224,17 @@
 }
 
 @utility code {
-	@apply bg-rcr-stain px-1.25 themed rounded-sm font-mono text-[0.875em];
+	@apply rounded-sm bg-rcr-stain px-1.25 font-mono text-[0.875em] themed;
 }
 
 @utility checkbox {
-	@apply rounded-xs border-rcr-border focus-visible:ring-rcr-focus size-[1em] overflow-hidden border text-[1.125em] focus-visible:outline-none focus-visible:ring-1;
+	@apply size-[1em] overflow-hidden rounded-xs border border-rcr-border text-[1.125em] focus-visible:ring-1 focus-visible:ring-rcr-focus focus-visible:outline-none;
 	&:checked,
 	&[data-state~='checked'] {
 		@apply border-rcr-theme bg-rcr-theme text-rcr-theme-contrast;
 	}
 	&:disabled {
-		@apply border-rcr-divider bg-rcr-stain text-rcr-symbol cursor-not-allowed opacity-90;
+		@apply cursor-not-allowed border-rcr-divider bg-rcr-stain text-rcr-symbol opacity-90;
 	}
 }
 
@@ -245,12 +242,12 @@
 	@apply block h-full w-[1px] self-center border-0 border-none border-transparent;
 	&::before {
 		content: '';
-		@apply bg-rcr-divider block h-full;
+		@apply block h-full bg-rcr-divider;
 	}
 }
 
 @utility selectable {
-	@apply border-rcr-divider cursor-pointer;
+	@apply cursor-pointer border-rcr-divider;
 	&:hover {
 		@apply border-rcr-border bg-rcr-hovered;
 	}

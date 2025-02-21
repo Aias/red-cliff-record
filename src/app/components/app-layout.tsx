@@ -2,14 +2,14 @@ import type { ReactNode } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/start';
 import { ArchiveIcon, DayModeIcon, ExpandIcon, NightModeIcon } from '@/app/components/icons';
-import { setTheme } from '../lib/server/setTheme';
+import { setTheme } from '@/lib/server/theme';
 import {
 	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from './';
+} from '.';
 
 interface AppLayoutProps {
 	children: ReactNode;

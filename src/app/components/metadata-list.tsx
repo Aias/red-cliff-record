@@ -4,16 +4,21 @@ import { CopyIcon } from './icons';
 import { ScrollArea } from './ui/scroll-area';
 import {
 	Button,
-	DataList,
+	DataListItem,
+	DataListLabel,
+	DataListRoot,
+	DataListValue,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from './';
+	ExternalLink,
+	type DataListRootProps,
+} from '.';
 
-interface MetadataListProps extends DataList.RootProps {
+interface MetadataListProps extends DataListRootProps {
 	metadata: Record<string, unknown>;
 }
 
@@ -48,21 +53,17 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
 		const stringValue = String(value);
 		const urlResult = urlSchema.safeParse(stringValue);
 		if (urlResult.success) {
-			return (
-				<a href={urlResult.data} target="_blank" rel="noopener noreferrer">
-					{stringValue}
-				</a>
-			);
+			return <ExternalLink href={urlResult.data}>{stringValue}</ExternalLink>;
 		}
 		return stringValue;
 	};
 
 	return (
-		<DataList.Root {...props}>
+		<DataListRoot {...props}>
 			{Object.entries(metadata).map(([key, value]) => (
-				<DataList.Item key={key}>
-					<DataList.Label>{key}</DataList.Label>
-					<DataList.Value className="group relative">
+				<DataListItem key={key}>
+					<DataListLabel>{key}</DataListLabel>
+					<DataListValue className="group relative">
 						{value ? (
 							<div className="flex items-baseline gap-2">
 								<div className="flex-1" onClick={() => handleCopy(key, value)}>
@@ -77,10 +78,10 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
 						) : (
 							<span className="text-rcr-hint">—</span>
 						)}
-					</DataList.Value>
-				</DataList.Item>
+					</DataListValue>
+				</DataListItem>
 			))}
-		</DataList.Root>
+		</DataListRoot>
 	);
 };
 

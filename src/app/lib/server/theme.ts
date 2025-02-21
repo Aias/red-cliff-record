@@ -1,6 +1,15 @@
 import { createServerFn } from '@tanstack/start';
-import { setCookie } from 'vinxi/http';
+import { getCookie, setCookie } from 'vinxi/http';
 import { z } from 'zod';
+
+export const ThemeCookieSchema = z.enum(['light', 'dark']).default('dark');
+
+export type Theme = z.infer<typeof ThemeCookieSchema>;
+
+export const getTheme = createServerFn({ method: 'GET' }).handler(() => {
+	const theme = ThemeCookieSchema.parse(getCookie('theme'));
+	return { theme };
+});
 
 export const setTheme = createServerFn({ method: 'POST' })
 	.validator((data: unknown) => {

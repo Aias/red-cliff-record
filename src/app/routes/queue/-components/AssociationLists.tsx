@@ -1,7 +1,7 @@
 import { type PropsWithChildren } from 'react';
 import { trpc } from '@/app/trpc';
 import type { IntegrationType } from '@/server/db/schema';
-import { Badge, IntegrationAvatar, Placeholder, Spinner } from '@/components';
+import { Badge, IntegrationLogo, Placeholder, Spinner } from '@/components';
 import { toTitleCase } from '@/lib/formatting';
 
 interface RecordCategoriesProps {
@@ -48,7 +48,7 @@ const RecordListItem = ({
 		{sources && sources.length > 0 ? (
 			<div className="flex shrink grow-0 basis-auto items-center justify-end gap-2">
 				{sources.map((source) => (
-					<IntegrationAvatar key={source} integration={source} className="size-4" inline />
+					<IntegrationLogo key={source} integration={source} className="size-4" inline />
 				))}
 			</div>
 		) : null}

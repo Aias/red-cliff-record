@@ -5,7 +5,7 @@ import type { ServerHelpers } from '@/app/trpc';
 import stylesUrl from '../styles/app.css?url';
 import { AppLayout, DefaultCatchBoundary, NotFound } from '@/components';
 import { seo, SITE_NAME } from '@/lib/seo';
-import { getThemeCookie, type Theme } from '@/lib/theme';
+import { getTheme, type Theme } from '@/lib/server/theme';
 import { cn } from '@/lib/utils';
 
 export interface RouterAppContext {
@@ -14,7 +14,7 @@ export interface RouterAppContext {
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-	loader: () => getThemeCookie(),
+	loader: () => getTheme(),
 	head: () => ({
 		meta: [
 			{

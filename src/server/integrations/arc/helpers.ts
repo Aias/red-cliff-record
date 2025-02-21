@@ -5,6 +5,17 @@ import type { DailyVisitsQueryRow } from './types';
 
 const arcDb = createArcConnection();
 
+export const CHROME_EPOCH_TO_UNIX_SECONDS =
+	Math.floor(Date.UTC(1970, 0, 1) - Date.UTC(1601, 0, 1)) / 1000;
+
+export const chromeEpochMicrosecondsToDatetime = (
+	chromeEpochMicroseconds: number | bigint
+): Date => {
+	return new Date(
+		(Number(chromeEpochMicroseconds) / 1000000 - CHROME_EPOCH_TO_UNIX_SECONDS) * 1000
+	);
+};
+
 export const dailyVisitsQuery = arcDb
 	.select({
 		viewTime: visits.visitTime,
