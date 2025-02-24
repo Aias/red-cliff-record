@@ -1,6 +1,5 @@
 import { db } from '@/server/db/connections';
 import { lightroomImages } from '@/server/db/schema/adobe';
-import { transferMediaToR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
 import { createMediaFromLightroomImages } from './map';
 import { LightroomJsonResponseSchema } from './types';
@@ -47,20 +46,21 @@ async function syncLightroomImages(integrationRunId: number) {
 			captureDate,
 			userUpdated,
 		} = payload;
-		const url2048 = `${baseUrl}${asset.links['/rels/rendition_type/2048'].href}`;
+		const url2048 = `${baseUrl}${links['/rels/rendition_type/2048'].href}`;
 		const firstRatingKey = ratings ? Object.keys(ratings)[0] : undefined;
 		const rating = firstRatingKey && ratings ? (ratings[firstRatingKey]?.rating ?? 0) : 0;
 
 		const imageToInsert = {
 			id: id,
 			url2048,
+			baseUrl,
 			links: links,
 			fileName: importSource.fileName,
 			contentType: importSource.contentType,
 			sourceDevice: changedOnDevice ?? importSource.importedOnDevice ?? develop.device,
 			cameraMake: xmp.tiff.Make,
 			cameraModel: xmp.tiff.Model,
-			cameraLens: xmp.aux.Lens,
+			cameraLens: xmp.aux?.Lens,
 			captureDate: captureDate,
 			userUpdatedDate: userUpdated,
 			fileSize: importSource.fileSize,
@@ -97,7 +97,6 @@ async function syncLightroomImages(integrationRunId: number) {
 		`✅ Successfully processed ${successCount} out of ${jsonData.resources.length} images`
 	);
 	await createMediaFromLightroomImages();
-	await transferMediaToR2('%photos.adobe.io%');
 	return successCount;
 }
 

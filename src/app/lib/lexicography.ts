@@ -1,10 +1,11 @@
 // Constants for better maintainability and performance
+export const DEFAULT_ORDER_KEY = 'a0';
 const MIN_CHAR = 'a'.charCodeAt(0); // 97
 const MAX_CHAR = 'z'.charCodeAt(0); // 122
 const CHAR_RANGE = MAX_CHAR - MIN_CHAR + 1; // 26
 
 export const generateOrderKey = (lowerBound: string | null, upperBound: string | null): string => {
-	if (lowerBound === null && upperBound === null) return 'a0';
+	if (lowerBound === null && upperBound === null) return DEFAULT_ORDER_KEY;
 	if (lowerBound === null) return 'a' + upperBound;
 	if (upperBound === null) return lowerBound + 'a';
 

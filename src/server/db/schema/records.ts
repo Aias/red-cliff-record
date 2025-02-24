@@ -1,89 +1,112 @@
 import { relations } from 'drizzle-orm';
 import {
+	boolean,
 	index,
 	integer,
 	pgEnum,
 	pgTable,
 	serial,
 	text,
+	timestamp,
 	unique,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { lightroomImages } from './adobe';
-import { airtableExtracts } from './airtable';
-import { githubRepositories } from './github';
-import { indices } from './indices';
+import { airtableCreators, airtableExtracts, airtableFormats, airtableSpaces } from './airtable';
+import { githubRepositories, githubUsers } from './github';
 import { media } from './media';
 import {
-	commonColumns,
 	contentTimestamps,
 	databaseTimestamps,
-	flagEnum,
+	integrationTypeEnum,
 	textEmbeddingColumns,
 } from './operations';
-import { raindropBookmarks } from './raindrop';
-import { readwiseDocuments } from './readwise';
-import { twitterTweets } from './twitter';
+import { raindropBookmarks, raindropCollections, raindropTags } from './raindrop';
+import { readwiseAuthors, readwiseDocuments, readwiseTags } from './readwise';
+import { twitterTweets, twitterUsers } from './twitter';
+import { DEFAULT_ORDER_KEY } from '@/lib/lexicography';
 
-// Hierarchical relationships
-export const ChildRecordType = z.enum([
-	'part_of',
-	'primary_source',
-	'quotes',
-	'copied_from',
-	'derived_from',
+export const RecordTypeSchema = z.enum([
+	'entity', // an actor in the world, has will
+	'concept', // a category, idea, or abstraction
+	'artifact', // physical or digital objects, content, or media
+	'event', // an event or occurrence
+	'place', // a geographic location
+	'system', // a physical or conceptual system or network
 ]);
-export type ChildRecordType = z.infer<typeof ChildRecordType>;
-export const childRecordTypeEnum = pgEnum('child_record_type', ChildRecordType.options);
+export type RecordType = z.infer<typeof RecordTypeSchema>;
+export const recordTypeEnum = pgEnum('record_type', RecordTypeSchema.options);
 
-// Main records table
+export const ChildTypeSchema = z.enum([
+	'part_of', // default parent-child relationship
+	'quotes', // quotes parent record, as a quote tweet
+]);
+export type ChildType = z.infer<typeof ChildTypeSchema>;
+export const childTypeEnum = pgEnum('child_type', ChildTypeSchema.options);
+
+// Main index table
 export const records = pgTable(
 	'records',
 	{
 		id: serial('id').primaryKey(),
+		type: recordTypeEnum('type').notNull(),
 		title: text('title'),
+		sense: text('sense'),
+		abbreviation: text('abbreviation'),
 		url: text('url'),
-		content: text('content'),
+		avatarUrl: text('avatar_url'),
 		summary: text('summary'),
+		content: text('content'),
 		notes: text('notes'),
-		formatId: integer('format_id').references(() => indices.id, {
+		mediaCaption: text('media_caption'),
+		formatId: integer('format_id').references((): AnyPgColumn => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		mediaCaption: text('media_caption'),
 		parentId: integer('parent_id').references((): AnyPgColumn => records.id, {
-			onDelete: 'cascade',
+			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		childType: childRecordTypeEnum('child_type'),
-		childOrder: text('child_order').notNull().default('a0'),
+		childOrder: text('child_order').notNull().default(DEFAULT_ORDER_KEY),
+		childType: childTypeEnum('child_type'),
 		transcludeId: integer('transclude_id').references((): AnyPgColumn => records.id, {
 			onDelete: 'cascade',
 			onUpdate: 'cascade',
 		}),
-		flags: flagEnum('flags').array(),
+		rating: integer('rating').notNull().default(0),
+		isIndexNode: boolean('is_index_node').notNull().default(false),
+		isFormat: boolean('is_format').notNull().default(false),
+		isPrivate: boolean('is_private').notNull().default(false),
+		needsCuration: boolean('needs_curation').notNull().default(false),
+		reminderAt: timestamp('reminder_at', { withTimezone: true }),
+		sources: integrationTypeEnum('sources').array(),
 		...databaseTimestamps,
 		...contentTimestamps,
-		...commonColumns,
 		...textEmbeddingColumns,
 	},
 	(table) => [
-		index().on(table.title),
-		index().on(table.url),
-		index().on(table.formatId),
+		index().on(table.type, table.title, table.url),
 		index().on(table.parentId),
+		index().on(table.formatId),
 		index().on(table.transcludeId),
-		index().on(table.needsCuration),
 		index('idx_records_content_search').using(
 			'gin',
 			table.title,
-			table.content,
+			table.abbreviation,
+			table.sense,
+			table.url,
 			table.summary,
+			table.content,
 			table.notes,
 			table.mediaCaption
 		),
+		index().on(table.rating),
+		index().on(table.isIndexNode),
+		index().on(table.isFormat),
+		index().on(table.isPrivate),
+		index().on(table.needsCuration),
 	]
 );
 
@@ -91,26 +114,33 @@ export const RecordSelectSchema = createSelectSchema(records);
 export type RecordSelect = typeof records.$inferSelect;
 export const RecordInsertSchema = createInsertSchema(records).extend({
 	url: z.string().url().optional().nullable(),
+	avatarUrl: z.string().url().optional().nullable(),
+	rating: z.number().int().min(-2).max(2).default(0),
 });
 export type RecordInsert = typeof records.$inferInsert;
 
 export const recordsRelations = relations(records, ({ one, many }) => ({
-	format: one(indices, {
-		fields: [records.formatId],
-		references: [indices.id],
-		relationName: 'format',
-	}),
 	parent: one(records, {
 		fields: [records.parentId],
 		references: [records.id],
 		relationName: 'parentChild',
 	}),
 	children: many(records, { relationName: 'parentChild' }),
-	recordCreators: many(recordCreators),
-	recordCategories: many(recordCategories),
-	recordMedia: many(recordMedia),
-	recordOutgoingRelations: many(recordRelations, { relationName: 'source' }),
-	recordIncomingRelations: many(recordRelations, { relationName: 'target' }),
+	media: many(media),
+	creators: many(recordCreators, {
+		relationName: 'createdBy',
+	}),
+	created: many(recordCreators, {
+		relationName: 'created',
+	}),
+	format: one(records, {
+		fields: [records.formatId],
+		references: [records.id],
+		relationName: 'format',
+	}),
+	formatOf: many(records, { relationName: 'format' }),
+	references: many(recordRelations, { relationName: 'source' }),
+	referencedBy: many(recordRelations, { relationName: 'target' }),
 	transcludes: one(records, {
 		fields: [records.transcludeId],
 		references: [records.id],
@@ -119,21 +149,33 @@ export const recordsRelations = relations(records, ({ one, many }) => ({
 	transcludedBy: many(records, {
 		relationName: 'transcludes',
 	}),
+	airtableCreators: many(airtableCreators),
 	airtableExtracts: many(airtableExtracts),
+	airtableFormats: many(airtableFormats),
+	airtableSpaces: many(airtableSpaces),
 	githubRepositories: many(githubRepositories),
-	raindropBookmarks: many(raindropBookmarks),
-	readwiseDocuments: many(readwiseDocuments),
+	githubUsers: many(githubUsers),
 	lightroomImages: many(lightroomImages),
+	raindropBookmarks: many(raindropBookmarks),
+	raindropCollections: many(raindropCollections),
+	raindropTags: many(raindropTags),
+	readwiseAuthors: many(readwiseAuthors),
+	readwiseDocuments: many(readwiseDocuments),
+	readwiseTags: many(readwiseTags),
 	twitterTweets: many(twitterTweets),
+	twitterUsers: many(twitterUsers),
 }));
 
 // Non-hierarchical relationships
 export const RecordRelationType = z.enum([
-	'related_to',
-	'references',
-	'responds_to',
-	'contradicts',
-	'supports',
+	'tagged', // tagged with this thing
+	'related_to', // related to this thing
+	'about', // about this thing (at a meta-level)
+	'example_of', // an example of this thing
+	'references', // references this thing
+	'responds_to', // responds to this thing
+	'contradicts', // contradicts this thing
+	'supports', // supports this thing
 ]);
 export type RecordRelationType = z.infer<typeof RecordRelationType>;
 export const recordRelationTypeEnum = pgEnum('record_relation_type', RecordRelationType.options);
@@ -142,7 +184,6 @@ export const recordRelations = pgTable(
 	'record_relations',
 	{
 		id: serial('id').primaryKey(),
-		type: recordRelationTypeEnum('type').notNull().default('related_to'),
 		sourceId: integer('source_id')
 			.references(() => records.id, {
 				onDelete: 'cascade',
@@ -155,7 +196,8 @@ export const recordRelations = pgTable(
 				onUpdate: 'cascade',
 			})
 			.notNull(),
-		order: text('order').notNull().default('a0'),
+		type: recordRelationTypeEnum('type').notNull(),
+		order: text('order').notNull().default(DEFAULT_ORDER_KEY),
 		notes: text('notes'),
 		...databaseTimestamps,
 	},
@@ -184,7 +226,7 @@ export const recordRelationsRelations = relations(recordRelations, ({ one }) => 
 	}),
 }));
 
-export const CreatorRoleType = z.enum([
+export const CreatorRoleSchema = z.enum([
 	'creator', // primary creator
 	'owner', // owner of the record
 	'author', // specifically wrote/authored
@@ -197,35 +239,35 @@ export const CreatorRoleType = z.enum([
 	'subject', // topic is about this person
 	'mentioned', // referenced in content
 ]);
-export type CreatorRoleType = z.infer<typeof CreatorRoleType>;
-export const creatorRoleTypeEnum = pgEnum('creator_role_type', CreatorRoleType.options);
+export type CreatorRole = z.infer<typeof CreatorRoleSchema>;
+export const creatorRoleEnum = pgEnum('creator_role', CreatorRoleSchema.options);
 
 // Creator relationships
 export const recordCreators = pgTable(
 	'record_creators',
 	{
 		id: serial('id').primaryKey(),
-		role: creatorRoleTypeEnum('role').notNull().default('creator'),
 		recordId: integer('record_id')
 			.references(() => records.id, {
 				onDelete: 'cascade',
 				onUpdate: 'cascade',
 			})
 			.notNull(),
-		entityId: integer('entity_id')
-			.references(() => indices.id, {
+		creatorId: integer('creator_id')
+			.references(() => records.id, {
 				onDelete: 'cascade',
 				onUpdate: 'cascade',
 			})
 			.notNull(),
-		order: text('order').notNull().default('a0'),
+		creatorRole: creatorRoleEnum('creator_role').notNull().default('creator'),
+		order: text('order').notNull().default(DEFAULT_ORDER_KEY),
 		notes: text('notes'),
 		...databaseTimestamps,
 	},
 	(table) => [
 		index().on(table.recordId),
-		index().on(table.entityId),
-		unique().on(table.recordId, table.entityId, table.role),
+		index().on(table.creatorId),
+		unique().on(table.recordId, table.creatorId, table.creatorRole),
 	]
 );
 
@@ -238,103 +280,11 @@ export const recordCreatorsRelations = relations(recordCreators, ({ one }) => ({
 	record: one(records, {
 		fields: [recordCreators.recordId],
 		references: [records.id],
+		relationName: 'createdBy',
 	}),
-	creator: one(indices, {
-		fields: [recordCreators.entityId],
-		references: [indices.id],
-	}),
-}));
-
-export const CategorizationType = z.enum([
-	'about', // meta-level subject matter
-	'file_under', // organizational category
-]);
-export type CategorizationType = z.infer<typeof CategorizationType>;
-export const categorizationTypeEnum = pgEnum('categorization_type', CategorizationType.options);
-
-// Categorization
-export const recordCategories = pgTable(
-	'record_categories',
-	{
-		id: serial('id').primaryKey(),
-		type: categorizationTypeEnum('type').notNull().default('file_under'),
-		recordId: integer('record_id')
-			.references(() => records.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
-		categoryId: integer('category_id')
-			.references(() => indices.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
-		...databaseTimestamps,
-	},
-	(table) => [
-		index().on(table.recordId),
-		index().on(table.categoryId),
-		unique().on(table.recordId, table.categoryId, table.type),
-	]
-);
-
-export const recordCategoriesRelations = relations(recordCategories, ({ one }) => ({
-	record: one(records, {
-		fields: [recordCategories.recordId],
+	creator: one(records, {
+		fields: [recordCreators.creatorId],
 		references: [records.id],
-	}),
-	category: one(indices, {
-		fields: [recordCategories.categoryId],
-		references: [indices.id],
-	}),
-}));
-
-export const RecordCategorySelectSchema = createSelectSchema(recordCategories);
-export type RecordCategorySelect = typeof recordCategories.$inferSelect;
-export const RecordCategoryInsertSchema = createInsertSchema(recordCategories);
-export type RecordCategoryInsert = typeof recordCategories.$inferInsert;
-
-// Media links with captions
-export const recordMedia = pgTable(
-	'record_media',
-	{
-		id: serial('id').primaryKey(),
-		recordId: integer('record_id')
-			.references(() => records.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
-		mediaId: integer('media_id')
-			.references(() => media.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
-		caption: text('caption'),
-		order: text('order').notNull().default('a0'),
-		...databaseTimestamps,
-	},
-	(table) => [
-		index().on(table.recordId),
-		index().on(table.mediaId),
-		unique().on(table.recordId, table.mediaId),
-	]
-);
-
-export const RecordMediaSelectSchema = createSelectSchema(recordMedia);
-export type RecordMediaSelect = typeof recordMedia.$inferSelect;
-export const RecordMediaInsertSchema = createInsertSchema(recordMedia);
-export type RecordMediaInsert = typeof recordMedia.$inferInsert;
-
-export const recordMediaRelations = relations(recordMedia, ({ one }) => ({
-	record: one(records, {
-		fields: [recordMedia.recordId],
-		references: [records.id],
-	}),
-	media: one(media, {
-		fields: [recordMedia.mediaId],
-		references: [media.id],
+		relationName: 'created',
 	}),
 }));

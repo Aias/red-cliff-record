@@ -12,7 +12,6 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { indices } from './indices';
 import { media } from './media';
 import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
@@ -98,13 +97,13 @@ export const raindropTags = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		tag: text('tag').notNull().unique(),
-		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.tag), index().on(table.indexEntryId)]
+	(table) => [index().on(table.tag), index().on(table.recordId)]
 );
 
 export const RaindropTagSelectSchema = createSelectSchema(raindropTags);
@@ -116,10 +115,9 @@ export const raindropTagsRelations = relations(raindropTags, ({ one, many }) => 
 	tagBookmarks: many(raindropBookmarkTags, {
 		relationName: 'tagBookmarks',
 	}),
-	indexEntry: one(indices, {
-		fields: [raindropTags.indexEntryId],
-		references: [indices.id],
-		relationName: 'indexEntry',
+	record: one(records, {
+		fields: [raindropTags.recordId],
+		references: [records.id],
 	}),
 }));
 
@@ -176,14 +174,14 @@ export const raindropCollections = pgTable(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
 		...contentTimestamps,
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.parentId), index().on(table.indexEntryId)]
+	(table) => [index().on(table.parentId), index().on(table.recordId)]
 );
 
 export const RaindropCollectionSelectSchema = createSelectSchema(raindropCollections);
@@ -205,10 +203,9 @@ export const raindropCollectionsRelations = relations(raindropCollections, ({ on
 		fields: [raindropCollections.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indices, {
-		fields: [raindropCollections.indexEntryId],
-		references: [indices.id],
-		relationName: 'indexEntry',
+	record: one(records, {
+		fields: [raindropCollections.recordId],
+		references: [records.id],
 	}),
 }));
 

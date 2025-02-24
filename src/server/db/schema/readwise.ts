@@ -14,8 +14,6 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { indices } from './indices';
-import { media } from './media';
 import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
@@ -90,10 +88,6 @@ export const readwiseDocuments = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		mediaId: integer('media_id').references(() => media.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
-		}),
 	},
 	(table) => [
 		index().on(table.integrationRunId),
@@ -101,7 +95,6 @@ export const readwiseDocuments = pgTable(
 		index().on(table.recordCreatedAt),
 		index().on(table.parentId),
 		index().on(table.recordId),
-		index().on(table.mediaId),
 		index().on(table.authorId),
 	]
 );
@@ -130,10 +123,6 @@ export const readwiseDocumentsRelations = relations(readwiseDocuments, ({ one, m
 		fields: [readwiseDocuments.recordId],
 		references: [records.id],
 	}),
-	media: one(media, {
-		fields: [readwiseDocuments.mediaId],
-		references: [media.id],
-	}),
 }));
 
 export const ReadwiseDocumentSelectSchema = createSelectSchema(readwiseDocuments);
@@ -151,7 +140,7 @@ export const readwiseAuthors = pgTable(
 		id: serial('id').primaryKey(),
 		name: text('name').notNull(),
 		origin: text('origin'),
-		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
@@ -166,10 +155,9 @@ export const readwiseAuthors = pgTable(
 
 export const readwiseAuthorsRelations = relations(readwiseAuthors, ({ one, many }) => ({
 	documents: many(readwiseDocuments),
-	indexEntry: one(indices, {
-		fields: [readwiseAuthors.indexEntryId],
-		references: [indices.id],
-		relationName: 'indexEntry',
+	record: one(records, {
+		fields: [readwiseAuthors.recordId],
+		references: [records.id],
 	}),
 }));
 
@@ -183,7 +171,7 @@ export type ReadwiseAuthorInsert = typeof readwiseAuthors.$inferInsert;
 export const readwiseTags = pgTable('readwise_tags', {
 	id: serial('id').primaryKey(),
 	tag: text('tag').unique().notNull(),
-	indexEntryId: integer('index_entry_id').references(() => indices.id, {
+	recordId: integer('record_id').references(() => records.id, {
 		onDelete: 'set null',
 		onUpdate: 'cascade',
 	}),
@@ -194,10 +182,9 @@ export const readwiseTagsRelations = relations(readwiseTags, ({ one, many }) => 
 	tagDocuments: many(readwiseDocumentTags, {
 		relationName: 'tagDocuments',
 	}),
-	indexEntry: one(indices, {
-		fields: [readwiseTags.indexEntryId],
-		references: [indices.id],
-		relationName: 'indexEntry',
+	record: one(records, {
+		fields: [readwiseTags.recordId],
+		references: [records.id],
 	}),
 }));
 

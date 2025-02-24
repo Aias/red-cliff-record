@@ -26,6 +26,10 @@ const s3 = new S3Client({
  * @returns A publicly accessible (non-expiring) S3/R2 URL
  */
 export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
+	if (mediaUrl.includes(process.env.ASSETS_DOMAIN!)) {
+		console.log(`Media URL already on R2: ${mediaUrl}`);
+		return mediaUrl;
+	}
 	// 1. Fetch the remote file
 	const resp = await fetch(mediaUrl);
 	if (!resp.ok) {

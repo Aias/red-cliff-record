@@ -117,12 +117,9 @@ function Home() {
 	const recordsQuery = trpc.records.search.useQuery(debouncedValue, {
 		enabled: debouncedValue.length > 0,
 	});
-	const indicesQuery = trpc.indices.search.useQuery(debouncedValue, {
-		enabled: debouncedValue.length > 0,
-	});
 
-	const isLoading = recordsQuery.isLoading || indicesQuery.isLoading;
-	const hasResults = (recordsQuery.data?.length ?? 0) > 0 || (indicesQuery.data?.length ?? 0) > 0;
+	const isLoading = recordsQuery.isLoading;
+	const hasResults = (recordsQuery.data?.length ?? 0) > 0;
 
 	const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
 		setInputValue(e.target.value);
@@ -148,43 +145,18 @@ function Home() {
 						) : !hasResults ? (
 							<span className="text-center text-rcr-secondary">No results found</span>
 						) : (
-							<>
-								{(recordsQuery.data?.length ?? 0) > 0 && (
-									<SearchSection title="Records" count={recordsQuery.data?.length ?? 0}>
-										{recordsQuery.data?.map((record) => (
-											<SearchResult
-												key={record.id}
-												title={record.title ?? 'Untitled'}
-												content={record.content || record.summary || record.notes || undefined}
-												type="record"
-												url={record.url}
-												imageUrl={record.recordMedia?.[0]?.media.url}
-											/>
-										))}
-									</SearchSection>
-								)}
-
-								{(indicesQuery.data?.length ?? 0) > 0 && (
-									<>
-										{(recordsQuery.data?.length ?? 0) > 0 && <hr />}
-										<SearchSection title="Indices" count={indicesQuery.data?.length ?? 0}>
-											{indicesQuery.data?.map((index) => (
-												<SearchResult
-													key={index.id}
-													title={index.name}
-													content={index.notes || undefined}
-													type="index"
-													url={index.canonicalUrl}
-													imageUrl={
-														index.canonicalMedia?.url ?? index.canonicalMediaUrl ?? undefined
-													}
-													subType={index.subType}
-												/>
-											))}
-										</SearchSection>
-									</>
-								)}
-							</>
+							<SearchSection title="Records" count={recordsQuery.data?.length ?? 0}>
+								{recordsQuery.data?.map((record) => (
+									<SearchResult
+										key={record.id}
+										title={record.title ?? 'Untitled'}
+										content={record.content || record.summary || record.notes || undefined}
+										type="record"
+										url={record.url}
+										imageUrl={record.media[0]?.url}
+									/>
+								))}
+							</SearchSection>
 						)}
 					</div>
 				)}

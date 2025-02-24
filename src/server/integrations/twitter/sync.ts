@@ -12,7 +12,11 @@ import {
 } from '@/server/db/schema/twitter';
 import { runIntegration } from '../common/run-integration';
 import { processMedia, processTweet, processUser } from './helpers';
-import { createEntitiesFromUsers, createMediaFromTweets, createRecordsFromTweets } from './map';
+import {
+	createMediaFromTweets,
+	createRecordsFromTweets,
+	createRecordsFromTwitterUsers,
+} from './map';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
 
 export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
@@ -158,13 +162,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 			// 4. Insert Media
 			console.log(`Inserting ${processedMedia.length} media items...`);
 			processedMedia.forEach(async (mediaItem) => {
-				await tx
-					.insert(mediaTable)
-					.values(mediaItem)
-					.onConflictDoUpdate({
-						target: mediaTable.id,
-						set: { ...mediaItem, recordUpdatedAt: new Date() },
-					});
+				await tx.insert(mediaTable).values(mediaItem).onConflictDoNothing();
 			});
 
 			const totalTweets = processedTweets.length + processedQuoteTweets.length;
@@ -175,7 +173,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 			isolationLevel: 'read committed',
 		}
 	);
-	await createEntitiesFromUsers();
+	await createRecordsFromTwitterUsers();
 	await createRecordsFromTweets();
 	await createMediaFromTweets();
 

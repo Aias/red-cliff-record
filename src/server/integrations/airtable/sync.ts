@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, isNotNull, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import {
 	airtableAttachments,
@@ -18,79 +18,18 @@ import {
 	type AirtableFormatInsert,
 	type AirtableSpaceInsert,
 } from '@/server/db/schema/airtable';
-import { deleteMediaFromR2 } from '../common/media-helpers';
+import { uploadMediaToR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
 import { airtableBase, storeMedia } from './helpers';
 import {
-	createCategoriesFromAirtableSpaces,
 	createConnectionsBetweenRecords,
-	createEntitiesFromAirtableCreators,
-	createFormatsFromAirtableFormats,
 	createMediaFromAirtableAttachments,
+	createRecordsFromAirtableCreators,
 	createRecordsFromAirtableExtracts,
+	createRecordsFromAirtableFormats,
+	createRecordsFromAirtableSpaces,
 } from './map';
 import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
-
-async function cleanupExistingRecords() {
-	console.log('Cleaning up existing Airtable records...');
-
-	// First, get all attachments with R2 URLs that need to be deleted
-	console.log(`Deleting attachments from R2 bucket.`);
-	const attachmentsToDelete = await db.query.airtableAttachments.findMany({
-		where: ilike(airtableAttachments.url, `%${process.env.ASSETS_DOMAIN}%`),
-	});
-
-	if (attachmentsToDelete.length > 0) {
-		console.log(`Found ${attachmentsToDelete.length} R2 assets to delete`);
-
-		// Process in batches of 50
-		const BATCH_SIZE = 50;
-		for (let i = 0; i < attachmentsToDelete.length; i += BATCH_SIZE) {
-			const batch = attachmentsToDelete.slice(i, i + BATCH_SIZE);
-			console.log(
-				`Processing deletion batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(
-					attachmentsToDelete.length / BATCH_SIZE
-				)}`
-			);
-
-			await Promise.all(
-				batch.map(async (attachment) => {
-					try {
-						// Extract the asset ID from the URL
-						const url = new URL(attachment.url);
-						const assetId = url.pathname.slice(1); // Remove leading slash
-						await deleteMediaFromR2(assetId);
-						console.log(`Deleted R2 asset: ${assetId}`);
-					} catch (error) {
-						console.error('Failed to delete R2 asset:', {
-							attachmentId: attachment.id,
-							url: attachment.url,
-							error: error instanceof Error ? error.message : String(error),
-						});
-					}
-				})
-			);
-
-			// Add a small delay between batches to prevent rate limiting
-			if (i + BATCH_SIZE < attachmentsToDelete.length) {
-				await new Promise((resolve) => setTimeout(resolve, 1000));
-			}
-		}
-	}
-
-	// Then proceed with database cleanup in correct order to maintain referential integrity
-	await db.transaction(async (tx) => {
-		await tx.delete(airtableExtractConnections);
-		await tx.delete(airtableExtractSpaces);
-		await tx.delete(airtableExtractCreators);
-		await tx.delete(airtableAttachments);
-		await tx.delete(airtableExtracts);
-		await tx.delete(airtableSpaces);
-		await tx.delete(airtableCreators);
-	});
-
-	console.log('Cleanup complete');
-}
 
 async function syncCreators(integrationRunId: number) {
 	console.log('Syncing creators...');
@@ -271,9 +210,12 @@ async function syncExtracts(integrationRunId: number): Promise<{
 			// Link attachments
 			if (fields.images) {
 				for (const image of fields.images) {
+					console.log(`Uploading media ${image.filename} for extract ${newExtract.title}`);
+					const permanentUrl = await uploadMediaToR2(image.url);
+					console.log(`Uploaded to ${permanentUrl}, inserting attachment...`);
 					const attachment: AirtableAttachmentInsert = {
 						id: image.id,
-						url: image.url,
+						url: permanentUrl,
 						filename: image.filename,
 						size: image.size,
 						width: image.width,
@@ -391,13 +333,7 @@ async function syncFormats(integrationRunId: number) {
 	});
 }
 
-const CLEAR_BEFORE_SYNC = false;
-
 async function syncAirtableData(integrationRunId: number): Promise<number> {
-	if (CLEAR_BEFORE_SYNC) {
-		await cleanupExistingRecords();
-	}
-
 	await syncCreators(integrationRunId);
 	await syncSpaces(integrationRunId);
 	const { updatedExtractIds } = await syncExtracts(integrationRunId);
@@ -412,9 +348,9 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 
 	console.log(`Updated ${updatedMediaCount} media records`);
 
-	await createFormatsFromAirtableFormats();
-	await createEntitiesFromAirtableCreators();
-	await createCategoriesFromAirtableSpaces();
+	await createRecordsFromAirtableFormats();
+	await createRecordsFromAirtableCreators();
+	await createRecordsFromAirtableSpaces();
 	await createMediaFromAirtableAttachments();
 	await createRecordsFromAirtableExtracts();
 	await createConnectionsBetweenRecords(updatedExtractIds);

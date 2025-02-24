@@ -17,6 +17,7 @@ export const lightroomImages = pgTable(
 	{
 		id: text('id').primaryKey(),
 		url2048: text('url_2048').notNull(),
+		baseUrl: text('base_url').notNull(),
 		links: json('links').$type<LightroomAssetLinks>().notNull(),
 		fileName: text('file_name').notNull(),
 		contentType: text('content_type').notNull(),

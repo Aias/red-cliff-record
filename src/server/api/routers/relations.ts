@@ -20,7 +20,7 @@ export const relationsRouter = createTRPCRouter({
 		.input(z.number().int().positive())
 		.query(async ({ ctx: { db }, input }) => {
 			const records = await db.query.recordCreators.findMany({
-				where: eq(recordCreators.entityId, input),
+				where: eq(recordCreators.creatorId, input),
 				with: {
 					record: true,
 				},
@@ -28,12 +28,10 @@ export const relationsRouter = createTRPCRouter({
 			return records;
 		}),
 
-	getRecordsWithFormat: publicProcedure
-		.input(z.number().int().positive())
-		.query(async ({ ctx: { db }, input }) => {
-			const data = await db.query.records.findMany({
-				where: eq(records.formatId, input),
-			});
-			return data;
-		}),
+	getRecordsWithFormat: publicProcedure.input(z.string()).query(async ({ ctx: { db }, input }) => {
+		const data = await db.query.records.findMany({
+			where: eq(records.format, input),
+		});
+		return data;
+	}),
 });

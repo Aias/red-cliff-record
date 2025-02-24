@@ -11,7 +11,6 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { indices } from './indices';
 import {
 	contentTimestamps,
 	contentTimestampsNonUpdatable,
@@ -52,15 +51,12 @@ export const githubUsers = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
-		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
 	},
-	(table) => [index().on(table.login), index().on(table.archivedAt), index().on(table.indexEntryId)]
+	(table) => [index().on(table.login), index().on(table.recordId)]
 );
 
 export const GithubUserSelectSchema = createSelectSchema(githubUsers);
@@ -202,10 +198,9 @@ export const githubUsersRelations = relations(githubUsers, ({ one, many }) => ({
 		fields: [githubUsers.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indices, {
-		relationName: 'indexEntry',
-		fields: [githubUsers.indexEntryId],
-		references: [indices.id],
+	record: one(records, {
+		fields: [githubUsers.recordId],
+		references: [records.id],
 	}),
 }));
 
