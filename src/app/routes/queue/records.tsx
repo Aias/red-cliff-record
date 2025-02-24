@@ -1,12 +1,7 @@
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
-import {
-	IntegrationType,
-	type IndicesSelect,
-	type MediaSelect,
-	type RecordSelect,
-} from '@/server/db/schema';
+import { IntegrationType, type MediaSelect, type RecordSelect } from '@/server/db/schema';
 import {
 	Avatar,
 	Badge,
@@ -181,16 +176,15 @@ function RouteComponent() {
 
 type RecordQueueItemProps = {
 	entry: RecordSelect & {
-		recordCreators: {
-			creator: IndicesSelect;
+		creators: {
+			creator: RecordSelect & {
+				media: MediaSelect[];
+			};
 		}[];
-		recordCategories: {
-			category: IndicesSelect;
+		categories: {
+			category: RecordSelect;
 		}[];
-		recordMedia: {
-			media: MediaSelect;
-		}[];
-		format: IndicesSelect | null;
+		media: MediaSelect[];
 		children: RecordSelect[];
 	};
 	selected: boolean;
@@ -216,8 +210,8 @@ const RecordQueueItem = ({
 	checked,
 	onCheckToggle,
 }: RecordQueueItemProps) => {
-	const firstCreator = entry.recordCreators[0]?.creator;
-	const firstMedia = entry.recordMedia[0]?.media;
+	const firstCreator = entry.creators[0]?.creator;
+	const firstMedia = entry.media[0];
 	const childRecords = entry.children;
 
 	return (
@@ -239,8 +233,8 @@ const RecordQueueItem = ({
 						{firstCreator ? (
 							<>
 								<Avatar
-									src={firstCreator.canonicalMediaUrl ?? undefined}
-									fallback={firstCreator.name.slice(0, 1)}
+									src={firstCreator.media[0]?.url ?? undefined}
+									fallback={firstCreator.title.slice(0, 1)}
 									inline
 								/>
 							</>
@@ -251,7 +245,7 @@ const RecordQueueItem = ({
 							role="button"
 							className="inline-block shrink grow-0 justify-start truncate font-medium overflow-ellipsis whitespace-nowrap"
 						>
-							{entry.title ?? firstCreator?.name ?? 'Untitled'}
+							{entry.title ?? firstCreator?.title ?? 'Untitled'}
 						</span>
 						{entry.sources &&
 							entry.sources.length > 0 &&

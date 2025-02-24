@@ -9,22 +9,19 @@ export const recordsRouter = createTRPCRouter({
 		const record = await db.query.records.findFirst({
 			where: eq(records.id, input),
 			with: {
-				format: true,
-				recordCreators: {
+				creators: {
 					with: {
 						creator: true,
 					},
 				},
-				recordCategories: {
+				categories: {
 					with: {
 						category: true,
 					},
 				},
-				recordMedia: {
-					with: {
-						media: true,
-					},
-				},
+				media: true,
+				children: true,
+				parent: true,
 			},
 		});
 		if (!record) {
@@ -38,27 +35,22 @@ export const recordsRouter = createTRPCRouter({
 		.query(async ({ ctx: { db }, input: { source } }) => {
 			const entries = await db.query.records.findMany({
 				with: {
-					recordCreators: {
+					creators: {
 						with: {
 							creator: true,
 						},
 					},
-					recordCategories: {
+					categories: {
 						with: {
 							category: true,
 						},
 					},
-					recordMedia: {
-						with: {
-							media: true,
-						},
-					},
-					format: true,
+					media: true,
 					children: true,
 				},
 				where: and(
 					source ? arrayContained(records.sources, [source]) : undefined,
-					eq(records.needsCuration, true),
+					isNull(records.curatedAt),
 					isNull(records.parentId)
 				),
 				orderBy: [records.recordCreatedAt, records.childOrder, records.recordUpdatedAt],
@@ -77,7 +69,7 @@ export const recordsRouter = createTRPCRouter({
 			const count = await db.$count(
 				records,
 				and(
-					eq(records.needsCuration, true),
+					isNull(records.curatedAt),
 					source ? arrayContained(records.sources, [source]) : undefined
 				)
 			);
@@ -118,7 +110,7 @@ export const recordsRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { recordIds, needsCuration } }) => {
 			const updatedRecords = await db
 				.update(records)
-				.set({ needsCuration })
+				.set({ curatedAt: !needsCuration ? new Date() : null })
 				.where(inArray(records.id, recordIds))
 				.returning();
 			return updatedRecords;
@@ -154,26 +146,17 @@ export const recordsRouter = createTRPCRouter({
 				desc(records.recordUpdatedAt),
 			],
 			with: {
-				format: true,
-				recordCreators: {
+				creators: {
 					with: {
 						creator: true,
 					},
 				},
-				recordCategories: {
+				categories: {
 					with: {
 						category: true,
 					},
 				},
-				recordMedia: {
-					with: {
-						media: {
-							columns: {
-								url: true,
-							},
-						},
-					},
-				},
+				media: true,
 			},
 		});
 	}),

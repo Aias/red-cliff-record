@@ -2,16 +2,15 @@ import { and, eq, isNotNull, isNull, or } from 'drizzle-orm';
 import { getSmartMetadata } from '@/app/lib/server/content-helpers';
 import { db } from '@/server/db/connections/postgres';
 import {
-	indices,
 	lightroomImages,
 	media,
 	recordCreators,
-	recordMedia,
 	records,
 	type LightroomImageSelect,
 	type MediaInsert,
 	type RecordInsert,
 } from '@/server/db/schema';
+import { uploadMediaToR2 } from '../common/media-helpers';
 
 const generateImageDescription = (image: LightroomImageSelect): string => {
 	let description = '';
@@ -36,25 +35,31 @@ const generateImageDescription = (image: LightroomImageSelect): string => {
 const mapLightroomImageToMedia = async (
 	image: LightroomImageSelect
 ): Promise<MediaInsert | null> => {
+	let newUrl: string;
 	try {
+		console.log('Uploading media to R2', image.url2048);
+		newUrl = await uploadMediaToR2(image.url2048);
+	} catch (error) {
+		console.error('Error uploading media to R2', image.url2048, error);
+		return null;
+	}
+
+	try {
+		console.log('Getting smart metadata for media', newUrl);
 		const { size, width, height, mediaFormat, mediaType, contentTypeString } =
-			await getSmartMetadata(image.url2048);
+			await getSmartMetadata(newUrl);
 
 		return {
-			url: image.url2048,
+			url: newUrl,
 			type: mediaType,
 			format: mediaFormat,
 			contentTypeString,
 			fileSize: size,
 			width,
 			height,
-			isPrivate: false,
-			needsCuration: true,
-			sources: ['lightroom'],
+			recordId: image.recordId,
 			recordCreatedAt: image.recordCreatedAt,
 			recordUpdatedAt: image.recordUpdatedAt,
-			contentCreatedAt: image.captureDate,
-			contentUpdatedAt: image.userUpdatedDate,
 		};
 	} catch (error) {
 		console.error('Error getting smart metadata for media', image.url2048, error);
@@ -65,14 +70,16 @@ const mapLightroomImageToMedia = async (
 const mapLightroomImageToRecord = (image: LightroomImageSelect): RecordInsert => {
 	return {
 		title: image.fileName,
+		type: 'artifact',
 		content: generateImageDescription(image),
 		needsCuration: true,
 		isPrivate: false,
 		sources: ['lightroom'],
+		avatarUrl: `${image.baseUrl}${image.links['/rels/rendition_type/thumbnail2x'].href}`,
 		recordCreatedAt: image.recordCreatedAt,
 		recordUpdatedAt: image.recordUpdatedAt,
-		contentCreatedAt: image.contentCreatedAt,
-		contentUpdatedAt: image.contentUpdatedAt,
+		contentCreatedAt: image.captureDate,
+		contentUpdatedAt: image.userUpdatedDate,
 	};
 };
 
@@ -95,15 +102,20 @@ export const createMediaFromLightroomImages = async () => {
 	});
 
 	for (const image of unmappedImages) {
-		let mediaId: number | undefined;
-		let recordId: number | undefined;
-		if (!image.media) {
+		let mediaId: number | null = image.media?.id ?? null;
+		let recordId: number | null = image.record?.id ?? null;
+		if (!mediaId) {
 			console.log(`Creating media for ${image.fileName}`);
 			const newMediaDefaults = await mapLightroomImageToMedia(image);
 			if (!newMediaDefaults) {
 				console.log(`Failed to create media for ${image.fileName}`);
 				continue;
 			}
+			// Update the url2048 to the new url so subsequent runs don't try to upload again
+			await db
+				.update(lightroomImages)
+				.set({ url2048: newMediaDefaults.url })
+				.where(eq(lightroomImages.id, image.id));
 			const [newMedia] = await db
 				.insert(media)
 				.values(newMediaDefaults)
@@ -126,8 +138,8 @@ export const createMediaFromLightroomImages = async () => {
 			}
 			recordId = newRecord.id;
 			await db.update(lightroomImages).set({ recordId }).where(eq(lightroomImages.id, image.id));
-			const author = await db.query.indices.findFirst({
-				where: and(eq(indices.mainType, 'entity'), eq(indices.name, 'Nick Trombley')),
+			const author = await db.query.records.findFirst({
+				where: and(eq(records.type, 'entity'), eq(records.title, 'Nick Trombley')),
 				columns: {
 					id: true,
 				},
@@ -137,8 +149,8 @@ export const createMediaFromLightroomImages = async () => {
 					.insert(recordCreators)
 					.values({
 						recordId,
-						entityId: author.id,
-						role: 'creator',
+						creatorId: author.id,
+						creatorRole: 'creator',
 					})
 					.onConflictDoNothing();
 			}
@@ -146,12 +158,11 @@ export const createMediaFromLightroomImages = async () => {
 		if (mediaId && recordId) {
 			console.log(`Linking media ${mediaId} to record ${recordId}`);
 			await db
-				.insert(recordMedia)
-				.values({
+				.update(media)
+				.set({
 					recordId,
-					mediaId,
 				})
-				.onConflictDoNothing();
+				.where(eq(media.id, mediaId));
 		}
 	}
 };
@@ -167,12 +178,12 @@ export const createRecordMediaLinks = async () => {
 	});
 
 	for (const image of images) {
+		console.log(`Linking media ${image.mediaId} to record ${image.recordId}`);
 		await db
-			.insert(recordMedia)
-			.values({
+			.update(media)
+			.set({
 				recordId: image.recordId!,
-				mediaId: image.mediaId!,
 			})
-			.onConflictDoNothing();
+			.where(eq(media.id, image.mediaId!));
 	}
 };

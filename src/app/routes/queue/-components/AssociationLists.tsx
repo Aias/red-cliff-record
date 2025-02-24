@@ -64,7 +64,7 @@ export const RecordCategories = ({ categoryId }: RecordCategoriesProps) => {
 				{records.map((record) => (
 					<RecordListItem
 						key={record.record.id}
-						badge={record.type.replaceAll('_', ' ')}
+						badge={record.categoryType.replaceAll('_', ' ')}
 						title={record.record.title}
 						content={record.record.content ?? record.record.summary ?? ' '}
 						sources={record.record.sources}
@@ -92,7 +92,7 @@ export const RecordCreators = ({ creatorId }: RecordCreatorsProps) => {
 				{records.map((record) => (
 					<RecordListItem
 						key={record.record.id}
-						badge={record.role}
+						badge={record.creatorRole}
 						title={record.record.title}
 						content={record.record.content ?? record.record.summary ?? ' '}
 						sources={record.record.sources}

@@ -57,22 +57,26 @@ const LightroomAssetXmpSchema = z.object({
 	dng: z.object({ IsAppleProRAW: z.boolean() }).optional(),
 	tiff: z.object({
 		Orientation: z.string(),
-		Make: z.string(),
-		Model: z.string(),
+		Make: z.string().optional(),
+		Model: z.string().optional(),
 	}),
-	exif: LightroomAssetExifSchema,
-	aux: z.object({
-		SerialNumber: z.string().optional(),
-		Lens: z.string().optional(),
-		EnhanceDetailsVersion: z.string().optional(),
-		EnhanceDetailsAlreadyApplied: z.boolean().optional(),
-	}),
-	xmp: z.object({
-		CreatorTool: z.string().optional(),
-		CreateDate: z.string(),
-		ModifyDate: z.string(),
-	}),
-	photoshop: z.object({ DateCreated: z.string() }),
+	exif: LightroomAssetExifSchema.optional(),
+	aux: z
+		.object({
+			SerialNumber: z.string().optional(),
+			Lens: z.string().optional(),
+			EnhanceDetailsVersion: z.string().optional(),
+			EnhanceDetailsAlreadyApplied: z.boolean().optional(),
+		})
+		.optional(),
+	xmp: z
+		.object({
+			CreatorTool: z.string().optional(),
+			CreateDate: z.string(),
+			ModifyDate: z.string(),
+		})
+		.optional(),
+	photoshop: z.object({ DateCreated: z.string() }).optional(),
 });
 
 export const LightroomAestheticsSchema = z.object({

@@ -3,22 +3,20 @@ import { eq, isNotNull } from 'drizzle-orm';
 import { getSmartMetadata } from '@/app/lib/server/content-helpers';
 import { db } from '@/server/db/connections';
 import {
-	indices,
 	media,
 	raindropBookmarks,
 	raindropBookmarkTags,
 	raindropTags,
-	recordCategories,
-	recordMedia,
+	recordRelations,
 	records,
 } from '@/server/db/schema';
 import type {
-	IndicesInsert,
 	MediaInsert,
 	RaindropBookmarkSelect,
 	RaindropTagSelect,
 	RecordInsert,
 } from '@/server/db/schema';
+import { uploadMediaToR2 } from '../common/media-helpers';
 
 export async function createRaindropTags(integrationRunId?: number) {
 	console.log('Processing bookmark tags...');
@@ -96,11 +94,13 @@ export async function createRaindropTags(integrationRunId?: number) {
 
 export const mapRaindropBookmarkToRecord = (bookmark: RaindropBookmarkSelect): RecordInsert => {
 	return {
+		id: bookmark.recordId ?? undefined,
+		type: 'artifact',
 		title: bookmark.title,
 		url: bookmark.linkUrl,
 		content: bookmark.excerpt,
 		notes: bookmark.note,
-		flags: bookmark.important ? ['important'] : null,
+		rating: bookmark.important ? 1 : 0,
 		sources: ['raindrop'],
 		isPrivate: false,
 		needsCuration: true,
@@ -139,29 +139,28 @@ export async function createRecordsFromRaindropBookmarks() {
 		if (!newRecord) {
 			throw new Error('Failed to create record');
 		}
+		console.log(`Created record ${newRecord.id} for bookmark ${bookmark.title} (${bookmark.id})`);
 		await db
 			.update(raindropBookmarks)
 			.set({ recordId: newRecord.id })
 			.where(eq(raindropBookmarks.id, bookmark.id));
 
 		for (const tag of bookmark.bookmarkTags) {
-			if (tag.tag.indexEntryId) {
+			if (tag.tag.recordId) {
+				console.log(`Linking record ${newRecord.id} to tag ${tag.tag.recordId}`);
 				await db
-					.insert(recordCategories)
+					.insert(recordRelations)
 					.values({
-						recordId: newRecord.id,
-						categoryId: tag.tag.indexEntryId,
-						type: 'file_under',
+						sourceId: newRecord.id,
+						targetId: tag.tag.recordId,
+						type: 'tagged',
 					})
 					.onConflictDoNothing();
 			}
 		}
 		if (bookmark.mediaId) {
 			console.log(`Linking media ${bookmark.mediaId} to record ${newRecord.id}`);
-			await db
-				.insert(recordMedia)
-				.values({ recordId: newRecord.id, mediaId: bookmark.mediaId })
-				.onConflictDoNothing();
+			await db.update(media).set({ recordId: newRecord.id }).where(eq(media.id, bookmark.mediaId));
 		}
 	}
 }
@@ -169,27 +168,41 @@ export async function createRecordsFromRaindropBookmarks() {
 const mapRaindropBookmarkToMedia = async (
 	bookmark: RaindropBookmarkSelect
 ): Promise<MediaInsert | null> => {
-	if (!bookmark.coverImageUrl) return null;
-
+	let mediaUrl = bookmark.coverImageUrl;
+	if (!mediaUrl) return null;
+	try {
+		console.log(`Uploading media ${mediaUrl}`);
+		const updatedUrl = await uploadMediaToR2(mediaUrl);
+		if (!updatedUrl) {
+			console.log(`Failed to transfer media ${mediaUrl}`);
+			return null;
+		}
+		console.log(`Uploaded media for bookmark: ${bookmark.title} (${bookmark.id}) to ${updatedUrl}`);
+		mediaUrl = updatedUrl;
+		await db
+			.update(raindropBookmarks)
+			.set({ coverImageUrl: updatedUrl })
+			.where(eq(raindropBookmarks.id, bookmark.id));
+	} catch (error) {
+		console.error('Error transferring media', error);
+		return null;
+	}
 	try {
 		const { size, width, height, mediaFormat, mediaType, contentTypeString } =
-			await getSmartMetadata(bookmark.coverImageUrl);
+			await getSmartMetadata(mediaUrl);
 
 		return {
-			url: bookmark.coverImageUrl,
+			id: bookmark.mediaId ?? undefined,
+			url: mediaUrl,
+			recordId: bookmark.recordId,
 			type: mediaType,
 			format: mediaFormat,
 			contentTypeString,
 			fileSize: size,
 			width,
 			height,
-			sources: ['raindrop'],
-			isPrivate: false,
-			needsCuration: true,
 			recordCreatedAt: bookmark.recordCreatedAt,
 			recordUpdatedAt: bookmark.recordUpdatedAt,
-			contentCreatedAt: bookmark.contentCreatedAt,
-			contentUpdatedAt: bookmark.contentUpdatedAt,
 		};
 	} catch (error) {
 		console.error(
@@ -236,7 +249,7 @@ export async function createMediaFromRaindropBookmarks() {
 			.insert(media)
 			.values(newMedia)
 			.onConflictDoUpdate({
-				target: [media.url],
+				target: [media.url, media.recordId],
 				set: {
 					recordUpdatedAt: new Date(),
 				},
@@ -254,32 +267,31 @@ export async function createMediaFromRaindropBookmarks() {
 		if (bookmark.recordId) {
 			console.log(`Linking associated record to media ${bookmark.recordId}`);
 			await db
-				.insert(recordMedia)
-				.values({
-					recordId: bookmark.recordId,
-					mediaId: newMediaRecord.id,
-				})
-				.onConflictDoNothing();
+				.update(media)
+				.set({ recordId: bookmark.recordId })
+				.where(eq(media.id, newMediaRecord.id));
 		}
 	}
 }
 
-export const mapRaindropTagToCategory = (tag: RaindropTagSelect): IndicesInsert => {
+export const mapRaindropTagToRecord = (tag: RaindropTagSelect): RecordInsert => {
 	return {
-		mainType: 'category',
-		name: tag.tag,
+		id: tag.recordId ?? undefined,
+		type: 'concept',
+		title: tag.tag,
 		sources: ['raindrop'],
 		needsCuration: true,
 		isPrivate: false,
+		isIndexNode: true,
 		recordCreatedAt: tag.recordCreatedAt,
 		recordUpdatedAt: tag.recordUpdatedAt,
 	};
 };
 
-export async function createCategoriesFromRaindropTags() {
+export async function createRecordsFromRaindropTags() {
 	console.log('Creating categories from Raindrop tags');
 	const unmappedTags = await db.query.raindropTags.findMany({
-		where: isNull(raindropTags.indexEntryId),
+		where: isNull(raindropTags.recordId),
 		with: {
 			tagBookmarks: {
 				with: {
@@ -295,13 +307,13 @@ export async function createCategoriesFromRaindropTags() {
 	});
 
 	for (const tag of unmappedTags) {
-		const newCategoryDefaults = mapRaindropTagToCategory(tag);
+		const newCategoryDefaults = mapRaindropTagToRecord(tag);
 		const [newCategory] = await db
-			.insert(indices)
+			.insert(records)
 			.values(newCategoryDefaults)
-			.returning({ id: indices.id })
+			.returning({ id: records.id })
 			.onConflictDoUpdate({
-				target: [indices.mainType, indices.name, indices.sense],
+				target: records.id,
 				set: {
 					recordUpdatedAt: new Date(),
 					needsCuration: true,
@@ -312,17 +324,18 @@ export async function createCategoriesFromRaindropTags() {
 		}
 		await db
 			.update(raindropTags)
-			.set({ indexEntryId: newCategory.id })
+			.set({ recordId: newCategory.id })
 			.where(eq(raindropTags.id, tag.id));
 
 		for (const bookmark of tag.tagBookmarks) {
 			if (bookmark.bookmark.recordId) {
+				console.log(`Linking record ${bookmark.bookmark.recordId} to category ${newCategory.id}`);
 				await db
-					.insert(recordCategories)
+					.insert(recordRelations)
 					.values({
-						recordId: bookmark.bookmark.recordId,
-						categoryId: newCategory.id,
-						type: 'file_under',
+						sourceId: bookmark.bookmark.recordId,
+						targetId: newCategory.id,
+						type: 'tagged',
 					})
 					.onConflictDoNothing();
 			}

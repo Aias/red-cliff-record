@@ -9,10 +9,10 @@ import {
 } from '@/server/db/schema/raindrop';
 import { runIntegration } from '../common/run-integration';
 import {
-	createCategoriesFromRaindropTags,
 	createMediaFromRaindropBookmarks,
 	createRaindropTags,
 	createRecordsFromRaindropBookmarks,
+	createRecordsFromRaindropTags,
 } from './map';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
@@ -197,7 +197,7 @@ async function syncRaindrops(integrationRunId: number) {
 
 	console.log('All new raindrops inserted successfully');
 	await createRaindropTags(integrationRunId);
-	await createCategoriesFromRaindropTags();
+	await createRecordsFromRaindropTags();
 	await createRecordsFromRaindropBookmarks();
 	await createMediaFromRaindropBookmarks();
 	return successCount;

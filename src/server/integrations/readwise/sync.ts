@@ -3,12 +3,11 @@ import { db } from '@/server/db/connections';
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@/server/db/schema/readwise';
 import { runIntegration } from '../common/run-integration';
 import {
-	createCategoriesFromReadwiseTags,
-	createEntitiesFromReadwiseAuthors,
-	createMediaFromReadwiseDocuments,
 	createReadwiseAuthors,
 	createReadwiseTags,
+	createRecordsFromReadwiseAuthors,
 	createRecordsFromReadwiseDocuments,
+	createRecordsFromReadwiseTags,
 } from './map';
 import {
 	ReadwiseArticlesResponseSchema,
@@ -195,15 +194,13 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 	console.log('Processing readwise authors');
 	await createReadwiseAuthors();
 	console.log('Creating index entries for readwise authors');
-	await createEntitiesFromReadwiseAuthors();
+	await createRecordsFromReadwiseAuthors();
 	console.log('Processing readwise tags');
 	await createReadwiseTags(integrationRunId);
 	console.log('Creating categories from readwise tags');
-	await createCategoriesFromReadwiseTags();
+	await createRecordsFromReadwiseTags();
 	console.log('Creating records and linking relationships from readwise documents');
 	await createRecordsFromReadwiseDocuments();
-	console.log('Creating media from readwise documents');
-	await createMediaFromReadwiseDocuments();
 	return successCount;
 }
 

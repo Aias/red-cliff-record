@@ -141,6 +141,76 @@
       "when": 1739712799384,
       "tag": "0019_violet_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1740270730383,
+      "tag": "0020_dashing_power_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1740273671472,
+      "tag": "0021_young_black_crow",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1740279530537,
+      "tag": "0022_silly_nicolaos",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1740329161449,
+      "tag": "0023_cynical_queen_noir",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1740331769824,
+      "tag": "0024_bouncy_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1740332448085,
+      "tag": "0025_gorgeous_bastion",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1740334158872,
+      "tag": "0026_useful_magdalene",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1740343817104,
+      "tag": "0027_furry_cobalt_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1740408823591,
+      "tag": "0028_goofy_justice",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1740418640572,
+      "tag": "0029_shocking_retro_girl",
+      "breakpoints": true
     }
   ]
 }

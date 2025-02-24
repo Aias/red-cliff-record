@@ -6,45 +6,39 @@ import {
 	airtableAttachments,
 	airtableCreators,
 	airtableExtractConnections,
-	// Airtable integration (staging) tables
 	airtableExtracts,
 	airtableFormats,
 	airtableSpaces,
-	// Main tables
-	indices,
 	media,
-	recordCategories,
 	recordCreators,
-	recordMedia,
-	// The unified linking table for record relations
 	recordRelations,
 	records,
-	// Types
 	type AirtableAttachmentSelect,
 	type AirtableCreatorSelect,
 	type AirtableExtractSelect,
 	type AirtableFormatSelect,
 	type AirtableSpaceSelect,
-	type IndicesInsert,
 	type MediaInsert,
 	type RecordInsert,
 } from '@/server/db/schema';
 
-const mapFormatToIndexEntry = (format: AirtableFormatSelect): IndicesInsert => {
+const mapFormatToRecord = (format: AirtableFormatSelect): RecordInsert => {
 	return {
-		name: format.name,
-		mainType: 'format',
-		needsCuration: false,
+		title: format.name,
+		type: 'concept',
+		needsCuration: true,
 		isPrivate: false,
 		sources: ['airtable'],
+		isFormat: true,
+		isIndexNode: true,
 		recordCreatedAt: format.recordCreatedAt,
 		recordUpdatedAt: format.recordUpdatedAt,
 	};
 };
 
-export async function createFormatsFromAirtableFormats() {
+export async function createRecordsFromAirtableFormats() {
 	const formats = await db.query.airtableFormats.findMany({
-		where: isNull(airtableFormats.indexEntryId),
+		where: isNull(airtableFormats.recordId),
 		with: {
 			extracts: {
 				columns: {
@@ -57,46 +51,39 @@ export async function createFormatsFromAirtableFormats() {
 		console.log('No new Airtable formats to process.');
 		return;
 	}
-	console.log(`Processing ${formats.length} Airtable formats into index entities...`);
+	console.log(`Processing ${formats.length} Airtable formats into records...`);
 	for (const format of formats) {
-		const indexEntry = mapFormatToIndexEntry(format);
-		console.log(`Creating index entity for format ${format.name}`);
-		const [newIndexEntry] = await db
-			.insert(indices)
-			.values(indexEntry)
+		const record = mapFormatToRecord(format);
+		console.log(`Creating record for format ${format.name}`);
+		const [newRecord] = await db
+			.insert(records)
+			.values(record)
 			.onConflictDoUpdate({
-				target: [indices.mainType, indices.name, indices.sense],
+				target: records.id,
 				set: { recordUpdatedAt: new Date() },
 			})
-			.returning({ id: indices.id });
-		if (!newIndexEntry) {
-			console.log(`Failed to create index entity for format ${format.name}`);
+			.returning({ id: records.id });
+		if (!newRecord) {
+			console.log(`Failed to create record for format ${format.name}`);
 			continue;
 		}
 		await db
 			.update(airtableFormats)
-			.set({ indexEntryId: newIndexEntry.id })
+			.set({ recordId: newRecord.id })
 			.where(eq(airtableFormats.id, format.id));
-		console.log(`Linked format ${format.name} to index entity ${newIndexEntry.id}`);
-		format.extracts.forEach(async (extract) => {
-			if (extract.recordId) {
-				await db
-					.update(records)
-					.set({ formatId: newIndexEntry.id })
-					.where(eq(records.id, extract.recordId));
-			}
-		});
+		console.log(`Linked format ${format.name} to record ${newRecord.id}`);
 	}
 }
 
-const mapAirtableCreatorToIndexEntry = (creator: AirtableCreatorSelect): IndicesInsert => {
+const mapAirtableCreatorToRecord = (creator: AirtableCreatorSelect): RecordInsert => {
 	return {
-		name: creator.name,
-		canonicalUrl: creator.website ? validateAndFormatUrl(creator.website) : undefined,
-		mainType: 'entity',
-		needsCuration: false,
+		title: creator.name,
+		url: creator.website ? validateAndFormatUrl(creator.website) : undefined,
+		type: 'entity',
+		needsCuration: true,
 		isPrivate: false,
 		sources: ['airtable'],
+		isIndexNode: true,
 		recordCreatedAt: creator.recordCreatedAt,
 		recordUpdatedAt: creator.recordUpdatedAt,
 		contentCreatedAt: creator.contentCreatedAt,
@@ -104,48 +91,49 @@ const mapAirtableCreatorToIndexEntry = (creator: AirtableCreatorSelect): Indices
 	};
 };
 
-export async function createEntitiesFromAirtableCreators() {
-	console.log('Creating entities from Airtable creators');
+export async function createRecordsFromAirtableCreators() {
+	console.log('Creating records from Airtable creators');
 	const creators = await db.query.airtableCreators.findMany({
-		where: isNull(airtableCreators.indexEntryId),
+		where: isNull(airtableCreators.recordId),
 	});
 	if (creators.length === 0) {
 		console.log('No new Airtable creators to process.');
 		return;
 	}
 
-	console.log(`Processing ${creators.length} Airtable creators into index entities...`);
+	console.log(`Processing ${creators.length} Airtable creators into records...`);
 
 	for (const creator of creators) {
-		const entity = mapAirtableCreatorToIndexEntry(creator);
-		const [newEntity] = await db
-			.insert(indices)
+		const entity = mapAirtableCreatorToRecord(creator);
+		const [newRecord] = await db
+			.insert(records)
 			.values(entity)
 			.onConflictDoUpdate({
-				target: [indices.mainType, indices.name, indices.sense],
+				target: records.id,
 				set: { recordUpdatedAt: new Date() },
 			})
-			.returning({ id: indices.id });
-		if (!newEntity) {
-			console.log(`Failed to create index entity for creator ${creator.name}`);
+			.returning({ id: records.id });
+		if (!newRecord) {
+			console.log(`Failed to create record for creator ${creator.name}`);
 			continue;
 		}
 		await db
 			.update(airtableCreators)
-			.set({ indexEntryId: newEntity.id })
+			.set({ recordId: newRecord.id })
 			.where(eq(airtableCreators.id, creator.id));
-		console.log(`Linked creator ${creator.name} to index entity ${newEntity.id}`);
+		console.log(`Linked creator ${creator.name} to record ${newRecord.id}`);
 	}
 }
 
-const mapAirtableSpaceToIndexEntry = (space: AirtableSpaceSelect): IndicesInsert => {
+const mapAirtableSpaceToRecord = (space: AirtableSpaceSelect): RecordInsert => {
 	return {
-		name: space.name,
-		notes: [space.icon, space.fullName].filter(Boolean).join(' ') || undefined,
-		mainType: 'category',
-		needsCuration: false,
+		title: space.name,
+		summary: [space.icon, space.fullName].filter(Boolean).join(' ') || undefined,
+		type: 'concept',
+		needsCuration: true,
 		isPrivate: false,
 		sources: ['airtable'],
+		isIndexNode: true,
 		recordCreatedAt: space.recordCreatedAt,
 		recordUpdatedAt: space.recordUpdatedAt,
 		contentCreatedAt: space.contentCreatedAt,
@@ -153,42 +141,41 @@ const mapAirtableSpaceToIndexEntry = (space: AirtableSpaceSelect): IndicesInsert
 	};
 };
 
-export async function createCategoriesFromAirtableSpaces() {
-	console.log('Creating index categories from Airtable spaces');
+export async function createRecordsFromAirtableSpaces() {
+	console.log('Creating records from Airtable spaces');
 	const spaces = await db.query.airtableSpaces.findMany({
-		where: isNull(airtableSpaces.indexEntryId),
+		where: isNull(airtableSpaces.recordId),
 	});
 	if (spaces.length === 0) {
 		console.log('No new Airtable spaces to process.');
 		return;
 	}
 
-	console.log(`Processing ${spaces.length} Airtable spaces into index categories...`);
+	console.log(`Processing ${spaces.length} Airtable spaces into records...`);
 	for (const space of spaces) {
-		const category = mapAirtableSpaceToIndexEntry(space);
-		const [newCategory] = await db
-			.insert(indices)
-			.values(category)
+		const record = mapAirtableSpaceToRecord(space);
+		const [newRecord] = await db
+			.insert(records)
+			.values(record)
 			.onConflictDoUpdate({
-				target: [indices.mainType, indices.name, indices.sense],
+				target: records.id,
 				set: { recordUpdatedAt: new Date() },
 			})
-			.returning({ id: indices.id });
-		if (!newCategory) {
-			console.log(`Failed to create index category for space ${space.name}`);
+			.returning({ id: records.id });
+		if (!newRecord) {
+			console.log(`Failed to create record for space ${space.name}`);
 			continue;
 		}
 		await db
 			.update(airtableSpaces)
-			.set({ indexEntryId: newCategory.id })
+			.set({ recordId: newRecord.id })
 			.where(eq(airtableSpaces.id, space.id));
-		console.log(`Linked space ${space.name} to index category ${newCategory.id}`);
+		console.log(`Linked space ${space.name} to record ${newRecord.id}`);
 	}
 }
 
 const mapAirtableAttachmentToMedia = async (
-	attachment: AirtableAttachmentSelect,
-	extract?: AirtableExtractSelect
+	attachment: AirtableAttachmentSelect & { extract: AirtableExtractSelect }
 ): Promise<MediaInsert | null> => {
 	try {
 		const { size, width, height, mediaFormat, mediaType, contentTypeString } =
@@ -196,19 +183,15 @@ const mapAirtableAttachmentToMedia = async (
 
 		return {
 			url: attachment.url,
+			recordId: attachment.extract.recordId,
 			type: mediaType,
 			format: mediaFormat,
 			contentTypeString,
 			fileSize: size,
 			width,
 			height,
-			isPrivate: false,
-			needsCuration: false,
-			sources: ['airtable'],
 			recordCreatedAt: attachment.recordCreatedAt,
 			recordUpdatedAt: attachment.recordUpdatedAt,
-			contentCreatedAt: extract?.contentCreatedAt || attachment.recordCreatedAt,
-			contentUpdatedAt: extract?.contentUpdatedAt || attachment.recordUpdatedAt,
 		};
 	} catch (error) {
 		console.error('Error getting smart metadata for media', attachment.url, error);
@@ -220,6 +203,9 @@ export async function createMediaFromAirtableAttachments() {
 	console.log('Creating media from Airtable attachments');
 	const attachments = await db.query.airtableAttachments.findMany({
 		where: isNull(airtableAttachments.mediaId),
+		with: {
+			extract: true,
+		},
 	});
 	if (attachments.length === 0) {
 		console.log('No new Airtable attachments to process.');
@@ -227,13 +213,7 @@ export async function createMediaFromAirtableAttachments() {
 	}
 	console.log(`Creating ${attachments.length} media entries from Airtable attachments`);
 	for (const attachment of attachments) {
-		let associatedExtract;
-		if (attachment.extractId) {
-			associatedExtract = await db.query.airtableExtracts.findFirst({
-				where: eq(airtableExtracts.id, attachment.extractId),
-			});
-		}
-		const mediaItem = await mapAirtableAttachmentToMedia(attachment, associatedExtract);
+		const mediaItem = await mapAirtableAttachmentToMedia(attachment);
 		if (!mediaItem) {
 			console.log(`Failed to create media for attachment ${attachment.url}`);
 			continue;
@@ -242,7 +222,7 @@ export async function createMediaFromAirtableAttachments() {
 			.insert(media)
 			.values(mediaItem)
 			.onConflictDoUpdate({
-				target: [media.url],
+				target: [media.url, media.recordId],
 				set: { recordUpdatedAt: new Date() },
 			})
 			.returning({ id: media.id });
@@ -259,21 +239,23 @@ export async function createMediaFromAirtableAttachments() {
 }
 
 const mapAirtableExtractToRecord = (
-	extract: AirtableExtractSelect & { format: AirtableFormatSelect | null }
+	extract: AirtableExtractSelect & {
+		parent: AirtableExtractSelect | null;
+		format: AirtableFormatSelect | null;
+	}
 ): RecordInsert => {
+	const stars = extract.michelinStars;
+	const rating = stars === 3 ? 2 : stars > 0 ? 1 : 0;
 	return {
+		type: 'artifact',
 		title: extract.title,
-		content: extract.content,
 		url: extract.source,
-		formatId: extract.format?.indexEntryId,
-		flags:
-			extract.michelinStars > 2
-				? ['favorite']
-				: extract.michelinStars > 0
-					? ['important']
-					: undefined,
+		content: extract.content,
 		notes: extract.notes,
 		mediaCaption: extract.attachmentCaption,
+		parentId: extract.parent?.recordId,
+		formatId: extract.format?.recordId,
+		rating,
 		needsCuration: false,
 		isPrivate: extract.publishedAt ? false : true,
 		sources: ['airtable'],
@@ -346,33 +328,33 @@ export async function createRecordsFromAirtableExtracts() {
 		extract.attachments.forEach(async (attachment) => {
 			if (attachment.mediaId) {
 				await db
-					.insert(recordMedia)
-					.values({ recordId: insertedRecord.id, mediaId: attachment.mediaId })
-					.onConflictDoNothing();
+					.update(media)
+					.set({ recordId: insertedRecord.id })
+					.where(eq(media.id, attachment.mediaId));
 			}
 		});
 		// Link creators if entities exist and have been mapped.
 		extract.extractCreators.forEach(async (creator) => {
-			if (creator.creator.indexEntryId) {
+			if (creator.creator.recordId) {
 				await db
 					.insert(recordCreators)
 					.values({
 						recordId: insertedRecord.id,
-						entityId: creator.creator.indexEntryId,
-						role: 'creator',
+						creatorId: creator.creator.recordId,
+						creatorRole: 'creator',
 					})
 					.onConflictDoNothing();
 			}
 		});
 		// Link spaces if categories exist and have been mapped.
 		extract.extractSpaces.forEach(async (space) => {
-			if (space.space.indexEntryId) {
+			if (space.space.recordId) {
 				await db
-					.insert(recordCategories)
+					.insert(recordRelations)
 					.values({
-						recordId: insertedRecord.id,
-						categoryId: space.space.indexEntryId,
-						type: 'file_under',
+						sourceId: insertedRecord.id,
+						targetId: space.space.recordId,
+						type: 'tagged',
 					})
 					.onConflictDoNothing();
 			}
@@ -382,7 +364,11 @@ export async function createRecordsFromAirtableExtracts() {
 			if (connection.toExtract.recordId) {
 				await db
 					.insert(recordRelations)
-					.values({ sourceId: insertedRecord.id, targetId: connection.toExtract.recordId })
+					.values({
+						sourceId: insertedRecord.id,
+						targetId: connection.toExtract.recordId,
+						type: 'related_to',
+					})
 					.onConflictDoNothing();
 			}
 		});
@@ -390,7 +376,11 @@ export async function createRecordsFromAirtableExtracts() {
 			if (connection.fromExtract.recordId) {
 				await db
 					.insert(recordRelations)
-					.values({ sourceId: connection.fromExtract.recordId, targetId: insertedRecord.id })
+					.values({
+						sourceId: connection.fromExtract.recordId,
+						targetId: insertedRecord.id,
+						type: 'related_to',
+					})
 					.onConflictDoNothing();
 			}
 		});

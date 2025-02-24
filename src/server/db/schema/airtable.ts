@@ -10,7 +10,6 @@ import {
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { indices } from './indices';
 import { media } from './media';
 import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
@@ -90,7 +89,7 @@ export const airtableFormats = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		name: text('name').notNull().unique(),
-		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
@@ -99,7 +98,7 @@ export const airtableFormats = pgTable(
 			.notNull(),
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.indexEntryId)]
+	(table) => [index().on(table.recordId)]
 );
 
 export const AirtableFormatSelectSchema = createSelectSchema(airtableFormats);
@@ -112,10 +111,9 @@ export const airtableFormatsRelations = relations(airtableFormats, ({ one, many 
 		fields: [airtableFormats.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indices, {
-		relationName: 'indexEntry',
-		fields: [airtableFormats.indexEntryId],
-		references: [indices.id],
+	record: one(records, {
+		fields: [airtableFormats.recordId],
+		references: [records.id],
 	}),
 	extracts: many(airtableExtracts),
 }));
@@ -135,9 +133,6 @@ export const airtableAttachments = pgTable('airtable_attachments', {
 		})
 		.notNull(),
 	...databaseTimestamps,
-	archivedAt: timestamp('archived_at', {
-		withTimezone: true,
-	}),
 	mediaId: integer('media_id').references(() => media.id, {
 		onDelete: 'set null',
 		onUpdate: 'cascade',
@@ -176,15 +171,12 @@ export const airtableCreators = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
-		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
 	},
-	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
+	(table) => [index().on(table.recordId)]
 );
 
 export const AirtableCreatorSelectSchema = createSelectSchema(airtableCreators);
@@ -197,10 +189,9 @@ export const airtableCreatorsRelations = relations(airtableCreators, ({ one, man
 		fields: [airtableCreators.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indices, {
-		relationName: 'indexEntry',
-		fields: [airtableCreators.indexEntryId],
-		references: [indices.id],
+	record: one(records, {
+		fields: [airtableCreators.recordId],
+		references: [records.id],
 	}),
 	creatorExtracts: many(airtableExtractCreators, { relationName: 'creatorToExtract' }),
 }));
@@ -217,15 +208,12 @@ export const airtableSpaces = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		archivedAt: timestamp('archived_at', {
-			withTimezone: true,
-		}),
-		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
 	},
-	(table) => [index().on(table.archivedAt), index().on(table.indexEntryId)]
+	(table) => [index().on(table.recordId)]
 );
 
 export const AirtableSpaceSelectSchema = createSelectSchema(airtableSpaces);
@@ -238,10 +226,9 @@ export const airtableSpacesRelations = relations(airtableSpaces, ({ one, many })
 		fields: [airtableSpaces.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indices, {
-		relationName: 'indexEntry',
-		fields: [airtableSpaces.indexEntryId],
-		references: [indices.id],
+	record: one(records, {
+		fields: [airtableSpaces.recordId],
+		references: [records.id],
 	}),
 	spaceExtracts: many(airtableExtractSpaces, { relationName: 'spaceToExtract' }),
 }));

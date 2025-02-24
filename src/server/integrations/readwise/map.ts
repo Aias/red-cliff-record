@@ -2,28 +2,21 @@ import { and, eq, inArray, ne } from 'drizzle-orm';
 import { isNotNull } from 'drizzle-orm';
 import { isNull } from 'drizzle-orm';
 import { validateAndFormatUrl } from '@/app/lib/formatting';
-import { getSmartMetadata } from '@/app/lib/server/content-helpers';
 import { db } from '@/server/db/connections';
 import {
-	indices,
-	media,
 	readwiseAuthors,
 	readwiseDocuments,
 	readwiseDocumentTags,
 	readwiseTags,
-	recordCategories,
 	recordCreators,
-	recordMedia,
+	recordRelations,
 	records,
-	type Flag,
-	type IndicesInsert,
-	type MediaInsert,
 	type ReadwiseAuthorSelect,
 	type ReadwiseDocumentSelect,
 	type ReadwiseTagSelect,
-	type RecordCategoryInsert,
 	type RecordCreatorInsert,
 	type RecordInsert,
+	type RecordRelationInsert,
 } from '@/server/db/schema';
 
 // ------------------------------------------------------------------------
@@ -85,7 +78,7 @@ export async function createReadwiseAuthors() {
 	}
 }
 
-const mapReadwiseAuthorToEntity = (author: ReadwiseAuthorSelect): IndicesInsert => {
+const mapReadwiseAuthorToRecord = (author: ReadwiseAuthorSelect): RecordInsert => {
 	let canonicalUrl: string | null = null;
 	if (author.origin) {
 		const { success, data } = validateAndFormatUrl(author.origin, true);
@@ -94,47 +87,50 @@ const mapReadwiseAuthorToEntity = (author: ReadwiseAuthorSelect): IndicesInsert 
 		}
 	}
 	return {
-		name: author.name,
-		mainType: 'entity',
+		id: author.recordId ?? undefined,
+		type: 'entity',
+		title: author.name,
 		sources: ['readwise'],
-		canonicalUrl,
+		url: canonicalUrl,
 		needsCuration: true,
 		isPrivate: false,
+		isIndexNode: true,
 		recordCreatedAt: author.recordCreatedAt,
 		recordUpdatedAt: author.recordUpdatedAt,
 	};
 };
 
-export async function createEntitiesFromReadwiseAuthors() {
+export async function createRecordsFromReadwiseAuthors() {
 	const authors = await db.query.readwiseAuthors.findMany({
-		where: isNull(readwiseAuthors.indexEntryId),
+		where: isNull(readwiseAuthors.recordId),
 	});
 	if (authors.length === 0) {
 		console.log('No new or updated authors to process.');
 		return;
 	}
 
-	console.log(`Processing ${authors.length} readwise authors into index entities...`);
+	console.log(`Processing ${authors.length} readwise authors into records...`);
 
 	for (const author of authors) {
-		const entity = mapReadwiseAuthorToEntity(author);
+		const entity = mapReadwiseAuthorToRecord(author);
 		const [newEntity] = await db
-			.insert(indices)
+			.insert(records)
 			.values(entity)
 			.onConflictDoUpdate({
-				target: [indices.mainType, indices.name, indices.sense],
+				target: records.id,
 				set: { recordUpdatedAt: new Date() },
 			})
-			.returning({ id: indices.id });
+			.returning({ id: records.id });
 		if (!newEntity) {
-			console.log(`Failed to create index entity for author ${author.name}`);
+			console.log(`Failed to create record for author ${author.name}`);
 			continue;
 		}
+		console.log(`Created record ${newEntity.id} for author ${author.name} (${author.id})`);
 		await db
 			.update(readwiseAuthors)
-			.set({ indexEntryId: newEntity.id })
+			.set({ recordId: newEntity.id })
 			.where(eq(readwiseAuthors.id, author.id));
-		console.log(`Linked author ${author.name} to index entity ${newEntity.id}`);
+		console.log(`Linked author ${author.name} to record ${newEntity.id}`);
 	}
 }
 
@@ -215,21 +211,23 @@ export async function createReadwiseTags(integrationRunId?: number) {
 // 3. Create index categories from readwise tags
 // ------------------------------------------------------------------------
 
-const mapReadwiseTagToCategory = (tag: ReadwiseTagSelect): IndicesInsert => {
+const mapReadwiseTagToRecord = (tag: ReadwiseTagSelect): RecordInsert => {
 	return {
-		name: tag.tag,
-		mainType: 'category',
+		id: tag.recordId ?? undefined,
+		type: 'concept',
+		title: tag.tag,
 		sources: ['readwise'],
 		needsCuration: true,
 		isPrivate: false,
+		isIndexNode: true,
 		recordCreatedAt: tag.recordCreatedAt,
 		recordUpdatedAt: tag.recordUpdatedAt,
 	};
 };
 
-export async function createCategoriesFromReadwiseTags() {
+export async function createRecordsFromReadwiseTags() {
 	const tags = await db.query.readwiseTags.findMany({
-		where: isNull(readwiseTags.indexEntryId),
+		where: isNull(readwiseTags.recordId),
 		with: {
 			tagDocuments: {
 				with: {
@@ -243,39 +241,46 @@ export async function createCategoriesFromReadwiseTags() {
 		return;
 	}
 
-	console.log(`Processing ${tags.length} readwise tags into index categories...`);
+	console.log(`Processing ${tags.length} readwise tags into records...`);
 	for (const tag of tags) {
-		const category = mapReadwiseTagToCategory(tag);
+		const category = mapReadwiseTagToRecord(tag);
 		const [newCategory] = await db
-			.insert(indices)
+			.insert(records)
 			.values(category)
 			.onConflictDoUpdate({
-				target: [indices.mainType, indices.name, indices.sense],
+				target: records.id,
 				set: { recordUpdatedAt: new Date() },
 			})
-			.returning({ id: indices.id });
+			.returning({ id: records.id });
 		if (!newCategory) {
-			console.error(`Failed to create index category for tag ${tag.tag}`);
+			console.error(`Failed to create record for tag ${tag.tag}`);
 			continue;
 		}
+		console.log(`Created record ${newCategory.id} for tag ${tag.tag} (${tag.id})`);
 		const [updatedTag] = await db
 			.update(readwiseTags)
-			.set({ indexEntryId: newCategory.id })
+			.set({ recordId: newCategory.id })
 			.where(eq(readwiseTags.id, tag.id))
 			.returning();
 		if (!updatedTag) {
-			console.error(`Failed to update tag ${tag.tag} with index category ${newCategory.id}`);
+			console.error(`Failed to update tag ${tag.tag} with record ${newCategory.id}`);
 			continue;
 		}
-		console.log(`Linked tag ${tag.tag} to index category ${newCategory.id}`);
+		console.log(`Linked tag ${tag.tag} to record ${newCategory.id}`);
 		for (const tagDocument of tag.tagDocuments) {
 			if (tagDocument.document.recordId) {
 				console.log(`Linking tag ${tag.tag} to record ${tagDocument.document.recordId}`);
-				await db.insert(recordCategories).values({
-					recordId: tagDocument.document.recordId,
-					categoryId: newCategory.id,
-					type: 'file_under',
-				});
+				await db
+					.insert(recordRelations)
+					.values({
+						sourceId: tagDocument.document.recordId,
+						targetId: newCategory.id,
+						type: 'tagged',
+					})
+					.onConflictDoUpdate({
+						target: [recordRelations.sourceId, recordRelations.targetId, recordRelations.type],
+						set: { recordUpdatedAt: new Date() },
+					});
 			}
 		}
 	}
@@ -299,28 +304,33 @@ export const mapReadwiseDocumentToRecord = (
 	if (document.notes) {
 		notes = document.notes + '\n\n' + notes;
 	}
-	const flags: Flag[] = [];
+
+	let rating: number = 0;
 	if (document.tags?.includes('⭐')) {
-		flags.push('important');
+		rating = 1;
+	}
+	if (document.tags?.includes('⭐⭐')) {
+		rating = 1;
 	}
 	if (document.tags?.includes('⭐⭐⭐')) {
-		flags.push('favorite');
+		rating = 2;
 	}
 	if (document.tags?.includes('👎')) {
-		flags.push('disagree');
+		rating = -1;
 	}
-	if (document.tags?.includes('📷')) {
-		flags.push('follow_up');
-	}
+
 	return {
-		title: document.title,
+		id: document.recordId ?? undefined,
+		type: 'artifact',
+		title: document.title || null,
 		url: document.sourceUrl,
-		content: document.content,
-		summary: document.summary,
+		content: document.content || null,
+		summary: document.summary || null,
 		notes: notes || null,
 		isPrivate: false,
 		needsCuration: true,
-		flags: flags.length > 0 ? flags : null,
+		avatarUrl: document.imageUrl,
+		rating: rating,
 		sources: ['readwise'],
 		recordCreatedAt: document.recordCreatedAt,
 		recordUpdatedAt: document.recordUpdatedAt,
@@ -362,20 +372,16 @@ export async function createRecordsFromReadwiseDocuments() {
 			console.log(`Failed to create record for readwise document ${doc.id}`);
 			continue;
 		}
-		// If the document has already been mapped to a media item, link it.
-		if (doc.mediaId) {
-			await db
-				.insert(recordMedia)
-				.values({ recordId: insertedRecord.id, mediaId: doc.mediaId })
-				.onConflictDoNothing();
-		}
+		console.log(
+			`Created record ${insertedRecord.id} for readwise document ${doc.title || doc.content?.slice(0, 20)} (${doc.id})`
+		);
 		// Update the readwise document with the corresponding record id.
 		await db
 			.update(readwiseDocuments)
 			.set({ recordId: insertedRecord.id })
 			.where(eq(readwiseDocuments.id, doc.id));
 		recordMap.set(doc.id, insertedRecord.id);
-		console.log(`Created record ${insertedRecord.id} for readwise document ${doc.id}`);
+		console.log(`Linked readwise document ${doc.id} to record ${insertedRecord.id}`);
 	}
 
 	// Step 2: Update the parent-child relationships.
@@ -418,12 +424,12 @@ export async function createRecordsFromReadwiseDocuments() {
 	const authorIds = Array.from(authorIdsSet);
 	const authorsRows = await db.query.readwiseAuthors.findMany({
 		where: inArray(readwiseAuthors.id, authorIds),
-		columns: { id: true, indexEntryId: true },
+		columns: { id: true, recordId: true },
 	});
 	const authorIndexMap = new Map<number, number>();
 	for (const row of authorsRows) {
-		if (row.indexEntryId) {
-			authorIndexMap.set(row.id, row.indexEntryId);
+		if (row.recordId) {
+			authorIndexMap.set(row.id, row.recordId);
 		}
 	}
 
@@ -437,18 +443,18 @@ export async function createRecordsFromReadwiseDocuments() {
 	const tagsArray = Array.from(tagSet);
 	const tagRows = await db.query.readwiseTags.findMany({
 		where: inArray(readwiseTags.tag, tagsArray),
-		columns: { tag: true, indexEntryId: true },
+		columns: { tag: true, recordId: true },
 	});
 	const tagIndexMap = new Map<string, number>();
 	for (const row of tagRows) {
-		if (row.indexEntryId) {
-			tagIndexMap.set(row.tag, row.indexEntryId);
+		if (row.recordId) {
+			tagIndexMap.set(row.tag, row.recordId);
 		}
 	}
 
 	// Bulk prepare linking arrays.
 	const recordCreatorsValues: RecordCreatorInsert[] = [];
-	const recordCategoriesValues: RecordCategoryInsert[] = [];
+	const recordRelationsValues: RecordRelationInsert[] = [];
 	for (const doc of documents) {
 		const recordId = recordMap.get(doc.id);
 		if (!recordId) continue;
@@ -456,23 +462,18 @@ export async function createRecordsFromReadwiseDocuments() {
 		if (doc.authorId && authorIndexMap.has(doc.authorId)) {
 			recordCreatorsValues.push({
 				recordId,
-				entityId: authorIndexMap.get(doc.authorId)!,
-				role: 'creator',
-				order: 'a0',
-				recordCreatedAt: new Date(),
-				recordUpdatedAt: new Date(),
+				creatorId: authorIndexMap.get(doc.authorId)!,
+				creatorRole: 'creator',
 			});
 		}
-		// Link tags via recordCategories.
+		// Link tags via recordRelations.
 		if (doc.tags && Array.isArray(doc.tags)) {
 			for (const tag of doc.tags) {
 				if (tagIndexMap.has(tag)) {
-					recordCategoriesValues.push({
-						recordId,
-						categoryId: tagIndexMap.get(tag)!,
-						type: 'file_under',
-						recordCreatedAt: new Date(),
-						recordUpdatedAt: new Date(),
+					recordRelationsValues.push({
+						sourceId: recordId,
+						targetId: tagIndexMap.get(tag)!,
+						type: 'tagged',
 					});
 				}
 			}
@@ -480,100 +481,13 @@ export async function createRecordsFromReadwiseDocuments() {
 	}
 
 	if (recordCreatorsValues.length > 0) {
-		await db
-			.insert(recordCreators)
-			.values(recordCreatorsValues)
-			.onConflictDoUpdate({
-				target: [recordCreators.recordId, recordCreators.entityId, recordCreators.role],
-				set: { recordUpdatedAt: new Date() },
-			});
+		await db.insert(recordCreators).values(recordCreatorsValues).onConflictDoNothing();
 		console.log(`Linked ${recordCreatorsValues.length} authors to records.`);
 	}
-	if (recordCategoriesValues.length > 0) {
-		await db.insert(recordCategories).values(recordCategoriesValues).onConflictDoNothing();
-		console.log(`Linked ${recordCategoriesValues.length} tags to records.`);
+	if (recordRelationsValues.length > 0) {
+		await db.insert(recordRelations).values(recordRelationsValues).onConflictDoNothing();
+		console.log(`Linked ${recordRelationsValues.length} tags to records.`);
 	}
 
 	console.log(`Processed ${recordMap.size} records.`);
-}
-
-// ------------------------------------------------------------------------
-// 5. Create media from readwise documents
-// ------------------------------------------------------------------------
-
-export async function mapReadwiseDocumentToMedia(
-	document: ReadwiseDocumentSelect
-): Promise<MediaInsert | null> {
-	if (!document.imageUrl) return null;
-	try {
-		const { size, width, height, mediaFormat, mediaType, contentTypeString } =
-			await getSmartMetadata(document.imageUrl);
-		return {
-			url: document.imageUrl,
-			type: mediaType,
-			format: mediaFormat,
-			contentTypeString,
-			fileSize: size,
-			width,
-			height,
-			sources: ['readwise'],
-			isPrivate: false,
-			needsCuration: true,
-			recordCreatedAt: document.recordCreatedAt,
-			recordUpdatedAt: document.recordUpdatedAt,
-			contentCreatedAt: document.contentCreatedAt,
-			contentUpdatedAt: document.contentUpdatedAt,
-		};
-	} catch (error) {
-		console.error('Error getting smart metadata for media', document.imageUrl, error);
-		return null;
-	}
-}
-
-export async function createMediaFromReadwiseDocuments() {
-	const documentsWithImages = await db.query.readwiseDocuments.findMany({
-		where: and(isNull(readwiseDocuments.mediaId), isNotNull(readwiseDocuments.imageUrl)),
-	});
-	if (documentsWithImages.length === 0) {
-		console.log('No new or updated documents to process.');
-		return;
-	}
-	console.log(`Creating ${documentsWithImages.length} media from readwise documents`);
-	for (const item of documentsWithImages) {
-		const mediaItem = await mapReadwiseDocumentToMedia(item);
-		if (!mediaItem) {
-			console.log(`Failed to create media for document ${item.id}`);
-			await db
-				.update(readwiseDocuments)
-				.set({ imageUrl: null })
-				.where(eq(readwiseDocuments.id, item.id));
-			continue;
-		}
-		console.log(`Creating media for ${mediaItem.url}`);
-		const [newMedia] = await db
-			.insert(media)
-			.values(mediaItem)
-			.onConflictDoUpdate({
-				target: [media.url],
-				set: { recordUpdatedAt: new Date() },
-			})
-			.returning({ id: media.id });
-		if (!newMedia) {
-			throw new Error('Failed to create media');
-		}
-		await db
-			.update(readwiseDocuments)
-			.set({ mediaId: newMedia.id })
-			.where(eq(readwiseDocuments.id, item.id));
-		if (item.recordId) {
-			console.log(`Linking media ${newMedia.id} to record ${item.recordId}`);
-			await db
-				.insert(recordMedia)
-				.values({
-					recordId: item.recordId,
-					mediaId: newMedia.id,
-				})
-				.onConflictDoNothing();
-		}
-	}
 }

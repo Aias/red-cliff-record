@@ -4,27 +4,26 @@ import { db } from '@/server/db/connections';
 import {
 	githubRepositories,
 	githubUsers,
-	indices,
 	recordCreators,
 	records,
 	type GithubRepositorySelect,
 	type GithubUserSelect,
-	type IndicesInsert,
 	type RecordInsert,
 } from '@/server/db/schema';
 
-const mapGithubUserToEntity = (user: GithubUserSelect): IndicesInsert => {
+const mapGithubUserToRecord = (user: GithubUserSelect): RecordInsert => {
 	return {
-		mainType: 'entity',
-		subType: user.type === 'User' ? 'Individual' : user.type,
-		name: user.name ?? user.login,
-		shortName: user.name ? user.login : undefined,
-		canonicalUrl: user.blog ? validateAndFormatUrl(user.blog) : user.htmlUrl,
-		canonicalMediaUrl: user.avatarUrl,
-		notes: user.bio,
-		sources: ['github'],
+		type: 'entity',
+		title: user.name ?? user.login,
+		sense: user.type === 'User' ? 'Individual' : user.type,
+		abbreviation: user.name ? user.login : undefined,
+		url: user.blog ? validateAndFormatUrl(user.blog) : user.htmlUrl,
+		avatarUrl: user.avatarUrl,
+		summary: user.bio,
 		needsCuration: true,
+		isIndexNode: true,
 		isPrivate: false,
+		sources: ['github'],
 		recordCreatedAt: user.recordCreatedAt,
 		recordUpdatedAt: user.recordUpdatedAt,
 		contentCreatedAt: user.contentCreatedAt,
@@ -32,10 +31,10 @@ const mapGithubUserToEntity = (user: GithubUserSelect): IndicesInsert => {
 	};
 };
 
-export async function createEntitiesFromGithubUsers() {
-	console.log('Creating entities from Github users');
+export async function createRecordsFromGithubUsers() {
+	console.log('Creating records from Github users');
 	const unmappedUsers = await db.query.githubUsers.findMany({
-		where: isNull(githubUsers.indexEntryId),
+		where: isNull(githubUsers.recordId),
 		with: {
 			repositories: {
 				columns: {
@@ -45,33 +44,36 @@ export async function createEntitiesFromGithubUsers() {
 			},
 		},
 	});
+	if (unmappedUsers.length === 0) {
+		console.log('No unmapped users found');
+		return;
+	}
 
 	for (const user of unmappedUsers) {
-		const newEntityDefaults = mapGithubUserToEntity(user);
-		const [newEntity] = await db
-			.insert(indices)
+		const newEntityDefaults = mapGithubUserToRecord(user);
+		const [newRecord] = await db
+			.insert(records)
 			.values(newEntityDefaults)
 			.onConflictDoUpdate({
-				target: [indices.mainType, indices.name, indices.sense],
+				target: records.id,
 				set: { recordUpdatedAt: new Date() },
 			})
-			.returning({ id: indices.id });
-		if (!newEntity) {
-			throw new Error('Failed to create entity');
+			.returning({ id: records.id });
+		if (!newRecord) {
+			throw new Error('Failed to create record');
 		}
-		await db
-			.update(githubUsers)
-			.set({ indexEntryId: newEntity.id })
-			.where(eq(githubUsers.id, user.id));
+		console.log(`Created record ${newRecord.id} for ${user.login} (${user.id})`);
+		await db.update(githubUsers).set({ recordId: newRecord.id }).where(eq(githubUsers.id, user.id));
 
 		for (const repository of user.repositories) {
 			if (repository.recordId) {
+				console.log(`Linking repository ${repository.id} to creator record ${newRecord.id}`);
 				await db
 					.insert(recordCreators)
 					.values({
-						role: 'creator',
 						recordId: repository.recordId,
-						entityId: newEntity.id,
+						creatorId: newRecord.id,
+						creatorRole: 'creator',
 					})
 					.onConflictDoNothing();
 			}
@@ -81,8 +83,9 @@ export async function createEntitiesFromGithubUsers() {
 
 const mapGithubRepositoryToRecord = (repository: GithubRepositorySelect): RecordInsert => {
 	return {
-		title: repository.fullName,
-		content: repository.description,
+		type: 'artifact',
+		title: repository.name,
+		summary: repository.description,
 		url: repository.htmlUrl,
 		needsCuration: true,
 		isPrivate: repository.private,
@@ -102,11 +105,15 @@ export async function createRecordsFromGithubRepositories() {
 			owner: {
 				columns: {
 					id: true,
-					indexEntryId: true,
+					recordId: true,
 				},
 			},
 		},
 	});
+	if (unmappedRepositories.length === 0) {
+		console.log('No unmapped repositories found');
+		return;
+	}
 
 	for (const repository of unmappedRepositories) {
 		const newRecordDefaults = mapGithubRepositoryToRecord(repository);
@@ -117,18 +124,20 @@ export async function createRecordsFromGithubRepositories() {
 		if (!newRecord) {
 			throw new Error('Failed to create record');
 		}
+		console.log(`Created record ${newRecord.id} for ${repository.name} (${repository.id})`);
 		await db
 			.update(githubRepositories)
 			.set({ recordId: newRecord.id })
 			.where(eq(githubRepositories.id, repository.id));
 
-		if (repository.owner.indexEntryId) {
+		if (repository.owner.recordId) {
+			console.log(`Linking repository ${repository.id} to creator record ${newRecord.id}`);
 			await db
 				.insert(recordCreators)
 				.values({
-					role: 'creator',
 					recordId: newRecord.id,
-					entityId: repository.owner.indexEntryId,
+					creatorId: repository.owner.recordId,
+					creatorRole: 'creator',
 				})
 				.onConflictDoNothing();
 		}

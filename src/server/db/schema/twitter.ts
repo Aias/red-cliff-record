@@ -1,8 +1,15 @@
 import { relations } from 'drizzle-orm';
-import { index, integer, pgEnum, pgTable, text, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import {
+	index,
+	integer,
+	pgEnum,
+	pgTable,
+	text,
+	timestamp,
+	type AnyPgColumn,
+} from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { indices } from './indices';
 import { media } from './media';
 import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
@@ -88,6 +95,7 @@ export const twitterMedia = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', { withTimezone: true }),
 		...contentTimestamps,
 		...databaseTimestamps,
 	},
@@ -128,12 +136,12 @@ export const twitterUsers = pgTable(
 			.notNull(),
 		...contentTimestamps,
 		...databaseTimestamps,
-		indexEntryId: integer('index_entry_id').references(() => indices.id, {
+		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
 	},
-	(table) => [index().on(table.indexEntryId)]
+	(table) => [index().on(table.recordId)]
 );
 
 export const TwitterUserSelectSchema = createSelectSchema(twitterUsers);
@@ -147,10 +155,9 @@ export const twitterUsersRelations = relations(twitterUsers, ({ many, one }) => 
 		fields: [twitterUsers.integrationRunId],
 		references: [integrationRuns.id],
 	}),
-	indexEntry: one(indices, {
-		relationName: 'indexEntry',
-		fields: [twitterUsers.indexEntryId],
-		references: [indices.id],
+	record: one(records, {
+		fields: [twitterUsers.recordId],
+		references: [records.id],
 	}),
 }));
 
