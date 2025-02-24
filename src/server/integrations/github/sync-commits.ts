@@ -16,10 +16,26 @@ import { syncGithubEmbeddings } from './embeddings';
 import { syncCommitSummaries } from './summarize-all';
 import { ensureGithubUserExists } from './sync-users';
 
+/**
+ * Type definitions
+ */
 type GithubRepository = Endpoints['GET /repos/{owner}/{repo}']['response']['data'];
 
+/**
+ * Configuration constants
+ */
 const MAX_PATCH_LENGTH = 2048;
+const PER_PAGE = 100;
+const REQUEST_DELAY_MS = 1000;
 
+/**
+ * Retrieves the most recent commit date from the database
+ *
+ * This function checks both author date and committer date to find
+ * the most recent activity, which is used as a cutoff for fetching new commits.
+ *
+ * @returns The date of the most recent commit activity, or null if none exists
+ */
 async function getMostRecentCommitDate(): Promise<Date | null> {
 	// Get latest commit based on committer date (reflects push/merge activity)
 	const latestByCommitter = await db.query.githubCommits.findFirst({
@@ -43,6 +59,16 @@ async function getMostRecentCommitDate(): Promise<Date | null> {
 	return lastActivityTime ? new Date(lastActivityTime) : null;
 }
 
+/**
+ * Ensures a GitHub repository exists in the database
+ *
+ * This function creates or updates a repository record and ensures
+ * the repository owner exists in the database.
+ *
+ * @param repoData - Repository data from GitHub API
+ * @param integrationRunId - The ID of the current integration run
+ * @returns The ID of the repository
+ */
 async function ensureRepositoryExists(
 	repoData: GithubRepository,
 	integrationRunId: number
@@ -50,7 +76,7 @@ async function ensureRepositoryExists(
 	// First ensure the owner exists
 	await ensureGithubUserExists(repoData.owner, integrationRunId);
 
-	// Then insert repository if it doesn't exist
+	// Prepare repository data for insertion
 	const newRepo: GithubRepositoryInsert = {
 		id: repoData.id,
 		nodeId: repoData.node_id,
@@ -77,6 +103,7 @@ async function ensureRepositoryExists(
 		where: eq(githubRepositories.id, repoData.id),
 	});
 
+	// Insert or update the repository
 	await db
 		.insert(githubRepositories)
 		.values(newRepo)
@@ -84,6 +111,7 @@ async function ensureRepositoryExists(
 			target: githubRepositories.id,
 			set: {
 				...newRepo,
+				recordUpdatedAt: new Date(),
 				// Only include starredAt if it exists in the database
 				...(existingRepo?.starredAt && { starredAt: existingRepo.starredAt }),
 			},
@@ -92,6 +120,19 @@ async function ensureRepositoryExists(
 	return repoData.id;
 }
 
+/**
+ * Synchronizes GitHub commits with the database
+ *
+ * This function:
+ * 1. Fetches commits from the GitHub API
+ * 2. Determines which commits are new since the last sync
+ * 3. Stores commit information and file changes in the database
+ * 4. Triggers commit summary and embedding generation
+ *
+ * @param integrationRunId - The ID of the current integration run
+ * @returns The number of new commits processed
+ * @throws Error if the GitHub API request fails
+ */
 async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 	const octokit = new Octokit({
 		auth: process.env.GITHUB_TOKEN,
@@ -99,6 +140,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 	console.log('Fetching GitHub commits...');
 
+	// Get the most recent commit date to use as a cutoff
 	const mostRecentCommitDate = await getMostRecentCommitDate();
 	if (mostRecentCommitDate) {
 		console.log(
@@ -111,7 +153,6 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 	let page = 1;
 	let hasMore = true;
 	let totalCommits = 0;
-	const PER_PAGE = 100;
 
 	while (hasMore) {
 		try {
@@ -123,6 +164,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 				? `author:@me committer-date:>=${mostRecentCommitDate.toISOString().split('T')[0]}`
 				: 'author:@me';
 
+			// Search for commits authored by the authenticated user
 			const response = await octokit.rest.search.commits({
 				q: queryStr,
 				sort: 'committer-date',
@@ -131,8 +173,10 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 				page,
 			});
 
+			// Log rate limit information for monitoring
 			logRateLimitInfo(response);
 
+			// Check if we've reached the end of the results
 			if (response.data.items.length === 0) {
 				hasMore = false;
 				break;
@@ -140,87 +184,98 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 			let processedAnyNewCommits = false;
 			for (const item of response.data.items) {
-				// First check if commit exists by SHA
-				const existingCommit = await db.query.githubCommits.findFirst({
-					columns: {
-						id: true,
-						sha: true,
-					},
-					where: eq(githubCommits.sha, item.sha),
-				});
+				try {
+					// First check if commit exists by SHA
+					const existingCommit = await db.query.githubCommits.findFirst({
+						columns: {
+							id: true,
+							sha: true,
+						},
+						where: eq(githubCommits.sha, item.sha),
+					});
 
-				if (existingCommit) {
-					console.log(`Skipping existing commit ${item.sha}`);
-					continue;
-				}
-
-				processedAnyNewCommits = true;
-				// First get the full repository data
-				const repoResponse = await octokit.rest.repos.get({
-					owner: item.repository.owner.login,
-					repo: item.repository.name,
-				});
-
-				logRateLimitInfo(repoResponse);
-
-				// Skip if this is a fork and the commit is older than the fork date
-				if (repoResponse.data.fork) {
-					const commitDate = new Date(item.commit.author.date);
-					const forkDate = new Date(repoResponse.data.created_at);
-
-					if (commitDate < forkDate) {
-						console.log(`Skipping commit ${item.sha} as it predates fork creation`);
+					if (existingCommit) {
+						console.log(`Skipping existing commit ${item.sha}`);
 						continue;
 					}
-				}
 
-				// Get detailed commit info including file changes
-				const detailedCommit = await octokit.rest.repos.getCommit({
-					owner: item.repository.owner.login,
-					repo: item.repository.name,
-					ref: item.sha,
-				});
+					processedAnyNewCommits = true;
 
-				logRateLimitInfo(detailedCommit);
+					// Get the full repository data
+					const repoResponse = await octokit.rest.repos.get({
+						owner: item.repository.owner.login,
+						repo: item.repository.name,
+					});
 
-				// Ensure repository exists in database
-				await ensureRepositoryExists(repoResponse.data, integrationRunId);
+					logRateLimitInfo(repoResponse);
 
-				// Insert new commit
-				const newCommit: GithubCommitInsert = {
-					id: item.node_id,
-					sha: item.sha,
-					message: item.commit.message,
-					htmlUrl: item.html_url,
-					repositoryId: item.repository.id,
-					committedAt: item.commit.committer?.date ? new Date(item.commit.committer.date) : null,
-					contentCreatedAt: new Date(item.commit.author.date),
-					integrationRunId,
-					changes: detailedCommit.data.stats?.total ?? null,
-					additions: detailedCommit.data.stats?.additions ?? null,
-					deletions: detailedCommit.data.stats?.deletions ?? null,
-				};
+					// Skip if this is a fork and the commit is older than the fork date
+					if (repoResponse.data.fork) {
+						const commitDate = new Date(item.commit.author.date);
+						const forkDate = new Date(repoResponse.data.created_at);
 
-				await db.insert(githubCommits).values(newCommit);
+						if (commitDate < forkDate) {
+							console.log(`Skipping commit ${item.sha} as it predates fork creation`);
+							continue;
+						}
+					}
 
-				// Insert commit changes only for new commits
-				for (const file of detailedCommit.data.files || []) {
-					const newChange: GithubCommitChangeInsert = {
-						filename: file.filename,
-						status: file.status,
-						patch: file.patch ? file.patch.slice(0, MAX_PATCH_LENGTH) : '',
-						commitId: item.node_id,
-						changes: file.changes,
-						additions: file.additions,
-						deletions: file.deletions,
+					// Get detailed commit info including file changes
+					const detailedCommit = await octokit.rest.repos.getCommit({
+						owner: item.repository.owner.login,
+						repo: item.repository.name,
+						ref: item.sha,
+					});
+
+					logRateLimitInfo(detailedCommit);
+
+					// Ensure repository exists in database
+					await ensureRepositoryExists(repoResponse.data, integrationRunId);
+
+					// Insert new commit
+					const newCommit: GithubCommitInsert = {
+						id: item.node_id,
+						sha: item.sha,
+						message: item.commit.message,
+						htmlUrl: item.html_url,
+						repositoryId: item.repository.id,
+						committedAt: item.commit.committer?.date ? new Date(item.commit.committer.date) : null,
+						contentCreatedAt: new Date(item.commit.author.date),
+						integrationRunId,
+						changes: detailedCommit.data.stats?.total ?? null,
+						additions: detailedCommit.data.stats?.additions ?? null,
+						deletions: detailedCommit.data.stats?.deletions ?? null,
 					};
 
-					await db.insert(githubCommitChanges).values(newChange);
+					await db.insert(githubCommits).values(newCommit);
+
+					// Insert commit changes only for new commits
+					for (const file of detailedCommit.data.files || []) {
+						const newChange: GithubCommitChangeInsert = {
+							filename: file.filename,
+							status: file.status,
+							patch: file.patch ? file.patch.slice(0, MAX_PATCH_LENGTH) : '',
+							commitId: item.node_id,
+							changes: file.changes,
+							additions: file.additions,
+							deletions: file.deletions,
+						};
+
+						await db.insert(githubCommitChanges).values(newChange);
+					}
+
+					console.log(`Inserted commit ${item.sha} for ${item.repository.full_name}`);
+					totalCommits++;
+
+					// Add a small delay between requests to avoid rate limiting
+					await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
+				} catch (error) {
+					console.error(`Error processing commit ${item.sha}:`, {
+						error: error instanceof Error ? error.message : String(error),
+						repository: item.repository?.full_name,
+					});
+					// Continue with next commit rather than failing the entire sync
 				}
-
-				console.log(`Inserted commit ${item.sha} for ${item.repository.full_name}`);
-
-				totalCommits++;
 			}
 
 			// If we didn't process any new commits on this page, we can stop
@@ -244,7 +299,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 				}
 				// If we hit rate limits, throw to stop the process
 				if (error.status === 403 || error.status === 429) {
-					throw error;
+					throw new Error(`GitHub API rate limit exceeded: ${error.message}`);
 				}
 			}
 			throw error;
@@ -253,8 +308,14 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 	console.log(`Successfully synced ${totalCommits} new commits`);
 
-	await syncCommitSummaries();
-	await syncGithubEmbeddings();
+	// Generate summaries and embeddings for the new commits
+	if (totalCommits > 0) {
+		console.log('Generating commit summaries...');
+		await syncCommitSummaries();
+
+		console.log('Generating embeddings for commits...');
+		await syncGithubEmbeddings();
+	}
 
 	return totalCommits;
 }

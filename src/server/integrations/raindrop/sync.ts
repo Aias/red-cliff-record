@@ -17,41 +17,94 @@ import {
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
 
-async function syncCollections(integrationRunId: number) {
+/**
+ * Configuration constants
+ */
+const API_BASE_URL = 'https://api.raindrop.io/rest/v1';
+const RAINDROPS_PAGE_SIZE = 50;
+
+/**
+ * Synchronizes Raindrop collections with the database
+ *
+ * This function:
+ * 1. Fetches root collections from the Raindrop API
+ * 2. Fetches child collections from the Raindrop API
+ * 3. Combines and processes all collections
+ * 4. Inserts or updates collections in the database
+ *
+ * @param integrationRunId - The ID of the current integration run
+ * @returns The number of successfully processed collections
+ * @throws Error if API requests fail
+ */
+async function syncCollections(integrationRunId: number): Promise<number> {
 	let successCount = 0;
 
-	console.log('📚 Fetching root collections...');
-	const rootResponse = await fetch('https://api.raindrop.io/rest/v1/collections', {
+	try {
+		// Step 1: Fetch root collections
+		console.log('Fetching root collections...');
+		const rootCollections = await fetchRaindropCollections(`${API_BASE_URL}/collections`);
+
+		// Step 2: Fetch child collections
+		console.log('Fetching child collections...');
+		const childCollections = await fetchRaindropCollections(
+			`${API_BASE_URL}/collections/childrens`
+		);
+
+		// Step 3: Combine and process collections
+		const allCollections = [...rootCollections, ...childCollections];
+		console.log(`Retrieved ${allCollections.length} total collections`);
+
+		// Step 4: Insert or update collections in database
+		console.log('Inserting collections to database...');
+		successCount = await processCollections(allCollections, integrationRunId);
+
+		console.log(
+			`Successfully processed ${successCount} out of ${allCollections.length} collections`
+		);
+		return successCount;
+	} catch (error) {
+		console.error('Error syncing Raindrop collections:', error);
+		throw error;
+	}
+}
+
+/**
+ * Fetches collections from the Raindrop API
+ *
+ * @param url - The API endpoint URL
+ * @returns Array of collection items
+ * @throws Error if the API request fails
+ */
+async function fetchRaindropCollections(url: string) {
+	const response = await fetch(url, {
 		headers: {
 			Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`,
 		},
 	});
 
-	if (!rootResponse.ok) {
-		throw new Error(`Root collections API request failed with status ${rootResponse.status}`);
+	if (!response.ok) {
+		throw new Error(`Collections API request failed with status ${response.status}`);
 	}
 
-	const rootData = await rootResponse.json();
-	const rootParsed = CollectionsResponseSchema.parse(rootData);
+	const data = await response.json();
+	const parsed = CollectionsResponseSchema.parse(data);
+	return parsed.items;
+}
 
-	console.log('👶 Fetching child collections...');
-	const childrenResponse = await fetch('https://api.raindrop.io/rest/v1/collections/childrens', {
-		headers: {
-			Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`,
-		},
-	});
+/**
+ * Processes and stores collections in the database
+ *
+ * @param collections - The collections to process
+ * @param integrationRunId - The ID of the current integration run
+ * @returns The number of successfully processed collections
+ */
+async function processCollections(
+	collections: ReturnType<typeof fetchRaindropCollections> extends Promise<infer T> ? T : never,
+	integrationRunId: number
+): Promise<number> {
+	let successCount = 0;
 
-	if (!childrenResponse.ok) {
-		throw new Error(`Child collections API request failed with status ${childrenResponse.status}`);
-	}
-
-	const childrenData = await childrenResponse.json();
-	const childrenParsed = CollectionsResponseSchema.parse(childrenData);
-
-	const allCollections = [...rootParsed.items, ...childrenParsed.items];
-	console.log(`✅ Retrieved ${allCollections.length} total collections`);
-	console.log('Inserting collections to database.');
-	for (const collection of allCollections) {
+	for (const collection of collections) {
 		try {
 			const collectionToInsert: RaindropCollectionInsert = {
 				id: collection._id,
@@ -62,7 +115,7 @@ async function syncCollections(integrationRunId: number) {
 				raindropCount: collection.count,
 				contentCreatedAt: collection.created,
 				contentUpdatedAt: collection.lastUpdate,
-				integrationRunId: integrationRunId,
+				integrationRunId,
 			};
 
 			await db
@@ -76,22 +129,61 @@ async function syncCollections(integrationRunId: number) {
 			successCount++;
 		} catch (error) {
 			console.error('Error processing collection:', {
-				collection,
+				collectionId: collection._id,
 				error: error instanceof Error ? error.message : String(error),
 			});
 		}
 	}
-	console.log(
-		`✅ Successfully processed ${successCount} out of ${allCollections.length} collections`
-	);
 
 	return successCount;
 }
 
-async function syncRaindrops(integrationRunId: number) {
-	console.log('Starting Raindrop sync...');
+/**
+ * Synchronizes Raindrop bookmarks with the database
+ *
+ * This function:
+ * 1. Determines the last sync point
+ * 2. Fetches new raindrops from the API
+ * 3. Processes and stores the raindrops
+ * 4. Creates related entities (tags, records, media)
+ *
+ * @param integrationRunId - The ID of the current integration run
+ * @returns The number of successfully processed raindrops
+ * @throws Error if API requests fail
+ */
+async function syncRaindrops(integrationRunId: number): Promise<number> {
+	console.log('Starting Raindrop bookmarks sync...');
 
-	// Get the most recent raindrop date from the database
+	try {
+		// Step 1: Determine last sync point
+		const lastKnownDate = await getLastSyncDate();
+		console.log(`Last known raindrop date: ${lastKnownDate?.toLocaleString() ?? 'none'}`);
+
+		// Step 2: Fetch new raindrops
+		const newRaindrops = await fetchNewRaindrops(lastKnownDate);
+		console.log(`Found ${newRaindrops.length} new raindrops to process`);
+
+		// Step 3: Process and store raindrops
+		const successCount = await processRaindrops(newRaindrops, integrationRunId);
+		console.log(`Successfully processed ${successCount} out of ${newRaindrops.length} raindrops`);
+
+		// Step 4: Create related entities
+		console.log('Creating related entities...');
+		await createRelatedEntities(integrationRunId);
+
+		return successCount;
+	} catch (error) {
+		console.error('Error syncing Raindrop bookmarks:', error);
+		throw error;
+	}
+}
+
+/**
+ * Gets the date of the most recently updated raindrop
+ *
+ * @returns The date of the most recent raindrop, or undefined if none exists
+ */
+async function getLastSyncDate(): Promise<Date | undefined> {
 	const latestRaindrop = await db.query.raindropBookmarks.findFirst({
 		columns: {
 			contentUpdatedAt: true,
@@ -99,28 +191,33 @@ async function syncRaindrops(integrationRunId: number) {
 		orderBy: desc(raindropBookmarks.contentUpdatedAt),
 	});
 
-	const lastKnownDate = latestRaindrop?.contentUpdatedAt;
-	console.log(`Last known raindrop date: ${lastKnownDate?.toLocaleString() ?? 'none'}`);
+	return latestRaindrop?.contentUpdatedAt ?? undefined;
+}
 
+/**
+ * Fetches new raindrops from the Raindrop API
+ *
+ * @param lastKnownDate - The date of the most recent raindrop in the database
+ * @returns Array of new raindrops
+ */
+async function fetchNewRaindrops(lastKnownDate?: Date): Promise<Raindrop[]> {
 	let newRaindrops: Raindrop[] = [];
 	let page = 0;
 	let hasMore = true;
 	let totalFetched = 0;
-	const PAGE_SIZE = 50;
 
 	while (hasMore) {
-		console.log(`📥 Fetching page ${page + 1}...`);
-		const response = await fetch(
-			`https://api.raindrop.io/rest/v1/raindrops/0?perpage=${PAGE_SIZE}&page=${page}`,
-			{
-				headers: {
-					Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`,
-				},
-			}
-		);
+		console.log(`Fetching page ${page + 1}...`);
+		const url = `${API_BASE_URL}/raindrops/0?perpage=${RAINDROPS_PAGE_SIZE}&page=${page}`;
+
+		const response = await fetch(url, {
+			headers: {
+				Authorization: `Bearer ${process.env.RAINDROP_TEST_TOKEN}`,
+			},
+		});
 
 		if (!response.ok) {
-			throw new Error(`API request failed with status ${response.status}`);
+			throw new Error(`Raindrops API request failed with status ${response.status}`);
 		}
 
 		const data = await response.json();
@@ -140,18 +237,27 @@ async function syncRaindrops(integrationRunId: number) {
 			hasMore = false;
 		} else {
 			newRaindrops = [...newRaindrops, ...parsedData.items];
-			hasMore = parsedData.items.length === PAGE_SIZE;
+			hasMore = parsedData.items.length === RAINDROPS_PAGE_SIZE;
 		}
 
 		totalFetched += parsedData.items.length;
-		console.log(`✅ Processed ${parsedData.items.length} raindrops (total: ${totalFetched})`);
+		console.log(`Processed ${parsedData.items.length} raindrops (total: ${totalFetched})`);
 		page++;
 	}
 
-	console.log(`🎉 Found ${newRaindrops.length} new raindrops to process`);
+	return newRaindrops;
+}
 
+/**
+ * Processes and stores raindrops in the database
+ *
+ * @param raindrops - The raindrops to process
+ * @param integrationRunId - The ID of the current integration run
+ * @returns The number of successfully processed raindrops
+ */
+async function processRaindrops(raindrops: Raindrop[], integrationRunId: number): Promise<number> {
 	// Convert raindrops to bookmark format
-	const raindropsToInsert: RaindropBookmarkInsert[] = newRaindrops.map((raindrop) => ({
+	const raindropsToInsert: RaindropBookmarkInsert[] = raindrops.map((raindrop) => ({
 		id: raindrop._id,
 		linkUrl: raindrop.link,
 		title: raindrop.title,
@@ -169,8 +275,9 @@ async function syncRaindrops(integrationRunId: number) {
 	}));
 
 	// Insert raindrops one by one
-	console.log(`Inserting ${raindropsToInsert.length} new raindrops`);
+	console.log(`Inserting ${raindropsToInsert.length} raindrops...`);
 	let successCount = 0;
+
 	for (const raindrop of raindropsToInsert) {
 		try {
 			await db
@@ -180,42 +287,86 @@ async function syncRaindrops(integrationRunId: number) {
 					target: raindropBookmarks.id,
 					set: { ...raindrop, recordUpdatedAt: new Date() },
 				});
+
 			successCount++;
 			if (successCount % 10 === 0) {
 				console.log(`Processed ${successCount} of ${raindropsToInsert.length} raindrops`);
 			}
 		} catch (error) {
 			console.error('Error processing raindrop:', {
-				raindrop,
+				raindropId: raindrop.id,
 				error: error instanceof Error ? error.message : String(error),
 			});
 		}
 	}
-	console.log(
-		`Successfully processed ${successCount} out of ${raindropsToInsert.length} raindrops`
-	);
 
-	console.log('All new raindrops inserted successfully');
-	await createRaindropTags(integrationRunId);
-	await createRecordsFromRaindropTags();
-	await createRecordsFromRaindropBookmarks();
-	await createMediaFromRaindropBookmarks();
 	return successCount;
 }
 
-const main = async () => {
+/**
+ * Creates related entities from raindrop data
+ *
+ * @param integrationRunId - The ID of the current integration run
+ */
+async function createRelatedEntities(integrationRunId: number): Promise<void> {
+	// Create tags from raindrops
+	await createRaindropTags(integrationRunId);
+
+	// Create records from tags and bookmarks
+	await createRecordsFromRaindropTags();
+	await createRecordsFromRaindropBookmarks();
+
+	// Create media from bookmarks
+	await createMediaFromRaindropBookmarks();
+}
+
+/**
+ * Orchestrates the Raindrop data synchronization process
+ *
+ * This function coordinates the execution of multiple Raindrop integration steps:
+ * 1. Syncs collections
+ * 2. Syncs bookmarks (raindrops)
+ *
+ * Each step is wrapped in the runIntegration utility to track execution.
+ */
+async function syncRaindropData(): Promise<void> {
 	try {
+		console.log('Starting Raindrop data synchronization');
+
+		// Step 1: Sync collections
 		await runIntegration('raindrop', syncCollections);
+
+		// Step 2: Sync bookmarks
 		await runIntegration('raindrop', syncRaindrops);
-		process.exit();
-	} catch (err) {
-		console.error('Error in main:', err);
+
+		console.log('Raindrop data synchronization completed successfully');
+	} catch (error) {
+		console.error('Error syncing Raindrop data:', error);
+		throw error;
+	}
+}
+
+/**
+ * Main execution function when run as a standalone script
+ */
+const main = async (): Promise<void> => {
+	try {
+		console.log('\n=== STARTING RAINDROP SYNC ===\n');
+		await syncRaindropData();
+		console.log('\n=== RAINDROP SYNC COMPLETED ===\n');
+		console.log('\n' + '-'.repeat(50) + '\n');
+		process.exit(0);
+	} catch (error) {
+		console.error('Error in Raindrop sync main function:', error);
+		console.log('\n=== RAINDROP SYNC FAILED ===\n');
+		console.log('\n' + '-'.repeat(50) + '\n');
 		process.exit(1);
 	}
 };
 
+// Execute main function if this file is run directly
 if (import.meta.url === import.meta.resolve('./sync.ts')) {
 	main();
 }
 
-export { main as syncRaindrops };
+export { syncRaindropData };
