@@ -19,17 +19,37 @@ import {
 } from './map';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
 
-export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
-	const twitterDataDir = resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');
+/**
+ * Configuration constants
+ */
+const TWITTER_DATA_DIR = resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');
+const BOOKMARK_FILE_PREFIX = 'bookmarks-';
+const BOOKMARK_FILE_SUFFIX = '.json';
+const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
 
+/**
+ * Loads Twitter bookmarks data from local JSON files
+ *
+ * This function:
+ * 1. Locates bookmark JSON files in the Twitter data directory
+ * 2. Reads and parses each file
+ * 3. Combines the data into a single array
+ *
+ * @returns Array of Twitter bookmark data
+ * @throws Error if JSON parsing fails
+ */
+export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 	try {
-		// Read the directory entries with file types.
-		const entries = readdirSync(twitterDataDir, { withFileTypes: true });
-		// Filter for files that start with "bookmarks-" and end with ".json"
+		// Read the directory entries with file types
+		const entries = readdirSync(TWITTER_DATA_DIR, { withFileTypes: true });
+
+		// Filter for bookmark files and sort them
 		const bookmarkFiles = entries
 			.filter(
 				(entry) =>
-					entry.isFile() && entry.name.startsWith('bookmarks-') && entry.name.endsWith('.json')
+					entry.isFile() &&
+					entry.name.startsWith(BOOKMARK_FILE_PREFIX) &&
+					entry.name.endsWith(BOOKMARK_FILE_SUFFIX)
 			)
 			.map((entry) => entry.name)
 			.sort(); // Ascending order since the filenames are in ISO format
@@ -39,41 +59,98 @@ export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 			return [];
 		}
 
+		// Process each file and combine the data
 		const combinedData: TwitterBookmarksArray = [];
-		// Process each file in ascending order
 		for (const fileName of bookmarkFiles) {
-			const filePath = resolve(twitterDataDir, fileName);
+			const filePath = resolve(TWITTER_DATA_DIR, fileName);
 			console.log(`Processing Twitter bookmarks file: ${filePath}`);
+
 			const fileContent = readFileSync(filePath, 'utf-8');
-			// Assuming each JSON file parses into an array of bookmark responses
 			const parsedData = JSON.parse(fileContent);
 			combinedData.push(...parsedData);
 		}
 
 		return combinedData;
-	} catch (err) {
-		if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
-			console.log(`Twitter data directory not found at: ${twitterDataDir}`);
+	} catch (error) {
+		// Handle directory not found error
+		if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+			console.log(`Twitter data directory not found at: ${TWITTER_DATA_DIR}`);
 			return [];
 		}
-		// If it's any other error (e.g. issues with JSON parsing), we throw
-		console.error('Error loading Twitter bookmarks data:', err);
-		throw err;
+
+		// Rethrow other errors (e.g., JSON parsing issues)
+		console.error('Error loading Twitter bookmarks data:', error);
+		throw error;
 	}
 }
 
-const filteredTypes = ['TimelineTimelineCursor', 'TweetTombstone'];
-
+/**
+ * Synchronizes Twitter bookmarks with the database
+ *
+ * This function:
+ * 1. Loads bookmarks data from local files
+ * 2. Extracts and processes tweets, including quoted tweets
+ * 3. Processes users and media associated with tweets
+ * 4. Stores all data in the database
+ * 5. Creates records from the Twitter data
+ *
+ * @param integrationRunId - The ID of the current integration run
+ * @returns The number of successfully processed tweets
+ * @throws Error if processing fails
+ */
 async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
-	const bookmarkResponses = await loadBookmarksData();
+	try {
+		// Step 1: Load bookmarks data
+		const bookmarkResponses = await loadBookmarksData();
+		if (bookmarkResponses.length === 0) {
+			console.log('No Twitter bookmarks data found');
+			return 0;
+		}
+
+		// Step 2: Extract tweets from bookmarks
+		const tweets = extractTweetsFromBookmarks(bookmarkResponses);
+		console.log(`Extracted ${tweets.length} tweets from bookmarks`);
+
+		// Step 3: Process tweets, users, and media
+		const { processedTweets, processedQuoteTweets, processedUsers, processedMedia } =
+			processTweetData(tweets, integrationRunId);
+
+		// Step 4: Store data in the database
+		const updatedCount = await storeTweetData(
+			processedTweets,
+			processedQuoteTweets,
+			processedUsers,
+			processedMedia
+		);
+
+		// Step 5: Create records from Twitter data
+		await createRelatedRecords();
+
+		return updatedCount;
+	} catch (error) {
+		console.error('Error syncing Twitter bookmarks:', error);
+		throw new Error(
+			`Failed to sync Twitter bookmarks: ${error instanceof Error ? error.message : String(error)}`
+		);
+	}
+}
+
+/**
+ * Extracts tweets from bookmark responses
+ *
+ * @param bookmarkResponses - Array of Twitter bookmark responses
+ * @returns Array of tweet data
+ */
+function extractTweetsFromBookmarks(bookmarkResponses: TwitterBookmarksArray): TweetData[] {
 	const tweets: TweetData[] = [];
 
+	// Extract raw tweets from the bookmark responses
 	const rawTweets = bookmarkResponses
 		.flatMap((group) =>
 			group.response.data.bookmark_timeline_v2.timeline.instructions.flatMap((i) => i.entries)
 		)
 		.map((entry) => entry.content)
-		.filter((item) => !filteredTypes.includes(item.__typename))
+		.filter((item) => !FILTERED_TWEET_TYPES.includes(item.__typename))
 		.map((item) => {
 			const result = item.itemContent.tweet_results.result;
 			return result.__typename === 'TweetWithVisibilityResults'
@@ -81,48 +158,99 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 				: (result as Tweet);
 		});
 
+	// Process each tweet, handling quoted tweets
 	rawTweets.forEach((tweet) => {
 		const { quoted_status_result: quotedTweet, ...mainTweet } = tweet;
+
 		if (quotedTweet?.result) {
 			const quotedResult = quotedTweet.result;
-			if (filteredTypes.includes(quotedResult.__typename)) return;
+
+			// Skip filtered tweet types
+			if (FILTERED_TWEET_TYPES.includes(quotedResult.__typename)) return;
+
 			if (quotedResult.__typename === 'TweetWithVisibilityResults') {
+				// Add the quoted tweet first
 				tweets.push({ ...quotedResult.tweet, isQuoted: true });
+				// Then add the main tweet with a reference to the quoted tweet
 				tweets.push({ ...mainTweet, quotedTweetId: quotedResult.tweet.rest_id });
 			} else {
+				// Add the quoted tweet first
 				tweets.push({ ...quotedResult, isQuoted: true });
+				// Then add the main tweet with a reference to the quoted tweet
 				tweets.push({ ...mainTweet, quotedTweetId: quotedResult.rest_id });
 			}
 		} else {
+			// Add the main tweet without any quoted tweet reference
 			tweets.push(mainTweet);
 		}
 	});
 
+	return tweets;
+}
+
+/**
+ * Processes tweet data into database-ready formats
+ *
+ * @param tweets - Array of tweet data
+ * @param integrationRunId - The ID of the current integration run
+ * @returns Object containing processed tweets, users, and media
+ */
+function processTweetData(tweets: TweetData[], integrationRunId: number) {
 	const processedUsers: TwitterUserInsert[] = [];
 	const processedMedia: TwitterMediaInsert[] = [];
 	const processedTweets: TwitterTweetInsert[] = [];
 	const processedQuoteTweets: TwitterTweetInsert[] = [];
 
 	tweets.forEach((t) => {
+		// Process the tweet
 		const tweet = processTweet(t);
+
+		// Separate regular tweets from quote tweets
 		if (tweet.quotedTweetId) {
 			processedQuoteTweets.push({ ...tweet, integrationRunId });
 		} else {
 			processedTweets.push({ ...tweet, integrationRunId });
 		}
+
+		// Process the user
 		const user = processUser(t.core.user_results.result);
 		processedUsers.push({ ...user, integrationRunId });
+
+		// Process any media attached to the tweet
 		t.legacy.entities.media?.forEach((m) => {
 			const mediaData = processMedia(m, t);
 			processedMedia.push({ ...mediaData });
 		});
 	});
 
-	const updatedCount = await db.transaction(
+	return {
+		processedTweets,
+		processedQuoteTweets,
+		processedUsers,
+		processedMedia,
+	};
+}
+
+/**
+ * Stores tweet data in the database
+ *
+ * @param processedTweets - Regular tweets to store
+ * @param processedQuoteTweets - Quote tweets to store
+ * @param processedUsers - Users to store
+ * @param processedMedia - Media to store
+ * @returns The total number of tweets stored
+ */
+async function storeTweetData(
+	processedTweets: TwitterTweetInsert[],
+	processedQuoteTweets: TwitterTweetInsert[],
+	processedUsers: TwitterUserInsert[],
+	processedMedia: TwitterMediaInsert[]
+): Promise<number> {
+	return db.transaction(
 		async (tx) => {
 			// 1. Insert Users
 			console.log(`Inserting ${processedUsers.length} users...`);
-			processedUsers.forEach(async (user) => {
+			for (const user of processedUsers) {
 				await tx
 					.insert(usersTable)
 					.values(user)
@@ -133,11 +261,11 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 							recordUpdatedAt: new Date(),
 						},
 					});
-			});
+			}
 
 			// 2. Insert Regular Tweets
 			console.log(`Inserting ${processedTweets.length} regular tweets...`);
-			processedTweets.forEach(async (tweet) => {
+			for (const tweet of processedTweets) {
 				await tx
 					.insert(tweetsTable)
 					.values(tweet)
@@ -145,11 +273,11 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 						target: tweetsTable.id,
 						set: { ...tweet, recordUpdatedAt: new Date() },
 					});
-			});
+			}
 
 			// 3. Insert Quoted Tweets
 			console.log(`Inserting ${processedQuoteTweets.length} tweets with quotes...`);
-			processedQuoteTweets.forEach(async (tweet) => {
+			for (const tweet of processedQuoteTweets) {
 				await tx
 					.insert(tweetsTable)
 					.values(tweet)
@@ -157,13 +285,13 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 						target: tweetsTable.id,
 						set: { ...tweet, recordUpdatedAt: new Date() },
 					});
-			});
+			}
 
 			// 4. Insert Media
 			console.log(`Inserting ${processedMedia.length} media items...`);
-			processedMedia.forEach(async (mediaItem) => {
+			for (const mediaItem of processedMedia) {
 				await tx.insert(mediaTable).values(mediaItem).onConflictDoNothing();
-			});
+			}
 
 			const totalTweets = processedTweets.length + processedQuoteTweets.length;
 			console.log(`Successfully processed ${totalTweets} tweets`);
@@ -173,25 +301,52 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 			isolationLevel: 'read committed',
 		}
 	);
+}
+
+/**
+ * Creates records from Twitter data
+ */
+async function createRelatedRecords(): Promise<void> {
 	await createRecordsFromTwitterUsers();
 	await createRecordsFromTweets();
 	await createMediaFromTweets();
-
-	return updatedCount;
 }
 
-const main = async () => {
+/**
+ * Orchestrates the Twitter data synchronization process
+ */
+async function syncTwitterData(): Promise<void> {
 	try {
+		console.log('Starting Twitter data synchronization');
 		await runIntegration('twitter', syncTwitterBookmarks);
-		process.exit();
-	} catch (err) {
-		console.error('Error in main:', err);
+		console.log('Twitter data synchronization completed successfully');
+	} catch (error) {
+		console.error('Error syncing Twitter data:', error);
+		throw error;
+	}
+}
+
+/**
+ * Main execution function when run as a standalone script
+ */
+const main = async (): Promise<void> => {
+	try {
+		console.log('\n=== STARTING TWITTER SYNC ===\n');
+		await syncTwitterData();
+		console.log('\n=== TWITTER SYNC COMPLETED ===\n');
+		console.log('\n' + '-'.repeat(50) + '\n');
+		process.exit(0);
+	} catch (error) {
+		console.error('Error in Twitter sync main function:', error);
+		console.log('\n=== TWITTER SYNC FAILED ===\n');
+		console.log('\n' + '-'.repeat(50) + '\n');
 		process.exit(1);
 	}
 };
 
+// Execute main function if this file is run directly
 if (import.meta.url === import.meta.resolve('./sync.ts')) {
 	main();
 }
 
-export { main as syncTwitterBookmarks };
+export { syncTwitterData };
