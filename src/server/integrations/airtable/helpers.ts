@@ -4,7 +4,7 @@ import { eq, notIlike } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import type { AirtableAttachmentSelect, AirtableExtractSelect } from '@/server/db/schema/airtable';
 import { airtableAttachments } from '@/server/db/schema/airtable';
-import { uploadMediaToR2 } from '../common/media-helpers';
+import { uploadToR2 } from '../common/record-mapping';
 import { AirtableAttachmentSchema } from './types';
 
 Airtable.configure({
@@ -28,7 +28,17 @@ async function processAttachment(attachment: AttachmentWithExtract) {
 			console.log(`Processing ${filename} (${id})`);
 
 			try {
-				const r2Url = await uploadMediaToR2(airtableUrl);
+				const r2Url = await uploadToR2(airtableUrl);
+				if (!r2Url) {
+					console.error('Failed to upload attachment to R2:', {
+						extractTitle,
+						extractId,
+						filename,
+						attachmentId: id,
+					});
+					continue;
+				}
+
 				console.log(`Uploaded to R2: ${r2Url}`);
 
 				const [updatedAttachment] = await db
@@ -48,24 +58,21 @@ async function processAttachment(attachment: AttachmentWithExtract) {
 						attachmentId: id,
 						r2Url,
 					});
-					continue;
 				}
-				console.log(`Updated attachment ${attachment.id} to ${r2Url}\n`);
 			} catch (error) {
-				console.error('Error processing image:', {
+				console.error('Error processing attachment:', {
 					extractTitle,
 					extractId,
-					attachmentId: id,
 					filename,
+					attachmentId: id,
 					error: error instanceof Error ? error.message : String(error),
 				});
-				continue;
 			}
 		}
+
 		return true;
 	} catch (error) {
 		console.error('Error processing attachment:', {
-			attachmentId: attachment.id,
 			extractId: attachment.extract.id,
 			error: error instanceof Error ? error.message : String(error),
 		});

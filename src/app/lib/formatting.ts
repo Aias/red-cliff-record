@@ -42,16 +42,57 @@ export const formatCreatorDescription = (
 	return `${article} ${nationalityString}${professionString}.`;
 };
 
-const urlSchema = z.string().url();
+// More robust URL schema with custom error message
+const urlSchema = z.string().url({
+	message: 'Invalid URL format. Please provide a valid URL.',
+});
 
-export function validateAndFormatUrl(url: string): string;
+type UrlOptions = {
+	skipHttps?: boolean;
+};
+
+/**
+ * Validates and formats a URL string, ensuring it has an HTTP/HTTPS protocol by default
+ *
+ * This function automatically adds https:// to URLs like "example.com" to make them valid.
+ * For example, "blog.edu" becomes "https://blog.edu" before validation.
+ *
+ * @param url - The URL string to validate and format
+ * @param safe - If true, returns a SafeParseReturn object instead of throwing
+ * @param options - Configuration options
+ * @returns The validated URL or a SafeParseReturn object
+ */
+export function validateAndFormatUrl(url: string, safe?: false, options?: UrlOptions): string;
 export function validateAndFormatUrl(
 	url: string,
-	safe: true
+	safe: true,
+	options?: UrlOptions
 ): z.SafeParseReturnType<string, string>;
-export function validateAndFormatUrl(url: string, safe?: boolean) {
-	// Add https:// if no protocol is present
-	const formattedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
+export function validateAndFormatUrl(
+	url: string,
+	safe?: boolean,
+	options?: UrlOptions
+): string | z.SafeParseReturnType<string, string> {
+	// Default options
+	const { skipHttps = false } = options || {};
 
-	return safe ? urlSchema.safeParse(formattedUrl) : urlSchema.parse(formattedUrl);
+	// Add https:// if no HTTP/HTTPS protocol is present (unless explicitly skipped)
+	let formattedUrl = url;
+	if (!skipHttps && !url.match(/^https?:\/\//)) {
+		formattedUrl = `https://${url}`;
+	}
+
+	// Validate and return based on safe parameter
+	if (safe === true) {
+		return urlSchema.safeParse(formattedUrl);
+	} else {
+		try {
+			return urlSchema.parse(formattedUrl);
+		} catch (error) {
+			// Enhance error message with the attempted URL
+			throw new Error(
+				`Invalid URL: ${url}. ${error instanceof Error ? error.message : String(error)}`
+			);
+		}
+	}
 }

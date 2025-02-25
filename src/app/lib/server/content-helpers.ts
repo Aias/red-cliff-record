@@ -1,9 +1,8 @@
 import mime from 'mime-types';
 import sharp from 'sharp';
-import { z } from 'zod';
+import { validateAndFormatUrl } from '@/app/lib/formatting';
 import { MediaType } from '@/server/db/schema/media';
 
-const urlSchema = z.string().url();
 const DEFAULT_MEDIA_TYPE = MediaType.enum.application;
 const DEFAULT_MEDIA_FORMAT = 'octet-stream';
 const DEFAULT_MIME_TYPE = `${DEFAULT_MEDIA_TYPE}/${DEFAULT_MEDIA_FORMAT}`;
@@ -32,12 +31,16 @@ export const getMediaType = (filenameOrExt: string): MediaType => {
 //              determined, returns 'application/octet-stream'.
 // -----------------------------------------------------------------
 export const getMimeTypeFromURL = (url: string): string => {
-	const parsedUrl = urlSchema.safeParse(url);
-	if (!parsedUrl.success) {
+	try {
+		const { success, data } = validateAndFormatUrl(url, true);
+		if (!success) {
+			return DEFAULT_MIME_TYPE;
+		}
+		const { pathname } = new URL(data);
+		return mime.lookup(pathname) || DEFAULT_MIME_TYPE;
+	} catch {
 		return DEFAULT_MIME_TYPE;
 	}
-	const { pathname } = new URL(parsedUrl.data);
-	return mime.lookup(pathname) || DEFAULT_MIME_TYPE;
 };
 
 // -----------------------------------------------------------------
@@ -46,12 +49,16 @@ export const getMimeTypeFromURL = (url: string): string => {
 //              pathname of the URL. If the URL is invalid, returns the default media type.
 // -----------------------------------------------------------------
 export const getMediaTypeFromURL = (url: string): MediaType => {
-	const parsedUrl = urlSchema.safeParse(url);
-	if (!parsedUrl.success) {
+	try {
+		const { success, data } = validateAndFormatUrl(url, true);
+		if (!success) {
+			return DEFAULT_MEDIA_TYPE;
+		}
+		const { pathname } = new URL(data);
+		return getMediaType(pathname);
+	} catch {
 		return DEFAULT_MEDIA_TYPE;
 	}
-	const { pathname } = new URL(parsedUrl.data);
-	return getMediaType(pathname);
 };
 
 export type MediaMetadata = {
@@ -66,32 +73,50 @@ export type MediaMetadata = {
 };
 
 export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
-	const validatedUrl = z.string().url().parse(url);
+	try {
+		const { success, data: validatedUrl } = validateAndFormatUrl(url, true);
+		if (!success) {
+			throw new Error(`Invalid URL: ${url}`);
+		}
 
-	// Start with a HEAD request
-	const headResponse = await fetch(validatedUrl, { method: 'HEAD' });
-	let mediaType: MediaType = DEFAULT_MEDIA_TYPE;
-	let mediaFormat: string = DEFAULT_MEDIA_FORMAT;
-	const contentTypeHeader = headResponse.headers.get('content-type');
-	const contentLengthHeader = headResponse.headers.get('content-length');
-	if (contentTypeHeader) {
-		const { data: typeFromHeaders } = MediaType.safeParse(contentTypeHeader?.split('/')[0] || '');
-		mediaType = typeFromHeaders ?? getMediaTypeFromURL(validatedUrl);
-		mediaFormat = contentTypeHeader?.split('/')[1] ?? DEFAULT_MEDIA_FORMAT;
-	} else {
-		mediaType = getMediaTypeFromURL(validatedUrl);
-		mediaFormat = new URL(validatedUrl).pathname.split('.').pop() ?? DEFAULT_MEDIA_FORMAT;
-	}
-	const mimeType = `${mediaType}/${mediaFormat}`;
+		// Start with a HEAD request to get basic info without downloading the entire file
+		const headResponse = await fetch(validatedUrl, { method: 'HEAD' });
+		let mediaType: MediaType = DEFAULT_MEDIA_TYPE;
+		let mediaFormat: string = DEFAULT_MEDIA_FORMAT;
+		const contentTypeHeader = headResponse.headers.get('content-type');
+		const contentLengthHeader = headResponse.headers.get('content-length');
 
-	// If it's an image, get more details
-	if (mediaType === 'image') {
+		if (contentTypeHeader) {
+			const { data: typeFromHeaders } = MediaType.safeParse(contentTypeHeader?.split('/')[0] || '');
+			mediaType = typeFromHeaders ?? getMediaTypeFromURL(validatedUrl);
+			mediaFormat = contentTypeHeader?.split('/')[1] ?? DEFAULT_MEDIA_FORMAT;
+		} else {
+			mediaType = getMediaTypeFromURL(validatedUrl);
+			mediaFormat = new URL(validatedUrl).pathname.split('.').pop() ?? DEFAULT_MEDIA_FORMAT;
+		}
+		const mimeType = `${mediaType}/${mediaFormat}`;
+
+		// For non-images, return basic info from the HEAD request
+		if (mediaType !== 'image') {
+			return {
+				mediaType,
+				mediaFormat,
+				contentTypeString: mimeType,
+				size: contentLengthHeader ? Number(contentLengthHeader) : undefined,
+			};
+		}
+
+		// For images, get more detailed metadata
 		const response = await fetch(validatedUrl);
+		if (!response.ok) {
+			throw new Error(`Failed to fetch image: HTTP ${response.status}`);
+		}
+
 		const buffer = await response.arrayBuffer();
 		const metadata = await sharp(buffer).metadata();
 
 		return {
-			mediaType: mediaType,
+			mediaType,
 			mediaFormat: metadata.format ?? mediaFormat,
 			contentTypeString: mimeType,
 			size: contentLengthHeader ? Number(contentLengthHeader) : metadata.size,
@@ -100,13 +125,9 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 			format: metadata.format,
 			hasAlpha: metadata.hasAlpha,
 		};
+	} catch (error) {
+		throw new Error(
+			`Failed to get smart metadata for URL: ${url}. ${error instanceof Error ? error.message : String(error)}`
+		);
 	}
-
-	// For non-images, return basic info
-	return {
-		mediaType,
-		mediaFormat,
-		contentTypeString: mimeType,
-		size: contentLengthHeader ? Number(contentLengthHeader) : undefined,
-	};
 }

@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
-import { mkdirSync } from 'fs';
+import { mkdirSync, unlinkSync } from 'fs';
 import { S3Client } from 'bun';
 import { eq, ilike } from 'drizzle-orm';
-import { extension as mimeExtension, lookup as mimeLookup } from 'mime-types';
+import { extension as mimeExtension } from 'mime-types';
+import { getMimeTypeFromURL } from '@/app/lib/server/content-helpers';
 import { db } from '@/server/db/connections/postgres';
 import { media } from '@/server/db/schema/media';
 
@@ -61,6 +62,8 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 		return mediaUrl;
 	}
 
+	let tempFilePath: string | null = null;
+
 	try {
 		// 1. Fetch the remote file
 		const resp = await fetch(mediaUrl);
@@ -71,11 +74,9 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 		// 2. Determine content type
 		let contentType = resp.headers.get('content-type') || '';
 
-		// If content type not provided, guess from URL
+		// If content type not provided, guess from URL using the centralized function
 		if (!contentType) {
-			const pathname = new URL(mediaUrl).pathname;
-			const guess = mimeLookup(pathname);
-			contentType = guess || 'application/octet-stream';
+			contentType = getMimeTypeFromURL(mediaUrl);
 		}
 
 		// 3. Create temp directory if it doesn't exist
@@ -87,7 +88,7 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 		// 5. Generate unique filename with appropriate extension
 		const uniqueName = randomUUID();
 		const ext = mimeExtension(contentType) || 'bin';
-		const tempFilePath = `${TEMP_MEDIA_DIR}/${uniqueName}.${ext}`;
+		tempFilePath = `${TEMP_MEDIA_DIR}/${uniqueName}.${ext}`;
 		const objectKey = `${uniqueName}.${ext}`;
 
 		// 6. Write to temporary file
@@ -109,6 +110,15 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 		throw new Error(
 			`Failed to upload media: ${error instanceof Error ? error.message : String(error)}`
 		);
+	} finally {
+		// Clean up temporary file if it exists
+		if (tempFilePath) {
+			try {
+				unlinkSync(tempFilePath);
+			} catch (cleanupError) {
+				console.warn(`Failed to clean up temporary file ${tempFilePath}:`, cleanupError);
+			}
+		}
 	}
 }
 

@@ -1,9 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
-import { getSmartMetadata } from '@/app/lib/server/content-helpers';
 import { db } from '@/server/db/connections';
 import {
 	media,
-	recordCreators,
 	records,
 	twitterMedia,
 	twitterTweets,
@@ -14,8 +12,18 @@ import {
 	type TwitterTweetSelect,
 	type TwitterUserSelect,
 } from '@/server/db/schema';
-import { uploadMediaToR2 } from '../common/media-helpers';
+import { linkRecordToCreator, setRecordParent } from '../common/db-helpers';
+import { createIntegrationLogger } from '../common/logging';
+import { getMediaMetadata, uploadToR2 } from '../common/record-mapping';
 
+const logger = createIntegrationLogger('twitter', 'map');
+
+/**
+ * Maps a Twitter user to a record
+ *
+ * @param user - The Twitter user to map
+ * @returns A record insert object
+ */
 export const mapTwitterUserToRecord = (user: TwitterUserSelect): RecordInsert => {
 	return {
 		id: user.recordId ?? undefined,
@@ -36,19 +44,26 @@ export const mapTwitterUserToRecord = (user: TwitterUserSelect): RecordInsert =>
 	};
 };
 
+/**
+ * Creates records from Twitter users that don't have associated records yet
+ */
 export async function createRecordsFromTwitterUsers() {
-	console.log('Creating records from Twitter users');
+	logger.start('Creating records from Twitter users');
+
 	const users = await db.query.twitterUsers.findMany({
 		where: isNull(twitterUsers.recordId),
 	});
 
 	if (users.length === 0) {
-		console.log('No new or updated users to process.');
+		logger.skip('No new or updated users to process');
 		return;
 	}
 
+	logger.info(`Found ${users.length} unmapped Twitter users`);
+
 	for (const user of users) {
 		const entity = mapTwitterUserToRecord(user);
+
 		const [newRecord] = await db
 			.insert(records)
 			.values(entity)
@@ -57,22 +72,36 @@ export async function createRecordsFromTwitterUsers() {
 				set: { recordUpdatedAt: new Date() },
 			})
 			.returning({ id: records.id });
+
 		if (!newRecord) {
 			throw new Error('Failed to create record');
 		}
+
 		await db
 			.update(twitterUsers)
 			.set({ recordId: newRecord.id })
 			.where(eq(twitterUsers.id, user.id));
-		console.log(`Created record ${newRecord.id} for user ${user.username}`);
+
+		logger.info(`Created record ${newRecord.id} for user ${user.username}`);
 	}
+
+	logger.complete(`Processed ${users.length} Twitter users`);
 }
 
+/**
+ * Type for a tweet with its user and quoted tweet data
+ */
 type TweetData = TwitterTweetSelect & {
 	user: TwitterUserSelect;
 	quotedTweet: TwitterTweetSelect | null;
 };
 
+/**
+ * Maps a Twitter tweet to a record
+ *
+ * @param tweet - The Twitter tweet to map
+ * @returns A record insert object
+ */
 export const mapTwitterTweetToRecord = (tweet: TweetData): RecordInsert => {
 	return {
 		id: tweet.recordId ?? undefined,
@@ -91,17 +120,23 @@ export const mapTwitterTweetToRecord = (tweet: TweetData): RecordInsert => {
 	};
 };
 
+/**
+ * Creates records from tweets that don't have associated records yet
+ */
 export async function createRecordsFromTweets() {
-	console.log('Creating records from Twitter tweets');
+	logger.start('Creating records from Twitter tweets');
+
 	const tweets = await db.query.twitterTweets.findMany({
 		where: isNull(twitterTweets.recordId),
 		with: { user: true, media: true, quotedTweet: true },
 	});
 
 	if (tweets.length === 0) {
-		console.log('No new or updated tweets to process.');
+		logger.skip('No new or updated tweets to process');
 		return;
 	}
+
+	logger.info(`Found ${tweets.length} unmapped Twitter tweets`);
 
 	const updatedTweetIds: string[] = [];
 	// Map to store the new record IDs keyed by the corresponding Twitter tweet ID.
@@ -109,123 +144,145 @@ export async function createRecordsFromTweets() {
 
 	for (const tweet of tweets) {
 		const record = mapTwitterTweetToRecord(tweet);
+
 		// Insert the record with parentId set to null (to be updated later if this is a quote).
-		const [newRecord] = await db.insert(records).values(record).returning({ id: records.id });
+		const [newRecord] = await db
+			.insert(records)
+			.values(record)
+			.onConflictDoUpdate({
+				target: records.id,
+				set: { recordUpdatedAt: new Date() },
+			})
+			.returning({ id: records.id });
 		if (!newRecord) {
 			throw new Error('Failed to create record');
 		}
-		console.log(
+
+		logger.info(
 			`Created record ${newRecord.id} for tweet ${tweet.text?.slice(0, 20)} (${tweet.id})`
 		);
+
 		await db
 			.update(twitterTweets)
 			.set({ recordId: newRecord.id })
 			.where(eq(twitterTweets.id, tweet.id));
+
 		updatedTweetIds.push(tweet.id);
 		recordMap.set(tweet.id, newRecord.id);
+
 		// Link the tweet creator via recordCreators.
 		if (tweet.user.recordId) {
-			await db
-				.insert(recordCreators)
-				.values({
-					recordId: newRecord.id,
-					creatorId: tweet.user.recordId,
-					creatorRole: 'creator',
-				})
-				.onConflictDoUpdate({
-					target: [recordCreators.recordId, recordCreators.creatorId, recordCreators.creatorRole],
-					set: { recordUpdatedAt: new Date() },
-				});
+			await linkRecordToCreator(newRecord.id, tweet.user.recordId, 'creator');
 		}
+
 		// Link the tweet media via recordMedia.
-		tweet.media.forEach(async (mediaItem) => {
+		for (const mediaItem of tweet.media) {
 			if (mediaItem.mediaId) {
-				console.log(`Linking media ${mediaItem.mediaId} to record ${newRecord.id}`);
+				logger.info(`Linking media ${mediaItem.mediaId} to record ${newRecord.id}`);
 				await db
 					.update(media)
 					.set({ recordId: newRecord.id })
 					.where(eq(media.id, mediaItem.mediaId));
 			}
-		});
+		}
 	}
 
 	// Update parent-child relationships for tweets that are quoting another tweet.
-	await linkQuotedTweets(updatedTweetIds);
+	if (updatedTweetIds.length > 0) {
+		await linkQuotedTweets(updatedTweetIds);
+	}
+
+	logger.complete(`Processed ${tweets.length} Twitter tweets`);
 }
 
+/**
+ * Links quoted tweets to their parent tweets
+ *
+ * @param tweetIds - Array of tweet IDs to check for quotes
+ */
 export async function linkQuotedTweets(tweetIds: string[]) {
+	logger.start('Linking quoted tweets');
+
 	const tweetsWithQuotes = await db.query.twitterTweets.findMany({
 		where: and(inArray(twitterTweets.id, tweetIds), isNotNull(twitterTweets.quotedTweetId)),
 		with: { quotedTweet: true },
 	});
 
 	if (tweetsWithQuotes.length === 0) {
-		console.log('No new or updated tweets with quotes to process.');
+		logger.skip('No tweets with quotes to process');
 		return;
 	}
 
-	console.log(`Linking ${tweetsWithQuotes.length} tweets with quotes to records`);
+	logger.info(`Found ${tweetsWithQuotes.length} tweets with quotes to link`);
 
 	for (const tweet of tweetsWithQuotes) {
 		// The quoted tweet should already have been processed.
 		const quotedTweet = tweet.quotedTweet!;
 		if (!tweet.recordId || !quotedTweet.recordId) {
-			console.log(`Quoted tweet ${tweet.id} not linked to record`);
+			logger.warn(`Quoted tweet ${tweet.id} not linked to record`);
 			continue;
 		}
+
 		// Update the tweet's record with the parent's record id.
-		console.log(
+		logger.info(
 			`Setting parentId of tweet record ${tweet.recordId} to quoted tweet record ${quotedTweet.recordId}`
 		);
-		await db
-			.update(records)
-			.set({ parentId: quotedTweet.recordId, childType: 'quotes' })
-			.where(eq(records.id, tweet.recordId));
+
+		await setRecordParent(tweet.recordId, quotedTweet.recordId, 'quotes');
 	}
+
+	logger.complete(`Linked ${tweetsWithQuotes.length} quoted tweets`);
 }
 
+/**
+ * Type for Twitter media with its associated tweet
+ */
 type MediaWithTweet = TwitterMediaSelect & {
 	tweet: TwitterTweetSelect;
 };
 
+/**
+ * Maps Twitter media to a media object
+ *
+ * @param media - The Twitter media to map
+ * @returns A promise resolving to a media insert object or null if processing fails
+ */
 export const mapTwitterMediaToMedia = async (
 	media: MediaWithTweet
 ): Promise<MediaInsert | null> => {
+	// First upload to R2 if needed
 	let mediaUrl = media.mediaUrl;
 	try {
-		const newUrl = await uploadMediaToR2(mediaUrl);
+		const newUrl = await uploadToR2(mediaUrl);
+		if (!newUrl) {
+			return null;
+		}
+
 		mediaUrl = newUrl;
-		console.log(`Uploaded media ${media.mediaUrl} to ${newUrl}`);
+		logger.info(`Uploaded media ${media.mediaUrl} to ${newUrl}`);
+
 		await db.update(twitterMedia).set({ mediaUrl: newUrl }).where(eq(twitterMedia.id, media.id));
-		console.log(`Updated twitterMedia ${media.id} with new URL ${newUrl}`);
+
+		logger.info(`Updated twitterMedia ${media.id} with new URL ${newUrl}`);
 	} catch (error) {
-		console.error('Error uploading media to R2', media.tweetUrl, media.mediaUrl, error);
+		logger.error('Error uploading media to R2', error);
 		return null;
 	}
-	try {
-		const { size, width, height, mediaFormat, mediaType, contentTypeString } =
-			await getSmartMetadata(mediaUrl);
-		return {
-			id: media.mediaId ?? undefined,
-			url: mediaUrl,
-			recordId: media.tweet.recordId ?? undefined,
-			type: mediaType,
-			format: mediaFormat,
-			contentTypeString,
-			fileSize: size,
-			width,
-			height,
-			recordCreatedAt: media.tweet.recordCreatedAt,
-			recordUpdatedAt: media.tweet.recordUpdatedAt,
-		};
-	} catch (error) {
-		console.error('Error getting smart metadata for media', media.tweetUrl, media.mediaUrl, error);
-		return null;
-	}
+
+	// Then get metadata and create media object
+	return getMediaMetadata(mediaUrl, {
+		recordId: media.tweet.recordId,
+		recordCreatedAt: media.tweet.recordCreatedAt,
+		recordUpdatedAt: media.tweet.recordUpdatedAt,
+	});
 };
 
+/**
+ * Creates media from Twitter tweets that don't have associated media yet
+ */
 export async function createMediaFromTweets() {
-	console.log('Creating media from Twitter tweets');
+	logger.start('Creating media from Twitter tweets');
+
 	const mediaWithTweets = await db.query.twitterMedia.findMany({
 		where: and(isNull(twitterMedia.mediaId), isNull(twitterMedia.deletedAt)),
 		with: {
@@ -234,25 +291,29 @@ export async function createMediaFromTweets() {
 	});
 
 	if (mediaWithTweets.length === 0) {
-		console.log('No new or updated tweets without media to process.');
+		logger.skip('No new or updated tweets without media to process');
 		return;
 	}
 
-	console.log(`Creating ${mediaWithTweets.length} media from tweets`);
+	logger.info(`Found ${mediaWithTweets.length} Twitter media items to process`);
 
 	for (const item of mediaWithTweets) {
 		const mediaItem = await mapTwitterMediaToMedia(item);
 		if (!mediaItem) {
-			console.log(
-				`Failed to create media for tweet ${item.tweetUrl}: ${item.mediaUrl}, deleting source media.`
+			logger.error(
+				`Failed to create media for tweet ${item.tweetUrl}: ${item.mediaUrl}, deleting source media`
 			);
+
 			await db
 				.update(twitterMedia)
 				.set({ mediaId: null, deletedAt: new Date() })
 				.where(eq(twitterMedia.id, item.id));
+
 			continue;
 		}
-		console.log(`Creating media for ${mediaItem.url}`);
+
+		logger.info(`Creating media for ${mediaItem.url}`);
+
 		const [newMedia] = await db
 			.insert(media)
 			.values(mediaItem)
@@ -263,21 +324,27 @@ export async function createMediaFromTweets() {
 				},
 			})
 			.returning({ id: media.id });
+
 		if (!newMedia) {
 			throw new Error('Failed to create media');
 		}
-		console.log(`Created media ${newMedia.id} for ${mediaItem.url}`);
+
+		logger.info(`Created media ${newMedia.id} for ${mediaItem.url}`);
+
 		await db
 			.update(twitterMedia)
 			.set({ mediaId: newMedia.id, mediaUrl: mediaItem.url })
 			.where(eq(twitterMedia.id, item.id));
 
 		if (item.tweet.recordId) {
-			console.log(`Linking media ${newMedia.id} to record ${item.tweet.recordId}`);
+			logger.info(`Linking media ${newMedia.id} to record ${item.tweet.recordId}`);
+
 			await db
 				.update(media)
 				.set({ recordId: item.tweet.recordId })
 				.where(eq(media.id, newMedia.id));
 		}
 	}
+
+	logger.complete(`Processed ${mediaWithTweets.length} Twitter media items`);
 }
