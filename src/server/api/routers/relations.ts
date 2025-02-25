@@ -1,16 +1,16 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { recordCategories, recordCreators, records } from '@/server/db/schema';
+import { recordCreators, recordRelations, records } from '@/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
 
 export const relationsRouter = createTRPCRouter({
 	getRecordsForCategory: publicProcedure
 		.input(z.number().int().positive())
 		.query(async ({ ctx: { db }, input }) => {
-			const records = await db.query.recordCategories.findMany({
-				where: eq(recordCategories.categoryId, input),
+			const records = await db.query.recordRelations.findMany({
+				where: and(eq(recordRelations.targetId, input), eq(recordRelations.type, 'tagged')),
 				with: {
-					record: true,
+					source: true,
 				},
 			});
 			return records;
@@ -28,10 +28,12 @@ export const relationsRouter = createTRPCRouter({
 			return records;
 		}),
 
-	getRecordsWithFormat: publicProcedure.input(z.string()).query(async ({ ctx: { db }, input }) => {
-		const data = await db.query.records.findMany({
-			where: eq(records.format, input),
-		});
-		return data;
-	}),
+	getRecordsWithFormat: publicProcedure
+		.input(z.number().int().positive())
+		.query(async ({ ctx: { db }, input }) => {
+			const data = await db.query.records.findMany({
+				where: eq(records.formatId, input),
+			});
+			return data;
+		}),
 });

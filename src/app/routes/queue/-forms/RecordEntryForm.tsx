@@ -239,11 +239,13 @@ export const RecordEntryForm: React.FC<RecordEntryFormProps> = ({
 							/>
 						)}
 					</form.Field>
-					<form.Field name="curatedAt">
+					<form.Field name="needsCuration">
 						{(field) => (
-							<Button variant="outline" onClick={() => field.handleChange(new Date())}>
-								Mark as Curated
-							</Button>
+							<CheckboxWithLabel
+								label="Needs Curation"
+								checked={field.state.value || false}
+								onCheckedChange={(checked) => field.handleChange(!!checked)}
+							/>
 						)}
 					</form.Field>
 				</div>

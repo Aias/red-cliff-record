@@ -63,11 +63,11 @@ export const RecordCategories = ({ categoryId }: RecordCategoriesProps) => {
 			<RecordList>
 				{records.map((record) => (
 					<RecordListItem
-						key={record.record.id}
-						badge={record.categoryType.replaceAll('_', ' ')}
-						title={record.record.title}
-						content={record.record.content ?? record.record.summary ?? ' '}
-						sources={record.record.sources}
+						key={record.source.id}
+						badge={record.type.replaceAll('_', ' ')}
+						title={record.source.title}
+						content={record.source.content ?? record.source.summary ?? ' '}
+						sources={record.source.sources}
 					/>
 				))}
 			</RecordList>
