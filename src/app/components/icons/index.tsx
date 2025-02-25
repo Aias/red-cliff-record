@@ -12,13 +12,18 @@ import {
 	Cross1Icon as Cross1IconRadix,
 	CubeIcon as CubeIconRadix,
 	ExternalLinkIcon as ExternalLinkIconRadix,
+	Half1Icon as Half1IconRadix,
 	ImageIcon as ImageIconRadix,
 	Link2Icon as Link2IconRadix,
+	LinkBreak1Icon as LinkBreak1IconRadix,
+	LockClosedIcon as LockClosedIconRadix,
+	LockOpen2Icon as LockOpen2IconRadix,
 	MagnifyingGlassIcon as MagnifyingGlassIconRadix,
 	MoonIcon as MoonIconRadix,
 	PersonIcon as PersonIconRadix,
 	QuestionMarkCircledIcon as QuestionMarkCircledIconRadix,
 	SunIcon as SunIconRadix,
+	TrashIcon as TrashIconRadix,
 } from '@radix-ui/react-icons';
 
 export type IconProps = Omit<React.ComponentPropsWithRef<'svg'>, 'children'>;
@@ -33,7 +38,10 @@ function wrapIcon(IconComponent: React.ComponentType<IconProps>) {
 	return WrappedIcon;
 }
 
+// Semantic Mappings
+
 export const ArchiveIcon = wrapIcon(ArchiveIconRadix);
+
 export const CategoryIcon = wrapIcon(ArchiveIconRadix);
 export const CheckIcon = wrapIcon(CheckIconRadix);
 export const ClearIcon = wrapIcon(Cross1IconRadix);
@@ -42,15 +50,29 @@ export const CollapseIcon = wrapIcon(ChevronUpIconRadix);
 export const CompleteIcon = wrapIcon(CheckCircledIconRadix);
 export const ConnectIcon = wrapIcon(Link2IconRadix);
 export const CopyIcon = wrapIcon(CopyIconRadix);
+export const CuratedIcon = wrapIcon(CheckCircledIconRadix);
+
 export const DayModeIcon = wrapIcon(SunIconRadix);
+export const DeleteIcon = wrapIcon(TrashIconRadix);
+
 export const EntityIcon = wrapIcon(PersonIconRadix);
 export const ExpandIcon = wrapIcon(ChevronDownIconRadix);
 export const ExternalLinkIcon = wrapIcon(ExternalLinkIconRadix);
+
 export const FormatIcon = wrapIcon(CubeIconRadix);
+
 export const ImageIcon = wrapIcon(ImageIconRadix);
 export const IncompleteIcon = wrapIcon(CircleIconRadix);
+
 export const NextIcon = wrapIcon(ChevronRightIconRadix);
 export const NightModeIcon = wrapIcon(MoonIconRadix);
+
 export const PreviousIcon = wrapIcon(ChevronLeftIconRadix);
+export const PrivateIcon = wrapIcon(LockClosedIconRadix);
+export const PublicIcon = wrapIcon(LockOpen2IconRadix);
+
 export const SearchIcon = wrapIcon(MagnifyingGlassIconRadix);
+
+export const UncuratedIcon = wrapIcon(Half1IconRadix);
 export const UnknownIcon = wrapIcon(QuestionMarkCircledIconRadix);
+export const UnlinkIcon = wrapIcon(LinkBreak1IconRadix);

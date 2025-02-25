@@ -11,56 +11,14 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as QueueRouteImport } from './routes/queue/route'
-import { Route as CommitsRouteImport } from './routes/commits/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as QueueRecordsImport } from './routes/queue/records'
-import { Route as HistoryDateImport } from './routes/history/$date'
-import { Route as CommitsShaImport } from './routes/commits/$sha'
-import { Route as QueueRecordsRecordIdImport } from './routes/queue/records.$recordId'
 
 // Create/Update Routes
-
-const QueueRouteRoute = QueueRouteImport.update({
-  id: '/queue',
-  path: '/queue',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const CommitsRouteRoute = CommitsRouteImport.update({
-  id: '/commits',
-  path: '/commits',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
-} as any)
-
-const QueueRecordsRoute = QueueRecordsImport.update({
-  id: '/records',
-  path: '/records',
-  getParentRoute: () => QueueRouteRoute,
-} as any)
-
-const HistoryDateRoute = HistoryDateImport.update({
-  id: '/history/$date',
-  path: '/history/$date',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const CommitsShaRoute = CommitsShaImport.update({
-  id: '/$sha',
-  path: '/$sha',
-  getParentRoute: () => CommitsRouteRoute,
-} as any)
-
-const QueueRecordsRecordIdRoute = QueueRecordsRecordIdImport.update({
-  id: '/$recordId',
-  path: '/$recordId',
-  getParentRoute: () => QueueRecordsRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -74,163 +32,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/commits': {
-      id: '/commits'
-      path: '/commits'
-      fullPath: '/commits'
-      preLoaderRoute: typeof CommitsRouteImport
-      parentRoute: typeof rootRoute
-    }
-    '/queue': {
-      id: '/queue'
-      path: '/queue'
-      fullPath: '/queue'
-      preLoaderRoute: typeof QueueRouteImport
-      parentRoute: typeof rootRoute
-    }
-    '/commits/$sha': {
-      id: '/commits/$sha'
-      path: '/$sha'
-      fullPath: '/commits/$sha'
-      preLoaderRoute: typeof CommitsShaImport
-      parentRoute: typeof CommitsRouteImport
-    }
-    '/history/$date': {
-      id: '/history/$date'
-      path: '/history/$date'
-      fullPath: '/history/$date'
-      preLoaderRoute: typeof HistoryDateImport
-      parentRoute: typeof rootRoute
-    }
-    '/queue/records': {
-      id: '/queue/records'
-      path: '/records'
-      fullPath: '/queue/records'
-      preLoaderRoute: typeof QueueRecordsImport
-      parentRoute: typeof QueueRouteImport
-    }
-    '/queue/records/$recordId': {
-      id: '/queue/records/$recordId'
-      path: '/$recordId'
-      fullPath: '/queue/records/$recordId'
-      preLoaderRoute: typeof QueueRecordsRecordIdImport
-      parentRoute: typeof QueueRecordsImport
-    }
   }
 }
 
 // Create and export the route tree
 
-interface CommitsRouteRouteChildren {
-  CommitsShaRoute: typeof CommitsShaRoute
-}
-
-const CommitsRouteRouteChildren: CommitsRouteRouteChildren = {
-  CommitsShaRoute: CommitsShaRoute,
-}
-
-const CommitsRouteRouteWithChildren = CommitsRouteRoute._addFileChildren(
-  CommitsRouteRouteChildren,
-)
-
-interface QueueRecordsRouteChildren {
-  QueueRecordsRecordIdRoute: typeof QueueRecordsRecordIdRoute
-}
-
-const QueueRecordsRouteChildren: QueueRecordsRouteChildren = {
-  QueueRecordsRecordIdRoute: QueueRecordsRecordIdRoute,
-}
-
-const QueueRecordsRouteWithChildren = QueueRecordsRoute._addFileChildren(
-  QueueRecordsRouteChildren,
-)
-
-interface QueueRouteRouteChildren {
-  QueueRecordsRoute: typeof QueueRecordsRouteWithChildren
-}
-
-const QueueRouteRouteChildren: QueueRouteRouteChildren = {
-  QueueRecordsRoute: QueueRecordsRouteWithChildren,
-}
-
-const QueueRouteRouteWithChildren = QueueRouteRoute._addFileChildren(
-  QueueRouteRouteChildren,
-)
-
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/commits': typeof CommitsRouteRouteWithChildren
-  '/queue': typeof QueueRouteRouteWithChildren
-  '/commits/$sha': typeof CommitsShaRoute
-  '/history/$date': typeof HistoryDateRoute
-  '/queue/records': typeof QueueRecordsRouteWithChildren
-  '/queue/records/$recordId': typeof QueueRecordsRecordIdRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/commits': typeof CommitsRouteRouteWithChildren
-  '/queue': typeof QueueRouteRouteWithChildren
-  '/commits/$sha': typeof CommitsShaRoute
-  '/history/$date': typeof HistoryDateRoute
-  '/queue/records': typeof QueueRecordsRouteWithChildren
-  '/queue/records/$recordId': typeof QueueRecordsRecordIdRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/commits': typeof CommitsRouteRouteWithChildren
-  '/queue': typeof QueueRouteRouteWithChildren
-  '/commits/$sha': typeof CommitsShaRoute
-  '/history/$date': typeof HistoryDateRoute
-  '/queue/records': typeof QueueRecordsRouteWithChildren
-  '/queue/records/$recordId': typeof QueueRecordsRecordIdRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/commits'
-    | '/queue'
-    | '/commits/$sha'
-    | '/history/$date'
-    | '/queue/records'
-    | '/queue/records/$recordId'
+  fullPaths: '/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/commits'
-    | '/queue'
-    | '/commits/$sha'
-    | '/history/$date'
-    | '/queue/records'
-    | '/queue/records/$recordId'
-  id:
-    | '__root__'
-    | '/'
-    | '/commits'
-    | '/queue'
-    | '/commits/$sha'
-    | '/history/$date'
-    | '/queue/records'
-    | '/queue/records/$recordId'
+  to: '/'
+  id: '__root__' | '/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CommitsRouteRoute: typeof CommitsRouteRouteWithChildren
-  QueueRouteRoute: typeof QueueRouteRouteWithChildren
-  HistoryDateRoute: typeof HistoryDateRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CommitsRouteRoute: CommitsRouteRouteWithChildren,
-  QueueRouteRoute: QueueRouteRouteWithChildren,
-  HistoryDateRoute: HistoryDateRoute,
 }
 
 export const routeTree = rootRoute
@@ -243,44 +77,11 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/",
-        "/commits",
-        "/queue",
-        "/history/$date"
+        "/"
       ]
     },
     "/": {
       "filePath": "index.tsx"
-    },
-    "/commits": {
-      "filePath": "commits/route.tsx",
-      "children": [
-        "/commits/$sha"
-      ]
-    },
-    "/queue": {
-      "filePath": "queue/route.tsx",
-      "children": [
-        "/queue/records"
-      ]
-    },
-    "/commits/$sha": {
-      "filePath": "commits/$sha.tsx",
-      "parent": "/commits"
-    },
-    "/history/$date": {
-      "filePath": "history/$date.tsx"
-    },
-    "/queue/records": {
-      "filePath": "queue/records.tsx",
-      "parent": "/queue",
-      "children": [
-        "/queue/records/$recordId"
-      ]
-    },
-    "/queue/records/$recordId": {
-      "filePath": "queue/records.$recordId.tsx",
-      "parent": "/queue/records"
     }
   }
 }

@@ -61,30 +61,28 @@ async function processBatch(
 					`\n  Message: ${commit.message.split('\n')[0]}`
 				);
 
-				const summary = await summarizeCommit(
-					JSON.stringify({
-						message: commit.message,
-						sha: commit.sha,
-						changes: commit.changes,
-						additions: commit.additions,
-						deletions: commit.deletions,
-						commitChanges: commit.commitChanges.map((change: GithubCommitChangeSelect) => ({
-							filename: change.filename,
-							status: change.status,
-							changes: change.changes,
-							deletions: change.deletions,
-							additions: change.additions,
-							patch: change.patch,
-						})),
-						repository: {
-							fullName: commit.repository.fullName,
-							description: commit.repository.description,
-							language: commit.repository.language,
-							topics: commit.repository.topics,
-							licenseName: commit.repository.licenseName,
-						},
-					})
-				);
+				const summary = await summarizeCommit({
+					message: commit.message,
+					sha: commit.sha,
+					changes: commit.changes,
+					additions: commit.additions,
+					deletions: commit.deletions,
+					commitChanges: commit.commitChanges.map((change) => ({
+						filename: change.filename,
+						status: change.status,
+						changes: change.changes,
+						deletions: change.deletions,
+						additions: change.additions,
+						patch: change.patch,
+					})),
+					repository: {
+						fullName: commit.repository.fullName,
+						description: commit.repository.description,
+						language: commit.repository.language,
+						topics: commit.repository.topics,
+						licenseName: commit.repository.licenseName,
+					},
+				});
 
 				console.log(
 					`Completed summarization for commit ${commit.sha.slice(0, 7)}:`,
