@@ -1,7 +1,12 @@
 import { TRPCError } from '@trpc/server';
 import { arrayOverlaps } from 'drizzle-orm';
 import { z } from 'zod';
-import { IntegrationTypeSchema, RecordTypeSchema } from '@/server/db/schema';
+import {
+	IntegrationTypeSchema,
+	RecordInsertSchema,
+	records,
+	RecordTypeSchema,
+} from '@/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { DEFAULT_LIMIT, SIMILARITY_THRESHOLD } from './common';
 
@@ -254,8 +259,35 @@ const searchRecords = publicProcedure.input(z.string()).query(({ ctx: { db }, in
 	});
 });
 
+const upsertRecord = publicProcedure
+	.input(RecordInsertSchema)
+	.mutation(async ({ ctx: { db }, input }) => {
+		const [result] = await db
+			.insert(records)
+			.values(input)
+			.onConflictDoUpdate({
+				target: records.id,
+				set: {
+					...input,
+					recordUpdatedAt: new Date(),
+					textEmbedding: null, // Changes require recalculating the embedding.
+				},
+			})
+			.returning();
+
+		if (!result) {
+			throw new TRPCError({
+				code: 'INTERNAL_SERVER_ERROR',
+				message: `Record upsert failed. Input data:\n\n${JSON.stringify(input, null, 2)}`,
+			});
+		}
+
+		return result;
+	});
+
 export const recordsRouter = createTRPCRouter({
 	get: getRecord,
 	list: listRecords,
 	search: searchRecords,
+	upsert: upsertRecord,
 });

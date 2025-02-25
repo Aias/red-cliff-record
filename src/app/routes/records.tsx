@@ -50,9 +50,7 @@ function RouteComponent() {
 					})}
 				</ol>
 			</div>
-			<div className="flex-1 overflow-hidden">
-				<Outlet />
-			</div>
+			<Outlet />
 		</main>
 	);
 }
