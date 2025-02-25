@@ -14,11 +14,6 @@ export const recordsRouter = createTRPCRouter({
 						creator: true,
 					},
 				},
-				categories: {
-					with: {
-						category: true,
-					},
-				},
 				media: true,
 				children: true,
 				parent: true,
@@ -40,17 +35,12 @@ export const recordsRouter = createTRPCRouter({
 							creator: true,
 						},
 					},
-					categories: {
-						with: {
-							category: true,
-						},
-					},
 					media: true,
 					children: true,
 				},
 				where: and(
 					source ? arrayContained(records.sources, [source]) : undefined,
-					isNull(records.curatedAt),
+					eq(records.needsCuration, true),
 					isNull(records.parentId)
 				),
 				orderBy: [records.recordCreatedAt, records.childOrder, records.recordUpdatedAt],
@@ -69,7 +59,7 @@ export const recordsRouter = createTRPCRouter({
 			const count = await db.$count(
 				records,
 				and(
-					isNull(records.curatedAt),
+					eq(records.needsCuration, true),
 					source ? arrayContained(records.sources, [source]) : undefined
 				)
 			);
@@ -110,7 +100,7 @@ export const recordsRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db }, input: { recordIds, needsCuration } }) => {
 			const updatedRecords = await db
 				.update(records)
-				.set({ curatedAt: !needsCuration ? new Date() : null })
+				.set({ needsCuration })
 				.where(inArray(records.id, recordIds))
 				.returning();
 			return updatedRecords;
@@ -149,11 +139,6 @@ export const recordsRouter = createTRPCRouter({
 				creators: {
 					with: {
 						creator: true,
-					},
-				},
-				categories: {
-					with: {
-						category: true,
 					},
 				},
 				media: true,

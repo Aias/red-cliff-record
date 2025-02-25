@@ -177,12 +177,7 @@ function RouteComponent() {
 type RecordQueueItemProps = {
 	entry: RecordSelect & {
 		creators: {
-			creator: RecordSelect & {
-				media: MediaSelect[];
-			};
-		}[];
-		categories: {
-			category: RecordSelect;
+			creator: RecordSelect;
 		}[];
 		media: MediaSelect[];
 		children: RecordSelect[];
@@ -233,8 +228,8 @@ const RecordQueueItem = ({
 						{firstCreator ? (
 							<>
 								<Avatar
-									src={firstCreator.media[0]?.url ?? undefined}
-									fallback={firstCreator.title.slice(0, 1)}
+									src={firstCreator.avatarUrl ?? undefined}
+									fallback={firstCreator.title?.slice(0, 1) ?? '?'}
 									inline
 								/>
 							</>
