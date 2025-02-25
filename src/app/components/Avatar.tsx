@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 export type AvatarProps = React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> & {
 	src?: string | undefined;
-	fallback?: ReactNode;
+	fallback: ReactNode;
 	rounded?: boolean;
 	themed?: boolean;
 	inline?: boolean;

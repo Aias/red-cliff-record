@@ -19,12 +19,15 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 
 	return (
 		<div className="fixed inset-0 flex flex-col overflow-hidden">
-			<menu className="z-100 flex items-center justify-between gap-4 border-b border-rcr-border surface px-4 py-2">
+			<menu className="z-100 flex shrink-0 basis-auto items-center justify-between gap-4 border-b border-rcr-border surface px-4 py-2">
 				<li className="flex grow">
 					<Link to={'/'} className="flex grow cursor-pointer items-center gap-3">
 						<ArchiveIcon />
-						<span className="font-mono text-sm font-medium">The Red Cliff Record</span>
+						<span className="font-mono font-medium">The Red Cliff Record</span>
 					</Link>
+				</li>
+				<li>
+					<Link to={'/records'}>Records</Link>
 				</li>
 				<Button asChild variant="ghost" onClick={toggleTheme}>
 					<li>{currentTheme === 'light' ? <DayModeIcon /> : <NightModeIcon />}</li>

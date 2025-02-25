@@ -11,14 +11,28 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as RecordsImport } from './routes/records'
 import { Route as IndexImport } from './routes/index'
+import { Route as RecordsRecordIdImport } from './routes/records.$recordId'
 
 // Create/Update Routes
+
+const RecordsRoute = RecordsImport.update({
+  id: '/records',
+  path: '/records',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const RecordsRecordIdRoute = RecordsRecordIdImport.update({
+  id: '/$recordId',
+  path: '/$recordId',
+  getParentRoute: () => RecordsRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -32,39 +46,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/records': {
+      id: '/records'
+      path: '/records'
+      fullPath: '/records'
+      preLoaderRoute: typeof RecordsImport
+      parentRoute: typeof rootRoute
+    }
+    '/records/$recordId': {
+      id: '/records/$recordId'
+      path: '/$recordId'
+      fullPath: '/records/$recordId'
+      preLoaderRoute: typeof RecordsRecordIdImport
+      parentRoute: typeof RecordsImport
+    }
   }
 }
 
 // Create and export the route tree
 
+interface RecordsRouteChildren {
+  RecordsRecordIdRoute: typeof RecordsRecordIdRoute
+}
+
+const RecordsRouteChildren: RecordsRouteChildren = {
+  RecordsRecordIdRoute: RecordsRecordIdRoute,
+}
+
+const RecordsRouteWithChildren =
+  RecordsRoute._addFileChildren(RecordsRouteChildren)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/records': typeof RecordsRouteWithChildren
+  '/records/$recordId': typeof RecordsRecordIdRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/records': typeof RecordsRouteWithChildren
+  '/records/$recordId': typeof RecordsRecordIdRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/records': typeof RecordsRouteWithChildren
+  '/records/$recordId': typeof RecordsRecordIdRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/records' | '/records/$recordId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/records' | '/records/$recordId'
+  id: '__root__' | '/' | '/records' | '/records/$recordId'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RecordsRoute: typeof RecordsRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RecordsRoute: RecordsRouteWithChildren,
 }
 
 export const routeTree = rootRoute
@@ -77,11 +124,22 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/"
+        "/",
+        "/records"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/records": {
+      "filePath": "records.tsx",
+      "children": [
+        "/records/$recordId"
+      ]
+    },
+    "/records/$recordId": {
+      "filePath": "records.$recordId.tsx",
+      "parent": "/records"
     }
   }
 }

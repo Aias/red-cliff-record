@@ -17,7 +17,7 @@ export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
 
 export const integrationStatusEnum = pgEnum('integration_status', IntegrationStatus.options);
 
-export const IntegrationType = z.enum([
+export const IntegrationTypeSchema = z.enum([
 	'ai_chat',
 	'airtable',
 	'browser_history',
@@ -30,8 +30,8 @@ export const IntegrationType = z.enum([
 	'readwise',
 	'twitter',
 ]);
-export type IntegrationType = z.infer<typeof IntegrationType>;
-export const integrationTypeEnum = pgEnum('integration_type', IntegrationType.options);
+export type IntegrationType = z.infer<typeof IntegrationTypeSchema>;
+export const integrationTypeEnum = pgEnum('integration_type', IntegrationTypeSchema.options);
 
 export const RunType = z.enum(['seed', 'sync']);
 export type RunType = z.infer<typeof RunType>;
