@@ -1,6 +1,6 @@
 import { z } from 'zod';
+import { emptyStringToNull } from '@/app/lib/formatting';
 import { ReadwiseCategory, ReadwiseLocation } from '@/server/db/schema/readwise';
-import { emptyStringToNull } from '../common/validation-helpers';
 
 const ReadwiseTagSchema = z.object({
 	name: z.string(),

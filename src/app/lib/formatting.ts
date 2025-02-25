@@ -96,3 +96,41 @@ export function validateAndFormatUrl(
 		}
 	}
 }
+
+/**
+ * Maps a URL string to a validated URL
+ *
+ * @param url - The URL to validate and format
+ * @returns The validated URL or undefined if invalid
+ */
+export function mapUrl(url?: string | null): string | undefined {
+	if (!url) return undefined;
+
+	try {
+		const { success, data } = validateAndFormatUrl(url, true);
+		return success ? data : undefined;
+	} catch {
+		console.error('Invalid URL:', url);
+		return undefined;
+	}
+}
+
+/**
+ * Transforms empty strings to null when validating with Zod
+ *
+ * This helper creates a Zod transformer that converts empty strings to null
+ * before validating with the provided schema. Useful for handling optional
+ * string fields from APIs that might return empty strings instead of null.
+ *
+ * @param schema - The Zod schema to apply after the transformation
+ * @returns A Zod schema that transforms empty strings to null before validation
+ * @example
+ * const nameSchema = emptyStringToNull(z.string())
+ * // '' -> null, 'value' -> 'value'
+ */
+export const emptyStringToNull = <T extends z.ZodType>(schema: T) =>
+	z
+		.string()
+		.nullable()
+		.transform((str) => (str === '' ? null : str))
+		.pipe(schema.nullable());

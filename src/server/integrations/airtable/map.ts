@@ -1,4 +1,5 @@
 import { eq, inArray, isNull, or } from 'drizzle-orm';
+import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
 	airtableAttachments,
@@ -25,7 +26,7 @@ import {
 	setRecordParent,
 } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { getMediaMetadata, mapUrl } from '../common/record-mapping';
+import { getMediaInsertData } from '../common/media-helpers';
 
 const logger = createIntegrationLogger('airtable', 'map');
 
@@ -267,7 +268,7 @@ const mapAirtableAttachmentToMedia = async (
 	try {
 		// Since the URL should already be uploaded to R2 during the sync process,
 		// we only need to get the metadata
-		return getMediaMetadata(attachment.url, {
+		return getMediaInsertData(attachment.url, {
 			recordId: attachment.extract.recordId,
 			recordCreatedAt: attachment.extract.recordCreatedAt,
 			recordUpdatedAt: attachment.extract.recordUpdatedAt,

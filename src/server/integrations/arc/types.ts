@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emptyStringToNull } from '../common/validation-helpers';
+import { emptyStringToNull } from '@/app/lib/formatting';
 
 const sanitizeString = (str: string | null): string | null => {
 	if (!str) return null;

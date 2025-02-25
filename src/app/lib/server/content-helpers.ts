@@ -72,6 +72,15 @@ export type MediaMetadata = {
 	hasAlpha?: boolean;
 };
 
+/**
+ * Gets detailed metadata for a media URL
+ * For images, includes dimensions and format information
+ * For other media types, includes basic size and type information
+ *
+ * @param url - The URL of the media to analyze
+ * @returns Detailed metadata about the media
+ * @throws Error if metadata extraction fails
+ */
 export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 	try {
 		const { success, data: validatedUrl } = validateAndFormatUrl(url, true);

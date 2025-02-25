@@ -1,13 +1,11 @@
 import { randomUUID } from 'crypto';
 import { mkdirSync, unlinkSync } from 'fs';
 import { S3Client } from 'bun';
-import { eq, ilike } from 'drizzle-orm';
-import { extension as mimeExtension } from 'mime-types';
-import { getMimeTypeFromURL } from '@/app/lib/server/content-helpers';
-import { db } from '@/server/db/connections/postgres';
-import { media } from '@/server/db/schema/media';
+import mime from 'mime-types';
+import { getMimeTypeFromURL, getSmartMetadata } from '@/app/lib/server/content-helpers';
+import type { MediaInsert } from '@/server/db/schema';
 
-// Environment variable validation
+// Environment variable validation for S3/R2
 const requiredEnvVars = [
 	'S3_REGION',
 	'S3_ACCESS_KEY_ID',
@@ -87,7 +85,7 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 
 		// 5. Generate unique filename with appropriate extension
 		const uniqueName = randomUUID();
-		const ext = mimeExtension(contentType) || 'bin';
+		const ext = mime.extension(contentType) || 'bin';
 		tempFilePath = `${TEMP_MEDIA_DIR}/${uniqueName}.${ext}`;
 		const objectKey = `${uniqueName}.${ext}`;
 
@@ -140,39 +138,38 @@ export async function deleteMediaFromR2(assetId: string): Promise<void> {
 }
 
 /**
- * Transfers media from external URLs to R2 storage
+ * Gets metadata for a media URL
  *
- * This function:
- * 1. Finds media records matching the search term
- * 2. Uploads each media to R2
- * 3. Updates the database records with the new R2 URLs
- *
- * @param searchTerm - SQL LIKE pattern to match media URLs
- * @returns Promise that resolves when all transfers are complete
+ * @param url - The URL of the media to get metadata for
+ * @param recordInfo - Record information to include in the media object
+ * @returns A promise resolving to a media insert object or null if processing fails
  */
-export async function transferMediaToR2(searchTerm: string): Promise<void> {
-	// Find media records matching the search pattern
-	const mediaToTransfer = await db.query.media.findMany({
-		where: ilike(media.url, searchTerm),
-	});
+export async function getMediaInsertData(
+	url: string,
+	recordInfo: { recordId?: number | null; recordCreatedAt: Date; recordUpdatedAt: Date }
+): Promise<MediaInsert | null> {
+	try {
+		// Get metadata for the media
+		const { size, width, height, mediaFormat, mediaType, contentTypeString } =
+			await getSmartMetadata(url);
 
-	console.log(`Found ${mediaToTransfer.length} media items to transfer`);
-
-	// Process each media item
-	for (const m of mediaToTransfer) {
-		try {
-			console.log(`Transferring ${m.url}`);
-			const r2Url = await uploadMediaToR2(m.url);
-			console.log(`Uploaded to R2: ${r2Url}`);
-
-			// Update the database record with the new URL
-			await db
-				.update(media)
-				.set({ url: r2Url, recordUpdatedAt: new Date() })
-				.where(eq(media.id, m.id));
-		} catch (error) {
-			console.error(`Failed to transfer media ${m.id}:`, error);
-			// Continue with next item instead of failing the entire batch
-		}
+		return {
+			url,
+			recordId: recordInfo.recordId ?? undefined,
+			type: mediaType,
+			format: mediaFormat,
+			contentTypeString,
+			fileSize: size,
+			width,
+			height,
+			recordCreatedAt: recordInfo.recordCreatedAt,
+			recordUpdatedAt: recordInfo.recordUpdatedAt,
+		};
+	} catch (error) {
+		console.error('Error getting smart metadata for media', url, error);
+		// Include more detailed error information
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		console.error(`Failed to get metadata for ${url}: ${errorMessage}`);
+		return null;
 	}
 }

@@ -1,4 +1,5 @@
 import { eq, isNull } from 'drizzle-orm';
+import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
 	githubRepositories,
@@ -10,7 +11,6 @@ import {
 } from '@/server/db/schema';
 import { linkRecordToCreator } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { mapUrl } from '../common/record-mapping';
 
 const logger = createIntegrationLogger('github', 'map');
 

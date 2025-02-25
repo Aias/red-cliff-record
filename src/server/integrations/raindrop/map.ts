@@ -13,7 +13,7 @@ import {
 } from '@/server/db/schema';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { getMediaMetadata, uploadToR2 } from '../common/record-mapping';
+import { getMediaInsertData, uploadMediaToR2 } from '../common/media-helpers';
 
 const logger = createIntegrationLogger('raindrop', 'map');
 
@@ -197,7 +197,7 @@ const mapRaindropBookmarkToMedia = async (
 	// First upload to R2 if needed
 	let mediaUrl = bookmark.coverImageUrl;
 	try {
-		const newUrl = await uploadToR2(mediaUrl);
+		const newUrl = await uploadMediaToR2(mediaUrl);
 		if (!newUrl) {
 			logger.error(`Failed to transfer media ${mediaUrl}`);
 			return null;
@@ -216,7 +216,7 @@ const mapRaindropBookmarkToMedia = async (
 	}
 
 	// Then get metadata and create media object
-	return getMediaMetadata(mediaUrl, {
+	return getMediaInsertData(mediaUrl, {
 		recordId: bookmark.recordId,
 		recordCreatedAt: bookmark.recordCreatedAt,
 		recordUpdatedAt: bookmark.recordUpdatedAt,

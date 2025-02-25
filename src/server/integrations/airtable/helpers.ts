@@ -4,7 +4,7 @@ import { eq, notIlike } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import type { AirtableAttachmentSelect, AirtableExtractSelect } from '@/server/db/schema/airtable';
 import { airtableAttachments } from '@/server/db/schema/airtable';
-import { uploadToR2 } from '../common/record-mapping';
+import { uploadMediaToR2 } from '../common/media-helpers';
 import { AirtableAttachmentSchema } from './types';
 
 Airtable.configure({
@@ -28,7 +28,7 @@ async function processAttachment(attachment: AttachmentWithExtract) {
 			console.log(`Processing ${filename} (${id})`);
 
 			try {
-				const r2Url = await uploadToR2(airtableUrl);
+				const r2Url = await uploadMediaToR2(airtableUrl);
 				if (!r2Url) {
 					console.error('Failed to upload attachment to R2:', {
 						extractTitle,

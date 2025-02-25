@@ -1,4 +1,5 @@
 import { and, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm';
+import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
 	readwiseAuthors,
@@ -20,7 +21,6 @@ import {
 	setRecordParent,
 } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { mapUrl } from '../common/record-mapping';
 
 const logger = createIntegrationLogger('readwise', 'map');
 

@@ -10,7 +10,7 @@ import {
 } from '@/server/db/schema';
 import { linkRecordToCreator } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { getMediaMetadata, uploadToR2 } from '../common/record-mapping';
+import { getMediaInsertData, uploadMediaToR2 } from '../common/media-helpers';
 
 const logger = createIntegrationLogger('adobe', 'map');
 
@@ -30,7 +30,7 @@ const mapLightroomImageToMedia = async (
 	image: LightroomImageSelect
 ): Promise<MediaInsert | null> => {
 	// Upload to R2 (the function internally checks if it's already an R2 URL)
-	const newUrl = await uploadToR2(image.url2048);
+	const newUrl = await uploadMediaToR2(image.url2048);
 	if (!newUrl) {
 		logger.error(`Failed to upload image to R2: ${image.url2048}`);
 		return null;
@@ -46,7 +46,7 @@ const mapLightroomImageToMedia = async (
 	}
 
 	// Get metadata for the URL
-	return getMediaMetadata(newUrl, {
+	return getMediaInsertData(newUrl, {
 		recordId: image.recordId,
 		recordCreatedAt: image.recordCreatedAt,
 		recordUpdatedAt: image.recordUpdatedAt,

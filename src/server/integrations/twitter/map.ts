@@ -14,7 +14,7 @@ import {
 } from '@/server/db/schema';
 import { linkRecordToCreator, setRecordParent } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { getMediaMetadata, uploadToR2 } from '../common/record-mapping';
+import { getMediaInsertData, uploadMediaToR2 } from '../common/media-helpers';
 
 const logger = createIntegrationLogger('twitter', 'map');
 
@@ -253,7 +253,7 @@ export const mapTwitterMediaToMedia = async (
 	// First upload to R2 if needed
 	let mediaUrl = media.mediaUrl;
 	try {
-		const newUrl = await uploadToR2(mediaUrl);
+		const newUrl = await uploadMediaToR2(mediaUrl);
 		if (!newUrl) {
 			return null;
 		}
@@ -270,7 +270,7 @@ export const mapTwitterMediaToMedia = async (
 	}
 
 	// Then get metadata and create media object
-	return getMediaMetadata(mediaUrl, {
+	return getMediaInsertData(mediaUrl, {
 		recordId: media.tweet.recordId,
 		recordCreatedAt: media.tweet.recordCreatedAt,
 		recordUpdatedAt: media.tweet.recordUpdatedAt,

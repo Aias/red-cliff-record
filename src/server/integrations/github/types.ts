@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emptyStringToNull } from '../common/validation-helpers';
+import { emptyStringToNull } from '@/app/lib/formatting';
 
 export const GithubEventSchema = z.object({
 	id: z.string(),
