@@ -44,6 +44,11 @@ export const ArchiveIcon = wrapIcon(ArchiveIconRadix);
 
 export const CategoryIcon = wrapIcon(ArchiveIconRadix);
 export const CheckIcon = wrapIcon(CheckIconRadix);
+export const ChevronDownIcon = wrapIcon(ChevronDownIconRadix);
+export const ChevronLeftIcon = wrapIcon(ChevronLeftIconRadix);
+export const ChevronRightIcon = wrapIcon(ChevronRightIconRadix);
+export const ChevronUpIcon = wrapIcon(ChevronUpIconRadix);
+export const CircleIcon = wrapIcon(CircleIconRadix);
 export const ClearIcon = wrapIcon(Cross1IconRadix);
 export const CloseIcon = wrapIcon(Cross1IconRadix);
 export const CollapseIcon = wrapIcon(ChevronUpIconRadix);
@@ -56,7 +61,6 @@ export const DayModeIcon = wrapIcon(SunIconRadix);
 export const DeleteIcon = wrapIcon(TrashIconRadix);
 
 export const EntityIcon = wrapIcon(PersonIconRadix);
-export const ExpandIcon = wrapIcon(ChevronDownIconRadix);
 export const ExternalLinkIcon = wrapIcon(ExternalLinkIconRadix);
 
 export const FormatIcon = wrapIcon(CubeIconRadix);
@@ -64,10 +68,8 @@ export const FormatIcon = wrapIcon(CubeIconRadix);
 export const ImageIcon = wrapIcon(ImageIconRadix);
 export const IncompleteIcon = wrapIcon(CircleIconRadix);
 
-export const NextIcon = wrapIcon(ChevronRightIconRadix);
 export const NightModeIcon = wrapIcon(MoonIconRadix);
 
-export const PreviousIcon = wrapIcon(ChevronLeftIconRadix);
 export const PrivateIcon = wrapIcon(LockClosedIconRadix);
 export const PublicIcon = wrapIcon(LockOpen2IconRadix);
 

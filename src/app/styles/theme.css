@@ -1,5 +1,6 @@
 :root {
-	color-scheme: light dark;
+	color-scheme: light;
+
 	--clr-neutral-1: var(--flexoki-base-50);
 	--clr-neutral-2: var(--flexoki-base-100);
 	--clr-neutral-3: var(--flexoki-base-150);
@@ -22,8 +23,8 @@
 	--clr-neutral-surface: var(--white);
 
 	--clr-neutral-tint: color-mix(in oklch, var(--clr-neutral-main) 0%, var(--clr-neutral-main) 4%);
-	--clr-neutral-stain: color-mix(in oklch, var(--clr-neutral-main) 0%, var(--clr-neutral-main) 12%);
-	--clr-neutral-dye: color-mix(in oklch, var(--clr-neutral-main) 0%, var(--clr-neutral-main) 20%);
+	--clr-neutral-stain: color-mix(in oklch, var(--clr-neutral-main) 0%, var(--clr-neutral-main) 10%);
+	--clr-neutral-dye: color-mix(in oklch, var(--clr-neutral-main) 0%, var(--clr-neutral-main) 16%);
 
 	--clr-neutral-hovered: var(--clr-neutral-2);
 	--clr-neutral-active: var(--clr-neutral-3);

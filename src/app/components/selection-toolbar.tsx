@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { ClearIcon, ExpandIcon } from './icons';
+import { ClearIcon, ChevronDownIcon } from './icons';
 import {
 	Button,
 	DropdownMenu,
@@ -46,7 +46,7 @@ export function SelectionActions({
 							<DropdownMenuTrigger asChild>
 								<Button>
 									Actions
-									<ExpandIcon />
+									<ChevronDownIcon />
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent>

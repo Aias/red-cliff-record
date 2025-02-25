@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Cross1Icon } from '@radix-ui/react-icons';
+import { CloseIcon } from '../icons';
 import { cn } from '@/lib/utils';
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -53,7 +53,7 @@ function DialogContent({
 			>
 				{children}
 				<DialogPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
-					<Cross1Icon />
+					<CloseIcon />
 					<span className="sr-only">Close</span>
 				</DialogPrimitive.Close>
 			</DialogPrimitive.Content>
@@ -85,7 +85,7 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
 	return (
 		<DialogPrimitive.Title
 			data-slot="dialog-title"
-			className={cn('text-lg leading-none font-semibold tracking-tight', className)}
+			className={cn('text-lg leading-none font-semibold', className)}
 			{...props}
 		/>
 	);

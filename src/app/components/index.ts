@@ -19,7 +19,6 @@ export * from './avatar';
 export * from './badge';
 export * from './checkbox';
 export * from './code-block';
-export * from './data-grid';
 export * from './data-list';
 export * from './external-link';
 export * from './integration-logo';
