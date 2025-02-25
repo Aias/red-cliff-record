@@ -87,6 +87,8 @@ async function fetchRaindropCollections(url: string) {
 	}
 
 	const data = await response.json();
+	// Write raw response to temp file for debugging
+	await Bun.write('.temp/raindrop-collections.json', JSON.stringify(data, null, 2));
 	const parsed = CollectionsResponseSchema.parse(data);
 	return parsed.items;
 }
@@ -221,6 +223,8 @@ async function fetchNewRaindrops(lastKnownDate?: Date): Promise<Raindrop[]> {
 		}
 
 		const data = await response.json();
+		// Write raw response to temp file for debugging
+		await Bun.write('.temp/raindrop-raindrops.json', JSON.stringify(data, null, 2));
 		const parsedData = RaindropResponseSchema.parse(data);
 
 		// Check if we've reached raindrops older than our last known date
