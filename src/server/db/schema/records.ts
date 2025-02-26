@@ -79,7 +79,7 @@ export const records = pgTable(
 		isIndexNode: boolean('is_index_node').notNull().default(false),
 		isFormat: boolean('is_format').notNull().default(false),
 		isPrivate: boolean('is_private').notNull().default(false),
-		needsCuration: boolean('needs_curation').notNull().default(false),
+		isCurated: boolean('is_curated').notNull().default(false),
 		reminderAt: timestamp('reminder_at', { withTimezone: true }),
 		sources: integrationTypeEnum('sources').array(),
 		...databaseTimestamps,
@@ -106,7 +106,7 @@ export const records = pgTable(
 		index().on(table.isIndexNode),
 		index().on(table.isFormat),
 		index().on(table.isPrivate),
-		index().on(table.needsCuration),
+		index().on(table.isCurated),
 	]
 );
 

@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/start';
+import { createServerFn } from '@tanstack/react-start';
 import { getCookie, setCookie } from 'vinxi/http';
 import { z } from 'zod';
 

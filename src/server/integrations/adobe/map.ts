@@ -59,7 +59,7 @@ const mapLightroomImageToRecord = (image: LightroomImageSelect): RecordInsert =>
 		type: 'artifact',
 		title: image.fileName,
 		content: generateImageDescription(image),
-		needsCuration: true,
+		isCurated: false,
 		isPrivate: false,
 		sources: ['lightroom'],
 		avatarUrl: `${image.baseUrl}${image.links['/rels/rendition_type/thumbnail2x'].href}`,

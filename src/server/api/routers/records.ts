@@ -21,6 +21,7 @@ const OrderByFieldSchema = z.enum([
 	'contentUpdatedAt',
 	'rating',
 	'childOrder',
+	'id',
 ]);
 
 // Define the order direction enum
@@ -61,36 +62,37 @@ const getRecord = publicProcedure.input(IdSchema).query(async ({ ctx: { db }, in
 	return record;
 });
 
-const listRecords = publicProcedure
-	.input(
-		z.object({
-			filters: z
-				.object({
-					type: RecordTypeSchema.optional(),
-					title: z.string().nullable().optional(),
-					creatorId: IdSchema.nullable().optional(),
-					formatId: IdSchema.nullable().optional(),
-					domain: z.string().nullable().optional(),
-					parentId: IdSchema.nullable().optional(),
-					minRating: z.number().int().gte(-2).optional(),
-					maxRating: z.number().int().lte(2).optional(),
-					isIndexNode: z.boolean().optional(),
-					isFormat: z.boolean().optional(),
-					isPrivate: z.boolean().optional(),
-					needsCuration: z.boolean().optional(),
-					hasReminder: z.boolean().optional(),
-					source: IntegrationTypeSchema.optional(),
-				})
-				.optional()
-				.default({}),
-			limit: z.number().int().positive().optional().default(DEFAULT_LIMIT),
-			offset: z.number().int().gte(0).optional().default(0),
-			orderBy: z
-				.array(OrderCriteriaSchema)
-				.optional()
-				.default([{ field: 'recordCreatedAt', direction: 'desc' }]),
+const ListRecordsInputSchema = z.object({
+	filters: z
+		.object({
+			type: RecordTypeSchema.optional(),
+			title: z.string().nullable().optional(),
+			creatorId: IdSchema.nullable().optional(),
+			formatId: IdSchema.nullable().optional(),
+			domain: z.string().nullable().optional(),
+			parentId: IdSchema.nullable().optional(),
+			minRating: z.number().int().gte(-2).optional(),
+			maxRating: z.number().int().lte(2).optional(),
+			isIndexNode: z.boolean().optional(),
+			isFormat: z.boolean().optional(),
+			isPrivate: z.boolean().optional(),
+			isCurated: z.boolean().optional(),
+			hasReminder: z.boolean().optional(),
+			source: IntegrationTypeSchema.optional(),
 		})
-	)
+		.optional()
+		.default({}),
+	limit: z.number().int().positive().optional().default(DEFAULT_LIMIT),
+	offset: z.number().int().gte(0).optional().default(0),
+	orderBy: z
+		.array(OrderCriteriaSchema)
+		.optional()
+		.default([{ field: 'recordCreatedAt', direction: 'desc' }]),
+});
+export type ListRecordsInput = z.infer<typeof ListRecordsInputSchema>;
+
+const listRecords = publicProcedure
+	.input(ListRecordsInputSchema)
 	.query(async ({ ctx: { db }, input }) => {
 		const {
 			filters: {
@@ -105,7 +107,7 @@ const listRecords = publicProcedure
 				isIndexNode,
 				isFormat,
 				isPrivate,
-				needsCuration,
+				isCurated,
 				hasReminder,
 				source,
 			},
@@ -199,8 +201,8 @@ const listRecords = publicProcedure
 					whereClauses.push(eq(records.isPrivate, isPrivate));
 				}
 
-				if (needsCuration !== undefined) {
-					whereClauses.push(eq(records.needsCuration, needsCuration));
+				if (isCurated !== undefined) {
+					whereClauses.push(eq(records.isCurated, isCurated));
 				}
 
 				if (hasReminder !== undefined) {

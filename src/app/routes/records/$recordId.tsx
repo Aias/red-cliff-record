@@ -3,14 +3,15 @@ import { useForm } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@/server/db/schema';
-import { trpc } from '../trpc';
-import { Avatar, Badge, DynamicTextarea, GhostInput, MetadataList } from '@/components';
+import { trpc } from '../../trpc';
+import { BooleanSwitch } from './-components/form-components';
+import { typeIcons } from './-components/type-icons';
+import { Avatar, DynamicTextarea, GhostInput, MetadataList } from '@/components';
 import {
 	Button,
 	Label,
 	Separator,
 	Slider,
-	Switch,
 	Table,
 	TableBody,
 	TableCell,
@@ -24,14 +25,6 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@/components';
-import {
-	ArtifactIcon,
-	ConceptIcon,
-	EntityIcon,
-	EventIcon,
-	PlaceIcon,
-	SystemIcon,
-} from '@/components/icons';
 import ImageGrid from '@/components/media-grid';
 
 export const Route = createFileRoute('/records/$recordId')({
@@ -58,22 +51,7 @@ function RouteComponent() {
 	// Using recordId as a key to force re-creation of the form when recordId changes
 	const form = useForm({
 		defaultValues: {
-			id: record.id,
-			title: record.title ?? '',
-			type: record.type,
-			summary: record.summary ?? '',
-			content: record.content ?? '',
-			notes: record.notes ?? '',
-			url: record.url ?? '',
-			avatarUrl: record.avatarUrl ?? '',
-			abbreviation: record.abbreviation ?? '',
-			sense: record.sense ?? '',
-			mediaCaption: record.mediaCaption ?? '',
-			isIndexNode: record.isIndexNode ?? false,
-			isFormat: record.isFormat ?? false,
-			isPrivate: record.isPrivate ?? false,
-			needsCuration: record.needsCuration ?? false,
-			rating: record.rating ?? 0,
+			...record,
 		},
 		onSubmit: async ({ value }) => {
 			await handleUpdate.mutateAsync({
@@ -87,17 +65,7 @@ function RouteComponent() {
 	});
 
 	// Extract related data for display
-	const { media, children, parent, creators, format } = useMemo(() => record, [record]);
-
-	// Map record types to their corresponding icons and descriptions
-	const typeIcons = {
-		entity: { icon: EntityIcon, description: 'An actor in the world, has will' },
-		concept: { icon: ConceptIcon, description: 'A category, idea, or abstraction' },
-		artifact: { icon: ArtifactIcon, description: 'Physical or digital objects, content, or media' },
-		event: { icon: EventIcon, description: 'An event or occurrence' },
-		place: { icon: PlaceIcon, description: 'A geographic location' },
-		system: { icon: SystemIcon, description: 'A physical or conceptual system or network' },
-	};
+	const { media } = useMemo(() => record, [record]);
 
 	return (
 		<div className="basis-full overflow-y-auto p-4">
@@ -110,8 +78,6 @@ function RouteComponent() {
 				}}
 				className="card flex max-w-150 flex-col gap-4 p-4"
 			>
-				{/* Single card containing all sections */}
-				{/* Header section with title and avatar */}
 				<div className="flex items-center gap-3">
 					{record.avatarUrl && (
 						<Avatar
@@ -154,10 +120,11 @@ function RouteComponent() {
 									onValueChange={(value) => {
 										if (value) field.handleChange(value as RecordType);
 									}}
-									className="justify-start"
+									variant="outline"
+									className="w-full"
 								>
 									{RecordTypeSchema.options.map((type) => {
-										const { icon: Icon, description } = typeIcons[type as keyof typeof typeIcons];
+										const { icon: Icon, description } = typeIcons[type];
 										return (
 											<Tooltip key={type}>
 												<TooltipTrigger asChild>
@@ -165,12 +132,13 @@ function RouteComponent() {
 														value={type}
 														aria-label={type}
 														data-state={field.state.value === type ? 'on' : 'off'}
+														className="flex grow-1 items-center gap-1"
 													>
-														<Icon className="mr-1 size-4" />
+														<Icon />
 														<span className="capitalize">{type}</span>
 													</ToggleGroupItem>
 												</TooltipTrigger>
-												<TooltipContent>
+												<TooltipContent side="bottom">
 													<p>{description}</p>
 												</TooltipContent>
 											</Tooltip>
@@ -186,12 +154,12 @@ function RouteComponent() {
 
 				{/* Metadata section with editable label-value table */}
 				<div className="flex flex-col gap-3">
-					<h2 className="text-xl font-semibold">Record Metadata</h2>
+					<h2>Record Metadata</h2>
 
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead className="w-1/3">Field</TableHead>
+								<TableHead className="w-20">Field</TableHead>
 								<TableHead>Value</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -309,7 +277,7 @@ function RouteComponent() {
 
 				{/* Content section */}
 				<div className="flex flex-col gap-3">
-					<h2 className="text-xl font-semibold">Content</h2>
+					<h2>Content</h2>
 
 					{/* Summary field */}
 					<form.Field name="summary">
@@ -321,7 +289,6 @@ function RouteComponent() {
 									value={field.state.value ?? ''}
 									placeholder="A brief summary of this record"
 									onChange={(e) => field.handleChange(e.target.value)}
-									className="min-h-20"
 								/>
 							</div>
 						)}
@@ -337,7 +304,6 @@ function RouteComponent() {
 									value={field.state.value ?? ''}
 									placeholder="Main content"
 									onChange={(e) => field.handleChange(e.target.value)}
-									className="min-h-32"
 								/>
 							</div>
 						)}
@@ -353,7 +319,6 @@ function RouteComponent() {
 									value={field.state.value ?? ''}
 									placeholder="Additional notes"
 									onChange={(e) => field.handleChange(e.target.value)}
-									className="min-h-20"
 								/>
 							</div>
 						)}
@@ -365,7 +330,7 @@ function RouteComponent() {
 					<>
 						<Separator />
 						<div className="flex flex-col gap-3">
-							<h2 className="text-xl font-semibold">Media</h2>
+							<h2>Media</h2>
 							<ImageGrid media={media} />
 
 							{/* Media caption field */}
@@ -386,182 +351,83 @@ function RouteComponent() {
 					</>
 				)}
 
-				{/* Related records section */}
-				{(parent || children?.length > 0 || format || creators?.length > 0) && (
-					<>
-						<Separator />
-						<div className="flex flex-col gap-3">
-							<h2 className="text-xl font-semibold">Related Records</h2>
-
-							{/* Parent record */}
-							{parent && (
-								<div className="flex flex-col gap-1">
-									<Label>Parent</Label>
-									<div className="flex items-center gap-2 rounded-md border border-input p-2">
-										{parent.avatarUrl && (
-											<Avatar
-												inline
-												className="!size-6"
-												src={parent.avatarUrl}
-												fallback={parent.title?.charAt(0) ?? '?'}
-											/>
-										)}
-										<span>{parent.title}</span>
-									</div>
-								</div>
-							)}
-
-							{/* Format */}
-							{format && (
-								<div className="flex flex-col gap-1">
-									<Label>Format</Label>
-									<div className="flex items-center gap-2 rounded-md border border-input p-2">
-										{format.avatarUrl && (
-											<Avatar
-												inline
-												className="!size-6"
-												src={format.avatarUrl}
-												fallback={format.title?.charAt(0) ?? '?'}
-											/>
-										)}
-										<span>{format.title}</span>
-									</div>
-								</div>
-							)}
-
-							{/* Child records */}
-							{children && children.length > 0 && (
-								<div className="flex flex-col gap-1">
-									<Label>Children ({children.length})</Label>
-									<div className="flex flex-wrap gap-2">
-										{children.slice(0, 5).map((child) => (
-											<Badge key={child.id} variant="outline">
-												{child.title || 'Untitled'}
-											</Badge>
-										))}
-										{children.length > 5 && (
-											<Badge variant="outline">+{children.length - 5} more</Badge>
-										)}
-									</div>
-								</div>
-							)}
-
-							{/* Creators */}
-							{creators && creators.length > 0 && (
-								<div className="flex flex-col gap-1">
-									<Label>Creators ({creators.length})</Label>
-									<div className="flex flex-wrap gap-2">
-										{creators.map((creatorRel) => (
-											<Badge key={creatorRel.id} variant="outline">
-												{creatorRel.creator.title || 'Untitled'}
-												<span className="ml-1 text-muted-foreground">
-													({creatorRel.creatorRole})
-												</span>
-											</Badge>
-										))}
-									</div>
-								</div>
-							)}
-						</div>
-					</>
-				)}
-
 				{/* Settings section */}
 				<Separator />
-				<div className="flex flex-col gap-3">
-					<h2 className="text-xl font-semibold">Settings</h2>
-
-					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-						{/* Toggle switches */}
-						<div className="flex flex-col gap-3">
-							<form.Field name="isIndexNode">
-								{(field) => (
-									<div className="flex items-center justify-between">
-										<Label htmlFor="isIndexNode" className="cursor-pointer">
-											Is Index Node
-										</Label>
-										<Switch
-											id="isIndexNode"
-											checked={field.state.value}
-											onCheckedChange={field.handleChange}
-										/>
-									</div>
-								)}
-							</form.Field>
-
-							<form.Field name="isFormat">
-								{(field) => (
-									<div className="flex items-center justify-between">
-										<Label htmlFor="isFormat" className="cursor-pointer">
-											Is Format
-										</Label>
-										<Switch
-											id="isFormat"
-											checked={field.state.value}
-											onCheckedChange={field.handleChange}
-										/>
-									</div>
-								)}
-							</form.Field>
-
-							<form.Field name="isPrivate">
-								{(field) => (
-									<div className="flex items-center justify-between">
-										<Label htmlFor="isPrivate" className="cursor-pointer">
-											Is Private
-										</Label>
-										<Switch
-											id="isPrivate"
-											checked={field.state.value}
-											onCheckedChange={field.handleChange}
-										/>
-									</div>
-								)}
-							</form.Field>
-
-							<form.Field name="needsCuration">
-								{(field) => (
-									<div className="flex items-center justify-between">
-										<Label htmlFor="needsCuration" className="cursor-pointer">
-											Needs Curation
-										</Label>
-										<Switch
-											id="needsCuration"
-											checked={field.state.value}
-											onCheckedChange={field.handleChange}
-										/>
-									</div>
-								)}
-							</form.Field>
-						</div>
-
-						{/* Rating slider */}
-						<form.Field name="rating">
+				<div className="flex flex-col gap-4">
+					<h2>Settings</h2>
+					{/* Toggle switches */}
+					<div className="flex justify-between">
+						<form.Field name="isIndexNode">
 							{(field) => (
-								<div className="flex flex-col gap-2">
-									<div className="flex items-center justify-between">
-										<Label htmlFor="rating">Rating</Label>
-										<span className="text-sm font-medium">{field.state.value}</span>
-									</div>
-									<Slider
-										id="rating"
-										min={-2}
-										max={2}
-										step={1}
-										value={[field.state.value ?? 0]}
-										onValueChange={(values: number[]) => field.handleChange(values[0])}
-									/>
-									<div className="flex justify-between text-xs text-muted-foreground">
-										<span>-2</span>
-										<span>-1</span>
-										<span>0</span>
-										<span>1</span>
-										<span>2</span>
-									</div>
-								</div>
+								<BooleanSwitch
+									label="In Index"
+									id="isIndexNode"
+									value={field.state.value}
+									handleChange={field.handleChange}
+								/>
+							)}
+						</form.Field>
+
+						<form.Field name="isFormat">
+							{(field) => (
+								<BooleanSwitch
+									label="Is Format"
+									id="isFormat"
+									value={field.state.value}
+									handleChange={field.handleChange}
+								/>
+							)}
+						</form.Field>
+
+						<form.Field name="isPrivate">
+							{(field) => (
+								<BooleanSwitch
+									label="Is Private"
+									id="isPrivate"
+									value={field.state.value}
+									handleChange={field.handleChange}
+								/>
+							)}
+						</form.Field>
+
+						<form.Field name="isCurated">
+							{(field) => (
+								<BooleanSwitch
+									label="Is Curated"
+									id="isCurated"
+									value={field.state.value}
+									handleChange={field.handleChange}
+								/>
 							)}
 						</form.Field>
 					</div>
+
+					{/* Rating slider */}
+					<form.Field name="rating">
+						{(field) => (
+							<div className="flex flex-col gap-2">
+								<div className="flex items-center justify-between">
+									<Label htmlFor="rating">Rating</Label>
+									<span className="text-sm font-medium">{field.state.value}</span>
+								</div>
+								<Slider
+									id="rating"
+									min={-2}
+									max={2}
+									step={1}
+									value={[field.state.value ?? 0]}
+									onValueChange={(values: number[]) => field.handleChange(values[0])}
+								/>
+								<div className="flex justify-between font-mono text-xs text-muted-foreground">
+									<pre>-2 </pre>
+									<pre>-1 </pre>
+									<pre> 0 </pre>
+									<pre> 1 </pre>
+									<pre> 2 </pre>
+								</div>
+							</div>
+						)}
+					</form.Field>
 				</div>
 
 				{/* Metadata section */}
@@ -570,11 +436,11 @@ function RouteComponent() {
 					<h2 className="text-xl font-semibold">System Metadata</h2>
 					<MetadataList
 						metadata={{
-							ID: record.id.toString(),
-							Created: record.recordCreatedAt?.toLocaleString(),
-							Updated: record.recordUpdatedAt?.toLocaleString(),
-							'Content Created': record.contentCreatedAt?.toLocaleString(),
-							'Content Updated': record.contentUpdatedAt?.toLocaleString(),
+							ID: record.id,
+							Created: record.recordCreatedAt,
+							Updated: record.recordUpdatedAt,
+							'Content Created': record.contentCreatedAt,
+							'Content Updated': record.contentUpdatedAt,
 						}}
 					/>
 				</div>

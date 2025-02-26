@@ -1,12 +1,24 @@
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
+import type { ListRecordsInput } from '@/server/api/routers/records';
 
-const defaultQueryOptions = {
+const defaultQueryOptions: ListRecordsInput = {
 	filters: {
-		needsCuration: true,
+		isCurated: false,
 		isIndexNode: true,
 	},
 	limit: 200,
+	offset: 0,
+	orderBy: [
+		{
+			field: 'recordCreatedAt',
+			direction: 'desc',
+		},
+		{
+			field: 'id',
+			direction: 'desc',
+		},
+	],
 };
 
 export const Route = createFileRoute('/records')({
@@ -22,15 +34,15 @@ function RouteComponent() {
 
 	return (
 		<main className="flex basis-full overflow-hidden">
-			<div className="flex w-80 flex-col gap-2 overflow-hidden border-r border-border bg-card py-3">
-				<h2 className="px-4">Records Queue</h2>
-				<ol className="flex flex-col overflow-y-auto">
+			<div className="flex w-80 flex-col gap-2 overflow-hidden border-r border-border py-3">
+				<h2 className="px-3">Records Queue</h2>
+				<ol className="flex flex-col gap-2 overflow-y-auto px-3">
 					{recordsList.map((record) => {
 						const { id, title, type } = record;
 						return (
 							<li
 								key={id}
-								className="flex selectable items-center gap-2 px-4 py-1"
+								className="flex shrink-0 selectable items-center gap-2 overflow-hidden rounded-md border border-border bg-card p-2 text-sm"
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();

@@ -122,7 +122,7 @@ export const mapRaindropBookmarkToRecord = (bookmark: RaindropBookmarkSelect): R
 		rating: bookmark.important ? 1 : 0,
 		sources: ['raindrop'],
 		isPrivate: false,
-		needsCuration: true,
+		isCurated: false,
 		recordCreatedAt: bookmark.recordCreatedAt,
 		recordUpdatedAt: bookmark.recordUpdatedAt,
 		contentCreatedAt: bookmark.contentCreatedAt,
@@ -301,7 +301,7 @@ export const mapRaindropTagToRecord = (tag: RaindropTagSelect): RecordInsert => 
 		type: 'concept',
 		title: tag.tag,
 		sources: ['raindrop'],
-		needsCuration: true,
+		isCurated: false,
 		isPrivate: false,
 		isIndexNode: true,
 		recordCreatedAt: tag.recordCreatedAt,
@@ -346,7 +346,7 @@ export async function createRecordsFromRaindropTags() {
 				target: records.id,
 				set: {
 					recordUpdatedAt: new Date(),
-					needsCuration: true,
+					isCurated: false,
 				},
 			});
 
