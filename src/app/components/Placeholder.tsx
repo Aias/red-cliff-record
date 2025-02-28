@@ -14,21 +14,6 @@ export const Placeholder = ({
 				className
 			)}
 		>
-			<div className="flex w-full flex-col gap-2 bg-rcr-background p-4">
-				<div className="h-8 w-full rounded border border-rcr-divider bg-rcr-tint"></div>
-				<div className="h-8 w-full rounded border border-rcr-divider bg-rcr-stain"></div>
-				<div className="h-8 w-full rounded border border-rcr-divider bg-rcr-dye"></div>
-			</div>
-			<div className="flex w-full flex-col gap-2 bg-rcr-surface p-4">
-				<div className="h-8 w-full rounded border border-rcr-divider bg-rcr-tint"></div>
-				<div className="h-8 w-full rounded border border-rcr-divider bg-rcr-stain"></div>
-				<div className="h-8 w-full rounded border border-rcr-divider bg-rcr-dye"></div>
-			</div>
-			<div className="flex w-full flex-col gap-2 bg-transparent p-4">
-				<div className="h-8 w-full rounded border border-rcr-divider bg-rcr-tint"></div>
-				<div className="h-8 w-full rounded border border-rcr-divider bg-rcr-stain"></div>
-				<div className="h-8 w-full rounded border border-rcr-divider bg-rcr-dye"></div>
-			</div>
 			{children}
 		</div>
 	);

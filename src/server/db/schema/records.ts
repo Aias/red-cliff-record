@@ -26,6 +26,7 @@ import {
 import { raindropBookmarks, raindropCollections, raindropTags } from './raindrop';
 import { readwiseAuthors, readwiseDocuments, readwiseTags } from './readwise';
 import { twitterTweets, twitterUsers } from './twitter';
+import { emptyStringToNull } from '@/lib/formatting';
 import { DEFAULT_ORDER_KEY } from '@/lib/lexicography';
 
 export const RecordTypeSchema = z.enum([
@@ -113,8 +114,8 @@ export const records = pgTable(
 export const RecordSelectSchema = createSelectSchema(records);
 export type RecordSelect = typeof records.$inferSelect;
 export const RecordInsertSchema = createInsertSchema(records).extend({
-	url: z.string().url().optional().nullable(),
-	avatarUrl: z.string().url().optional().nullable(),
+	url: emptyStringToNull(z.string().url()).optional(),
+	avatarUrl: emptyStringToNull(z.string().url()).optional(),
 	rating: z.number().int().min(-2).max(2).default(0),
 });
 export type RecordInsert = typeof records.$inferInsert;

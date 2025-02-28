@@ -34,7 +34,7 @@ function RouteComponent() {
 
 	return (
 		<main className="flex basis-full overflow-hidden">
-			<div className="flex w-80 flex-col gap-2 overflow-hidden border-r border-border py-3">
+			<div className="flex shrink-0 grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-border py-3">
 				<h2 className="px-3">Records Queue</h2>
 				<ol className="flex flex-col gap-2 overflow-y-auto px-3">
 					{recordsList.map((record) => {

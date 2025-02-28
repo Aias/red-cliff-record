@@ -10,6 +10,7 @@ import raindropLogo from './logos/raindrop.svg?url';
 import readwiseLogo from './logos/readwise.svg?url';
 import xLogoDark from './logos/x_dark.svg?url';
 import xLogoLight from './logos/x_light.svg?url';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface IntegrationLogoProps extends Omit<AvatarProps, 'src' | 'fallback'> {
 	integration: IntegrationType;
@@ -52,12 +53,21 @@ export function IntegrationLogo({
 	}
 
 	return (
-		<Avatar
-			className={className}
-			src={logoUrl}
-			fallback={service.charAt(0).toUpperCase()}
-			themed={false}
-			{...props}
-		/>
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Avatar
+						className={className}
+						src={logoUrl}
+						fallback={service.charAt(0).toUpperCase()}
+						themed={false}
+						{...props}
+					/>
+				</TooltipTrigger>
+				<TooltipContent>
+					<span className="capitalize">{service}</span>
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
 	);
 }

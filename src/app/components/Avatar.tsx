@@ -7,18 +7,16 @@ export type AvatarProps = React.ComponentPropsWithoutRef<typeof AvatarPrimitive.
 	fallback: ReactNode;
 	rounded?: boolean;
 	themed?: boolean;
-	inline?: boolean;
 };
 
 const Avatar = React.forwardRef<React.ComponentRef<typeof AvatarPrimitive.Root>, AvatarProps>(
-	({ className, rounded = false, src, fallback, themed = true, inline = false, ...props }, ref) => (
+	({ className, rounded = false, src, fallback, themed = true, ...props }, ref) => (
 		<AvatarPrimitive.Root
 			ref={ref}
 			className={cn(
-				'relative flex size-[2.25em] shrink-0 overflow-hidden',
+				'relative flex size-[1.4em] shrink-0 overflow-hidden [&_.avatar-fallback]:text-[1em]',
 				rounded ? 'rounded-full' : 'rounded-sm',
 				themed && 'themed',
-				inline && 'size-[1.2lh] [&_.avatar-fallback]:text-[1em]',
 				className
 			)}
 			{...props}

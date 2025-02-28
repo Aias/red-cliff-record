@@ -141,7 +141,7 @@
 
 	h1,
 	.h1 {
-		@apply text-2xl font-medium;
+		@apply text-2xl font-semibold;
 	}
 
 	h2,
@@ -210,16 +210,11 @@
 
 @utility surface {
 	@apply bg-rcr-panel;
-	backdrop-filter: var(--backdrop-filter-panel); /* TODO: Add support for backdrop-filter. */
+	/* backdrop-filter: var(--backdrop-filter-panel); */ /* TODO: Add support for backdrop-filter. */
 }
 
 @utility card {
-	@apply relative block overflow-hidden rounded-md border border-rcr-divider p-3 contain-paint;
-	&::before {
-		@apply pointer-events-none absolute inset-0 z-[-1] rounded-md surface;
-		content: '';
-		transition: inherit;
-	}
+	@apply relative block overflow-hidden rounded-md border border-rcr-divider surface p-4;
 }
 
 @utility icon {
