@@ -1,6 +1,19 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
-import { Placeholder, Spinner } from '@/components';
+import { entityTypeIcons } from './type-icons';
+import {
+	Avatar,
+	Badge,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	ExternalLink,
+	IntegrationLogo,
+	MergeIcon,
+	Placeholder,
+	Spinner,
+} from '@/components';
 
 interface DuplicatesListProps {
 	recordId: number;
@@ -15,9 +28,14 @@ export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
 
 	const handleMerge = trpc.records.merge.useMutation({
 		onSuccess: (data) => {
-			navigate({ to: '/records/$recordId', params: { recordId: data.target.id.toString() } });
-			utils.records.findDuplicates.invalidate();
-			utils.records.get.invalidate();
+			console.log('Merge Success', data);
+			const { updatedRecord } = data;
+			navigate({
+				to: '/records/$recordId',
+				params: { recordId: updatedRecord.id.toString() },
+			});
+			utils.records.findDuplicates.invalidate(updatedRecord.id);
+			utils.records.get.invalidate(updatedRecord.id);
 			utils.records.list.invalidate();
 		},
 	});
@@ -25,100 +43,87 @@ export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
 	const onMergeClick = (targetId: number) => {
 		if (!recordId) return;
 
-		if (
-			confirm(
-				`Are you sure you want to merge this record into record #${targetId}? This action cannot be undone.`
-			)
-		) {
-			handleMerge.mutate({
-				sourceId: recordId,
-				targetId: targetId,
-			});
-		}
-	};
-
-	// Check if a specific merge is in progress
-	const isMerging = (targetId: number): boolean => {
-		return (
-			handleMerge.status === 'pending' &&
-			handleMerge.variables?.sourceId === recordId &&
-			handleMerge.variables?.targetId === targetId
-		);
+		handleMerge.mutate({
+			sourceId: recordId,
+			targetId: targetId,
+		});
 	};
 
 	return duplicates && duplicates.length > 0 ? (
-		<div className="flex flex-col gap-4">
-			<div className="text-lg font-bold">Potential Duplicates</div>
-			<div className="flex flex-col gap-3">
-				{duplicates.map((record) => {
-					const { id, title, summary, similarityScore, type, creators, recordUpdatedAt } = record;
+		<ol className="flex flex-col text-sm">
+			{duplicates.map((record) => {
+				const {
+					id,
+					title,
+					abbreviation,
+					format,
+					sense,
+					type,
+					recordCreatedAt,
+					url,
+					sources,
+					avatarUrl,
+					content,
+					summary,
+					notes,
+				} = record;
 
-					// Safely format the date without date-fns
-					const formattedDate = recordUpdatedAt
-						? new Date(recordUpdatedAt).toLocaleDateString()
-						: '';
+				const identifier = title || 'Untitled Record';
+				const formattedDate = recordCreatedAt.toLocaleDateString();
+				const description = content || summary || notes;
+				const TypeIcon = entityTypeIcons[type].icon;
 
-					return (
-						<div key={id} className="rounded-md border p-4">
-							<div className="flex flex-col gap-2">
-								<div className="flex items-center justify-between">
-									<div className="flex items-center gap-2">
-										<h3 className="text-base font-semibold">
-											<Link to="/records/$recordId" params={{ recordId: id.toString() }}>
-												{title || 'Untitled'}
-											</Link>
-										</h3>
-										<span className="rounded-full bg-slate-100 px-2 py-1 text-xs">{type}</span>
-									</div>
-									<div className="flex items-center gap-2">
-										<span className="text-sm text-muted-foreground">
-											{formattedDate && `Updated ${formattedDate}`}
-										</span>
-										<span className="ml-2 rounded-full bg-slate-200 px-2 py-1 text-xs">
-											ID: {id}
-										</span>
-									</div>
-								</div>
-								<div className="mt-1">
-									<div className="flex items-center gap-2">
-										<span className="text-sm font-medium">Similarity:</span>
-										<div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
-											<div
-												className="h-full bg-blue-500"
-												style={{ width: `${similarityScore}%` }}
-											></div>
-										</div>
-										<span className="text-sm font-medium">{similarityScore}%</span>
-									</div>
-								</div>
-								{summary && (
-									<p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{summary}</p>
-								)}
-								{creators && creators.length > 0 && (
-									<div className="mt-2 flex flex-wrap gap-1">
-										{creators.map((c) => (
-											<span key={c.creatorId} className="rounded-full border px-2 py-1 text-xs">
-												{/* Use a safe approach to display creator name */}
-												Creator {c.creatorId}
-											</span>
-										))}
-									</div>
-								)}
-								<div className="mt-3 flex justify-end">
-									<button
-										onClick={() => onMergeClick(id)}
-										disabled={handleMerge.status === 'pending'}
-										className="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-									>
-										{isMerging(id) ? 'Merging...' : 'Merge into this record'}
-									</button>
-								</div>
+				return (
+					<li
+						key={id}
+						className="flex flex-col gap-1 border-b border-border px-3 py-2 first:border-t"
+					>
+						<div className="flex items-center gap-2">
+							<Avatar src={avatarUrl ?? undefined} fallback={identifier.charAt(0)} />
+							<div className="flex grow items-center gap-2">
+								<Link to="/records/$recordId" params={{ recordId: id.toString() }}>
+									{identifier}
+								</Link>
+								{abbreviation && <span>({abbreviation})</span>}
+								{sense && <em className="text-rcr-secondary">{sense}</em>}
 							</div>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Badge className="before:mr-[0.15ch] before:text-rcr-hint before:content-['#']">
+										<span>{id}</span>
+										<ul className="ml-2 flex items-center gap-1.5 text-[0.875em]">
+											{sources?.map((source) => (
+												<li key={source}>
+													<IntegrationLogo integration={source} />
+												</li>
+											))}
+										</ul>
+									</Badge>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent>
+									<DropdownMenuItem onClick={() => onMergeClick(id)}>
+										<MergeIcon />
+										Merge
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</div>
-					);
-				})}
-			</div>
-		</div>
+						<p className="line-clamp-2 text-xs text-rcr-secondary">{description}</p>
+						<div className="flex items-center justify-around gap-2 rounded-md border border-border bg-rcr-tint px-3 py-1 text-xs font-medium">
+							{type && (
+								<span className="flex items-center gap-1 capitalize">
+									{<TypeIcon className="text-rcr-symbol" />}
+									<span>{type}</span>
+								</span>
+							)}
+							{format && <span>{format.title}</span>}
+							{url && <ExternalLink href={url}>{new URL(url).hostname}</ExternalLink>}
+							<span>{formattedDate}</span>
+						</div>
+					</li>
+				);
+			})}
+		</ol>
 	) : isLoading ? (
 		<Placeholder>
 			<Spinner />

@@ -151,7 +151,7 @@
 
 	h3,
 	.h3 {
-		@apply text-lg font-bold;
+		@apply text-lg font-medium;
 	}
 
 	h4,

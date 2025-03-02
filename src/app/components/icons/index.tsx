@@ -15,6 +15,7 @@ import {
 	CopyIcon as CopyIconRadix,
 	Cross1Icon as Cross1IconRadix,
 	CubeIcon as CubeIconRadix,
+	DoubleArrowRightIcon as DoubleArrowRightIconRadix,
 	ExternalLinkIcon as ExternalLinkIconRadix,
 	FileTextIcon as FileTextIconRadix,
 	GlobeIcon as GlobeIconRadix,
@@ -54,7 +55,7 @@ export const CloseIcon = wrapIcon(Cross1IconRadix);
 export const DeleteIcon = wrapIcon(TrashIconRadix);
 export const CopyIcon = wrapIcon(CopyIconRadix);
 export const SearchIcon = wrapIcon(MagnifyingGlassIconRadix);
-
+export const MergeIcon = wrapIcon(DoubleArrowRightIconRadix);
 export const ChevronDownIcon = wrapIcon(ChevronDownIconRadix);
 export const ChevronLeftIcon = wrapIcon(ChevronLeftIconRadix);
 export const ChevronRightIcon = wrapIcon(ChevronRightIconRadix);

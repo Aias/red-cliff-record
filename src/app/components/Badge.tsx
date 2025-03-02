@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 const badgeVariants = cva(
 	'inline-flex items-center whitespace-nowrap font-medium flex-shrink-0 transition-colors text-[0.875em] ' +
 		// Use relative units here: 0.75em horizontal padding and 0.375em vertical padding, with a small rounding.
-		'px-[0.75em] py-[0.25em] rounded-[0.25em]',
+		'px-[0.5em] py-[0.21em] rounded-[0.25em]',
 	{
 		variants: {
 			variant: {

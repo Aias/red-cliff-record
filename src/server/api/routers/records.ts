@@ -59,13 +59,24 @@ const getRecord = publicProcedure.input(IdSchema).query(async ({ ctx: { db }, in
 					creator: true,
 				},
 			},
+			created: {
+				with: {
+					record: true,
+				},
+			},
 			format: true,
+			formatOf: true,
 			parent: true,
 			children: true,
 			media: true,
 			references: {
 				with: {
 					target: true,
+				},
+			},
+			referencedBy: {
+				with: {
+					source: true,
 				},
 			},
 			transcludes: true,
@@ -344,13 +355,50 @@ const mergeRecords = publicProcedure
 				new Set([...(source.sources ?? []), ...(target.sources ?? [])])
 			);
 
+			// Helper function to merge text fields
+			const mergeTextFields = (
+				sourceText: string | null,
+				targetText: string | null
+			): string | null => {
+				const hasSourceText = sourceText && sourceText !== '';
+				const hasTargetText = targetText && targetText !== '';
+
+				if (hasSourceText && hasTargetText) {
+					return `${targetText}\n---\n${sourceText}`;
+				} else if (hasTargetText) {
+					return targetText;
+				} else if (hasSourceText) {
+					return sourceText;
+				}
+				return null;
+			};
+
 			// Merge record data, preferring target's non-null (and non-empty string) values
+			// but concatenating summary, content, and notes fields
 			const mergedRecord = {
 				...source,
 				...Object.fromEntries(
-					Object.entries(target).filter(([_, value]) => !(value === null || value === ''))
+					Object.entries(target).filter(([key, value]) => {
+						// Skip summary, content, and notes as we'll handle them separately
+						if (key === 'summary' || key === 'content' || key === 'notes') {
+							return false;
+						}
+						if (['rating', 'isIndexNode', 'isFormat', 'isPrivate', 'isCurated'].includes(key)) {
+							return false;
+						}
+						return !(value === null || value === '');
+					})
 				),
+				// Merge text fields
+				summary: mergeTextFields(source.summary, target.summary),
+				content: mergeTextFields(source.content, target.content),
+				notes: mergeTextFields(source.notes, target.notes),
 				sources: allSources.length > 0 ? allSources : null,
+				rating: Math.max(source.rating, target.rating),
+				isIndexNode: source.isIndexNode || target.isIndexNode,
+				isFormat: source.isFormat || target.isFormat,
+				isPrivate: source.isPrivate || target.isPrivate,
+				isCurated: source.isCurated || target.isCurated,
 				recordUpdatedAt: new Date(),
 				textEmbedding: null, // Changes require recalculating the embedding
 			};
@@ -550,11 +598,7 @@ const mergeRecords = publicProcedure
 				}
 			});
 
-			return {
-				source,
-				target,
-				...transactionResult,
-			};
+			return transactionResult;
 		} catch (error) {
 			console.error('Merge error:', error);
 			if (error instanceof TRPCError) {

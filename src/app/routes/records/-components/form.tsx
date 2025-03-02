@@ -3,7 +3,7 @@ import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@/server/db/schema';
-import { typeIcons } from './type-icons';
+import { entityTypeIcons } from './type-icons';
 import { Avatar, DynamicTextarea, ExternalLink, GhostInput, MetadataList } from '@/components';
 import {
 	Button,
@@ -61,7 +61,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 		onSuccess: () => {
 			utils.records.get.invalidate(Number(recordId));
 			utils.records.list.invalidate();
-			utils.records.search.invalidate();
+			utils.records.findDuplicates.invalidate(Number(recordId));
 		},
 	});
 
@@ -143,7 +143,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 			</h1>
 
 			{/* Type selector with toggle group */}
-			<div>
+			<div className="@container">
 				<form.Field name="type">
 					{(field) => (
 						<TooltipProvider>
@@ -157,7 +157,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 								className="w-full"
 							>
 								{RecordTypeSchema.options.map((type) => {
-									const { icon: Icon, description } = typeIcons[type];
+									const { icon: Icon, description } = entityTypeIcons[type];
 									return (
 										<Tooltip key={type}>
 											<TooltipTrigger asChild>
@@ -168,11 +168,14 @@ export function RecordForm({ recordId }: RecordFormProps) {
 													className="flex grow-1 items-center gap-1"
 												>
 													<Icon />
-													<span className="capitalize">{type}</span>
+													<span className="hidden capitalize @[480px]:inline">{type}</span>
 												</ToggleGroupItem>
 											</TooltipTrigger>
 											<TooltipContent side="bottom">
-												<p>{description}</p>
+												<p>
+													<strong className="mr-1 capitalize">{type}</strong>
+													{description}
+												</p>
 											</TooltipContent>
 										</Tooltip>
 									);
@@ -505,9 +508,22 @@ export function RecordForm({ recordId }: RecordFormProps) {
 			<div className="flex justify-end gap-2">
 				<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
 					{([canSubmit, isSubmitting]) => (
-						<Button type="submit" disabled={!canSubmit || isSubmitting}>
-							{isSubmitting ? 'Saving...' : 'Save Changes'}
-						</Button>
+						<div className="flex gap-2">
+							<Button
+								type="button"
+								disabled={!canSubmit || isSubmitting}
+								variant="outline"
+								onClick={async () => {
+									form.setFieldValue('isCurated', true);
+									await form.handleSubmit();
+								}}
+							>
+								{isSubmitting ? 'Saving...' : 'Save As Curated'}
+							</Button>
+							<Button type="submit" disabled={!canSubmit || isSubmitting}>
+								{isSubmitting ? 'Saving...' : 'Save Changes'}
+							</Button>
+						</div>
 					)}
 				</form.Subscribe>
 			</div>
