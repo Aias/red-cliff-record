@@ -90,7 +90,7 @@ export const RaindropSchema = z.object({
 	domain: z.string(),
 	file: RaindropFileSchema.optional(),
 	creatorRef: z.union([RaindropCreatorSchema, z.number().int().positive()]), // API started returning creatorRef as an integer ID on 2025-02-25
-	sort: z.number().int().positive(),
+	sort: z.number().int().positive().nullable(),
 	broken: z.coerce.boolean(),
 	cache: RaindropCacheSchema.optional(),
 	collectionId: z.number().int().positive(),
@@ -123,7 +123,7 @@ export const RaindropCollectionSchema = z.object({
 	lastUpdate: z.coerce.date(),
 	parent: RaindropRefSchema.optional().nullable(),
 	public: z.boolean(),
-	sort: z.number().int(),
+	sort: z.number().int().nullable(),
 	title: z.string(),
 	user: RaindropRefSchema,
 	view: z.string(),

@@ -95,15 +95,17 @@ const RelationItem = ({ record }: RelationItemProps) => {
 	return (
 		<div className="flex items-center gap-1 text-sm">
 			<TypeIcon className="text-rcr-symbol" />
-			<Link
-				className="line-clamp-1 grow"
-				to={`/records/$recordId`}
-				params={{ recordId: record.id.toString() }}
-			>
-				{label}
-			</Link>
-			{abbreviation && <span>({abbreviation})</span>}
-			{sense && <em className="text-rcr-secondary">({sense})</em>}
+			<div className="flex grow items-center gap-1">
+				<Link
+					className="line-clamp-1"
+					to={`/records/$recordId`}
+					params={{ recordId: record.id.toString() }}
+				>
+					{label}
+				</Link>
+				{abbreviation && <span>({abbreviation})</span>}
+				{sense && <em className="text-rcr-secondary">{sense}</em>}
+			</div>
 			{url && (
 				<ExternalLink
 					className="rounded-sm bg-rcr-tint px-2 text-xs whitespace-nowrap text-rcr-secondary"

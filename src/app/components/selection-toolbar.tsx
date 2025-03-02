@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { ClearIcon, ChevronDownIcon } from './icons';
+import { ChevronDownIcon, ClearIcon } from './icons';
 import {
 	Button,
 	DropdownMenu,

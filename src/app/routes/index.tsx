@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '../trpc';
-import { Avatar, ExternalLink, Input } from '@/components';
+import { Avatar, Input } from '@/components';
 import { parseToSingleLine } from '@/lib/marked';
 
 const SearchSchema = z.object({
@@ -29,10 +29,11 @@ function SearchResult({
 	title,
 	content,
 	type,
-	url,
 	imageUrl,
 	subType,
+	id,
 }: {
+	id: number;
 	title: string;
 	content?: string | null;
 	type: 'record' | 'index';
@@ -47,13 +48,13 @@ function SearchResult({
 			<div className="flex flex-1 flex-col gap-1">
 				<div className="flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
-						{url ? (
-							<ExternalLink href={url} className="font-medium">
-								{title}
-							</ExternalLink>
-						) : (
-							<span className="font-medium">{title}</span>
-						)}
+						<Link
+							to="/records/$recordId"
+							params={{ recordId: id.toString() }}
+							className="font-medium"
+						>
+							{title}
+						</Link>
 						{subType && <span className="text-rcr-secondary">{subType}</span>}
 					</div>
 					<span className="text-rcr-secondary capitalize">{type}</span>
@@ -149,6 +150,7 @@ function Home() {
 								{recordsQuery.data?.map((record) => (
 									<SearchResult
 										key={record.id}
+										id={record.id}
 										title={record.title ?? 'Untitled'}
 										content={record.content || record.summary || record.notes || undefined}
 										type="record"
