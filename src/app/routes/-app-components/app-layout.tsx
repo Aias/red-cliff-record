@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ArchiveIcon, DayModeIcon, NightModeIcon } from '@/app/components/icons';
+import { defaultQueueOptions } from '@/server/api/routers/records.types';
 import { Button } from '../../components';
 import { setTheme } from '@/lib/server/theme';
 
@@ -27,7 +28,9 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 					</Link>
 				</li>
 				<li>
-					<Link to={'/records'}>Records</Link>
+					<Link to={'/records'} search={defaultQueueOptions}>
+						Records
+					</Link>
 				</li>
 				<Button asChild variant="ghost" onClick={toggleTheme}>
 					<li>{currentTheme === 'light' ? <DayModeIcon /> : <NightModeIcon />}</li>

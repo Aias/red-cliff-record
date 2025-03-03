@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
 import { DuplicatesList } from './-components/duplicates-list';
 import { RecordForm } from './-components/form';
 import { RelationsList } from './-components/relations';
@@ -8,6 +8,9 @@ export const Route = createFileRoute('/records/$recordId')({
 	component: RouteComponent,
 	loader: async ({ context: { trpc, queryClient }, params: { recordId } }) => {
 		await queryClient.ensureQueryData(trpc.records.get.queryOptions(Number(recordId)));
+	},
+	search: {
+		middlewares: [retainSearchParams(true)],
 	},
 });
 

@@ -8,7 +8,6 @@ import {
 	airtableSpaces,
 	githubRepositories,
 	githubUsers,
-	IntegrationTypeSchema,
 	lightroomImages,
 	media,
 	raindropBookmarks,
@@ -21,35 +20,12 @@ import {
 	RecordInsertSchema,
 	recordRelations,
 	records,
-	RecordTypeSchema,
 	twitterTweets,
 	twitterUsers,
 } from '@/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
-import { DEFAULT_LIMIT, SIMILARITY_THRESHOLD } from './common';
-
-const IdSchema = z.number().int().positive();
-
-// Define the order fields enum
-const OrderByFieldSchema = z.enum([
-	'recordUpdatedAt',
-	'recordCreatedAt',
-	'title',
-	'contentCreatedAt',
-	'contentUpdatedAt',
-	'rating',
-	'childOrder',
-	'id',
-]);
-
-// Define the order direction enum
-const OrderDirectionSchema = z.enum(['asc', 'desc']);
-
-// Define the order criteria schema
-const OrderCriteriaSchema = z.object({
-	field: OrderByFieldSchema,
-	direction: OrderDirectionSchema.optional().default('desc'),
-});
+import { SIMILARITY_THRESHOLD } from './common';
+import { IdSchema, ListRecordsInputSchema } from './records.types';
 
 const getRecord = publicProcedure.input(IdSchema).query(async ({ ctx: { db }, input }) => {
 	const record = await db.query.records.findFirst({
@@ -91,35 +67,6 @@ const getRecord = publicProcedure.input(IdSchema).query(async ({ ctx: { db }, in
 	return record;
 });
 
-const ListRecordsInputSchema = z.object({
-	filters: z
-		.object({
-			type: RecordTypeSchema.optional(),
-			title: z.string().nullable().optional(),
-			creatorId: IdSchema.nullable().optional(),
-			formatId: IdSchema.nullable().optional(),
-			domain: z.string().nullable().optional(),
-			parentId: IdSchema.nullable().optional(),
-			minRating: z.number().int().gte(-2).optional(),
-			maxRating: z.number().int().lte(2).optional(),
-			isIndexNode: z.boolean().optional(),
-			isFormat: z.boolean().optional(),
-			isPrivate: z.boolean().optional(),
-			isCurated: z.boolean().optional(),
-			hasReminder: z.boolean().optional(),
-			source: IntegrationTypeSchema.optional(),
-		})
-		.optional()
-		.default({}),
-	limit: z.number().int().positive().optional().default(DEFAULT_LIMIT),
-	offset: z.number().int().gte(0).optional().default(0),
-	orderBy: z
-		.array(OrderCriteriaSchema)
-		.optional()
-		.default([{ field: 'recordCreatedAt', direction: 'desc' }]),
-});
-export type ListRecordsInput = z.infer<typeof ListRecordsInputSchema>;
-
 const listRecords = publicProcedure
 	.input(ListRecordsInputSchema)
 	.query(async ({ ctx: { db }, input }) => {
@@ -129,7 +76,7 @@ const listRecords = publicProcedure
 				title,
 				creatorId,
 				formatId,
-				domain,
+				url: domain,
 				parentId,
 				minRating,
 				maxRating,

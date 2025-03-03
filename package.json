@@ -85,7 +85,7 @@
 		"eslint-plugin-import": "^2.31.0",
 		"eslint-plugin-react-compiler": "^19.0.0-beta-e552027-20250112",
 		"globals": "^15.15.0",
-		"prettier": "^3.5.2",
+		"prettier": "^3.5.3",
 		"prettier-plugin-tailwindcss": "^0.6.11",
 		"tailwindcss": "^4.0.9",
 		"typescript": "^5.8.2",

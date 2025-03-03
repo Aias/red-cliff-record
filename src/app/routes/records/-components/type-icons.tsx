@@ -1,3 +1,4 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components';
 import {
 	ArtifactIcon,
 	ConceptIcon,
@@ -18,3 +19,19 @@ export const entityTypeIcons: Record<RecordType, { icon: React.ElementType; desc
 		place: { icon: PlaceIcon, description: 'A geographic location' },
 		system: { icon: SystemIcon, description: 'A physical or conceptual system or network' },
 	};
+
+interface EntityTypeIconProps extends React.HTMLAttributes<SVGElement> {
+	type: RecordType;
+}
+
+export const EntityTypeIcon = ({ type, ...props }: EntityTypeIconProps) => {
+	const { icon: Icon, description } = entityTypeIcons[type];
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Icon {...props} />
+			</TooltipTrigger>
+			<TooltipContent>{description}</TooltipContent>
+		</Tooltip>
+	);
+};
