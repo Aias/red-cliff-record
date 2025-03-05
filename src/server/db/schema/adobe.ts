@@ -46,15 +46,13 @@ export const lightroomImages = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
 		...contentTimestamps,
 		...databaseTimestamps,
 	},
-	(table) => [
-		index().on(table.integrationRunId),
-		index().on(table.captureDate),
-		index().on(table.recordId),
-		index().on(table.mediaId),
-	]
+	(table) => [index().on(table.recordId), index().on(table.mediaId), index().on(table.deletedAt)]
 );
 
 export const LightroomImageSelectSchema = createSelectSchema(lightroomImages);

@@ -82,20 +82,21 @@ export const readwiseDocuments = pgTable(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...contentTimestamps,
-		...databaseTimestamps,
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
-		index().on(table.integrationRunId),
-		index().on(table.sourceUrl),
-		index().on(table.recordCreatedAt),
 		index().on(table.parentId),
 		index().on(table.recordId),
 		index().on(table.authorId),
+		index().on(table.deletedAt),
 	]
 );
 
@@ -144,12 +145,16 @@ export const readwiseAuthors = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
 		...databaseTimestamps,
 	},
 	(table) => [
 		index().on(table.name),
 		index().on(table.origin),
 		unique().on(table.name, table.origin),
+		index().on(table.deletedAt),
 	]
 );
 
@@ -168,15 +173,22 @@ export const ReadwiseAuthorInsertSchema = createInsertSchema(readwiseAuthors).ex
 });
 export type ReadwiseAuthorInsert = typeof readwiseAuthors.$inferInsert;
 
-export const readwiseTags = pgTable('readwise_tags', {
-	id: serial('id').primaryKey(),
-	tag: text('tag').unique().notNull(),
-	recordId: integer('record_id').references(() => records.id, {
-		onDelete: 'set null',
-		onUpdate: 'cascade',
-	}),
-	...databaseTimestamps,
-});
+export const readwiseTags = pgTable(
+	'readwise_tags',
+	{
+		id: serial('id').primaryKey(),
+		tag: text('tag').unique().notNull(),
+		recordId: integer('record_id').references(() => records.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
+		...databaseTimestamps,
+	},
+	(table) => [index().on(table.deletedAt)]
+);
 
 export const readwiseTagsRelations = relations(readwiseTags, ({ one, many }) => ({
 	tagDocuments: many(readwiseDocumentTags, {

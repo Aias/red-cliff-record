@@ -69,3 +69,17 @@ export const defaultQueueOptions: ListRecordsInput = {
 		},
 	],
 };
+
+export const SearchRecordsInputSchema = z.object({
+	query: z.string(),
+	filters: z
+		.object({
+			isFormat: z.boolean().optional(),
+			isIndexNode: z.boolean().optional(),
+		})
+		.optional()
+		.default({}),
+	limit: LimitSchema.optional().default(10),
+});
+
+export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;

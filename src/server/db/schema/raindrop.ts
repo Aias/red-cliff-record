@@ -7,6 +7,7 @@ import {
 	pgTable,
 	serial,
 	text,
+	timestamp,
 	unique,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
@@ -30,7 +31,6 @@ export const raindropBookmarks = pgTable(
 		excerpt: text('excerpt'),
 		note: text('note'),
 		type: raindropTypeEnum('type'),
-		coverImageUrl: text('cover_image_url'),
 		tags: text('tags').array(),
 		important: boolean('important').notNull().default(false),
 		domain: text('domain'),
@@ -41,24 +41,21 @@ export const raindropBookmarks = pgTable(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...contentTimestamps,
-		...databaseTimestamps,
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		mediaId: integer('media_id').references(() => media.id, {
-			onDelete: 'set null',
-			onUpdate: 'cascade',
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
 		}),
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
 	(table) => [
 		unique().on(table.linkUrl, table.recordCreatedAt),
-		index().on(table.integrationRunId),
-		index().on(table.linkUrl),
 		index().on(table.recordCreatedAt),
 		index().on(table.recordId),
-		index().on(table.mediaId),
+		index().on(table.deletedAt),
 	]
 );
 
@@ -75,10 +72,7 @@ export const raindropBookmarksRelations = relations(raindropBookmarks, ({ one, m
 		fields: [raindropBookmarks.recordId],
 		references: [records.id],
 	}),
-	media: one(media, {
-		fields: [raindropBookmarks.mediaId],
-		references: [media.id],
-	}),
+	coverImages: many(raindropImages),
 	bookmarkTags: many(raindropBookmarkTags, {
 		relationName: 'bookmarkTags',
 	}),
@@ -88,7 +82,6 @@ export const RaindropBookmarkSelectSchema = createSelectSchema(raindropBookmarks
 export type RaindropBookmarkSelect = typeof raindropBookmarks.$inferSelect;
 export const RaindropBookmarkInsertSchema = createInsertSchema(raindropBookmarks).extend({
 	linkUrl: z.string().url(),
-	coverImageUrl: z.string().url().optional().nullable(),
 });
 export type RaindropBookmarkInsert = typeof raindropBookmarks.$inferInsert;
 
@@ -101,9 +94,12 @@ export const raindropTags = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.tag), index().on(table.recordId)]
+	(table) => [index().on(table.tag), index().on(table.recordId), index().on(table.deletedAt)]
 );
 
 export const RaindropTagSelectSchema = createSelectSchema(raindropTags);
@@ -178,10 +174,13 @@ export const raindropCollections = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
 		...contentTimestamps,
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.parentId), index().on(table.recordId)]
+	(table) => [index().on(table.parentId), index().on(table.recordId), index().on(table.deletedAt)]
 );
 
 export const RaindropCollectionSelectSchema = createSelectSchema(raindropCollections);
@@ -213,3 +212,44 @@ export const raindropIntegrationRelations = relations(integrationRuns, ({ many }
 	raindropCollections: many(raindropCollections),
 	raindropRaindrops: many(raindropBookmarks),
 }));
+
+export const raindropImages = pgTable(
+	'raindrop_images',
+	{
+		id: serial('id').primaryKey(),
+		url: text('url').notNull(),
+		bookmarkId: integer('bookmark_id')
+			.references(() => raindropBookmarks.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
+			.notNull(),
+		mediaId: integer('media_id').references(() => media.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
+		...databaseTimestamps,
+	},
+	(table) => [index().on(table.bookmarkId), index().on(table.mediaId), index().on(table.deletedAt)]
+);
+
+export const raindropImagesRelations = relations(raindropImages, ({ one }) => ({
+	media: one(media, {
+		fields: [raindropImages.mediaId],
+		references: [media.id],
+	}),
+	bookmark: one(raindropBookmarks, {
+		fields: [raindropImages.bookmarkId],
+		references: [raindropBookmarks.id],
+	}),
+}));
+
+export const RaindropImageSelectSchema = createSelectSchema(raindropImages);
+export type RaindropImageSelect = typeof raindropImages.$inferSelect;
+export const RaindropImageInsertSchema = createInsertSchema(raindropImages).extend({
+	url: z.string().url(),
+});
+export type RaindropImageInsert = typeof raindropImages.$inferInsert;

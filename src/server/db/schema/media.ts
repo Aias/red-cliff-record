@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { lightroomImages } from './adobe';
 import { airtableAttachments } from './airtable';
 import { databaseTimestamps } from './operations';
-import { raindropBookmarks } from './raindrop';
+import { raindropImages } from './raindrop';
 import { records } from './records';
 import { twitterMedia } from './twitter';
 
@@ -79,7 +79,7 @@ export const mediaRelations = relations(media, ({ one, many }) => ({
 	}),
 	airtableAttachments: many(airtableAttachments),
 	lightroomImages: many(lightroomImages),
-	raindropBookmarks: many(raindropBookmarks),
+	raindropImages: many(raindropImages),
 	twitterMedia: many(twitterMedia),
 }));
 

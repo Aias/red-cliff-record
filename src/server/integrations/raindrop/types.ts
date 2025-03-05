@@ -93,7 +93,7 @@ export const RaindropSchema = z.object({
 	sort: z.number().int().positive().nullable(),
 	broken: z.coerce.boolean(),
 	cache: RaindropCacheSchema.optional(),
-	collectionId: z.number().int().positive(),
+	collectionId: z.number().int(),
 });
 
 export const RaindropResponseSchema = z.object({

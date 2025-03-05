@@ -115,9 +115,15 @@ function Home() {
 		}
 	}, [debouncedValue, navigate, q]);
 
-	const recordsQuery = trpc.records.search.useQuery(debouncedValue, {
-		enabled: debouncedValue.length > 0,
-	});
+	const recordsQuery = trpc.records.search.useQuery(
+		{
+			query: debouncedValue,
+			limit: 10,
+		},
+		{
+			enabled: debouncedValue.length > 0,
+		}
+	);
 
 	const isLoading = recordsQuery.isLoading;
 	const hasResults = (recordsQuery.data?.length ?? 0) > 0;

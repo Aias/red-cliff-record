@@ -9,6 +9,14 @@ interface RelationsListProps {
 	recordId: number;
 }
 
+function sortByTime(a: RecordSelect, b: RecordSelect) {
+	// Use contentCreatedAt if both records have it, otherwise fall back to recordCreatedAt
+	if (a.contentCreatedAt && b.contentCreatedAt) {
+		return a.contentCreatedAt.getTime() - b.contentCreatedAt.getTime();
+	}
+	return a.recordCreatedAt.getTime() - b.recordCreatedAt.getTime();
+}
+
 export const RelationsList = ({ recordId }: RelationsListProps) => {
 	const { data: record, isLoading } = trpc.records.get.useQuery(recordId, {
 		enabled: !!recordId,
@@ -45,7 +53,7 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 			{children.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Children</h3>
-					<RelationList records={children} />
+					<RelationList records={children.sort(sortByTime)} />
 				</section>
 			)}
 			{created.length > 0 && (
@@ -130,13 +138,9 @@ interface RelationListProps {
 }
 
 const RelationList = ({ records }: RelationListProps) => {
-	const sortedRecords = useMemo(() => {
-		return [...records].sort((a, b) => b.recordUpdatedAt.getTime() - a.recordUpdatedAt.getTime());
-	}, [records]);
-
 	return (
 		<ul>
-			{sortedRecords.map((record) => (
+			{records.map((record) => (
 				<li key={record.id}>
 					<RelationItem record={record} />
 				</li>

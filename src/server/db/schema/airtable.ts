@@ -41,14 +41,17 @@ export const airtableExtracts = pgTable(
 		publishedAt: timestamp('published_at', {
 			withTimezone: true,
 		}),
-		...contentTimestamps,
-		...databaseTimestamps,
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
-	(table) => [index().on(table.recordId)]
+	(table) => [index().on(table.recordId), index().on(table.deletedAt)]
 );
 
 export const AirtableExtractSelectSchema = createSelectSchema(airtableExtracts);
@@ -89,16 +92,19 @@ export const airtableFormats = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		name: text('name').notNull().unique(),
+		integrationRunId: integer('integration_run_id')
+			.references(() => integrationRuns.id)
+			.notNull(),
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
-		integrationRunId: integer('integration_run_id')
-			.references(() => integrationRuns.id)
-			.notNull(),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.recordId)]
+	(table) => [index().on(table.recordId), index().on(table.deletedAt)]
 );
 
 export const AirtableFormatSelectSchema = createSelectSchema(airtableFormats);
@@ -118,26 +124,33 @@ export const airtableFormatsRelations = relations(airtableFormats, ({ one, many 
 	extracts: many(airtableExtracts),
 }));
 
-export const airtableAttachments = pgTable('airtable_attachments', {
-	id: text('id').primaryKey(),
-	url: text('url').notNull(),
-	filename: text('filename').notNull(),
-	size: integer('size'),
-	type: text('type'),
-	width: integer('width'),
-	height: integer('height'),
-	extractId: text('extract_id')
-		.references(() => airtableExtracts.id, {
+export const airtableAttachments = pgTable(
+	'airtable_attachments',
+	{
+		id: text('id').primaryKey(),
+		url: text('url').notNull(),
+		filename: text('filename').notNull(),
+		size: integer('size'),
+		type: text('type'),
+		width: integer('width'),
+		height: integer('height'),
+		extractId: text('extract_id')
+			.references(() => airtableExtracts.id, {
+				onDelete: 'cascade',
+				onUpdate: 'cascade',
+			})
+			.notNull(),
+		mediaId: integer('media_id').references(() => media.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
-		})
-		.notNull(),
-	...databaseTimestamps,
-	mediaId: integer('media_id').references(() => media.id, {
-		onDelete: 'set null',
-		onUpdate: 'cascade',
-	}),
-});
+		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
+		...databaseTimestamps,
+	},
+	(table) => [index().on(table.mediaId), index().on(table.deletedAt)]
+);
 
 export const AirtableAttachmentSelectSchema = createSelectSchema(airtableAttachments);
 export type AirtableAttachmentSelect = typeof airtableAttachments.$inferSelect;
@@ -169,14 +182,17 @@ export const airtableCreators = pgTable(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...contentTimestamps,
-		...databaseTimestamps,
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
-	(table) => [index().on(table.recordId)]
+	(table) => [index().on(table.recordId), index().on(table.deletedAt)]
 );
 
 export const AirtableCreatorSelectSchema = createSelectSchema(airtableCreators);
@@ -206,14 +222,17 @@ export const airtableSpaces = pgTable(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...contentTimestamps,
-		...databaseTimestamps,
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
-	(table) => [index().on(table.recordId)]
+	(table) => [index().on(table.recordId), index().on(table.deletedAt)]
 );
 
 export const AirtableSpaceSelectSchema = createSelectSchema(airtableSpaces);

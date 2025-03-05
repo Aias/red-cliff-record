@@ -4,10 +4,12 @@ import {
 	media,
 	raindropBookmarks,
 	raindropBookmarkTags,
+	raindropImages,
 	raindropTags,
 	records,
 	type MediaInsert,
 	type RaindropBookmarkSelect,
+	type RaindropImageSelect,
 	type RaindropTagSelect,
 	type RecordInsert,
 } from '@/server/db/schema';
@@ -142,6 +144,7 @@ export async function createRecordsFromRaindropBookmarks() {
 					tag: true,
 				},
 			},
+			coverImages: true,
 		},
 	});
 
@@ -180,22 +183,24 @@ export async function createRecordsFromRaindropBookmarks() {
 		}
 
 		// Link media to the record if it exists
-		if (bookmark.mediaId) {
-			logger.info(`Linking media ${bookmark.mediaId} to record ${newRecord.id}`);
-			await db.update(media).set({ recordId: newRecord.id }).where(eq(media.id, bookmark.mediaId));
+		for (const image of bookmark.coverImages) {
+			if (image.mediaId) {
+				logger.info(`Linking media ${image.mediaId} to record ${newRecord.id}`);
+				await db.update(media).set({ recordId: newRecord.id }).where(eq(media.id, image.mediaId));
+			}
 		}
 	}
 
 	logger.complete(`Processed ${unmappedBookmarks.length} Raindrop bookmarks`);
 }
 
-const mapRaindropBookmarkToMedia = async (
-	bookmark: RaindropBookmarkSelect
+const mapRaindropImageToMedia = async (
+	image: RaindropImageSelect & { bookmark: RaindropBookmarkSelect }
 ): Promise<MediaInsert | null> => {
-	if (!bookmark.coverImageUrl) return null;
+	if (!image.url) return null;
 
 	// First upload to R2 if needed
-	let mediaUrl = bookmark.coverImageUrl;
+	let mediaUrl = image.url;
 	try {
 		const newUrl = await uploadMediaToR2(mediaUrl);
 		if (!newUrl) {
@@ -204,12 +209,9 @@ const mapRaindropBookmarkToMedia = async (
 		}
 
 		mediaUrl = newUrl;
-		logger.info(`Uploaded media for bookmark: ${bookmark.title} (${bookmark.id}) to ${mediaUrl}`);
+		logger.info(`Uploaded media for image: ${image.url} (${image.id}) to ${mediaUrl}`);
 
-		await db
-			.update(raindropBookmarks)
-			.set({ coverImageUrl: mediaUrl })
-			.where(eq(raindropBookmarks.id, bookmark.id));
+		await db.update(raindropImages).set({ url: mediaUrl }).where(eq(raindropImages.id, image.id));
 	} catch (error) {
 		logger.error('Error transferring media', error);
 		return null;
@@ -217,48 +219,40 @@ const mapRaindropBookmarkToMedia = async (
 
 	// Then get metadata and create media object
 	return getMediaInsertData(mediaUrl, {
-		recordId: bookmark.recordId,
-		recordCreatedAt: bookmark.recordCreatedAt,
-		recordUpdatedAt: bookmark.recordUpdatedAt,
+		recordId: image.bookmark.recordId,
+		recordCreatedAt: image.recordCreatedAt,
+		recordUpdatedAt: image.recordUpdatedAt,
 	});
 };
 
 export async function createMediaFromRaindropBookmarks() {
 	logger.start('Creating media from Raindrop bookmarks');
 
-	const unmappedBookmarks = await db.query.raindropBookmarks.findMany({
-		where: and(
-			isNotNull(raindropBookmarks.coverImageUrl),
-			isNull(raindropBookmarks.mediaId),
-			isNotNull(raindropBookmarks.recordId)
-		),
+	const unmappedImages = await db.query.raindropImages.findMany({
+		where: isNull(raindropImages.mediaId),
+		with: {
+			bookmark: true,
+		},
 	});
 
-	if (unmappedBookmarks.length === 0) {
-		logger.skip('No new or updated bookmarks to process');
+	if (unmappedImages.length === 0) {
+		logger.skip('No new or updated images to process');
 		return;
 	}
 
-	logger.info(`Found ${unmappedBookmarks.length} Raindrop bookmarks with cover images`);
+	logger.info(`Found ${unmappedImages.length} Raindrop images without media`);
 
-	for (const bookmark of unmappedBookmarks) {
-		const newMedia = await mapRaindropBookmarkToMedia(bookmark);
+	for (const image of unmappedImages) {
+		const newMedia = await mapRaindropImageToMedia(image);
 		if (!newMedia) {
-			logger.warn(`Invalid image for bookmark ${bookmark.id}, setting cover image to null`);
+			logger.warn(`Invalid image for image ${image.id}, deleting...`);
 
-			await db
-				.update(raindropBookmarks)
-				.set({ coverImageUrl: null })
-				.where(eq(raindropBookmarks.id, bookmark.id));
+			await db.delete(raindropImages).where(eq(raindropImages.id, image.id));
 
 			continue;
 		}
 
-		logger.info(
-			`Creating media for bookmark ${bookmark.id}`,
-			newMedia.url,
-			newMedia.contentTypeString
-		);
+		logger.info(`Creating media for image ${image.id}`, newMedia.url, newMedia.contentTypeString);
 
 		const [newMediaRecord] = await db
 			.insert(media)
@@ -275,24 +269,24 @@ export async function createMediaFromRaindropBookmarks() {
 			throw new Error('Failed to create media');
 		}
 
-		logger.info(`Linking bookmark to media ${newMediaRecord.id}`);
+		logger.info(`Created media ${newMediaRecord.id} for image ${image.id}, linking to image...`);
 
 		await db
-			.update(raindropBookmarks)
+			.update(raindropImages)
 			.set({ mediaId: newMediaRecord.id })
-			.where(eq(raindropBookmarks.id, bookmark.id));
+			.where(eq(raindropImages.id, image.id));
 
-		if (bookmark.recordId) {
-			logger.info(`Linking associated record to media ${bookmark.recordId}`);
+		if (image.bookmark.recordId) {
+			logger.info(`Linking associated media to record ${image.bookmark.recordId}`);
 
 			await db
 				.update(media)
-				.set({ recordId: bookmark.recordId })
+				.set({ recordId: image.bookmark.recordId })
 				.where(eq(media.id, newMediaRecord.id));
 		}
 	}
 
-	logger.complete(`Processed ${unmappedBookmarks.length} Raindrop bookmark media`);
+	logger.complete(`Processed ${unmappedImages.length} Raindrop bookmark media`);
 }
 
 export const mapRaindropTagToRecord = (tag: RaindropTagSelect): RecordInsert => {

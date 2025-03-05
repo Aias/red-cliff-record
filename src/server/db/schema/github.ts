@@ -49,14 +49,17 @@ export const githubUsers = pgTable(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...contentTimestamps,
-		...databaseTimestamps,
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
-	(table) => [index().on(table.login), index().on(table.recordId)]
+	(table) => [index().on(table.login), index().on(table.recordId), index().on(table.deletedAt)]
 );
 
 export const GithubUserSelectSchema = createSelectSchema(githubUsers);
@@ -89,14 +92,22 @@ export const githubRepositories = pgTable(
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),
-		...contentTimestamps,
-		...databaseTimestamps,
 		recordId: integer('record_id').references(() => records.id, {
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		deletedAt: timestamp('deleted_at', {
+			withTimezone: true,
+		}),
+		...contentTimestamps,
+		...databaseTimestamps,
 	},
-	(table) => [index().on(table.ownerId), index().on(table.nodeId), index().on(table.recordId)]
+	(table) => [
+		index().on(table.ownerId),
+		index().on(table.nodeId),
+		index().on(table.recordId),
+		index().on(table.deletedAt),
+	]
 );
 
 export const GithubRepositorySelectSchema = createSelectSchema(githubRepositories);

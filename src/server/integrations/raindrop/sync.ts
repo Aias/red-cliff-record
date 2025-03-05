@@ -3,6 +3,7 @@ import { db } from '@/server/db/connections';
 import {
 	raindropBookmarks,
 	raindropCollections,
+	raindropImages,
 	RaindropType,
 	type RaindropBookmarkInsert,
 	type RaindropCollectionInsert,
@@ -256,49 +257,65 @@ async function fetchNewRaindrops(lastKnownDate?: Date): Promise<Raindrop[]> {
  * @returns The number of successfully processed raindrops
  */
 async function processRaindrops(raindrops: Raindrop[], integrationRunId: number): Promise<number> {
-	// Convert raindrops to bookmark format
-	const raindropsToInsert: RaindropBookmarkInsert[] = raindrops.map((raindrop) => ({
-		id: raindrop._id,
-		linkUrl: raindrop.link,
-		title: raindrop.title,
-		excerpt: raindrop.excerpt,
-		note: raindrop.note,
-		type: RaindropType.parse(raindrop.type),
-		coverImageUrl: raindrop.cover,
-		tags: raindrop.tags.length > 0 ? raindrop.tags : null,
-		important: raindrop.important,
-		domain: raindrop.domain,
-		collectionId: raindrop.collection.$id > 0 ? raindrop.collection.$id : null,
-		contentCreatedAt: raindrop.created,
-		contentUpdatedAt: raindrop.lastUpdate,
-		integrationRunId,
-	}));
-
 	// Insert raindrops one by one
-	console.log(`Inserting ${raindropsToInsert.length} raindrops...`);
+	console.log(`Inserting ${raindrops.length} raindrops...`);
 	let successCount = 0;
 
-	for (const raindrop of raindropsToInsert) {
-		try {
-			await db
-				.insert(raindropBookmarks)
-				.values(raindrop)
-				.onConflictDoUpdate({
-					target: raindropBookmarks.id,
-					set: { ...raindrop, recordUpdatedAt: new Date() },
-				});
+	await db.transaction(async (tx) => {
+		for (const raindrop of raindrops) {
+			try {
+				const coverImageUrl = raindrop.cover;
+				const bookmarkId = raindrop._id;
 
-			successCount++;
-			if (successCount % 10 === 0) {
-				console.log(`Processed ${successCount} of ${raindropsToInsert.length} raindrops`);
+				const insertData: RaindropBookmarkInsert[] = raindrops.map((raindrop) => ({
+					id: bookmarkId,
+					linkUrl: raindrop.link,
+					title: raindrop.title,
+					excerpt: raindrop.excerpt,
+					note: raindrop.note,
+					type: RaindropType.parse(raindrop.type),
+					tags: raindrop.tags.length > 0 ? raindrop.tags : null,
+					important: raindrop.important,
+					domain: raindrop.domain,
+					collectionId: raindrop.collection.$id > 0 ? raindrop.collection.$id : null,
+					contentCreatedAt: raindrop.created,
+					contentUpdatedAt: raindrop.lastUpdate,
+					integrationRunId,
+				}));
+
+				await tx
+					.insert(raindropBookmarks)
+					.values(insertData)
+					.onConflictDoUpdate({
+						target: raindropBookmarks.id,
+						set: { ...raindrop, recordUpdatedAt: new Date() },
+					});
+
+				if (coverImageUrl) {
+					const [coverImage] = await tx
+						.insert(raindropImages)
+						.values({
+							url: coverImageUrl,
+							bookmarkId,
+						})
+						.returning();
+					if (!coverImage) {
+						throw new Error('Failed to insert cover image');
+					}
+				}
+
+				successCount++;
+				if (successCount % 10 === 0) {
+					console.log(`Processed ${successCount} of ${raindrops.length} raindrops`);
+				}
+			} catch (error) {
+				console.error('Error processing raindrop:', {
+					raindropId: raindrop._id,
+					error: error instanceof Error ? error.message : String(error),
+				});
 			}
-		} catch (error) {
-			console.error('Error processing raindrop:', {
-				raindropId: raindrop.id,
-				error: error instanceof Error ? error.message : String(error),
-			});
 		}
-	}
+	});
 
 	return successCount;
 }
@@ -312,12 +329,12 @@ async function createRelatedEntities(integrationRunId: number): Promise<void> {
 	// Create tags from raindrops
 	await createRaindropTags(integrationRunId);
 
-	// Create records from tags and bookmarks
-	await createRecordsFromRaindropTags();
-	await createRecordsFromRaindropBookmarks();
-
 	// Create media from bookmarks
 	await createMediaFromRaindropBookmarks();
+	// Create records from tags
+	await createRecordsFromRaindropTags();
+	// Create main records
+	await createRecordsFromRaindropBookmarks();
 }
 
 /**

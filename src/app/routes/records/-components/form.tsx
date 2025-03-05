@@ -2,7 +2,12 @@ import { useEffect, useMemo } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
-import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@/server/db/schema';
+import {
+	RecordInsertSchema,
+	RecordTypeSchema,
+	type RecordInsert,
+	type RecordType,
+} from '@/server/db/schema';
 import { entityTypeIcons } from './type-icons';
 import { Avatar, DynamicTextarea, ExternalLink, GhostInput, MetadataList } from '@/components';
 import {
@@ -57,6 +62,10 @@ export function RecordForm({ recordId }: RecordFormProps) {
 	const utils = trpc.useUtils();
 	const [record] = trpc.records.get.useSuspenseQuery(Number(recordId));
 
+	const recordFormData: RecordInsert = useMemo(() => {
+		return { ...record };
+	}, [record]);
+
 	const handleUpdate = trpc.records.upsert.useMutation({
 		onSuccess: () => {
 			utils.records.get.invalidate(Number(recordId));
@@ -65,30 +74,34 @@ export function RecordForm({ recordId }: RecordFormProps) {
 		},
 	});
 
-	// Create a form with Tanstack Form
-	// Using recordId as a key to force re-creation of the form when recordId changes
 	const form = useForm({
 		defaultValues: {
-			...record,
+			...recordFormData,
 		},
 		onSubmit: async ({ value }) => {
+			const {
+				title,
+				sense,
+				abbreviation,
+				url,
+				avatarUrl,
+				summary,
+				content,
+				notes,
+				mediaCaption,
+				...rest
+			} = value;
 			await handleUpdate.mutateAsync({
-				title: value.title || null,
-				type: value.type,
-				url: value.url || null,
-				avatarUrl: value.avatarUrl || null,
-				abbreviation: value.abbreviation || null,
-				sense: value.sense || null,
-				summary: value.summary || null,
-				content: value.content || null,
-				notes: value.notes || null,
-				mediaCaption: value.mediaCaption || null,
-				isIndexNode: value.isIndexNode,
-				isFormat: value.isFormat,
-				isPrivate: value.isPrivate,
-				isCurated: value.isCurated,
-				rating: value.rating,
-				id: record.id,
+				...rest,
+				title: title || null,
+				url: url || null,
+				avatarUrl: avatarUrl || null,
+				abbreviation: abbreviation || null,
+				sense: sense || null,
+				summary: summary || null,
+				content: content || null,
+				notes: notes || null,
+				mediaCaption: mediaCaption || null,
 			});
 		},
 		validators: {
@@ -111,7 +124,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 			onSubmit={(e) => {
 				e.preventDefault();
 				e.stopPropagation();
-				void form.handleSubmit();
+				form.handleSubmit();
 			}}
 			className="flex flex-col gap-4"
 		>
@@ -213,7 +226,6 @@ export function RecordForm({ recordId }: RecordFormProps) {
 												.string()
 												.url('Must be a valid URL')
 												.or(z.string().length(0))
-												.optional()
 												.nullable(),
 										}}
 									>
@@ -257,7 +269,6 @@ export function RecordForm({ recordId }: RecordFormProps) {
 												.string()
 												.url('Must be a valid URL')
 												.or(z.string().length(0))
-												.optional()
 												.nullable(),
 										}}
 									>
@@ -474,7 +485,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 								max={2}
 								step={1}
 								value={[field.state.value ?? 0]}
-								onValueChange={(values: number[]) => field.handleChange(values[0])}
+								onValueChange={(values) => field.handleChange(values[0] ?? 0)}
 							/>
 							<div className="flex justify-between font-mono text-xs text-muted-foreground">
 								<pre>-2 </pre>
