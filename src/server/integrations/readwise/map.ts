@@ -387,13 +387,10 @@ export const mapReadwiseDocumentToRecord = (
 		rating = 1;
 	}
 	if (document.tags?.includes('⭐⭐')) {
-		rating = 1;
-	}
-	if (document.tags?.includes('⭐⭐⭐')) {
 		rating = 2;
 	}
-	if (document.tags?.includes('👎')) {
-		rating = -1;
+	if (document.tags?.includes('⭐⭐⭐')) {
+		rating = 3;
 	}
 
 	return {

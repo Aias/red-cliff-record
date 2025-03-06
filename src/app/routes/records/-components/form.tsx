@@ -445,10 +445,9 @@ export function RecordForm({ recordId }: RecordFormProps) {
 				</>
 			)}
 
-			{/* Settings section */}
-			<div className="flex flex-col gap-4">
-				<h2>Settings</h2>
-				{/* Toggle switches */}
+			{/* Metadata section */}
+			<div className="flex flex-col gap-3">
+				<h2>Metadata</h2>
 				<div className="flex justify-between">
 					<form.Field name="isIndexNode">
 						{(field) => (
@@ -494,12 +493,6 @@ export function RecordForm({ recordId }: RecordFormProps) {
 						)}
 					</form.Field>
 				</div>
-			</div>
-
-			{/* Metadata section */}
-			<Separator />
-			<div className="flex flex-col gap-3">
-				<h2 className="text-xl font-semibold">System Metadata</h2>
 				<MetadataList
 					metadata={{
 						ID: record.id,

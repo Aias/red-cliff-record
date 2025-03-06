@@ -117,7 +117,7 @@ export type RecordSelect = typeof records.$inferSelect;
 export const RecordInsertSchema = createInsertSchema(records).extend({
 	url: emptyStringToNull(z.string().url()).optional(),
 	avatarUrl: emptyStringToNull(z.string().url()).optional(),
-	rating: z.number().int().min(-2).max(2).default(0),
+	rating: z.number().int().min(0).max(3).default(0),
 });
 export type RecordInsert = typeof records.$inferInsert;
 

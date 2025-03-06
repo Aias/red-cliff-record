@@ -348,9 +348,6 @@ const mapAirtableExtractToRecord = (
 		format: AirtableFormatSelect | null;
 	}
 ): RecordInsert => {
-	const stars = extract.michelinStars;
-	const rating = stars === 3 ? 2 : stars > 0 ? 1 : 0;
-
 	return {
 		id: extract.recordId ?? undefined,
 		type: 'artifact',
@@ -361,7 +358,7 @@ const mapAirtableExtractToRecord = (
 		mediaCaption: extract.attachmentCaption,
 		parentId: extract.parent?.recordId,
 		formatId: extract.format?.recordId,
-		rating,
+		rating: extract.michelinStars,
 		isCurated: false,
 		isPrivate: extract.publishedAt ? false : true,
 		sources: ['airtable'],
