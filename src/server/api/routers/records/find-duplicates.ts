@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { isNotNull } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
 import { SIMILARITY_THRESHOLD } from '../common';
 import { IdSchema } from '../records.types';
@@ -72,6 +73,8 @@ export const findDuplicates = publicProcedure
 				const andConditions = [
 					// Exclude current record
 					ne(records.id, input),
+					// Exclude "partials" (record fragments)
+					isNotNull(records.title),
 					// We only combine OR-conditions if there's something to compare
 					orConditions.length ? or(...orConditions) : undefined,
 				].filter(Boolean);

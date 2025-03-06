@@ -267,7 +267,7 @@ async function processRaindrops(raindrops: Raindrop[], integrationRunId: number)
 				const coverImageUrl = raindrop.cover;
 				const bookmarkId = raindrop._id;
 
-				const insertData: RaindropBookmarkInsert[] = raindrops.map((raindrop) => ({
+				const insertData: RaindropBookmarkInsert = {
 					id: bookmarkId,
 					linkUrl: raindrop.link,
 					title: raindrop.title,
@@ -281,14 +281,14 @@ async function processRaindrops(raindrops: Raindrop[], integrationRunId: number)
 					contentCreatedAt: raindrop.created,
 					contentUpdatedAt: raindrop.lastUpdate,
 					integrationRunId,
-				}));
+				};
 
 				await tx
 					.insert(raindropBookmarks)
 					.values(insertData)
 					.onConflictDoUpdate({
 						target: raindropBookmarks.id,
-						set: { ...raindrop, recordUpdatedAt: new Date() },
+						set: { ...insertData, recordUpdatedAt: new Date() },
 					});
 
 				if (coverImageUrl) {

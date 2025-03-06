@@ -16,7 +16,6 @@ import {
 	contentTimestampsNonUpdatable,
 	databaseTimestamps,
 	databaseTimestampsNonUpdatable,
-	textEmbeddingColumns,
 } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
@@ -164,7 +163,6 @@ export const githubCommits = pgTable(
 		committedAt: timestamp('committed_at', { withTimezone: true }),
 		...contentTimestampsNonUpdatable,
 		...databaseTimestampsNonUpdatable,
-		...textEmbeddingColumns,
 	},
 	(table) => [index().on(table.repositoryId), index().on(table.sha)]
 );

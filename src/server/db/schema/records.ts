@@ -108,6 +108,7 @@ export const records = pgTable(
 		index().on(table.isFormat),
 		index().on(table.isPrivate),
 		index().on(table.isCurated),
+		index().using('hnsw', table.textEmbedding.op('vector_cosine_ops')),
 	]
 );
 

@@ -232,6 +232,13 @@
       "when": 1741198915899,
       "tag": "0032_heavy_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1741270292288,
+      "tag": "0033_quiet_turbo",
+      "breakpoints": true
     }
   ]
 }
