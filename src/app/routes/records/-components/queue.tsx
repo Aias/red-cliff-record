@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
-import { EntityTypeIcon } from './type-icons';
+import { RecordTypeIcon } from './type-icons';
 import {
 	CheckIcon,
 	ExternalLink,
@@ -383,7 +383,7 @@ export const QueueFilters = () => {
 					{queue.map((record) => (
 						<TableRow key={record.id}>
 							<TableCell className="text-center text-sm">
-								<EntityTypeIcon type={record.type} />
+								<RecordTypeIcon type={record.type} />
 							</TableCell>
 							<TableCell className="max-w-40 truncate whitespace-nowrap">
 								<Tooltip>

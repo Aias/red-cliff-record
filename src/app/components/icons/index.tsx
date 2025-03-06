@@ -3,6 +3,7 @@ import {
 	ArchiveIcon as ArchiveIconRadix,
 	BellIcon as BellIconRadix,
 	CalendarIcon as CalendarIconRadix,
+	CaretSortIcon as CaretSortIconRadix,
 	CheckCircledIcon as CheckCircledIconRadix,
 	CheckIcon as CheckIconRadix,
 	ChevronDownIcon as ChevronDownIconRadix,
@@ -62,6 +63,7 @@ export const ChevronDownIcon = wrapIcon(ChevronDownIconRadix);
 export const ChevronLeftIcon = wrapIcon(ChevronLeftIconRadix);
 export const ChevronRightIcon = wrapIcon(ChevronRightIconRadix);
 export const ChevronUpIcon = wrapIcon(ChevronUpIconRadix);
+export const ChevronUpDownIcon = wrapIcon(CaretSortIconRadix);
 
 export const DayModeIcon = wrapIcon(SunIconRadix);
 export const NightModeIcon = wrapIcon(MoonIconRadix);

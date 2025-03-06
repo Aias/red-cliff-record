@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
-import { entityTypeIcons } from './type-icons';
+import { recordTypeIcons } from './type-icons';
 import {
 	Avatar,
 	Badge,
@@ -71,7 +71,7 @@ export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
 				const identifier = title || 'Untitled Record';
 				const formattedDate = recordCreatedAt.toLocaleDateString();
 				const description = content || summary || notes;
-				const TypeIcon = entityTypeIcons[type].icon;
+				const TypeIcon = recordTypeIcons[type].icon;
 
 				return (
 					<li

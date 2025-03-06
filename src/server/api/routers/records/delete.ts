@@ -48,100 +48,172 @@ export const deleteRecords = publicProcedure
 				// Update all associated tables with a soft delete. For each table with a recordId field, set deletedAt to now
 
 				// Airtable
-				await tx
+				const deletedAirtableCreators = await tx
 					.update(airtableCreators)
 					.set({ deletedAt: now })
-					.where(inArray(airtableCreators.recordId, input));
+					.where(inArray(airtableCreators.recordId, input))
+					.returning();
+				for (const creator of deletedAirtableCreators) {
+					console.log(`Deleted Airtable creator ${creator.name} (${creator.id})`);
+				}
 
-				await tx
+				const deletedAirtableExtracts = await tx
 					.update(airtableExtracts)
 					.set({ deletedAt: now })
-					.where(inArray(airtableExtracts.recordId, input));
+					.where(inArray(airtableExtracts.recordId, input))
+					.returning();
+				for (const extract of deletedAirtableExtracts) {
+					console.log(`Deleted Airtable extract ${extract.title} (${extract.id})`);
+				}
 
-				await tx
+				const deletedAirtableFormats = await tx
 					.update(airtableFormats)
 					.set({ deletedAt: now })
-					.where(inArray(airtableFormats.recordId, input));
+					.where(inArray(airtableFormats.recordId, input))
+					.returning();
+				for (const format of deletedAirtableFormats) {
+					console.log(`Deleted Airtable format ${format.name} (${format.id})`);
+				}
 
-				await tx
+				const deletedAirtableSpaces = await tx
 					.update(airtableSpaces)
 					.set({ deletedAt: now })
-					.where(inArray(airtableSpaces.recordId, input));
+					.where(inArray(airtableSpaces.recordId, input))
+					.returning();
+				for (const space of deletedAirtableSpaces) {
+					console.log(`Deleted Airtable space ${space.name} (${space.id})`);
+				}
 
-				await tx
+				const deletedAirtableAttachments = await tx
 					.update(airtableAttachments)
 					.set({ deletedAt: now })
-					.where(inArray(airtableAttachments.mediaId, linkedMediaIds));
+					.where(inArray(airtableAttachments.mediaId, linkedMediaIds))
+					.returning();
+				for (const attachment of deletedAirtableAttachments) {
+					console.log(`Deleted Airtable attachment ${attachment.filename} (${attachment.id})`);
+				}
 
 				// Github
-				await tx
+				const deletedGithubRepositories = await tx
 					.update(githubRepositories)
 					.set({ deletedAt: now })
-					.where(inArray(githubRepositories.recordId, input));
+					.where(inArray(githubRepositories.recordId, input))
+					.returning();
+				for (const repo of deletedGithubRepositories) {
+					console.log(`Deleted Github repository ${repo.name} (${repo.id})`);
+				}
 
-				await tx
+				const deletedGithubUsers = await tx
 					.update(githubUsers)
 					.set({ deletedAt: now })
-					.where(inArray(githubUsers.recordId, input));
+					.where(inArray(githubUsers.recordId, input))
+					.returning();
+				for (const user of deletedGithubUsers) {
+					console.log(`Deleted Github user ${user.login} (${user.id})`);
+				}
 
 				// Lightroom
-				await tx
+				const deletedLightroomImages = await tx
 					.update(lightroomImages)
 					.set({ deletedAt: now })
-					.where(inArray(lightroomImages.recordId, input));
+					.where(inArray(lightroomImages.recordId, input))
+					.returning();
+				for (const image of deletedLightroomImages) {
+					console.log(`Deleted Lightroom image ${image.fileName} (${image.id})`);
+				}
 
 				// Raindrop
-				await tx
+				const deletedRaindropBookmarks = await tx
 					.update(raindropBookmarks)
 					.set({ deletedAt: now })
-					.where(inArray(raindropBookmarks.recordId, input));
+					.where(inArray(raindropBookmarks.recordId, input))
+					.returning();
+				for (const bookmark of deletedRaindropBookmarks) {
+					console.log(`Deleted Raindrop bookmark ${bookmark.title} (${bookmark.id})`);
+				}
 
-				await tx
+				const deletedRaindropCollections = await tx
 					.update(raindropCollections)
 					.set({ deletedAt: now })
-					.where(inArray(raindropCollections.recordId, input));
+					.where(inArray(raindropCollections.recordId, input))
+					.returning();
+				for (const collection of deletedRaindropCollections) {
+					console.log(`Deleted Raindrop collection ${collection.title} (${collection.id})`);
+				}
 
-				await tx
+				const deletedRaindropTags = await tx
 					.update(raindropTags)
 					.set({ deletedAt: now })
-					.where(inArray(raindropTags.recordId, input));
+					.where(inArray(raindropTags.recordId, input))
+					.returning();
+				for (const tag of deletedRaindropTags) {
+					console.log(`Deleted Raindrop tag ${tag.tag} (${tag.id})`);
+				}
 
-				await tx
+				const deletedRaindropImages = await tx
 					.update(raindropImages)
 					.set({ deletedAt: now })
-					.where(inArray(raindropImages.mediaId, linkedMediaIds));
+					.where(inArray(raindropImages.mediaId, linkedMediaIds))
+					.returning();
+				for (const image of deletedRaindropImages) {
+					console.log(`Deleted Raindrop image ${image.url} (${image.id})`);
+				}
 
 				// Readwise
-				await tx
+				const deletedReadwiseAuthors = await tx
 					.update(readwiseAuthors)
 					.set({ deletedAt: now })
-					.where(inArray(readwiseAuthors.recordId, input));
+					.where(inArray(readwiseAuthors.recordId, input))
+					.returning();
+				for (const author of deletedReadwiseAuthors) {
+					console.log(`Deleted Readwise author ${author.name} (${author.id})`);
+				}
 
-				await tx
+				const deletedReadwiseDocuments = await tx
 					.update(readwiseDocuments)
 					.set({ deletedAt: now })
-					.where(inArray(readwiseDocuments.recordId, input));
+					.where(inArray(readwiseDocuments.recordId, input))
+					.returning();
+				for (const document of deletedReadwiseDocuments) {
+					console.log(`Deleted Readwise document ${document.title} (${document.id})`);
+				}
 
-				await tx
+				const deletedReadwiseTags = await tx
 					.update(readwiseTags)
 					.set({ deletedAt: now })
-					.where(inArray(readwiseTags.recordId, input));
+					.where(inArray(readwiseTags.recordId, input))
+					.returning();
+				for (const tag of deletedReadwiseTags) {
+					console.log(`Deleted Readwise tag ${tag.tag} (${tag.id})`);
+				}
 
 				// Twitter
-				await tx
+				const deletedTwitterTweets = await tx
 					.update(twitterTweets)
 					.set({ deletedAt: now })
-					.where(inArray(twitterTweets.recordId, input));
+					.where(inArray(twitterTweets.recordId, input))
+					.returning();
+				for (const tweet of deletedTwitterTweets) {
+					console.log(`Deleted Twitter tweet ${tweet.text?.slice(0, 20)} (${tweet.id})`);
+				}
 
-				await tx
+				const deletedTwitterUsers = await tx
 					.update(twitterUsers)
 					.set({ deletedAt: now })
-					.where(inArray(twitterUsers.recordId, input));
+					.where(inArray(twitterUsers.recordId, input))
+					.returning();
+				for (const twUser of deletedTwitterUsers) {
+					console.log(`Deleted Twitter user ${twUser.username} (${twUser.id})`);
+				}
 
-				await tx
+				const deletedTwitterMedia = await tx
 					.update(twitterMedia)
 					.set({ deletedAt: now })
-					.where(inArray(twitterMedia.mediaId, linkedMediaIds));
+					.where(inArray(twitterMedia.mediaId, linkedMediaIds))
+					.returning();
+				for (const media of deletedTwitterMedia) {
+					console.log(`Deleted Twitter media ${media.mediaUrl} (${media.id})`);
+				}
 
 				// Delete the main records
 				const deletedRecords = await tx

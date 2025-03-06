@@ -8,7 +8,7 @@ import {
 	type RecordInsert,
 	type RecordType,
 } from '@/server/db/schema';
-import { entityTypeIcons } from './type-icons';
+import { recordTypeIcons } from './type-icons';
 import { Avatar, DynamicTextarea, ExternalLink, GhostInput, MetadataList } from '@/components';
 import {
 	Button,
@@ -170,7 +170,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 								className="w-full"
 							>
 								{RecordTypeSchema.options.map((type) => {
-									const { icon: Icon, description } = entityTypeIcons[type];
+									const { icon: Icon, description } = recordTypeIcons[type];
 									return (
 										<Tooltip key={type}>
 											<TooltipTrigger asChild>
@@ -198,6 +198,30 @@ export function RecordForm({ recordId }: RecordFormProps) {
 					)}
 				</form.Field>
 			</div>
+
+			{/* Rating slider */}
+			<form.Field name="rating">
+				{(field) => (
+					<div className="mx-5 flex flex-col gap-3">
+						<div className="flex items-center justify-between text-xs text-muted-foreground">
+							<Label htmlFor="rating" className="inline-flex w-[0px] justify-center">
+								Rating
+							</Label>
+							<span className="inline-flex w-[0px] justify-center text-[0.875em]">⭐</span>
+							<span className="inline-flex w-[0px] justify-center text-[0.875em]">⭐⭐</span>
+							<span className="inline-flex w-[0px] justify-center text-[0.875em]">⭐⭐⭐</span>
+						</div>
+						<Slider
+							id="rating"
+							min={0}
+							max={3}
+							step={1}
+							value={[field.state.value ?? 0]}
+							onValueChange={(values) => field.handleChange(values[0] ?? 0)}
+						/>
+					</div>
+				)}
+			</form.Field>
 
 			{/* Metadata section with editable label-value table */}
 			<div className="flex flex-col gap-3">
@@ -470,33 +494,6 @@ export function RecordForm({ recordId }: RecordFormProps) {
 						)}
 					</form.Field>
 				</div>
-
-				{/* Rating slider */}
-				<form.Field name="rating">
-					{(field) => (
-						<div className="flex flex-col gap-2">
-							<div className="flex items-center justify-between">
-								<Label htmlFor="rating">Rating</Label>
-								<span className="text-sm font-medium">{field.state.value}</span>
-							</div>
-							<Slider
-								id="rating"
-								min={-2}
-								max={2}
-								step={1}
-								value={[field.state.value ?? 0]}
-								onValueChange={(values) => field.handleChange(values[0] ?? 0)}
-							/>
-							<div className="flex justify-between font-mono text-xs text-muted-foreground">
-								<pre>-2 </pre>
-								<pre>-1 </pre>
-								<pre> 0 </pre>
-								<pre> 1 </pre>
-								<pre> 2 </pre>
-							</div>
-						</div>
-					)}
-				</form.Field>
 			</div>
 
 			{/* Metadata section */}

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
-import { entityTypeIcons } from './type-icons';
+import { recordTypeIcons } from './type-icons';
 import { ExternalLink, IntegrationLogo, Placeholder, Spinner } from '@/components';
 import type { RecordSelect } from '@/db/schema';
 
@@ -97,7 +97,7 @@ interface RelationItemProps {
 
 const RelationItem = ({ record }: RelationItemProps) => {
 	const { type, title, content, summary, notes, abbreviation, url, sense, sources } = record;
-	const TypeIcon = entityTypeIcons[type].icon;
+	const TypeIcon = recordTypeIcons[type].icon;
 	const label = title || summary || notes || content;
 
 	return (

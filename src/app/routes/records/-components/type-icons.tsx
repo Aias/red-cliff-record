@@ -10,7 +10,7 @@ import {
 import { type RecordType } from '@/db/schema';
 
 // Map record types to their corresponding icons and descriptions
-export const entityTypeIcons: Record<RecordType, { icon: React.ElementType; description: string }> =
+export const recordTypeIcons: Record<RecordType, { icon: React.ElementType; description: string }> =
 	{
 		entity: { icon: EntityIcon, description: 'An actor in the world, has will' },
 		concept: { icon: ConceptIcon, description: 'A category, idea, or abstraction' },
@@ -20,12 +20,12 @@ export const entityTypeIcons: Record<RecordType, { icon: React.ElementType; desc
 		system: { icon: SystemIcon, description: 'A physical or conceptual system or network' },
 	};
 
-interface EntityTypeIconProps extends React.HTMLAttributes<SVGElement> {
+interface RecordTypeIconProps extends React.HTMLAttributes<SVGElement> {
 	type: RecordType;
 }
 
-export const EntityTypeIcon = ({ type, ...props }: EntityTypeIconProps) => {
-	const { icon: Icon, description } = entityTypeIcons[type];
+export const RecordTypeIcon = ({ type, ...props }: RecordTypeIconProps) => {
+	const { icon: Icon, description } = recordTypeIcons[type];
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>

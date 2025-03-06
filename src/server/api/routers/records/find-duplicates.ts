@@ -96,7 +96,7 @@ export const findDuplicates = publicProcedure
         )`,
 				desc(records.recordUpdatedAt),
 			],
-			limit: 5, // Adjust as needed
+			limit: 3, // Adjust as needed
 			with: {
 				creators: {
 					with: {
