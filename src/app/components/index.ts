@@ -1,6 +1,7 @@
 export * from './icons';
 
 // Shadcn UI
+export * from './ui/alert-dialog';
 export * from './ui/button';
 export * from './ui/command';
 export * from './ui/dialog';

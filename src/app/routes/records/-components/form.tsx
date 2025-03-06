@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useForm } from '@tanstack/react-form';
+import { useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
 import {
@@ -9,7 +10,23 @@ import {
 	type RecordType,
 } from '@/server/db/schema';
 import { recordTypeIcons } from './type-icons';
-import { Avatar, DynamicTextarea, ExternalLink, GhostInput, MetadataList } from '@/components';
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+	Avatar,
+	DeleteIcon,
+	DynamicTextarea,
+	ExternalLink,
+	GhostInput,
+	MetadataList,
+} from '@/components';
 import {
 	Button,
 	IntegrationLogo,
@@ -59,20 +76,34 @@ interface RecordFormProps {
 }
 
 export function RecordForm({ recordId }: RecordFormProps) {
+	const navigate = useNavigate();
 	const utils = trpc.useUtils();
-	const [record] = trpc.records.get.useSuspenseQuery(Number(recordId));
+	const [record] = trpc.records.get.useSuspenseQuery(recordId);
 
 	const recordFormData: RecordInsert = useMemo(() => {
 		return { ...record };
 	}, [record]);
 
-	const handleUpdate = trpc.records.upsert.useMutation({
+	const updateMutation = trpc.records.upsert.useMutation({
 		onSuccess: () => {
-			utils.records.get.invalidate(Number(recordId));
+			utils.records.get.invalidate(recordId);
 			utils.records.list.invalidate();
-			utils.records.findDuplicates.invalidate(Number(recordId));
+			utils.records.findDuplicates.invalidate(recordId);
 		},
 	});
+
+	const deleteMutation = trpc.records.delete.useMutation({
+		onSuccess: () => {
+			navigate({ to: '/records' });
+			utils.records.get.invalidate(recordId);
+			utils.records.list.invalidate();
+			utils.records.findDuplicates.invalidate(recordId);
+		},
+	});
+
+	const handleDelete = async () => {
+		await deleteMutation.mutateAsync([recordId]);
+	};
 
 	const form = useForm({
 		defaultValues: {
@@ -91,7 +122,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 				mediaCaption,
 				...rest
 			} = value;
-			await handleUpdate.mutateAsync({
+			await updateMutation.mutateAsync({
 				...rest,
 				title: title || null,
 				url: url || null,
@@ -506,28 +537,55 @@ export function RecordForm({ recordId }: RecordFormProps) {
 
 			{/* Form actions */}
 			<Separator />
-			<div className="flex justify-end gap-2">
-				<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
-					{([canSubmit, isSubmitting]) => (
-						<div className="flex gap-2">
-							<Button
-								type="button"
-								disabled={!canSubmit || isSubmitting}
-								variant="outline"
-								onClick={async () => {
-									form.setFieldValue('isCurated', true);
-									await form.handleSubmit();
-								}}
-							>
-								{isSubmitting ? 'Saving...' : 'Save As Curated'}
-							</Button>
-							<Button type="submit" disabled={!canSubmit || isSubmitting}>
-								{isSubmitting ? 'Saving...' : 'Save Changes'}
-							</Button>
-						</div>
-					)}
-				</form.Subscribe>
-			</div>
+
+			<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+				{([canSubmit, isSubmitting]) => (
+					<div className="flex gap-2">
+						<span className="grow-1">
+							<AlertDialog>
+								<AlertDialogTrigger asChild>
+									<Button variant="outline" type="button">
+										<DeleteIcon />
+									</Button>
+								</AlertDialogTrigger>
+								<AlertDialogContent>
+									<AlertDialogHeader>
+										<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+										<AlertDialogDescription>
+											This action cannot be undone. This will permanently delete this record.
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter>
+										<AlertDialogCancel>Cancel</AlertDialogCancel>
+										<Button variant="destructive" asChild>
+											<AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+										</Button>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
+						</span>
+						<Button
+							type="button"
+							disabled={!canSubmit || isSubmitting}
+							variant="outline"
+							onClick={async () => {
+								form.setFieldValue('isCurated', true);
+								await form.handleSubmit();
+							}}
+						>
+							{isSubmitting ? 'Saving...' : 'Save As Curated'}
+						</Button>
+						<Button
+							variant="default"
+							className="themed"
+							type="submit"
+							disabled={!canSubmit || isSubmitting}
+						>
+							{isSubmitting ? 'Saving...' : 'Save Changes'}
+						</Button>
+					</div>
+				)}
+			</form.Subscribe>
 		</form>
 	);
 }
