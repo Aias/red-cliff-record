@@ -37,8 +37,6 @@ import {
 	Table,
 	TableBody,
 	TableCell,
-	TableHead,
-	TableHeader,
 	TableRow,
 	ToggleGroup,
 	ToggleGroupItem,
@@ -233,7 +231,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 			{/* Rating slider */}
 			<form.Field name="rating">
 				{(field) => (
-					<div className="mx-5 flex flex-col gap-3">
+					<div className="mx-5 mb-1.5 flex flex-col gap-3">
 						<div className="flex items-center justify-between text-xs text-muted-foreground">
 							<Label htmlFor="rating" className="inline-flex w-[0px] justify-center">
 								Rating
@@ -255,149 +253,140 @@ export function RecordForm({ recordId }: RecordFormProps) {
 			</form.Field>
 
 			{/* Metadata section with editable label-value table */}
-			<div className="flex flex-col gap-3">
-				<h2>Record Metadata</h2>
-				<div className="rounded-md border border-border">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className="w-20">Field</TableHead>
-								<TableHead>Value</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{/* URL field */}
-							<TableRow>
-								<TableCell>
-									<Label className="flex w-full" htmlFor="url">
-										URL
-									</Label>
-								</TableCell>
-								<TableCell>
-									<form.Field
-										name="url"
-										validators={{
-											onChange: z
-												.string()
-												.url('Must be a valid URL')
-												.or(z.string().length(0))
-												.nullable(),
-										}}
-									>
-										{(field) => (
-											<>
-												<div className="flex items-center gap-1">
-													<GhostInput
-														id="url"
-														className="w-full"
-														value={field.state.value ?? ''}
-														placeholder="https://example.com"
-														onChange={(e) => field.handleChange(e.target.value)}
-													/>
-													{field.state.value && (
-														<ExternalLink href={field.state.value} children={null} />
-													)}
-												</div>
-												{field.state.meta.errors && (
-													<p className="text-sm text-destructive">
-														{field.state.meta.errors.join(', ')}
-													</p>
+			<div className="rounded-md border border-border">
+				<Table>
+					<TableBody>
+						{/* URL field */}
+						<TableRow>
+							<TableCell className="w-20">
+								<Label className="flex w-full" htmlFor="url">
+									URL
+								</Label>
+							</TableCell>
+							<TableCell>
+								<form.Field
+									name="url"
+									validators={{
+										onChange: z
+											.string()
+											.url('Must be a valid URL')
+											.or(z.string().length(0))
+											.nullable(),
+									}}
+								>
+									{(field) => (
+										<>
+											<div className="flex items-center gap-1">
+												<GhostInput
+													id="url"
+													className="w-full"
+													value={field.state.value ?? ''}
+													placeholder="https://example.com"
+													onChange={(e) => field.handleChange(e.target.value)}
+												/>
+												{field.state.value && (
+													<ExternalLink href={field.state.value} children={null} />
 												)}
-											</>
-										)}
-									</form.Field>
-								</TableCell>
-							</TableRow>
+											</div>
+											{field.state.meta.errors && (
+												<p className="text-sm text-destructive">
+													{field.state.meta.errors.join(', ')}
+												</p>
+											)}
+										</>
+									)}
+								</form.Field>
+							</TableCell>
+						</TableRow>
 
-							{/* Avatar URL field */}
-							<TableRow>
-								<TableCell>
-									<Label className="flex w-full" htmlFor="avatarUrl">
-										Avatar URL
-									</Label>
-								</TableCell>
-								<TableCell>
-									<form.Field
-										name="avatarUrl"
-										validators={{
-											onChange: z
-												.string()
-												.url('Must be a valid URL')
-												.or(z.string().length(0))
-												.nullable(),
-										}}
-									>
-										{(field) => (
-											<>
-												<div className="flex items-center gap-1">
-													<GhostInput
-														id="avatarUrl"
-														className="w-full"
-														value={field.state.value ?? ''}
-														placeholder="https://example.com/image.jpg"
-														onChange={(e) => field.handleChange(e.target.value)}
-													/>
-													{field.state.value && (
-														<ExternalLink href={field.state.value} children={null} />
-													)}
-												</div>
-												{field.state.meta.errors && (
-													<p className="text-sm text-destructive">
-														{field.state.meta.errors.join(', ')}
-													</p>
+						{/* Avatar URL field */}
+						<TableRow>
+							<TableCell className="w-20">
+								<Label className="flex w-full" htmlFor="avatarUrl">
+									Avatar URL
+								</Label>
+							</TableCell>
+							<TableCell>
+								<form.Field
+									name="avatarUrl"
+									validators={{
+										onChange: z
+											.string()
+											.url('Must be a valid URL')
+											.or(z.string().length(0))
+											.nullable(),
+									}}
+								>
+									{(field) => (
+										<>
+											<div className="flex items-center gap-1">
+												<GhostInput
+													id="avatarUrl"
+													className="w-full"
+													value={field.state.value ?? ''}
+													placeholder="https://example.com/image.jpg"
+													onChange={(e) => field.handleChange(e.target.value)}
+												/>
+												{field.state.value && (
+													<ExternalLink href={field.state.value} children={null} />
 												)}
-											</>
-										)}
-									</form.Field>
-								</TableCell>
-							</TableRow>
+											</div>
+											{field.state.meta.errors && (
+												<p className="text-sm text-destructive">
+													{field.state.meta.errors.join(', ')}
+												</p>
+											)}
+										</>
+									)}
+								</form.Field>
+							</TableCell>
+						</TableRow>
 
-							{/* Abbreviation field */}
-							<TableRow>
-								<TableCell>
-									<Label className="flex w-full" htmlFor="abbreviation">
-										Abbreviation
-									</Label>
-								</TableCell>
-								<TableCell>
-									<form.Field name="abbreviation">
-										{(field) => (
-											<GhostInput
-												id="abbreviation"
-												className="w-full"
-												value={field.state.value ?? ''}
-												placeholder="Short form"
-												onChange={(e) => field.handleChange(e.target.value)}
-											/>
-										)}
-									</form.Field>
-								</TableCell>
-							</TableRow>
+						{/* Abbreviation field */}
+						<TableRow>
+							<TableCell className="w-20">
+								<Label className="flex w-full" htmlFor="abbreviation">
+									Abbreviation
+								</Label>
+							</TableCell>
+							<TableCell>
+								<form.Field name="abbreviation">
+									{(field) => (
+										<GhostInput
+											id="abbreviation"
+											className="w-full"
+											value={field.state.value ?? ''}
+											placeholder="Short form"
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+									)}
+								</form.Field>
+							</TableCell>
+						</TableRow>
 
-							{/* Sense field */}
-							<TableRow>
-								<TableCell>
-									<Label className="flex w-full" htmlFor="sense">
-										Sense
-									</Label>
-								</TableCell>
-								<TableCell>
-									<form.Field name="sense">
-										{(field) => (
-											<GhostInput
-												id="sense"
-												className="w-full"
-												value={field.state.value ?? ''}
-												placeholder="Meaning or definition"
-												onChange={(e) => field.handleChange(e.target.value)}
-											/>
-										)}
-									</form.Field>
-								</TableCell>
-							</TableRow>
-						</TableBody>
-					</Table>
-				</div>
+						{/* Sense field */}
+						<TableRow>
+							<TableCell className="w-20">
+								<Label className="flex w-full" htmlFor="sense">
+									Sense
+								</Label>
+							</TableCell>
+							<TableCell>
+								<form.Field name="sense">
+									{(field) => (
+										<GhostInput
+											id="sense"
+											className="w-full"
+											value={field.state.value ?? ''}
+											placeholder="Meaning or definition"
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+									)}
+								</form.Field>
+							</TableCell>
+						</TableRow>
+					</TableBody>
+				</Table>
 			</div>
 
 			{/* Content section */}
