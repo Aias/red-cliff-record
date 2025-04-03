@@ -51,7 +51,7 @@ export async function createRecordsFromTwitterUsers() {
 	logger.start('Creating records from Twitter users');
 
 	const users = await db.query.twitterUsers.findMany({
-		where: isNull(twitterUsers.recordId),
+		where: and(isNull(twitterUsers.recordId), isNull(twitterUsers.deletedAt)),
 	});
 
 	if (users.length === 0) {
@@ -127,7 +127,7 @@ export async function createRecordsFromTweets() {
 	logger.start('Creating records from Twitter tweets');
 
 	const tweets = await db.query.twitterTweets.findMany({
-		where: isNull(twitterTweets.recordId),
+		where: and(isNull(twitterTweets.recordId), isNull(twitterTweets.deletedAt)),
 		with: { user: true, media: true, quotedTweet: true },
 	});
 

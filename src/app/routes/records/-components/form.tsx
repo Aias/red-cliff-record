@@ -92,7 +92,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 
 	const deleteMutation = trpc.records.delete.useMutation({
 		onSuccess: () => {
-			navigate({ to: '/records' });
+			navigate({ to: '/records', search: true });
 			utils.records.get.invalidate(recordId);
 			utils.records.list.invalidate();
 			utils.records.findDuplicates.invalidate(recordId);

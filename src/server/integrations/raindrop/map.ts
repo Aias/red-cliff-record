@@ -136,7 +136,7 @@ export async function createRecordsFromRaindropBookmarks() {
 	logger.start('Creating records from Raindrop bookmarks');
 
 	const unmappedBookmarks = await db.query.raindropBookmarks.findMany({
-		where: isNull(raindropBookmarks.recordId),
+		where: and(isNull(raindropBookmarks.recordId), isNull(raindropBookmarks.deletedAt)),
 		with: {
 			collection: true,
 			bookmarkTags: {
@@ -229,7 +229,7 @@ export async function createMediaFromRaindropBookmarks() {
 	logger.start('Creating media from Raindrop bookmarks');
 
 	const unmappedImages = await db.query.raindropImages.findMany({
-		where: isNull(raindropImages.mediaId),
+		where: and(isNull(raindropImages.mediaId), isNull(raindropImages.deletedAt)),
 		with: {
 			bookmark: true,
 		},
@@ -307,7 +307,7 @@ export async function createRecordsFromRaindropTags() {
 	logger.start('Creating categories from Raindrop tags');
 
 	const unmappedTags = await db.query.raindropTags.findMany({
-		where: isNull(raindropTags.recordId),
+		where: and(isNull(raindropTags.recordId), isNull(raindropTags.deletedAt)),
 		with: {
 			tagBookmarks: {
 				with: {

@@ -1,4 +1,4 @@
-import { eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or } from 'drizzle-orm';
 import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
@@ -62,7 +62,7 @@ export async function createRecordsFromAirtableFormats() {
 	logger.start('Creating records from Airtable formats');
 
 	const formats = await db.query.airtableFormats.findMany({
-		where: isNull(airtableFormats.recordId),
+		where: and(isNull(airtableFormats.recordId), isNull(airtableFormats.deletedAt)),
 		with: {
 			extracts: {
 				columns: {
@@ -142,7 +142,7 @@ export async function createRecordsFromAirtableCreators() {
 	logger.start('Creating records from Airtable creators');
 
 	const creators = await db.query.airtableCreators.findMany({
-		where: isNull(airtableCreators.recordId),
+		where: and(isNull(airtableCreators.recordId), isNull(airtableCreators.deletedAt)),
 	});
 
 	if (creators.length === 0) {
@@ -214,7 +214,7 @@ export async function createRecordsFromAirtableSpaces() {
 	logger.start('Creating records from Airtable spaces');
 
 	const spaces = await db.query.airtableSpaces.findMany({
-		where: isNull(airtableSpaces.recordId),
+		where: and(isNull(airtableSpaces.recordId), isNull(airtableSpaces.deletedAt)),
 	});
 
 	if (spaces.length === 0) {
@@ -286,7 +286,7 @@ export async function createMediaFromAirtableAttachments() {
 	logger.start('Creating media from Airtable attachments');
 
 	const attachments = await db.query.airtableAttachments.findMany({
-		where: isNull(airtableAttachments.mediaId),
+		where: and(isNull(airtableAttachments.mediaId), isNull(airtableAttachments.deletedAt)),
 		with: {
 			extract: true,
 		},
@@ -376,7 +376,7 @@ export async function createRecordsFromAirtableExtracts() {
 	logger.start('Creating records from Airtable extracts');
 
 	const extracts = await db.query.airtableExtracts.findMany({
-		where: isNull(airtableExtracts.recordId),
+		where: and(isNull(airtableExtracts.recordId), isNull(airtableExtracts.deletedAt)),
 		with: {
 			format: true,
 			attachments: true,

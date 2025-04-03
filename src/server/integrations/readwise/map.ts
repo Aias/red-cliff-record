@@ -121,7 +121,7 @@ export async function createRecordsFromReadwiseAuthors() {
 	logger.start('Creating records from Readwise authors');
 
 	const authors = await db.query.readwiseAuthors.findMany({
-		where: isNull(readwiseAuthors.recordId),
+		where: and(isNull(readwiseAuthors.recordId), isNull(readwiseAuthors.deletedAt)),
 	});
 
 	if (authors.length === 0) {
@@ -290,7 +290,7 @@ export async function createRecordsFromReadwiseTags() {
 	logger.start('Creating records from Readwise tags');
 
 	const tags = await db.query.readwiseTags.findMany({
-		where: isNull(readwiseTags.recordId),
+		where: and(isNull(readwiseTags.recordId), isNull(readwiseTags.deletedAt)),
 		with: {
 			tagDocuments: {
 				with: {
@@ -421,7 +421,11 @@ export async function createRecordsFromReadwiseDocuments() {
 
 	// Query readwise documents that need records created (skip notes-only docs)
 	const documents = await db.query.readwiseDocuments.findMany({
-		where: and(isNull(readwiseDocuments.recordId), ne(readwiseDocuments.category, 'note')),
+		where: and(
+			isNull(readwiseDocuments.recordId),
+			ne(readwiseDocuments.category, 'note'),
+			isNull(readwiseDocuments.deletedAt)
+		),
 		with: {
 			children: true,
 		},

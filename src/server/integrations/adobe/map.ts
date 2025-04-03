@@ -75,7 +75,10 @@ export const createMediaFromLightroomImages = async () => {
 
 	// Find images that don't have media or records yet
 	const unmappedImages = await db.query.lightroomImages.findMany({
-		where: or(isNull(lightroomImages.mediaId), isNull(lightroomImages.recordId)),
+		where: and(
+			or(isNull(lightroomImages.mediaId), isNull(lightroomImages.recordId)),
+			isNull(lightroomImages.deletedAt)
+		),
 		with: {
 			media: {
 				columns: {
