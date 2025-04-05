@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { isNotNull } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
 import { SIMILARITY_THRESHOLD } from '../common';
-import { IdSchema } from '../records.types';
+import { IdSchema } from '../common';
 
 export const findDuplicates = publicProcedure
 	.input(IdSchema)

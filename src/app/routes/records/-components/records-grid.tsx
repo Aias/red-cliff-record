@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
 import { RecordTypeIcon } from './type-icons';
 import {
@@ -34,7 +34,7 @@ import {
 	type RecordType,
 } from '@/db/schema';
 
-export const QueueFilters = () => {
+export const RecordsGrid = () => {
 	const search = useSearch({
 		from: '/records',
 	});
@@ -361,74 +361,107 @@ export const QueueFilters = () => {
 						onChange={handleLimitChange}
 					/>
 				</div>
+				<div className="flex flex-col gap-1.5">
+					<Link
+						to="/records"
+						search={(prev) => ({
+							...prev,
+							filters: {
+								isCurated: false,
+								isIndexNode: true,
+							},
+						})}
+						className="mt-3 block w-full border-t border-border pt-3 text-center"
+					>
+						Index Queue
+					</Link>
+				</div>
 			</div>
-			<Table className="text-xs">
-				<TableHeader>
-					<TableRow>
-						<TableHead className="text-center">Type</TableHead>
-						<TableHead>Title</TableHead>
-						<TableHead>Creators</TableHead>
-						<TableHead>Format</TableHead>
-						<TableHead>URL</TableHead>
-						<TableHead>Parent</TableHead>
-						<TableHead className="text-center">Rating</TableHead>
-						<TableHead className="text-center">Index?</TableHead>
-						<TableHead className="text-center">Format?</TableHead>
-						<TableHead className="text-center">Private?</TableHead>
-						<TableHead className="text-center">Curated?</TableHead>
-						<TableHead className="text-center">Sources</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{queue.map((record) => (
-						<TableRow key={record.id}>
-							<TableCell className="text-center text-sm">
-								<RecordTypeIcon type={record.type} />
-							</TableCell>
-							<TableCell className="max-w-40 truncate whitespace-nowrap">
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<span>{record.title}</span>
-									</TooltipTrigger>
-									<TooltipContent>{record.title}</TooltipContent>
-								</Tooltip>
-							</TableCell>
-							<TableCell>
-								{record.creators.map((creator) => creator.creator.title).join(', ')}
-							</TableCell>
-							<TableCell>{record.format?.title}</TableCell>
-							<TableCell className="whitespace-nowrap">
-								{record.url ? (
-									<ExternalLink href={record.url}>{new URL(record.url).hostname}</ExternalLink>
-								) : (
-									''
-								)}
-							</TableCell>
-							<TableCell>{record.parentId}</TableCell>
-							<TableCell className="text-center">{record.rating}</TableCell>
-							<TableCell className="text-center text-base">
-								{record.isIndexNode ? <CheckIcon /> : null}
-							</TableCell>
-							<TableCell className="text-center text-base">
-								{record.isFormat ? <CheckIcon /> : null}
-							</TableCell>
-							<TableCell className="text-center text-base">
-								{record.isPrivate ? <CheckIcon /> : null}
-							</TableCell>
-							<TableCell className="text-center text-base">
-								{record.isCurated ? <CheckIcon /> : null}
-							</TableCell>
-							<TableCell className="text-center">
-								<div className="flex justify-center gap-1 text-[0.875em]">
-									{record.sources?.map((source) => (
-										<IntegrationLogo integration={source} key={source} />
-									))}
-								</div>
-							</TableCell>
+			<div className="flex grow overflow-hidden rounded border border-border bg-rcr-surface text-xs">
+				<Table className="h-full">
+					<TableHeader className="sticky top-0 z-10 bg-rcr-surface before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-border">
+						<TableRow className="sticky top-0 z-10 bg-rcr-tint">
+							<TableHead className="text-center">Type</TableHead>
+							<TableHead>Record</TableHead>
+							<TableHead>Creators</TableHead>
+							<TableHead>Format</TableHead>
+							<TableHead>URL</TableHead>
+							<TableHead>Parent</TableHead>
+							<TableHead className="text-center">Rating</TableHead>
+							<TableHead className="text-center">Index?</TableHead>
+							<TableHead className="text-center">Format?</TableHead>
+							<TableHead className="text-center">Private?</TableHead>
+							<TableHead className="text-center">Curated?</TableHead>
+							<TableHead className="text-center">Sources</TableHead>
 						</TableRow>
-					))}
-				</TableBody>
-			</Table>
+					</TableHeader>
+					<TableBody>
+						{queue.length > 0 ? (
+							queue.map((record) => (
+								<TableRow key={record.id}>
+									<TableCell className="text-center text-sm">
+										<RecordTypeIcon type={record.type} />
+									</TableCell>
+									<TableCell className="max-w-60 truncate whitespace-nowrap">
+										<Tooltip delayDuration={500}>
+											<TooltipTrigger asChild>
+												<Link
+													to="/records/$recordId"
+													params={{ recordId: record.id.toString() }}
+													className="block w-full truncate"
+												>
+													{record.title || record.summary || record.content}
+												</Link>
+											</TooltipTrigger>
+											<TooltipContent>
+												{record.title || record.summary || record.content}
+											</TooltipContent>
+										</Tooltip>
+									</TableCell>
+									<TableCell>
+										{record.creators.map((creator) => creator.creator.title).join(', ')}
+									</TableCell>
+									<TableCell>{record.format?.title}</TableCell>
+									<TableCell className="whitespace-nowrap">
+										{record.url ? (
+											<ExternalLink href={record.url}>{new URL(record.url).hostname}</ExternalLink>
+										) : (
+											''
+										)}
+									</TableCell>
+									<TableCell>{record.parentId}</TableCell>
+									<TableCell className="text-center">{record.rating}</TableCell>
+									<TableCell className="text-center text-base">
+										{record.isIndexNode ? <CheckIcon /> : null}
+									</TableCell>
+									<TableCell className="text-center text-base">
+										{record.isFormat ? <CheckIcon /> : null}
+									</TableCell>
+									<TableCell className="text-center text-base">
+										{record.isPrivate ? <CheckIcon /> : null}
+									</TableCell>
+									<TableCell className="text-center text-base">
+										{record.isCurated ? <CheckIcon /> : null}
+									</TableCell>
+									<TableCell className="text-center">
+										<div className="flex justify-center gap-1 text-[0.875em]">
+											{record.sources?.map((source) => (
+												<IntegrationLogo integration={source} key={source} />
+											))}
+										</div>
+									</TableCell>
+								</TableRow>
+							))
+						) : (
+							<TableRow>
+								<TableCell colSpan={12} className="pointer-events-none text-center">
+									No records found
+								</TableCell>
+							</TableRow>
+						)}
+					</TableBody>
+				</Table>
+			</div>
 		</div>
 	) : (
 		<Placeholder>

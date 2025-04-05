@@ -177,13 +177,17 @@
 
 	a:where(:any-link, button),
 	.link {
-		@apply inline-flex items-center gap-1 font-medium text-rcr-accent hover:text-rcr-accent-active hover:underline;
+		@apply font-medium text-rcr-accent hover:text-rcr-accent-active hover:underline;
 		text-decoration-line: none;
 		text-decoration-style: solid;
 		text-decoration-thickness: min(2px, max(1px, 0.05em));
 		text-underline-offset: calc(0.025em + 2px);
 		text-decoration-skip-ink: auto;
 		text-decoration-color: var(--clr-theme-divider);
+
+		&:has(.icon) {
+			@apply inline-flex items-center gap-1;
+		}
 	}
 
 	input[type='text']::-webkit-calendar-picker-indicator {

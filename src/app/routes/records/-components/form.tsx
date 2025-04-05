@@ -4,8 +4,10 @@ import { useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
 import {
+	MediaSelectSchema,
 	RecordInsertSchema,
 	RecordTypeSchema,
+	type MediaSelect,
 	type RecordInsert,
 	type RecordType,
 } from '@/server/db/schema';
@@ -45,7 +47,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@/components';
-import ImageGrid from '@/components/media-grid';
+import MediaGrid from '@/components/media-grid';
 import { cn } from '@/lib/utils';
 
 interface BooleanSwitchProps extends React.ComponentProps<typeof Label> {
@@ -78,7 +80,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 	const utils = trpc.useUtils();
 	const [record] = trpc.records.get.useSuspenseQuery(recordId);
 
-	const recordFormData: RecordInsert = useMemo(() => {
+	const recordFormData: RecordInsert & { media: MediaSelect[] } = useMemo(() => {
 		return { ...record };
 	}, [record]);
 
@@ -96,6 +98,18 @@ export function RecordForm({ recordId }: RecordFormProps) {
 			utils.records.get.invalidate(recordId);
 			utils.records.list.invalidate();
 			utils.records.findDuplicates.invalidate(recordId);
+		},
+	});
+
+	const deleteMediaMutation = trpc.media.delete.useMutation({
+		onSuccess: (deletedMedia) => {
+			utils.records.get.invalidate(recordId);
+			form.setFieldValue(
+				'media',
+				form.state.values.media?.filter(
+					(media) => !deletedMedia.map((m) => m.id).includes(media.id)
+				)
+			);
 		},
 	});
 
@@ -134,7 +148,9 @@ export function RecordForm({ recordId }: RecordFormProps) {
 			});
 		},
 		validators: {
-			onSubmit: RecordInsertSchema,
+			onSubmit: RecordInsertSchema.extend({
+				media: z.array(MediaSelectSchema),
+			}),
 		},
 	});
 
@@ -154,6 +170,12 @@ export function RecordForm({ recordId }: RecordFormProps) {
 				e.preventDefault();
 				e.stopPropagation();
 				form.handleSubmit();
+			}}
+			onKeyDown={(e) => {
+				if (e.key === 'Escape') {
+					// Blur any focused element when Escape is pressed
+					(document.activeElement as HTMLElement)?.blur();
+				}
 			}}
 			className="flex flex-col gap-4"
 		>
@@ -403,6 +425,12 @@ export function RecordForm({ recordId }: RecordFormProps) {
 								value={field.state.value ?? ''}
 								placeholder="A brief summary of this record"
 								onChange={(e) => field.handleChange(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' && !e.shiftKey) {
+										e.preventDefault();
+										form.handleSubmit();
+									}
+								}}
 							/>
 						</div>
 					)}
@@ -418,6 +446,12 @@ export function RecordForm({ recordId }: RecordFormProps) {
 								value={field.state.value ?? ''}
 								placeholder="Main content"
 								onChange={(e) => field.handleChange(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' && !e.shiftKey) {
+										e.preventDefault();
+										form.handleSubmit();
+									}
+								}}
 							/>
 						</div>
 					)}
@@ -433,6 +467,12 @@ export function RecordForm({ recordId }: RecordFormProps) {
 								value={field.state.value ?? ''}
 								placeholder="Additional notes"
 								onChange={(e) => field.handleChange(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' && !e.shiftKey) {
+										e.preventDefault();
+										form.handleSubmit();
+									}
+								}}
 							/>
 						</div>
 					)}
@@ -445,7 +485,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 					<Separator />
 					<div className="flex flex-col gap-3">
 						<h2>Media</h2>
-						<ImageGrid media={media} />
+						<MediaGrid media={media} onDelete={(media) => deleteMediaMutation.mutate([media.id])} />
 
 						{/* Media caption field */}
 						<form.Field name="mediaCaption">
@@ -457,6 +497,12 @@ export function RecordForm({ recordId }: RecordFormProps) {
 										value={field.state.value ?? ''}
 										placeholder="Media caption"
 										onChange={(e) => field.handleChange(e.target.value)}
+										onKeyDown={(e) => {
+											if (e.key === 'Enter' && !e.shiftKey) {
+												e.preventDefault();
+												form.handleSubmit();
+											}
+										}}
 									/>
 								</div>
 							)}

@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { publicProcedure } from '../../init';
-import { IdSchema } from '../records.types';
+import { IdSchema } from '../common';
 
 export const get = publicProcedure.input(IdSchema).query(async ({ ctx: { db }, input }) => {
 	const record = await db.query.records.findFirst({

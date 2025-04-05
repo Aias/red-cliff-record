@@ -1,3 +1,4 @@
+import { mkdir } from 'node:fs/promises';
 import { desc } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@/server/db/schema/readwise';
@@ -20,6 +21,7 @@ import {
  */
 const API_BASE_URL = 'https://readwise.io/api/v3/list/';
 const RETRY_DELAY_BASE = 1000; // 1 second in milliseconds
+const DEBUG = false;
 
 /**
  * Retrieves the most recent update time from the database
@@ -95,6 +97,18 @@ async function fetchReadwiseDocuments(
 
 	// Parse and validate the response
 	const data = await response.json();
+
+	if (DEBUG) {
+		// Log raw response to file
+		try {
+			await mkdir('.temp', { recursive: true });
+			await Bun.write('.temp/readwise-documents.json', JSON.stringify(data, null, 2));
+			console.log('Logged raw response to .temp/readwise-documents.json');
+		} catch (error) {
+			console.warn('Failed to log raw response:', error);
+		}
+	}
+
 	return ReadwiseArticlesResponseSchema.parse(data);
 }
 

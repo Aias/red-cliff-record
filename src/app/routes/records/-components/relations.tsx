@@ -4,6 +4,7 @@ import { trpc } from '@/app/trpc';
 import { recordTypeIcons } from './type-icons';
 import { ExternalLink, IntegrationLogo, Placeholder, Spinner } from '@/components';
 import type { RecordSelect } from '@/db/schema';
+import { cn } from '@/lib/utils';
 
 interface RelationsListProps {
 	recordId: number;
@@ -37,7 +38,7 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 	);
 
 	return record ? (
-		<div>
+		<div className="text-sm">
 			{creators.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Creators</h3>
@@ -47,7 +48,7 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 			{parent && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Parent</h3>
-					<RelationItem record={parent} />
+					<RecordLink record={parent} />
 				</section>
 			)}
 			{children.length > 0 && (
@@ -91,17 +92,25 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 	);
 };
 
-interface RelationItemProps {
+interface RecordLinkProps {
 	record: RecordSelect;
+	className?: string;
+	options?: {
+		showExternalLink?: boolean;
+	};
 }
 
-const RelationItem = ({ record }: RelationItemProps) => {
+export const RecordLink = ({
+	record,
+	className,
+	options = { showExternalLink: true },
+}: RecordLinkProps) => {
 	const { type, title, content, summary, notes, abbreviation, url, sense, sources } = record;
 	const TypeIcon = recordTypeIcons[type].icon;
 	const label = title || summary || notes || content;
 
 	return (
-		<div className="flex items-center gap-1 text-sm">
+		<div className={cn('flex items-center gap-1', className)}>
 			<TypeIcon className="text-rcr-symbol" />
 			<div className="flex grow items-center gap-1">
 				<Link
@@ -114,7 +123,7 @@ const RelationItem = ({ record }: RelationItemProps) => {
 				{abbreviation && <span>({abbreviation})</span>}
 				{sense && <em className="text-rcr-secondary">{sense}</em>}
 			</div>
-			{url && (
+			{url && options.showExternalLink && (
 				<ExternalLink
 					className="rounded-sm bg-rcr-tint px-2 text-xs whitespace-nowrap text-rcr-secondary"
 					href={url}
@@ -142,7 +151,7 @@ const RelationList = ({ records }: RelationListProps) => {
 		<ul>
 			{records.map((record) => (
 				<li key={record.id}>
-					<RelationItem record={record} />
+					<RecordLink record={record} />
 				</li>
 			))}
 		</ul>

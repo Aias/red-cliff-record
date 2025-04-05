@@ -1,8 +1,6 @@
 import { z } from 'zod';
-import { DEFAULT_LIMIT } from './common';
+import { DEFAULT_LIMIT, IdSchema } from './common';
 import { IntegrationTypeSchema, RecordTypeSchema } from '@/db/schema';
-
-export const IdSchema = z.number().int().positive();
 
 const OrderByFieldSchema = z.enum([
 	'recordUpdatedAt',
@@ -52,10 +50,7 @@ export const ListRecordsInputSchema = z.object({
 export type ListRecordsInput = z.infer<typeof ListRecordsInputSchema>;
 
 export const defaultQueueOptions: ListRecordsInput = {
-	filters: {
-		isCurated: false,
-		isIndexNode: true,
-	},
+	filters: {},
 	limit: 200,
 	offset: 0,
 	orderBy: [

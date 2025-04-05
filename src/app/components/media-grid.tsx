@@ -2,15 +2,26 @@ import React from 'react';
 import type { MediaSelect } from '@/server/db/schema/media';
 import { DeleteIcon } from './icons';
 import { Button } from './ui/button';
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from '@/components';
 
-interface ImageGridProps {
+interface MediaGridProps {
 	media: MediaSelect[];
 	className?: string;
 	onDelete?: (media: MediaSelect) => void;
 }
 
-const ImageGrid: React.FC<ImageGridProps> = ({ media, className = '', onDelete }) => {
-	// Limit to 8 images maximum
+const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }) => {
+	// Limit to 8 media items maximum
 	const displayMedia = media.slice(0, 8);
 	const count = displayMedia.length;
 
@@ -18,9 +29,8 @@ const ImageGrid: React.FC<ImageGridProps> = ({ media, className = '', onDelete }
 
 	return (
 		<div
-			className={`relative aspect-[3/2] w-full overflow-hidden rounded-md bg-rcr-background ${className}`}
+			className={`relative grid aspect-[3/2] w-full gap-px overflow-hidden rounded-md bg-rcr-background ${className}`}
 			style={{
-				display: 'grid',
 				gridTemplateColumns: getGridColumns(count),
 				gridTemplateRows: getGridRows(count),
 			}}
@@ -32,26 +42,55 @@ const ImageGrid: React.FC<ImageGridProps> = ({ media, className = '', onDelete }
 					style={{ gridArea: getGridArea(count, index) }}
 				>
 					{/* Gradient overlay that appears on hover */}
-					<div className="absolute inset-0 z-10 bg-gradient-to-b from-black/50 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+					<div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-black/50 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
 
-					{/* Image */}
-					<img
-						src={item.url}
-						alt={item.altText || `Image ${index + 1}`}
-						className="h-full w-full object-cover"
-					/>
+					{/* Render video or image based on media type */}
+					{item.type === 'video' ? (
+						<video
+							src={item.url}
+							className="h-full w-full object-cover"
+							controls
+							muted
+							loop
+							autoPlay
+							playsInline
+							preload="metadata"
+						/>
+					) : (
+						<img
+							src={item.url}
+							alt={item.altText || `Media ${index + 1}`}
+							className="h-full w-full object-cover"
+						/>
+					)}
 
 					{/* Toolbar */}
 					{onDelete && (
-						<div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-							<Button
-								onClick={() => onDelete(item)}
-								size="icon"
-								variant="ghost"
-								aria-label="Delete image"
-							>
-								<DeleteIcon />
-							</Button>
+						<div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-rcr-surface opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+							<AlertDialog>
+								<AlertDialogTrigger asChild>
+									<Button type="button" size="icon" variant="ghost" aria-label="Delete media">
+										<DeleteIcon />
+									</Button>
+								</AlertDialogTrigger>
+								<AlertDialogContent>
+									<AlertDialogHeader>
+										<AlertDialogTitle>Delete media?</AlertDialogTitle>
+										<AlertDialogDescription>
+											This action cannot be undone. This will permanently delete this media item.
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter>
+										<AlertDialogCancel>Cancel</AlertDialogCancel>
+										<AlertDialogAction
+											onClick={() => onDelete(item)}
+											className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+										>
+											Delete
+										</AlertDialogAction>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
 						</div>
 					)}
 				</div>
@@ -156,4 +195,4 @@ function getGridArea(count: number, index: number): string {
 	return '';
 }
 
-export default ImageGrid;
+export default MediaGrid;
