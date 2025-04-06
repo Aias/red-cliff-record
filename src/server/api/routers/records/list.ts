@@ -13,6 +13,7 @@ export const list = publicProcedure
 				formatId,
 				url: domain,
 				parentId,
+				hasParent,
 				minRating,
 				maxRating,
 				isIndexNode,
@@ -89,6 +90,14 @@ export const list = publicProcedure
 						whereClauses.push(isNull(records.parentId));
 					} else {
 						whereClauses.push(eq(records.parentId, parentId));
+					}
+				}
+
+				if (hasParent !== undefined) {
+					if (hasParent) {
+						whereClauses.push(isNotNull(records.parentId));
+					} else {
+						whereClauses.push(isNull(records.parentId));
 					}
 				}
 

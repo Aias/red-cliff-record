@@ -20,10 +20,50 @@ const generateImageDescription = (image: LightroomImageSelect): string => {
 	if (image.cameraMake) parts.push(image.cameraMake);
 	if (image.cameraModel) parts.push(image.cameraModel);
 	if (image.cameraLens) parts.push(image.cameraLens);
-	if (image.captureDate) parts.push(image.captureDate.toLocaleDateString());
-	if (image.location?.country) parts.push(image.location.country);
+	if (image.location) {
+		const { city, state, country, sublocation } = image.location;
+		const locationParts = [];
+		if (sublocation) locationParts.push(...sublocation);
+		if (city) locationParts.push(city);
+		if (state) locationParts.push(state);
+		if (country) locationParts.push(country);
+		if (locationParts.length) parts.push(locationParts.join(', '));
+	}
+	parts.push(image.captureDate.toLocaleDateString());
 
 	return parts.join('\n');
+};
+
+export const resetMediaCaptionsForLightroomImages = async () => {
+	logger.start('Resetting media captions for Lightroom images');
+
+	// Find all Lightroom images that have linked records
+	const images = await db.query.lightroomImages.findMany({
+		where: and(isNotNull(lightroomImages.recordId), isNull(lightroomImages.deletedAt)),
+	});
+
+	logger.info(`Found ${images.length} Lightroom images with linked records`);
+
+	let updatedCount = 0;
+	for (const image of images) {
+		if (!image.recordId) continue;
+
+		const description = generateImageDescription(image);
+
+		// Update the record's mediaCaption
+		await db
+			.update(records)
+			.set({
+				mediaCaption: description,
+				recordUpdatedAt: new Date(),
+			})
+			.where(eq(records.id, image.recordId));
+
+		updatedCount++;
+		logger.info(`Updated caption for record ${image.recordId} (${image.fileName})`);
+	}
+
+	logger.complete(`Updated captions for ${updatedCount} records`);
 };
 
 const mapLightroomImageToMedia = async (
@@ -58,7 +98,7 @@ const mapLightroomImageToRecord = (image: LightroomImageSelect): RecordInsert =>
 		id: image.recordId ?? undefined,
 		type: 'artifact',
 		title: image.fileName,
-		content: generateImageDescription(image),
+		mediaCaption: generateImageDescription(image),
 		isCurated: false,
 		isPrivate: false,
 		sources: ['lightroom'],

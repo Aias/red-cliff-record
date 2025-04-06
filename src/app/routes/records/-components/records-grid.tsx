@@ -33,6 +33,7 @@ import {
 	type IntegrationType,
 	type RecordType,
 } from '@/db/schema';
+import { cn } from '@/lib/utils';
 
 export const RecordsGrid = () => {
 	const search = useSearch({
@@ -44,7 +45,7 @@ export const RecordsGrid = () => {
 	const { data: queue } = trpc.records.list.useQuery(search);
 
 	const {
-		filters: { type, title, url, isCurated, isFormat, isIndexNode, isPrivate, source },
+		filters: { type, title, url, isCurated, isFormat, isIndexNode, isPrivate, source, hasParent },
 		limit,
 	} = search;
 
@@ -103,6 +104,18 @@ export const RecordsGrid = () => {
 				filters: {
 					...prev.filters,
 					isPrivate: value === 'All' ? undefined : value === 'Yes' ? true : false,
+				},
+			}),
+		});
+	};
+
+	const handleHasParentChange = (value: string) => {
+		navigate({
+			search: (prev) => ({
+				...prev,
+				filters: {
+					...prev.filters,
+					hasParent: value === 'All' ? undefined : value === 'Yes' ? true : false,
 				},
 			}),
 		});
@@ -203,6 +216,7 @@ export const RecordsGrid = () => {
 	const indexNodeValue = isIndexNode === undefined ? 'All' : isIndexNode ? 'Yes' : 'No';
 	const formatValue = isFormat === undefined ? 'All' : isFormat ? 'Yes' : 'No';
 	const privateValue = isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No';
+	const hasParentValue = hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No';
 
 	return queue ? (
 		<div className="flex h-full grow overflow-hidden">
@@ -330,6 +344,27 @@ export const RecordsGrid = () => {
 					</ToggleGroup>
 				</div>
 				<div className="flex flex-col gap-1.5">
+					<Label htmlFor="hasParent">Has Parent?</Label>
+					<ToggleGroup
+						id="hasParent"
+						type="single"
+						value={hasParentValue}
+						onValueChange={handleHasParentChange}
+						variant="outline"
+						className="w-full"
+					>
+						<ToggleGroupItem value="All" className="flex-1">
+							All
+						</ToggleGroupItem>
+						<ToggleGroupItem value="Yes" className="flex-1">
+							Yes
+						</ToggleGroupItem>
+						<ToggleGroupItem value="No" className="flex-1">
+							No
+						</ToggleGroupItem>
+					</ToggleGroup>
+				</div>
+				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="private">Is Private?</Label>
 					<ToggleGroup
 						id="private"
@@ -378,7 +413,7 @@ export const RecordsGrid = () => {
 				</div>
 			</div>
 			<div className="flex grow overflow-hidden rounded border border-border bg-rcr-surface text-xs">
-				<Table className="h-full">
+				<Table className={cn({ 'h-full': queue.length === 0 })}>
 					<TableHeader className="sticky top-0 z-10 bg-rcr-surface before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-border">
 						<TableRow className="sticky top-0 z-10 bg-rcr-tint">
 							<TableHead className="text-center">Type</TableHead>

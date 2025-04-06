@@ -27,6 +27,7 @@ export const RecordFiltersSchema = z.object({
 	formatId: IdSchema.nullable().optional(),
 	url: z.string().nullable().optional(),
 	parentId: IdSchema.nullable().optional(),
+	hasParent: z.boolean().optional(),
 	minRating: z.number().int().gte(0).optional(),
 	maxRating: z.number().int().lte(3).optional(),
 	isIndexNode: z.boolean().optional(),
@@ -50,7 +51,10 @@ export const ListRecordsInputSchema = z.object({
 export type ListRecordsInput = z.infer<typeof ListRecordsInputSchema>;
 
 export const defaultQueueOptions: ListRecordsInput = {
-	filters: {},
+	filters: {
+		hasParent: false,
+		isPrivate: false,
+	},
 	limit: 200,
 	offset: 0,
 	orderBy: [
