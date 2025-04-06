@@ -115,7 +115,7 @@ export const deleteRecords = publicProcedure
 				// Lightroom
 				const deletedLightroomImages = await tx
 					.update(lightroomImages)
-					.set({ deletedAt: now })
+					.set({ deletedAt: now, mediaId: null })
 					.where(inArray(lightroomImages.recordId, input))
 					.returning();
 				for (const image of deletedLightroomImages) {

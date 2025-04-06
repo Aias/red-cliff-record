@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
@@ -73,9 +73,10 @@ export const BooleanSwitch = ({
 
 interface RecordFormProps {
 	recordId: number;
+	nextRecordId?: number;
 }
 
-export function RecordForm({ recordId }: RecordFormProps) {
+export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
 	const [record] = trpc.records.get.useSuspenseQuery(recordId);
@@ -154,6 +155,30 @@ export function RecordForm({ recordId }: RecordFormProps) {
 		},
 	});
 
+	const curateAndNextHandler = useCallback(
+		async (e?: React.KeyboardEvent<HTMLFormElement>) => {
+			if (e) {
+				e.preventDefault();
+			}
+
+			// Set isCurated to true
+			form.setFieldValue('isCurated', true);
+
+			// Submit the form and wait for completion
+			await form.handleSubmit();
+
+			// Navigate to the next record if provided
+			if (nextRecordId) {
+				navigate({
+					to: '/records/$recordId',
+					params: { recordId: nextRecordId.toString() },
+					search: true,
+				});
+			}
+		},
+		[form, navigate, nextRecordId]
+	);
+
 	useEffect(() => {
 		form.reset({
 			...record,
@@ -176,6 +201,11 @@ export function RecordForm({ recordId }: RecordFormProps) {
 					// Blur any focused element when Escape is pressed
 					(document.activeElement as HTMLElement)?.blur();
 				}
+
+				// Handle Cmd+Shift+Return (Mac) or Ctrl+Shift+Enter (Windows/Linux)
+				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'Enter' || e.key === 'Return')) {
+					curateAndNextHandler(e);
+				}
 			}}
 			className="flex flex-col gap-4"
 		>
@@ -190,6 +220,7 @@ export function RecordForm({ recordId }: RecordFormProps) {
 								value={field.state.value ?? ''}
 								placeholder="Untitled Record"
 								onChange={(e) => field.handleChange(e.target.value)}
+								autoFocus
 							/>
 							{field.state.meta.errors && (
 								<p className="text-sm text-destructive">{field.state.meta.errors.join(', ')}</p>

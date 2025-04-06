@@ -96,9 +96,9 @@
 	--clr-neutral-12: var(--flexoki-base-100);
 	--clr-neutral-13: var(--flexoki-base-50);
 
-	--clr-neutral-main: var(--clr-neutral-2);
-	--clr-neutral-main-active: var(--clr-neutral-3);
-	--clr-neutral-main-contrast: var(--black);
+	--clr-neutral-main: var(--clr-neutral-5);
+	--clr-neutral-main-active: var(--clr-neutral-6);
+	--clr-neutral-main-contrast: var(--white);
 
 	--clr-neutral-background: var(--clr-neutral-1);
 	--clr-neutral-surface: var(--clr-neutral-2);
