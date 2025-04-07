@@ -1,7 +1,7 @@
 import { type ComponentProps } from 'react';
 import React from 'react';
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
-import { Check } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Checkbox = React.forwardRef<
@@ -14,7 +14,7 @@ const Checkbox = React.forwardRef<
 				'relative flex size-full items-center justify-center overflow-hidden text-current'
 			)}
 		>
-			<Check className="absolute inset-1/2 size-[1.15em] -translate-x-1/2 -translate-y-[calc(50%+0.025em)]" />
+			<CheckIcon className="absolute inset-1/2 size-[1.15em] -translate-x-1/2 -translate-y-[calc(50%+0.025em)]" />
 		</CheckboxPrimitive.Indicator>
 	</CheckboxPrimitive.Root>
 ));

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronsUpDown, Trash2 } from 'lucide-react';
+import { CheckIcon, ChevronsUpDownIcon, Trash2Icon } from 'lucide-react';
 import { RecordTypeIcon } from './type-icons';
 import {
 	Button,
@@ -74,7 +74,7 @@ export function RecordLookup({ defaultRecord, onRecordSelected, handleSearch }: 
 					className="w-full justify-between"
 				>
 					{selectedRecord ? selectedRecord.title : 'Select record...'}
-					<ChevronsUpDown className="ml-2 opacity-50" />
+					<ChevronsUpDownIcon className="ml-2 opacity-50" />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="p-0" align="start" sideOffset={4}>
@@ -92,7 +92,7 @@ export function RecordLookup({ defaultRecord, onRecordSelected, handleSearch }: 
 									onSelect={handleClear}
 									className="text-destructive data-selected:text-destructive!"
 								>
-									<Trash2 />
+									<Trash2Icon />
 									Clear selection
 								</CommandItem>
 							</CommandGroup>
@@ -127,7 +127,7 @@ export function RecordLookup({ defaultRecord, onRecordSelected, handleSearch }: 
 											{record.abbreviation && <span>({record.abbreviation})</span>}
 											{record.sense && <em className="text-rcr-secondary">{record.sense}</em>}
 										</span>
-										{selectedRecord?.id === record.id && <Check className="ml-auto" />}
+										{selectedRecord?.id === record.id && <CheckIcon className="ml-auto" />}
 									</CommandItem>
 								))}
 							</CommandGroup>

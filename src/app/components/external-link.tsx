@@ -1,4 +1,4 @@
-import { ExternalLink as ExternalLinkIcon } from 'lucide-react';
+import { ExternalLinkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const ExternalLink = ({

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { Check } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { RecordTypeIcon } from './type-icons';
 import {
@@ -224,7 +224,7 @@ export const RecordsGrid = () => {
 				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="type">Type</Label>
 					<Select value={type ?? 'All'} onValueChange={handleTypeChange}>
-						<SelectTrigger id="type">
+						<SelectTrigger id="type" className="w-full">
 							<SelectValue placeholder="Filter by type" />
 						</SelectTrigger>
 						<SelectContent>
@@ -240,7 +240,7 @@ export const RecordsGrid = () => {
 				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="source">Source</Label>
 					<Select value={source ?? 'All'} onValueChange={handleSourceChange}>
-						<SelectTrigger id="source">
+						<SelectTrigger id="source" className="w-full">
 							<SelectValue placeholder="Filter by source" />
 						</SelectTrigger>
 						<SelectContent>
@@ -469,16 +469,16 @@ export const RecordsGrid = () => {
 										{record.rating ? '⭐'.repeat(record.rating) : ''}
 									</TableCell>
 									<TableCell className="text-center text-base">
-										{record.isIndexNode ? <Check /> : null}
+										{record.isIndexNode ? <CheckIcon /> : null}
 									</TableCell>
 									<TableCell className="text-center text-base">
-										{record.isFormat ? <Check /> : null}
+										{record.isFormat ? <CheckIcon /> : null}
 									</TableCell>
 									<TableCell className="text-center text-base">
-										{record.isPrivate ? <Check /> : null}
+										{record.isPrivate ? <CheckIcon /> : null}
 									</TableCell>
 									<TableCell className="text-center text-base">
-										{record.isCurated ? <Check /> : null}
+										{record.isCurated ? <CheckIcon /> : null}
 									</TableCell>
 									<TableCell className="text-center">
 										<div className="flex justify-center gap-1 text-[0.875em]">

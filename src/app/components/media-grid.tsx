@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2Icon } from 'lucide-react';
 import type { MediaSelect } from '@/server/db/schema/media';
 import { Button } from './ui/button';
 import {
@@ -70,7 +70,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 							<AlertDialog>
 								<AlertDialogTrigger asChild>
 									<Button type="button" size="icon" variant="ghost" aria-label="Delete media">
-										<Trash2 />
+										<Trash2Icon />
 									</Button>
 								</AlertDialogTrigger>
 								<AlertDialogContent>

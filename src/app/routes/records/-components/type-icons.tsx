@@ -1,16 +1,23 @@
-import { Calendar, FileText, Lightbulb, MapPin, User, Waypoints } from 'lucide-react';
+import {
+	CalendarIcon,
+	FileTextIcon,
+	LightbulbIcon,
+	MapPinIcon,
+	UserIcon,
+	WaypointsIcon,
+} from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components';
 import { type RecordType } from '@/db/schema';
 
 // Map record types to their corresponding icons and descriptions
 export const recordTypeIcons: Record<RecordType, { icon: React.ElementType; description: string }> =
 	{
-		entity: { icon: User, description: 'An actor in the world, has will' },
-		concept: { icon: Lightbulb, description: 'A category, idea, or abstraction' },
-		artifact: { icon: FileText, description: 'Physical or digital objects, content, or media' },
-		event: { icon: Calendar, description: 'An event or occurrence' },
-		place: { icon: MapPin, description: 'A geographic location' },
-		system: { icon: Waypoints, description: 'A physical or conceptual system or network' },
+		entity: { icon: UserIcon, description: 'An actor in the world, has will' },
+		concept: { icon: LightbulbIcon, description: 'A category, idea, or abstraction' },
+		artifact: { icon: FileTextIcon, description: 'Physical or digital objects, content, or media' },
+		event: { icon: CalendarIcon, description: 'An event or occurrence' },
+		place: { icon: MapPinIcon, description: 'A geographic location' },
+		system: { icon: WaypointsIcon, description: 'A physical or conceptual system or network' },
 	};
 
 interface RecordTypeIconProps extends React.HTMLAttributes<SVGElement> {
