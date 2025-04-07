@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import {
 	boolean,
 	index,
@@ -200,56 +199,3 @@ export const GithubCommitChangeSelectSchema = createSelectSchema(githubCommitCha
 export type GithubCommitChangeSelect = typeof githubCommitChanges.$inferSelect;
 export const GithubCommitChangeInsertSchema = createInsertSchema(githubCommitChanges);
 export type GithubCommitChangeInsert = typeof githubCommitChanges.$inferInsert;
-
-export const githubUsersRelations = relations(githubUsers, ({ one, many }) => ({
-	repositories: many(githubRepositories),
-	integrationRun: one(integrationRuns, {
-		fields: [githubUsers.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [githubUsers.recordId],
-		references: [records.id],
-	}),
-}));
-
-export const githubRepositoriesRelations = relations(githubRepositories, ({ one, many }) => ({
-	owner: one(githubUsers, {
-		fields: [githubRepositories.ownerId],
-		references: [githubUsers.id],
-	}),
-	integrationRun: one(integrationRuns, {
-		fields: [githubRepositories.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [githubRepositories.recordId],
-		references: [records.id],
-	}),
-	commits: many(githubCommits),
-}));
-
-export const githubCommitsRelations = relations(githubCommits, ({ many, one }) => ({
-	commitChanges: many(githubCommitChanges),
-	repository: one(githubRepositories, {
-		fields: [githubCommits.repositoryId],
-		references: [githubRepositories.id],
-	}),
-	integrationRun: one(integrationRuns, {
-		fields: [githubCommits.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-}));
-
-export const githubCommitChangesRelations = relations(githubCommitChanges, ({ one }) => ({
-	commit: one(githubCommits, {
-		fields: [githubCommitChanges.commitId],
-		references: [githubCommits.id],
-	}),
-}));
-
-export const githubIntegrationRelations = relations(integrationRuns, ({ many }) => ({
-	githubUsers: many(githubUsers),
-	githubRepositories: many(githubRepositories),
-	githubCommits: many(githubCommits),
-}));

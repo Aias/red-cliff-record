@@ -1,6 +1,6 @@
 import Airtable from 'airtable';
 import 'dotenv/config';
-import { eq, notIlike } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import type { AirtableAttachmentSelect, AirtableExtractSelect } from '@/server/db/schema/airtable';
 import { airtableAttachments } from '@/server/db/schema/airtable';
@@ -92,7 +92,11 @@ export async function storeMedia() {
 		with: {
 			extract: true,
 		},
-		where: notIlike(airtableAttachments.url, `%${process.env.ASSETS_DOMAIN}%`),
+		where: {
+			url: {
+				notIlike: `%${process.env.ASSETS_DOMAIN}%`,
+			},
+		},
 	});
 
 	if (attachments.length === 0) {

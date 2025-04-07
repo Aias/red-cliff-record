@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import {
 	index,
 	integer,
@@ -11,12 +10,8 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { lightroomImages } from './adobe';
-import { airtableAttachments } from './airtable';
 import { databaseTimestamps } from './operations';
-import { raindropImages } from './raindrop';
 import { records } from './records';
-import { twitterMedia } from './twitter';
 
 export const MediaType = z.enum([
 	'application', // application or binary data
@@ -63,25 +58,6 @@ export const media = pgTable(
 		index().on(table.versionOfMediaId),
 	]
 );
-
-export const mediaRelations = relations(media, ({ one, many }) => ({
-	versionOf: one(media, {
-		fields: [media.versionOfMediaId],
-		references: [media.id],
-		relationName: 'versionOf',
-	}),
-	versions: many(media, {
-		relationName: 'versionOf',
-	}),
-	record: one(records, {
-		fields: [media.recordId],
-		references: [records.id],
-	}),
-	airtableAttachments: many(airtableAttachments),
-	lightroomImages: many(lightroomImages),
-	raindropImages: many(raindropImages),
-	twitterMedia: many(twitterMedia),
-}));
 
 export const MediaSelectSchema = createSelectSchema(media);
 export type MediaSelect = typeof media.$inferSelect;

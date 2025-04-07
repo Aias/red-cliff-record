@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import {
 	airtableAttachments,
@@ -48,8 +48,14 @@ async function syncCreators(integrationRunId: number): Promise<void> {
 
 		// Step 1: Determine last sync point
 		const lastUpdatedCreator = await db.query.airtableCreators.findFirst({
-			orderBy: desc(airtableCreators.contentUpdatedAt),
-			where: isNotNull(airtableCreators.contentUpdatedAt),
+			orderBy: {
+				contentUpdatedAt: 'desc',
+			},
+			where: {
+				contentUpdatedAt: {
+					isNotNull: true,
+				},
+			},
 		});
 		const lastUpdatedTime = lastUpdatedCreator?.contentUpdatedAt;
 		console.log(`Last updated creator: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
@@ -134,8 +140,14 @@ async function syncSpaces(integrationRunId: number): Promise<void> {
 
 		// Step 1: Determine last sync point
 		const lastUpdatedSpace = await db.query.airtableSpaces.findFirst({
-			orderBy: desc(airtableSpaces.contentUpdatedAt),
-			where: isNotNull(airtableSpaces.contentUpdatedAt),
+			orderBy: {
+				contentUpdatedAt: 'desc',
+			},
+			where: {
+				contentUpdatedAt: {
+					isNotNull: true,
+				},
+			},
 		});
 		const lastUpdatedTime = lastUpdatedSpace?.contentUpdatedAt;
 		console.log(`Last updated space: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
@@ -218,8 +230,14 @@ async function syncExtracts(integrationRunId: number): Promise<{
 
 		// Step 1: Determine last sync point
 		const lastUpdatedExtract = await db.query.airtableExtracts.findFirst({
-			orderBy: desc(airtableExtracts.contentUpdatedAt),
-			where: isNotNull(airtableExtracts.contentUpdatedAt),
+			orderBy: {
+				contentUpdatedAt: 'desc',
+			},
+			where: {
+				contentUpdatedAt: {
+					isNotNull: true,
+				},
+			},
 		});
 		const lastUpdatedTime = lastUpdatedExtract?.contentUpdatedAt;
 		console.log(`Last updated extract: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
@@ -400,8 +418,17 @@ async function syncFormats(integrationRunId: number): Promise<void> {
 
 		// Find extracts without a linked format
 		const unlinkedExtracts = await db.query.airtableExtracts.findMany({
-			where: and(isNull(airtableExtracts.formatId), isNotNull(airtableExtracts.formatString)),
-			orderBy: airtableExtracts.contentUpdatedAt,
+			where: {
+				formatId: {
+					isNull: true,
+				},
+				formatString: {
+					isNotNull: true,
+				},
+			},
+			orderBy: {
+				contentUpdatedAt: 'asc',
+			},
 		});
 
 		if (unlinkedExtracts.length === 0) {
@@ -422,7 +449,9 @@ async function syncFormats(integrationRunId: number): Promise<void> {
 
 				// Try to find an existing format
 				const format = await tx.query.airtableFormats.findFirst({
-					where: eq(airtableFormats.name, extract.formatString),
+					where: {
+						name: extract.formatString,
+					},
 				});
 
 				if (format) {

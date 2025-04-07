@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { isNotNull } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
 import { SIMILARITY_THRESHOLD } from '../common';
 import { IdSchema } from '../common';
@@ -9,7 +9,9 @@ export const findDuplicates = publicProcedure
 	.query(async ({ ctx: { db }, input }) => {
 		// 1) Fetch the source record by ID
 		const sourceRecord = await db.query.records.findFirst({
-			where: (records, { eq }) => eq(records.id, input),
+			where: {
+				id: input,
+			},
 			with: {
 				creators: {
 					with: {
@@ -29,57 +31,37 @@ export const findDuplicates = publicProcedure
 		//    - Exclude the source record itself
 		//    - OR conditions for URL =, or text columns that are "similar" below a threshold
 		return db.query.records.findMany({
-			where: (records, { eq, ne, or, and, sql }) => {
-				const orConditions = [];
-
-				// Exact URL match (if url is present)
-				if (url) {
-					orConditions.push(eq(records.url, url));
-				}
-
-				// Title similarity
-				if (title) {
-					orConditions.push(sql`${records.title} <-> ${title} < ${SIMILARITY_THRESHOLD}`);
-				}
-
-				// Abbreviation similarity
-				if (abbreviation) {
-					orConditions.push(
-						sql`${records.abbreviation} <-> ${abbreviation} < ${SIMILARITY_THRESHOLD}`
-					);
-				}
-
-				// Sense similarity
-				if (sense) {
-					orConditions.push(sql`${records.sense} <-> ${sense} < ${SIMILARITY_THRESHOLD}`);
-				}
-
-				// Content similarity
-				if (content) {
-					orConditions.push(sql`${records.content} <-> ${content} < ${SIMILARITY_THRESHOLD}`);
-				}
-
-				// Summary similarity
-				if (summary) {
-					orConditions.push(sql`${records.summary} <-> ${summary} < ${SIMILARITY_THRESHOLD}`);
-				}
-
-				// Notes similarity
-				if (notes) {
-					orConditions.push(sql`${records.notes} <-> ${notes} < ${SIMILARITY_THRESHOLD}`);
-				}
-
-				// AND conditions
-				const andConditions = [
-					// Exclude current record
-					ne(records.id, input),
-					// Exclude "partials" (record fragments)
-					isNotNull(records.title),
-					// We only combine OR-conditions if there's something to compare
-					orConditions.length ? or(...orConditions) : undefined,
-				].filter(Boolean);
-
-				return and(...andConditions);
+			where: {
+				OR: [
+					url ? { url } : {},
+					title
+						? { RAW: (records) => sql`${records.title} <-> ${title} < ${SIMILARITY_THRESHOLD}` }
+						: {},
+					content
+						? { RAW: (records) => sql`${records.content} <-> ${content} < ${SIMILARITY_THRESHOLD}` }
+						: {},
+					summary
+						? { RAW: (records) => sql`${records.summary} <-> ${summary} < ${SIMILARITY_THRESHOLD}` }
+						: {},
+					notes
+						? { RAW: (records) => sql`${records.notes} <-> ${notes} < ${SIMILARITY_THRESHOLD}` }
+						: {},
+					abbreviation
+						? {
+								RAW: (records) =>
+									sql`${records.abbreviation} <-> ${abbreviation} < ${SIMILARITY_THRESHOLD}`,
+							}
+						: {},
+					sense
+						? { RAW: (records) => sql`${records.sense} <-> ${sense} < ${SIMILARITY_THRESHOLD}` }
+						: {},
+				],
+				id: {
+					ne: input,
+				},
+				title: {
+					isNotNull: true,
+				},
 			},
 
 			// 3) Order by combined similarity measure first (lowest distance = best match),

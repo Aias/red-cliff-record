@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import {
 	media,
@@ -23,10 +23,12 @@ export async function createRaindropTags(integrationRunId?: number) {
 	logger.start('Processing bookmark tags');
 
 	const bookmarks = await db.query.raindropBookmarks.findMany({
-		where: and(
-			isNotNull(raindropBookmarks.tags),
-			integrationRunId ? eq(raindropBookmarks.integrationRunId, integrationRunId) : undefined
-		),
+		where: {
+			tags: {
+				isNotNull: true,
+			},
+			integrationRunId: integrationRunId,
+		},
 	});
 
 	if (bookmarks.length === 0) {
@@ -136,14 +138,17 @@ export async function createRecordsFromRaindropBookmarks() {
 	logger.start('Creating records from Raindrop bookmarks');
 
 	const unmappedBookmarks = await db.query.raindropBookmarks.findMany({
-		where: and(isNull(raindropBookmarks.recordId), isNull(raindropBookmarks.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			collection: true,
-			bookmarkTags: {
-				with: {
-					tag: true,
-				},
-			},
+			tags: true,
 			coverImages: true,
 		},
 	});
@@ -175,10 +180,10 @@ export async function createRecordsFromRaindropBookmarks() {
 			.where(eq(raindropBookmarks.id, bookmark.id));
 
 		// Link tags to the record
-		for (const tag of bookmark.bookmarkTags) {
-			if (tag.tag.recordId) {
-				logger.info(`Linking record ${newRecord.id} to tag ${tag.tag.recordId}`);
-				await linkRecords(newRecord.id, tag.tag.recordId, 'tagged');
+		for (const tag of bookmark.tags) {
+			if (tag.recordId) {
+				logger.info(`Linking record ${newRecord.id} to tag ${tag.recordId}`);
+				await linkRecords(newRecord.id, tag.recordId, 'tagged');
 			}
 		}
 
@@ -229,7 +234,14 @@ export async function createMediaFromRaindropBookmarks() {
 	logger.start('Creating media from Raindrop bookmarks');
 
 	const unmappedImages = await db.query.raindropImages.findMany({
-		where: and(isNull(raindropImages.mediaId), isNull(raindropImages.deletedAt)),
+		where: {
+			mediaId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			bookmark: true,
 		},
@@ -307,16 +319,19 @@ export async function createRecordsFromRaindropTags() {
 	logger.start('Creating categories from Raindrop tags');
 
 	const unmappedTags = await db.query.raindropTags.findMany({
-		where: and(isNull(raindropTags.recordId), isNull(raindropTags.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
-			tagBookmarks: {
-				with: {
-					bookmark: {
-						columns: {
-							id: true,
-							recordId: true,
-						},
-					},
+			bookmarks: {
+				columns: {
+					id: true,
+					recordId: true,
 				},
 			},
 		},
@@ -356,10 +371,10 @@ export async function createRecordsFromRaindropTags() {
 			.where(eq(raindropTags.id, tag.id));
 
 		// Link bookmarks to the tag
-		for (const bookmark of tag.tagBookmarks) {
-			if (bookmark.bookmark.recordId) {
-				logger.info(`Linking record ${bookmark.bookmark.recordId} to category ${newCategory.id}`);
-				await linkRecords(bookmark.bookmark.recordId, newCategory.id, 'tagged');
+		for (const bookmark of tag.bookmarks) {
+			if (bookmark.recordId) {
+				logger.info(`Linking record ${bookmark.recordId} to category ${newCategory.id}`);
+				await linkRecords(bookmark.recordId, newCategory.id, 'tagged');
 			}
 		}
 	}

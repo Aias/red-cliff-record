@@ -1,4 +1,3 @@
-import { desc } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import {
 	raindropBookmarks,
@@ -189,7 +188,9 @@ async function getLastSyncDate(): Promise<Date | undefined> {
 		columns: {
 			contentUpdatedAt: true,
 		},
-		orderBy: desc(raindropBookmarks.contentUpdatedAt),
+		orderBy: {
+			contentUpdatedAt: 'desc',
+		},
 	});
 
 	return latestRaindrop?.contentUpdatedAt ?? undefined;

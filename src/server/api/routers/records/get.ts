@@ -32,7 +32,9 @@ export const get = publicProcedure.input(IdSchema).query(async ({ ctx: { db }, i
 			},
 			transcludes: true,
 		},
-		where: (records, { eq }) => eq(records.id, input),
+		where: {
+			id: input,
+		},
 	});
 
 	if (!record) {

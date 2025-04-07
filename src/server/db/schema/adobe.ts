@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import { index, integer, json, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import type {
@@ -59,22 +58,3 @@ export const LightroomImageSelectSchema = createSelectSchema(lightroomImages);
 export type LightroomImageSelect = typeof lightroomImages.$inferSelect;
 export const LightroomImageInsertSchema = createInsertSchema(lightroomImages);
 export type LightroomImageInsert = typeof lightroomImages.$inferInsert;
-
-export const lightroomImagesRelations = relations(lightroomImages, ({ one }) => ({
-	integrationRun: one(integrationRuns, {
-		fields: [lightroomImages.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [lightroomImages.recordId],
-		references: [records.id],
-	}),
-	media: one(media, {
-		fields: [lightroomImages.mediaId],
-		references: [media.id],
-	}),
-}));
-
-export const lightroomIntegrationRelations = relations(integrationRuns, ({ many }) => ({
-	lightroomImages: many(lightroomImages),
-}));

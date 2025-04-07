@@ -29,7 +29,11 @@ export const deleteRecords = publicProcedure
 	.input(z.array(IdSchema))
 	.mutation(async ({ ctx: { db }, input }) => {
 		const recordsToDelete = await db.query.records.findMany({
-			where: (records, { inArray }) => inArray(records.id, input),
+			where: {
+				id: {
+					in: input,
+				},
+			},
 			with: {
 				media: true,
 			},

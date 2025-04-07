@@ -3,6 +3,7 @@ import 'dotenv/config';
 // Note: Will also need to work with Tanstack Start. Probably after Start removes Vinxi dependency: https://tanstack.com/router/latest/docs/framework/react/start/build-from-scratch#install-dependencies
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { relations } from '@/server/db/relations';
 import * as schema from '@/server/db/schema';
 
 const globalForDb = globalThis as unknown as {
@@ -12,5 +13,5 @@ const globalForDb = globalThis as unknown as {
 const conn = globalForDb.conn ?? postgres(process.env.DATABASE_URL!);
 if (process.env.NODE_ENV !== 'production') globalForDb.conn = conn;
 
-export const db = drizzle(conn, { schema });
+export const db = drizzle(conn, { schema, relations });
 export type Db = typeof db;

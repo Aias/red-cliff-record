@@ -38,8 +38,14 @@ async function getCommitsWithoutSummaries() {
 				},
 			},
 		},
-		where: (fields, { isNull }) => isNull(fields.summary),
-		orderBy: (fields, { asc }) => [asc(fields.committedAt)],
+		where: {
+			summary: {
+				isNull: true,
+			},
+		},
+		orderBy: {
+			committedAt: 'asc',
+		},
 	});
 
 	return commits as unknown as CommitWithRelations[];

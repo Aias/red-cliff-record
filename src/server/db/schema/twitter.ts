@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import {
 	index,
 	integer,
@@ -55,30 +54,6 @@ export type TwitterTweetSelect = typeof twitterTweets.$inferSelect;
 export const TwitterTweetInsertSchema = createInsertSchema(twitterTweets);
 export type TwitterTweetInsert = typeof twitterTweets.$inferInsert;
 
-export const twitterTweetsRelations = relations(twitterTweets, ({ one, many }) => ({
-	media: many(twitterMedia, { relationName: 'tweetMedia' }),
-	user: one(twitterUsers, {
-		fields: [twitterTweets.userId],
-		references: [twitterUsers.id],
-	}),
-	quotedTweet: one(twitterTweets, {
-		fields: [twitterTweets.quotedTweetId],
-		references: [twitterTweets.id],
-		relationName: 'quotes',
-	}),
-	quotedBy: many(twitterTweets, {
-		relationName: 'quotes',
-	}),
-	integrationRun: one(integrationRuns, {
-		fields: [twitterTweets.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [twitterTweets.recordId],
-		references: [records.id],
-	}),
-}));
-
 export const TwitterMediaType = z.enum(['photo', 'video', 'animated_gif']);
 export type TwitterMediaType = z.infer<typeof TwitterMediaType>;
 
@@ -114,18 +89,6 @@ export type TwitterMediaSelect = typeof twitterMedia.$inferSelect;
 export const TwitterMediaInsertSchema = createInsertSchema(twitterMedia);
 export type TwitterMediaInsert = typeof twitterMedia.$inferInsert;
 
-export const twitterMediaRelations = relations(twitterMedia, ({ one }) => ({
-	tweet: one(twitterTweets, {
-		fields: [twitterMedia.tweetId],
-		references: [twitterTweets.id],
-		relationName: 'tweetMedia',
-	}),
-	media: one(media, {
-		fields: [twitterMedia.mediaId],
-		references: [media.id],
-	}),
-}));
-
 export const twitterUsers = pgTable(
 	'twitter_users',
 	{
@@ -158,20 +121,3 @@ export const TwitterUserSelectSchema = createSelectSchema(twitterUsers);
 export type TwitterUserSelect = typeof twitterUsers.$inferSelect;
 export const TwitterUserInsertSchema = createInsertSchema(twitterUsers);
 export type TwitterUserInsert = typeof twitterUsers.$inferInsert;
-
-export const twitterUsersRelations = relations(twitterUsers, ({ many, one }) => ({
-	tweets: many(twitterTweets),
-	integrationRun: one(integrationRuns, {
-		fields: [twitterUsers.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [twitterUsers.recordId],
-		references: [records.id],
-	}),
-}));
-
-export const twitterIntegrationRelations = relations(integrationRuns, ({ many }) => ({
-	tweets: many(twitterTweets),
-	users: many(twitterUsers),
-}));

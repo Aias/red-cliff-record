@@ -1,6 +1,6 @@
 import os from 'os';
 import readline from 'readline';
-import { and, desc, eq, gt, isNotNull, ne, notLike } from 'drizzle-orm';
+import { and, eq, gt, isNotNull, ne, notLike } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { urls, visits } from '@/server/db/schema/arc';
 import { Browser, browsingHistory, type BrowsingHistoryInsert } from '@/server/db/schema/history';
@@ -209,12 +209,16 @@ async function getLastSyncPoint(hostname: string): Promise<bigint | null> {
 		columns: {
 			viewEpochMicroseconds: true,
 		},
-		where: and(
-			eq(browsingHistory.browser, Browser.enum.arc),
-			eq(browsingHistory.hostname, hostname),
-			isNotNull(browsingHistory.viewEpochMicroseconds)
-		),
-		orderBy: desc(browsingHistory.viewEpochMicroseconds),
+		where: {
+			browser: Browser.enum.arc,
+			hostname: hostname,
+			viewEpochMicroseconds: {
+				isNotNull: true,
+			},
+		},
+		orderBy: {
+			viewEpochMicroseconds: 'desc',
+		},
 	});
 
 	return latestVisit?.viewEpochMicroseconds ?? null;

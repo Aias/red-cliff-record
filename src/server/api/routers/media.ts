@@ -14,7 +14,11 @@ import {
 export const mediaRouter = createTRPCRouter({
 	delete: publicProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
 		const mediaToDelete = await db.query.media.findMany({
-			where: (media, { inArray }) => inArray(media.id, input),
+			where: {
+				id: {
+					in: input,
+				},
+			},
 		});
 
 		if (mediaToDelete.length !== input.length) {

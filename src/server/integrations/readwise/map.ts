@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
@@ -35,9 +35,15 @@ export async function createReadwiseAuthors() {
 	logger.start('Creating authors from Readwise documents');
 
 	const documentsWithoutAuthors = await db.query.readwiseDocuments.findMany({
-		where: and(isNotNull(readwiseDocuments.author), isNull(readwiseDocuments.authorId)),
+		where: {
+			author: {
+				isNotNull: true,
+			},
+			authorId: {
+				isNull: true,
+			},
+		},
 	});
-
 	if (documentsWithoutAuthors.length === 0) {
 		logger.skip('No documents without authors found');
 		return;
@@ -121,9 +127,15 @@ export async function createRecordsFromReadwiseAuthors() {
 	logger.start('Creating records from Readwise authors');
 
 	const authors = await db.query.readwiseAuthors.findMany({
-		where: and(isNull(readwiseAuthors.recordId), isNull(readwiseAuthors.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 	});
-
 	if (authors.length === 0) {
 		logger.skip('No new or updated authors to process');
 		return;
@@ -175,10 +187,12 @@ export async function createReadwiseTags(integrationRunId?: number) {
 	logger.start('Processing document tags');
 
 	const documents = await db.query.readwiseDocuments.findMany({
-		where: and(
-			isNotNull(readwiseDocuments.tags),
-			integrationRunId ? eq(readwiseDocuments.integrationRunId, integrationRunId) : undefined
-		),
+		where: {
+			tags: {
+				isNotNull: true,
+			},
+			integrationRunId: integrationRunId,
+		},
 	});
 
 	if (documents.length === 0) {
@@ -290,13 +304,16 @@ export async function createRecordsFromReadwiseTags() {
 	logger.start('Creating records from Readwise tags');
 
 	const tags = await db.query.readwiseTags.findMany({
-		where: and(isNull(readwiseTags.recordId), isNull(readwiseTags.deletedAt)),
-		with: {
-			tagDocuments: {
-				with: {
-					document: true,
-				},
+		where: {
+			recordId: {
+				isNull: true,
 			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
+		with: {
+			documents: true,
 		},
 	});
 
@@ -340,10 +357,10 @@ export async function createRecordsFromReadwiseTags() {
 		logger.info(`Linked tag ${tag.tag} to record ${newCategory.id}`);
 
 		// Link documents to tag
-		for (const tagDocument of tag.tagDocuments) {
-			if (tagDocument.document.recordId) {
-				logger.info(`Linking tag ${tag.tag} to record ${tagDocument.document.recordId}`);
-				await linkRecords(tagDocument.document.recordId, newCategory.id, 'tagged');
+		for (const tagDocument of tag.documents) {
+			if (tagDocument.recordId) {
+				logger.info(`Linking tag ${tag.tag} to record ${tagDocument.recordId}`);
+				await linkRecords(tagDocument.recordId, newCategory.id, 'tagged');
 			}
 		}
 	}
@@ -421,11 +438,17 @@ export async function createRecordsFromReadwiseDocuments() {
 
 	// Query readwise documents that need records created (skip notes-only docs)
 	const documents = await db.query.readwiseDocuments.findMany({
-		where: and(
-			isNull(readwiseDocuments.recordId),
-			ne(readwiseDocuments.category, 'note'),
-			isNull(readwiseDocuments.deletedAt)
-		),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			category: {
+				ne: 'note',
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			children: true,
 		},
@@ -489,7 +512,9 @@ export async function createRecordsFromReadwiseDocuments() {
 			let parentRecordId = recordMap.get(doc.parentId);
 			if (!parentRecordId) {
 				const parentDoc = await db.query.readwiseDocuments.findFirst({
-					where: eq(readwiseDocuments.id, doc.parentId),
+					where: {
+						id: doc.parentId,
+					},
 					columns: { recordId: true },
 				});
 				parentRecordId = parentDoc?.recordId ?? undefined;
@@ -515,7 +540,11 @@ export async function createRecordsFromReadwiseDocuments() {
 
 	const authorIds = Array.from(authorIdsSet);
 	const authorsRows = await db.query.readwiseAuthors.findMany({
-		where: inArray(readwiseAuthors.id, authorIds),
+		where: {
+			id: {
+				in: authorIds,
+			},
+		},
 		columns: { id: true, recordId: true },
 	});
 
@@ -536,7 +565,11 @@ export async function createRecordsFromReadwiseDocuments() {
 
 	const tagsArray = Array.from(tagSet);
 	const tagRows = await db.query.readwiseTags.findMany({
-		where: inArray(readwiseTags.tag, tagsArray),
+		where: {
+			tag: {
+				in: tagsArray,
+			},
+		},
 		columns: { tag: true, recordId: true },
 	});
 

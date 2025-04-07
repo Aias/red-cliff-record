@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import {
 	bigint,
 	index,
@@ -63,14 +62,3 @@ export const BrowsingHistoryOmitListSelectSchema = createSelectSchema(browsingHi
 export type BrowsingHistoryOmitListSelect = typeof browsingHistoryOmitList.$inferSelect;
 export const BrowsingHistoryOmitListInsertSchema = createInsertSchema(browsingHistoryOmitList);
 export type BrowsingHistoryOmitListInsert = typeof browsingHistoryOmitList.$inferInsert;
-
-export const browsingHistoryRelations = relations(browsingHistory, ({ one }) => ({
-	integrationRun: one(integrationRuns, {
-		fields: [browsingHistory.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-}));
-
-export const integrationRelations = relations(integrationRuns, ({ many }) => ({
-	browsingHistory: many(browsingHistory),
-}));

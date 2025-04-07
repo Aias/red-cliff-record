@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import {
 	date,
 	index,
@@ -100,32 +99,6 @@ export const readwiseDocuments = pgTable(
 	]
 );
 
-export const readwiseDocumentsRelations = relations(readwiseDocuments, ({ one, many }) => ({
-	parent: one(readwiseDocuments, {
-		fields: [readwiseDocuments.parentId],
-		references: [readwiseDocuments.id],
-		relationName: 'parentChild',
-	}),
-	children: many(readwiseDocuments, {
-		relationName: 'parentChild',
-	}),
-	author: one(readwiseAuthors, {
-		fields: [readwiseDocuments.authorId],
-		references: [readwiseAuthors.id],
-	}),
-	documentTags: many(readwiseDocumentTags, {
-		relationName: 'documentTags',
-	}),
-	integrationRun: one(integrationRuns, {
-		fields: [readwiseDocuments.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [readwiseDocuments.recordId],
-		references: [records.id],
-	}),
-}));
-
 export const ReadwiseDocumentSelectSchema = createSelectSchema(readwiseDocuments);
 export type ReadwiseDocumentSelect = typeof readwiseDocuments.$inferSelect;
 export const ReadwiseDocumentInsertSchema = createInsertSchema(readwiseDocuments).extend({
@@ -158,14 +131,6 @@ export const readwiseAuthors = pgTable(
 	]
 );
 
-export const readwiseAuthorsRelations = relations(readwiseAuthors, ({ one, many }) => ({
-	documents: many(readwiseDocuments),
-	record: one(records, {
-		fields: [readwiseAuthors.recordId],
-		references: [records.id],
-	}),
-}));
-
 export const ReadwiseAuthorSelectSchema = createSelectSchema(readwiseAuthors);
 export type ReadwiseAuthorSelect = typeof readwiseAuthors.$inferSelect;
 export const ReadwiseAuthorInsertSchema = createInsertSchema(readwiseAuthors).extend({
@@ -189,16 +154,6 @@ export const readwiseTags = pgTable(
 	},
 	(table) => [index().on(table.deletedAt)]
 );
-
-export const readwiseTagsRelations = relations(readwiseTags, ({ one, many }) => ({
-	tagDocuments: many(readwiseDocumentTags, {
-		relationName: 'tagDocuments',
-	}),
-	record: one(records, {
-		fields: [readwiseTags.recordId],
-		references: [records.id],
-	}),
-}));
 
 export const ReadwiseTagSelectSchema = createSelectSchema(readwiseTags);
 export type ReadwiseTagSelect = typeof readwiseTags.$inferSelect;
@@ -231,20 +186,3 @@ export const readwiseDocumentTags = pgTable(
 		unique().on(table.documentId, table.tagId),
 	]
 );
-
-export const readwiseDocumentTagsRelations = relations(readwiseDocumentTags, ({ one }) => ({
-	document: one(readwiseDocuments, {
-		fields: [readwiseDocumentTags.documentId],
-		references: [readwiseDocuments.id],
-		relationName: 'documentTags',
-	}),
-	tag: one(readwiseTags, {
-		fields: [readwiseDocumentTags.tagId],
-		references: [readwiseTags.id],
-		relationName: 'tagDocuments',
-	}),
-}));
-
-export const readwiseIntegrationRelations = relations(integrationRuns, ({ many }) => ({
-	readwiseDocuments: many(readwiseDocuments),
-}));
