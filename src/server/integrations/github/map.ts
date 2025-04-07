@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
@@ -48,7 +48,14 @@ export async function createRecordsFromGithubUsers() {
 	logger.start('Creating records from Github users');
 
 	const unmappedUsers = await db.query.githubUsers.findMany({
-		where: and(isNull(githubUsers.recordId), isNull(githubUsers.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			repositories: {
 				columns: {
@@ -128,7 +135,14 @@ export async function createRecordsFromGithubRepositories() {
 	logger.start('Creating records from Github repositories');
 
 	const unmappedRepositories = await db.query.githubRepositories.findMany({
-		where: and(isNull(githubRepositories.recordId), isNull(githubRepositories.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			owner: {
 				columns: {

@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import {
 	index,
 	integer,
@@ -59,34 +58,6 @@ export type AirtableExtractSelect = typeof airtableExtracts.$inferSelect;
 export const AirtableExtractInsertSchema = createInsertSchema(airtableExtracts);
 export type AirtableExtractInsert = typeof airtableExtracts.$inferInsert;
 
-export const airtableExtractsRelations = relations(airtableExtracts, ({ many, one }) => ({
-	children: many(airtableExtracts, {
-		relationName: 'parentChild',
-	}),
-	parent: one(airtableExtracts, {
-		fields: [airtableExtracts.parentId],
-		references: [airtableExtracts.id],
-		relationName: 'parentChild',
-	}),
-	extractCreators: many(airtableExtractCreators, { relationName: 'extractToCreator' }),
-	extractSpaces: many(airtableExtractSpaces, { relationName: 'extractToSpace' }),
-	outgoingConnections: many(airtableExtractConnections, { relationName: 'fromExtract' }),
-	incomingConnections: many(airtableExtractConnections, { relationName: 'toExtract' }),
-	attachments: many(airtableAttachments),
-	integrationRun: one(integrationRuns, {
-		fields: [airtableExtracts.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [airtableExtracts.recordId],
-		references: [records.id],
-	}),
-	format: one(airtableFormats, {
-		fields: [airtableExtracts.formatId],
-		references: [airtableFormats.id],
-	}),
-}));
-
 export const airtableFormats = pgTable(
 	'airtable_formats',
 	{
@@ -111,18 +82,6 @@ export const AirtableFormatSelectSchema = createSelectSchema(airtableFormats);
 export type AirtableFormatSelect = typeof airtableFormats.$inferSelect;
 export const AirtableFormatInsertSchema = createInsertSchema(airtableFormats);
 export type AirtableFormatInsert = typeof airtableFormats.$inferInsert;
-
-export const airtableFormatsRelations = relations(airtableFormats, ({ one, many }) => ({
-	integrationRun: one(integrationRuns, {
-		fields: [airtableFormats.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [airtableFormats.recordId],
-		references: [records.id],
-	}),
-	extracts: many(airtableExtracts),
-}));
 
 export const airtableAttachments = pgTable(
 	'airtable_attachments',
@@ -157,17 +116,6 @@ export type AirtableAttachmentSelect = typeof airtableAttachments.$inferSelect;
 export const AirtableAttachmentInsertSchema = createInsertSchema(airtableAttachments);
 export type AirtableAttachmentInsert = typeof airtableAttachments.$inferInsert;
 
-export const airtableAttachmentsRelations = relations(airtableAttachments, ({ one }) => ({
-	extract: one(airtableExtracts, {
-		fields: [airtableAttachments.extractId],
-		references: [airtableExtracts.id],
-	}),
-	media: one(media, {
-		fields: [airtableAttachments.mediaId],
-		references: [media.id],
-	}),
-}));
-
 export const airtableCreators = pgTable(
 	'airtable_creators',
 	{
@@ -200,18 +148,6 @@ export type AirtableCreatorSelect = typeof airtableCreators.$inferSelect;
 export const AirtableCreatorInsertSchema = createInsertSchema(airtableCreators);
 export type AirtableCreatorInsert = typeof airtableCreators.$inferInsert;
 
-export const airtableCreatorsRelations = relations(airtableCreators, ({ one, many }) => ({
-	integrationRun: one(integrationRuns, {
-		fields: [airtableCreators.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [airtableCreators.recordId],
-		references: [records.id],
-	}),
-	creatorExtracts: many(airtableExtractCreators, { relationName: 'creatorToExtract' }),
-}));
-
 export const airtableSpaces = pgTable(
 	'airtable_spaces',
 	{
@@ -240,18 +176,6 @@ export type AirtableSpaceSelect = typeof airtableSpaces.$inferSelect;
 export const AirtableSpaceInsertSchema = createInsertSchema(airtableSpaces);
 export type AirtableSpaceInsert = typeof airtableSpaces.$inferInsert;
 
-export const airtableSpacesRelations = relations(airtableSpaces, ({ one, many }) => ({
-	integrationRun: one(integrationRuns, {
-		fields: [airtableSpaces.integrationRunId],
-		references: [integrationRuns.id],
-	}),
-	record: one(records, {
-		fields: [airtableSpaces.recordId],
-		references: [records.id],
-	}),
-	spaceExtracts: many(airtableExtractSpaces, { relationName: 'spaceToExtract' }),
-}));
-
 export const airtableExtractCreators = pgTable(
 	'airtable_extract_creators',
 	{
@@ -276,19 +200,6 @@ export const AirtableExtractCreatorSelectSchema = createSelectSchema(airtableExt
 export type AirtableExtractCreatorSelect = typeof airtableExtractCreators.$inferSelect;
 export const AirtableExtractCreatorInsertSchema = createInsertSchema(airtableExtractCreators);
 export type AirtableExtractCreatorInsert = typeof airtableExtractCreators.$inferInsert;
-
-export const airtableExtractCreatorsRelations = relations(airtableExtractCreators, ({ one }) => ({
-	extract: one(airtableExtracts, {
-		fields: [airtableExtractCreators.extractId],
-		references: [airtableExtracts.id],
-		relationName: 'extractToCreator',
-	}),
-	creator: one(airtableCreators, {
-		fields: [airtableExtractCreators.creatorId],
-		references: [airtableCreators.id],
-		relationName: 'creatorToExtract',
-	}),
-}));
 
 export const airtableExtractSpaces = pgTable(
 	'airtable_extract_spaces',
@@ -315,19 +226,6 @@ export type AirtableExtractSpaceSelect = typeof airtableExtractSpaces.$inferSele
 export const AirtableExtractSpaceInsertSchema = createInsertSchema(airtableExtractSpaces);
 export type AirtableExtractSpaceInsert = typeof airtableExtractSpaces.$inferInsert;
 
-export const airtableExtractSpacesRelations = relations(airtableExtractSpaces, ({ one }) => ({
-	extract: one(airtableExtracts, {
-		fields: [airtableExtractSpaces.extractId],
-		references: [airtableExtracts.id],
-		relationName: 'extractToSpace',
-	}),
-	space: one(airtableSpaces, {
-		fields: [airtableExtractSpaces.spaceId],
-		references: [airtableSpaces.id],
-		relationName: 'spaceToExtract',
-	}),
-}));
-
 export const airtableExtractConnections = pgTable(
 	'airtable_extract_connections',
 	{
@@ -352,26 +250,3 @@ export const AirtableExtractConnectionSelectSchema = createSelectSchema(airtable
 export type AirtableExtractConnectionSelect = typeof airtableExtractConnections.$inferSelect;
 export const AirtableExtractConnectionInsertSchema = createInsertSchema(airtableExtractConnections);
 export type AirtableExtractConnectionInsert = typeof airtableExtractConnections.$inferInsert;
-
-export const airtableExtractConnectionsRelations = relations(
-	airtableExtractConnections,
-	({ one }) => ({
-		fromExtract: one(airtableExtracts, {
-			relationName: 'fromExtract',
-			fields: [airtableExtractConnections.fromExtractId],
-			references: [airtableExtracts.id],
-		}),
-		toExtract: one(airtableExtracts, {
-			relationName: 'toExtract',
-			fields: [airtableExtractConnections.toExtractId],
-			references: [airtableExtracts.id],
-		}),
-	})
-);
-
-export const airtableIntegrationRelations = relations(integrationRuns, ({ many }) => ({
-	airtableExtracts: many(airtableExtracts),
-	airtableCreators: many(airtableCreators),
-	airtableSpaces: many(airtableSpaces),
-	airtableFormats: many(airtableFormats),
-}));

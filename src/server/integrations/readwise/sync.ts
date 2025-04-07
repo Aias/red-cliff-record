@@ -1,5 +1,4 @@
 import { mkdir } from 'node:fs/promises';
-import { desc } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@/server/db/schema/readwise';
 import { runIntegration } from '../common/run-integration';
@@ -35,7 +34,9 @@ async function getMostRecentUpdateTime(): Promise<Date | null> {
 		columns: {
 			contentUpdatedAt: true,
 		},
-		orderBy: desc(readwiseDocuments.contentUpdatedAt),
+		orderBy: {
+			contentUpdatedAt: 'desc',
+		},
 	});
 	if (mostRecent) {
 		console.log(

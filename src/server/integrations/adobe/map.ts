@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import {
 	lightroomImages,
@@ -39,9 +39,15 @@ export const resetMediaCaptionsForLightroomImages = async () => {
 
 	// Find all Lightroom images that have linked records
 	const images = await db.query.lightroomImages.findMany({
-		where: and(isNotNull(lightroomImages.recordId), isNull(lightroomImages.deletedAt)),
+		where: {
+			recordId: {
+				isNotNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 	});
-
 	logger.info(`Found ${images.length} Lightroom images with linked records`);
 
 	let updatedCount = 0;
@@ -115,10 +121,21 @@ export const createMediaFromLightroomImages = async () => {
 
 	// Find images that don't have media or records yet
 	const unmappedImages = await db.query.lightroomImages.findMany({
-		where: and(
-			or(isNull(lightroomImages.mediaId), isNull(lightroomImages.recordId)),
-			isNull(lightroomImages.deletedAt)
-		),
+		where: {
+			OR: [
+				{
+					mediaId: {
+						isNull: true,
+					},
+					recordId: {
+						isNull: true,
+					},
+				},
+			],
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			media: {
 				columns: {
@@ -201,7 +218,10 @@ export const createMediaFromLightroomImages = async () => {
 
 			// Link to author if found
 			const author = await db.query.records.findFirst({
-				where: and(eq(records.type, 'entity'), eq(records.title, 'Nick Trombley')),
+				where: {
+					type: 'entity',
+					title: 'Nick Trombley',
+				},
 				columns: {
 					id: true,
 				},
@@ -233,7 +253,14 @@ export const createRecordMediaLinks = async () => {
 	logger.start('Creating record-media links for Lightroom images');
 
 	const images = await db.query.lightroomImages.findMany({
-		where: and(isNotNull(lightroomImages.recordId), isNotNull(lightroomImages.mediaId)),
+		where: {
+			recordId: {
+				isNotNull: true,
+			},
+			mediaId: {
+				isNotNull: true,
+			},
+		},
 		columns: {
 			id: true,
 			recordId: true,

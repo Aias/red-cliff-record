@@ -78,7 +78,12 @@ export async function updatePartialUsers(): Promise<number> {
 
 	// Find all users marked as partial
 	const partialUsers = await db.query.githubUsers.findMany({
-		where: eq(githubUsers.partial, true),
+		where: {
+			partial: true,
+			deletedAt: {
+				isNull: true,
+			},
+		},
 	});
 
 	console.log(`Found ${partialUsers.length} partial users to update`);

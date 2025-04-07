@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import {
 	boolean,
 	index,
@@ -13,19 +12,12 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { lightroomImages } from './adobe';
-import { airtableCreators, airtableExtracts, airtableFormats, airtableSpaces } from './airtable';
-import { githubRepositories, githubUsers } from './github';
-import { media } from './media';
 import {
 	contentTimestamps,
 	databaseTimestamps,
 	integrationTypeEnum,
 	textEmbeddingColumns,
 } from './operations';
-import { raindropBookmarks, raindropCollections, raindropTags } from './raindrop';
-import { readwiseAuthors, readwiseDocuments, readwiseTags } from './readwise';
-import { twitterTweets, twitterUsers } from './twitter';
 import { emptyStringToNull } from '@/lib/formatting';
 import { DEFAULT_ORDER_KEY } from '@/lib/lexicography';
 
@@ -121,53 +113,6 @@ export const RecordInsertSchema = createInsertSchema(records).extend({
 });
 export type RecordInsert = typeof records.$inferInsert;
 
-export const recordsRelations = relations(records, ({ one, many }) => ({
-	parent: one(records, {
-		fields: [records.parentId],
-		references: [records.id],
-		relationName: 'parentChild',
-	}),
-	children: many(records, { relationName: 'parentChild' }),
-	media: many(media),
-	creators: many(recordCreators, {
-		relationName: 'createdBy',
-	}),
-	created: many(recordCreators, {
-		relationName: 'created',
-	}),
-	format: one(records, {
-		fields: [records.formatId],
-		references: [records.id],
-		relationName: 'format',
-	}),
-	formatOf: many(records, { relationName: 'format' }),
-	references: many(recordRelations, { relationName: 'source' }),
-	referencedBy: many(recordRelations, { relationName: 'target' }),
-	transcludes: one(records, {
-		fields: [records.transcludeId],
-		references: [records.id],
-		relationName: 'transcludes',
-	}),
-	transcludedBy: many(records, {
-		relationName: 'transcludes',
-	}),
-	airtableCreators: many(airtableCreators),
-	airtableExtracts: many(airtableExtracts),
-	airtableFormats: many(airtableFormats),
-	airtableSpaces: many(airtableSpaces),
-	githubRepositories: many(githubRepositories),
-	githubUsers: many(githubUsers),
-	lightroomImages: many(lightroomImages),
-	raindropBookmarks: many(raindropBookmarks),
-	raindropCollections: many(raindropCollections),
-	raindropTags: many(raindropTags),
-	readwiseAuthors: many(readwiseAuthors),
-	readwiseDocuments: many(readwiseDocuments),
-	readwiseTags: many(readwiseTags),
-	twitterTweets: many(twitterTweets),
-	twitterUsers: many(twitterUsers),
-}));
-
 // Non-hierarchical relationships
 export const RecordRelationType = z.enum([
 	'tagged', // tagged with this thing
@@ -214,19 +159,6 @@ export const RecordRelationSelectSchema = createSelectSchema(recordRelations);
 export type RecordRelationSelect = typeof recordRelations.$inferSelect;
 export const RecordRelationInsertSchema = createInsertSchema(recordRelations);
 export type RecordRelationInsert = typeof recordRelations.$inferInsert;
-
-export const recordRelationsRelations = relations(recordRelations, ({ one }) => ({
-	source: one(records, {
-		fields: [recordRelations.sourceId],
-		references: [records.id],
-		relationName: 'source',
-	}),
-	target: one(records, {
-		fields: [recordRelations.targetId],
-		references: [records.id],
-		relationName: 'target',
-	}),
-}));
 
 export const CreatorRoleSchema = z.enum([
 	'creator', // primary creator
@@ -277,16 +209,3 @@ export const RecordCreatorSelectSchema = createSelectSchema(recordCreators);
 export type RecordCreatorSelect = typeof recordCreators.$inferSelect;
 export const RecordCreatorInsertSchema = createInsertSchema(recordCreators);
 export type RecordCreatorInsert = typeof recordCreators.$inferInsert;
-
-export const recordCreatorsRelations = relations(recordCreators, ({ one }) => ({
-	record: one(records, {
-		fields: [recordCreators.recordId],
-		references: [records.id],
-		relationName: 'createdBy',
-	}),
-	creator: one(records, {
-		fields: [recordCreators.creatorId],
-		references: [records.id],
-		relationName: 'created',
-	}),
-}));

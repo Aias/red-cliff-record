@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { eq, inArray, or } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { publicProcedure } from '../../init';
 import {
@@ -33,6 +33,7 @@ export const merge = publicProcedure
 	)
 	.mutation(async ({ ctx: { db }, input }) => {
 		const { sourceId, targetId } = input;
+		const ids = [sourceId, targetId];
 
 		try {
 			if (sourceId === targetId) {
@@ -44,10 +45,14 @@ export const merge = publicProcedure
 
 			const [source, target] = await Promise.all([
 				db.query.records.findFirst({
-					where: (records, { eq }) => eq(records.id, sourceId),
+					where: {
+						id: sourceId,
+					},
 				}),
 				db.query.records.findFirst({
-					where: (records, { eq }) => eq(records.id, targetId),
+					where: {
+						id: targetId,
+					},
 				}),
 			]);
 
@@ -190,12 +195,20 @@ export const merge = publicProcedure
 
 					// 3. Handle record relations (non-hierarchical relationships)
 					const recordRelationsRows = await tx.query.recordRelations.findMany({
-						where: or(
-							eq(recordRelations.sourceId, sourceId),
-							eq(recordRelations.targetId, sourceId),
-							eq(recordRelations.sourceId, targetId),
-							eq(recordRelations.targetId, targetId)
-						),
+						where: {
+							OR: [
+								{
+									sourceId: {
+										in: ids,
+									},
+								},
+								{
+									targetId: {
+										in: ids,
+									},
+								},
+							],
+						},
 					});
 
 					// Delete all relations involving either record
@@ -239,12 +252,20 @@ export const merge = publicProcedure
 
 					// 4. Handle record creators
 					const recordCreatorsRows = await tx.query.recordCreators.findMany({
-						where: or(
-							eq(recordCreators.recordId, sourceId),
-							eq(recordCreators.recordId, targetId),
-							eq(recordCreators.creatorId, sourceId),
-							eq(recordCreators.creatorId, targetId)
-						),
+						where: {
+							OR: [
+								{
+									recordId: {
+										in: ids,
+									},
+								},
+								{
+									creatorId: {
+										in: ids,
+									},
+								},
+							],
+						},
 					});
 
 					// Delete all creator relationships involving either record

@@ -1,6 +1,5 @@
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
-import { desc, isNotNull } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { githubRepositories, type GithubRepositoryInsert } from '@/server/db/schema/github';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
@@ -25,8 +24,17 @@ async function getMostRecentStarredAt(): Promise<Date | null> {
 		columns: {
 			starredAt: true,
 		},
-		where: isNotNull(githubRepositories.starredAt),
-		orderBy: desc(githubRepositories.starredAt),
+		where: {
+			starredAt: {
+				isNotNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
+		orderBy: {
+			starredAt: 'desc',
+		},
 	});
 
 	return result?.starredAt ?? null;

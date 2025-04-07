@@ -1,4 +1,3 @@
-import { and, eq } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
 import { SIMILARITY_THRESHOLD } from '../common';
 import { SearchRecordsInputSchema } from '../records.types';
@@ -12,17 +11,17 @@ export const search = publicProcedure
 			limit,
 		} = input;
 		return db.query.records.findMany({
-			where: (records, { sql }) =>
-				and(
+			where: {
+				RAW: (records, { sql }) =>
 					sql`(
-			${records.title} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-			${records.content} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-			${records.notes} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-			${records.summary} <-> ${query} < ${SIMILARITY_THRESHOLD}
-		)`,
-					isFormat ? eq(records.isFormat, true) : undefined,
-					isIndexNode ? eq(records.isIndexNode, true) : undefined
-				),
+						${records.title} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
+						${records.content} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
+						${records.notes} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
+						${records.summary} <-> ${query} < ${SIMILARITY_THRESHOLD}
+					)`,
+				isFormat,
+				isIndexNode,
+			},
 			limit,
 			orderBy: (records, { desc, sql }) => [
 				sql`LEAST(

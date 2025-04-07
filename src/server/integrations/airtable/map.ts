@@ -1,10 +1,9 @@
-import { and, eq, inArray, isNull, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
 	airtableAttachments,
 	airtableCreators,
-	airtableExtractConnections,
 	airtableExtracts,
 	airtableFormats,
 	airtableSpaces,
@@ -62,7 +61,14 @@ export async function createRecordsFromAirtableFormats() {
 	logger.start('Creating records from Airtable formats');
 
 	const formats = await db.query.airtableFormats.findMany({
-		where: and(isNull(airtableFormats.recordId), isNull(airtableFormats.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			extracts: {
 				columns: {
@@ -142,9 +148,15 @@ export async function createRecordsFromAirtableCreators() {
 	logger.start('Creating records from Airtable creators');
 
 	const creators = await db.query.airtableCreators.findMany({
-		where: and(isNull(airtableCreators.recordId), isNull(airtableCreators.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 	});
-
 	if (creators.length === 0) {
 		logger.skip('No new Airtable creators to process');
 		return;
@@ -214,9 +226,15 @@ export async function createRecordsFromAirtableSpaces() {
 	logger.start('Creating records from Airtable spaces');
 
 	const spaces = await db.query.airtableSpaces.findMany({
-		where: and(isNull(airtableSpaces.recordId), isNull(airtableSpaces.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 	});
-
 	if (spaces.length === 0) {
 		logger.skip('No new Airtable spaces to process');
 		return;
@@ -286,7 +304,14 @@ export async function createMediaFromAirtableAttachments() {
 	logger.start('Creating media from Airtable attachments');
 
 	const attachments = await db.query.airtableAttachments.findMany({
-		where: and(isNull(airtableAttachments.mediaId), isNull(airtableAttachments.deletedAt)),
+		where: {
+			mediaId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			extract: true,
 		},
@@ -376,31 +401,22 @@ export async function createRecordsFromAirtableExtracts() {
 	logger.start('Creating records from Airtable extracts');
 
 	const extracts = await db.query.airtableExtracts.findMany({
-		where: and(isNull(airtableExtracts.recordId), isNull(airtableExtracts.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			format: true,
 			attachments: true,
-			extractCreators: {
-				with: {
-					creator: true,
-				},
-			},
-			extractSpaces: {
-				with: {
-					space: true,
-				},
-			},
+			creators: true,
+			spaces: true,
 			parent: true,
-			outgoingConnections: {
-				with: {
-					toExtract: true,
-				},
-			},
-			incomingConnections: {
-				with: {
-					fromExtract: true,
-				},
-			},
+			outgoingConnections: true,
+			incomingConnections: true,
 		},
 	});
 
@@ -461,22 +477,22 @@ export async function createRecordsFromAirtableExtracts() {
 		}
 
 		// Prepare creator links
-		for (const creator of extract.extractCreators) {
-			if (creator.creator.recordId) {
+		for (const creator of extract.creators) {
+			if (creator.recordId) {
 				recordCreatorsValues.push({
 					recordId: insertedRecord.id,
-					creatorId: creator.creator.recordId,
+					creatorId: creator.recordId,
 					creatorRole: 'creator',
 				});
 			}
 		}
 
 		// Prepare space links
-		for (const space of extract.extractSpaces) {
-			if (space.space.recordId) {
+		for (const space of extract.spaces) {
+			if (space.recordId) {
 				recordRelationsValues.push({
 					sourceId: insertedRecord.id,
-					targetId: space.space.recordId,
+					targetId: space.recordId,
 					type: 'tagged',
 				});
 			}
@@ -484,10 +500,10 @@ export async function createRecordsFromAirtableExtracts() {
 
 		// Prepare outgoing connection links
 		for (const connection of extract.outgoingConnections) {
-			if (connection.toExtract.recordId) {
+			if (connection.recordId) {
 				recordRelationsValues.push({
 					sourceId: insertedRecord.id,
-					targetId: connection.toExtract.recordId,
+					targetId: connection.recordId,
 					type: 'related_to',
 				});
 			}
@@ -495,9 +511,9 @@ export async function createRecordsFromAirtableExtracts() {
 
 		// Prepare incoming connection links
 		for (const connection of extract.incomingConnections) {
-			if (connection.fromExtract.recordId) {
+			if (connection.recordId) {
 				recordRelationsValues.push({
-					sourceId: connection.fromExtract.recordId,
+					sourceId: connection.recordId,
 					targetId: insertedRecord.id,
 					type: 'related_to',
 				});
@@ -526,7 +542,9 @@ export async function createRecordsFromAirtableExtracts() {
 			let parentRecordId = recordMap.get(extract.parentId);
 			if (!parentRecordId) {
 				const parentExtract = await db.query.airtableExtracts.findFirst({
-					where: eq(airtableExtracts.id, extract.parentId),
+					where: {
+						id: extract.parentId,
+					},
 					columns: { recordId: true },
 				});
 				parentRecordId = parentExtract?.recordId ?? undefined;
@@ -562,10 +580,20 @@ export async function createConnectionsBetweenRecords(updatedIds?: string[]) {
 			toExtract: true,
 		},
 		where: updatedIds
-			? or(
-					inArray(airtableExtractConnections.fromExtractId, updatedIds),
-					inArray(airtableExtractConnections.toExtractId, updatedIds)
-				)
+			? {
+					OR: [
+						{
+							fromExtractId: {
+								in: updatedIds,
+							},
+						},
+						{
+							toExtractId: {
+								in: updatedIds,
+							},
+						},
+					],
+				}
 			: undefined,
 	});
 

@@ -1,7 +1,6 @@
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';
-import { desc, eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import {
 	githubCommitChanges,
@@ -39,13 +38,17 @@ async function getMostRecentCommitDate(): Promise<Date | null> {
 	// Get latest commit based on committer date (reflects push/merge activity)
 	const latestByCommitter = await db.query.githubCommits.findFirst({
 		columns: { committedAt: true },
-		orderBy: desc(githubCommits.committedAt),
+		orderBy: {
+			committedAt: 'desc',
+		},
 	});
 
 	// Get latest commit based on content created date (author date)
 	const latestByAuthor = await db.query.githubCommits.findFirst({
 		columns: { contentCreatedAt: true },
-		orderBy: desc(githubCommits.contentCreatedAt),
+		orderBy: {
+			contentCreatedAt: 'desc',
+		},
 	});
 
 	const latestCommitterTime = latestByCommitter?.committedAt
@@ -99,7 +102,9 @@ async function ensureRepositoryExists(
 		columns: {
 			starredAt: true,
 		},
-		where: eq(githubRepositories.id, repoData.id),
+		where: {
+			id: repoData.id,
+		},
 	});
 
 	// Insert or update the repository
@@ -190,7 +195,9 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 							id: true,
 							sha: true,
 						},
-						where: eq(githubCommits.sha, item.sha),
+						where: {
+							sha: item.sha,
+						},
 					});
 
 					if (existingCommit) {

@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import {
 	media,
@@ -51,7 +51,14 @@ export async function createRecordsFromTwitterUsers() {
 	logger.start('Creating records from Twitter users');
 
 	const users = await db.query.twitterUsers.findMany({
-		where: and(isNull(twitterUsers.recordId), isNull(twitterUsers.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 	});
 
 	if (users.length === 0) {
@@ -127,7 +134,14 @@ export async function createRecordsFromTweets() {
 	logger.start('Creating records from Twitter tweets');
 
 	const tweets = await db.query.twitterTweets.findMany({
-		where: and(isNull(twitterTweets.recordId), isNull(twitterTweets.deletedAt)),
+		where: {
+			recordId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: { user: true, media: true, quotedTweet: true },
 	});
 
@@ -204,7 +218,14 @@ export async function linkQuotedTweets(tweetIds: string[]) {
 	logger.start('Linking quoted tweets');
 
 	const tweetsWithQuotes = await db.query.twitterTweets.findMany({
-		where: and(inArray(twitterTweets.id, tweetIds), isNotNull(twitterTweets.quotedTweetId)),
+		where: {
+			id: {
+				in: tweetIds,
+			},
+			quotedTweetId: {
+				isNotNull: true,
+			},
+		},
 		with: { quotedTweet: true },
 	});
 
@@ -284,7 +305,14 @@ export async function createMediaFromTweets() {
 	logger.start('Creating media from Twitter tweets');
 
 	const mediaWithTweets = await db.query.twitterMedia.findMany({
-		where: and(isNull(twitterMedia.mediaId), isNull(twitterMedia.deletedAt)),
+		where: {
+			mediaId: {
+				isNull: true,
+			},
+			deletedAt: {
+				isNull: true,
+			},
+		},
 		with: {
 			tweet: true,
 		},
