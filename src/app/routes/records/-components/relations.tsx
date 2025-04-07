@@ -111,7 +111,7 @@ export const RecordLink = ({
 
 	return (
 		<div className={cn('flex items-center gap-1', className)}>
-			<TypeIcon className="text-rcr-symbol" />
+			<TypeIcon className="text-c-symbol" />
 			<div className="flex grow items-center gap-1">
 				<Link
 					className="line-clamp-1"
@@ -121,11 +121,11 @@ export const RecordLink = ({
 					{label}
 				</Link>
 				{abbreviation && <span>({abbreviation})</span>}
-				{sense && <em className="text-rcr-secondary">{sense}</em>}
+				{sense && <em className="text-c-secondary">{sense}</em>}
 			</div>
 			{url && options.showExternalLink && (
 				<ExternalLink
-					className="rounded-sm bg-rcr-tint px-2 text-xs whitespace-nowrap text-rcr-secondary"
+					className="rounded-sm bg-c-mist px-2 text-xs whitespace-nowrap text-c-secondary"
 					href={url}
 				>
 					{new URL(url).hostname}

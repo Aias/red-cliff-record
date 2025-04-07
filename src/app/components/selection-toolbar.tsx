@@ -32,7 +32,7 @@ export function SelectionActions({
 
 	return (
 		<div role="toolbar" className={cn('flex items-center gap-2', className)} {...props}>
-			<span className="grow text-sm text-rcr-secondary">{selectedCount} selected</span>
+			<span className="grow text-sm text-c-secondary">{selectedCount} selected</span>
 			{selectedCount === 0 ? (
 				<Button onClick={() => onSelectAll()}>Select All</Button>
 			) : (

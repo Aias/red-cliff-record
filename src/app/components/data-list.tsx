@@ -151,42 +151,15 @@ DataListItem.displayName = 'DataList.Item';
 //
 // 4) LABEL STYLES & COMPONENT
 //
-// - By default, label uses text-rcr-secondary. If `contrast` is true, use text-rcr-display.
-// - If `accent` is true, apply the “themed” class (which presumably sets accent variables).
-//
-const dataListLabelVariants = cva('m-0', {
-	variants: {
-		accent: {
-			true: 'themed',
-			false: '',
-		},
-		contrast: {
-			true: 'text-rcr-display', // high contrast text
-			false: 'text-rcr-secondary', // default label color
-		},
-	},
-	defaultVariants: {
-		accent: false,
-		contrast: false,
-	},
-});
 
-interface DataListLabelProps
-	extends React.HTMLAttributes<HTMLElement>,
-		VariantProps<typeof dataListLabelVariants> {
+interface DataListLabelProps extends React.HTMLAttributes<HTMLElement> {
 	asChild?: boolean;
 }
 
 const DataListLabel = React.forwardRef<HTMLElement, DataListLabelProps>(
-	({ className, accent, contrast, asChild = false, ...props }, ref) => {
+	({ asChild = false, ...props }, ref) => {
 		const Comp = asChild ? Slot : 'dt';
-		return (
-			<Comp
-				ref={ref}
-				className={cn(dataListLabelVariants({ accent, contrast }), className)}
-				{...props}
-			/>
-		);
+		return <Comp ref={ref} {...props} />;
 	}
 );
 DataListLabel.displayName = 'DataList.Label';
@@ -194,42 +167,15 @@ DataListLabel.displayName = 'DataList.Label';
 //
 // 5) VALUE STYLES & COMPONENT
 //
-// - By default, value uses text-rcr-primary. If `contrast` is true, text-rcr-display.
-// - Also allow `accent` => “themed” class.
-//
-const dataListValueVariants = cva('m-0 min-w-0', {
-	variants: {
-		accent: {
-			true: 'themed',
-			false: '',
-		},
-		contrast: {
-			true: 'text-rcr-display',
-			false: 'text-rcr-primary',
-		},
-	},
-	defaultVariants: {
-		accent: false,
-		contrast: false,
-	},
-});
 
-interface DataListValueProps
-	extends React.HTMLAttributes<HTMLElement>,
-		VariantProps<typeof dataListValueVariants> {
+interface DataListValueProps extends React.HTMLAttributes<HTMLElement> {
 	asChild?: boolean;
 }
 
 const DataListValue = React.forwardRef<HTMLElement, DataListValueProps>(
-	({ className, accent, contrast, asChild = false, ...props }, ref) => {
+	({ asChild = false, ...props }, ref) => {
 		const Comp = asChild ? Slot : 'dd';
-		return (
-			<Comp
-				ref={ref}
-				className={cn(dataListValueVariants({ accent, contrast }), className)}
-				{...props}
-			/>
-		);
+		return <Comp ref={ref} {...props} />;
 	}
 );
 DataListValue.displayName = 'DataList.Value';

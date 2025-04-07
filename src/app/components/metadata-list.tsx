@@ -43,7 +43,7 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
 		if (value instanceof Date) return value.toLocaleString();
 		if (value instanceof Object) {
 			return (
-				<pre className="block text-[0.875em] break-all whitespace-pre-wrap text-rcr-secondary">
+				<pre className="block text-[0.875em] break-all whitespace-pre-wrap text-c-secondary">
 					{JSON.stringify(value, null, 2)}
 				</pre>
 			);
@@ -70,13 +70,13 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
 									{formatValue(value)}
 								</div>
 								{copiedKey === key ? (
-									<div className="absolute top-0 right-0 text-xs text-rcr-hint">Copied!</div>
+									<div className="absolute top-0 right-0 text-xs text-c-hint">Copied!</div>
 								) : (
-									<CopyIcon className="absolute right-0 text-rcr-hint opacity-0 transition-opacity group-hover:opacity-100" />
+									<CopyIcon className="absolute right-0 text-c-hint opacity-0 transition-opacity group-hover:opacity-100" />
 								)}
 							</div>
 						) : (
-							<span className="text-rcr-hint">—</span>
+							<span className="text-c-hint">—</span>
 						)}
 					</DataListValue>
 				</DataListItem>
@@ -104,9 +104,9 @@ export const MetadataDialogButton: React.FC<MetadataDialogButtonProps> = ({
 				<Button {...buttonProps}>{buttonText}</Button>
 			</DialogTrigger>
 			<DialogContent className="flex max-h-[90vh] max-w-[75vw] flex-col overflow-hidden px-0 py-5">
-				<DialogHeader className="mb-3 border-b border-rcr-divider px-5 pb-3">
+				<DialogHeader className="mb-3 border-b border-c-divider px-5 pb-3">
 					<DialogTitle className="mb-0.5">Metadata</DialogTitle>
-					<DialogDescription className="text-rcr-secondary">{description}</DialogDescription>
+					<DialogDescription className="text-c-secondary">{description}</DialogDescription>
 				</DialogHeader>
 				<ScrollArea className="px-5">
 					<MetadataList metadata={metadata} />

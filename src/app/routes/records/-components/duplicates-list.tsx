@@ -85,11 +85,11 @@ export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
 									{identifier}
 								</Link>
 								{abbreviation && <span>({abbreviation})</span>}
-								{sense && <em className="text-rcr-secondary">{sense}</em>}
+								{sense && <em className="text-c-secondary">{sense}</em>}
 							</div>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<Badge className="before:mr-[0.15ch] before:text-rcr-hint before:content-['#']">
+									<Badge className="before:mr-[0.15ch] before:text-c-hint before:content-['#']">
 										<span>{id}</span>
 										<ul className="ml-2 flex items-center gap-1.5 text-[0.875em]">
 											{sources?.map((source) => (
@@ -108,11 +108,11 @@ export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
 								</DropdownMenuContent>
 							</DropdownMenu>
 						</div>
-						<p className="line-clamp-2 text-xs text-rcr-secondary">{description}</p>
-						<div className="flex items-center justify-around gap-2 rounded-md border border-border bg-rcr-tint px-3 py-1 text-xs font-medium">
+						<p className="line-clamp-2 text-xs text-c-secondary">{description}</p>
+						<div className="flex items-center justify-around gap-2 rounded-md border border-border bg-c-mist px-3 py-1 text-xs font-medium">
 							{type && (
 								<span className="flex items-center gap-1 capitalize">
-									{<TypeIcon className="text-rcr-symbol" />}
+									{<TypeIcon className="text-c-symbol" />}
 									<span>{type}</span>
 								</span>
 							)}

@@ -72,7 +72,7 @@ function RouteComponent() {
 				<div className="flex shrink-0 grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-border py-3">
 					<header className="flex items-center justify-between px-3">
 						<h2 className="text-lg font-medium">
-							Records <span className="text-sm text-rcr-secondary">({recordsList.length})</span>
+							Records <span className="text-sm text-c-secondary">({recordsList.length})</span>
 						</h2>
 						<Link to="/records" search={true} className="text-sm">
 							Index

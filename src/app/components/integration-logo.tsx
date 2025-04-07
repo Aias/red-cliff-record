@@ -11,16 +11,11 @@ import readwiseLogo from './logos/readwise.svg?url';
 import xLogoDark from './logos/x_dark.svg?url';
 import xLogoLight from './logos/x_light.svg?url';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-
 interface IntegrationLogoProps extends Omit<AvatarProps, 'src' | 'fallback'> {
 	integration: IntegrationType;
 }
 
-export function IntegrationLogo({
-	integration: service,
-	className,
-	...props
-}: IntegrationLogoProps) {
+export function IntegrationLogo({ integration: service, ...props }: IntegrationLogoProps) {
 	const { theme } = useLoaderData({
 		from: '__root__',
 	});
@@ -57,7 +52,6 @@ export function IntegrationLogo({
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<Avatar
-						className={className}
 						src={logoUrl}
 						fallback={service.charAt(0).toUpperCase()}
 						themed={false}

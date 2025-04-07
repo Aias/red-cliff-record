@@ -3,136 +3,259 @@
 	--black: #000;
 	--transparent: transparent;
 
-	--flexoki-base-50: #f2f0e5;
-	--flexoki-base-100: #e6e4d9;
-	--flexoki-base-150: #dad8ce;
-	--flexoki-base-200: #cecdc3;
-	--flexoki-base-300: #b7b5ac;
-	--flexoki-base-400: #9f9d96;
-	--flexoki-base-500: #878580;
-	--flexoki-base-600: #6f6e69;
-	--flexoki-base-700: #575653;
-	--flexoki-base-800: #403e3c;
-	--flexoki-base-850: #343331;
-	--flexoki-base-900: #282726;
-	--flexoki-base-950: #1c1b1a;
+	/* Radix Jade */
+	--radix-jade-1: light-dark(#fbfefd, #0d1512);
+	--radix-jade-2: light-dark(#f4fbf7, #121c18);
+	--radix-jade-3: light-dark(#e6f7ed, #0f2e22);
+	--radix-jade-4: light-dark(#d6f1e3, #0b3b2c);
+	--radix-jade-5: light-dark(#c3e9d7, #114837);
+	--radix-jade-6: light-dark(#acdec8, #1b5745);
+	--radix-jade-7: light-dark(#8bceb6, #246854);
+	--radix-jade-8: light-dark(#56ba9f, #2a7e68);
+	--radix-jade-9: light-dark(#29a383, #29a383);
+	--radix-jade-10: light-dark(#26997b, #27b08b);
+	--radix-jade-11: light-dark(#208368, #1fd8a4);
+	--radix-jade-12: light-dark(#1d3b31, #adf0d4);
 
-	--flexoki-red-50: #ffe1d5;
-	--flexoki-red-100: #ffcabb;
-	--flexoki-red-150: #fdb2a2;
-	--flexoki-red-200: #f89a8a;
-	--flexoki-red-300: #e8705f;
-	--flexoki-red-400: #d14d41;
-	--flexoki-red-500: #c03e35;
-	--flexoki-red-600: #af3029;
-	--flexoki-red-700: #942822;
-	--flexoki-red-800: #6c201c;
-	--flexoki-red-850: #551b18;
-	--flexoki-red-900: #3e1715;
-	--flexoki-red-950: #261312;
+	--radix-jade-a1: light-dark(#00c08004, #00de4505);
+	--radix-jade-a2: light-dark(#00a3460b, #27fba60c);
+	--radix-jade-a3: light-dark(#00ae4819, #02f99920);
+	--radix-jade-a4: light-dark(#00a85129, #00ffaa2d);
+	--radix-jade-a5: light-dark(#00a2553c, #11ffb63b);
+	--radix-jade-a6: light-dark(#009a5753, #34ffc24b);
+	--radix-jade-a7: light-dark(#00945f74, #45fdc75e);
+	--radix-jade-a8: light-dark(#00976ea9, #48ffcf75);
+	--radix-jade-a9: light-dark(#00916bd6, #38feca9d);
+	--radix-jade-a10: light-dark(#008764d9, #31fec7ab);
+	--radix-jade-a11: light-dark(#007152df, #21fec0d6);
+	--radix-jade-a12: light-dark(#002217e2, #b8ffe1ef);
 
-	--flexoki-orange-50: #ffe7ce;
-	--flexoki-orange-100: #fed3af;
-	--flexoki-orange-150: #fcc192;
-	--flexoki-orange-200: #f9ae77;
-	--flexoki-orange-300: #ec8b49;
-	--flexoki-orange-400: #da702c;
-	--flexoki-orange-500: #cb6120;
-	--flexoki-orange-600: #bc5215;
-	--flexoki-orange-700: #9d4310;
-	--flexoki-orange-800: #71320d;
-	--flexoki-orange-850: #59290d;
-	--flexoki-orange-900: #40200d;
-	--flexoki-orange-950: #27180e;
+	/* Radix Sage */
+	--radix-sage-1: light-dark(#fbfdfc, #101211);
+	--radix-sage-2: light-dark(#f7f9f8, #171918);
+	--radix-sage-3: light-dark(#eef1f0, #202221);
+	--radix-sage-4: light-dark(#e6e9e8, #272a29);
+	--radix-sage-5: light-dark(#dfe2e0, #2e3130);
+	--radix-sage-6: light-dark(#d7dad9, #373b39);
+	--radix-sage-7: light-dark(#cbcfcd, #444947);
+	--radix-sage-8: light-dark(#b8bcba, #5b625f);
+	--radix-sage-9: light-dark(#868e8b, #63706b);
+	--radix-sage-10: light-dark(#7c8481, #717d79);
+	--radix-sage-11: light-dark(#5f6563, #adb5b2);
+	--radix-sage-12: light-dark(#1a211e, #eceeed);
 
-	--flexoki-yellow-50: #faeec6;
-	--flexoki-yellow-100: #f6e2a0;
-	--flexoki-yellow-150: #f1d67e;
-	--flexoki-yellow-200: #eccb60;
-	--flexoki-yellow-300: #dfb431;
-	--flexoki-yellow-400: #d0a215;
-	--flexoki-yellow-500: #be9207;
-	--flexoki-yellow-600: #ad8301;
-	--flexoki-yellow-700: #8e6b01;
-	--flexoki-yellow-800: #664d01;
-	--flexoki-yellow-850: #503d02;
-	--flexoki-yellow-900: #3a2d04;
-	--flexoki-yellow-950: #241e08;
-
-	--flexoki-green-50: #edeecf;
-	--flexoki-green-100: #dde2b2;
-	--flexoki-green-150: #cdd597;
-	--flexoki-green-200: #bec97e;
-	--flexoki-green-300: #a0af54;
-	--flexoki-green-400: #879a39;
-	--flexoki-green-500: #768d21;
-	--flexoki-green-600: #66800b;
-	--flexoki-green-700: #536907;
-	--flexoki-green-800: #3d4c07;
-	--flexoki-green-850: #313d07;
-	--flexoki-green-900: #252d09;
-	--flexoki-green-950: #1a1e0c;
-
-	--flexoki-cyan-50: #ddf1e4;
-	--flexoki-cyan-100: #bfe8d9;
-	--flexoki-cyan-150: #a2dece;
-	--flexoki-cyan-200: #87d3c3;
-	--flexoki-cyan-300: #5abdac;
-	--flexoki-cyan-400: #3aa99f;
-	--flexoki-cyan-500: #2f968d;
-	--flexoki-cyan-600: #24837b;
-	--flexoki-cyan-700: #1c6c66;
-	--flexoki-cyan-800: #164f4a;
-	--flexoki-cyan-850: #143f3c;
-	--flexoki-cyan-900: #122f2c;
-	--flexoki-cyan-950: #101f1d;
-
-	--flexoki-blue-50: #e1eceb;
-	--flexoki-blue-100: #c6dde8;
-	--flexoki-blue-150: #abcfe2;
-	--flexoki-blue-200: #92bfdb;
-	--flexoki-blue-300: #66a0c8;
-	--flexoki-blue-400: #4385be;
-	--flexoki-blue-500: #3171b2;
-	--flexoki-blue-600: #205ea6;
-	--flexoki-blue-700: #1a4f8c;
-	--flexoki-blue-800: #163b66;
-	--flexoki-blue-850: #133051;
-	--flexoki-blue-900: #12253b;
-	--flexoki-blue-950: #101a24;
-
-	--flexoki-purple-50: #f0eaec;
-	--flexoki-purple-100: #e2d9e9;
-	--flexoki-purple-150: #d3cae6;
-	--flexoki-purple-200: #c4b9e0;
-	--flexoki-purple-300: #a699d0;
-	--flexoki-purple-400: #8b7ec8;
-	--flexoki-purple-500: #735eb5;
-	--flexoki-purple-600: #5e409d;
-	--flexoki-purple-700: #4f3685;
-	--flexoki-purple-800: #3c2a62;
-	--flexoki-purple-850: #31234e;
-	--flexoki-purple-900: #261c39;
-	--flexoki-purple-950: #1a1623;
-
-	--flexoki-magenta-50: #fee4e5;
-	--flexoki-magenta-100: #fccfda;
-	--flexoki-magenta-150: #f9b9cf;
-	--flexoki-magenta-200: #f4a4c2;
-	--flexoki-magenta-300: #e47da8;
-	--flexoki-magenta-400: #ce5d97;
-	--flexoki-magenta-500: #b74583;
-	--flexoki-magenta-600: #a02f6f;
-	--flexoki-magenta-700: #87285e;
-	--flexoki-magenta-800: #641f46;
-	--flexoki-magenta-850: #4f1b39;
-	--flexoki-magenta-900: #39172b;
-	--flexoki-magenta-950: #24131d;
+	--radix-sage-a1: light-dark(#00804004, #00000000);
+	--radix-sage-a2: light-dark(#00402008, #f0f2f108);
+	--radix-sage-a3: light-dark(#002d1e11, #f3f5f412);
+	--radix-sage-a4: light-dark(#001f1519, #f2fefd1a);
+	--radix-sage-a5: light-dark(#00180820, #f1fbfa22);
+	--radix-sage-a6: light-dark(#00140d28, #edfbf42d);
+	--radix-sage-a7: light-dark(#00140a34, #edfcf73c);
+	--radix-sage-a8: light-dark(#000f0847, #ebfdf657);
+	--radix-sage-a9: light-dark(#00110b79, #dffdf266);
+	--radix-sage-a10: light-dark(#00100a83, #e5fdf674);
+	--radix-sage-a11: light-dark(#000a07a0, #f4fefbb0);
+	--radix-sage-a12: light-dark(#000805e5, #fdfffeed);
 }
 
 @supports (color: color(display-p3 1 1 1)) {
 	:root {
 		--white: color(display-p3 1 1 1);
 		--black: color(display-p3 0 0 0);
+
+		/* Radix Jade P3 */
+		--radix-jade-1: light-dark(
+			color(display-p3 0.986 0.996 0.992),
+			color(display-p3 0.059 0.083 0.071)
+		);
+		--radix-jade-2: light-dark(
+			color(display-p3 0.962 0.983 0.969),
+			color(display-p3 0.078 0.11 0.094)
+		);
+		--radix-jade-3: light-dark(
+			color(display-p3 0.912 0.965 0.932),
+			color(display-p3 0.091 0.176 0.138)
+		);
+		--radix-jade-4: light-dark(
+			color(display-p3 0.858 0.941 0.893),
+			color(display-p3 0.102 0.228 0.177)
+		);
+		--radix-jade-5: light-dark(
+			color(display-p3 0.795 0.909 0.847),
+			color(display-p3 0.133 0.279 0.221)
+		);
+		--radix-jade-6: light-dark(
+			color(display-p3 0.715 0.864 0.791),
+			color(display-p3 0.174 0.334 0.273)
+		);
+		--radix-jade-7: light-dark(
+			color(display-p3 0.603 0.802 0.718),
+			color(display-p3 0.219 0.402 0.335)
+		);
+		--radix-jade-8: light-dark(
+			color(display-p3 0.44 0.72 0.629),
+			color(display-p3 0.263 0.488 0.411)
+		);
+		--radix-jade-9: light-dark(
+			color(display-p3 0.319 0.63 0.521),
+			color(display-p3 0.319 0.63 0.521)
+		);
+		--radix-jade-10: light-dark(
+			color(display-p3 0.299 0.592 0.488),
+			color(display-p3 0.338 0.68 0.555)
+		);
+		--radix-jade-11: light-dark(color(display-p3 0.15 0.5 0.37), color(display-p3 0.4 0.835 0.656));
+		--radix-jade-12: light-dark(
+			color(display-p3 0.142 0.229 0.194),
+			color(display-p3 0.734 0.934 0.838)
+		);
+
+		--radix-jade-a1: light-dark(
+			color(display-p3 0.024 0.757 0.514 / 0.016),
+			color(display-p3 0 0.992 0.298 / 0.017)
+		);
+		--radix-jade-a2: light-dark(
+			color(display-p3 0.024 0.612 0.22 / 0.04),
+			color(display-p3 0.318 0.988 0.651 / 0.047)
+		);
+		--radix-jade-a3: light-dark(
+			color(display-p3 0.012 0.596 0.235 / 0.087),
+			color(display-p3 0.267 1 0.667 / 0.118)
+		);
+		--radix-jade-a4: light-dark(
+			color(display-p3 0.008 0.588 0.255 / 0.142),
+			color(display-p3 0.275 0.996 0.702 / 0.173)
+		);
+		--radix-jade-a5: light-dark(
+			color(display-p3 0.004 0.561 0.251 / 0.204),
+			color(display-p3 0.361 1 0.741 / 0.227)
+		);
+		--radix-jade-a6: light-dark(
+			color(display-p3 0.004 0.525 0.278 / 0.287),
+			color(display-p3 0.439 1 0.796 / 0.286)
+		);
+		--radix-jade-a7: light-dark(
+			color(display-p3 0.004 0.506 0.29 / 0.397),
+			color(display-p3 0.49 1 0.804 / 0.362)
+		);
+		--radix-jade-a8: light-dark(
+			color(display-p3 0 0.506 0.337 / 0.561),
+			color(display-p3 0.506 1 0.835 / 0.45)
+		);
+		--radix-jade-a9: light-dark(
+			color(display-p3 0 0.459 0.298 / 0.683),
+			color(display-p3 0.478 0.996 0.816 / 0.606)
+		);
+		--radix-jade-a10: light-dark(
+			color(display-p3 0 0.42 0.271 / 0.702),
+			color(display-p3 0.478 1 0.816 / 0.656)
+		);
+		--radix-jade-a11: light-dark(
+			color(display-p3 0.15 0.5 0.37),
+			color(display-p3 0.4 0.835 0.656)
+		);
+		--radix-jade-a12: light-dark(
+			color(display-p3 0.142 0.229 0.194),
+			color(display-p3 0.734 0.934 0.838)
+		);
+
+		/* Radix Sage P3 */
+		--radix-sage-1: light-dark(
+			color(display-p3 0.986 0.992 0.988),
+			color(display-p3 0.064 0.07 0.067)
+		);
+		--radix-sage-2: light-dark(
+			color(display-p3 0.97 0.977 0.974),
+			color(display-p3 0.092 0.098 0.094)
+		);
+		--radix-sage-3: light-dark(
+			color(display-p3 0.935 0.944 0.94),
+			color(display-p3 0.128 0.135 0.131)
+		);
+		--radix-sage-4: light-dark(
+			color(display-p3 0.904 0.913 0.909),
+			color(display-p3 0.155 0.164 0.159)
+		);
+		--radix-sage-5: light-dark(
+			color(display-p3 0.875 0.885 0.88),
+			color(display-p3 0.183 0.193 0.188)
+		);
+		--radix-sage-6: light-dark(
+			color(display-p3 0.844 0.854 0.849),
+			color(display-p3 0.218 0.23 0.224)
+		);
+		--radix-sage-7: light-dark(
+			color(display-p3 0.8 0.811 0.806),
+			color(display-p3 0.269 0.285 0.277)
+		);
+		--radix-sage-8: light-dark(
+			color(display-p3 0.725 0.738 0.732),
+			color(display-p3 0.362 0.382 0.373)
+		);
+		--radix-sage-9: light-dark(
+			color(display-p3 0.531 0.556 0.546),
+			color(display-p3 0.398 0.438 0.421)
+		);
+		--radix-sage-10: light-dark(
+			color(display-p3 0.492 0.515 0.506),
+			color(display-p3 0.453 0.49 0.474)
+		);
+		--radix-sage-11: light-dark(
+			color(display-p3 0.377 0.395 0.389),
+			color(display-p3 0.685 0.709 0.697)
+		);
+		--radix-sage-12: light-dark(
+			color(display-p3 0.107 0.129 0.118),
+			color(display-p3 0.927 0.933 0.93)
+		);
+
+		--radix-sage-a1: light-dark(
+			color(display-p3 0.024 0.514 0.267 / 0.016),
+			color(display-p3 0 0 0 / 0)
+		);
+		--radix-sage-a2: light-dark(
+			color(display-p3 0.02 0.267 0.145 / 0.032),
+			color(display-p3 0.976 0.988 0.984 / 0.03)
+		);
+		--radix-sage-a3: light-dark(
+			color(display-p3 0.008 0.184 0.125 / 0.067),
+			color(display-p3 0.992 0.945 0.941 / 0.072)
+		);
+		--radix-sage-a4: light-dark(
+			color(display-p3 0.012 0.094 0.051 / 0.095),
+			color(display-p3 0.988 0.996 0.992 / 0.102)
+		);
+		--radix-sage-a5: light-dark(
+			color(display-p3 0.008 0.098 0.035 / 0.126),
+			color(display-p3 0.992 1 0.996 / 0.131)
+		);
+		--radix-sage-a6: light-dark(
+			color(display-p3 0.004 0.078 0.027 / 0.157),
+			color(display-p3 0.973 1 0.976 / 0.173)
+		);
+		--radix-sage-a7: light-dark(
+			color(display-p3 0 0.059 0.039 / 0.2),
+			color(display-p3 0.957 1 0.976 / 0.233)
+		);
+		--radix-sage-a8: light-dark(
+			color(display-p3 0.004 0.047 0.031 / 0.275),
+			color(display-p3 0.957 1 0.984 / 0.334)
+		);
+		--radix-sage-a9: light-dark(
+			color(display-p3 0.004 0.059 0.035 / 0.471),
+			color(display-p3 0.902 1 0.957 / 0.397)
+		);
+		--radix-sage-a10: light-dark(
+			color(display-p3 0 0.047 0.031 / 0.51),
+			color(display-p3 0.929 1 0.973 / 0.452)
+		);
+		--radix-sage-a11: light-dark(
+			color(display-p3 0 0.031 0.02 / 0.624),
+			color(display-p3 0.969 1 0.988 / 0.688)
+		);
+		--radix-sage-a12: light-dark(
+			color(display-p3 0 0.027 0.012 / 0.895),
+			color(display-p3 0.992 1 0.996 / 0.929)
+		);
 	}
 }

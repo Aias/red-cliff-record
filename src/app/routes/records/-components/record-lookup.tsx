@@ -125,7 +125,7 @@ export function RecordLookup({ defaultRecord, onRecordSelected, handleSearch }: 
 										<span className="flex flex-1 flex-wrap gap-1 leading-none">
 											<span>{record.title ?? 'Untitled'}</span>
 											{record.abbreviation && <span>({record.abbreviation})</span>}
-											{record.sense && <em className="text-rcr-secondary">{record.sense}</em>}
+											{record.sense && <em className="text-c-secondary">{record.sense}</em>}
 										</span>
 										{selectedRecord?.id === record.id && <CheckIcon className="ml-auto" />}
 									</CommandItem>

@@ -14,7 +14,7 @@ function GhostInput({ className, type, ...props }: React.ComponentProps<'input'>
 			className={cn(
 				'm-0 w-full border-none bg-transparent p-0 text-inherit outline-none',
 				'transition-colors',
-				'placeholder:text-rcr-hint disabled:opacity-50',
+				'placeholder:text-c-hint disabled:opacity-50',
 				className
 			)}
 			{...props}

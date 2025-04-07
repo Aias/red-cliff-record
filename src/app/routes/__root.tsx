@@ -88,7 +88,7 @@ function RootDocument({
 			<head>
 				<HeadContent />
 			</head>
-			<body className="size-full bg-rcr-background text-rcr-primary">
+			<body className="size-full bg-c-background text-c-primary">
 				{children}
 				<Scripts />
 			</body>

@@ -26,7 +26,7 @@ export const list = publicProcedure
 			offset,
 			orderBy,
 		} = input;
-		console.log(`title: ${title}`);
+
 		return db.query.records.findMany({
 			with: {
 				creators: {

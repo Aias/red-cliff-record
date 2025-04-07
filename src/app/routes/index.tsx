@@ -55,13 +55,13 @@ function SearchResult({
 						>
 							{title}
 						</Link>
-						{subType && <span className="text-rcr-secondary">{subType}</span>}
+						{subType && <span className="text-c-secondary">{subType}</span>}
 					</div>
-					<span className="text-rcr-secondary capitalize">{type}</span>
+					<span className="text-c-secondary capitalize">{type}</span>
 				</div>
 				{content && (
 					<span
-						className="line-clamp-2 text-rcr-secondary"
+						className="line-clamp-2 text-c-secondary"
 						dangerouslySetInnerHTML={{
 							__html: parseToSingleLine(content),
 						}}
@@ -148,9 +148,9 @@ function Home() {
 				{debouncedValue.length > 0 && (
 					<div className="-mx-4 flex flex-col gap-6 overflow-y-auto px-4">
 						{isLoading ? (
-							<span className="text-center text-rcr-secondary">Searching...</span>
+							<span className="text-center text-c-secondary">Searching...</span>
 						) : !hasResults ? (
-							<span className="text-center text-rcr-secondary">No results found</span>
+							<span className="text-center text-c-secondary">No results found</span>
 						) : (
 							<SearchSection title="Records" count={recordsQuery.data?.length ?? 0}>
 								{recordsQuery.data?.map((record) => (
