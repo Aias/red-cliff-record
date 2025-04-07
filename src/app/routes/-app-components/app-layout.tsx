@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
-import { ArchiveIcon, DayModeIcon, NightModeIcon } from '@/app/components/icons';
+import { Archive, Moon, Sun } from 'lucide-react';
 import { defaultQueueOptions } from '@/server/api/routers/records.types';
 import { Button } from '../../components';
 import { setTheme } from '@/lib/server/theme';
@@ -23,7 +23,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 			<menu className="z-100 flex shrink-0 basis-auto items-center justify-between gap-4 border-b border-rcr-border surface px-4 py-2">
 				<li className="flex grow">
 					<Link to={'/'} className="flex grow cursor-pointer items-center gap-3">
-						<ArchiveIcon />
+						<Archive />
 						<span className="font-mono font-medium">The Red Cliff Record</span>
 					</Link>
 				</li>
@@ -33,7 +33,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 					</Link>
 				</li>
 				<Button asChild variant="ghost" onClick={toggleTheme}>
-					<li>{currentTheme === 'light' ? <DayModeIcon /> : <NightModeIcon />}</li>
+					<li>{currentTheme === 'light' ? <Sun /> : <Moon />}</li>
 				</Button>
 			</menu>
 			{children}

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import { Check } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { RecordTypeIcon } from './type-icons';
 import {
-	CheckIcon,
 	ExternalLink,
 	Input,
 	IntegrationLogo,
@@ -219,8 +219,8 @@ export const RecordsGrid = () => {
 	const hasParentValue = hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No';
 
 	return queue ? (
-		<div className="flex h-full grow overflow-hidden">
-			<div className="mr-4 flex min-w-48 flex-col gap-3 border-r border-border pr-4 text-sm">
+		<div className="flex h-full grow gap-4 overflow-hidden">
+			<div className="flex min-w-48 flex-col gap-3 text-sm">
 				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="type">Type</Label>
 					<Select value={type ?? 'All'} onValueChange={handleTypeChange}>
@@ -465,18 +465,20 @@ export const RecordsGrid = () => {
 										)}
 									</TableCell>
 									<TableCell>{record.parentId}</TableCell>
-									<TableCell className="text-center">{record.rating}</TableCell>
-									<TableCell className="text-center text-base">
-										{record.isIndexNode ? <CheckIcon /> : null}
+									<TableCell className="text-center">
+										{record.rating ? '⭐'.repeat(record.rating) : ''}
 									</TableCell>
 									<TableCell className="text-center text-base">
-										{record.isFormat ? <CheckIcon /> : null}
+										{record.isIndexNode ? <Check /> : null}
 									</TableCell>
 									<TableCell className="text-center text-base">
-										{record.isPrivate ? <CheckIcon /> : null}
+										{record.isFormat ? <Check /> : null}
 									</TableCell>
 									<TableCell className="text-center text-base">
-										{record.isCurated ? <CheckIcon /> : null}
+										{record.isPrivate ? <Check /> : null}
+									</TableCell>
+									<TableCell className="text-center text-base">
+										{record.isCurated ? <Check /> : null}
 									</TableCell>
 									<TableCell className="text-center">
 										<div className="flex justify-center gap-1 text-[0.875em]">

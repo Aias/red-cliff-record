@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Check, ChevronsUpDown, Trash2 } from 'lucide-react';
 import { RecordTypeIcon } from './type-icons';
 import {
 	Button,
-	CheckIcon,
-	ChevronUpDownIcon,
 	Command,
 	CommandGroup,
 	CommandInput,
 	CommandItem,
 	CommandList,
-	DeleteIcon,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -76,7 +74,7 @@ export function RecordLookup({ defaultRecord, onRecordSelected, handleSearch }: 
 					className="w-full justify-between"
 				>
 					{selectedRecord ? selectedRecord.title : 'Select record...'}
-					<ChevronUpDownIcon className="ml-2 opacity-50" />
+					<ChevronsUpDown className="ml-2 opacity-50" />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="p-0" align="start" sideOffset={4}>
@@ -94,7 +92,7 @@ export function RecordLookup({ defaultRecord, onRecordSelected, handleSearch }: 
 									onSelect={handleClear}
 									className="text-destructive data-selected:text-destructive!"
 								>
-									<DeleteIcon />
+									<Trash2 />
 									Clear selection
 								</CommandItem>
 							</CommandGroup>
@@ -129,7 +127,7 @@ export function RecordLookup({ defaultRecord, onRecordSelected, handleSearch }: 
 											{record.abbreviation && <span>({record.abbreviation})</span>}
 											{record.sense && <em className="text-rcr-secondary">{record.sense}</em>}
 										</span>
-										{selectedRecord?.id === record.id && <CheckIcon className="ml-auto" />}
+										{selectedRecord?.id === record.id && <Check className="ml-auto" />}
 									</CommandItem>
 								))}
 							</CommandGroup>

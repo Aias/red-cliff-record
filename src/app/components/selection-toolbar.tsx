@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { ChevronDownIcon, ClearIcon } from './icons';
+import { ChevronDown, X } from 'lucide-react';
 import {
 	Button,
 	DropdownMenu,
@@ -46,7 +46,7 @@ export function SelectionActions({
 							<DropdownMenuTrigger asChild>
 								<Button>
 									Actions
-									<ChevronDownIcon />
+									<ChevronDown />
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent>
@@ -63,7 +63,7 @@ export function SelectionActions({
 						</DropdownMenu>
 					)}
 					<Button onClick={() => onClear()} title="Clear selection">
-						<ClearIcon />
+						<X />
 					</Button>
 				</>
 			)}

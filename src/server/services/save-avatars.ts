@@ -1,4 +1,4 @@
-import { and, eq, isNotNull } from 'drizzle-orm';
+import { and, eq, isNotNull, notIlike } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { records } from '@/server/db/schema';
 import { RunType } from '@/server/db/schema/operations';
@@ -29,10 +29,15 @@ const MAX_RETRIES = 2;
  */
 export async function saveAvatarsToR2(): Promise<number> {
 	logger.start('Saving record avatars to R2 storage');
+	const assetsDomain = process.env.ASSETS_DOMAIN!;
 
 	// Find records with non-null avatarUrl and isCurated set to true
 	const recordsWithAvatars = await db.query.records.findMany({
-		where: and(isNotNull(records.avatarUrl), eq(records.isCurated, true)),
+		where: and(
+			isNotNull(records.avatarUrl),
+			eq(records.isCurated, true),
+			notIlike(records.avatarUrl, `%${assetsDomain}%`)
+		),
 		columns: {
 			id: true,
 			avatarUrl: true,

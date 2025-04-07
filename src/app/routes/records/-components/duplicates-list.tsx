@@ -1,4 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router';
+import { Merge } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { recordTypeIcons } from './type-icons';
 import {
@@ -10,7 +11,6 @@ import {
 	DropdownMenuTrigger,
 	ExternalLink,
 	IntegrationLogo,
-	MergeIcon,
 	Placeholder,
 	Spinner,
 } from '@/components';
@@ -102,7 +102,7 @@ export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
 								</DropdownMenuTrigger>
 								<DropdownMenuContent>
 									<DropdownMenuItem onClick={() => onMergeClick(id)}>
-										<MergeIcon />
+										<Merge />
 										Merge
 									</DropdownMenuItem>
 								</DropdownMenuContent>

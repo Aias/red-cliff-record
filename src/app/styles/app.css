@@ -185,7 +185,7 @@
 		text-decoration-skip-ink: auto;
 		text-decoration-color: var(--clr-theme-divider);
 
-		&:has(.icon) {
+		&:has(.icon, .lucide) {
 			@apply inline-flex items-center gap-1;
 		}
 	}
@@ -223,6 +223,10 @@
 
 @utility icon {
 	@apply inline-flex aspect-square h-[1em] w-[1em] shrink-0 leading-none text-current;
+}
+
+.lucide {
+	@apply icon;
 }
 
 @utility code {

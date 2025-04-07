@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { useNavigate } from '@tanstack/react-router';
+import { Trash2 } from 'lucide-react';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
 import {
@@ -23,7 +24,6 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 	Avatar,
-	DeleteIcon,
 	DynamicTextarea,
 	ExternalLink,
 	GhostInput,
@@ -611,7 +611,7 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 							<AlertDialog>
 								<AlertDialogTrigger asChild>
 									<Button variant="outline" type="button">
-										<DeleteIcon />
+										<Trash2 />
 									</Button>
 								</AlertDialogTrigger>
 								<AlertDialogContent>

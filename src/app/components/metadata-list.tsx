@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { Copy } from 'lucide-react';
 import { z } from 'zod';
-import { CopyIcon } from './icons';
 import { ScrollArea } from './ui/scroll-area';
 import {
 	Button,
@@ -72,7 +72,7 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
 								{copiedKey === key ? (
 									<div className="absolute top-0 right-0 text-xs text-rcr-hint">Copied!</div>
 								) : (
-									<CopyIcon className="absolute right-0 text-rcr-hint opacity-0 transition-opacity group-hover:opacity-100" />
+									<Copy className="absolute right-0 text-rcr-hint opacity-0 transition-opacity group-hover:opacity-100" />
 								)}
 							</div>
 						) : (
