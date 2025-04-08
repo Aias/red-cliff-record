@@ -87,18 +87,14 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 
 	const updateMutation = trpc.records.upsert.useMutation({
 		onSuccess: () => {
-			utils.records.get.invalidate(recordId);
-			utils.records.list.invalidate();
-			utils.records.findDuplicates.invalidate(recordId);
+			utils.records.invalidate();
 		},
 	});
 
 	const deleteMutation = trpc.records.delete.useMutation({
 		onSuccess: () => {
 			navigate({ to: '/records', search: true });
-			utils.records.get.invalidate(recordId);
-			utils.records.list.invalidate();
-			utils.records.findDuplicates.invalidate(recordId);
+			utils.records.invalidate();
 		},
 	});
 

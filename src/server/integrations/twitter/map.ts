@@ -110,10 +110,17 @@ type TweetData = TwitterTweetSelect & {
  * @returns A record insert object
  */
 export const mapTwitterTweetToRecord = (tweet: TweetData): RecordInsert => {
+	// Remove t.co URLs from the beginning or end of the tweet text
+	const cleanedContent =
+		tweet.text
+			?.trim()
+			.replace(/^https?:\/\/t\.co\/[^\s]+|https?:\/\/t\.co\/[^\s]+$/g, '')
+			.trim() ?? '';
+
 	return {
 		id: tweet.recordId ?? undefined,
 		type: 'artifact',
-		content: tweet.text,
+		content: cleanedContent,
 		url: `https://x.com/${tweet.user.username}/status/${tweet.id}`,
 		parentId: tweet.quotedTweet?.recordId ?? null,
 		childType: tweet.quotedTweet ? 'quotes' : null,

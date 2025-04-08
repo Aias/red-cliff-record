@@ -23,6 +23,7 @@ export const OrderCriteriaSchema = z.object({
 export const RecordFiltersSchema = z.object({
 	type: RecordTypeSchema.optional(),
 	title: z.string().nullable().optional(),
+	text: z.string().nullable().optional(),
 	creatorId: IdSchema.nullable().optional(),
 	formatId: IdSchema.nullable().optional(),
 	url: z.string().nullable().optional(),

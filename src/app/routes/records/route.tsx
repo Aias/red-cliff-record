@@ -47,11 +47,20 @@ function RouteComponent() {
 
 	// Update the next record ID whenever the selection or list changes
 	const nextRecordId = useMemo(() => {
+		// If the list is empty, there's no next record
+		if (recordsList.length === 0) return undefined;
+
+		// If no record is currently selected, there's no concept of 'next'
 		if (!currentRecordId) return undefined;
 
 		const currentIndex = recordsList.findIndex((record) => record.id === currentRecordId);
-		if (currentIndex === -1) return undefined;
 
+		// If the current record isn't in the list, default to the first record in the list
+		if (currentIndex === -1) {
+			return recordsList[0]?.id;
+		}
+
+		// Otherwise, find the next record, wrapping around to the beginning if necessary
 		const nextIndex = currentIndex + 1 < recordsList.length ? currentIndex + 1 : 0;
 		return recordsList[nextIndex]?.id;
 	}, [currentRecordId, recordsList]);

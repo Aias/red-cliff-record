@@ -107,7 +107,7 @@ export const RecordLink = ({
 }: RecordLinkProps) => {
 	const { type, title, content, summary, notes, abbreviation, url, sense, sources } = record;
 	const TypeIcon = recordTypeIcons[type].icon;
-	const label = title || summary || notes || content;
+	const label = title || summary || notes || content || 'Untitled Record';
 
 	return (
 		<div className={cn('flex items-center gap-1', className)}>

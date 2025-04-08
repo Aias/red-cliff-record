@@ -420,7 +420,11 @@ export const mapReadwiseDocumentToRecord = (
 		notes: notes || null,
 		isPrivate: false,
 		isCurated: false,
-		avatarUrl: document.imageUrl,
+		avatarUrl: document.imageUrl?.startsWith(
+			'https://assets.feedbin.com/assets-site/images/icon-manifest.png' // Ignore Feedbin favicon
+		)
+			? null
+			: document.imageUrl,
 		rating,
 		sources: ['readwise'],
 		recordCreatedAt: document.recordCreatedAt,

@@ -450,7 +450,7 @@ export const relations = defineRelations(
 			}),
 			created: r.many.recordCreators({
 				from: r.records.id,
-				to: r.recordCreators.recordId,
+				to: r.recordCreators.creatorId,
 			}),
 			format: r.one.records({
 				from: r.records.formatId,

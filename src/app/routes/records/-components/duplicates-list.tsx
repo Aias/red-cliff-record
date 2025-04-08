@@ -34,9 +34,7 @@ export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
 				to: '/records/$recordId',
 				params: { recordId: updatedRecord.id.toString() },
 			});
-			utils.records.findDuplicates.invalidate(updatedRecord.id);
-			utils.records.get.invalidate(updatedRecord.id);
-			utils.records.list.invalidate();
+			utils.records.invalidate();
 		},
 	});
 

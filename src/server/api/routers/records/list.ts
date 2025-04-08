@@ -8,6 +8,7 @@ export const list = publicProcedure
 			filters: {
 				type,
 				title,
+				text,
 				creatorId,
 				formatId,
 				url: domain,
@@ -50,6 +51,22 @@ export const list = publicProcedure
 									ilike: `%${title}%`,
 								}
 							: undefined,
+				OR: text
+					? [
+							{
+								content: { ilike: `%${text}%` },
+							},
+							{
+								summary: { ilike: `%${text}%` },
+							},
+							{
+								notes: { ilike: `%${text}%` },
+							},
+							{
+								mediaCaption: { ilike: `%${text}%` },
+							},
+						]
+					: undefined,
 				formatId:
 					formatId === null
 						? {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { CheckIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
+import { defaultQueueOptions } from '@/server/api/routers/records.types';
 import { RecordTypeIcon } from './type-icons';
 import {
 	ExternalLink,
@@ -45,7 +46,18 @@ export const RecordsGrid = () => {
 	const { data: queue } = trpc.records.list.useQuery(search);
 
 	const {
-		filters: { type, title, url, isCurated, isFormat, isIndexNode, isPrivate, source, hasParent },
+		filters: {
+			type,
+			title,
+			url,
+			isCurated,
+			isFormat,
+			isIndexNode,
+			isPrivate,
+			source,
+			hasParent,
+			text,
+		},
 		limit,
 	} = search;
 
@@ -135,15 +147,17 @@ export const RecordsGrid = () => {
 
 	// State for input values
 	const [titleInput, setTitleInput] = useState(title ?? '');
+	const [textInput, setTextInput] = useState(text ?? '');
 	const [urlInput, setUrlInput] = useState(url ?? '');
 	const [limitInput, setLimitInput] = useState(limit?.toString() ?? '');
 
 	// Update input states when search params change
 	useEffect(() => {
 		setTitleInput(title ?? '');
+		setTextInput(text ?? '');
 		setUrlInput(url ?? '');
 		setLimitInput(limit?.toString() ?? '');
-	}, [title, url, limit]);
+	}, [title, text, url, limit]);
 
 	// Debounced handlers for text inputs
 	useEffect(() => {
@@ -169,14 +183,14 @@ export const RecordsGrid = () => {
 					...prev,
 					filters: {
 						...prev.filters,
-						url: urlInput.trim() === '' ? undefined : urlInput.trim(),
+						text: textInput.trim() === '' ? undefined : textInput.trim(),
 					},
 				}),
 			});
 		}, 500);
 
 		return () => clearTimeout(timer);
-	}, [urlInput, navigate]);
+	}, [textInput, navigate]);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
@@ -198,6 +212,10 @@ export const RecordsGrid = () => {
 
 	const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setTitleInput(e.target.value);
+	};
+
+	const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setTextInput(e.target.value);
 	};
 
 	const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -267,6 +285,16 @@ export const RecordsGrid = () => {
 						placeholder="Filter by title"
 						value={titleInput}
 						onChange={handleTitleChange}
+					/>
+				</div>
+				<div className="flex flex-col gap-1.5">
+					<Label htmlFor="text">Text</Label>
+					<Input
+						id="text"
+						type="text"
+						placeholder="Filter by text content"
+						value={textInput}
+						onChange={handleTextChange}
 					/>
 				</div>
 				<div className="flex flex-col gap-1.5">
@@ -396,7 +424,12 @@ export const RecordsGrid = () => {
 						onChange={handleLimitChange}
 					/>
 				</div>
+				<hr />
 				<div className="flex flex-col gap-1.5">
+					<h3 className="mb-1 text-base">Quick Filters</h3>
+					<Link to="/records" search={defaultQueueOptions}>
+						Reset to Defaults
+					</Link>
 					<Link
 						to="/records"
 						search={(prev) => ({
@@ -406,7 +439,6 @@ export const RecordsGrid = () => {
 								isIndexNode: true,
 							},
 						})}
-						className="mt-3 block w-full border-t border-border pt-3 text-center"
 					>
 						Index Queue
 					</Link>
@@ -445,11 +477,11 @@ export const RecordsGrid = () => {
 													params={{ recordId: record.id.toString() }}
 													className="block w-full truncate"
 												>
-													{record.title || record.summary || record.content}
+													{record.title || record.summary || record.content || 'Untitled Record'}
 												</Link>
 											</TooltipTrigger>
 											<TooltipContent>
-												{record.title || record.summary || record.content}
+												{record.title || record.summary || record.content || 'Untitled Record'}
 											</TooltipContent>
 										</Tooltip>
 									</TableCell>
