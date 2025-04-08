@@ -19,10 +19,9 @@
 
 	--color-c-background: var(--c-neutral-background);
 	--color-c-surface: var(--c-neutral-surface);
-	--color-c-overlay: var(--c-neutral-surface);
-	--color-c-panel: var(
-		--c-neutral-surface
-	); /* TODO: Differentiate surface and panel, i.e. for inputs. */
+	--color-c-component: var(--c-neutral-component);
+	--color-c-overlay: var(--c-neutral-overlay);
+	--color-c-panel: var(--c-neutral-panel);
 
 	--color-c-display: var(--c-neutral-display);
 	--color-c-primary: var(--c-neutral-primary);
@@ -32,7 +31,7 @@
 	--color-c-symbol: var(--c-neutral-symbol);
 
 	--color-c-accent: var(--c-neutral-accent);
-	--color-c-accent-active: oklch(from var(--c-neutral-accent) calc(l * 1.25) c h);
+	--color-c-accent-active: var(--c-neutral-primary);
 
 	--color-c-main: var(--c-neutral-main);
 	--color-c-main-active: var(--c-neutral-main-active);
@@ -46,6 +45,39 @@
 	--color-c-border: var(--c-neutral-border);
 	--color-c-edge: var(--c-neutral-edge);
 	--color-c-focus: var(--c-theme-main);
+}
+
+@utility themed {
+	--color-c-background: var(--c-theme-background);
+	--color-c-overlay: var(--c-theme-surface);
+	--color-c-component: var(--c-theme-component);
+	--color-c-surface: var(--c-theme-surface);
+	--color-c-panel: var(--c-theme-panel);
+
+	--color-c-display: var(--c-theme-display);
+	--color-c-primary: var(--c-theme-primary);
+	--color-c-secondary: var(--c-theme-secondary);
+	--color-c-hint: var(--c-theme-hint);
+	--color-c-ghost: var(--c-theme-ghost);
+	--color-c-symbol: var(--c-theme-symbol);
+
+	--color-c-accent: var(--c-theme-accent);
+	--color-c-accent-active: var(--c-theme-primary);
+
+	--color-c-main: var(--c-theme-main);
+	--color-c-main-active: var(--c-theme-main-active);
+	--color-c-main-contrast: var(--c-theme-main-contrast);
+
+	--color-c-mist: var(--c-theme-mist);
+	--color-c-splash: var(--c-theme-splash);
+	--color-c-flood: var(--c-theme-flood);
+
+	--color-c-divider: var(--c-theme-divider);
+	--color-c-border: var(--c-theme-border);
+	--color-c-edge: var(--c-theme-edge);
+	--color-c-focus: var(--c-theme-main);
+
+	color: var(--color-c-primary);
 }
 
 @theme inline {
@@ -68,11 +100,11 @@
 	--color-border: var(--color-c-divider);
 	--color-input: var(--color-c-border);
 	--color-ring: var(--color-c-focus);
-	--color-chart-1: var(--color-c-main);
-	--color-chart-2: var(--color-c-main);
-	--color-chart-3: var(--color-c-main);
-	--color-chart-4: var(--color-c-main);
-	--color-chart-5: var(--color-c-main);
+	--color-chart-1: #29a383;
+	--color-chart-2: #00a2c7;
+	--color-chart-3: #3e63dd;
+	--color-chart-4: #6e56cf;
+	--color-chart-5: #ab4aba;
 
 	--radius-sm: 2px;
 	--radius-md: 4px;
@@ -241,35 +273,4 @@
 	&:is(.selected, [data-status='active'], :has([data-status='active'])):active {
 		@apply border-c-edge bg-c-flood;
 	}
-}
-
-@utility themed {
-	--color-c-background: var(--c-theme-background);
-	--color-c-overlay: var(--c-theme-surface);
-	--color-c-surface: var(--c-theme-surface);
-	--color-c-panel: var(--c-theme-surface);
-
-	--color-c-display: var(--c-theme-display);
-	--color-c-primary: var(--c-theme-primary);
-	--color-c-secondary: var(--c-theme-secondary);
-	--color-c-hint: var(--c-theme-hint);
-	--color-c-symbol: var(--c-theme-symbol);
-
-	--color-c-accent: var(--c-theme-secondary);
-	--color-c-accent-active: var(--c-theme-primary);
-
-	--color-c-main: var(--c-theme-main);
-	--color-c-main-active: var(--c-theme-main-active);
-	--color-c-main-contrast: var(--c-theme-main-contrast);
-
-	--color-c-mist: var(--c-theme-mist);
-	--color-c-splash: var(--c-theme-splash);
-	--color-c-flood: var(--c-theme-flood);
-
-	--color-c-divider: var(--c-theme-divider);
-	--color-c-border: var(--c-theme-border);
-	--color-c-edge: var(--c-theme-edge);
-	--color-c-focus: var(--c-theme-main);
-
-	color: var(--color-c-accent);
 }
