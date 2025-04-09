@@ -11,6 +11,7 @@ import { trpc } from '@/app/trpc';
 import { ListRecordsInputSchema } from '@/server/api/routers/records.types';
 import { RecordsGrid } from './-components/records-grid';
 import { RecordLink } from './-components/relations';
+import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
 
 // Create context for sharing data between parent and child routes
 export const NextRecordIdContext = createContext<number | undefined>(undefined);
@@ -87,29 +88,28 @@ function RouteComponent() {
 							Index
 						</Link>
 					</header>
-					<ol className="flex flex-col gap-1 overflow-y-auto px-3 text-sm">
+					<RadioCards
+						size="xs"
+						value={currentRecordId?.toString()}
+						onValueChange={(value) => {
+							navigate({
+								to: '/records/$recordId',
+								params: { recordId: value },
+								search,
+							});
+						}}
+						className="flex flex-col gap-1 overflow-y-auto px-3"
+					>
 						{recordsList.map((record) => (
-							<li
-								key={record.id}
-								className="flex shrink-0 selectable items-center gap-2 overflow-hidden rounded-sm border border-border bg-card px-2 py-1"
-								onClick={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
-									navigate({
-										to: '/records/$recordId',
-										params: { recordId: record.id.toString() },
-										search,
-									});
-								}}
-							>
+							<RadioCardsItem key={record.id} value={record.id.toString()} asChild>
 								<RecordLink
 									record={record}
-									className="flex-1 overflow-hidden text-xs"
+									className="w-full overflow-hidden"
 									options={{ showExternalLink: false }}
 								/>
-							</li>
+							</RadioCardsItem>
 						))}
-					</ol>
+					</RadioCards>
 				</div>
 				<Outlet />
 			</main>

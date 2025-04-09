@@ -130,11 +130,6 @@
 		--em-font-family: var(--font-family-sans);
 		--em-font-size-adjust: 1;
 		--quote-font-family: var(--font-family-serif);
-
-		--font-weight-light: 300;
-		--font-weight-normal: 400;
-		--font-weight-medium: 500;
-		--font-weight-bold: 700;
 	}
 
 	* {
@@ -175,7 +170,7 @@
 	.h5,
 	h6,
 	.h6 {
-		@apply text-sm font-bold;
+		@apply text-sm font-semibold;
 	}
 
 	hr {
@@ -185,6 +180,11 @@
 	pre,
 	code {
 		font-family: var(--font-family-mono);
+	}
+
+	b,
+	strong {
+		@apply font-semibold;
 	}
 
 	a:where(:any-link, button),

@@ -97,15 +97,17 @@ interface RecordLinkProps {
 	className?: string;
 	options?: {
 		showExternalLink?: boolean;
+		showInternalLink?: boolean;
 	};
 }
 
 export const RecordLink = ({
 	record,
 	className,
-	options = { showExternalLink: true },
+	options = { showExternalLink: true, showInternalLink: true },
 }: RecordLinkProps) => {
 	const { type, title, content, summary, notes, abbreviation, url, sense, sources } = record;
+	const { showInternalLink, showExternalLink } = options;
 	const TypeIcon = recordTypeIcons[type].icon;
 	const label = title || summary || notes || content || 'Untitled Record';
 
@@ -113,17 +115,21 @@ export const RecordLink = ({
 		<div className={cn('flex items-center gap-1', className)}>
 			<TypeIcon className="text-c-symbol" />
 			<div className="flex grow items-center gap-1">
-				<Link
-					className="line-clamp-1"
-					to={`/records/$recordId`}
-					params={{ recordId: record.id.toString() }}
-				>
-					{label}
-				</Link>
+				{showInternalLink ? (
+					<Link
+						className="line-clamp-1"
+						to={`/records/$recordId`}
+						params={{ recordId: record.id.toString() }}
+					>
+						{label}
+					</Link>
+				) : (
+					<strong className="line-clamp-1">{label}</strong>
+				)}
 				{abbreviation && <span>({abbreviation})</span>}
 				{sense && <em className="text-c-secondary">{sense}</em>}
 			</div>
-			{url && options.showExternalLink && (
+			{url && showExternalLink && (
 				<ExternalLink
 					className="rounded-sm bg-c-mist px-2 text-xs whitespace-nowrap text-c-secondary"
 					href={url}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { useNavigate } from '@tanstack/react-router';
 import { Trash2Icon } from 'lucide-react';
@@ -99,6 +99,8 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
 	const [record] = trpc.records.get.useSuspenseQuery(recordId);
+	const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
+	const mediaUploadRef = useRef<HTMLDivElement>(null);
 
 	const recordFormData: RecordInsert & { media: MediaSelect[] } = useMemo(() => {
 		return { ...record };
@@ -118,23 +120,33 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	});
 
 	const deleteMediaMutation = trpc.media.delete.useMutation({
-		onSuccess: () => {
-			utils.records.get.invalidate(recordId);
+		onSuccess: (_data, variables) => {
+			const deletedMediaIds = new Set(variables);
+			const updatedMedia =
+				form.getFieldValue('media')?.filter((m) => !deletedMediaIds.has(m.id)) ?? [];
+			form.setFieldValue('media', updatedMedia);
+
+			if (updatedMedia.length === 0) {
+				setTimeout(() => {
+					mediaUploadRef.current?.focus();
+				}, 0);
+			}
 		},
 	});
 
 	const createMediaMutation = trpc.media.create.useMutation({
-		onSuccess: () => {
-			utils.records.get.invalidate(recordId);
+		onSuccess: (createdMedia) => {
+			if (createdMedia) {
+				form.setFieldValue('media', [...(form.getFieldValue('media') ?? []), createdMedia]);
+				setTimeout(() => {
+					mediaCaptionRef.current?.focus();
+				}, 0);
+			}
 		},
 		onError: (error) => {
 			console.error('Media upload failed:', error);
 		},
 	});
-
-	const handleDelete = async () => {
-		await deleteMutation.mutateAsync([recordId]);
-	};
 
 	const form = useForm({
 		defaultValues: {
@@ -200,7 +212,7 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 		});
 	}, [recordId, record, form]);
 
-	const { media: currentMedia, sources } = useMemo(() => record, [record]);
+	const { sources } = useMemo(() => record, [record]);
 
 	return (
 		<form
@@ -232,7 +244,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 								value={field.state.value ?? ''}
 								placeholder="Untitled Record"
 								onChange={(e) => field.handleChange(e.target.value)}
-								autoFocus
 							/>
 							{field.state.meta.errors && (
 								<p className="text-sm text-destructive">{field.state.meta.errors.join(', ')}</p>
@@ -511,60 +522,66 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				</form.Field>
 			</div>
 
-			{currentMedia && currentMedia.length > 0 ? (
-				<>
-					<Separator />
-					<div className="flex flex-col gap-3">
-						<h2>Media</h2>
-						<MediaGrid
-							media={currentMedia}
-							onDelete={(media) => deleteMediaMutation.mutate([media.id])}
-						/>
+			<form.Field name="media">
+				{(field) =>
+					field.state.value && field.state.value.length > 0 ? (
+						<>
+							<Separator />
+							<div className="flex flex-col gap-3">
+								<h2>Media</h2>
+								<MediaGrid
+									media={field.state.value}
+									onDelete={(media) => deleteMediaMutation.mutateAsync([media.id])}
+								/>
 
-						<form.Field name="mediaCaption">
-							{(field) => (
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="mediaCaption">Caption</Label>
-									<DynamicTextarea
-										id="mediaCaption"
-										value={field.state.value ?? ''}
-										placeholder="Media caption"
-										onChange={(e) => field.handleChange(e.target.value)}
-										onKeyDown={(e) => {
-											if (e.key === 'Enter' && !e.shiftKey) {
-												e.preventDefault();
-												form.handleSubmit();
-											}
-										}}
-									/>
-								</div>
-							)}
-						</form.Field>
-					</div>
-				</>
-			) : (
-				<>
-					<Separator />
-					<div className="flex flex-col gap-3">
-						<h2>Media</h2>
-						<MediaUpload
-							onUpload={async (file) => {
-								try {
-									const fileData = await readFileAsBase64(file);
-									await createMediaMutation.mutateAsync({
-										recordId,
-										fileData,
-										fileName: file.name,
-										fileType: file.type,
-									});
-								} catch (error) {
-									console.error('Error processing or uploading file:', error);
-								}
-							}}
-						/>
-					</div>
-				</>
-			)}
+								<form.Field name="mediaCaption">
+									{(captionField) => (
+										<div className="flex flex-col gap-1">
+											<Label htmlFor="mediaCaption">Caption</Label>
+											<DynamicTextarea
+												ref={mediaCaptionRef}
+												id="mediaCaption"
+												value={captionField.state.value ?? ''}
+												placeholder="Media caption"
+												onChange={(e) => captionField.handleChange(e.target.value)}
+												onKeyDown={(e) => {
+													if (e.key === 'Enter' && !e.shiftKey) {
+														e.preventDefault();
+														form.handleSubmit();
+													}
+												}}
+											/>
+										</div>
+									)}
+								</form.Field>
+							</div>
+						</>
+					) : (
+						<>
+							<Separator />
+							<div className="flex flex-col gap-3">
+								<h2>Media</h2>
+								<MediaUpload
+									ref={mediaUploadRef}
+									onUpload={async (file) => {
+										try {
+											const fileData = await readFileAsBase64(file);
+											await createMediaMutation.mutateAsync({
+												recordId,
+												fileData,
+												fileName: file.name,
+												fileType: file.type,
+											});
+										} catch (error) {
+											console.error('Error processing or uploading file:', error);
+										}
+									}}
+								/>
+							</div>
+						</>
+					)
+				}
+			</form.Field>
 
 			<div className="flex flex-col gap-3">
 				<h2>Metadata</h2>
@@ -646,7 +663,13 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 									<AlertDialogFooter>
 										<AlertDialogCancel>Cancel</AlertDialogCancel>
 										<Button variant="destructive" asChild>
-											<AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+											<AlertDialogAction
+												onClick={async () => {
+													await deleteMutation.mutateAsync([recordId]);
+												}}
+											>
+												Continue
+											</AlertDialogAction>
 										</Button>
 									</AlertDialogFooter>
 								</AlertDialogContent>
