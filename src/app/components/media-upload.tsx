@@ -9,8 +9,7 @@ import { cn } from '@/lib/utils'; // Assuming shadcn utility path
 // Define a basic schema for image files. Adjust as needed.
 const imageFileSchema = z
 	.instanceof(File)
-	.refine((file) => file.type.startsWith('image/'), 'File must be an image.')
-	.refine((file) => file.size < 5 * 1024 * 1024, 'Image must be less than 5MB.'); // Example size limit
+	.refine((file) => file.type.startsWith('image/'), 'File must be an image.');
 
 type MediaUploadProps = {
 	onUpload: (file: File) => void | Promise<void>;
@@ -124,20 +123,31 @@ export const MediaUpload = forwardRef<
 			if (isLoading) return;
 			setError(null);
 			const items = e.clipboardData?.items;
+
 			if (items) {
-				for (let i = 0; i < items.length; i++) {
-					const currentItem = items[i];
-					if (currentItem?.kind === 'file') {
-						const file = currentItem.getAsFile();
+				// First try to find a GIF specifically
+				for (const item of Array.from(items)) {
+					if (item?.type === 'image/gif') {
+						const file = item.getAsFile();
 						if (file) {
-							e.preventDefault(); // Prevent default paste behavior only if we handle a file
+							e.preventDefault();
 							handleFile(file);
-							return; // Handle only the first file found
+							return;
 						}
 					}
 				}
-				// Optionally handle text paste or other data types here
-				// setStatusMessage('Pasted content is not a file.');
+
+				// If no GIF found, look for any image
+				for (const item of Array.from(items)) {
+					if (item?.kind === 'file' && item.type.startsWith('image/')) {
+						const file = item.getAsFile();
+						if (file) {
+							e.preventDefault();
+							handleFile(file);
+							return;
+						}
+					}
+				}
 			}
 		},
 		[handleFile, isLoading]

@@ -66,52 +66,58 @@ function RouteComponent() {
 		return recordsList[nextIndex]?.id;
 	}, [currentRecordId, recordsList]);
 
-	// When no record is selected, show the full queue with filters
-	if (!isRecordSelected) {
-		return (
-			<main className="flex basis-full flex-col overflow-hidden p-3">
-				<RecordsGrid />
-			</main>
-		);
-	}
+	const linkOptions = useMemo(() => ({ showExternalLink: false, showInternalLink: false }), []);
 
-	// When a record is selected, show the sidebar with the record list and the outlet
+	const handleValueChange = useCallback(
+		(value: string) => {
+			navigate({
+				to: '/records/$recordId',
+				params: { recordId: value },
+				search,
+			});
+		},
+		[navigate, search]
+	);
+
+	const recordList = useMemo(
+		() => (
+			<RadioCards
+				size="xs"
+				value={currentRecordId?.toString()}
+				onValueChange={handleValueChange}
+				className="flex flex-col gap-1 overflow-y-auto px-3"
+			>
+				{recordsList.map((record) => (
+					<RadioCardsItem key={record.id} value={record.id.toString()}>
+						<RecordLink record={record} className="w-full overflow-hidden" options={linkOptions} />
+					</RadioCardsItem>
+				))}
+			</RadioCards>
+		),
+		[recordsList, currentRecordId, handleValueChange, linkOptions]
+	);
+
 	return (
 		<NextRecordIdContext.Provider value={nextRecordId}>
-			<main className="flex basis-full overflow-hidden">
-				<div className="flex shrink-0 grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-border py-3">
-					<header className="flex items-center justify-between px-3">
-						<h2 className="text-lg font-medium">
-							Records <span className="text-sm text-c-secondary">({recordsList.length})</span>
-						</h2>
-						<Link to="/records" search={true} className="text-sm">
-							Index
-						</Link>
-					</header>
-					<RadioCards
-						size="xs"
-						value={currentRecordId?.toString()}
-						onValueChange={(value) => {
-							navigate({
-								to: '/records/$recordId',
-								params: { recordId: value },
-								search,
-							});
-						}}
-						className="flex flex-col gap-1 overflow-y-auto px-3"
-					>
-						{recordsList.map((record) => (
-							<RadioCardsItem key={record.id} value={record.id.toString()} asChild>
-								<RecordLink
-									record={record}
-									className="w-full overflow-hidden"
-									options={{ showExternalLink: false }}
-								/>
-							</RadioCardsItem>
-						))}
-					</RadioCards>
-				</div>
-				<Outlet />
+			<main className={`flex basis-full overflow-hidden ${!isRecordSelected ? 'p-3' : ''}`}>
+				{isRecordSelected ? (
+					<>
+						<div className="flex shrink-0 grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-border py-3">
+							<header className="flex items-center justify-between px-3">
+								<h2 className="text-lg font-medium">
+									Records <span className="text-sm text-c-secondary">({recordsList.length})</span>
+								</h2>
+								<Link to="/records" search={true} className="text-sm">
+									Index
+								</Link>
+							</header>
+							{recordList}
+						</div>
+						<Outlet />
+					</>
+				) : (
+					<RecordsGrid />
+				)}
 			</main>
 		</NextRecordIdContext.Provider>
 	);

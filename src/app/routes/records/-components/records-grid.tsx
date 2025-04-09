@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { CheckIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { defaultQueueOptions } from '@/server/api/routers/records.types';
+import { type RecordWithRelations } from '@/server/api/routers/records.types';
 import { RecordTypeIcon } from './type-icons';
 import {
 	ExternalLink,
@@ -36,6 +37,67 @@ import {
 } from '@/db/schema';
 import { cn } from '@/lib/utils';
 
+const RecordRow = memo(function RecordRow({ record }: { record: RecordWithRelations }) {
+	const title = record.title || record.summary || record.content || 'Untitled Record';
+
+	return (
+		<TableRow>
+			<TableCell className="text-center text-sm">
+				<RecordTypeIcon type={record.type} />
+			</TableCell>
+			<TableCell className="max-w-60 truncate whitespace-nowrap">
+				<Tooltip delayDuration={500}>
+					<TooltipTrigger asChild>
+						<Link
+							to="/records/$recordId"
+							params={{ recordId: record.id.toString() }}
+							className="block w-full truncate"
+						>
+							{title}
+						</Link>
+					</TooltipTrigger>
+					<TooltipContent>{title}</TooltipContent>
+				</Tooltip>
+			</TableCell>
+			<TableCell>
+				{record.creators
+					?.map((creator) => creator.creator.title || '')
+					.filter(Boolean)
+					.join(', ')}
+			</TableCell>
+			<TableCell>{record.format?.title || ''}</TableCell>
+			<TableCell className="whitespace-nowrap">
+				{record.url ? (
+					<ExternalLink href={record.url}>{new URL(record.url).hostname}</ExternalLink>
+				) : (
+					''
+				)}
+			</TableCell>
+			<TableCell>{record.parentId}</TableCell>
+			<TableCell className="text-center">
+				{record.rating ? '⭐'.repeat(record.rating) : ''}
+			</TableCell>
+			<TableCell className="text-center text-base">
+				{record.isIndexNode ? <CheckIcon /> : null}
+			</TableCell>
+			<TableCell className="text-center text-base">
+				{record.isFormat ? <CheckIcon /> : null}
+			</TableCell>
+			<TableCell className="text-center text-base">
+				{record.isPrivate ? <CheckIcon /> : null}
+			</TableCell>
+			<TableCell className="text-center text-base">
+				{record.isCurated ? <CheckIcon /> : null}
+			</TableCell>
+			<TableCell className="text-center">
+				<div className="flex justify-center gap-1 text-[0.875em]">
+					{record.sources?.map((source) => <IntegrationLogo integration={source} key={source} />)}
+				</div>
+			</TableCell>
+		</TableRow>
+	);
+});
+
 export const RecordsGrid = () => {
 	const search = useSearch({
 		from: '/records',
@@ -61,183 +123,202 @@ export const RecordsGrid = () => {
 		limit,
 	} = search;
 
-	const handleTypeChange = (value: string) => {
-		navigate({
-			search: (prev) => ({
-				...prev,
-				filters: {
-					...prev.filters,
-					type: value === 'All' ? undefined : (value as RecordType),
-				},
-			}),
-		});
-	};
+	// Memoize filter values
+	const filterValues = useMemo(
+		() => ({
+			curatedValue: isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No',
+			indexNodeValue: isIndexNode === undefined ? 'All' : isIndexNode ? 'Yes' : 'No',
+			formatValue: isFormat === undefined ? 'All' : isFormat ? 'Yes' : 'No',
+			privateValue: isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No',
+			hasParentValue: hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No',
+		}),
+		[isCurated, isIndexNode, isFormat, isPrivate, hasParent]
+	);
 
-	const handleCuratedChange = (value: string) => {
-		navigate({
-			search: (prev) => ({
-				...prev,
-				filters: {
-					...prev.filters,
-					isCurated: value === 'All' ? undefined : value === 'Yes' ? true : false,
-				},
-			}),
-		});
-	};
-
-	const handleIndexNodeChange = (value: string) => {
-		navigate({
-			search: (prev) => ({
-				...prev,
-				filters: {
-					...prev.filters,
-					isIndexNode: value === 'All' ? undefined : value === 'Yes' ? true : false,
-				},
-			}),
-		});
-	};
-
-	const handleFormatChange = (value: string) => {
-		navigate({
-			search: (prev) => ({
-				...prev,
-				filters: {
-					...prev.filters,
-					isFormat: value === 'All' ? undefined : value === 'Yes' ? true : false,
-				},
-			}),
-		});
-	};
-
-	const handlePrivateChange = (value: string) => {
-		navigate({
-			search: (prev) => ({
-				...prev,
-				filters: {
-					...prev.filters,
-					isPrivate: value === 'All' ? undefined : value === 'Yes' ? true : false,
-				},
-			}),
-		});
-	};
-
-	const handleHasParentChange = (value: string) => {
-		navigate({
-			search: (prev) => ({
-				...prev,
-				filters: {
-					...prev.filters,
-					hasParent: value === 'All' ? undefined : value === 'Yes' ? true : false,
-				},
-			}),
-		});
-	};
-
-	const handleSourceChange = (value: string) => {
-		navigate({
-			search: (prev) => ({
-				...prev,
-				filters: {
-					...prev.filters,
-					source: value === 'All' ? undefined : (value as IntegrationType),
-				},
-			}),
-		});
-	};
-
-	// State for input values
+	// State for input fields
 	const [titleInput, setTitleInput] = useState(title ?? '');
-	const [textInput, setTextInput] = useState(text ?? '');
 	const [urlInput, setUrlInput] = useState(url ?? '');
+	const [textInput, setTextInput] = useState(text ?? '');
 	const [limitInput, setLimitInput] = useState(limit?.toString() ?? '');
 
-	// Update input states when search params change
-	useEffect(() => {
-		setTitleInput(title ?? '');
-		setTextInput(text ?? '');
-		setUrlInput(url ?? '');
-		setLimitInput(limit?.toString() ?? '');
-	}, [title, text, url, limit]);
-
-	// Debounced handlers for text inputs
-	useEffect(() => {
-		const timer = setTimeout(() => {
+	// Debounced navigation handlers
+	const handleTitleChange = useMemo(() => {
+		const handler = (e: React.ChangeEvent<HTMLInputElement>) => {
+			const value = e.target.value;
+			setTitleInput(value);
 			navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
 						...prev.filters,
-						title: titleInput.trim() === '' ? undefined : titleInput.trim(),
+						title: value || undefined,
 					},
 				}),
 			});
-		}, 500);
+		};
+		return handler;
+	}, [navigate]);
 
-		return () => clearTimeout(timer);
-	}, [titleInput, navigate]);
-
-	useEffect(() => {
-		const timer = setTimeout(() => {
+	const handleUrlChange = useMemo(() => {
+		const handler = (e: React.ChangeEvent<HTMLInputElement>) => {
+			const value = e.target.value;
+			setUrlInput(value);
 			navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
 						...prev.filters,
-						text: textInput.trim() === '' ? undefined : textInput.trim(),
+						url: value || undefined,
 					},
 				}),
 			});
-		}, 500);
+		};
+		return handler;
+	}, [navigate]);
 
-		return () => clearTimeout(timer);
-	}, [textInput, navigate]);
+	const handleTextChange = useMemo(() => {
+		const handler = (e: React.ChangeEvent<HTMLInputElement>) => {
+			const value = e.target.value;
+			setTextInput(value);
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						text: value || undefined,
+					},
+				}),
+			});
+		};
+		return handler;
+	}, [navigate]);
 
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			const parsedLimit = limitInput === '' ? undefined : parseInt(limitInput, 10);
+	const handleTypeChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						type: value === 'All' ? undefined : (value as RecordType),
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
 
-			// Only update if it's a valid number or undefined
-			if (parsedLimit === undefined || !isNaN(parsedLimit)) {
-				navigate({
-					search: (prev) => ({
-						...prev,
-						limit: parsedLimit,
-					}),
-				});
+	const handleSourceChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						source: value === 'All' ? undefined : (value as IntegrationType),
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
+
+	const handleCuratedChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						isCurated: value === 'All' ? undefined : value === 'Yes',
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
+
+	const handleIndexNodeChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						isIndexNode: value === 'All' ? undefined : value === 'Yes',
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
+
+	const handleFormatChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						isFormat: value === 'All' ? undefined : value === 'Yes',
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
+
+	const handlePrivateChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						isPrivate: value === 'All' ? undefined : value === 'Yes',
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
+
+	const handleHasParentChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						hasParent: value === 'All' ? undefined : value === 'Yes',
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
+
+	const handleLimitChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const value = e.target.value;
+			if (value === '' || /^\d+$/.test(value)) {
+				setLimitInput(value);
+				if (value) {
+					navigate({
+						search: (prev) => ({
+							...prev,
+							limit: parseInt(value, 10),
+						}),
+					});
+				}
 			}
-		}, 500);
+		},
+		[navigate]
+	);
 
-		return () => clearTimeout(timer);
-	}, [limitInput, navigate]);
-
-	const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setTitleInput(e.target.value);
-	};
-
-	const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setTextInput(e.target.value);
-	};
-
-	const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setUrlInput(e.target.value);
-	};
-
-	const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		// Only allow positive numbers
-		const value = e.target.value;
-		if (value === '' || /^\d+$/.test(value)) {
-			setLimitInput(value);
-		}
-	};
-
-	const curatedValue = isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No';
-	const indexNodeValue = isIndexNode === undefined ? 'All' : isIndexNode ? 'Yes' : 'No';
-	const formatValue = isFormat === undefined ? 'All' : isFormat ? 'Yes' : 'No';
-	const privateValue = isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No';
-	const hasParentValue = hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No';
-
-	return queue ? (
-		<div className="flex h-full grow gap-4 overflow-hidden">
+	// Memoize the filter sidebar content
+	const FilterSidebar = useMemo(
+		() => (
 			<div className="flex min-w-48 flex-col gap-3 text-sm">
 				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="type">Type</Label>
@@ -313,7 +394,7 @@ export const RecordsGrid = () => {
 					<ToggleGroup
 						id="curated"
 						type="single"
-						value={curatedValue}
+						value={filterValues.curatedValue}
 						onValueChange={handleCuratedChange}
 						variant="outline"
 						className="w-full"
@@ -334,7 +415,7 @@ export const RecordsGrid = () => {
 					<ToggleGroup
 						id="indexNode"
 						type="single"
-						value={indexNodeValue}
+						value={filterValues.indexNodeValue}
 						onValueChange={handleIndexNodeChange}
 						variant="outline"
 						className="w-full"
@@ -355,7 +436,7 @@ export const RecordsGrid = () => {
 					<ToggleGroup
 						id="format"
 						type="single"
-						value={formatValue}
+						value={filterValues.formatValue}
 						onValueChange={handleFormatChange}
 						variant="outline"
 						className="w-full"
@@ -376,7 +457,7 @@ export const RecordsGrid = () => {
 					<ToggleGroup
 						id="hasParent"
 						type="single"
-						value={hasParentValue}
+						value={filterValues.hasParentValue}
 						onValueChange={handleHasParentChange}
 						variant="outline"
 						className="w-full"
@@ -397,7 +478,7 @@ export const RecordsGrid = () => {
 					<ToggleGroup
 						id="private"
 						type="single"
-						value={privateValue}
+						value={filterValues.privateValue}
 						onValueChange={handlePrivateChange}
 						variant="outline"
 						className="w-full"
@@ -444,6 +525,32 @@ export const RecordsGrid = () => {
 					</Link>
 				</div>
 			</div>
+		),
+		[
+			type,
+			handleTypeChange,
+			source,
+			handleSourceChange,
+			titleInput,
+			handleTitleChange,
+			urlInput,
+			handleUrlChange,
+			textInput,
+			handleTextChange,
+			limitInput,
+			handleLimitChange,
+			filterValues,
+			handleCuratedChange,
+			handleIndexNodeChange,
+			handleFormatChange,
+			handlePrivateChange,
+			handleHasParentChange,
+		]
+	);
+
+	return queue ? (
+		<div className="flex h-full grow gap-4 overflow-hidden">
+			{FilterSidebar}
 			<div className="flex grow overflow-hidden rounded border border-border bg-c-surface text-xs">
 				<Table className={cn({ 'h-full': queue.length === 0 })}>
 					<TableHeader className="sticky top-0 z-10 bg-c-surface before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-border">
@@ -464,63 +571,7 @@ export const RecordsGrid = () => {
 					</TableHeader>
 					<TableBody>
 						{queue.length > 0 ? (
-							queue.map((record) => (
-								<TableRow key={record.id}>
-									<TableCell className="text-center text-sm">
-										<RecordTypeIcon type={record.type} />
-									</TableCell>
-									<TableCell className="max-w-60 truncate whitespace-nowrap">
-										<Tooltip delayDuration={500}>
-											<TooltipTrigger asChild>
-												<Link
-													to="/records/$recordId"
-													params={{ recordId: record.id.toString() }}
-													className="block w-full truncate"
-												>
-													{record.title || record.summary || record.content || 'Untitled Record'}
-												</Link>
-											</TooltipTrigger>
-											<TooltipContent>
-												{record.title || record.summary || record.content || 'Untitled Record'}
-											</TooltipContent>
-										</Tooltip>
-									</TableCell>
-									<TableCell>
-										{record.creators.map((creator) => creator.creator.title).join(', ')}
-									</TableCell>
-									<TableCell>{record.format?.title}</TableCell>
-									<TableCell className="whitespace-nowrap">
-										{record.url ? (
-											<ExternalLink href={record.url}>{new URL(record.url).hostname}</ExternalLink>
-										) : (
-											''
-										)}
-									</TableCell>
-									<TableCell>{record.parentId}</TableCell>
-									<TableCell className="text-center">
-										{record.rating ? '⭐'.repeat(record.rating) : ''}
-									</TableCell>
-									<TableCell className="text-center text-base">
-										{record.isIndexNode ? <CheckIcon /> : null}
-									</TableCell>
-									<TableCell className="text-center text-base">
-										{record.isFormat ? <CheckIcon /> : null}
-									</TableCell>
-									<TableCell className="text-center text-base">
-										{record.isPrivate ? <CheckIcon /> : null}
-									</TableCell>
-									<TableCell className="text-center text-base">
-										{record.isCurated ? <CheckIcon /> : null}
-									</TableCell>
-									<TableCell className="text-center">
-										<div className="flex justify-center gap-1 text-[0.875em]">
-											{record.sources?.map((source) => (
-												<IntegrationLogo integration={source} key={source} />
-											))}
-										</div>
-									</TableCell>
-								</TableRow>
-							))
+							queue.map((record) => <RecordRow key={record.id} record={record} />)
 						) : (
 							<TableRow>
 								<TableCell colSpan={12} className="pointer-events-none text-center">

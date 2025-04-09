@@ -2,17 +2,6 @@ import React from 'react';
 import { Trash2Icon } from 'lucide-react';
 import type { MediaSelect } from '@/server/db/schema/media';
 import { Button } from './ui/button';
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from '@/components';
 
 interface MediaGridProps {
 	media: MediaSelect[];
@@ -67,30 +56,15 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 					{/* Toolbar */}
 					{onDelete && (
 						<div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-c-surface opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
-							<AlertDialog>
-								<AlertDialogTrigger asChild>
-									<Button type="button" size="icon" variant="ghost" aria-label="Delete media">
-										<Trash2Icon />
-									</Button>
-								</AlertDialogTrigger>
-								<AlertDialogContent>
-									<AlertDialogHeader>
-										<AlertDialogTitle>Delete media?</AlertDialogTitle>
-										<AlertDialogDescription>
-											This action cannot be undone. This will permanently delete this media item.
-										</AlertDialogDescription>
-									</AlertDialogHeader>
-									<AlertDialogFooter>
-										<AlertDialogCancel>Cancel</AlertDialogCancel>
-										<AlertDialogAction
-											onClick={() => onDelete(item)}
-											className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-										>
-											Delete
-										</AlertDialogAction>
-									</AlertDialogFooter>
-								</AlertDialogContent>
-							</AlertDialog>
+							<Button
+								type="button"
+								size="icon"
+								variant="ghost"
+								aria-label="Delete media"
+								onClick={() => onDelete(item)}
+							>
+								<Trash2Icon />
+							</Button>
 						</div>
 					)}
 				</div>

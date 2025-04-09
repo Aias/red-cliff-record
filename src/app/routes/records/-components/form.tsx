@@ -44,7 +44,6 @@ import {
 	ToggleGroupItem,
 	Tooltip,
 	TooltipContent,
-	TooltipProvider,
 	TooltipTrigger,
 } from '@/components';
 import MediaGrid from '@/components/media-grid';
@@ -263,42 +262,40 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 			<div className="@container">
 				<form.Field name="type">
 					{(field) => (
-						<TooltipProvider>
-							<ToggleGroup
-								type="single"
-								value={field.state.value}
-								onValueChange={(value) => {
-									if (value) field.handleChange(value as RecordType);
-								}}
-								variant="outline"
-								className="w-full"
-							>
-								{RecordTypeSchema.options.map((type) => {
-									const { icon: Icon, description } = recordTypeIcons[type];
-									return (
-										<Tooltip key={type}>
-											<TooltipTrigger asChild>
-												<ToggleGroupItem
-													value={type}
-													aria-label={type}
-													data-state={field.state.value === type ? 'on' : 'off'}
-													className="flex grow-1 items-center gap-1"
-												>
-													<Icon />
-													<span className="hidden capitalize @[480px]:inline">{type}</span>
-												</ToggleGroupItem>
-											</TooltipTrigger>
-											<TooltipContent side="bottom">
-												<p>
-													<strong className="mr-1 capitalize">{type}</strong>
-													{description}
-												</p>
-											</TooltipContent>
-										</Tooltip>
-									);
-								})}
-							</ToggleGroup>
-						</TooltipProvider>
+						<ToggleGroup
+							type="single"
+							value={field.state.value}
+							onValueChange={(value) => {
+								if (value) field.handleChange(value as RecordType);
+							}}
+							variant="outline"
+							className="w-full"
+						>
+							{RecordTypeSchema.options.map((type) => {
+								const { icon: Icon, description } = recordTypeIcons[type];
+								return (
+									<Tooltip key={type}>
+										<TooltipTrigger asChild>
+											<ToggleGroupItem
+												value={type}
+												aria-label={type}
+												data-state={field.state.value === type ? 'on' : 'off'}
+												className="flex grow-1 items-center gap-1"
+											>
+												<Icon />
+												<span className="hidden capitalize @[480px]:inline">{type}</span>
+											</ToggleGroupItem>
+										</TooltipTrigger>
+										<TooltipContent side="bottom">
+											<p>
+												<strong className="mr-1 capitalize">{type}</strong>
+												{description}
+											</p>
+										</TooltipContent>
+									</Tooltip>
+								);
+							})}
+						</ToggleGroup>
 					)}
 				</form.Field>
 			</div>

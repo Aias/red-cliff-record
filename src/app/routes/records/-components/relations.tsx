@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
 import { recordTypeIcons } from './type-icons';
@@ -101,52 +101,58 @@ interface RecordLinkProps {
 	};
 }
 
-export const RecordLink = ({
-	record,
-	className,
-	options = { showExternalLink: true, showInternalLink: true },
-}: RecordLinkProps) => {
-	const { type, title, content, summary, notes, abbreviation, url, sense, sources } = record;
-	const { showInternalLink, showExternalLink } = options;
-	const TypeIcon = recordTypeIcons[type].icon;
-	const label = title || summary || notes || content || 'Untitled Record';
+export const RecordLink = memo(
+	({
+		record,
+		className,
+		options = { showExternalLink: true, showInternalLink: true },
+	}: RecordLinkProps) => {
+		const { type, title, content, summary, notes, abbreviation, url, sense, sources } = record;
+		const { showInternalLink, showExternalLink } = options;
 
-	return (
-		<div className={cn('flex items-center gap-1', className)}>
-			<TypeIcon className="text-c-symbol" />
-			<div className="flex grow items-center gap-1">
-				{showInternalLink ? (
-					<Link
-						className="line-clamp-1"
-						to={`/records/$recordId`}
-						params={{ recordId: record.id.toString() }}
+		const TypeIcon = useMemo(() => recordTypeIcons[type].icon, [type]);
+		const label = useMemo(
+			() => title || summary || notes || content || 'Untitled Record',
+			[title, summary, notes, content]
+		);
+
+		return (
+			<div className={cn('flex items-center gap-1', className)}>
+				<TypeIcon className="text-c-symbol" />
+				<div className="flex grow items-center gap-1">
+					{showInternalLink ? (
+						<Link
+							className="line-clamp-1"
+							to={`/records/$recordId`}
+							params={{ recordId: record.id.toString() }}
+						>
+							{label}
+						</Link>
+					) : (
+						<strong className="line-clamp-1">{label}</strong>
+					)}
+					{abbreviation && <span>({abbreviation})</span>}
+					{sense && <em className="text-c-secondary">{sense}</em>}
+				</div>
+				{url && showExternalLink && (
+					<ExternalLink
+						className="rounded-sm bg-c-mist px-2 text-xs whitespace-nowrap text-c-secondary"
+						href={url}
 					>
-						{label}
-					</Link>
-				) : (
-					<strong className="line-clamp-1">{label}</strong>
+						{new URL(url).hostname}
+					</ExternalLink>
 				)}
-				{abbreviation && <span>({abbreviation})</span>}
-				{sense && <em className="text-c-secondary">{sense}</em>}
+				<ul className="flex items-center gap-1.5 text-[0.75em] opacity-50">
+					{sources?.map((source) => (
+						<li key={source}>
+							<IntegrationLogo integration={source} />
+						</li>
+					))}
+				</ul>
 			</div>
-			{url && showExternalLink && (
-				<ExternalLink
-					className="rounded-sm bg-c-mist px-2 text-xs whitespace-nowrap text-c-secondary"
-					href={url}
-				>
-					{new URL(url).hostname}
-				</ExternalLink>
-			)}
-			<ul className="flex items-center gap-1.5 text-[0.75em] opacity-50">
-				{sources?.map((source) => (
-					<li key={source}>
-						<IntegrationLogo integration={source} />
-					</li>
-				))}
-			</ul>
-		</div>
-	);
-};
+		);
+	}
+);
 
 interface RelationListProps {
 	records: RecordSelect[];

@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { DEFAULT_LIMIT, IdSchema } from './common';
-import { IntegrationTypeSchema, RecordTypeSchema } from '@/db/schema';
+import {
+	IntegrationTypeSchema,
+	RecordTypeSchema,
+	type MediaSelect,
+	type RecordCreatorSelect,
+	type RecordSelect,
+} from '@/db/schema';
 
 const OrderByFieldSchema = z.enum([
 	'recordUpdatedAt',
@@ -83,3 +89,10 @@ export const SearchRecordsInputSchema = z.object({
 });
 
 export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
+
+export interface RecordWithRelations extends RecordSelect {
+	creators: Array<RecordCreatorSelect & { creator: RecordSelect }>;
+	format: RecordSelect | null;
+	parent: RecordSelect | null;
+	media: Array<MediaSelect>;
+}

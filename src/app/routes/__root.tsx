@@ -1,11 +1,13 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { type QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
+import { scan } from 'react-scan';
 import type { ServerHelpers } from '@/app/trpc';
 import stylesUrl from '../styles/app.css?url';
 import { AppLayout } from './-app-components/app-layout';
 import { DefaultCatchBoundary } from './-app-components/catch-boundary';
 import { NotFound } from './-app-components/not-found';
+import { TooltipProvider } from '@/components';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getTheme, type Theme } from '@/lib/server/theme';
 import { cn } from '@/lib/utils';
@@ -72,9 +74,11 @@ function RootComponent() {
 
 	return (
 		<RootDocument appearance={appearance}>
-			<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
-				<Outlet />
-			</AppLayout>
+			<TooltipProvider>
+				<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
+					<Outlet />
+				</AppLayout>
+			</TooltipProvider>
 		</RootDocument>
 	);
 }
@@ -83,6 +87,11 @@ function RootDocument({
 	children,
 	appearance,
 }: Readonly<{ children: ReactNode; appearance: Theme }>) {
+	useEffect(() => {
+		scan({
+			enabled: false,
+		});
+	}, []);
 	return (
 		<html className={cn('h-viewport w-full', appearance)}>
 			<head>

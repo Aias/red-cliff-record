@@ -1,9 +1,9 @@
 import { publicProcedure } from '../../init';
-import { ListRecordsInputSchema } from '../records.types';
+import { ListRecordsInputSchema, type RecordWithRelations } from '../records.types';
 
 export const list = publicProcedure
 	.input(ListRecordsInputSchema)
-	.query(async ({ ctx: { db }, input }) => {
+	.query(async ({ ctx: { db }, input }): Promise<RecordWithRelations[]> => {
 		const {
 			filters: {
 				type,
