@@ -1,6 +1,10 @@
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import {
+	getMediaInsertData,
+	uploadClientFileToR2,
+} from '@/server/integrations/common/media-helpers';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { IdSchema } from './common';
 import {
@@ -11,7 +15,59 @@ import {
 	twitterMedia,
 } from '@/db/schema';
 
+// Schema for file upload input
+const MediaCreateInputSchema = z.object({
+	recordId: IdSchema,
+	fileData: z.string(), // Expecting base64 encoded string
+	fileName: z.string(),
+	fileType: z.string(), // e.g., 'image/png'
+});
+
 export const mediaRouter = createTRPCRouter({
+	create: publicProcedure.input(MediaCreateInputSchema).mutation(async ({ ctx: { db }, input }) => {
+		try {
+			// 1. Decode base64 file data
+			const fileBuffer = Buffer.from(input.fileData, 'base64');
+
+			// 2. Upload file to R2
+			const r2Url = await uploadClientFileToR2(fileBuffer, input.fileType, input.fileName);
+
+			// 4. Get metadata for the uploaded file using its R2 URL
+			const mediaInsertData = await getMediaInsertData(r2Url, {
+				recordId: input.recordId,
+			});
+
+			if (!mediaInsertData) {
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: 'Failed to get media metadata after upload.',
+				});
+			}
+
+			// 5. Insert media record into the database
+			const [newMedia] = await db.insert(media).values(mediaInsertData).returning();
+
+			if (!newMedia) {
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: 'Failed to insert media record into database.',
+				});
+			}
+
+			console.log(`Created media record ${newMedia.id} for record ${input.recordId}`);
+			return newMedia;
+		} catch (error) {
+			console.error('Failed to create media:', error);
+			if (error instanceof TRPCError) {
+				throw error;
+			}
+			throw new TRPCError({
+				code: 'INTERNAL_SERVER_ERROR',
+				message: `Failed to create media: ${error instanceof Error ? error.message : 'Unknown error'}`,
+			});
+		}
+	}),
+
 	delete: publicProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
 		const mediaToDelete = await db.query.media.findMany({
 			where: {

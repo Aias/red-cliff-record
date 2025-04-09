@@ -48,6 +48,7 @@ import {
 	TooltipTrigger,
 } from '@/components';
 import MediaGrid from '@/components/media-grid';
+import { MediaUpload } from '@/components/media-upload';
 import { cn } from '@/lib/utils';
 
 interface BooleanSwitchProps extends React.ComponentProps<typeof Label> {
@@ -76,6 +77,24 @@ interface RecordFormProps {
 	nextRecordId?: number;
 }
 
+// Helper function to read file as base64
+const readFileAsBase64 = (file: File): Promise<string> => {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => {
+			// Result is Data URL (e.g., "data:image/png;base64,iVBOR..."), remove prefix
+			const base64String = (reader.result as string).split(',')[1];
+			if (base64String) {
+				resolve(base64String);
+			} else {
+				reject(new Error('Failed to read file as base64: result is empty'));
+			}
+		};
+		reader.onerror = (error) => reject(error);
+		reader.readAsDataURL(file);
+	});
+};
+
 export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
@@ -99,14 +118,17 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	});
 
 	const deleteMediaMutation = trpc.media.delete.useMutation({
-		onSuccess: (deletedMedia) => {
+		onSuccess: () => {
 			utils.records.get.invalidate(recordId);
-			form.setFieldValue(
-				'media',
-				form.state.values.media?.filter(
-					(media) => !deletedMedia.map((m) => m.id).includes(media.id)
-				)
-			);
+		},
+	});
+
+	const createMediaMutation = trpc.media.create.useMutation({
+		onSuccess: () => {
+			utils.records.get.invalidate(recordId);
+		},
+		onError: (error) => {
+			console.error('Media upload failed:', error);
 		},
 	});
 
@@ -121,10 +143,10 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 		onSubmit: async ({ value }) => {
 			const {
 				title,
-				sense,
-				abbreviation,
 				url,
 				avatarUrl,
+				abbreviation,
+				sense,
 				summary,
 				content,
 				notes,
@@ -157,13 +179,10 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				e.preventDefault();
 			}
 
-			// Set isCurated to true
 			form.setFieldValue('isCurated', true);
 
-			// Submit the form and wait for completion
 			await form.handleSubmit();
 
-			// Navigate to the next record if provided
 			if (nextRecordId) {
 				navigate({
 					to: '/records/$recordId',
@@ -181,12 +200,11 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 		});
 	}, [recordId, record, form]);
 
-	// Extract related data for display
-	const { media, sources } = useMemo(() => record, [record]);
+	const { media: currentMedia, sources } = useMemo(() => record, [record]);
 
 	return (
 		<form
-			key={recordId} // Add key prop to force re-render when recordId changes
+			key={recordId}
 			onSubmit={(e) => {
 				e.preventDefault();
 				e.stopPropagation();
@@ -194,11 +212,9 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 			}}
 			onKeyDown={(e) => {
 				if (e.key === 'Escape') {
-					// Blur any focused element when Escape is pressed
 					(document.activeElement as HTMLElement)?.blur();
 				}
 
-				// Handle Cmd+Shift+Return (Mac) or Ctrl+Shift+Enter (Windows/Linux)
 				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'Enter' || e.key === 'Return')) {
 					curateAndNextHandler(e);
 				}
@@ -233,7 +249,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				)}
 			</h1>
 
-			{/* Type selector with toggle group */}
 			<div className="@container">
 				<form.Field name="type">
 					{(field) => (
@@ -277,7 +292,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				</form.Field>
 			</div>
 
-			{/* Rating slider */}
 			<form.Field name="rating">
 				{(field) => (
 					<div className="mx-5 mb-1.5 flex flex-col gap-3">
@@ -301,11 +315,9 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				)}
 			</form.Field>
 
-			{/* Metadata section with editable label-value table */}
 			<div className="rounded-md border border-border">
 				<Table>
 					<TableBody>
-						{/* URL field */}
 						<TableRow>
 							<TableCell className="w-20">
 								<Label className="flex w-full" htmlFor="url">
@@ -348,7 +360,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 							</TableCell>
 						</TableRow>
 
-						{/* Avatar URL field */}
 						<TableRow>
 							<TableCell className="w-20">
 								<Label className="flex w-full" htmlFor="avatarUrl">
@@ -391,7 +402,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 							</TableCell>
 						</TableRow>
 
-						{/* Abbreviation field */}
 						<TableRow>
 							<TableCell className="w-20">
 								<Label className="flex w-full" htmlFor="abbreviation">
@@ -413,7 +423,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 							</TableCell>
 						</TableRow>
 
-						{/* Sense field */}
 						<TableRow>
 							<TableCell className="w-20">
 								<Label className="flex w-full" htmlFor="sense">
@@ -438,11 +447,9 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				</Table>
 			</div>
 
-			{/* Content section */}
 			<div className="flex flex-col gap-3">
 				<h2>Content</h2>
 
-				{/* Summary field */}
 				<form.Field name="summary">
 					{(field) => (
 						<div className="flex flex-col gap-1">
@@ -463,7 +470,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 					)}
 				</form.Field>
 
-				{/* Content field */}
 				<form.Field name="content">
 					{(field) => (
 						<div className="flex flex-col gap-1">
@@ -484,7 +490,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 					)}
 				</form.Field>
 
-				{/* Notes field */}
 				<form.Field name="notes">
 					{(field) => (
 						<div className="flex flex-col gap-1">
@@ -506,15 +511,16 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				</form.Field>
 			</div>
 
-			{/* Media section */}
-			{media && media.length > 0 && (
+			{currentMedia && currentMedia.length > 0 ? (
 				<>
 					<Separator />
 					<div className="flex flex-col gap-3">
 						<h2>Media</h2>
-						<MediaGrid media={media} onDelete={(media) => deleteMediaMutation.mutate([media.id])} />
+						<MediaGrid
+							media={currentMedia}
+							onDelete={(media) => deleteMediaMutation.mutate([media.id])}
+						/>
 
-						{/* Media caption field */}
 						<form.Field name="mediaCaption">
 							{(field) => (
 								<div className="flex flex-col gap-1">
@@ -536,9 +542,30 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 						</form.Field>
 					</div>
 				</>
+			) : (
+				<>
+					<Separator />
+					<div className="flex flex-col gap-3">
+						<h2>Media</h2>
+						<MediaUpload
+							onUpload={async (file) => {
+								try {
+									const fileData = await readFileAsBase64(file);
+									await createMediaMutation.mutateAsync({
+										recordId,
+										fileData,
+										fileName: file.name,
+										fileType: file.type,
+									});
+								} catch (error) {
+									console.error('Error processing or uploading file:', error);
+								}
+							}}
+						/>
+					</div>
+				</>
 			)}
 
-			{/* Metadata section */}
 			<div className="flex flex-col gap-3">
 				<h2>Metadata</h2>
 				<div className="flex justify-between">
@@ -597,7 +624,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				/>
 			</div>
 
-			{/* Form actions */}
 			<Separator />
 
 			<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
