@@ -60,11 +60,11 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 		if (!resp.ok) {
 			throw new Error(`Failed to download: HTTP ${resp.status} from ${mediaUrl}`);
 		}
-		if (!resp.body) {
-			throw new Error(`Response body is null for ${mediaUrl}`);
-		}
 
-		// 2. Determine content type
+		// 2. Buffer the response instead of streaming
+		const buffer = Buffer.from(await resp.arrayBuffer());
+
+		// 3. Determine content type
 		let contentType = resp.headers.get('content-type') || '';
 
 		// If content type not provided, guess from URL using the centralized function
@@ -72,27 +72,28 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 			contentType = getMimeTypeFromURL(mediaUrl);
 		}
 
-		// 3. Generate unique filename (object key) with appropriate extension
+		// 4. Generate unique filename (object key) with appropriate extension
 		const uniqueName = randomUUID();
 		const ext = mime.extension(contentType) || 'bin';
 		const objectKey = `${uniqueName}.${ext}`;
 
-		// 4. Prepare and execute S3 Upload Command (Streaming)
+		// 5. Prepare and execute S3 Upload Command with buffered data
 		const putCommand = new PutObjectCommand({
 			Bucket: process.env.S3_BUCKET!,
 			Key: objectKey,
-			Body: resp.body,
+			Body: buffer,
 			ContentType: contentType,
+			ContentLength: buffer.length,
 		});
 
 		await s3Client.send(putCommand);
 
-		// 5. Construct and return public URL
+		// 6. Construct and return public URL
 		const publicUrl = `https://${process.env.ASSETS_DOMAIN}/${objectKey}`;
-		console.log(`Successfully streamed ${mediaUrl} to ${publicUrl}`);
+		console.log(`Successfully uploaded ${mediaUrl} to ${publicUrl}`);
 		return publicUrl;
 	} catch (error) {
-		console.error('Error streaming media to R2:', error);
+		console.error('Error uploading media to R2:', error);
 		throw new Error(
 			`Failed to stream media: ${error instanceof Error ? error.message : String(error)}`
 		);
