@@ -18,7 +18,7 @@
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.782.0",
 		"@libsql/client": "0.15.2",
-		"@octokit/request-error": "^6.1.7",
+		"@octokit/request-error": "^6.1.8",
 		"@octokit/rest": "^21.1.1",
 		"@radix-ui/colors": "^3.0.0",
 		"@radix-ui/react-alert-dialog": "^1.1.7",
@@ -71,7 +71,7 @@
 		"superjson": "^2.2.2",
 		"tailwind-merge": "^3.2.0",
 		"tailwindcss-animate": "^1.0.7",
-		"vinxi": "^0.5.3",
+		"vinxi": "^0.5.4",
 		"zod": "^3.24.2"
 	},
 	"devDependencies": {
@@ -87,7 +87,7 @@
 		"@vitejs/plugin-react": "^4.3.4",
 		"drizzle-kit": "^1.0.0-beta.1-5e64efc",
 		"eslint": "^9.24.0",
-		"eslint-config-prettier": "^10.1.1",
+		"eslint-config-prettier": "^10.1.2",
 		"eslint-plugin-import": "^2.31.0",
 		"eslint-plugin-react-compiler": "^19.0.0-beta-e993439-20250405",
 		"globals": "^16.0.0",

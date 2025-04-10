@@ -84,7 +84,7 @@ export const list = publicProcedure
 								}
 							: undefined,
 				parentId:
-					parentId === null
+					parentId === null || hasParent === false
 						? {
 								isNull: true,
 							}
