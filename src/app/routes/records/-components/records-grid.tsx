@@ -75,7 +75,7 @@ const RecordRow = memo(function RecordRow({ record }: { record: RecordWithRelati
 			</TableCell>
 			<TableCell>{record.parentId}</TableCell>
 			<TableCell className="text-center">
-				{record.rating ? '⭐'.repeat(record.rating) : ''}
+				{record.rating && record.rating > 0 ? '⭐'.repeat(record.rating) : ''}
 			</TableCell>
 			<TableCell className="text-center text-base">
 				{record.isIndexNode ? <CheckIcon /> : null}
