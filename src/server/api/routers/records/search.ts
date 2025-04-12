@@ -33,11 +33,7 @@ export const search = publicProcedure
 				desc(records.recordUpdatedAt),
 			],
 			with: {
-				creators: {
-					with: {
-						creator: true,
-					},
-				},
+				creators: true,
 				media: true,
 			},
 		});

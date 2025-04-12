@@ -30,11 +30,7 @@ export const list = publicProcedure
 
 		return db.query.records.findMany({
 			with: {
-				creators: {
-					with: {
-						creator: true,
-					},
-				},
+				creators: true,
 				format: true,
 				parent: true,
 				media: true,
@@ -99,7 +95,7 @@ export const list = publicProcedure
 				isCurated,
 				creators: creatorId
 					? {
-							creatorId,
+							id: creatorId,
 						}
 					: undefined,
 				reminderAt: hasReminder

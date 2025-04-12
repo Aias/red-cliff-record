@@ -42,7 +42,7 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 			{creators.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Creators</h3>
-					<RelationList records={creators.map(({ creator }) => creator)} />
+					<RelationList records={creators} />
 				</section>
 			)}
 			{parent && (
@@ -60,25 +60,25 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 			{created.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Created</h3>
-					<RelationList records={created.map(({ record }) => record)} />
+					<RelationList records={created} />
 				</section>
 			)}
 			{formatOf.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Format Of</h3>
-					<RelationList records={formatOf.map((record) => record)} />
+					<RelationList records={formatOf} />
 				</section>
 			)}
 			{references.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">References</h3>
-					<RelationList records={references.map(({ target }) => target)} />
+					<RelationList records={references} />
 				</section>
 			)}
 			{referencedBy.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Referenced By</h3>
-					<RelationList records={referencedBy.map(({ source }) => source)} />
+					<RelationList records={referencedBy} />
 				</section>
 			)}
 		</div>

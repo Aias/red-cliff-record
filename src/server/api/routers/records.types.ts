@@ -4,7 +4,6 @@ import {
 	IntegrationTypeSchema,
 	RecordTypeSchema,
 	type MediaSelect,
-	type RecordCreatorSelect,
 	type RecordSelect,
 } from '@/db/schema';
 
@@ -91,7 +90,7 @@ export const SearchRecordsInputSchema = z.object({
 export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
 
 export interface RecordWithRelations extends RecordSelect {
-	creators: Array<RecordCreatorSelect & { creator: RecordSelect }>;
+	creators: RecordSelect[];
 	format: RecordSelect | null;
 	parent: RecordSelect | null;
 	media: Array<MediaSelect>;

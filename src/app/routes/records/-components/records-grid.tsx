@@ -61,7 +61,7 @@ const RecordRow = memo(function RecordRow({ record }: { record: RecordWithRelati
 			</TableCell>
 			<TableCell>
 				{record.creators
-					?.map((creator) => creator.creator.title || '')
+					?.map((creator) => creator.title || '')
 					.filter(Boolean)
 					.join(', ')}
 			</TableCell>

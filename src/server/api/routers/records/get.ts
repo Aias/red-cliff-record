@@ -5,31 +5,15 @@ import { IdSchema } from '../common';
 export const get = publicProcedure.input(IdSchema).query(async ({ ctx: { db }, input }) => {
 	const record = await db.query.records.findFirst({
 		with: {
-			creators: {
-				with: {
-					creator: true,
-				},
-			},
-			created: {
-				with: {
-					record: true,
-				},
-			},
+			creators: true,
+			created: true,
 			format: true,
 			formatOf: true,
 			parent: true,
 			children: true,
 			media: true,
-			references: {
-				with: {
-					target: true,
-				},
-			},
-			referencedBy: {
-				with: {
-					source: true,
-				},
-			},
+			references: true,
+			referencedBy: true,
 			transcludes: true,
 		},
 		where: {

@@ -444,13 +444,13 @@ export const relations = defineRelations(
 				to: r.records.parentId,
 			}),
 			media: r.many.media(),
-			creators: r.many.recordCreators({
-				from: r.records.id,
-				to: r.recordCreators.recordId,
+			creators: r.many.records({
+				from: r.records.id.through(r.recordCreators.recordId),
+				to: r.records.id.through(r.recordCreators.creatorId),
 			}),
-			created: r.many.recordCreators({
-				from: r.records.id,
-				to: r.recordCreators.creatorId,
+			created: r.many.records({
+				from: r.records.id.through(r.recordCreators.creatorId),
+				to: r.records.id.through(r.recordCreators.recordId),
 			}),
 			format: r.one.records({
 				from: r.records.formatId,
@@ -460,13 +460,13 @@ export const relations = defineRelations(
 				from: r.records.id,
 				to: r.records.formatId,
 			}),
-			references: r.many.recordRelations({
-				from: r.records.id,
-				to: r.recordRelations.sourceId,
+			references: r.many.records({
+				from: r.records.id.through(r.recordRelations.sourceId),
+				to: r.records.id.through(r.recordRelations.targetId),
 			}),
-			referencedBy: r.many.recordRelations({
-				from: r.records.id,
-				to: r.recordRelations.targetId,
+			referencedBy: r.many.records({
+				from: r.records.id.through(r.recordRelations.targetId),
+				to: r.records.id.through(r.recordRelations.sourceId),
 			}),
 			transcludes: r.one.records({
 				from: r.records.transcludeId,

@@ -13,11 +13,7 @@ export const findDuplicates = publicProcedure
 				id: input,
 			},
 			with: {
-				creators: {
-					with: {
-						creator: true,
-					},
-				},
+				creators: true,
 			},
 		});
 
@@ -80,11 +76,7 @@ export const findDuplicates = publicProcedure
 			],
 			limit: 3, // Adjust as needed
 			with: {
-				creators: {
-					with: {
-						creator: true,
-					},
-				},
+				creators: true,
 				media: true,
 				format: true,
 			},
