@@ -21,6 +21,7 @@ export const list = publicProcedure
 				isPrivate,
 				isCurated,
 				hasReminder,
+				hasEmbedding,
 				source,
 			},
 			limit,
@@ -117,6 +118,16 @@ export const list = publicProcedure
 								lte: maxRating,
 							}
 						: undefined,
+				textEmbedding:
+					hasEmbedding === true
+						? {
+								isNotNull: true,
+							}
+						: hasEmbedding === false
+							? {
+									isNull: true,
+								}
+							: undefined,
 			},
 			limit,
 			offset,

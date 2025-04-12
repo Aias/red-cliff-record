@@ -119,6 +119,7 @@ export const RecordsGrid = () => {
 			source,
 			hasParent,
 			text,
+			hasEmbedding,
 		},
 		limit,
 	} = search;
@@ -131,8 +132,9 @@ export const RecordsGrid = () => {
 			formatValue: isFormat === undefined ? 'All' : isFormat ? 'Yes' : 'No',
 			privateValue: isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No',
 			hasParentValue: hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No',
+			hasEmbeddingValue: hasEmbedding === undefined ? 'All' : hasEmbedding ? 'Yes' : 'No',
 		}),
-		[isCurated, isIndexNode, isFormat, isPrivate, hasParent]
+		[isCurated, isIndexNode, isFormat, isPrivate, hasParent, hasEmbedding]
 	);
 
 	// State for input fields
@@ -291,6 +293,21 @@ export const RecordsGrid = () => {
 					filters: {
 						...prev.filters,
 						hasParent: value === 'All' ? undefined : value === 'Yes',
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
+
+	const handleHasEmbeddingChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						hasEmbedding: value === 'All' ? undefined : value === 'Yes',
 					},
 				}),
 			});
@@ -459,6 +476,27 @@ export const RecordsGrid = () => {
 						type="single"
 						value={filterValues.hasParentValue}
 						onValueChange={handleHasParentChange}
+						variant="outline"
+						className="w-full"
+					>
+						<ToggleGroupItem value="All" className="flex-1">
+							All
+						</ToggleGroupItem>
+						<ToggleGroupItem value="Yes" className="flex-1">
+							Yes
+						</ToggleGroupItem>
+						<ToggleGroupItem value="No" className="flex-1">
+							No
+						</ToggleGroupItem>
+					</ToggleGroup>
+				</div>
+				<div className="flex flex-col gap-1.5">
+					<Label htmlFor="hasEmbedding">Has Embedding?</Label>
+					<ToggleGroup
+						id="hasEmbedding"
+						type="single"
+						value={filterValues.hasEmbeddingValue}
+						onValueChange={handleHasEmbeddingChange}
 						variant="outline"
 						className="w-full"
 					>

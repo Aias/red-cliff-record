@@ -1,6 +1,10 @@
+import { TRPCError } from '@trpc/server';
+import { and, desc, getTableColumns, isNotNull, notInArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { publicProcedure } from '../../init';
-import { SIMILARITY_THRESHOLD } from '../common';
+import { similarity, SIMILARITY_THRESHOLD } from '../common';
 import { SearchRecordsInputSchema } from '../records.types';
+import { records } from '@/db/schema';
 
 export const search = publicProcedure
 	.input(SearchRecordsInputSchema)
@@ -37,4 +41,40 @@ export const search = publicProcedure
 				media: true,
 			},
 		});
+	});
+
+export const similaritySearch = publicProcedure
+	.input(
+		z.object({
+			vector: z.number().array(),
+			limit: z.number().optional().default(20),
+			exclude: z.number().array().optional(),
+		})
+	)
+	.query(async ({ ctx: { db }, input }) => {
+		try {
+			const { vector, limit, exclude } = input;
+			const similaritySql = similarity(records.textEmbedding, vector);
+			const results = await db
+				.select({
+					...getTableColumns(records),
+					similarity: similaritySql,
+				})
+				.from(records)
+				.where(
+					and(
+						isNotNull(records.textEmbedding),
+						exclude ? notInArray(records.id, exclude) : undefined
+					)
+				)
+				.orderBy((t) => [desc(t.similarity), desc(t.recordUpdatedAt)])
+				.limit(limit);
+			return results;
+		} catch (error) {
+			console.error(error);
+			throw new TRPCError({
+				code: 'INTERNAL_SERVER_ERROR',
+				message: 'Error searching for similar records',
+			});
+		}
 	});

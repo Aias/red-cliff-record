@@ -41,6 +41,7 @@ export const RecordFiltersSchema = z.object({
 	isPrivate: z.boolean().optional(),
 	isCurated: z.boolean().optional(),
 	hasReminder: z.boolean().optional(),
+	hasEmbedding: z.boolean().optional(),
 	source: IntegrationTypeSchema.optional(),
 });
 export const LimitSchema = z.number().int().positive();
@@ -94,4 +95,17 @@ export interface RecordWithRelations extends RecordSelect {
 	format: RecordSelect | null;
 	parent: RecordSelect | null;
 	media: Array<MediaSelect>;
+}
+
+export interface FullRecord extends RecordSelect {
+	creators: RecordSelect[];
+	created: RecordSelect[];
+	format: RecordSelect | null;
+	formatOf: RecordSelect[];
+	parent: RecordSelect | null;
+	children: RecordSelect[];
+	media: Array<MediaSelect>;
+	references: RecordSelect[];
+	referencedBy: RecordSelect[];
+	transcludes: RecordSelect | null;
 }
