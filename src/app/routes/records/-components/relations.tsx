@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
+import { ArrowLeft, ArrowLeftRight, ArrowRight } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { recordTypeIcons } from './type-icons';
 import { ExternalLink, IntegrationLogo, Placeholder, Spinner } from '@/components';
@@ -23,19 +24,41 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 		enabled: !!recordId,
 	});
 
-	const { children, creators, references, parent, referencedBy, created, formatOf } = useMemo(
+	const { children, creators, parent, created, formatOf } = useMemo(
 		() =>
 			record ?? {
 				children: [],
 				creators: [],
 				created: [],
-				references: [],
-				referencedBy: [],
 				formatOf: [],
 				parent: null,
 			},
 		[record]
 	);
+
+	const combinedReferences = useMemo(() => {
+		if (!record) return [];
+
+		const referencesMap = new Map<
+			number,
+			{ record: RecordSelect; direction: 'reference' | 'referencedBy' | 'both' }
+		>();
+
+		record.references.forEach((ref) => {
+			referencesMap.set(ref.id, { record: ref, direction: 'reference' });
+		});
+
+		record.referencedBy.forEach((refBy) => {
+			const existing = referencesMap.get(refBy.id);
+			if (existing) {
+				existing.direction = 'both';
+			} else {
+				referencesMap.set(refBy.id, { record: refBy, direction: 'referencedBy' });
+			}
+		});
+
+		return Array.from(referencesMap.values());
+	}, [record]);
 
 	return record ? (
 		<div className="text-sm">
@@ -69,16 +92,16 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 					<RelationList records={formatOf} />
 				</section>
 			)}
-			{references.length > 0 && (
+			{combinedReferences.length > 0 && (
 				<section className="px-3">
-					<h3 className="mt-4 mb-2">References</h3>
-					<RelationList records={references} />
-				</section>
-			)}
-			{referencedBy.length > 0 && (
-				<section className="px-3">
-					<h3 className="mt-4 mb-2">Referenced By</h3>
-					<RelationList records={referencedBy} />
+					<h3 className="mt-4 mb-2">Relations</h3>
+					<ul>
+						{combinedReferences.map(({ record: refRecord, direction }) => (
+							<li key={refRecord.id}>
+								<ReferenceItem record={refRecord} direction={direction} />
+							</li>
+						))}
+					</ul>
 				</section>
 			)}
 		</div>
@@ -210,15 +233,59 @@ const RelationList = ({ records }: RelationListProps) => {
 	);
 };
 
+// New component for displaying combined references with directionality
+interface ReferenceItemProps {
+	record: RecordSelect;
+	direction: 'reference' | 'referencedBy' | 'both';
+}
+
+const ReferenceItem = ({ record, direction }: ReferenceItemProps) => {
+	const DirectionIcon = useMemo(() => {
+		switch (direction) {
+			case 'reference':
+				return ArrowRight;
+			case 'referencedBy':
+				return ArrowLeft;
+			case 'both':
+				return ArrowLeftRight;
+		}
+	}, [direction]);
+
+	return (
+		<div className="flex items-center justify-between gap-4">
+			<span className="w-[4ch] text-center font-mono text-xs text-c-accent">
+				<DirectionIcon className="size-4 shrink-0" />
+			</span>
+			<RecordLink record={record} className="flex-1" />
+		</div>
+	);
+};
+
 export const SimilarRecords = ({ recordId }: { recordId: number }) => {
 	const [record] = trpc.records.get.useSuspenseQuery(recordId);
+
+	const omittedRecordIds = useMemo(() => {
+		const { children, creators, references, parent, referencedBy, created, formatOf } = record;
+		return [
+			record,
+			parent,
+			...children,
+			...creators,
+			...created,
+			...references,
+			...referencedBy,
+			...formatOf,
+		]
+			.map((record) => record?.id)
+			.filter((id): id is number => id !== undefined);
+	}, [record]);
 
 	// Fetch similar records only if textEmbedding exists
 	const { data: similarRecords, isLoading } = trpc.records.similaritySearch.useQuery(
 		{
 			vector: record.textEmbedding!, // Assert non-null because enabled is true only if it exists
 			limit: 10,
-			exclude: [recordId],
+			exclude: [recordId, ...omittedRecordIds],
 		},
 		{
 			enabled: !!record.textEmbedding, // Only run the query if textEmbedding is present
@@ -233,7 +300,10 @@ export const SimilarRecords = ({ recordId }: { recordId: number }) => {
 			) : similarRecords && similarRecords.length > 0 ? (
 				<ul>
 					{similarRecords.map((record) => (
-						<li key={record.id} className="flex items-center gap-6">
+						<li key={record.id} className="flex items-center gap-4">
+							<span className="w-[4ch] font-mono text-xs text-c-secondary">
+								{record.similarity.toFixed(2)}
+							</span>
 							<RecordLink
 								record={record}
 								className="flex-1"
@@ -242,9 +312,6 @@ export const SimilarRecords = ({ recordId }: { recordId: number }) => {
 									showInternalLink: true,
 								}}
 							/>
-							<span className="font-mono text-xs text-c-secondary">
-								{record.similarity.toFixed(2)}
-							</span>
 						</li>
 					))}
 				</ul>

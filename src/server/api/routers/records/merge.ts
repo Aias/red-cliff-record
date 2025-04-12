@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { publicProcedure } from '../../init';
 import {
@@ -112,6 +112,8 @@ export const merge = publicProcedure
 				isFormat: source.isFormat || target.isFormat,
 				isPrivate: source.isPrivate || target.isPrivate,
 				isCurated: source.isCurated || target.isCurated,
+				// If merging child into parent, set parentId to null
+				parentId: source.parentId === targetId ? null : target.parentId || source.parentId,
 				recordUpdatedAt: new Date(),
 				textEmbedding: null, // Changes require recalculating the embedding
 			};
@@ -145,7 +147,7 @@ export const merge = publicProcedure
 							parentId: targetId,
 							recordUpdatedAt: new Date(),
 						})
-						.where(eq(records.parentId, sourceId));
+						.where(and(eq(records.parentId, sourceId), ne(records.id, targetId)));
 
 					await tx
 						.update(records)

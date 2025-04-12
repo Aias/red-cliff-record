@@ -336,7 +336,7 @@ export const RecordsGrid = () => {
 	// Memoize the filter sidebar content
 	const FilterSidebar = useMemo(
 		() => (
-			<div className="flex min-w-48 flex-col gap-3 text-sm">
+			<div className="-mx-4 flex min-w-48 flex-col gap-3 overflow-y-auto px-4 text-sm">
 				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="type">Type</Label>
 					<Select value={type ?? 'All'} onValueChange={handleTypeChange}>

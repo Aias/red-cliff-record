@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, getTableColumns, isNotNull, notInArray } from 'drizzle-orm';
+import { and, desc, eq, getTableColumns, isNotNull, notInArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { publicProcedure } from '../../init';
 import { similarity, SIMILARITY_THRESHOLD } from '../common';
@@ -64,7 +64,8 @@ export const similaritySearch = publicProcedure
 				.where(
 					and(
 						isNotNull(records.textEmbedding),
-						exclude ? notInArray(records.id, exclude) : undefined
+						exclude ? notInArray(records.id, exclude) : undefined,
+						eq(records.isPrivate, false)
 					)
 				)
 				.orderBy((t) => [desc(t.similarity), desc(t.recordUpdatedAt)])

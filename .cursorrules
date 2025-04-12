@@ -5,7 +5,7 @@
 - Use Shadcn where appropriate for functional and interactive components, especially for interactive components such as buttons, checkboxes, inputs, etc.
 - Use Tanstack Forms for form handling and validation, which can be integrated with Tailwind, tRPC, and Tanstack Query.
 - Reusable components should be created in `/src/app/components` and named like `example-component.tsx`.
-- Icon are located in `/src/app/components/icons`. We use Radix icons, not Lucide, and customize them. For any new icons needed, import it from Radix and add a corresponding export according to its semantic meaning to the icons index file.
+- Use Lucide for icons, and import the `<Name>Icon` component from the library rather than just the `<Name>` titled export.
 - Components that are specific to a page should be created in the page's directory either in a `-components` folder or named like `-page-component.tsx`. The `-` prefix instructs Tanstack to ignore the component when generating routes.
 - Interaction with the database should be done via `tRPC`, with new API routes created as needed within `/src/server/api/routers`. Input validation should be done via zod and database queries should be done via drizzle.
 - When writing drizzle queries that read data from the database, prefer the `db.query.<table>` syntax (relational queries) over `db.select().from(<table>)`. Updates, inserts, and deletes should be done via `db.update`, `db.insert`, and `db.delete`. Always handle conflicts gracefully on insertions.
