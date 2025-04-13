@@ -106,8 +106,18 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	}, [record]);
 
 	const updateMutation = trpc.records.upsert.useMutation({
-		onSuccess: () => {
+		onSuccess: (record) => {
 			utils.records.invalidate();
+			if (record.isCurated) {
+				embedMutation.mutate(recordId);
+			}
+		},
+	});
+
+	const embedMutation = trpc.records.embed.useMutation({
+		onSuccess: (record) => {
+			utils.records.get.invalidate(record.id);
+			utils.records.similaritySearch.invalidate();
 		},
 	});
 

@@ -265,16 +265,18 @@ export const SimilarRecords = ({ recordId }: { recordId: number }) => {
 	const [record] = trpc.records.get.useSuspenseQuery(recordId);
 
 	const omittedRecordIds = useMemo(() => {
-		const { children, creators, references, parent, referencedBy, created, formatOf } = record;
+		const { children, creators, references, parent, referencedBy, created, formatOf, format } =
+			record;
 		return [
 			record,
+			format,
+			...formatOf,
 			parent,
 			...children,
 			...creators,
 			...created,
 			...references,
 			...referencedBy,
-			...formatOf,
 		]
 			.map((record) => record?.id)
 			.filter((id): id is number => id !== undefined);

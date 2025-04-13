@@ -6,20 +6,6 @@ const openai = new OpenAI({
 });
 
 /**
- * Base interface for types that can be embedded.
- * All embedding classes should implement this interface to ensure consistent text generation.
- */
-export interface EmbeddingType {
-	/**
-	 * Generates a text representation of the object that will be used to create the embedding.
-	 * The text should include all relevant information about the object in a structured format.
-	 *
-	 * @returns A string containing the object's information, formatted with sections and key-value pairs
-	 */
-	getEmbeddingText(): string;
-}
-
-/**
  * Creates an embedding vector for the given text using OpenAI's text-embedding-3-large model.
  * The vector has 768 dimensions and can be used for semantic search and similarity comparisons.
  *

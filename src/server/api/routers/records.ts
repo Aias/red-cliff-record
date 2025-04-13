@@ -1,5 +1,6 @@
 import { createTRPCRouter } from '../init';
 import { deleteRecords } from './records/delete';
+import { embed } from './records/embed';
 import { findDuplicates } from './records/find-duplicates';
 import { get } from './records/get';
 import { list } from './records/list';
@@ -11,6 +12,7 @@ export const recordsRouter = createTRPCRouter({
 	get,
 	list,
 	search,
+	embed,
 	similaritySearch,
 	upsert,
 	merge,
