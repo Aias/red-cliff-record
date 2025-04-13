@@ -6,10 +6,13 @@ import { Spinner } from './spinner'; // Import Spinner
 import { Button } from '@/components/ui/button'; // Assuming shadcn Button path
 import { cn } from '@/lib/utils'; // Assuming shadcn utility path
 
-// Define a basic schema for image files. Adjust as needed.
-const imageFileSchema = z
+// Define a basic schema for image and video files. Adjust as needed.
+const mediaFileSchema = z
 	.instanceof(File)
-	.refine((file) => file.type.startsWith('image/'), 'File must be an image.');
+	.refine(
+		(file) => file.type.startsWith('image/') || file.type.startsWith('video/'),
+		'File must be an image or a video.'
+	);
 
 type MediaUploadProps = {
 	onUpload: (file: File) => void | Promise<void>;
@@ -22,7 +25,7 @@ type MediaUploadProps = {
 export const MediaUpload = forwardRef<
 	HTMLDivElement, // Type of the element the ref points to (the main div)
 	MediaUploadProps
->(({ onUpload, className, validationSchema = imageFileSchema }, ref) => {
+>(({ onUpload, className, validationSchema = mediaFileSchema }, ref) => {
 	const [isDragging, setIsDragging] = useState(false);
 	const [isLoading, setIsLoading] = useState(false); // Add loading state
 	const [error, setError] = useState<string | null>(null);
@@ -125,26 +128,17 @@ export const MediaUpload = forwardRef<
 			const items = e.clipboardData?.items;
 
 			if (items) {
-				// First try to find a GIF specifically
+				// Prioritize specific image/video types if needed, or handle generally
 				for (const item of Array.from(items)) {
-					if (item?.type === 'image/gif') {
+					if (
+						item?.kind === 'file' &&
+						(item.type.startsWith('image/') || item.type.startsWith('video/'))
+					) {
 						const file = item.getAsFile();
 						if (file) {
 							e.preventDefault();
 							handleFile(file);
-							return;
-						}
-					}
-				}
-
-				// If no GIF found, look for any image
-				for (const item of Array.from(items)) {
-					if (item?.kind === 'file' && item.type.startsWith('image/')) {
-						const file = item.getAsFile();
-						if (file) {
-							e.preventDefault();
-							handleFile(file);
-							return;
+							return; // Handle the first valid file found
 						}
 					}
 				}
@@ -193,7 +187,7 @@ export const MediaUpload = forwardRef<
 				className="hidden"
 				disabled={isLoading} // Disable hidden input
 				// Consider adding 'accept' attribute based on validationSchema if possible
-				// accept="image/*" // Example
+				accept="image/*,video/*" // Accept both image and video files
 			/>
 			<Button type="button" variant="ghost" size="sm" onClick={handleClick} disabled={isLoading}>
 				<UploadIcon className="mr-2 h-4 w-4" />
