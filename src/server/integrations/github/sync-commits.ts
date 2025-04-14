@@ -11,7 +11,7 @@ import {
 	type GithubRepositoryInsert,
 } from '@/server/db/schema/github';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
-import { syncCommitSummaries } from './summarize-all';
+import { syncCommitSummaries } from './summarize-commits';
 import { ensureGithubUserExists } from './sync-users';
 
 /**

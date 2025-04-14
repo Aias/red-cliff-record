@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import mime from 'mime-types';
-import { getMimeTypeFromURL, getSmartMetadata } from '@/app/lib/server/content-helpers';
 import type { MediaInsert } from '@/server/db/schema';
+import { getMimeTypeFromURL, getSmartMetadata } from './content-helpers';
 
 // Environment variable validation for S3/R2
 const requiredEnvVars = [

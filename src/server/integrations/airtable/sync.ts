@@ -18,7 +18,6 @@ import {
 	type AirtableFormatInsert,
 	type AirtableSpaceInsert,
 } from '@/server/db/schema/airtable';
-import { uploadMediaToR2 } from '../common/media-helpers';
 import { runIntegration } from '../common/run-integration';
 import { airtableBase, storeMedia } from './helpers';
 import {
@@ -30,6 +29,7 @@ import {
 	createRecordsFromAirtableSpaces,
 } from './map';
 import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
+import { uploadMediaToR2 } from '@/lib/server/media-helpers';
 
 /**
  * Synchronizes Airtable creators with the database

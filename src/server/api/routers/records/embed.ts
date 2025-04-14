@@ -1,10 +1,10 @@
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
-import { createEmbedding } from '@/server/services/ai/create-embedding';
 import { publicProcedure } from '../../init';
 import { IdSchema } from '../common';
 import { records } from '@/db/schema';
 import { createRecordEmbeddingText } from '@/lib/embedding';
+import { createEmbedding } from '@/lib/server/create-embedding';
 
 export const embed = publicProcedure
 	.input(IdSchema)

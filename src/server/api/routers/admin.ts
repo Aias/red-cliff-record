@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { createEmbedding } from '@/server/services/ai/create-embedding';
 import { createTRPCRouter, publicProcedure } from '../init';
+import { createEmbedding } from '@/lib/server/create-embedding';
 
 export const adminRouter = createTRPCRouter({
 	createEmbedding: publicProcedure.input(z.string()).mutation(async ({ input }) => {

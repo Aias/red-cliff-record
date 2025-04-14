@@ -25,7 +25,7 @@ import {
 	setRecordParent,
 } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { getMediaInsertData } from '../common/media-helpers';
+import { getMediaInsertData } from '@/lib/server/media-helpers';
 
 const logger = createIntegrationLogger('airtable', 'map');
 

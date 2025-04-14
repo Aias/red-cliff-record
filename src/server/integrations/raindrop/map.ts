@@ -15,7 +15,7 @@ import {
 } from '@/server/db/schema';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { getMediaInsertData, uploadMediaToR2 } from '../common/media-helpers';
+import { getMediaInsertData, uploadMediaToR2 } from '@/lib/server/media-helpers';
 
 const logger = createIntegrationLogger('raindrop', 'map');
 

@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { eq } from 'drizzle-orm';
+import { createEmbedding } from '../../app/lib/server/create-embedding';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';
-import { createEmbedding } from './ai/create-embedding';
 import { db } from '@/db/connections';
 import { records, RunType } from '@/db/schema';
 import { createRecordEmbeddingText, getRecordTitle } from '@/lib/embedding';

@@ -3,8 +3,8 @@ import { db } from '@/server/db/connections/postgres';
 import { records } from '@/server/db/schema';
 import { RunType } from '@/server/db/schema/operations';
 import { createIntegrationLogger } from '../integrations/common/logging';
-import { uploadMediaToR2 } from '../integrations/common/media-helpers';
 import { runIntegration } from '../integrations/common/run-integration';
+import { uploadMediaToR2 } from '@/lib/server/media-helpers';
 
 const logger = createIntegrationLogger('services', 'save-avatars');
 
