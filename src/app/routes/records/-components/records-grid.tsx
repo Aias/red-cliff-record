@@ -90,8 +90,10 @@ const RecordRow = memo(function RecordRow({ record }: { record: RecordWithRelati
 				{record.isCurated ? <CheckIcon /> : null}
 			</TableCell>
 			<TableCell className="text-center">
-				<div className="flex justify-center gap-1 text-[0.875em]">
-					{record.sources?.map((source) => <IntegrationLogo integration={source} key={source} />)}
+				<div className="flex justify-center gap-1">
+					{record.sources?.map((source) => (
+						<IntegrationLogo integration={source} key={source} className="size-4" />
+					))}
 				</div>
 			</TableCell>
 		</TableRow>
@@ -337,6 +339,26 @@ export const RecordsGrid = () => {
 	const FilterSidebar = useMemo(
 		() => (
 			<div className="-mx-4 flex min-w-48 flex-col gap-3 overflow-y-auto px-4 text-sm">
+				<h3 className="mb-1 text-base">Record Filters</h3>
+				<hr />
+				<div className="flex flex-col gap-1.5">
+					<Link to="/records" search={defaultQueueOptions}>
+						Reset to Defaults
+					</Link>
+					<Link
+						to="/records"
+						search={(prev) => ({
+							...prev,
+							filters: {
+								isCurated: false,
+								isIndexNode: true,
+							},
+						})}
+					>
+						Index Queue
+					</Link>
+				</div>
+				<hr />
 				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="type">Type</Label>
 					<Select value={type ?? 'All'} onValueChange={handleTypeChange}>
@@ -542,25 +564,6 @@ export const RecordsGrid = () => {
 						value={limitInput}
 						onChange={handleLimitChange}
 					/>
-				</div>
-				<hr />
-				<div className="flex flex-col gap-1.5">
-					<h3 className="mb-1 text-base">Quick Filters</h3>
-					<Link to="/records" search={defaultQueueOptions}>
-						Reset to Defaults
-					</Link>
-					<Link
-						to="/records"
-						search={(prev) => ({
-							...prev,
-							filters: {
-								isCurated: false,
-								isIndexNode: true,
-							},
-						})}
-					>
-						Index Queue
-					</Link>
 				</div>
 			</div>
 		),
