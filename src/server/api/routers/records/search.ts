@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { publicProcedure } from '../../init';
 import { similarity, SIMILARITY_THRESHOLD } from '../common';
 import { SearchRecordsInputSchema } from '../records.types';
-import { records } from '@/db/schema';
+import { records, type RecordSelect } from '@/db/schema';
 
 export const search = publicProcedure
 	.input(SearchRecordsInputSchema)
@@ -51,7 +51,7 @@ export const similaritySearch = publicProcedure
 			exclude: z.number().array().optional(),
 		})
 	)
-	.query(async ({ ctx: { db }, input }) => {
+	.query(async ({ ctx: { db }, input }): Promise<Array<RecordSelect & { similarity: number }>> => {
 		try {
 			const { vector, limit, exclude } = input;
 			const similaritySql = similarity(records.textEmbedding, vector);
