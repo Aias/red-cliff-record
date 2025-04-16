@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from '@tanstack/react-router';
 import { useNavigate } from '@tanstack/react-router';
 import { SearchIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { defaultQueueOptions } from '@/server/api/routers/records.types';
+import { RecordLink } from '../records/-components/relations';
 import {
-	Avatar,
 	Button,
 	Command,
 	CommandEmpty,
@@ -18,47 +17,7 @@ import {
 	PopoverTrigger,
 } from '@/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
-import { parseToSingleLine } from '@/lib/marked';
 import { cn } from '@/lib/utils';
-
-interface SearchResultProps {
-	id: number;
-	title: string;
-	content?: string | null;
-	url?: string | null;
-	imageUrl?: string | null;
-}
-
-export function SearchResult({ title, content, imageUrl, id }: SearchResultProps) {
-	return (
-		<div className="flex w-full gap-3 py-2 text-sm">
-			<Avatar src={imageUrl ?? undefined} fallback={title[0]?.toUpperCase() ?? '?'} />
-			<div className="flex flex-1 flex-col gap-1">
-				<div className="flex items-center justify-between gap-2">
-					<div className="flex items-center gap-2">
-						<Link
-							to="/records/$recordId"
-							params={{ recordId: id.toString() }}
-							className="font-medium"
-							// Prevent link navigation (handled by combobox)
-							onClick={(e) => e.preventDefault()}
-						>
-							{title}
-						</Link>
-					</div>
-				</div>
-				{content && (
-					<span
-						className="line-clamp-2 text-c-secondary"
-						dangerouslySetInnerHTML={{
-							__html: parseToSingleLine(content),
-						}}
-					/>
-				)}
-			</div>
-		</div>
-	);
-}
 
 export const SiteSearch = () => {
 	const navigate = useNavigate();
@@ -154,14 +113,14 @@ export const SiteSearch = () => {
 						</kbd>
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent className="w-150 p-0" align="end">
+				<PopoverContent className="w-150 overflow-auto p-0" align="end">
 					<Command shouldFilter={false}>
 						<CommandInput
 							placeholder="Search records..."
 							value={inputValue}
 							onValueChange={handleInputChange}
 						/>
-						<CommandList>
+						<CommandList className="max-h-[75vh]">
 							<CommandEmpty>
 								{(textResultsLoading ||
 									(embedMutation.isPending && debouncedValue.length > 1) ||
@@ -177,14 +136,12 @@ export const SiteSearch = () => {
 											key={`text-${record.id}`}
 											value={record.title ?? record.id.toString()}
 											onSelect={() => handleSelectResult(record.id)}
-											className="flex w-full cursor-pointer"
+											className="flex w-full cursor-pointer px-3 py-2"
 										>
-											<SearchResult
-												id={record.id}
-												title={record.title ?? 'Untitled'}
-												content={record.content || record.summary || record.notes || undefined}
-												url={record.url}
-												imageUrl={record.media[0]?.url}
+											<RecordLink
+												record={record}
+												className="flex-1"
+												options={{ showExternalLink: false, showInternalLink: true }}
 											/>
 										</CommandItem>
 									))}
@@ -197,14 +154,12 @@ export const SiteSearch = () => {
 											key={`sim-${record.id}-${record.similarity}`}
 											value={`${record.title ?? record.id.toString()} (Similarity: ${record.similarity.toFixed(2)})`}
 											onSelect={() => handleSelectResult(record.id)}
-											className="flex w-full cursor-pointer"
+											className="flex w-full cursor-pointer px-3 py-2"
 										>
-											<SearchResult
-												id={record.id}
-												title={record.title ?? 'Untitled'}
-												content={record.content || record.summary || record.notes || undefined}
-												url={record.url}
-												imageUrl={record.avatarUrl}
+											<RecordLink
+												record={record}
+												className="flex-1"
+												options={{ showExternalLink: false, showInternalLink: true }}
 											/>
 										</CommandItem>
 									))}
