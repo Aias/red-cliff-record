@@ -88,7 +88,6 @@ export const SiteSearch = () => {
 		);
 	const embedMutation = trpc.admin.createEmbedding.useMutation({
 		onSuccess: (data) => {
-			console.log('embedding created');
 			setTextEmbedding(data);
 		},
 	});
@@ -130,7 +129,6 @@ export const SiteSearch = () => {
 
 	useEffect(() => {
 		if (debouncedValue.length > 1) {
-			console.log('starting embedding for ', debouncedValue);
 			embedMutation.mutate(debouncedValue);
 		} else {
 			setTextEmbedding(null);
