@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod.mjs';
+import { zodTextFormat } from 'openai/helpers/zod.mjs';
 import { z } from 'zod';
 import { db } from '@/server/db/connections';
 import type {
@@ -93,22 +93,22 @@ You will be given the following as input:
 
 </style-rules>`;
 
-export const summarizeCommit = async (commit: CommitSummaryInput) => {
-	const completion = await openai.beta.chat.completions.parse({
-		model: 'gpt-4o',
-		response_format: zodResponseFormat(CommitSummaryResponseSchema, 'commit_summary'),
-		messages: [
+export const summarizeCommit = async (
+	commit: CommitSummaryInput
+): Promise<CommitSummaryResponse> => {
+	const response = await openai.responses.create({
+		model: 'gpt-4.1',
+		text: {
+			format: zodTextFormat(CommitSummaryResponseSchema, 'commit_summary'),
+		},
+		input: [
 			{ role: 'system', content: commitSummarizerInstructions },
 			{ role: 'user', content: JSON.stringify(commit) },
 		],
 	});
 
-	const firstChoice = completion.choices[0];
-	if (!firstChoice?.message.parsed) {
-		throw new Error('No response from OpenAI');
-	}
-
-	const summary = firstChoice.message.parsed;
+	const summaryJson = JSON.parse(response.output_text);
+	const summary = CommitSummaryResponseSchema.parse(summaryJson);
 
 	return summary;
 };
