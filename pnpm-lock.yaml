@@ -11,9 +11,6 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.787.0
         version: 3.787.0
-      '@eslint/js':
-        specifier: ^9.24.0
-        version: 9.24.0
       '@libsql/client':
         specifier: 0.15.4
         version: 0.15.4
@@ -186,6 +183,9 @@ importers:
         specifier: ^3.24.3
         version: 3.24.3
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.24.0
+        version: 9.24.0
       '@octokit/types':
         specifier: 14.0.0
         version: 14.0.0
