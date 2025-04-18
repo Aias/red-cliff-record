@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { eq } from 'drizzle-orm';
 import { createEmbedding } from '../../app/lib/server/create-embedding';
@@ -23,7 +24,7 @@ export async function embedCuratedRecords(): Promise<number> {
 			logger.info(`Created directory ${outputDir}`);
 		}
 
-		await Bun.write(OUTPUT_FILE, '');
+		await writeFile(OUTPUT_FILE, '');
 		logger.info(`Cleared output file ${OUTPUT_FILE}`);
 	}
 
@@ -111,7 +112,7 @@ export async function embedCuratedRecords(): Promise<number> {
 		}
 
 		try {
-			await Bun.write(OUTPUT_FILE, fileContent);
+			await writeFile(OUTPUT_FILE, fileContent);
 			logger.info(`Wrote ${textsToAppend.length} records to ${OUTPUT_FILE}`);
 		} catch (writeError) {
 			logger.error(`Failed to write records to ${OUTPUT_FILE}: ${writeError}`);

@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { db } from '@/server/db/connections';
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@/server/db/schema/readwise';
 import { runIntegration } from '../common/run-integration';
@@ -103,7 +103,7 @@ async function fetchReadwiseDocuments(
 		// Log raw response to file
 		try {
 			await mkdir('.temp', { recursive: true });
-			await Bun.write('.temp/readwise-documents.json', JSON.stringify(data, null, 2));
+			await writeFile('.temp/readwise-documents.json', JSON.stringify(data, null, 2));
 			console.log('Logged raw response to .temp/readwise-documents.json');
 		} catch (error) {
 			console.warn('Failed to log raw response:', error);

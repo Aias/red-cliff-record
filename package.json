@@ -13,7 +13,7 @@
 	},
 	"type": "module",
 	"engines": {
-		"bun": ">=1.2.2"
+		"node": ">=22"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.787.0",
@@ -56,14 +56,14 @@
 		"clsx": "^2.1.1",
 		"cmdk": "^1.1.1",
 		"dotenv": "^16.5.0",
-		"drizzle-orm": "^1.0.0-beta.1-5e64efc",
+		"drizzle-orm": "1.0.0-beta.1-5e64efc",
 		"drizzle-zod": "^0.7.1",
 		"lucide-react": "0.501.0",
 		"marked": "^15.0.8",
 		"marked-linkify-it": "^3.1.12",
 		"marked-smartypants": "^1.1.9",
 		"mime-types": "3.0.1",
-		"openai": "4.95.0",
+		"openai": "4.95.1",
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
 		"react-scan": "^0.3.3",
@@ -76,8 +76,8 @@
 		"zod": "^3.24.3"
 	},
 	"devDependencies": {
+		"@eslint/js": "^9.24.0",
 		"@octokit/types": "14.0.0",
-		"@types/bun": "^1.2.10",
 		"@types/eslint": "9.6.1",
 		"@types/mime-types": "^2.1.4",
 		"@types/node": "^22.14.1",
@@ -86,7 +86,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.30.1",
 		"@typescript-eslint/parser": "^8.30.1",
 		"@vitejs/plugin-react": "^4.4.0",
-		"drizzle-kit": "^1.0.0-beta.1-5e64efc",
+		"drizzle-kit": "1.0.0-beta.1-5e64efc",
 		"eslint": "^9.24.0",
 		"eslint-config-prettier": "^10.1.2",
 		"eslint-plugin-import": "^2.31.0",
@@ -100,30 +100,20 @@
 		"vite-tsconfig-paths": "^5.1.4"
 	},
 	"scripts": {
-		"format": "bun prettier --write .",
-		"lint": "bun prettier --write . && bun eslint . --fix",
-		"typecheck": "bun tsc --noEmit --watch",
+		"format": "prettier --write .",
+		"lint": "prettier --write . && eslint . --fix",
+		"typecheck": "tsc --noEmit --watch",
 		"cache-clear": "rm -rf node_modules/.vinxi node_modules/.cache",
-		"dev": "npm run cache-clear && vinxi dev",
-		"build": "npm run cache-clear && vinxi build",
+		"dev": "pnpm run cache-clear && vinxi dev",
+		"build": "pnpm run cache-clear && vinxi build",
 		"start": "node --env-file=.env .output/server/index.mjs",
-		"update": "bunx npm-check-updates -i",
-		"db:migrate": "bun drizzle-kit migrate",
-		"db:generate": "bun drizzle-kit generate",
-		"db:studio": "bun drizzle-kit studio",
+		"db:migrate": "pnpm drizzle-kit migrate",
+		"db:generate": "pnpm drizzle-kit generate",
+		"db:studio": "pnpm drizzle-kit studio",
 		"db:backup-local": "bash src/server/db/db-manager.sh backup local",
 		"db:backup-remote": "bash src/server/db/db-manager.sh backup remote",
 		"db:restore-local": "bash src/server/db/db-manager.sh restore local",
-		"db:restore-remote": "bash src/server/db/db-manager.sh restore remote",
-		"sync:daily": "bun sync:arc && bun sync:raindrop && bun sync:readwise && bun sync:github && bun sync:airtable",
-		"sync:adobe": "bun src/server/integrations/adobe/sync.ts",
-		"sync:airtable": "bun src/server/integrations/airtable/sync.ts",
-		"sync:arc": "bun src/server/integrations/arc/sync.ts",
-		"sync:github": "bun src/server/integrations/github/sync.ts",
-		"sync:raindrop": "bun src/server/integrations/raindrop/sync.ts",
-		"sync:readwise": "bun src/server/integrations/readwise/sync.ts",
-		"sync:twitter": "bun src/server/integrations/twitter/sync.ts",
-		"sync:avatars": "bun src/server/services/save-avatars.ts",
-		"sync:embeddings": "bun src/server/services/embed-records.ts"
-	}
+		"db:restore-remote": "bash src/server/db/db-manager.sh restore remote"
+	},
+	"packageManager": "pnpm@10.8.1+sha512.c50088ba998c67b8ca8c99df8a5e02fd2ae2e2b29aaf238feaa9e124248d3f48f9fb6db2424949ff901cffbb5e0f0cc1ad6aedb602cd29450751d11c35023677"
 }

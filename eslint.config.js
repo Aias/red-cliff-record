@@ -1,5 +1,5 @@
 import eslint from '@eslint/js';
-import prettier from 'eslint-config-prettier';
+import prettier from 'eslint-config-prettier/flat';
 import importPlugin from 'eslint-plugin-import';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import globals from 'globals';

@@ -5,17 +5,18 @@
 		"skipLibCheck": true,
 		"target": "ESNext",
 		"allowJs": true,
-		"checkJs": false,
+		"checkJs": true,
 		"resolveJsonModule": true,
 		"moduleDetection": "force",
 		"isolatedModules": true,
-		"types": ["bun", "vite/client"],
+		// "types": ["vite/client"],
 		// "noErrorTruncation": true, // Toggle comment to see full Intellisense errors and types.
 
 		/* Strictness */
 		"strict": true,
 		"noUncheckedIndexedAccess": true,
 		"noFallthroughCasesInSwitch": true, // Bun recommended
+		"forceConsistentCasingInFileNames": true,
 
 		/* Bundled projects */
 		"noEmit": true,
