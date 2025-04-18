@@ -105,7 +105,7 @@
 		"typecheck": "tsc --noEmit --watch",
 		"cache-clear": "rm -rf node_modules/.vinxi node_modules/.cache",
 		"dev": "pnpm run cache-clear && vinxi dev",
-		"build": "pnpm run cache-clear && vinxi build",
+		"build": "vinxi build",
 		"start": "node --env-file=.env .output/server/index.mjs",
 		"db:migrate": "pnpm drizzle-kit migrate",
 		"db:generate": "pnpm drizzle-kit generate",
