@@ -1,7 +1,10 @@
+import { Pool } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import { initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
-import { db } from '@/server/db/connections';
+import { relations } from '@/server/db/relations';
+import * as schema from '@/server/db/schema';
 
 /**
  * 1. CONTEXT
@@ -16,9 +19,12 @@ import { db } from '@/server/db/connections';
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+	const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+	const db = drizzle(pool, { schema, relations });
 	return {
-		db,
 		...opts,
+		db,
+		close: () => pool.end(),
 	};
 };
 
