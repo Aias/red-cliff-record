@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import mime from 'mime-types';
 import type { MediaInsert } from '@/server/db/schema';
@@ -73,7 +72,7 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 		}
 
 		// 4. Generate unique filename (object key) with appropriate extension
-		const uniqueName = randomUUID();
+		const uniqueName = crypto.randomUUID();
 		const ext = mime.extension(contentType) || 'bin';
 		const objectKey = `${uniqueName}.${ext}`;
 

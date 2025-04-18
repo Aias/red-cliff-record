@@ -1,6 +1,6 @@
 import mime from 'mime-types';
-import sharp from 'sharp';
 import { validateAndFormatUrl } from '@/app/lib/formatting';
+import { getImageMetadata } from '@/app/lib/image-metadata';
 import { MediaType } from '@/server/db/schema/media';
 
 const DEFAULT_MEDIA_TYPE = MediaType.enum.application;
@@ -122,7 +122,7 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 		}
 
 		const buffer = await response.arrayBuffer();
-		const metadata = await sharp(buffer).metadata();
+		const metadata = await getImageMetadata(buffer);
 
 		return {
 			mediaType,
@@ -132,7 +132,6 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 			width: metadata.width,
 			height: metadata.height,
 			format: metadata.format,
-			hasAlpha: metadata.hasAlpha,
 		};
 	} catch (error) {
 		throw new Error(
