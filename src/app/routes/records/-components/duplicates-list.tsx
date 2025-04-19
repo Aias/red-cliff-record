@@ -126,7 +126,5 @@ export const DuplicatesList = ({ record }: DuplicatesListProps) => {
 			<Spinner />
 			<p>Searching for duplicates...</p>
 		</Placeholder>
-	) : (
-		<div className="py-2 text-muted-foreground">No potential duplicates found.</div>
-	);
+	) : null;
 };

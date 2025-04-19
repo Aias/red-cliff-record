@@ -142,7 +142,7 @@ export const RecordLink = memo(
 
 		const TypeIcon = useMemo(() => recordTypeIcons[type].icon, [type]);
 		const label = useMemo(
-			() => title || summary || notes || content || 'Untitled Record',
+			() => title || summary || content || notes || 'Untitled Record',
 			[title, summary, notes, content]
 		);
 

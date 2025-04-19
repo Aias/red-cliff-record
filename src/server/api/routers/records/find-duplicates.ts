@@ -1,84 +1,115 @@
 import { TRPCError } from '@trpc/server';
 import { sql } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
-import { SIMILARITY_THRESHOLD } from '../common';
 import { IdSchema } from '../common';
+
+const MATCH_THRESHOLD = 0.45;
+
+/**
+ * Weights for the composite distance score.
+ * Sum to 1.0 so the result stays in [0, 1].
+ */
+const WEIGHT = {
+	title: 0.45,
+	url: 0.35,
+	abbrVsTitle: 0.1, // abbreviation ↔ title
+	titleVsAbbr: 0.05,
+	senseVsTitle: 0.05,
+};
 
 export const findDuplicates = publicProcedure
 	.input(IdSchema)
 	.query(async ({ ctx: { db }, input }) => {
-		// 1) Fetch the source record by ID
-		const sourceRecord = await db.query.records.findFirst({
-			where: {
-				id: input,
+		/* 1. Fetch source record */
+		const source = await db.query.records.findFirst({
+			columns: {
+				id: true,
+				title: true,
+				url: true,
+				abbreviation: true,
+				sense: true,
 			},
-			with: {
-				creators: true,
-			},
+			where: { id: input },
+			with: { creators: true },
 		});
 
-		if (!sourceRecord) {
+		if (!source) {
 			throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
 		}
 
-		const { title, url, content, summary, notes, abbreviation, sense } = sourceRecord;
+		const { title, url, abbreviation, sense } = source;
 
-		// 2) Build a WHERE clause:
-		//    - Exclude the source record itself
-		//    - OR conditions for URL =, or text columns that are "similar" below a threshold
+		if (!title && !url && !abbreviation && !sense) {
+			return [];
+		}
+
+		/* 3. Query & rank */
 		return db.query.records.findMany({
 			where: {
+				id: { ne: input },
+				NOT: {
+					AND: [
+						{
+							url: {
+								isNull: true,
+							},
+						},
+						{
+							title: {
+								isNull: true,
+							},
+						},
+						{
+							abbreviation: {
+								isNull: true,
+							},
+						},
+						{
+							sense: {
+								isNull: true,
+							},
+						},
+					],
+				},
 				OR: [
 					url ? { url } : {},
-					title
-						? { RAW: (records) => sql`${records.title} <-> ${title} < ${SIMILARITY_THRESHOLD}` }
-						: {},
-					content
-						? { RAW: (records) => sql`${records.content} <-> ${content} < ${SIMILARITY_THRESHOLD}` }
-						: {},
-					summary
-						? { RAW: (records) => sql`${records.summary} <-> ${summary} < ${SIMILARITY_THRESHOLD}` }
-						: {},
-					notes
-						? { RAW: (records) => sql`${records.notes} <-> ${notes} < ${SIMILARITY_THRESHOLD}` }
-						: {},
-					abbreviation
+					title ? { RAW: (r) => sql`${r.title} <-> ${title} < ${MATCH_THRESHOLD}` } : {},
+					abbreviation && title
 						? {
-								RAW: (records) =>
-									sql`${records.abbreviation} <-> ${abbreviation} < ${SIMILARITY_THRESHOLD}`,
+								RAW: (r) =>
+									sql`LEAST(${r.title} <-> ${abbreviation},
+														${r.abbreviation} <-> ${title}) < ${MATCH_THRESHOLD}`,
 							}
 						: {},
-					sense
-						? { RAW: (records) => sql`${records.sense} <-> ${sense} < ${SIMILARITY_THRESHOLD}` }
-						: {},
+					sense ? { RAW: (r) => sql`${r.sense} <-> ${sense} < ${MATCH_THRESHOLD}` } : {},
 				],
-				id: {
-					ne: input,
-				},
-				title: {
-					isNotNull: true,
-				},
 			},
-
-			// 3) Order by combined similarity measure first (lowest distance = best match),
-			//    then perhaps by updated date
-			orderBy: (records, { sql, desc }) => [
-				// You can adjust which columns go into this LEAST() calculation
-				sql`LEAST(
-          COALESCE(${records.title} <-> ${title || ''}, 1),
-          COALESCE(${records.content} <-> ${content || ''}, 1),
-          COALESCE(${records.summary} <-> ${summary || ''}, 1),
-          COALESCE(${records.notes} <-> ${notes || ''}, 1),
-          COALESCE(${records.abbreviation} <-> ${abbreviation || ''}, 1),
-          COALESCE(${records.sense} <-> ${sense || ''}, 1)
-        )`,
-				desc(records.recordUpdatedAt),
+			orderBy: (r, { sql, desc }) => [
+				sql`(
+					  ${WEIGHT.title}       * COALESCE(${r.title}       <-> ${title},        1) +
+					  ${WEIGHT.url}         * COALESCE(${r.url}         <-> ${url},          1) +
+					  ${WEIGHT.abbrVsTitle} * COALESCE(${r.abbreviation}<-> ${title},        1) +
+					  ${WEIGHT.titleVsAbbr} * COALESCE(${r.title}       <-> ${abbreviation}, 1) +
+					  ${WEIGHT.senseVsTitle}* COALESCE(${r.sense}       <-> ${title},        1)
+				)`,
+				desc(r.recordUpdatedAt),
 			],
-			limit: 3, // Adjust as needed
+			limit: 3,
 			with: {
-				creators: true,
+				creators: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
+				format: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
 				media: true,
-				format: true,
+			},
+			columns: {
+				textEmbedding: false, // still omit embeddings
 			},
 		});
 	});
