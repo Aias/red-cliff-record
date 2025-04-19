@@ -1,6 +1,6 @@
 import { Pool } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
 import { initTRPC } from '@trpc/server';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 import { relations } from '@/server/db/relations';
@@ -81,7 +81,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 	const start = performance.now();
 	const result = await next();
 	const end = performance.now();
-	console.log(`[tRPC] ${path}: ${(end - start).toFixed(2)} ms`);
+	console.log(`[tRPC] ${path}: ${(end - start).toFixed(2)} ms`);
 
 	return result;
 });

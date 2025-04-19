@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { MergeIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
+import type { FullRecord } from '@/server/api/routers/records.types';
 import { recordTypeIcons } from './type-icons';
 import {
 	Avatar,
@@ -14,8 +16,6 @@ import {
 	Placeholder,
 	Spinner,
 } from '@/components';
-import type { FullRecord } from '@/server/api/routers/records.types';
-import { useMemo } from 'react';
 
 interface DuplicatesListProps {
 	record: Pick<FullRecord, 'id'>;

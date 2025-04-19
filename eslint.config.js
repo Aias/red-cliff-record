@@ -1,5 +1,5 @@
 import eslint from '@eslint/js';
-import prettier from 'eslint-config-prettier/flat';
+import prettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import globals from 'globals';
@@ -18,6 +18,7 @@ export default tseslint.config(
 		},
 	},
 	{
+		files: ['**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx'],
 		plugins: {
 			'react-compiler': reactCompiler,
 			import: importPlugin,

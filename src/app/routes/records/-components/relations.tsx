@@ -2,11 +2,11 @@ import { memo, useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ArrowLeft, ArrowLeftRight, ArrowRight } from 'lucide-react';
 import { trpc } from '@/app/trpc';
+import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
 import { recordTypeIcons } from './type-icons';
 import { ExternalLink, IntegrationLogo } from '@/components';
 import type { MediaSelect } from '@/db/schema';
 import { cn } from '@/lib/utils';
-import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
 
 interface RelationsListProps {
 	record: FullRecord;

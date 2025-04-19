@@ -1,10 +1,10 @@
 import { useContext, useMemo } from 'react';
 import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
+import { trpc } from '@/app/trpc';
 import { DuplicatesList } from './-components/duplicates-list';
 import { RecordForm } from './-components/form';
 import { RelationsList, SimilarRecords } from './-components/relations';
 import { NextRecordIdContext } from './route';
-import { trpc } from '@/app/trpc';
 
 export const Route = createFileRoute('/records/$recordId')({
 	component: RouteComponent,
