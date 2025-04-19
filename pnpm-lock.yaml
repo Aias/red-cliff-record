@@ -149,9 +149,6 @@ importers:
       mime-types:
         specifier: 3.0.1
         version: 3.0.1
-      next-themes:
-        specifier: ^0.4.6
-        version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       openai:
         specifier: 4.95.1
         version: 4.95.1(ws@8.18.1)(zod@3.24.3)
@@ -5174,12 +5171,6 @@ packages:
   netlify@13.3.4:
     resolution: {integrity: sha512-+Uh1YkU5EjbvqqmolVy/N8RlejDg2zvSqnpbpdaTAkgpIXgeIhCkUep0SAWa2UCEIf1Mlz1XHWRmQJaSgIZbGw==}
     engines: {node: ^14.16.0 || >=16.0.0}
-
-  next-themes@0.4.6:
-    resolution: {integrity: sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA==}
-    peerDependencies:
-      react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
 
   nitropack@2.11.9:
     resolution: {integrity: sha512-SL5L3EDMJFXbEX0zZbNl67jRW+5312UGAkw6t0PGjjP1cuLULvR9trhx2rz/RYltRCfzrJG1hp6j3vxxhDLohg==}
@@ -12239,11 +12230,6 @@ snapshots:
       node-fetch: 3.3.2
       p-wait-for: 5.0.2
       qs: 6.14.0
-
-  next-themes@0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
 
   nitropack@2.11.9(@libsql/client@0.15.4)(@netlify/blobs@8.2.0)(drizzle-orm@1.0.0-beta.1-5e64efc(@libsql/client@0.15.4)(@neondatabase/serverless@1.0.0)(@types/pg@8.11.13)(gel@2.0.2)):
     dependencies:

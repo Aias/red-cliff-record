@@ -7,6 +7,7 @@ import { AppLayout } from './-app-components/app-layout';
 import { DefaultCatchBoundary } from './-app-components/catch-boundary';
 import { NotFound } from './-app-components/not-found';
 import { TooltipProvider } from '@/components';
+import { Toaster } from '@/components/ui/sonner';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getTheme, type Theme } from '@/lib/server/theme';
 import { cn } from '@/lib/utils';
@@ -106,6 +107,7 @@ function RootDocument({
 			</head>
 			<body className="size-full bg-c-background text-c-primary">
 				{children}
+				<Toaster />
 				<Scripts />
 			</body>
 		</html>

@@ -21,4 +21,10 @@ export const adminRouter = createTRPCRouter({
 			});
 		}
 	}),
+	testError: publicProcedure.mutation(async () => {
+		throw new TRPCError({
+			code: 'INTERNAL_SERVER_ERROR',
+			message: 'Test error',
+		});
+	}),
 });
