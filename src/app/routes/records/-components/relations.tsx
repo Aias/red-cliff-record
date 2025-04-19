@@ -3,15 +3,16 @@ import { Link } from '@tanstack/react-router';
 import { ArrowLeft, ArrowLeftRight, ArrowRight } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { recordTypeIcons } from './type-icons';
-import { ExternalLink, IntegrationLogo, Placeholder, Spinner } from '@/components';
-import type { MediaSelect, RecordSelect } from '@/db/schema';
+import { ExternalLink, IntegrationLogo } from '@/components';
+import type { MediaSelect } from '@/db/schema';
 import { cn } from '@/lib/utils';
+import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
 
 interface RelationsListProps {
-	recordId: number;
+	record: FullRecord;
 }
 
-function sortByTime(a: RecordSelect, b: RecordSelect) {
+function sortByTime(a: RecordWithoutEmbedding, b: RecordWithoutEmbedding) {
 	// Use contentCreatedAt if both records have it, otherwise fall back to recordCreatedAt
 	if (a.contentCreatedAt && b.contentCreatedAt) {
 		return a.contentCreatedAt.getTime() - b.contentCreatedAt.getTime();
@@ -19,11 +20,7 @@ function sortByTime(a: RecordSelect, b: RecordSelect) {
 	return a.recordCreatedAt.getTime() - b.recordCreatedAt.getTime();
 }
 
-export const RelationsList = ({ recordId }: RelationsListProps) => {
-	const { data: record, isLoading } = trpc.records.get.useQuery(recordId, {
-		enabled: !!recordId,
-	});
-
+export const RelationsList = ({ record }: RelationsListProps) => {
 	const { children, creators, parent, created, formatOf } = useMemo(
 		() =>
 			record ?? {
@@ -41,7 +38,7 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 
 		const referencesMap = new Map<
 			number,
-			{ record: RecordSelect; direction: 'reference' | 'referencedBy' | 'both' }
+			{ record: RecordWithoutEmbedding; direction: 'reference' | 'referencedBy' | 'both' }
 		>();
 
 		record.references.forEach((ref) => {
@@ -105,18 +102,13 @@ export const RelationsList = ({ recordId }: RelationsListProps) => {
 				</section>
 			)}
 		</div>
-	) : isLoading ? (
-		<Placeholder>
-			<Spinner />
-			<p>Loading...</p>
-		</Placeholder>
 	) : (
 		<div className="py-2 text-muted-foreground">No related records.</div>
 	);
 };
 
 interface RecordLinkProps {
-	record: RecordSelect & { media?: MediaSelect[] };
+	record: RecordWithoutEmbedding & { media?: MediaSelect[] };
 	className?: string;
 	options?: {
 		showExternalLink?: boolean;
@@ -218,7 +210,7 @@ export const RecordLink = memo(
 );
 
 interface RelationListProps {
-	records: RecordSelect[];
+	records: RecordWithoutEmbedding[];
 }
 
 const RelationList = ({ records }: RelationListProps) => {
@@ -235,7 +227,7 @@ const RelationList = ({ records }: RelationListProps) => {
 
 // New component for displaying combined references with directionality
 interface ReferenceItemProps {
-	record: RecordSelect;
+	record: RecordWithoutEmbedding;
 	direction: 'reference' | 'referencedBy' | 'both';
 }
 
@@ -261,8 +253,8 @@ const ReferenceItem = ({ record, direction }: ReferenceItemProps) => {
 	);
 };
 
-export const SimilarRecords = ({ recordId }: { recordId: number }) => {
-	const [record] = trpc.records.get.useSuspenseQuery(recordId);
+export const SimilarRecords = ({ record }: { record: FullRecord }) => {
+	const recordId = useMemo(() => record.id, [record.id]);
 
 	const omittedRecordIds = useMemo(() => {
 		const { children, creators, references, parent, referencedBy, created, formatOf, format } =

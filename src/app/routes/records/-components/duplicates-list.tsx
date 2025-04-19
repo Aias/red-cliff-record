@@ -14,17 +14,18 @@ import {
 	Placeholder,
 	Spinner,
 } from '@/components';
+import type { FullRecord } from '@/server/api/routers/records.types';
+import { useMemo } from 'react';
 
 interface DuplicatesListProps {
-	recordId: number;
+	record: Pick<FullRecord, 'id'>;
 }
 
-export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
+export const DuplicatesList = ({ record }: DuplicatesListProps) => {
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
-	const { data: duplicates, isLoading } = trpc.records.findDuplicates.useQuery(recordId, {
-		enabled: !!recordId,
-	});
+	const recordId = useMemo(() => record.id, [record.id]);
+	const { data: duplicates, isLoading } = trpc.records.findDuplicates.useQuery(recordId);
 
 	const handleMerge = trpc.records.merge.useMutation({
 		onSuccess: (data) => {
@@ -39,8 +40,6 @@ export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
 	});
 
 	const onMergeClick = (targetId: number) => {
-		if (!recordId) return;
-
 		handleMerge.mutate({
 			sourceId: recordId,
 			targetId: targetId,

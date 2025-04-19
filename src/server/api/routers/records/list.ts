@@ -30,10 +30,25 @@ export const list = publicProcedure
 		} = input;
 
 		return db.query.records.findMany({
+			columns: {
+				textEmbedding: false,
+			},
 			with: {
-				creators: true,
-				format: true,
-				parent: true,
+				creators: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
+				format: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
+				parent: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
 				media: true,
 			},
 			where: {

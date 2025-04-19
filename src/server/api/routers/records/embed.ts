@@ -14,31 +14,64 @@ export const embed = publicProcedure
 				id: recordId,
 			},
 			with: {
-				creators: true,
-				created: true,
-				format: true,
+				creators: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
+				created: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
+				format: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
 				formatOf: {
+					columns: {
+						textEmbedding: false,
+					},
 					limit: 20,
 					orderBy: {
 						recordUpdatedAt: 'desc',
 					},
 				},
-				parent: true,
-				children: true,
+				parent: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
+				children: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
 				media: true,
 				references: {
+					columns: {
+						textEmbedding: false,
+					},
 					limit: 20,
 					orderBy: {
 						recordUpdatedAt: 'desc',
 					},
 				},
 				referencedBy: {
+					columns: {
+						textEmbedding: false,
+					},
 					limit: 20,
 					orderBy: {
 						recordUpdatedAt: 'desc',
 					},
 				},
-				transcludes: true,
+				transcludes: {
+					columns: {
+						textEmbedding: false,
+					},
+				},
 			},
 		});
 

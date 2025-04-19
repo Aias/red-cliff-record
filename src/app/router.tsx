@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routerWithQueryClient } from '@tanstack/react-router-with-query';
-import { httpBatchLink } from '@trpc/client';
+import { httpBatchLink, loggerLink } from '@trpc/client';
 import { createServerSideHelpers } from '@trpc/react-query/server';
 import superjson from 'superjson';
 import { DefaultCatchBoundary } from './routes/-app-components/catch-boundary';
@@ -13,6 +13,8 @@ function getBaseUrl() {
 	if (typeof window !== 'undefined') return window.location.origin;
 	return `http://localhost:${process.env.PORT ?? 3000}`;
 }
+
+const ENABLE_LOGGING = false;
 
 export function createRouter() {
 	const queryClient = new QueryClient({
@@ -32,6 +34,9 @@ export function createRouter() {
 
 	const trpcClient = trpc.createClient({
 		links: [
+			loggerLink({
+				enabled: () => ENABLE_LOGGING && process.env.NODE_ENV === 'development',
+			}),
 			httpBatchLink({
 				// since we are using Vinxi, the server is running on the same port,
 				// this means in dev the url is `http://localhost:3000/trpc`
