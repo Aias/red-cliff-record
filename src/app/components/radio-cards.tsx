@@ -1,6 +1,6 @@
 import * as React from 'react';
-import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 const radioCardsVariants = cva('grid', {
