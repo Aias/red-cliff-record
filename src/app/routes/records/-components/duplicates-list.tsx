@@ -29,13 +29,15 @@ export const DuplicatesList = ({ record }: DuplicatesListProps) => {
 
 	const handleMerge = trpc.records.merge.useMutation({
 		onSuccess: (data) => {
-			console.log('Merge Success', data);
 			const { updatedRecord } = data;
+			utils.records.findDuplicates.invalidate(updatedRecord.id);
+			utils.records.get.invalidate(updatedRecord.id);
+			utils.records.list.invalidate();
 			navigate({
 				to: '/records/$recordId',
 				params: { recordId: updatedRecord.id.toString() },
+				replace: true,
 			});
-			utils.records.invalidate();
 		},
 	});
 

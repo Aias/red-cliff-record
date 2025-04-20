@@ -34,7 +34,10 @@ export const findDuplicates = publicProcedure
 		});
 
 		if (!source) {
-			throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
+			throw new TRPCError({
+				code: 'NOT_FOUND',
+				message: `Find duplicates: Record ${input} not found`,
+			});
 		}
 
 		const { title, url, abbreviation, sense } = source;

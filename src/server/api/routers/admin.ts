@@ -17,7 +17,7 @@ export const adminRouter = createTRPCRouter({
 			console.error(error);
 			throw new TRPCError({
 				code: 'INTERNAL_SERVER_ERROR',
-				message: 'Failed to create embedding',
+				message: 'Create embedding: Failed to create embedding',
 			});
 		}
 	}),

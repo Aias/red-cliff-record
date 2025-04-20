@@ -31,7 +31,10 @@ export const get = publicProcedure
 		});
 
 		if (!record) {
-			throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
+			throw new TRPCError({
+				code: 'NOT_FOUND',
+				message: `Get record: Record ${input} not found`,
+			});
 		}
 
 		return record;

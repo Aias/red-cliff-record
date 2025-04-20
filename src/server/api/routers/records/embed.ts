@@ -76,7 +76,10 @@ export const embed = publicProcedure
 		});
 
 		if (!record) {
-			throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
+			throw new TRPCError({
+				code: 'NOT_FOUND',
+				message: `Embed record: Record ${recordId} not found`,
+			});
 		}
 
 		const embeddingText = createRecordEmbeddingText(record);
@@ -93,7 +96,10 @@ export const embed = publicProcedure
 			.returning();
 
 		if (!updatedRecord) {
-			throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to embed record' });
+			throw new TRPCError({
+				code: 'INTERNAL_SERVER_ERROR',
+				message: `Embed record: Failed to embed record ${recordId}`,
+			});
 		}
 
 		return updatedRecord;

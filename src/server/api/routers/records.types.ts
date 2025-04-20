@@ -59,7 +59,7 @@ export type ListRecordsInput = z.infer<typeof ListRecordsInputSchema>;
 
 export const defaultQueueOptions: ListRecordsInput = {
 	filters: {},
-	limit: 200,
+	limit: 50,
 	offset: 0,
 	orderBy: [
 		{
