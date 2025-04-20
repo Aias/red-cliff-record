@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { MergeIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
+import type { FullRecord } from '@/server/api/routers/records.types';
 import { recordTypeIcons } from './type-icons';
 import {
 	Avatar,
@@ -16,31 +18,30 @@ import {
 } from '@/components';
 
 interface DuplicatesListProps {
-	recordId: number;
+	record: Pick<FullRecord, 'id'>;
 }
 
-export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
+export const DuplicatesList = ({ record }: DuplicatesListProps) => {
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
-	const { data: duplicates, isLoading } = trpc.records.findDuplicates.useQuery(recordId, {
-		enabled: !!recordId,
-	});
+	const recordId = useMemo(() => record.id, [record.id]);
+	const { data: duplicates, isLoading } = trpc.records.findDuplicates.useQuery(recordId);
 
 	const handleMerge = trpc.records.merge.useMutation({
 		onSuccess: (data) => {
-			console.log('Merge Success', data);
 			const { updatedRecord } = data;
+			utils.records.findDuplicates.invalidate(updatedRecord.id);
+			utils.records.get.invalidate(updatedRecord.id);
+			utils.records.list.invalidate();
 			navigate({
 				to: '/records/$recordId',
 				params: { recordId: updatedRecord.id.toString() },
+				replace: true,
 			});
-			utils.records.invalidate();
 		},
 	});
 
 	const onMergeClick = (targetId: number) => {
-		if (!recordId) return;
-
 		handleMerge.mutate({
 			sourceId: recordId,
 			targetId: targetId,
@@ -127,7 +128,5 @@ export const DuplicatesList = ({ recordId }: DuplicatesListProps) => {
 			<Spinner />
 			<p>Searching for duplicates...</p>
 		</Placeholder>
-	) : (
-		<div className="py-2 text-muted-foreground">No potential duplicates found.</div>
-	);
+	) : null;
 };

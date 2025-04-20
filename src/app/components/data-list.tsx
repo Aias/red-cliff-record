@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Slot } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 //
@@ -83,7 +83,7 @@ interface DataListRootProps
 
 const DataListRoot = React.forwardRef<HTMLDListElement, DataListRootProps>(
 	({ className, orientation, size, trim, asChild = false, ...props }, ref) => {
-		const Comp = asChild ? Slot : 'dl';
+		const Comp = asChild ? Slot.Root : 'dl';
 
 		return (
 			<DataListOrientationContext.Provider value={orientation || 'horizontal'}>
@@ -158,7 +158,7 @@ interface DataListLabelProps extends React.HTMLAttributes<HTMLElement> {
 
 const DataListLabel = React.forwardRef<HTMLElement, DataListLabelProps>(
 	({ asChild = false, ...props }, ref) => {
-		const Comp = asChild ? Slot : 'dt';
+		const Comp = asChild ? Slot.Root : 'dt';
 		return <Comp ref={ref} {...props} />;
 	}
 );
@@ -174,7 +174,7 @@ interface DataListValueProps extends React.HTMLAttributes<HTMLElement> {
 
 const DataListValue = React.forwardRef<HTMLElement, DataListValueProps>(
 	({ asChild = false, ...props }, ref) => {
-		const Comp = asChild ? Slot : 'dd';
+		const Comp = asChild ? Slot.Root : 'dd';
 		return <Comp ref={ref} {...props} />;
 	}
 );

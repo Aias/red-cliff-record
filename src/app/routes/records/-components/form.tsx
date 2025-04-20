@@ -640,7 +640,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 						ID: record.id,
 						Created: record.recordCreatedAt,
 						Updated: record.recordUpdatedAt,
-						'Has Embedding': record.textEmbedding ? 'Yes' : 'No',
 						'Content Created': record.contentCreatedAt,
 						'Content Updated': record.contentUpdatedAt,
 					}}

@@ -1,7 +1,7 @@
 import { type ComponentProps } from 'react';
 import React from 'react';
-import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import { CheckIcon } from 'lucide-react';
+import { Checkbox as CheckboxPrimitive } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 const Checkbox = React.forwardRef<

@@ -18,6 +18,7 @@ export default tseslint.config(
 		},
 	},
 	{
+		files: ['**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx'],
 		plugins: {
 			'react-compiler': reactCompiler,
 			import: importPlugin,

@@ -5,6 +5,7 @@ import {
 	readwiseAuthors,
 	readwiseDocuments,
 	readwiseDocumentTags,
+	ReadwiseLocation,
 	readwiseTags,
 	records,
 	type ReadwiseAuthorSelect,
@@ -128,6 +129,9 @@ export async function createRecordsFromReadwiseAuthors() {
 
 	const authors = await db.query.readwiseAuthors.findMany({
 		where: {
+			documents: {
+				location: ReadwiseLocation.enum.archive, // Only map authors with at least one document in the archive.
+			},
 			recordId: {
 				isNull: true,
 			},
@@ -389,14 +393,12 @@ export const mapReadwiseDocumentToRecord = (
 	document: ReadwiseDocumentWithChildren
 ): RecordInsert => {
 	// Combine notes from children and document
-	let notes = document.children
-		.map((child) => (child.category === 'note' ? child.content : null))
+	const notes = [
+		document.notes,
+		...document.children.filter((child) => child.category === 'note').map((child) => child.content),
+	]
 		.filter(Boolean)
 		.join('\n\n');
-
-	if (document.notes) {
-		notes = document.notes + '\n\n' + notes;
-	}
 
 	// Determine rating from tags
 	let rating = 0;
@@ -415,7 +417,7 @@ export const mapReadwiseDocumentToRecord = (
 		type: 'artifact',
 		title: document.title || null,
 		url: document.sourceUrl,
-		content: document.content || null,
+		content: document.content ? document.content.replace(/(?<!\n)\n(?!\n)/g, '\n\n') : null, // Normalize newlines: add extra newlines between paragraphs but keep existing double newlines.
 		summary: document.summary || null,
 		notes: notes || null,
 		isPrivate: false,
@@ -441,8 +443,25 @@ export async function createRecordsFromReadwiseDocuments() {
 	logger.start('Creating records from Readwise documents');
 
 	// Query readwise documents that need records created (skip notes-only docs)
+	// We only want to process documents that are in the archive or have no location set (i.e. are highlights within other documents) and whose parent is in the archive.
 	const documents = await db.query.readwiseDocuments.findMany({
+		with: {
+			children: true,
+		},
 		where: {
+			OR: [
+				{
+					location: {
+						isNull: true,
+					},
+					parent: {
+						location: ReadwiseLocation.enum.archive,
+					},
+				},
+				{
+					location: ReadwiseLocation.enum.archive,
+				},
+			],
 			recordId: {
 				isNull: true,
 			},
@@ -452,9 +471,6 @@ export async function createRecordsFromReadwiseDocuments() {
 			deletedAt: {
 				isNull: true,
 			},
-		},
-		with: {
-			children: true,
 		},
 	});
 

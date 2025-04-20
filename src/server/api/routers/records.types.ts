@@ -59,7 +59,7 @@ export type ListRecordsInput = z.infer<typeof ListRecordsInputSchema>;
 
 export const defaultQueueOptions: ListRecordsInput = {
 	filters: {},
-	limit: 200,
+	limit: 50,
 	offset: 0,
 	orderBy: [
 		{
@@ -87,22 +87,24 @@ export const SearchRecordsInputSchema = z.object({
 
 export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
 
-export interface RecordWithRelations extends RecordSelect {
-	creators: RecordSelect[];
-	format: RecordSelect | null;
-	parent: RecordSelect | null;
+export type RecordWithoutEmbedding = Omit<RecordSelect, 'textEmbedding'>;
+
+export interface RecordWithRelations extends RecordWithoutEmbedding {
+	creators: RecordWithoutEmbedding[];
+	format: RecordWithoutEmbedding | null;
+	parent: RecordWithoutEmbedding | null;
 	media: Array<MediaSelect>;
 }
 
 export interface FullRecord extends RecordSelect {
-	creators: RecordSelect[];
-	created: RecordSelect[];
-	format: RecordSelect | null;
-	formatOf: RecordSelect[];
-	parent: RecordSelect | null;
-	children: RecordSelect[];
+	creators: RecordWithoutEmbedding[];
+	created: RecordWithoutEmbedding[];
+	format: RecordWithoutEmbedding | null;
+	formatOf: RecordWithoutEmbedding[];
+	parent: RecordWithoutEmbedding | null;
+	children: RecordWithoutEmbedding[];
 	media: Array<MediaSelect>;
-	references: RecordSelect[];
-	referencedBy: RecordSelect[];
-	transcludes: RecordSelect | null;
+	references: RecordWithoutEmbedding[];
+	referencedBy: RecordWithoutEmbedding[];
+	transcludes: RecordWithoutEmbedding | null;
 }

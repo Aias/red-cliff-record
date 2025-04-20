@@ -1,7 +1,10 @@
+import { Pool } from '@neondatabase/serverless';
 import { initTRPC } from '@trpc/server';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
-import { db } from '@/server/db/connections';
+import { relations } from '@/server/db/relations';
+import * as schema from '@/server/db/schema';
 
 /**
  * 1. CONTEXT
@@ -16,9 +19,12 @@ import { db } from '@/server/db/connections';
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+	const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+	const db = drizzle(pool, { schema, relations });
 	return {
-		db,
 		...opts,
+		db,
+		close: () => pool.end(),
 	};
 };
 
@@ -72,18 +78,10 @@ export const mergeRouters = t.mergeRouters;
  * network latency that would occur in production but not in local development.
  */
 const timingMiddleware = t.middleware(async ({ next, path }) => {
-	const start = Date.now();
-
-	// if (t._config.isDev) {
-	// 	// artificial delay in dev
-	// 	const waitMs = Math.floor(Math.random() * 400) + 100;
-	// 	await new Promise((resolve) => setTimeout(resolve, waitMs));
-	// }
-
+	const start = performance.now();
 	const result = await next();
-
-	const end = Date.now();
-	console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+	const end = performance.now();
+	console.log(`[tRPC] ${path}: ${(end - start).toFixed(2)} ms`);
 
 	return result;
 });

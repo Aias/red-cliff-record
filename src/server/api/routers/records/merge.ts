@@ -39,7 +39,7 @@ export const merge = publicProcedure
 			if (sourceId === targetId) {
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
-					message: 'Source and target records must be different.',
+					message: 'Merge records: Source and target records must be different.',
 				});
 			}
 
@@ -59,7 +59,7 @@ export const merge = publicProcedure
 			if (!source || !target) {
 				throw new TRPCError({
 					code: 'NOT_FOUND',
-					message: 'One or both records not found',
+					message: 'Merge records: One or both records not found',
 				});
 			}
 
@@ -128,7 +128,10 @@ export const merge = publicProcedure
 						.returning();
 
 					if (!updatedRecord) {
-						throw new Error('Failed to update target record');
+						throw new TRPCError({
+							code: 'INTERNAL_SERVER_ERROR',
+							message: 'Merge records: Failed to update target record',
+						});
 					}
 
 					// Update all references to the source record to point to the target record
