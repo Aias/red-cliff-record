@@ -48,6 +48,7 @@ import {
 } from '@/components';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
+import { readFileAsBase64 } from '@/lib/read-file';
 import { cn } from '@/lib/utils';
 
 interface BooleanSwitchProps extends React.ComponentProps<typeof Label> {
@@ -75,24 +76,6 @@ interface RecordFormProps {
 	recordId: number;
 	nextRecordId?: number;
 }
-
-// Helper function to read file as base64
-const readFileAsBase64 = (file: File): Promise<string> => {
-	return new Promise((resolve, reject) => {
-		const reader = new FileReader();
-		reader.onload = () => {
-			// Result is Data URL (e.g., "data:image/png;base64,iVBOR..."), remove prefix
-			const base64String = (reader.result as string).split(',')[1];
-			if (base64String) {
-				resolve(base64String);
-			} else {
-				reject(new Error('Failed to read file as base64: result is empty'));
-			}
-		};
-		reader.onerror = (error) => reject(error);
-		reader.readAsDataURL(file);
-	});
-};
 
 export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	const navigate = useNavigate();
@@ -154,6 +137,29 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 			console.error('Media upload failed:', error);
 		},
 	});
+
+	const handleUpload = useCallback(
+		async (file: File) => {
+			console.log('File selected:', file.name, file.type, file.size);
+			try {
+				const fileData = await readFileAsBase64(file);
+				await createMediaMutation.mutateAsync({
+					recordId: recordId,
+					fileData: fileData,
+					fileName: file.name,
+					fileType: file.type,
+				});
+			} catch (error) {
+				console.error('Failed to read or upload file:', error);
+				if (error instanceof Error) {
+					throw new Error(`Upload processing failed: ${error.message}`);
+				} else {
+					throw new Error('An unknown error occurred during file processing or upload.');
+				}
+			}
+		},
+		[recordId, createMediaMutation, readFileAsBase64]
+	);
 
 	const form = useForm({
 		defaultValues: {
@@ -566,22 +572,7 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 							<Separator />
 							<div className="flex flex-col gap-3">
 								<h2>Media</h2>
-								<MediaUpload
-									ref={mediaUploadRef}
-									onUpload={async (file) => {
-										try {
-											const fileData = await readFileAsBase64(file);
-											await createMediaMutation.mutateAsync({
-												recordId,
-												fileData,
-												fileName: file.name,
-												fileType: file.type,
-											});
-										} catch (error) {
-											console.error('Error processing or uploading file:', error);
-										}
-									}}
-								/>
+								<MediaUpload ref={mediaUploadRef} onUpload={handleUpload} className="mt-2" />
 							</div>
 						</>
 					)
