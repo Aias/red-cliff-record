@@ -2,3 +2,7 @@ name = "red-cliff-record"
 pages_build_output_dir = "./dist"
 compatibility_flags = ["nodejs_compat", "nodejs_compat_populate_process_env"]
 compatibility_date = "2025-04-02"
+
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "redcliffrecord"
