@@ -14,35 +14,38 @@ export async function embedCuratedRecords(): Promise<number> {
 
 	const curatedRecords = await db.query.records.findMany({
 		with: {
-			creators: true,
-			created: true,
-			format: true,
-			formatOf: {
-				limit: 20,
-				orderBy: {
-					recordUpdatedAt: 'desc',
+			outgoingLinks: {
+				with: {
+					target: {
+						columns: {
+							textEmbedding: false,
+						},
+					},
+					predicate: true,
 				},
 			},
-			parent: true,
-			children: true,
+			incomingLinks: {
+				with: {
+					source: {
+						columns: {
+							textEmbedding: false,
+						},
+					},
+					predicate: true,
+				},
+			},
 			media: true,
-			references: {
-				limit: 20,
-				orderBy: {
-					recordUpdatedAt: 'desc',
-				},
-			},
-			referencedBy: {
-				limit: 20,
-				orderBy: {
-					recordUpdatedAt: 'desc',
-				},
-			},
-			transcludes: true,
 		},
 		where: {
 			textEmbedding: {
 				isNull: true,
+			},
+			incomingLinks: {
+				predicate: {
+					slug: {
+						notIn: ['format_of'], // Would bring back too many that are not useful for embedding.
+					},
+				},
 			},
 		},
 		orderBy: {

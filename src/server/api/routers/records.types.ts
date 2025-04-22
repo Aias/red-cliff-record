@@ -3,7 +3,9 @@ import { DEFAULT_LIMIT, IdSchema } from './common';
 import {
 	IntegrationTypeSchema,
 	RecordTypeSchema,
+	type LinkSelect,
 	type MediaSelect,
+	type PredicateSelect,
 	type RecordSelect,
 } from '@/db/schema';
 
@@ -97,14 +99,7 @@ export interface RecordWithRelations extends RecordWithoutEmbedding {
 }
 
 export interface FullRecord extends RecordSelect {
-	creators: RecordWithoutEmbedding[];
-	created: RecordWithoutEmbedding[];
-	format: RecordWithoutEmbedding | null;
-	formatOf: RecordWithoutEmbedding[];
-	parent: RecordWithoutEmbedding | null;
-	children: RecordWithoutEmbedding[];
+	outgoingLinks: Array<LinkSelect & { target: RecordWithoutEmbedding; predicate: PredicateSelect }>;
+	incomingLinks: Array<LinkSelect & { source: RecordWithoutEmbedding; predicate: PredicateSelect }>;
 	media: Array<MediaSelect>;
-	references: RecordWithoutEmbedding[];
-	referencedBy: RecordWithoutEmbedding[];
-	transcludes: RecordWithoutEmbedding | null;
 }

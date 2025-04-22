@@ -9,7 +9,7 @@ import {
 	type GithubUserSelect,
 	type RecordInsert,
 } from '@/server/db/schema';
-import { linkRecordToCreator } from '../common/db-helpers';
+import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 
 const logger = createIntegrationLogger('github', 'map');
@@ -31,7 +31,6 @@ const mapGithubUserToRecord = (user: GithubUserSelect): RecordInsert => {
 		avatarUrl: user.avatarUrl,
 		summary: user.bio,
 		isCurated: false,
-		isIndexNode: true,
 		isPrivate: false,
 		sources: ['github'],
 		recordCreatedAt: user.recordCreatedAt,
@@ -97,7 +96,7 @@ export async function createRecordsFromGithubUsers() {
 		for (const repository of user.repositories) {
 			if (repository.recordId) {
 				logger.info(`Linking repository ${repository.id} to creator record ${newRecord.id}`);
-				await linkRecordToCreator(repository.recordId, newRecord.id, 'creator');
+				await linkRecords(repository.recordId, newRecord.id, 'created_by', db);
 			}
 		}
 	}
@@ -184,7 +183,7 @@ export async function createRecordsFromGithubRepositories() {
 			logger.info(
 				`Linking repository ${repository.id} to creator record ${repository.owner.recordId}`
 			);
-			await linkRecordToCreator(newRecord.id, repository.owner.recordId, 'creator');
+			await linkRecords(newRecord.id, repository.owner.recordId, 'created_by', db);
 		}
 	}
 
