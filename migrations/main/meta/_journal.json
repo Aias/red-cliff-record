@@ -239,6 +239,13 @@
       "when": 1741270292288,
       "tag": "0033_quiet_turbo",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1745338710314,
+      "tag": "0034_slow_the_spike",
+      "breakpoints": true
     }
   ]
 }

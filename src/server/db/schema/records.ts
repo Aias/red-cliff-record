@@ -25,9 +25,6 @@ export const RecordTypeSchema = z.enum([
 	'entity', // an actor in the world, has will
 	'concept', // a category, idea, or abstraction
 	'artifact', // physical or digital objects, content, or media
-	'event', // an event or occurrence
-	'place', // a geographic location
-	'system', // a physical or conceptual system or network
 ]);
 export type RecordType = z.infer<typeof RecordTypeSchema>;
 export const recordTypeEnum = pgEnum('record_type', RecordTypeSchema.options);
@@ -59,6 +56,7 @@ export const records = pgTable(
 	},
 	(table) => [
 		index().on(table.type, table.title, table.url),
+		index().on(table.slug),
 		index('idx_records_content_search').using(
 			'gin',
 			table.title,
@@ -124,60 +122,38 @@ export type LinkSelect = typeof links.$inferSelect;
 export const LinkInsertSchema = createInsertSchema(links);
 export type LinkInsert = typeof links.$inferInsert;
 
-export const CreatorRoleSchema = z.enum([
-	'creator', // primary creator
-	'owner', // owner of the record
-	'author', // specifically wrote/authored
-	'editor', // edited/curated
-	'contributor', // helped create/contributed to
-	'via', // found through/attributed to
-	'participant', // involved in
-	'interviewer', // conducted interview
-	'interviewee', // was interviewed
-	'subject', // topic is about this person
-	'mentioned', // referenced in content
-]);
-export type CreatorRole = z.infer<typeof CreatorRoleSchema>;
-export const creatorRoleEnum = pgEnum('creator_role', CreatorRoleSchema.options);
-
-// Non-hierarchical relationships
-export const LinkType = z.enum([
-	'tagged', // tagged with this thing
-	'related_to', // related to this thing
-	'about', // about this thing (at a meta-level)
-	'example_of', // an example of this thing
-	'references', // references this thing
-	'responds_to', // responds to this thing
-	'contradicts', // contradicts this thing
-	'supports', // supports this thing
-]);
-export type LinkType = z.infer<typeof LinkType>;
-export const linkTypeEnum = pgEnum('link_type', LinkType.options);
-
 export const PredicateTypeSchema = z.enum([
-	'creation',
-	'containment',
-	'description',
-	'reference',
-	'association',
-	'identity',
+	'creation', // authorship, ownership …
+	'containment', // has_part, sequence …
+	'description', // about, tag …
+	'association', // related_to, similar_to …
+	'reference', // cites, responds_to …
+	'identity', // instance_of, same_as …
 ]);
 export type PredicateType = z.infer<typeof PredicateTypeSchema>;
 export const predicateTypeEnum = pgEnum('predicate_type', PredicateTypeSchema.options);
 
-export const predicates = pgTable('predicates', {
-	id: serial('id').primaryKey(),
-	slug: text('slug').unique().notNull(),
-	type: predicateTypeEnum('type').notNull(),
-	name: text('name').notNull(),
-	role: creatorRoleEnum('role'),
-	inverseId: integer('inverse_id').references((): AnyPgColumn => predicates.id, {
-		onDelete: 'set null',
-		onUpdate: 'cascade',
-	}),
-	description: text('description'),
-	...databaseTimestamps,
-});
+export const predicates = pgTable(
+	'predicates',
+	{
+		id: serial('id').primaryKey(),
+		slug: text('slug').unique().notNull(),
+		name: text('name').notNull(),
+		type: predicateTypeEnum('type').notNull(),
+		role: text('role'),
+		inverseSlug: text('inverse_slug').references((): AnyPgColumn => predicates.slug, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		...databaseTimestamps,
+	},
+	(table) => [
+		index().on(table.slug),
+		index().on(table.type),
+		index().on(table.role),
+		index().on(table.inverseSlug),
+	]
+);
 
 export const PredicateSelectSchema = createSelectSchema(predicates);
 export type PredicateSelect = typeof predicates.$inferSelect;
