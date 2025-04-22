@@ -18,7 +18,7 @@ import {
 	readwiseDocuments,
 	readwiseTags,
 	recordCreators,
-	recordRelations,
+	links,
 	records,
 	twitterTweets,
 	twitterUsers,
@@ -218,9 +218,9 @@ export const merge = publicProcedure
 
 					// Delete all relations involving either record
 					if (recordRelationsRows.length > 0) {
-						await tx.delete(recordRelations).where(
+						await tx.delete(links).where(
 							inArray(
-								recordRelations.id,
+								links.id,
 								recordRelationsRows.map((row) => row.id)
 							)
 						);
@@ -252,7 +252,7 @@ export const merge = publicProcedure
 					}
 
 					if (dedupedRelations.length > 0) {
-						await tx.insert(recordRelations).values(dedupedRelations);
+						await tx.insert(links).values(dedupedRelations);
 					}
 
 					// 4. Handle record creators
