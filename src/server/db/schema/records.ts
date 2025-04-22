@@ -110,6 +110,8 @@ export const links = pgTable(
 		...databaseTimestamps,
 	},
 	(table) => [
+		index().on(table.sourceId, table.predicateId),
+		index().on(table.targetId, table.predicateId),
 		index().on(table.sourceId),
 		index().on(table.targetId),
 		index().on(table.predicateId),
@@ -148,6 +150,7 @@ export const predicates = pgTable(
 		...databaseTimestamps,
 	},
 	(table) => [
+		index().on(table.id, table.type),
 		index().on(table.slug),
 		index().on(table.type),
 		index().on(table.role),
