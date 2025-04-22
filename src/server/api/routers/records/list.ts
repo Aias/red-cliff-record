@@ -1,5 +1,7 @@
+import { eq } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
 import { ListRecordsInputSchema, type RecordWithRelations } from '../records.types';
+import { links } from '@/db/schema';
 
 export const list = publicProcedure
 	.input(ListRecordsInputSchema)
@@ -9,15 +11,10 @@ export const list = publicProcedure
 				type,
 				title,
 				text,
-				creatorId,
-				formatId,
 				url: domain,
-				parentId,
 				hasParent,
 				minRating,
 				maxRating,
-				isIndexNode,
-				isFormat,
 				isPrivate,
 				isCurated,
 				hasReminder,
@@ -34,22 +31,20 @@ export const list = publicProcedure
 				textEmbedding: false,
 			},
 			with: {
-				creators: {
-					columns: {
-						textEmbedding: false,
-					},
-				},
-				format: {
-					columns: {
-						textEmbedding: false,
-					},
-				},
-				parent: {
-					columns: {
-						textEmbedding: false,
+				outgoingLinks: {
+					with: {
+						predicate: true,
+						target: {
+							columns: {
+								textEmbedding: false,
+							},
+						},
 					},
 				},
 				media: true,
+			},
+			extras: {
+				outgoingLinkCount: (table) => db.$count(links, eq(links.sourceId, table.id)),
 			},
 			where: {
 				type,
@@ -79,12 +74,6 @@ export const list = publicProcedure
 							},
 						]
 					: undefined,
-				formatId:
-					formatId === null
-						? {
-								isNull: true,
-							}
-						: formatId,
 				url:
 					domain === null
 						? {
@@ -95,25 +84,25 @@ export const list = publicProcedure
 									ilike: `%${domain}%`,
 								}
 							: undefined,
-				parentId:
-					parentId === null || hasParent === false
-						? {
-								isNull: true,
-							}
-						: hasParent
-							? {
-									isNotNull: true,
-								}
-							: parentId,
-				isIndexNode,
-				isFormat,
 				isPrivate,
 				isCurated,
-				creators: creatorId
+				...(hasParent === true
 					? {
-							id: creatorId,
+							outgoingLinks: {
+								predicate: {
+									type: 'containment',
+								},
+							},
 						}
-					: undefined,
+					: hasParent === false
+						? {
+								NOT: {
+									outgoingLinks: {
+										predicate: { type: 'containment' },
+									},
+								},
+							}
+						: {}),
 				reminderAt: hasReminder
 					? {
 							isNotNull: true,

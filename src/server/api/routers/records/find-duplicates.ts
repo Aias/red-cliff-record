@@ -30,7 +30,6 @@ export const findDuplicates = publicProcedure
 				sense: true,
 			},
 			where: { id: input },
-			with: { creators: true },
 		});
 
 		if (!source) {
@@ -99,14 +98,14 @@ export const findDuplicates = publicProcedure
 			],
 			limit: 3,
 			with: {
-				creators: {
-					columns: {
-						textEmbedding: false,
-					},
-				},
-				format: {
-					columns: {
-						textEmbedding: false,
+				outgoingLinks: {
+					with: {
+						target: {
+							columns: {
+								textEmbedding: false,
+							},
+						},
+						predicate: true,
 					},
 				},
 				media: true,

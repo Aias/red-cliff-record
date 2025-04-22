@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DEFAULT_LIMIT, IdSchema } from './common';
+import { DEFAULT_LIMIT } from './common';
 import {
 	IntegrationTypeSchema,
 	RecordTypeSchema,
@@ -16,7 +16,6 @@ const OrderByFieldSchema = z.enum([
 	'contentCreatedAt',
 	'contentUpdatedAt',
 	'rating',
-	'childOrder',
 	'id',
 ]);
 
@@ -31,15 +30,10 @@ export const RecordFiltersSchema = z.object({
 	type: RecordTypeSchema.optional(),
 	title: z.string().nullable().optional(),
 	text: z.string().nullable().optional(),
-	creatorId: IdSchema.nullable().optional(),
-	formatId: IdSchema.nullable().optional(),
 	url: z.string().nullable().optional(),
-	parentId: IdSchema.nullable().optional(),
 	hasParent: z.boolean().optional(),
 	minRating: z.number().int().gte(0).optional(),
 	maxRating: z.number().int().lte(3).optional(),
-	isIndexNode: z.boolean().optional(),
-	isFormat: z.boolean().optional(),
 	isPrivate: z.boolean().optional(),
 	isCurated: z.boolean().optional(),
 	hasReminder: z.boolean().optional(),
@@ -79,8 +73,7 @@ export const SearchRecordsInputSchema = z.object({
 	query: z.string(),
 	filters: z
 		.object({
-			isFormat: z.boolean().optional(),
-			isIndexNode: z.boolean().optional(),
+			recordType: RecordTypeSchema.optional(),
 		})
 		.optional()
 		.default({}),
@@ -92,9 +85,7 @@ export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
 export type RecordWithoutEmbedding = Omit<RecordSelect, 'textEmbedding'>;
 
 export interface RecordWithRelations extends RecordWithoutEmbedding {
-	creators: RecordWithoutEmbedding[];
-	format: RecordWithoutEmbedding | null;
-	parent: RecordWithoutEmbedding | null;
+	outgoingLinks: Array<LinkSelect & { target: RecordWithoutEmbedding; predicate: PredicateSelect }>;
 	media: Array<MediaSelect>;
 }
 

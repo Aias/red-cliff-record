@@ -55,7 +55,6 @@ export const DuplicatesList = ({ record }: DuplicatesListProps) => {
 					id,
 					title,
 					abbreviation,
-					format,
 					sense,
 					type,
 					recordCreatedAt,
@@ -115,7 +114,6 @@ export const DuplicatesList = ({ record }: DuplicatesListProps) => {
 									<span>{type}</span>
 								</span>
 							)}
-							{format && <span>{format.title}</span>}
 							{url && <ExternalLink href={url}>{new URL(url).hostname}</ExternalLink>}
 							<span>{formattedDate}</span>
 						</div>
