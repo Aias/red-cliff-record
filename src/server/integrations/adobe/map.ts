@@ -8,7 +8,7 @@ import {
 	type MediaInsert,
 	type RecordInsert,
 } from '@/server/db/schema';
-import { linkRecordToCreator } from '../common/db-helpers';
+import { getRecordId, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 import { getMediaInsertData, uploadMediaToR2 } from '@/lib/server/media-helpers';
 
@@ -217,18 +217,10 @@ export const createMediaFromLightroomImages = async () => {
 			await db.update(lightroomImages).set({ recordId }).where(eq(lightroomImages.id, image.id));
 
 			// Link to author if found
-			const author = await db.query.records.findFirst({
-				where: {
-					type: 'entity',
-					title: 'Nick Trombley',
-				},
-				columns: {
-					id: true,
-				},
-			});
+			const me = await getRecordId('nick-trombley', db);
 
-			if (author) {
-				await linkRecordToCreator(recordId, author.id, 'creator');
+			if (me) {
+				await linkRecords(recordId, me, 'created_by', db);
 			}
 
 			logger.info(`Created record ${recordId} for ${image.fileName}`);

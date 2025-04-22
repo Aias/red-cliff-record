@@ -15,7 +15,9 @@ import {
 	githubUsers,
 	integrationRuns,
 	lightroomImages,
+	links,
 	media,
+	predicates,
 	raindropBookmarks,
 	raindropBookmarkTags,
 	raindropCollections,
@@ -25,8 +27,6 @@ import {
 	readwiseDocuments,
 	readwiseDocumentTags,
 	readwiseTags,
-	recordCreators,
-	links,
 	records,
 	twitterMedia,
 	twitterTweets,
@@ -60,8 +60,8 @@ export const relations = defineRelations(
 		readwiseDocuments,
 		readwiseDocumentTags,
 		readwiseTags,
-		recordCreators,
-		recordRelations: links,
+		predicates,
+		links,
 		records,
 		twitterMedia,
 		twitterTweets,
@@ -435,47 +435,15 @@ export const relations = defineRelations(
 			}),
 		},
 		records: {
-			parent: r.one.records({
-				from: r.records.parentId,
-				to: r.records.id,
-			}),
-			children: r.many.records({
+			outgoingLinks: r.many.links({
 				from: r.records.id,
-				to: r.records.parentId,
+				to: r.links.sourceId,
+			}),
+			incomingLinks: r.many.links({
+				from: r.records.id,
+				to: r.links.targetId,
 			}),
 			media: r.many.media(),
-			creators: r.many.records({
-				from: r.records.id.through(r.recordCreators.recordId),
-				to: r.records.id.through(r.recordCreators.creatorId),
-			}),
-			created: r.many.records({
-				from: r.records.id.through(r.recordCreators.creatorId),
-				to: r.records.id.through(r.recordCreators.recordId),
-			}),
-			format: r.one.records({
-				from: r.records.formatId,
-				to: r.records.id,
-			}),
-			formatOf: r.many.records({
-				from: r.records.id,
-				to: r.records.formatId,
-			}),
-			references: r.many.records({
-				from: r.records.id.through(r.recordRelations.sourceId),
-				to: r.records.id.through(r.recordRelations.targetId),
-			}),
-			referencedBy: r.many.records({
-				from: r.records.id.through(r.recordRelations.targetId),
-				to: r.records.id.through(r.recordRelations.sourceId),
-			}),
-			transcludes: r.one.records({
-				from: r.records.transcludeId,
-				to: r.records.id,
-			}),
-			transcludedBy: r.many.records({
-				from: r.records.id,
-				to: r.records.transcludeId,
-			}),
 			airtableCreators: r.many.airtableCreators(),
 			airtableExtracts: r.many.airtableExtracts(),
 			airtableFormats: r.many.airtableFormats(),
@@ -492,28 +460,28 @@ export const relations = defineRelations(
 			twitterTweets: r.many.twitterTweets(),
 			twitterUsers: r.many.twitterUsers(),
 		},
-		recordCreators: {
-			creator: r.one.records({
-				from: r.recordCreators.creatorId,
-				to: r.records.id,
-				optional: false,
-			}),
-			record: r.one.records({
-				from: r.recordCreators.recordId,
-				to: r.records.id,
-				optional: false,
-			}),
-		},
-		recordRelations: {
+		links: {
 			source: r.one.records({
-				from: r.recordRelations.sourceId,
+				from: r.links.sourceId,
 				to: r.records.id,
-				optional: false,
 			}),
 			target: r.one.records({
-				from: r.recordRelations.targetId,
+				from: r.links.targetId,
 				to: r.records.id,
-				optional: false,
+			}),
+			predicates: r.one.predicates({
+				from: r.links.predicateId,
+				to: r.predicates.id,
+			}),
+		},
+		predicates: {
+			links: r.many.links({
+				from: r.predicates.id,
+				to: r.links.predicateId,
+			}),
+			inversePredicate: r.one.predicates({
+				from: r.predicates.inverseSlug,
+				to: r.predicates.slug,
 			}),
 		},
 		twitterMedia: {

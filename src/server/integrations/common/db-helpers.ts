@@ -1,160 +1,76 @@
-import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
-import { recordCreators, links, records } from '@/server/db/schema';
-import type {
-	ChildType,
-	CreatorRole,
-	RecordCreatorInsert,
-	RecordRelationInsert,
-	LinkType,
-} from '@/server/db/schema';
+import { type Db } from '@/server/db/connections';
+import { links } from '@/server/db/schema';
+import type { PredicateSlug, RecordSlug } from '@/server/db/seed';
 import { createIntegrationLogger } from './logging';
 
-const logger = createIntegrationLogger('common', 'db-helpers');
+const predicateCache = new Map<PredicateSlug, number>();
+const recordCache = new Map<RecordSlug, number>();
 
-/**
- * Links a record to a creator record
- *
- * @param recordId - The ID of the record to link
- * @param creatorId - The ID of the creator record
- * @param role - The role of the creator (defaults to 'creator')
- * @returns A promise that resolves when the link is created
- */
-export async function linkRecordToCreator(
-	recordId: number,
-	creatorId: number,
-	role: CreatorRole = 'creator'
-): Promise<void> {
-	try {
-		await db
-			.insert(recordCreators)
-			.values({
-				recordId,
-				creatorId,
-				creatorRole: role,
-			})
-			.onConflictDoUpdate({
-				target: [recordCreators.recordId, recordCreators.creatorId, recordCreators.creatorRole],
-				set: {
-					recordUpdatedAt: new Date(),
-				},
-			});
+export async function getPredicateId(slug: PredicateSlug, db: Db): Promise<number> {
+	if (predicateCache.has(slug)) return predicateCache.get(slug)!;
 
-		logger.info(`Linked record ${recordId} to creator ${creatorId} with role ${role}`);
-	} catch (error) {
-		logger.error(`Failed to link record ${recordId} to creator ${creatorId}`, error);
-		throw error;
-	}
+	const row = await db.query.predicates.findFirst({
+		where: {
+			slug: slug,
+		},
+	});
+
+	if (!row) throw new Error(`Predicate slug ${slug} not found in DB`);
+	predicateCache.set(slug, row.id);
+	return row.id;
 }
+
+export async function getRecordId(slug: RecordSlug, db: Db): Promise<number> {
+	if (recordCache.has(slug)) return recordCache.get(slug)!;
+
+	const row = await db.query.records.findFirst({
+		where: {
+			slug: slug,
+		},
+	});
+
+	if (!row) throw new Error(`Record slug ${slug} not found in DB`);
+	recordCache.set(slug, row.id);
+	return row.id;
+}
+
+const logger = createIntegrationLogger('common', 'db-helpers');
 
 /**
  * Links a record to a target record with a specific relation type
  *
  * @param sourceId - The ID of the source record
  * @param targetId - The ID of the target record
- * @param type - The type of relation (defaults to 'related_to')
+ * @param predicateSlug - The slug of the relation type
  * @returns A promise that resolves when the link is created
  */
 export async function linkRecords(
 	sourceId: number,
 	targetId: number,
-	type: RecordRelationType = 'related_to'
+	predicateSlug: PredicateSlug,
+	db: Db
 ): Promise<void> {
+	const predicateId = await getPredicateId(predicateSlug, db);
 	try {
 		await db
 			.insert(links)
 			.values({
 				sourceId,
 				targetId,
-				type,
+				predicateId,
 			})
 			.onConflictDoUpdate({
-				target: [links.sourceId, links.targetId, links.type],
+				target: [links.sourceId, links.targetId, links.predicateId],
 				set: {
 					recordUpdatedAt: new Date(),
 				},
 			});
 
-		logger.info(`Linked record ${sourceId} to record ${targetId} with relation type ${type}`);
+		logger.info(
+			`Linked record ${sourceId} to record ${targetId} with relation type ${predicateSlug} (${predicateId})`
+		);
 	} catch (error) {
 		logger.error(`Failed to link record ${sourceId} to record ${targetId}`, error);
-		throw error;
-	}
-}
-
-/**
- * Updates a record's parent relationship
- *
- * @param recordId - The ID of the child record
- * @param parentId - The ID of the parent record
- * @param childType - The type of child relationship (defaults to 'part_of')
- * @returns A promise that resolves when the relationship is updated
- */
-export async function setRecordParent(
-	recordId: number,
-	parentId: number,
-	childType: ChildType = 'part_of'
-): Promise<void> {
-	try {
-		await db.update(records).set({ parentId, childType }).where(eq(records.id, recordId));
-
-		logger.info(`Set parent of record ${recordId} to ${parentId} with type ${childType}`);
-	} catch (error) {
-		logger.error(`Failed to set parent of record ${recordId} to ${parentId}`, error);
-		throw error;
-	}
-}
-
-/**
- * Bulk inserts record creator relationships
- *
- * @param items - Array of record creator relationships to insert
- * @returns A promise that resolves when all relationships are inserted
- */
-export async function bulkInsertRecordCreators(items: RecordCreatorInsert[]): Promise<void> {
-	if (items.length === 0) return;
-
-	try {
-		await db
-			.insert(recordCreators)
-			.values(items)
-			.onConflictDoUpdate({
-				target: [recordCreators.recordId, recordCreators.creatorId, recordCreators.creatorRole],
-				set: {
-					recordUpdatedAt: new Date(),
-				},
-			});
-
-		logger.info(`Inserted ${items.length} record creator relationships`);
-	} catch (error) {
-		logger.error(`Failed to insert ${items.length} record creator relationships`, error);
-		throw error;
-	}
-}
-
-/**
- * Bulk inserts record relation relationships
- *
- * @param items - Array of record relation relationships to insert
- * @returns A promise that resolves when all relationships are inserted
- */
-export async function bulkInsertRecordRelations(items: RecordRelationInsert[]): Promise<void> {
-	if (items.length === 0) return;
-
-	try {
-		await db
-			.insert(links)
-			.values(items)
-			.onConflictDoUpdate({
-				target: [links.sourceId, links.targetId, links.type],
-				set: {
-					recordUpdatedAt: new Date(),
-				},
-			});
-
-		logger.info(`Inserted ${items.length} record relation relationships`);
-	} catch (error) {
-		logger.error(`Failed to insert ${items.length} record relation relationships`, error);
 		throw error;
 	}
 }
