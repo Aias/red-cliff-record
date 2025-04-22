@@ -22,24 +22,17 @@ const MediaCreateInputSchema = z.object({
 
 export const mediaRouter = createTRPCRouter({
 	create: publicProcedure.input(MediaCreateInputSchema).mutation(async ({ ctx: { db }, input }) => {
-		console.log('Starting media creation for record:', input.recordId, 'fileName:', input.fileName);
 		try {
 			// 1. Decode base64 file data
-			console.log('Decoding base64 data...');
 			const fileBuffer = Buffer.from(input.fileData, 'base64');
-			console.log('Base64 decoded successfully. Buffer length:', fileBuffer.length);
 
 			// 2. Upload file to R2
-			console.log('Uploading file to R2...');
 			const r2Url = await uploadClientFileToR2(fileBuffer, input.fileType, input.fileName);
-			console.log('File uploaded to R2 successfully. URL:', r2Url);
 
 			// 3. Get metadata for the uploaded file using its R2 URL
-			console.log('Getting media metadata...');
 			const mediaInsertData = await getMediaInsertData(r2Url, {
 				recordId: input.recordId,
 			});
-			console.log('Media metadata retrieved successfully:', mediaInsertData);
 
 			if (!mediaInsertData) {
 				console.error('Failed to get media metadata after upload.');
@@ -50,9 +43,7 @@ export const mediaRouter = createTRPCRouter({
 			}
 
 			// 4. Insert media record into the database
-			console.log('Inserting media record into database...');
 			const [newMedia] = await db.insert(media).values(mediaInsertData).returning();
-			console.log('Media record inserted successfully:', newMedia?.id);
 
 			if (!newMedia) {
 				console.error('Failed to insert media record into database.');
@@ -62,7 +53,6 @@ export const mediaRouter = createTRPCRouter({
 				});
 			}
 
-			console.log(`Created media record ${newMedia.id} for record ${input.recordId}`);
 			return newMedia;
 		} catch (error) {
 			// Log the specific error before wrapping it
@@ -146,7 +136,7 @@ export const mediaRouter = createTRPCRouter({
 
 			return deletedMedia;
 		} catch (error) {
-			console.error(error);
+			console.error('Failed to delete media:', error);
 			throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete media' });
 		}
 	}),
