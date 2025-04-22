@@ -116,8 +116,14 @@ export async function uploadClientFileToR2(
 	contentType: string,
 	originalFilename?: string
 ): Promise<string> {
+	console.log('[uploadClientFileToR2] Starting upload.', {
+		contentType,
+		originalFilename,
+		bufferLength: fileBuffer.length,
+	});
 	try {
 		// Generate unique filename (object key) with appropriate extension
+		console.log('[uploadClientFileToR2] Generating unique name and extension...');
 		const uniqueName = crypto.randomUUID();
 		let ext = mime.extension(contentType);
 		if (!ext && originalFilename) {
@@ -132,8 +138,10 @@ export async function uploadClientFileToR2(
 		}
 		ext = ext || 'bin'; // Fallback to 'bin' if no suitable extension found
 		const objectKey = `${uniqueName}.${ext}`;
+		console.log(`[uploadClientFileToR2] Generated object key: ${objectKey}`);
 
-		// Prepare and execute S3 Upload Command
+		// Prepare S3 Upload Command
+		console.log('[uploadClientFileToR2] Preparing PutObjectCommand...');
 		const putCommand = new PutObjectCommand({
 			Bucket: process.env.S3_BUCKET!,
 			Key: objectKey,
@@ -141,15 +149,19 @@ export async function uploadClientFileToR2(
 			ContentType: contentType,
 			ContentLength: fileBuffer.length,
 		});
+		console.log('[uploadClientFileToR2] PutObjectCommand prepared. Sending to S3/R2...');
 
+		// Execute S3 Upload Command
 		await s3Client.send(putCommand);
+		console.log('[uploadClientFileToR2] s3Client.send(putCommand) completed successfully.');
 
 		// Construct and return public URL
 		const publicUrl = `https://${process.env.ASSETS_DOMAIN}/${objectKey}`;
-		console.log(`Successfully uploaded client file to ${publicUrl}`);
+		console.log(`[uploadClientFileToR2] Successfully uploaded client file to ${publicUrl}`);
 		return publicUrl;
 	} catch (error) {
-		console.error('Error uploading client file to R2:', error);
+		console.error('[uploadClientFileToR2] Error during upload:', error);
+		// Re-throwing the error so the calling function (media.create) can handle it
 		throw new Error(
 			`Failed to upload client file: ${error instanceof Error ? error.message : String(error)}`
 		);
