@@ -59,13 +59,6 @@ const RecordRow = memo(function RecordRow({ record }: { record: RecordWithRelati
 					<TooltipContent>{title}</TooltipContent>
 				</Tooltip>
 			</TableCell>
-			<TableCell>
-				{record.creators
-					?.map((creator) => creator.title || '')
-					.filter(Boolean)
-					.join(', ')}
-			</TableCell>
-			<TableCell>{record.format?.title || ''}</TableCell>
 			<TableCell className="whitespace-nowrap">
 				{record.url ? (
 					<ExternalLink href={record.url}>{new URL(record.url).hostname}</ExternalLink>
@@ -73,15 +66,8 @@ const RecordRow = memo(function RecordRow({ record }: { record: RecordWithRelati
 					''
 				)}
 			</TableCell>
-			<TableCell>{record.parentId}</TableCell>
 			<TableCell className="text-center">
 				{record.rating && record.rating > 0 ? '⭐'.repeat(record.rating) : ''}
-			</TableCell>
-			<TableCell className="text-center text-base">
-				{record.isIndexNode ? <CheckIcon /> : null}
-			</TableCell>
-			<TableCell className="text-center text-base">
-				{record.isFormat ? <CheckIcon /> : null}
 			</TableCell>
 			<TableCell className="text-center text-base">
 				{record.isPrivate ? <CheckIcon /> : null}
@@ -110,19 +96,7 @@ export const RecordsGrid = () => {
 	const { data: queue } = trpc.records.list.useQuery(search);
 
 	const {
-		filters: {
-			type,
-			title,
-			url,
-			isCurated,
-			isFormat,
-			isIndexNode,
-			isPrivate,
-			source,
-			hasParent,
-			text,
-			hasEmbedding,
-		},
+		filters: { type, title, url, isCurated, isPrivate, source, hasParent, text, hasEmbedding },
 		limit,
 	} = search;
 
@@ -130,13 +104,11 @@ export const RecordsGrid = () => {
 	const filterValues = useMemo(
 		() => ({
 			curatedValue: isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No',
-			indexNodeValue: isIndexNode === undefined ? 'All' : isIndexNode ? 'Yes' : 'No',
-			formatValue: isFormat === undefined ? 'All' : isFormat ? 'Yes' : 'No',
 			privateValue: isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No',
 			hasParentValue: hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No',
 			hasEmbeddingValue: hasEmbedding === undefined ? 'All' : hasEmbedding ? 'Yes' : 'No',
 		}),
-		[isCurated, isIndexNode, isFormat, isPrivate, hasParent, hasEmbedding]
+		[isCurated, isPrivate, hasParent, hasEmbedding]
 	);
 
 	// State for input fields
@@ -450,48 +422,6 @@ export const RecordsGrid = () => {
 					</ToggleGroup>
 				</div>
 				<div className="flex flex-col gap-1.5">
-					<Label htmlFor="indexNode">Is Index Node?</Label>
-					<ToggleGroup
-						id="indexNode"
-						type="single"
-						value={filterValues.indexNodeValue}
-						onValueChange={handleIndexNodeChange}
-						variant="outline"
-						className="w-full"
-					>
-						<ToggleGroupItem value="All" className="flex-1">
-							All
-						</ToggleGroupItem>
-						<ToggleGroupItem value="Yes" className="flex-1">
-							Yes
-						</ToggleGroupItem>
-						<ToggleGroupItem value="No" className="flex-1">
-							No
-						</ToggleGroupItem>
-					</ToggleGroup>
-				</div>
-				<div className="flex flex-col gap-1.5">
-					<Label htmlFor="format">Is Format?</Label>
-					<ToggleGroup
-						id="format"
-						type="single"
-						value={filterValues.formatValue}
-						onValueChange={handleFormatChange}
-						variant="outline"
-						className="w-full"
-					>
-						<ToggleGroupItem value="All" className="flex-1">
-							All
-						</ToggleGroupItem>
-						<ToggleGroupItem value="Yes" className="flex-1">
-							Yes
-						</ToggleGroupItem>
-						<ToggleGroupItem value="No" className="flex-1">
-							No
-						</ToggleGroupItem>
-					</ToggleGroup>
-				</div>
-				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="hasParent">Has Parent?</Label>
 					<ToggleGroup
 						id="hasParent"
@@ -598,13 +528,8 @@ export const RecordsGrid = () => {
 						<TableRow className="sticky top-0 z-10 bg-c-mist">
 							<TableHead className="text-center">Type</TableHead>
 							<TableHead>Record</TableHead>
-							<TableHead>Creators</TableHead>
-							<TableHead>Format</TableHead>
 							<TableHead>URL</TableHead>
-							<TableHead>Parent</TableHead>
 							<TableHead className="text-center">Rating</TableHead>
-							<TableHead className="text-center">Index?</TableHead>
-							<TableHead className="text-center">Format?</TableHead>
 							<TableHead className="text-center">Private?</TableHead>
 							<TableHead className="text-center">Curated?</TableHead>
 							<TableHead className="text-center">Sources</TableHead>

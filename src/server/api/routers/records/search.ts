@@ -11,7 +11,7 @@ export const search = publicProcedure
 	.query(({ ctx: { db }, input }) => {
 		const {
 			query,
-			filters: { isFormat, isIndexNode },
+			filters: { recordType },
 			limit,
 		} = input;
 		return db.query.records.findMany({
@@ -23,8 +23,7 @@ export const search = publicProcedure
 						${records.notes} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
 						${records.summary} <-> ${query} < ${SIMILARITY_THRESHOLD}
 					)`,
-				isFormat,
-				isIndexNode,
+				type: recordType,
 			},
 			limit,
 			orderBy: (records, { desc, sql }) => [
@@ -37,7 +36,7 @@ export const search = publicProcedure
 				desc(records.recordUpdatedAt),
 			],
 			with: {
-				creators: true,
+				outgoingLinks: true,
 				media: true,
 			},
 		});

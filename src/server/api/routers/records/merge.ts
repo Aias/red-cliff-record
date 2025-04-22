@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { and, eq, inArray, ne } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { publicProcedure } from '../../init';
 import {
@@ -10,6 +10,7 @@ import {
 	githubRepositories,
 	githubUsers,
 	lightroomImages,
+	links,
 	media,
 	raindropBookmarks,
 	raindropCollections,
@@ -17,12 +18,11 @@ import {
 	readwiseAuthors,
 	readwiseDocuments,
 	readwiseTags,
-	recordCreators,
-	links,
 	records,
 	twitterTweets,
 	twitterUsers,
 } from '@/db/schema';
+import type { LinkInsert } from '@/db/schema';
 
 export const merge = publicProcedure
 	.input(
@@ -77,6 +77,7 @@ export const merge = publicProcedure
 				const hasTargetText = targetText && targetText !== '';
 
 				if (hasSourceText && hasTargetText) {
+					// Prefer target text first in merged content
 					return `${targetText}\n---\n${sourceText}`;
 				} else if (hasTargetText) {
 					return targetText;
@@ -88,17 +89,28 @@ export const merge = publicProcedure
 
 			// Merge record data, preferring target's non-null (and non-empty string) values
 			// but concatenating summary, content, and notes fields
-			const mergedRecord = {
+			const mergedRecordData = {
 				...source,
 				...Object.fromEntries(
 					Object.entries(target).filter(([key, value]) => {
-						// Skip summary, content, and notes as we'll handle them separately
-						if (key === 'summary' || key === 'content' || key === 'notes') {
+						// Skip fields handled separately or automatically
+						if (
+							[
+								'id',
+								'summary',
+								'content',
+								'notes',
+								'sources',
+								'rating',
+								'isPrivate',
+								'isCurated',
+								'recordUpdatedAt',
+								'textEmbedding',
+							].includes(key)
+						) {
 							return false;
 						}
-						if (['rating', 'isIndexNode', 'isFormat', 'isPrivate', 'isCurated'].includes(key)) {
-							return false;
-						}
+						// Keep target's value if it's not null or empty string
 						return !(value === null || value === '');
 					})
 				),
@@ -108,22 +120,26 @@ export const merge = publicProcedure
 				notes: mergeTextFields(source.notes, target.notes),
 				sources: allSources.length > 0 ? allSources : null,
 				rating: Math.max(source.rating, target.rating),
-				isIndexNode: source.isIndexNode || target.isIndexNode,
-				isFormat: source.isFormat || target.isFormat,
 				isPrivate: source.isPrivate || target.isPrivate,
 				isCurated: source.isCurated || target.isCurated,
-				// If merging child into parent, set parentId to null
-				parentId: source.parentId === targetId ? null : target.parentId || source.parentId,
 				recordUpdatedAt: new Date(),
 				textEmbedding: null, // Changes require recalculating the embedding
 			};
 
+			// Remove id from the update payload
+			const { id: _sourceId, ...updatePayload } = mergedRecordData;
+
 			const transactionResult = await db.transaction(async (tx) => {
 				try {
+					// If the source record has a slug, nullify it first to avoid unique constraint conflict
+					if (source.slug) {
+						await tx.update(records).set({ slug: null }).where(eq(records.id, sourceId));
+					}
+
 					// Update the target record with the merged data
 					const [updatedRecord] = await tx
 						.update(records)
-						.set(mergedRecord)
+						.set(updatePayload)
 						.where(eq(records.id, targetId))
 						.returning();
 
@@ -134,33 +150,7 @@ export const merge = publicProcedure
 						});
 					}
 
-					// Update all references to the source record to point to the target record
-					// 1. Update records that reference the source record in any of the self-referencing columns
-					await tx
-						.update(records)
-						.set({
-							formatId: targetId,
-							recordUpdatedAt: new Date(),
-						})
-						.where(eq(records.formatId, sourceId));
-
-					await tx
-						.update(records)
-						.set({
-							parentId: targetId,
-							recordUpdatedAt: new Date(),
-						})
-						.where(and(eq(records.parentId, sourceId), ne(records.id, targetId)));
-
-					await tx
-						.update(records)
-						.set({
-							transcludeId: targetId,
-							recordUpdatedAt: new Date(),
-						})
-						.where(eq(records.transcludeId, sourceId));
-
-					// 1.5. Update media records to point to the target record
+					// 1. Update media records to point to the target record
 					await tx
 						.update(media)
 						.set({
@@ -198,8 +188,8 @@ export const merge = publicProcedure
 							.where(eq(table[column], sourceId));
 					}
 
-					// 3. Handle record relations (non-hierarchical relationships)
-					const recordRelationsRows = await tx.query.recordRelations.findMany({
+					// 3. Handle merging links
+					const linksToMerge = await tx.query.links.findMany({
 						where: {
 							OR: [
 								{
@@ -216,100 +206,54 @@ export const merge = publicProcedure
 						},
 					});
 
-					// Delete all relations involving either record
-					if (recordRelationsRows.length > 0) {
-						await tx.delete(links).where(
-							inArray(
-								links.id,
-								recordRelationsRows.map((row) => row.id)
-							)
-						);
+					// Store original IDs to delete them later
+					const linkIdsToDelete = linksToMerge.map((link) => link.id);
+
+					// Delete all original links involving either record
+					if (linkIdsToDelete.length > 0) {
+						await tx.delete(links).where(inArray(links.id, linkIdsToDelete));
 					}
 
-					// Update relations to use the target ID instead of source ID
-					const updatedRelations = recordRelationsRows.map((row) => ({
-						...row,
-						sourceId: row.sourceId === sourceId ? targetId : row.sourceId,
-						targetId: row.targetId === sourceId ? targetId : row.targetId,
+					// Update links to replace sourceId with targetId
+					const updatedLinks = linksToMerge.map((link) => ({
+						// Keep original notes and predicateId
+						predicateId: link.predicateId,
+						notes: link.notes,
+						// Update source/target IDs and timestamp
+						sourceId: link.sourceId === sourceId ? targetId : link.sourceId,
+						targetId: link.targetId === sourceId ? targetId : link.targetId,
 						recordUpdatedAt: new Date(),
 					}));
 
-					// Deduplicate based on the composite key (sourceId, targetId, type)
-					const dedupedRelations = [];
-					const seenRelationKeys = new Set<string>();
+					// Deduplicate based on the composite key (sourceId, targetId, predicateId)
+					// and filter out self-references
+					const dedupedLinksToInsert: LinkInsert[] = [];
+					const seenLinkKeys = new Set<string>();
 
-					for (const row of updatedRelations) {
-						// Skip self-references that would be created during the merge
-						if (row.sourceId === row.targetId) {
+					for (const link of updatedLinks) {
+						// Skip self-references created by the merge
+						if (link.sourceId === link.targetId) {
 							continue;
 						}
 
-						const key = `${row.sourceId}-${row.targetId}-${row.type}`;
-						if (!seenRelationKeys.has(key)) {
-							seenRelationKeys.add(key);
-							dedupedRelations.push(row);
+						const key = `${link.sourceId}-${link.targetId}-${link.predicateId}`;
+						if (!seenLinkKeys.has(key)) {
+							seenLinkKeys.add(key);
+							// Only include fields needed for insertion
+							dedupedLinksToInsert.push({
+								sourceId: link.sourceId,
+								targetId: link.targetId,
+								predicateId: link.predicateId,
+								notes: link.notes,
+								recordUpdatedAt: link.recordUpdatedAt,
+								// id will be generated by the database
+							});
 						}
 					}
 
-					if (dedupedRelations.length > 0) {
-						await tx.insert(links).values(dedupedRelations);
-					}
-
-					// 4. Handle record creators
-					const recordCreatorsRows = await tx.query.recordCreators.findMany({
-						where: {
-							OR: [
-								{
-									recordId: {
-										in: ids,
-									},
-								},
-								{
-									creatorId: {
-										in: ids,
-									},
-								},
-							],
-						},
-					});
-
-					// Delete all creator relationships involving either record
-					if (recordCreatorsRows.length > 0) {
-						await tx.delete(recordCreators).where(
-							inArray(
-								recordCreators.id,
-								recordCreatorsRows.map((row) => row.id)
-							)
-						);
-					}
-
-					// Update creator relationships to use the target ID
-					const updatedCreators = recordCreatorsRows.map((row) => ({
-						...row,
-						recordId: row.recordId === sourceId ? targetId : row.recordId,
-						creatorId: row.creatorId === sourceId ? targetId : row.creatorId,
-						recordUpdatedAt: new Date(),
-					}));
-
-					// Deduplicate based on the composite key (recordId, creatorId, creatorRole)
-					const dedupedCreators = [];
-					const seenCreatorKeys = new Set<string>();
-
-					for (const row of updatedCreators) {
-						// Skip self-references
-						if (row.recordId === row.creatorId) {
-							continue;
-						}
-
-						const key = `${row.recordId}-${row.creatorId}-${row.creatorRole}`;
-						if (!seenCreatorKeys.has(key)) {
-							seenCreatorKeys.add(key);
-							dedupedCreators.push(row);
-						}
-					}
-
-					if (dedupedCreators.length > 0) {
-						await tx.insert(recordCreators).values(dedupedCreators);
+					// Insert the merged and deduplicated links
+					if (dedupedLinksToInsert.length > 0) {
+						await tx.insert(links).values(dedupedLinksToInsert);
 					}
 
 					// Finally, delete the source record
@@ -318,12 +262,19 @@ export const merge = publicProcedure
 						.where(eq(records.id, sourceId))
 						.returning();
 
+					if (!deletedRecord) {
+						// This case might indicate the source record was already deleted,
+						// but the transaction should ideally prevent this state. Log it.
+						console.warn(`Merge records: Source record ID ${sourceId} not found for deletion.`);
+					}
+
 					return {
 						updatedRecord,
 						deletedRecord,
 					};
 				} catch (error) {
 					console.error('Transaction error:', error);
+					// Rollback is handled automatically by db.transaction
 					throw new TRPCError({
 						code: 'INTERNAL_SERVER_ERROR',
 						message: `Transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,

@@ -21,17 +21,39 @@ function sortByTime(a: RecordWithoutEmbedding, b: RecordWithoutEmbedding) {
 }
 
 export const RelationsList = ({ record }: RelationsListProps) => {
-	const { children, creators, parent, created, formatOf } = useMemo(
+	const { outgoingLinks, incomingLinks } = useMemo(
 		() =>
 			record ?? {
-				children: [],
-				creators: [],
-				created: [],
-				formatOf: [],
-				parent: null,
+				outgoingLinks: [],
+				incomingLinks: [],
 			},
 		[record]
 	);
+
+	const creators = outgoingLinks
+		.filter((link) => link.predicate.type === 'creation')
+		.map((link) => link.target);
+	const created = incomingLinks
+		.filter((link) => link.predicate.type === 'creation')
+		.map((link) => link.source);
+	const formats = outgoingLinks
+		.filter((link) => link.predicate.type === 'identity')
+		.map((link) => link.target);
+	const parents = outgoingLinks
+		.filter((link) => link.predicate.type === 'containment')
+		.map((link) => link.target);
+	const children = incomingLinks
+		.filter((link) => link.predicate.type === 'containment')
+		.map((link) => link.source);
+	const references = outgoingLinks
+		.filter((link) => link.predicate.type === 'association')
+		.map((link) => link.target);
+	const referencedBy = incomingLinks
+		.filter((link) => link.predicate.type === 'association')
+		.map((link) => link.source);
+	const tags = outgoingLinks
+		.filter((link) => link.predicate.type === 'description')
+		.map((link) => link.target);
 
 	const combinedReferences = useMemo(() => {
 		if (!record) return [];
@@ -41,11 +63,11 @@ export const RelationsList = ({ record }: RelationsListProps) => {
 			{ record: RecordWithoutEmbedding; direction: 'reference' | 'referencedBy' | 'both' }
 		>();
 
-		record.references.forEach((ref) => {
+		references.forEach((ref) => {
 			referencesMap.set(ref.id, { record: ref, direction: 'reference' });
 		});
 
-		record.referencedBy.forEach((refBy) => {
+		referencedBy.forEach((refBy) => {
 			const existing = referencesMap.get(refBy.id);
 			if (existing) {
 				existing.direction = 'both';
@@ -65,10 +87,10 @@ export const RelationsList = ({ record }: RelationsListProps) => {
 					<RelationList records={creators} />
 				</section>
 			)}
-			{parent && (
+			{parents.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Parent</h3>
-					<RecordLink record={parent} />
+					<RelationList records={parents} />
 				</section>
 			)}
 			{children.length > 0 && (
@@ -83,10 +105,16 @@ export const RelationsList = ({ record }: RelationsListProps) => {
 					<RelationList records={created} />
 				</section>
 			)}
-			{formatOf.length > 0 && (
+			{formats.length > 0 && (
 				<section className="px-3">
-					<h3 className="mt-4 mb-2">Format Of</h3>
-					<RelationList records={formatOf} />
+					<h3 className="mt-4 mb-2">Format</h3>
+					<RelationList records={formats} />
+				</section>
+			)}
+			{tags.length > 0 && (
+				<section className="px-3">
+					<h3 className="mt-4 mb-2">Tags</h3>
+					<RelationList records={tags} />
 				</section>
 			)}
 			{combinedReferences.length > 0 && (
@@ -257,19 +285,8 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 	const recordId = useMemo(() => record.id, [record.id]);
 
 	const omittedRecordIds = useMemo(() => {
-		const { children, creators, references, parent, referencedBy, created, formatOf, format } =
-			record;
-		return [
-			record,
-			format,
-			...formatOf,
-			parent,
-			...children,
-			...creators,
-			...created,
-			...references,
-			...referencedBy,
-		]
+		const { incomingLinks, outgoingLinks } = record;
+		return [record, ...incomingLinks, ...outgoingLinks]
 			.map((record) => record?.id)
 			.filter((id): id is number => id !== undefined);
 	}, [record]);

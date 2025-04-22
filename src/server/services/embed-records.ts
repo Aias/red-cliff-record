@@ -33,19 +33,19 @@ export async function embedCuratedRecords(): Promise<number> {
 					},
 					predicate: true,
 				},
+				where: {
+					predicate: {
+						slug: {
+							notIn: ['format_of'], // Would bring back too many that are not useful for embedding.
+						},
+					},
+				},
 			},
 			media: true,
 		},
 		where: {
 			textEmbedding: {
 				isNull: true,
-			},
-			incomingLinks: {
-				predicate: {
-					slug: {
-						notIn: ['format_of'], // Would bring back too many that are not useful for embedding.
-					},
-				},
 			},
 		},
 		orderBy: {

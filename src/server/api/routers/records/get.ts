@@ -14,16 +14,19 @@ export const get = publicProcedure
 	.query(async ({ ctx: { db }, input }): Promise<FullRecord> => {
 		const record = await db.query.records.findFirst({
 			with: {
-				creators: columnsWithoutEmbedding,
-				created: columnsWithoutEmbedding,
-				format: columnsWithoutEmbedding,
-				formatOf: columnsWithoutEmbedding,
-				parent: columnsWithoutEmbedding,
-				children: columnsWithoutEmbedding,
+				outgoingLinks: {
+					with: {
+						target: columnsWithoutEmbedding,
+						predicate: true,
+					},
+				},
+				incomingLinks: {
+					with: {
+						source: columnsWithoutEmbedding,
+						predicate: true,
+					},
+				},
 				media: true,
-				references: columnsWithoutEmbedding,
-				referencedBy: columnsWithoutEmbedding,
-				transcludes: columnsWithoutEmbedding,
 			},
 			where: {
 				id: input,

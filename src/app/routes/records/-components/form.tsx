@@ -582,28 +582,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 			<div className="flex flex-col gap-3">
 				<h2>Metadata</h2>
 				<div className="flex justify-between">
-					<form.Field name="isIndexNode">
-						{(field) => (
-							<BooleanSwitch
-								label="Indexable"
-								id="isIndexNode"
-								value={field.state.value}
-								handleChange={field.handleChange}
-							/>
-						)}
-					</form.Field>
-
-					<form.Field name="isFormat">
-						{(field) => (
-							<BooleanSwitch
-								label="Is Format"
-								id="isFormat"
-								value={field.state.value}
-								handleChange={field.handleChange}
-							/>
-						)}
-					</form.Field>
-
 					<form.Field name="isPrivate">
 						{(field) => (
 							<BooleanSwitch
@@ -629,6 +607,7 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				<MetadataList
 					metadata={{
 						ID: record.id,
+						Slug: record.slug,
 						Created: record.recordCreatedAt,
 						Updated: record.recordUpdatedAt,
 						'Content Created': record.contentCreatedAt,
