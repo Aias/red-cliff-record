@@ -11,8 +11,36 @@ export const trpc = createTRPCReact<AppRouter>();
 export type ServerHelpers = ReturnType<typeof createServerSideHelpers<AppRouter>>;
 
 function getBaseUrl() {
-	if (typeof window !== 'undefined') return window.location.origin;
-	return `http://localhost:${process.env.PORT ?? 3000}`;
+	// 1. Running in the browser (dev or prod)
+	if (typeof window !== 'undefined') {
+		return window.location.origin;
+	}
+
+	// 2. Running on the server/edge (dev or prod)
+	// Use standard NODE_ENV to check environment
+	if (process.env.NODE_ENV === 'production') {
+		// Production server/worker: Use the PUBLIC_URL from env vars
+		// PUBLIC_URL MUST be set in your Cloudflare environment
+		const publicUrl = process.env.PUBLIC_URL;
+		if (!publicUrl) {
+			// Log a more prominent error in production if the URL is missing
+			console.error(
+				"\n🔴 CRITICAL ERROR: The 'PUBLIC_URL' environment variable is not set in your production environment." +
+					'\n   This is required for server-side tRPC requests to function correctly.' +
+					'\n   Please set it in your Cloudflare Pages/Worker environment settings.\n'
+			);
+			// Throwing an error might be better to halt deployment/startup if misconfigured
+			// throw new Error("PUBLIC_URL environment variable is not set in production.");
+			return ''; // Fallback that will likely cause tRPC errors
+		}
+		return publicUrl;
+	} else {
+		// Development server (assume anything not 'production' is development)
+		// Use localhost and the port (default 3000)
+		// Ensure PORT env var matches your dev server if not 3000
+		const port = process.env.PORT ?? 3000;
+		return `http://localhost:${port}`;
+	}
 }
 
 function showTRPCError(err: unknown) {
@@ -53,9 +81,6 @@ export const trpcClient = trpc.createClient({
 			enabled: () => ENABLE_LOGGING && process.env.NODE_ENV === 'development',
 		}),
 		httpBatchLink({
-			// since we are using Vinxi, the server is running on the same port,
-			// this means in dev the url is `http://localhost:3000/trpc`
-			// and since its from the same origin, we don't need to explicitly set the full URL
 			url: `${getBaseUrl()}/trpc`,
 			transformer: superjson,
 		}),
