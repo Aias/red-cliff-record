@@ -39,6 +39,9 @@ export const RelationsList = ({ record }: RelationsListProps) => {
 	const formats = outgoingLinks
 		.filter((link) => link.predicate.type === 'identity')
 		.map((link) => link.target);
+	const formatOf = incomingLinks
+		.filter((link) => link.predicate.type === 'identity')
+		.map((link) => link.source);
 	const parents = outgoingLinks
 		.filter((link) => link.predicate.type === 'containment')
 		.map((link) => link.target);
@@ -54,6 +57,9 @@ export const RelationsList = ({ record }: RelationsListProps) => {
 	const tags = outgoingLinks
 		.filter((link) => link.predicate.type === 'description')
 		.map((link) => link.target);
+	const tagged = incomingLinks
+		.filter((link) => link.predicate.type === 'description')
+		.map((link) => link.source);
 
 	const combinedReferences = useMemo(() => {
 		if (!record) return [];
@@ -81,10 +87,28 @@ export const RelationsList = ({ record }: RelationsListProps) => {
 
 	return record ? (
 		<div className="text-sm">
+			{formats.length > 0 && (
+				<section className="px-3">
+					<h3 className="mt-4 mb-2">Format</h3>
+					<RelationList records={formats} />
+				</section>
+			)}
+			{formatOf.length > 0 && (
+				<section className="px-3">
+					<h3 className="mt-4 mb-2">Format Of</h3>
+					<RelationList records={formatOf} />
+				</section>
+			)}
 			{creators.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Creators</h3>
 					<RelationList records={creators} />
+				</section>
+			)}
+			{created.length > 0 && (
+				<section className="px-3">
+					<h3 className="mt-4 mb-2">Created</h3>
+					<RelationList records={created} />
 				</section>
 			)}
 			{parents.length > 0 && (
@@ -99,22 +123,17 @@ export const RelationsList = ({ record }: RelationsListProps) => {
 					<RelationList records={children.sort(sortByTime)} />
 				</section>
 			)}
-			{created.length > 0 && (
-				<section className="px-3">
-					<h3 className="mt-4 mb-2">Created</h3>
-					<RelationList records={created} />
-				</section>
-			)}
-			{formats.length > 0 && (
-				<section className="px-3">
-					<h3 className="mt-4 mb-2">Format</h3>
-					<RelationList records={formats} />
-				</section>
-			)}
+
 			{tags.length > 0 && (
 				<section className="px-3">
 					<h3 className="mt-4 mb-2">Tags</h3>
 					<RelationList records={tags} />
+				</section>
+			)}
+			{tagged.length > 0 && (
+				<section className="px-3">
+					<h3 className="mt-4 mb-2">Tagged</h3>
+					<RelationList records={tagged} />
 				</section>
 			)}
 			{combinedReferences.length > 0 && (
@@ -286,8 +305,12 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 
 	const omittedRecordIds = useMemo(() => {
 		const { incomingLinks, outgoingLinks } = record;
-		return [record, ...incomingLinks, ...outgoingLinks]
-			.map((record) => record?.id)
+		return [
+			record,
+			...incomingLinks.map((link) => link.source),
+			...outgoingLinks.map((link) => link.target),
+		]
+			.map((record) => record.id)
 			.filter((id): id is number => id !== undefined);
 	}, [record]);
 

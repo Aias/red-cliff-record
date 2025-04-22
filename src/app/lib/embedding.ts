@@ -40,13 +40,27 @@ export const createRecordEmbeddingText = (record: FullRecord) => {
 	const { title, content, summary, notes, mediaCaption, outgoingLinks, incomingLinks, media, url } =
 		record;
 
-	const creators = outgoingLinks.filter((link) => link.predicate.type === 'creation');
-	const created = incomingLinks.filter((link) => link.predicate.type === 'creation');
-	const formats = outgoingLinks.filter((link) => link.predicate.type === 'identity');
-	const parents = outgoingLinks.filter((link) => link.predicate.type === 'containment');
-	const children = incomingLinks.filter((link) => link.predicate.type === 'containment');
-	const associations = outgoingLinks.filter((link) => link.predicate.type === 'association');
-	const tags = outgoingLinks.filter((link) => link.predicate.type === 'description');
+	const creators = outgoingLinks
+		.filter((link) => link.predicate.type === 'creation')
+		.map((link) => link.target);
+	const created = incomingLinks
+		.filter((link) => link.predicate.type === 'creation')
+		.map((link) => link.source);
+	const formats = outgoingLinks
+		.filter((link) => link.predicate.type === 'identity')
+		.map((link) => link.target);
+	const parents = outgoingLinks
+		.filter((link) => link.predicate.type === 'containment')
+		.map((link) => link.target);
+	const children = incomingLinks
+		.filter((link) => link.predicate.type === 'containment')
+		.map((link) => link.source);
+	const associations = outgoingLinks
+		.filter((link) => link.predicate.type === 'association')
+		.map((link) => link.target);
+	const tags = outgoingLinks
+		.filter((link) => link.predicate.type === 'description')
+		.map((link) => link.target);
 
 	const textParts = [];
 
@@ -104,5 +118,7 @@ export const createRecordEmbeddingText = (record: FullRecord) => {
 		textParts.push(contentParts.join('\n\n'));
 	}
 
-	return textParts.join('\n\n');
+	const finalText = textParts.join('\n\n');
+
+	return finalText;
 };

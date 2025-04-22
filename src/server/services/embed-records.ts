@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { createEmbedding } from '../../app/lib/server/create-embedding';
+import type { FullRecord } from '../api/routers/records.types';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';
 import { db } from '@/db/connections';
@@ -12,7 +13,7 @@ const BATCH_SIZE = 5000;
 export async function embedCuratedRecords(): Promise<number> {
 	logger.start('Embedding curated records');
 
-	const curatedRecords = await db.query.records.findMany({
+	const curatedRecords: FullRecord[] = await db.query.records.findMany({
 		with: {
 			outgoingLinks: {
 				with: {

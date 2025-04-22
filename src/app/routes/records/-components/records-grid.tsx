@@ -323,7 +323,7 @@ export const RecordsGrid = () => {
 							...prev,
 							filters: {
 								isCurated: false,
-								isIndexNode: true,
+								hasParent: false,
 							},
 						})}
 					>
