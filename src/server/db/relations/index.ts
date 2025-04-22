@@ -464,14 +464,17 @@ export const relations = defineRelations(
 			source: r.one.records({
 				from: r.links.sourceId,
 				to: r.records.id,
+				optional: false,
 			}),
 			target: r.one.records({
 				from: r.links.targetId,
 				to: r.records.id,
+				optional: false,
 			}),
-			predicates: r.one.predicates({
+			predicate: r.one.predicates({
 				from: r.links.predicateId,
 				to: r.predicates.id,
+				optional: false,
 			}),
 		},
 		predicates: {

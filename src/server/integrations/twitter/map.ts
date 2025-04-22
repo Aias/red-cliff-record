@@ -12,7 +12,7 @@ import {
 	type TwitterTweetSelect,
 	type TwitterUserSelect,
 } from '@/server/db/schema';
-import { linkRecordToCreator, setRecordParent } from '../common/db-helpers';
+import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 import { getMediaInsertData, uploadMediaToR2 } from '@/lib/server/media-helpers';
 
@@ -35,7 +35,6 @@ export const mapTwitterUserToRecord = (user: TwitterUserSelect): RecordInsert =>
 		avatarUrl: user.profileImageUrl,
 		isCurated: false,
 		isPrivate: false,
-		isIndexNode: true,
 		sources: ['twitter'],
 		recordCreatedAt: user.recordCreatedAt,
 		recordUpdatedAt: user.recordUpdatedAt,
@@ -122,8 +121,6 @@ export const mapTwitterTweetToRecord = (tweet: TweetData): RecordInsert => {
 		type: 'artifact',
 		content: cleanedContent,
 		url: `https://x.com/${tweet.user.username}/status/${tweet.id}`,
-		parentId: tweet.quotedTweet?.recordId ?? null,
-		childType: tweet.quotedTweet ? 'quotes' : null,
 		isPrivate: false,
 		isCurated: false,
 		sources: ['twitter'],
@@ -193,7 +190,7 @@ export async function createRecordsFromTweets() {
 
 		// Link the tweet creator via recordCreators.
 		if (tweet.user.recordId) {
-			await linkRecordToCreator(newRecord.id, tweet.user.recordId, 'creator');
+			await linkRecords(newRecord.id, tweet.user.recordId, 'created_by', db);
 		}
 
 		// Link the tweet media via recordMedia.
@@ -256,7 +253,7 @@ export async function linkQuotedTweets(tweetIds: string[]) {
 			`Setting parentId of tweet record ${tweet.recordId} to quoted tweet record ${quotedTweet.recordId}`
 		);
 
-		await setRecordParent(tweet.recordId, quotedTweet.recordId, 'quotes');
+		await linkRecords(tweet.recordId, quotedTweet.recordId, 'quotes', db);
 	}
 
 	logger.complete(`Linked ${tweetsWithQuotes.length} quoted tweets`);

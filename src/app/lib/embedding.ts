@@ -37,22 +37,16 @@ export const getRecordTitle = (record: Partial<FullRecord>, maxLength: number = 
 };
 
 export const createRecordEmbeddingText = (record: FullRecord) => {
-	const {
-		title,
-		content,
-		summary,
-		notes,
-		mediaCaption,
-		creators,
-		created,
-		format,
-		parent,
-		children,
-		media,
-		references,
-		referencedBy,
-		url,
-	} = record;
+	const { title, content, summary, notes, mediaCaption, outgoingLinks, incomingLinks, media, url } =
+		record;
+
+	const creators = outgoingLinks.filter((link) => link.predicate.type === 'creation');
+	const created = incomingLinks.filter((link) => link.predicate.type === 'creation');
+	const formats = outgoingLinks.filter((link) => link.predicate.type === 'identity');
+	const parents = outgoingLinks.filter((link) => link.predicate.type === 'containment');
+	const children = incomingLinks.filter((link) => link.predicate.type === 'containment');
+	const associations = outgoingLinks.filter((link) => link.predicate.type === 'association');
+	const tags = outgoingLinks.filter((link) => link.predicate.type === 'description');
 
 	const textParts = [];
 
@@ -67,8 +61,8 @@ export const createRecordEmbeddingText = (record: FullRecord) => {
 	if (created.length > 0) {
 		metaParts.push(`Creator Of:\n - ${created.map((c) => getRecordTitle(c)).join('\n - ')}`);
 	}
-	if (format) {
-		metaParts.push(`Format: ${getRecordTitle(format)}`);
+	if (formats.length > 0) {
+		metaParts.push(`Format: ${formats.map((f) => getRecordTitle(f)).join(', ')}`);
 	}
 	if (url) {
 		metaParts.push(`URL: ${url}`);
@@ -78,8 +72,8 @@ export const createRecordEmbeddingText = (record: FullRecord) => {
 	}
 
 	const contentParts = [];
-	if (parent) {
-		contentParts.push(`From: ${getRecordTitle(parent)}`);
+	if (parents.length > 0) {
+		contentParts.push(`From: ${parents.map((p) => getRecordTitle(p)).join(', ')}`);
 	}
 	if (summary) {
 		contentParts.push(`**${summary}**`);
@@ -95,13 +89,13 @@ export const createRecordEmbeddingText = (record: FullRecord) => {
 			`Children:\n - ${children.map((c) => getRecordTitle(c, 1000)).join('\n - ')}`
 		);
 	}
-	if (references.length > 0) {
-		contentParts.push(`References:\n - ${references.map((r) => getRecordTitle(r)).join('\n - ')}`);
-	}
-	if (referencedBy.length > 0) {
+	if (associations.length > 0) {
 		contentParts.push(
-			`Referenced By:\n - ${referencedBy.map((r) => getRecordTitle(r)).join('\n - ')}`
+			`Associations:\n - ${associations.map((a) => getRecordTitle(a)).join('\n - ')}`
 		);
+	}
+	if (tags.length > 0) {
+		contentParts.push(`Tags:\n - ${tags.map((t) => getRecordTitle(t)).join('\n - ')}`);
 	}
 	if (notes) {
 		contentParts.push(`[Note:] ${notes}`);

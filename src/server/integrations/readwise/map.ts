@@ -8,19 +8,13 @@ import {
 	ReadwiseLocation,
 	readwiseTags,
 	records,
+	type LinkInsert,
 	type ReadwiseAuthorSelect,
 	type ReadwiseDocumentSelect,
 	type ReadwiseTagSelect,
-	type RecordCreatorInsert,
 	type RecordInsert,
-	type RecordRelationInsert,
 } from '@/server/db/schema';
-import {
-	bulkInsertRecordCreators,
-	bulkInsertRecordRelations,
-	linkRecords,
-	setRecordParent,
-} from '../common/db-helpers';
+import { bulkInsertLinks, getPredicateId, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 
 const logger = createIntegrationLogger('readwise', 'map');
@@ -115,7 +109,6 @@ const mapReadwiseAuthorToRecord = (author: ReadwiseAuthorSelect): RecordInsert =
 		sources: ['readwise'],
 		isCurated: false,
 		isPrivate: false,
-		isIndexNode: true,
 		recordCreatedAt: author.recordCreatedAt,
 		recordUpdatedAt: author.recordUpdatedAt,
 	};
@@ -295,7 +288,6 @@ const mapReadwiseTagToRecord = (tag: ReadwiseTagSelect): RecordInsert => {
 		sources: ['readwise'],
 		isCurated: false,
 		isPrivate: false,
-		isIndexNode: true,
 		recordCreatedAt: tag.recordCreatedAt,
 		recordUpdatedAt: tag.recordUpdatedAt,
 	};
@@ -364,7 +356,7 @@ export async function createRecordsFromReadwiseTags() {
 		for (const tagDocument of tag.documents) {
 			if (tagDocument.recordId) {
 				logger.info(`Linking tag ${tag.tag} to record ${tagDocument.recordId}`);
-				await linkRecords(tagDocument.recordId, newCategory.id, 'tagged');
+				await linkRecords(tagDocument.recordId, newCategory.id, 'tagged_with', db);
 			}
 		}
 	}
@@ -489,9 +481,6 @@ export async function createRecordsFromReadwiseDocuments() {
 		// Map the document into a record insertion payload.
 		const recordPayload = mapReadwiseDocumentToRecord(doc);
 
-		// Ensure that parent ID is null (we will update this below).
-		recordPayload.parentId = null;
-
 		const [insertedRecord] = await db
 			.insert(records)
 			.values(recordPayload)
@@ -541,7 +530,7 @@ export async function createRecordsFromReadwiseDocuments() {
 			}
 
 			if (childRecordId && parentRecordId) {
-				await setRecordParent(childRecordId, parentRecordId, 'part_of');
+				await linkRecords(childRecordId, parentRecordId, 'contained_by', db);
 				logger.info(`Linked child record ${childRecordId} to parent record ${parentRecordId}`);
 			} else {
 				logger.warn(`Skipping linking for document ${doc.id} due to missing parent record id`);
@@ -601,19 +590,22 @@ export async function createRecordsFromReadwiseDocuments() {
 	}
 
 	// Bulk prepare linking arrays.
-	const recordCreatorsValues: RecordCreatorInsert[] = [];
-	const recordRelationsValues: RecordRelationInsert[] = [];
+	const recordCreatorsValues: LinkInsert[] = [];
+	const recordRelationsValues: LinkInsert[] = [];
 
 	for (const doc of documents) {
 		const recordId = recordMap.get(doc.id);
 		if (!recordId) continue;
 
+		const createdByPredicateId = await getPredicateId('created_by', db);
+		const taggedWithPredicateId = await getPredicateId('tagged_with', db);
+
 		// Link author via recordCreators.
 		if (doc.authorId && authorIndexMap.has(doc.authorId)) {
 			recordCreatorsValues.push({
-				recordId,
-				creatorId: authorIndexMap.get(doc.authorId)!,
-				creatorRole: 'creator',
+				sourceId: recordId,
+				targetId: authorIndexMap.get(doc.authorId)!,
+				predicateId: createdByPredicateId,
 			});
 		}
 
@@ -624,7 +616,7 @@ export async function createRecordsFromReadwiseDocuments() {
 					recordRelationsValues.push({
 						sourceId: recordId,
 						targetId: tagIndexMap.get(tag)!,
-						type: 'tagged',
+						predicateId: taggedWithPredicateId,
 					});
 				}
 			}
@@ -633,12 +625,12 @@ export async function createRecordsFromReadwiseDocuments() {
 
 	// Bulk insert relationships
 	if (recordCreatorsValues.length > 0) {
-		await bulkInsertRecordCreators(recordCreatorsValues);
+		await bulkInsertLinks(recordCreatorsValues, db);
 		logger.info(`Linked ${recordCreatorsValues.length} authors to records`);
 	}
 
 	if (recordRelationsValues.length > 0) {
-		await bulkInsertRecordRelations(recordRelationsValues);
+		await bulkInsertLinks(recordRelationsValues, db);
 		logger.info(`Linked ${recordRelationsValues.length} tags to records`);
 	}
 

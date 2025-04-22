@@ -1,5 +1,5 @@
 import { type Db } from '@/server/db/connections';
-import { links } from '@/server/db/schema';
+import { links as linksTable, type LinkInsert } from '@/server/db/schema';
 import type { PredicateSlug, RecordSlug } from '@/server/db/seed';
 import { createIntegrationLogger } from './logging';
 
@@ -53,14 +53,14 @@ export async function linkRecords(
 	const predicateId = await getPredicateId(predicateSlug, db);
 	try {
 		await db
-			.insert(links)
+			.insert(linksTable)
 			.values({
 				sourceId,
 				targetId,
 				predicateId,
 			})
 			.onConflictDoUpdate({
-				target: [links.sourceId, links.targetId, links.predicateId],
+				target: [linksTable.sourceId, linksTable.targetId, linksTable.predicateId],
 				set: {
 					recordUpdatedAt: new Date(),
 				},
@@ -73,4 +73,16 @@ export async function linkRecords(
 		logger.error(`Failed to link record ${sourceId} to record ${targetId}`, error);
 		throw error;
 	}
+}
+
+export async function bulkInsertLinks(links: LinkInsert[], db: Db): Promise<void> {
+	await db
+		.insert(linksTable)
+		.values(links)
+		.onConflictDoUpdate({
+			target: [linksTable.sourceId, linksTable.targetId, linksTable.predicateId],
+			set: {
+				recordUpdatedAt: new Date(),
+			},
+		});
 }

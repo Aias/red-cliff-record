@@ -14,16 +14,11 @@ import {
 	type AirtableExtractSelect,
 	type AirtableFormatSelect,
 	type AirtableSpaceSelect,
+	type LinkInsert,
 	type MediaInsert,
-	type RecordCreatorInsert,
 	type RecordInsert,
-	type RecordRelationInsert,
 } from '@/server/db/schema';
-import {
-	bulkInsertRecordCreators,
-	bulkInsertRecordRelations,
-	setRecordParent,
-} from '../common/db-helpers';
+import { bulkInsertLinks, getPredicateId } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 import { getMediaInsertData } from '@/lib/server/media-helpers';
 
@@ -47,8 +42,6 @@ const mapFormatToRecord = (format: AirtableFormatSelect): RecordInsert => {
 		sources: ['airtable'],
 		isCurated: false,
 		isPrivate: false,
-		isFormat: true,
-		isIndexNode: true,
 		recordCreatedAt: format.recordCreatedAt,
 		recordUpdatedAt: format.recordUpdatedAt,
 	};
@@ -133,7 +126,6 @@ const mapAirtableCreatorToRecord = (creator: AirtableCreatorSelect): RecordInser
 		sources: ['airtable'],
 		isCurated: false,
 		isPrivate: false,
-		isIndexNode: true,
 		recordCreatedAt: creator.recordCreatedAt,
 		recordUpdatedAt: creator.recordUpdatedAt,
 		contentCreatedAt: creator.contentCreatedAt,
@@ -211,7 +203,6 @@ const mapAirtableSpaceToRecord = (space: AirtableSpaceSelect): RecordInsert => {
 		sources: ['airtable'],
 		isCurated: false,
 		isPrivate: false,
-		isIndexNode: true,
 		recordCreatedAt: space.recordCreatedAt,
 		recordUpdatedAt: space.recordUpdatedAt,
 		contentCreatedAt: space.contentCreatedAt,
@@ -381,8 +372,6 @@ const mapAirtableExtractToRecord = (
 		content: extract.content,
 		notes: extract.notes,
 		mediaCaption: extract.attachmentCaption,
-		parentId: extract.parent?.recordId,
-		formatId: extract.format?.recordId,
 		rating: extract.michelinStars,
 		isCurated: false,
 		isPrivate: extract.publishedAt ? false : true,
@@ -430,9 +419,18 @@ export async function createRecordsFromAirtableExtracts() {
 	// Map to store new record IDs keyed by their Airtable extract id.
 	const recordMap = new Map<string, number>();
 
+	const createdByPredicateId = await getPredicateId('created_by', db);
+	const taggedWithPredicateId = await getPredicateId('tagged_with', db);
+	const relatedToPredicateId = await getPredicateId('related_to', db);
+	const hasFormatPredicateId = await getPredicateId('has_format', db);
+	const containedByPredicateId = await getPredicateId('contained_by', db);
+
 	// Prepare bulk insert arrays
-	const recordCreatorsValues: RecordCreatorInsert[] = [];
-	const recordRelationsValues: RecordRelationInsert[] = [];
+	const recordCreatorsValues: LinkInsert[] = [];
+	const recordRelationsValues: LinkInsert[] = [];
+	const recordFormatsValues: LinkInsert[] = [];
+	const recordParentValues: LinkInsert[] = [];
+	const recordTagsValues: LinkInsert[] = [];
 
 	// Step 1: Create records
 	for (const extract of extracts) {
@@ -476,13 +474,31 @@ export async function createRecordsFromAirtableExtracts() {
 			}
 		}
 
+		// Prepare parent–child links
+		if (extract.parent?.recordId) {
+			recordParentValues.push({
+				sourceId: insertedRecord.id,
+				targetId: extract.parent.recordId,
+				predicateId: containedByPredicateId,
+			});
+		}
+
+		// Prepare format links
+		if (extract.format?.recordId) {
+			recordFormatsValues.push({
+				sourceId: insertedRecord.id,
+				targetId: extract.format.recordId,
+				predicateId: hasFormatPredicateId,
+			});
+		}
+
 		// Prepare creator links
 		for (const creator of extract.creators) {
 			if (creator.recordId) {
 				recordCreatorsValues.push({
-					recordId: insertedRecord.id,
-					creatorId: creator.recordId,
-					creatorRole: 'creator',
+					sourceId: insertedRecord.id,
+					targetId: creator.recordId,
+					predicateId: createdByPredicateId,
 				});
 			}
 		}
@@ -490,10 +506,10 @@ export async function createRecordsFromAirtableExtracts() {
 		// Prepare space links
 		for (const space of extract.spaces) {
 			if (space.recordId) {
-				recordRelationsValues.push({
+				recordTagsValues.push({
 					sourceId: insertedRecord.id,
 					targetId: space.recordId,
-					type: 'tagged',
+					predicateId: taggedWithPredicateId,
 				});
 			}
 		}
@@ -504,7 +520,7 @@ export async function createRecordsFromAirtableExtracts() {
 				recordRelationsValues.push({
 					sourceId: insertedRecord.id,
 					targetId: connection.recordId,
-					type: 'related_to',
+					predicateId: relatedToPredicateId,
 				});
 			}
 		}
@@ -515,7 +531,7 @@ export async function createRecordsFromAirtableExtracts() {
 				recordRelationsValues.push({
 					sourceId: connection.recordId,
 					targetId: insertedRecord.id,
-					type: 'related_to',
+					predicateId: relatedToPredicateId,
 				});
 			}
 		}
@@ -523,40 +539,28 @@ export async function createRecordsFromAirtableExtracts() {
 
 	// Bulk insert relationships
 	if (recordCreatorsValues.length > 0) {
-		await bulkInsertRecordCreators(recordCreatorsValues);
+		await bulkInsertLinks(recordCreatorsValues, db);
 		logger.info(`Linked ${recordCreatorsValues.length} creators to records`);
 	}
 
 	if (recordRelationsValues.length > 0) {
-		await bulkInsertRecordRelations(recordRelationsValues);
+		await bulkInsertLinks(recordRelationsValues, db);
 		logger.info(`Created ${recordRelationsValues.length} record relationships`);
 	}
 
-	// Step 2: Link parent–child relationships (if any)
-	for (const extract of extracts) {
-		if (extract.parentId) {
-			// Look up the parent record either from the map (created in this run) or from the DB.
-			const childRecordId = recordMap.get(extract.id);
-			if (!childRecordId) continue;
+	if (recordFormatsValues.length > 0) {
+		await bulkInsertLinks(recordFormatsValues, db);
+		logger.info(`Linked ${recordFormatsValues.length} formats to records`);
+	}
 
-			let parentRecordId = recordMap.get(extract.parentId);
-			if (!parentRecordId) {
-				const parentExtract = await db.query.airtableExtracts.findFirst({
-					where: {
-						id: extract.parentId,
-					},
-					columns: { recordId: true },
-				});
-				parentRecordId = parentExtract?.recordId ?? undefined;
-			}
+	if (recordParentValues.length > 0) {
+		await bulkInsertLinks(recordParentValues, db);
+		logger.info(`Linked ${recordParentValues.length} parent-child relationships`);
+	}
 
-			if (parentRecordId) {
-				await setRecordParent(childRecordId, parentRecordId, 'part_of');
-				logger.info(`Linked child record ${childRecordId} to parent record ${parentRecordId}`);
-			} else {
-				logger.warn(`Skipping linking for extract ${extract.id} due to missing parent record id`);
-			}
-		}
+	if (recordTagsValues.length > 0) {
+		await bulkInsertLinks(recordTagsValues, db);
+		logger.info(`Linked ${recordTagsValues.length} tags to records`);
 	}
 
 	logger.complete(`Processed ${extracts.length} Airtable extracts`);
@@ -604,7 +608,8 @@ export async function createConnectionsBetweenRecords(updatedIds?: string[]) {
 
 	logger.info(`Found ${connections.length} connections to process`);
 
-	const relationValues: RecordRelationInsert[] = [];
+	const relatedToPredicateId = await getPredicateId('related_to', db);
+	const relationValues: LinkInsert[] = [];
 
 	for (const connection of connections) {
 		if (connection.fromExtract.recordId && connection.toExtract.recordId) {
@@ -615,13 +620,13 @@ export async function createConnectionsBetweenRecords(updatedIds?: string[]) {
 			relationValues.push({
 				sourceId: connection.fromExtract.recordId,
 				targetId: connection.toExtract.recordId,
-				type: 'related_to',
+				predicateId: relatedToPredicateId,
 			});
 		}
 	}
 
 	if (relationValues.length > 0) {
-		await bulkInsertRecordRelations(relationValues);
+		await bulkInsertLinks(relationValues, db);
 		logger.info(`Created ${relationValues.length} record relationships`);
 	}
 

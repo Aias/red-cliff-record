@@ -183,7 +183,7 @@ export async function createRecordsFromRaindropBookmarks() {
 		for (const tag of bookmark.tags) {
 			if (tag.recordId) {
 				logger.info(`Linking record ${newRecord.id} to tag ${tag.recordId}`);
-				await linkRecords(newRecord.id, tag.recordId, 'tagged');
+				await linkRecords(newRecord.id, tag.recordId, 'tagged_with', db);
 			}
 		}
 
@@ -309,7 +309,6 @@ export const mapRaindropTagToRecord = (tag: RaindropTagSelect): RecordInsert => 
 		sources: ['raindrop'],
 		isCurated: false,
 		isPrivate: false,
-		isIndexNode: true,
 		recordCreatedAt: tag.recordCreatedAt,
 		recordUpdatedAt: tag.recordUpdatedAt,
 	};
@@ -374,7 +373,7 @@ export async function createRecordsFromRaindropTags() {
 		for (const bookmark of tag.bookmarks) {
 			if (bookmark.recordId) {
 				logger.info(`Linking record ${bookmark.recordId} to category ${newCategory.id}`);
-				await linkRecords(bookmark.recordId, newCategory.id, 'tagged');
+				await linkRecords(bookmark.recordId, newCategory.id, 'tagged_with', db);
 			}
 		}
 	}
