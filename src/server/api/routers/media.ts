@@ -29,32 +29,34 @@ export const mediaRouter = createTRPCRouter({
 			// 2. Upload file to R2
 			const r2Url = await uploadClientFileToR2(fileBuffer, input.fileType, input.fileName);
 
-			// 4. Get metadata for the uploaded file using its R2 URL
+			// 3. Get metadata for the uploaded file using its R2 URL
 			const mediaInsertData = await getMediaInsertData(r2Url, {
 				recordId: input.recordId,
 			});
 
 			if (!mediaInsertData) {
+				console.error('Failed to get media metadata after upload.');
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
 					message: 'Failed to get media metadata after upload.',
 				});
 			}
 
-			// 5. Insert media record into the database
+			// 4. Insert media record into the database
 			const [newMedia] = await db.insert(media).values(mediaInsertData).returning();
 
 			if (!newMedia) {
+				console.error('Failed to insert media record into database.');
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
 					message: 'Failed to insert media record into database.',
 				});
 			}
 
-			console.log(`Created media record ${newMedia.id} for record ${input.recordId}`);
 			return newMedia;
 		} catch (error) {
-			console.error('Failed to create media:', error);
+			// Log the specific error before wrapping it
+			console.error('Caught error during media creation:', error);
 			if (error instanceof TRPCError) {
 				throw error;
 			}
@@ -134,7 +136,7 @@ export const mediaRouter = createTRPCRouter({
 
 			return deletedMedia;
 		} catch (error) {
-			console.error(error);
+			console.error('Failed to delete media:', error);
 			throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete media' });
 		}
 	}),
