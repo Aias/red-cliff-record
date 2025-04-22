@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
-import { recordCreators, recordRelations, records } from '@/server/db/schema';
+import { recordCreators, links, records } from '@/server/db/schema';
 import type {
 	ChildType,
 	CreatorRole,
 	RecordCreatorInsert,
 	RecordRelationInsert,
-	RecordRelationType,
+	LinkType,
 } from '@/server/db/schema';
 import { createIntegrationLogger } from './logging';
 
@@ -62,14 +62,14 @@ export async function linkRecords(
 ): Promise<void> {
 	try {
 		await db
-			.insert(recordRelations)
+			.insert(links)
 			.values({
 				sourceId,
 				targetId,
 				type,
 			})
 			.onConflictDoUpdate({
-				target: [recordRelations.sourceId, recordRelations.targetId, recordRelations.type],
+				target: [links.sourceId, links.targetId, links.type],
 				set: {
 					recordUpdatedAt: new Date(),
 				},
@@ -143,10 +143,10 @@ export async function bulkInsertRecordRelations(items: RecordRelationInsert[]): 
 
 	try {
 		await db
-			.insert(recordRelations)
+			.insert(links)
 			.values(items)
 			.onConflictDoUpdate({
-				target: [recordRelations.sourceId, recordRelations.targetId, recordRelations.type],
+				target: [links.sourceId, links.targetId, links.type],
 				set: {
 					recordUpdatedAt: new Date(),
 				},
