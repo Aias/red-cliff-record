@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { SearchIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { defaultQueueOptions } from '@/server/api/routers/records.types';
-import { RecordLink } from '../records/-components/relations';
+import { RecordLink } from '../records/-components/record-link';
 import {
 	Button,
 	Command,
@@ -138,7 +138,7 @@ export const SiteSearch = () => {
 											onSelect={() => handleSelectResult(record.id)}
 											className="flex w-full cursor-pointer px-3 py-2"
 										>
-											<RecordLink record={record} className="flex-1" />
+											<RecordLink toRecord={record} className="flex-1" />
 										</CommandItem>
 									))}
 								</CommandGroup>
@@ -152,7 +152,7 @@ export const SiteSearch = () => {
 											onSelect={() => handleSelectResult(record.id)}
 											className="flex w-full cursor-pointer px-3 py-2"
 										>
-											<RecordLink record={record} className="flex-1" />
+											<RecordLink toRecord={record} className="flex-1" />
 										</CommandItem>
 									))}
 								</CommandGroup>

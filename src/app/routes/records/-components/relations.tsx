@@ -1,18 +1,21 @@
-import { memo, useMemo } from 'react';
-import { Link, type LinkOptions } from '@tanstack/react-router';
+import { useMemo } from 'react';
 import { ArrowLeft, ArrowLeftRight, ArrowRight } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
-import { recordTypeIcons } from './type-icons';
-import { IntegrationLogo } from '@/components';
-import type { LinkSelect, MediaSelect, MediaType, PredicateSelect } from '@/db/schema';
-import { cn } from '@/lib/utils';
+import { RecordLink } from './record-link';
 
 interface RelationsListProps {
 	record: FullRecord;
 }
 
-function sortByTime(a: RecordWithoutEmbedding, b: RecordWithoutEmbedding) {
+interface TimeSortable {
+	contentCreatedAt: Date | null;
+	contentUpdatedAt: Date | null;
+	recordCreatedAt: Date;
+	recordUpdatedAt: Date;
+}
+
+function sortByTime(a: TimeSortable, b: TimeSortable) {
 	// Use contentCreatedAt if both records have it, otherwise fall back to recordCreatedAt
 	if (a.contentCreatedAt && b.contentCreatedAt) {
 		return a.contentCreatedAt.getTime() - b.contentCreatedAt.getTime();
@@ -154,123 +157,6 @@ export const RelationsList = ({ record }: RelationsListProps) => {
 	);
 };
 
-interface RecordWithRelations extends RecordWithoutEmbedding {
-	media?: MediaSelect[];
-	outgoingLinks?: Array<
-		LinkSelect & { predicate: PredicateSelect; target: RecordWithoutEmbedding }
-	>;
-	incomingLinks?: Array<
-		LinkSelect & { predicate: PredicateSelect; source: RecordWithoutEmbedding }
-	>;
-}
-
-interface RecordLinkProps {
-	record: RecordWithRelations;
-	className?: string;
-	linkOptions?: LinkOptions;
-	checked?: boolean;
-	onCheckedChange?: (checked: boolean) => void;
-}
-
-export const RecordLink = memo(
-	({ record, className, linkOptions, checked, onCheckedChange }: RecordLinkProps) => {
-		const {
-			type,
-			title,
-			content,
-			summary,
-			notes,
-			url,
-			sources,
-			media,
-			mediaCaption,
-			avatarUrl,
-			recordUpdatedAt,
-			outgoingLinks,
-		} = record;
-
-		const firstCreator = useMemo(
-			() => outgoingLinks?.find((link) => link.predicate.type === 'creation')?.target,
-			[outgoingLinks]
-		);
-		const parent = useMemo(
-			() => outgoingLinks?.find((link) => link.predicate.type === 'containment')?.target,
-			[outgoingLinks]
-		);
-
-		const TypeIcon = useMemo(() => recordTypeIcons[type].icon, [type]);
-		const label = useMemo(() => {
-			if (title) return title;
-			if (firstCreator) return firstCreator.title;
-			if (parent) return `↳ ${parent.title}`;
-			return 'Untitled';
-		}, [title, firstCreator, parent]);
-
-		const mediaItem: {
-			type: MediaType;
-			altText?: string | null;
-			url: string;
-		} | null = useMemo(() => {
-			if (media && media.length > 0 && media[0]) {
-				return media[0];
-			}
-			if (avatarUrl) {
-				return {
-					type: 'image',
-					url: avatarUrl,
-				};
-			}
-			return null;
-		}, [media, avatarUrl]);
-
-		const preview = useMemo(() => {
-			return (
-				summary || content || notes || url || `Updated ${recordUpdatedAt.toLocaleDateString()}`
-			);
-		}, [summary, content, notes, url, recordUpdatedAt]);
-
-		return (
-			<div className="flex grow items-start gap-3">
-				<div className="flex grow flex-col gap-[0.25em]">
-					<div className={cn('flex items-center gap-1', className)}>
-						<TypeIcon className="text-c-symbol" />
-						<div className="flex grow items-center gap-1">
-							{linkOptions ? (
-								<Link className="mr-auto line-clamp-1" {...linkOptions}>
-									{label}
-								</Link>
-							) : (
-								<strong className="mr-auto line-clamp-1">{label}</strong>
-							)}
-						</div>
-						<ul className="flex items-center gap-1.5 text-[0.75em] opacity-50">
-							{sources?.map((source) => (
-								<li key={source}>
-									<IntegrationLogo integration={source} />
-								</li>
-							))}
-						</ul>
-					</div>
-					<p className="line-clamp-1 text-[0.925em] break-all text-c-secondary">{preview}</p>
-				</div>
-				{mediaItem && (
-					<div className="relative aspect-[3/2] h-[2lh] w-auto shrink-0 grow-0 basis-auto self-center overflow-hidden rounded-md border border-c-divider bg-c-mist">
-						{mediaItem.type === 'image' ? (
-							<img
-								src={mediaItem.url}
-								alt={mediaItem.altText ?? mediaCaption ?? ''}
-								className="absolute inset-0 object-cover"
-							/>
-						) : (
-							<video src={mediaItem.url} className="absolute inset-0 object-cover" />
-						)}
-					</div>
-				)}
-			</div>
-		);
-	}
-);
-
 interface RelationListProps {
 	records: RecordWithoutEmbedding[];
 }
@@ -281,7 +167,7 @@ const RelationList = ({ records }: RelationListProps) => {
 			{records.map((record) => (
 				<li key={record.id} className="mb-2">
 					<RecordLink
-						record={record}
+						toRecord={record}
 						linkOptions={{
 							to: '/records/$recordId',
 							search: true,
@@ -316,11 +202,11 @@ const ReferenceItem = ({ record, direction }: ReferenceItemProps) => {
 
 	return (
 		<div className="flex items-center justify-between gap-4">
-			<span className="w-[4ch] text-center font-mono text-xs text-c-accent">
+			<span className="w-[4ch] shrink-0 text-center font-mono text-xs text-c-accent">
 				<DirectionIcon className="size-4 shrink-0" />
 			</span>
 			<RecordLink
-				record={record}
+				toRecord={record}
 				className="flex-1"
 				linkOptions={{
 					to: '/records/$recordId',
@@ -369,11 +255,11 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 				<ul>
 					{similarRecords.map((record) => (
 						<li key={record.id} className="mb-2 flex items-center gap-4">
-							<span className="w-[4ch] font-mono text-xs text-c-secondary">
+							<span className="w-[4ch] shrink-0 font-mono text-xs text-c-secondary">
 								{record.similarity.toFixed(2)}
 							</span>
 							<RecordLink
-								record={record}
+								toRecord={record}
 								className="flex-1"
 								linkOptions={{
 									to: '/records/$recordId',

@@ -9,8 +9,8 @@ import {
 } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
 import { ListRecordsInputSchema } from '@/server/api/routers/records.types';
+import { RecordLink } from './-components/record-link';
 import { RecordsGrid } from './-components/records-grid';
-import { RecordLink } from './-components/relations';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
 
 // Create context for sharing data between parent and child routes
@@ -87,7 +87,7 @@ function RouteComponent() {
 			>
 				{recordsList.map((record) => (
 					<RadioCardsItem key={record.id} value={record.id.toString()}>
-						<RecordLink record={record} className="w-full overflow-hidden" />
+						<RecordLink toRecord={record} className="w-full overflow-hidden" />
 					</RadioCardsItem>
 				))}
 			</RadioCards>

@@ -76,6 +76,7 @@ export const similaritySearch = publicProcedure
 						},
 						limit: 5,
 					},
+					media: true,
 				},
 
 				extras: {
