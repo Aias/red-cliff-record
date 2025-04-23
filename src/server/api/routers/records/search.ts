@@ -1,10 +1,9 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, getTableColumns, isNotNull, notInArray } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { publicProcedure } from '../../init';
 import { similarity, SIMILARITY_THRESHOLD } from '../common';
 import { SearchRecordsInputSchema } from '../records.types';
-import { records, type RecordSelect } from '@/db/schema';
 
 export const search = publicProcedure
 	.input(SearchRecordsInputSchema)
@@ -36,7 +35,17 @@ export const search = publicProcedure
 				desc(records.recordUpdatedAt),
 			],
 			with: {
-				outgoingLinks: true,
+				outgoingLinks: {
+					with: {
+						predicate: true,
+						target: {
+							columns: {
+								textEmbedding: false,
+							},
+						},
+					},
+					limit: 5,
+				},
 				media: true,
 			},
 		});
@@ -50,28 +59,43 @@ export const similaritySearch = publicProcedure
 			exclude: z.number().array().optional(),
 		})
 	)
-	.query(async ({ ctx: { db }, input }): Promise<Array<RecordSelect & { similarity: number }>> => {
+	.query(async ({ ctx: { db }, input }) => {
 		try {
 			const { vector, limit, exclude } = input;
-			const similaritySql = similarity(records.textEmbedding, vector);
-			const results = await db
-				.select({
-					...getTableColumns(records),
-					similarity: similaritySql,
-				})
-				.from(records)
-				.where(
-					and(
-						isNotNull(records.textEmbedding),
-						exclude ? notInArray(records.id, exclude) : undefined,
-						eq(records.isPrivate, false)
-					)
-				)
-				.orderBy((t) => [desc(t.similarity), desc(t.recordUpdatedAt)])
-				.limit(limit);
-			return results;
-		} catch (error) {
-			console.error(error);
+
+			const results = await db.query.records.findMany({
+				with: {
+					outgoingLinks: {
+						with: {
+							predicate: true,
+							target: {
+								columns: {
+									textEmbedding: false,
+								},
+							},
+						},
+						limit: 5,
+					},
+				},
+
+				extras: {
+					similarity: (t) => similarity(t.textEmbedding, vector),
+				},
+
+				where: {
+					AND: [
+						{ textEmbedding: { isNotNull: true } },
+						exclude?.length ? { id: { notIn: exclude } } : {},
+						{ isPrivate: false },
+					],
+				},
+				orderBy: (t, { desc }) => [desc(sql`similarity`), desc(t.recordUpdatedAt)],
+				limit,
+			});
+
+			return results; // typed as (RecordSelect & { similarity: number })[]
+		} catch (err) {
+			console.error(err);
 			throw new TRPCError({
 				code: 'INTERNAL_SERVER_ERROR',
 				message: 'Error searching for similar records',

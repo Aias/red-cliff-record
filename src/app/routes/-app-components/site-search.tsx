@@ -138,11 +138,7 @@ export const SiteSearch = () => {
 											onSelect={() => handleSelectResult(record.id)}
 											className="flex w-full cursor-pointer px-3 py-2"
 										>
-											<RecordLink
-												record={record}
-												className="flex-1"
-												options={{ showExternalLink: false, showInternalLink: true }}
-											/>
+											<RecordLink record={record} className="flex-1" />
 										</CommandItem>
 									))}
 								</CommandGroup>
@@ -156,11 +152,7 @@ export const SiteSearch = () => {
 											onSelect={() => handleSelectResult(record.id)}
 											className="flex w-full cursor-pointer px-3 py-2"
 										>
-											<RecordLink
-												record={record}
-												className="flex-1"
-												options={{ showExternalLink: false, showInternalLink: true }}
-											/>
+											<RecordLink record={record} className="flex-1" />
 										</CommandItem>
 									))}
 								</CommandGroup>

@@ -66,8 +66,6 @@ function RouteComponent() {
 		return recordsList[nextIndex]?.id;
 	}, [currentRecordId, recordsList]);
 
-	const linkOptions = useMemo(() => ({ showExternalLink: false, showInternalLink: false }), []);
-
 	const handleValueChange = useCallback(
 		(value: string) => {
 			navigate({
@@ -89,12 +87,12 @@ function RouteComponent() {
 			>
 				{recordsList.map((record) => (
 					<RadioCardsItem key={record.id} value={record.id.toString()}>
-						<RecordLink record={record} className="w-full overflow-hidden" options={linkOptions} />
+						<RecordLink record={record} className="w-full overflow-hidden" />
 					</RadioCardsItem>
 				))}
 			</RadioCards>
 		),
-		[recordsList, currentRecordId, handleValueChange, linkOptions]
+		[recordsList, currentRecordId, handleValueChange]
 	);
 
 	return (

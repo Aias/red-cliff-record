@@ -184,7 +184,7 @@
 
 	b,
 	strong {
-		@apply font-semibold;
+		@apply font-medium;
 	}
 
 	a:where(:any-link, button),
