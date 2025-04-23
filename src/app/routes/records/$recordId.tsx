@@ -1,7 +1,6 @@
 import { useContext, useMemo } from 'react';
 import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
-import { DuplicatesList } from './-components/duplicates-list';
 import { RecordForm } from './-components/form';
 import { RelationsList, SimilarRecords } from './-components/relations';
 import { NextRecordIdContext } from './route';
@@ -27,8 +26,7 @@ function RouteComponent() {
 			<div className="card w-[540px] overflow-y-auto">
 				<RecordForm recordId={recordIdNumber} nextRecordId={nextRecordId} />
 			</div>
-			<div className="flex-1 overflow-y-auto">
-				<DuplicatesList record={record} />
+			<div className="flex flex-1 flex-col gap-4 overflow-y-auto">
 				<RelationsList record={record} />
 				<SimilarRecords record={record} />
 			</div>
