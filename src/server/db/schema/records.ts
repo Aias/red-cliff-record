@@ -147,6 +147,7 @@ export const predicates = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		canonical: boolean('canonical').notNull().default(true),
 		...databaseTimestamps,
 	},
 	(table) => [
@@ -154,7 +155,9 @@ export const predicates = pgTable(
 		index().on(table.slug),
 		index().on(table.type),
 		index().on(table.role),
+		index().on(table.canonical),
 		index().on(table.inverseSlug),
+		index().on(table.type, table.canonical),
 	]
 );
 
