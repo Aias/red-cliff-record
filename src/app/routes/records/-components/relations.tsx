@@ -1,20 +1,53 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
-import type { FullRecord } from '@/server/api/routers/records.types';
+import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
 import { RecordLink } from './record-link';
+import type { LinkSelect, PredicateSelect } from '@/db/schema';
 
 interface RelationsListProps {
 	record: FullRecord;
 }
 
-export const RelationsList = ({
-	record: { outgoingLinks, incomingLinks, ...rest },
-}: RelationsListProps) => {
+interface RecordLink extends LinkSelect {
+	predicate: PredicateSelect;
+	record: RecordWithoutEmbedding;
+	direction: 'outgoing' | 'incoming';
+}
+
+export const RelationsList = ({ record: { outgoingLinks, incomingLinks } }: RelationsListProps) => {
+	const utils = trpc.useUtils();
 	const totalLinks = useMemo(
 		() => outgoingLinks.length + incomingLinks.length,
 		[outgoingLinks, incomingLinks]
 	);
+	const { data: predicates } = trpc.relations.listPredicates.useQuery();
+
+	useEffect(() => {
+		console.log(predicates);
+	}, [predicates]);
+
+	const getInversePredicate = useCallback(
+		(predicate: PredicateSelect): PredicateSelect => {
+			return predicates?.find((p) => p.inverseSlug === predicate.slug) || predicate;
+		},
+		[predicates]
+	);
+
+	const allLinks: RecordLink[] = useMemo(() => {
+		return [
+			...outgoingLinks.map((link) => ({
+				...link,
+				record: link.target,
+				direction: 'outgoing' as const,
+			})),
+			...incomingLinks.map((link) => ({
+				...link,
+				record: link.source,
+				direction: 'incoming' as const,
+			})),
+		];
+	}, [outgoingLinks, incomingLinks]);
 
 	return (
 		<section>
@@ -23,34 +56,26 @@ export const RelationsList = ({
 			</h3>
 			{totalLinks > 0 ? (
 				<ul className="flex flex-col gap-2 text-xs">
-					{outgoingLinks.map((link) => (
+					{allLinks.map((link) => (
 						<li key={link.id} className="flex items-center gap-2">
 							<span className="flex w-22 shrink-0 items-center gap-1 truncate text-xs text-c-secondary capitalize">
-								<ArrowRightIcon className="text-c-hint" />
-								<span className="truncate">{link.predicate.name}</span>
+								{link.direction === 'outgoing' ? (
+									<ArrowRightIcon className="text-c-hint" />
+								) : (
+									<ArrowLeftIcon className="text-c-hint" />
+								)}
+								<span className="truncate">
+									{link.direction === 'outgoing'
+										? link.predicate.name
+										: getInversePredicate(link.predicate).name}
+								</span>
 							</span>
 							<RecordLink
-								toRecord={link.target}
+								toRecord={link.record}
 								linkOptions={{
 									to: '/records/$recordId',
 									search: true,
-									params: { recordId: link.target.id.toString() },
-								}}
-							/>
-						</li>
-					))}
-					{incomingLinks.map((link) => (
-						<li key={link.id} className="flex items-center gap-2">
-							<span className="flex w-22 shrink-0 items-center gap-1 truncate text-xs text-c-secondary capitalize">
-								<ArrowLeftIcon className="text-c-hint" />
-								<span className="truncate">{link.predicate.name}</span>
-							</span>
-							<RecordLink
-								toRecord={link.source}
-								linkOptions={{
-									to: '/records/$recordId',
-									search: true,
-									params: { recordId: link.source.id.toString() },
+									params: { recordId: link.record.id.toString() },
 								}}
 							/>
 						</li>
