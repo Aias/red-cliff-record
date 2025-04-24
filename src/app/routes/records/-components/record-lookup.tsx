@@ -85,6 +85,8 @@ function PredicateCombobox({ onSelect, predicates }: PredicateComboboxProps) {
 interface RelationshipSelectorProps {
 	label?: React.ReactNode;
 	sourceId: number;
+	/** Explicitly set target ID to skip record search. */
+	initialTargetId?: number;
 	/** Existing link information, if editing. */
 	link?: LinkSelect | null;
 	onComplete(sourceId: number, targetId: number, predicateId: number): void;
@@ -94,6 +96,8 @@ interface RelationshipSelectorProps {
 
 export function RelationshipSelector({
 	sourceId,
+	/** Explicitly set target ID to skip record search. */
+	initialTargetId,
 	/** Existing link information, if editing. */
 	link = null,
 	onComplete,
@@ -101,20 +105,21 @@ export function RelationshipSelector({
 	buttonProps: { className: buttonClassName, ...buttonProps } = {},
 	popoverProps: { className: popoverClassName, ...popoverProps } = {},
 }: RelationshipSelectorProps) {
-	const [targetId, setTargetId] = useState<number | null>(link?.targetId ?? null);
+	// Determine initial target ID: prioritize initialTargetId, then link.targetId
+	const initialTarget = initialTargetId ?? link?.targetId ?? null;
+	const [targetId, setTargetId] = useState<number | null>(initialTarget);
 	const [predicateId, setPredicateId] = useState<number | null>(link?.predicateId ?? null);
 	const [isOpen, setIsOpen] = useState(false); // Control popover state
 	const { data: predicates = [] } = trpc.relations.listPredicates.useQuery();
 
 	// Sync state with link prop changes
 	useEffect(() => {
-		if (link) {
-			setTargetId(link.targetId);
-			setPredicateId(link.predicateId);
-		}
+		// Use the determined initial target and predicate from the link if provided
+		setTargetId(initialTargetId ?? link?.targetId ?? null);
+		setPredicateId(link?.predicateId ?? null);
 		// Resetting should be handled by the parent if link becomes null/undefined
 		// or by changing the component key.
-	}, [link]);
+	}, [link, initialTargetId]);
 
 	const handleRecordSelect = (record: RecordSelect) => {
 		setTargetId(record.id);

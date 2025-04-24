@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { PlusIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
@@ -28,7 +28,9 @@ export const RelationsList = ({
 
 	const upsertMutation = trpc.relations.upsert.useMutation({
 		onSuccess: () => {
-			utils.records.invalidate();
+			utils.records.get.invalidate();
+			utils.records.search.invalidate();
+			utils.records.similaritySearch.invalidate();
 		},
 	});
 
@@ -53,10 +55,6 @@ export const RelationsList = ({
 			})),
 		];
 	}, [outgoingLinks, incomingLinks]);
-
-	useEffect(() => {
-		console.log('allLinks', allLinks);
-	}, [allLinks]);
 
 	return (
 		<section>
@@ -83,10 +81,10 @@ export const RelationsList = ({
 					{allLinks.map((link) => (
 						<li key={link.id} className="flex items-center gap-2">
 							<RelationshipSelector
+								label={link.predicate.name}
 								sourceId={link.sourceId}
 								link={link}
 								onComplete={(sourceId, targetId, predicateId) => {
-									console.log('onComplete', sourceId, targetId, predicateId);
 									upsertMutation.mutate({
 										id: link.id,
 										sourceId,
@@ -114,6 +112,7 @@ export const RelationsList = ({
 };
 
 export const SimilarRecords = ({ record }: { record: FullRecord }) => {
+	const utils = trpc.useUtils();
 	const recordId = useMemo(() => record.id, [record.id]);
 
 	const omittedRecordIds = useMemo(() => {
@@ -139,6 +138,12 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 		}
 	);
 
+	const upsertMutation = trpc.relations.upsert.useMutation({
+		onSuccess: () => {
+			utils.records.invalidate();
+		},
+	});
+
 	return record.textEmbedding ? (
 		<section className="text-xs">
 			<h3 className="mb-2">Similar Records</h3>
@@ -148,9 +153,24 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 				<ul>
 					{similarRecords.map((record) => (
 						<li key={record.id} className="mb-2 flex items-center gap-4">
-							<span className="w-[4ch] shrink-0 font-mono text-xs text-c-secondary">
-								{record.similarity.toFixed(2)}
-							</span>
+							<RelationshipSelector
+								sourceId={recordId}
+								initialTargetId={record.id}
+								label={record.similarity.toFixed(2)}
+								onComplete={(sourceId, targetId, predicateId) => {
+									upsertMutation.mutate({
+										sourceId,
+										targetId,
+										predicateId,
+									});
+								}}
+								buttonProps={{
+									size: 'sm',
+									variant: 'ghost',
+									className: 'h-[1.5lh] font-mono text-xs text-c-secondary',
+								}}
+								popoverProps={{ side: 'left' }}
+							/>
 							<RecordLink
 								toRecord={record}
 								className="flex-1"

@@ -25,7 +25,6 @@ export const get = publicProcedure
 						source: columnsWithoutEmbedding,
 						predicate: true,
 					},
-					limit: 50,
 				},
 				media: true,
 			},
