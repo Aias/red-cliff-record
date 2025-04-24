@@ -18,7 +18,7 @@
 	--c-neutral-secondary: oklch(from var(--c-neutral-primary) l c h / 0.75);
 	--c-neutral-hint: oklch(from var(--c-neutral-primary) l c h / 0.6);
 	--c-neutral-ghost: oklch(from var(--c-neutral-primary) l c h / 0.4);
-	--c-neutral-accent: color-mix(in oklch, var(--radix-sage-12) 50%, var(--radix-jade-11) 50%);
+	--c-neutral-accent: color-mix(in oklch, var(--radix-sage-11) 25%, var(--radix-jade-12) 75%);
 
 	/* Neutral Borders & Dividers */
 	--c-neutral-divider: light-dark(var(--radix-sage-5), var(--radix-sage-4));

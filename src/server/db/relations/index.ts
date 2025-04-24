@@ -482,7 +482,7 @@ export const relations = defineRelations(
 				from: r.predicates.id,
 				to: r.links.predicateId,
 			}),
-			inversePredicate: r.one.predicates({
+			inverse: r.one.predicates({
 				from: r.predicates.inverseSlug,
 				to: r.predicates.slug,
 			}),

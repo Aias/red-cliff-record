@@ -1,139 +1,169 @@
-import { useEffect, useState } from 'react';
-import { CheckIcon, ChevronsUpDownIcon, Trash2Icon } from 'lucide-react';
-import { RecordTypeIcon } from './type-icons';
+import { useEffect, useMemo, useState } from 'react';
+import { useDebounce } from '@/app/lib/hooks/use-debounce';
+import { trpc } from '@/app/trpc';
+import { RecordLink } from './record-link';
+import { Button, type ButtonProps } from '@/components/ui/button';
+import { Command, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
-	Button,
-	Command,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components';
-import type { RecordSelect } from '@/db/schema';
+	type PopoverContentProps,
+} from '@/components/ui/popover';
+import type { LinkSelect, PredicateSelect, RecordSelect } from '@/db/schema';
+import { cn } from '@/lib/utils';
 
-// Create a custom empty component since CommandEmpty doesn't work properly
-// when there are other items in the list
-const CustomEmpty = ({ children }: { children: React.ReactNode }) => {
-	return <div className="py-6 text-center text-sm">{children}</div>;
-};
-
-interface RecordLookupProps {
-	defaultRecord: RecordSelect | null;
-	onRecordSelected: (record: RecordSelect | null) => void;
-	handleSearch: (search: string) => Promise<RecordSelect[]>;
+/* --------------------------------------------------------------------------
+ * RecordSearch –– picks a target record by querying the server.
+ * No client‑side filtering; we rely entirely on server results.
+ * -------------------------------------------------------------------------- */
+interface RecordSearchProps {
+	onSelect(record: RecordSelect): void;
 }
 
-export function RecordLookup({ defaultRecord, onRecordSelected, handleSearch }: RecordLookupProps) {
-	const [open, setOpen] = useState(false);
-	const [searchTerm, setSearchTerm] = useState('');
-	const [records, setRecords] = useState<RecordSelect[]>([]);
-	const [selectedRecord, setSelectedRecord] = useState<RecordSelect | null>(defaultRecord);
-	const [isLoading, setIsLoading] = useState(false);
+function RecordSearch({ onSelect }: RecordSearchProps) {
+	const [query, setQuery] = useState('');
+	const debounced = useDebounce(query, 200);
 
-	useEffect(() => {
-		if (searchTerm.trim() === '') {
-			setRecords([]);
-			return;
+	const { data = [], isFetching } = trpc.records.search.useQuery(
+		{ query: debounced },
+		{
+			enabled: debounced.length > 0,
 		}
-
-		setIsLoading(true);
-		const handler = setTimeout(async () => {
-			try {
-				const results = await handleSearch(searchTerm);
-				setRecords(results);
-			} finally {
-				setIsLoading(false);
-			}
-		}, 250);
-
-		return () => clearTimeout(handler);
-	}, [searchTerm, handleSearch]);
-
-	const handleSelect = (record: RecordSelect | null) => {
-		setSelectedRecord(record);
-		onRecordSelected(record);
-		setOpen(false);
-	};
-
-	const handleClear = () => {
-		setSelectedRecord(null);
-		onRecordSelected(null);
-		setSearchTerm('');
-	};
+	);
 
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
+		<Command shouldFilter={false} className="w-full">
+			<CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
+
+			<CommandList>
+				{isFetching && <CommandItem disabled>Loading…</CommandItem>}
+				{data.map((rec) => (
+					<CommandItem key={rec.id} onSelect={() => onSelect(rec)}>
+						<RecordLink toRecord={rec} />
+					</CommandItem>
+				))}
+				{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
+			</CommandList>
+		</Command>
+	);
+}
+
+/* --------------------------------------------------------------------------
+ * PredicateCombobox –– chooses a predicate (relation type).
+ * -------------------------------------------------------------------------- */
+interface PredicateComboboxProps {
+	initialId?: number;
+	onSelect(id: number): void;
+	predicates: PredicateSelect[];
+}
+
+function PredicateCombobox({ onSelect, predicates }: PredicateComboboxProps) {
+	return (
+		<Command className="w-full">
+			<CommandInput placeholder="Select relation type..." autoFocus />
+			<CommandList>
+				{predicates.map((p) => (
+					<CommandItem
+						key={p.id}
+						onSelect={() => {
+							onSelect(p.id);
+						}}
+						className="capitalize"
+					>
+						{p.name} ({p.type})
+					</CommandItem>
+				))}
+			</CommandList>
+		</Command>
+	);
+}
+
+/* --------------------------------------------------------------------------
+ * RelationshipSelector –– exported component.
+ * -------------------------------------------------------------------------- */
+interface RelationshipSelectorProps {
+	label?: React.ReactNode;
+	sourceId: number;
+	/** Existing link information, if editing. */
+	link?: LinkSelect | null;
+	onComplete(sourceId: number, targetId: number, predicateId: number): void;
+	buttonProps?: ButtonProps;
+	popoverProps?: PopoverContentProps;
+}
+
+export function RelationshipSelector({
+	sourceId,
+	/** Existing link information, if editing. */
+	link = null,
+	onComplete,
+	label,
+	buttonProps: { className: buttonClassName, ...buttonProps } = {},
+	popoverProps: { className: popoverClassName, ...popoverProps } = {},
+}: RelationshipSelectorProps) {
+	const [targetId, setTargetId] = useState<number | null>(link?.targetId ?? null);
+	const [predicateId, setPredicateId] = useState<number | null>(link?.predicateId ?? null);
+	const [isOpen, setIsOpen] = useState(false); // Control popover state
+	const { data: predicates = [] } = trpc.relations.listPredicates.useQuery();
+
+	// Sync state with link prop changes
+	useEffect(() => {
+		if (link) {
+			setTargetId(link.targetId);
+			setPredicateId(link.predicateId);
+		}
+		// Resetting should be handled by the parent if link becomes null/undefined
+		// or by changing the component key.
+	}, [link]);
+
+	const handleRecordSelect = (record: RecordSelect) => {
+		setTargetId(record.id);
+		// Keep popover open to select predicate
+	};
+
+	const handlePredicateSelect = (selectedPredicateId: number) => {
+		// Target ID must be set to get here
+		if (targetId !== null) {
+			setPredicateId(selectedPredicateId); // Update internal state
+			onComplete(sourceId, targetId, selectedPredicateId); // Call parent callback
+			setIsOpen(false); // Close popover
+		} else {
+			console.error('Predicate selected without a target record.');
+			setIsOpen(false);
+		}
+	};
+
+	// Calculate current predicate name based on internal state for the button label
+	const currentPredicateName = useMemo(() => {
+		return predicates.find((p) => p.id === predicateId)?.name;
+	}, [predicateId, predicates]);
+
+	return (
+		<Popover open={isOpen} onOpenChange={setIsOpen}>
 			<PopoverTrigger asChild>
 				<Button
+					size="sm"
 					variant="outline"
-					role="combobox"
-					aria-expanded={open}
-					className="w-full justify-between"
+					className={cn('capitalize', buttonClassName)}
+					{...buttonProps}
 				>
-					{selectedRecord ? selectedRecord.title : 'Select record...'}
-					<ChevronsUpDownIcon className="ml-2 opacity-50" />
+					{/* Use label prop if provided, otherwise determine based on link/state */}
+					{label ?? (link && currentPredicateName ? currentPredicateName : 'Add relationship')}
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="p-0" align="start" sideOffset={4}>
-				<Command shouldFilter={false}>
-					<CommandInput
-						value={searchTerm}
-						onValueChange={setSearchTerm}
-						placeholder="Search records..."
+
+			<PopoverContent className={cn('w-80 p-0', popoverClassName)} {...popoverProps}>
+				{/* Step 1 –– choose target record (skip if already provided) */}
+				{!targetId && <RecordSearch onSelect={handleRecordSelect} />}
+
+				{/* Step 2 –– choose predicate */}
+				{targetId && (
+					<PredicateCombobox
+						// PredicateCombobox doesn't need initialId; its display is handled by PopoverTrigger
+						onSelect={handlePredicateSelect} // Use the correct handler
+						predicates={predicates}
 					/>
-					<CommandList>
-						{/* Clear selection section */}
-						{selectedRecord && (
-							<CommandGroup>
-								<CommandItem
-									onSelect={handleClear}
-									className="text-destructive data-selected:text-destructive!"
-								>
-									<Trash2Icon />
-									Clear selection
-								</CommandItem>
-							</CommandGroup>
-						)}
-						{/* Custom empty states */}
-						{searchTerm.trim() === '' && !selectedRecord && (
-							<CustomEmpty>Search for a record.</CustomEmpty>
-						)}
-
-						{searchTerm.trim() !== '' && records.length === 0 && !isLoading && (
-							<CustomEmpty>No records found.</CustomEmpty>
-						)}
-
-						{/* Results section */}
-						{records.length > 0 && (
-							<CommandGroup heading="Results">
-								{records.map((record) => (
-									<CommandItem
-										key={record.id}
-										onSelect={() => handleSelect(record)}
-										value={record.id.toString()}
-										className={
-											selectedRecord?.id === record.id ? 'bg-accent font-medium themed' : ''
-										}
-									>
-										<RecordTypeIcon
-											type={record.type}
-											className={selectedRecord?.id === record.id ? 'opacity-100' : 'opacity-50'}
-										/>
-										<span className="flex flex-1 flex-wrap gap-1 leading-none">
-											<span>{record.title ?? 'Untitled'}</span>
-											{record.abbreviation && <span>({record.abbreviation})</span>}
-											{record.sense && <em className="text-c-secondary">{record.sense}</em>}
-										</span>
-										{selectedRecord?.id === record.id && <CheckIcon className="ml-auto" />}
-									</CommandItem>
-								))}
-							</CommandGroup>
-						)}
-					</CommandList>
-				</Command>
+				)}
 			</PopoverContent>
 		</Popover>
 	);
