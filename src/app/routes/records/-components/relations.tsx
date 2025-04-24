@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
 import { RecordLink } from './record-link';
+import { RelationshipSelector } from './record-lookup';
 import type { LinkSelect, PredicateSelect } from '@/db/schema';
 
 interface RelationsListProps {
@@ -15,7 +16,9 @@ interface RecordLink extends LinkSelect {
 	direction: 'outgoing' | 'incoming';
 }
 
-export const RelationsList = ({ record: { outgoingLinks, incomingLinks } }: RelationsListProps) => {
+export const RelationsList = ({
+	record: { outgoingLinks, incomingLinks, id },
+}: RelationsListProps) => {
 	const utils = trpc.useUtils();
 	const totalLinks = useMemo(
 		() => outgoingLinks.length + incomingLinks.length,
@@ -23,11 +26,13 @@ export const RelationsList = ({ record: { outgoingLinks, incomingLinks } }: Rela
 	);
 	const { data: predicates } = trpc.relations.listPredicates.useQuery();
 
-	useEffect(() => {
-		console.log(predicates);
-	}, [predicates]);
+	const upsertMutation = trpc.relations.upsert.useMutation({
+		onSuccess: () => {
+			utils.records.invalidate();
+		},
+	});
 
-	const getInversePredicate = useCallback(
+	const _getInversePredicate = useCallback(
 		(predicate: PredicateSelect): PredicateSelect => {
 			return predicates?.find((p) => p.inverseSlug === predicate.slug) || predicate;
 		},
@@ -49,27 +54,47 @@ export const RelationsList = ({ record: { outgoingLinks, incomingLinks } }: Rela
 		];
 	}, [outgoingLinks, incomingLinks]);
 
+	useEffect(() => {
+		console.log('allLinks', allLinks);
+	}, [allLinks]);
+
 	return (
 		<section>
-			<h3 className="mb-2">
-				Relations <span className="text-sm text-c-secondary">({totalLinks})</span>
-			</h3>
+			<header className="flex items-center justify-between overflow-hidden">
+				<h3 className="mb-2">
+					Relations <span className="text-sm text-c-secondary">({totalLinks})</span>
+				</h3>
+				<RelationshipSelector
+					sourceId={id}
+					label={
+						<span>
+							<PlusIcon /> Add
+						</span>
+					}
+					buttonProps={{ size: 'sm', variant: 'outline', className: 'h-[1.5lh]' }}
+					onComplete={(sourceId, targetId, predicateId) => {
+						console.log('new relationship', sourceId, targetId, predicateId);
+					}}
+					popoverProps={{ side: 'left' }}
+				/>
+			</header>
 			{totalLinks > 0 ? (
 				<ul className="flex flex-col gap-2 text-xs">
 					{allLinks.map((link) => (
 						<li key={link.id} className="flex items-center gap-2">
-							<span className="flex w-22 shrink-0 items-center gap-1 truncate text-xs text-c-secondary capitalize">
-								{link.direction === 'outgoing' ? (
-									<ArrowRightIcon className="text-c-hint" />
-								) : (
-									<ArrowLeftIcon className="text-c-hint" />
-								)}
-								<span className="truncate">
-									{link.direction === 'outgoing'
-										? link.predicate.name
-										: getInversePredicate(link.predicate).name}
-								</span>
-							</span>
+							<RelationshipSelector
+								sourceId={link.sourceId}
+								link={link}
+								onComplete={(sourceId, targetId, predicateId) => {
+									console.log('onComplete', sourceId, targetId, predicateId);
+									upsertMutation.mutate({
+										id: link.id,
+										sourceId,
+										targetId,
+										predicateId,
+									});
+								}}
+							/>
 							<RecordLink
 								toRecord={link.record}
 								linkOptions={{

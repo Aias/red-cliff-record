@@ -2,20 +2,26 @@ import * as React from 'react';
 import { Popover as PopoverPrimitive } from 'radix-ui';
 import { cn } from '@/app/lib/utils';
 
-function Popover({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
+export type PopoverProps = React.ComponentProps<typeof PopoverPrimitive.Root>;
+
+function Popover({ ...props }: PopoverProps) {
 	return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
 
-function PopoverTrigger({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
+export type PopoverTriggerProps = React.ComponentProps<typeof PopoverPrimitive.Trigger>;
+
+function PopoverTrigger({ ...props }: PopoverTriggerProps) {
 	return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
 }
+
+export type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content>;
 
 function PopoverContent({
 	className,
 	align = 'center',
 	sideOffset = 4,
 	...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: PopoverContentProps) {
 	return (
 		<PopoverPrimitive.Portal>
 			<PopoverPrimitive.Content

@@ -89,7 +89,7 @@
 	--color-popover-foreground: var(--color-c-primary);
 	--color-primary: var(--color-c-main);
 	--color-primary-foreground: var(--color-c-main-contrast);
-	--color-secondary: var(--c-theme-flood);
+	--color-secondary: var(--color-c-flood);
 	--color-secondary-foreground: var(--color-c-accent);
 	--color-muted: var(--color-c-splash);
 	--color-muted-foreground: var(--color-c-secondary);
