@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { PlusCircleIcon } from 'lucide-react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
 import { RecordLink } from './record-link';
@@ -9,6 +11,7 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
+	CommandLoading,
 	CommandSeparator,
 } from '@/components/ui/command';
 import {
@@ -41,7 +44,18 @@ interface RecordSearchProps {
 
 function RecordSearch({ onSelect }: RecordSearchProps) {
 	const [query, setQuery] = useState('');
+	const navigate = useNavigate();
 	const debounced = useDebounce(query, 200);
+
+	const createRecordMutation = trpc.records.upsert.useMutation({
+		onSuccess: (newRecord) => {
+			navigate({
+				to: '/records/$recordId',
+				params: { recordId: newRecord.id.toString() },
+				search: true,
+			});
+		},
+	});
 
 	const { data = [], isFetching } = trpc.records.search.useQuery(
 		{ query: debounced },
@@ -49,16 +63,32 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 	);
 
 	return (
-		<Command shouldFilter={false} className="w-full">
+		<Command shouldFilter={false} loop={true} className="w-full">
 			<CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
 			<CommandList>
-				{isFetching && <CommandItem disabled>Loading…</CommandItem>}
-				{data.map((rec) => (
-					<CommandItem key={rec.id} onSelect={() => onSelect(rec)}>
-						<RecordLink toRecord={rec} />
-					</CommandItem>
-				))}
-				{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
+				<CommandGroup heading="Search results">
+					{isFetching && <CommandLoading>Loading results...</CommandLoading>}
+					{data.map((rec) => (
+						<CommandItem key={rec.id} onSelect={() => onSelect(rec)}>
+							<RecordLink toRecord={rec} />
+						</CommandItem>
+					))}
+					{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
+				</CommandGroup>
+				<CommandSeparator alwaysRender />
+				<CommandItem
+					disabled={query.length === 0}
+					key="create-record"
+					onSelect={() =>
+						createRecordMutation.mutate({
+							type: 'artifact',
+							title: query,
+						})
+					}
+					className="px-3 py-2"
+				>
+					<PlusCircleIcon /> Create New Record
+				</CommandItem>
 			</CommandList>
 		</Command>
 	);
@@ -76,7 +106,7 @@ interface PredicateComboboxProps {
 
 function PredicateCombobox({ predicates, onPredicate, actions = [] }: PredicateComboboxProps) {
 	return (
-		<Command className="w-full" shouldFilter={false}>
+		<Command className="w-full">
 			<CommandInput autoFocus placeholder="Select relation type…" />
 			<CommandList>
 				<CommandGroup heading="Predicates">

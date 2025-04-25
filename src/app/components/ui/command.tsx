@@ -76,11 +76,27 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Comman
 	);
 }
 
-function CommandEmpty({ ...props }: React.ComponentProps<typeof CommandPrimitive.Empty>) {
+function CommandLoading({
+	className,
+	...props
+}: React.ComponentProps<typeof CommandPrimitive.Loading>) {
+	return (
+		<CommandPrimitive.Loading
+			data-slot="command-loading"
+			className={cn('px-2 py-1.5 text-center text-sm text-c-hint', className)}
+			{...props}
+		/>
+	);
+}
+
+function CommandEmpty({
+	className,
+	...props
+}: React.ComponentProps<typeof CommandPrimitive.Empty>) {
 	return (
 		<CommandPrimitive.Empty
 			data-slot="command-empty"
-			className="py-6 text-center text-sm"
+			className={cn('py-6 text-center text-sm', className)}
 			{...props}
 		/>
 	);
@@ -146,6 +162,7 @@ export {
 	CommandInput,
 	CommandItem,
 	CommandList,
+	CommandLoading,
 	CommandSeparator,
 	CommandShortcut,
 };

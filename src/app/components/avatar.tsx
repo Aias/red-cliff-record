@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 export type AvatarProps = React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> & {
 	src?: string | undefined;
-	fallback: ReactNode;
+	fallback?: ReactNode;
 	rounded?: boolean;
 	themed?: boolean;
 };
@@ -19,10 +19,11 @@ const Avatar = React.forwardRef<React.ComponentRef<typeof AvatarPrimitive.Root>,
 				themed && 'themed',
 				className
 			)}
+			tabIndex={-1}
 			{...props}
 		>
 			<AvatarImage src={src} />
-			<AvatarFallback>{fallback}</AvatarFallback>
+			{fallback && <AvatarFallback>{fallback}</AvatarFallback>}
 		</AvatarPrimitive.Root>
 	)
 );

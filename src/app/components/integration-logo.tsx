@@ -44,12 +44,7 @@ export const IntegrationLogo = memo(function IntegrationLogo({
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<Avatar
-					src={logoUrl}
-					fallback={service.charAt(0).toUpperCase()}
-					themed={false}
-					{...props}
-				/>
+				<Avatar src={logoUrl} themed={false} {...props} />
 			</TooltipTrigger>
 			<TooltipContent>
 				<span className="capitalize">{service}</span>
