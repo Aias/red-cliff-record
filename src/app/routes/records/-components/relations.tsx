@@ -71,7 +71,7 @@ export const RelationsList = ({
 					}
 					buttonProps={{ size: 'sm', variant: 'outline', className: 'h-[1.5lh]' }}
 					onComplete={(sourceId, targetId, predicateId) => {
-						console.log('new relationship', sourceId, targetId, predicateId);
+						console.log('new relationship created', sourceId, targetId, predicateId);
 					}}
 					popoverProps={{ side: 'left' }}
 				/>

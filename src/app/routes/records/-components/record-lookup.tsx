@@ -1,9 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
 import { RecordLink } from './record-link';
 import { Button, type ButtonProps } from '@/components/ui/button';
-import { Command, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import {
+	Command,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+	CommandSeparator,
+} from '@/components/ui/command';
 import {
 	Popover,
 	PopoverContent,
@@ -12,6 +19,17 @@ import {
 } from '@/components/ui/popover';
 import type { LinkSelect, PredicateSelect, RecordSelect } from '@/db/schema';
 import { cn } from '@/lib/utils';
+
+/* --------------------------------------------------------------------------
+ * Types for extra, runtime‑supplied actions shown after the predicate list.
+ * -------------------------------------------------------------------------- */
+export interface RelationshipAction {
+	/** Stable key for React */
+	key: string;
+	/** Rendered content – can be any React node (icons, styled spans, etc.) */
+	label: ReactNode;
+	onSelect(): void;
+}
 
 /* --------------------------------------------------------------------------
  * RecordSearch –– picks a target record by querying the server.
@@ -27,15 +45,12 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 
 	const { data = [], isFetching } = trpc.records.search.useQuery(
 		{ query: debounced },
-		{
-			enabled: debounced.length > 0,
-		}
+		{ enabled: debounced.length > 0 }
 	);
 
 	return (
 		<Command shouldFilter={false} className="w-full">
 			<CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
-
 			<CommandList>
 				{isFetching && <CommandItem disabled>Loading…</CommandItem>}
 				{data.map((rec) => (
@@ -50,30 +65,40 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 }
 
 /* --------------------------------------------------------------------------
- * PredicateCombobox –– chooses a predicate (relation type).
+ * PredicateCombobox –– chooses a predicate (relation type) and shows
+ * extra runtime actions (delete link, merge, open record, …).
  * -------------------------------------------------------------------------- */
 interface PredicateComboboxProps {
-	initialId?: number;
-	onSelect(id: number): void;
 	predicates: PredicateSelect[];
+	onPredicate(id: number): void;
+	actions?: RelationshipAction[];
 }
 
-function PredicateCombobox({ onSelect, predicates }: PredicateComboboxProps) {
+function PredicateCombobox({ predicates, onPredicate, actions = [] }: PredicateComboboxProps) {
 	return (
-		<Command className="w-full">
-			<CommandInput placeholder="Select relation type..." autoFocus />
+		<Command className="w-full" shouldFilter={false}>
+			<CommandInput autoFocus placeholder="Select relation type…" />
 			<CommandList>
-				{predicates.map((p) => (
-					<CommandItem
-						key={p.id}
-						onSelect={() => {
-							onSelect(p.id);
-						}}
-						className="capitalize"
-					>
-						{p.name} ({p.type})
-					</CommandItem>
-				))}
+				<CommandGroup heading="Predicates">
+					{predicates.map((p) => (
+						<CommandItem key={p.id} onSelect={() => onPredicate(p.id)} className="capitalize">
+							{p.name} ({p.type})
+						</CommandItem>
+					))}
+				</CommandGroup>
+
+				{actions.length > 0 && (
+					<>
+						<CommandSeparator />
+						<CommandGroup heading="Actions">
+							{actions.map((a) => (
+								<CommandItem key={a.key} onSelect={a.onSelect}>
+									{a.label}
+								</CommandItem>
+							))}
+						</CommandGroup>
+					</>
+				)}
 			</CommandList>
 		</Command>
 	);
@@ -81,92 +106,107 @@ function PredicateCombobox({ onSelect, predicates }: PredicateComboboxProps) {
 
 /* --------------------------------------------------------------------------
  * RelationshipSelector –– exported component.
+ * buildActions now only receives a **defined** targetId – we invoke it
+ * only after the user has selected a record.
  * -------------------------------------------------------------------------- */
 interface RelationshipSelectorProps {
-	label?: React.ReactNode;
+	label?: ReactNode;
 	sourceId: number;
 	/** Explicitly set target ID to skip record search. */
 	initialTargetId?: number;
 	/** Existing link information, if editing. */
 	link?: LinkSelect | null;
+	/** Called after any predicate or action completes. */
 	onComplete(sourceId: number, targetId: number, predicateId: number): void;
 	buttonProps?: ButtonProps;
 	popoverProps?: PopoverContentProps;
+	/** Optional extra‑action builder; receives runtime context. */
+	buildActions?: (ctx: {
+		sourceId: number;
+		/** Selected record – guaranteed non‑null */
+		targetId: number;
+		link: LinkSelect | null;
+	}) => RelationshipAction[];
 }
 
 export function RelationshipSelector({
 	sourceId,
-	/** Explicitly set target ID to skip record search. */
 	initialTargetId,
-	/** Existing link information, if editing. */
 	link = null,
-	onComplete,
 	label,
+	onComplete,
+	buildActions,
 	buttonProps: { className: buttonClassName, ...buttonProps } = {},
 	popoverProps: { className: popoverClassName, ...popoverProps } = {},
 }: RelationshipSelectorProps) {
-	// Determine initial target ID: prioritize initialTargetId, then link.targetId
 	const initialTarget = initialTargetId ?? link?.targetId ?? null;
 	const [targetId, setTargetId] = useState<number | null>(initialTarget);
 	const [predicateId, setPredicateId] = useState<number | null>(link?.predicateId ?? null);
-	const [isOpen, setIsOpen] = useState(false); // Control popover state
+	const [open, setOpen] = useState(false);
+
 	const { data: predicates = [] } = trpc.relations.listPredicates.useQuery();
+	const utils = trpc.useUtils();
 
-	// Sync state with link prop changes
+	/* --------------------------------------------------
+	 * Reset unsaved state when the popover closes, unless
+	 * the target is controlled externally (initialTargetId) or editing mode.
+	 * -------------------------------------------------- */
 	useEffect(() => {
-		// Use the determined initial target and predicate from the link if provided
-		setTargetId(initialTargetId ?? link?.targetId ?? null);
-		setPredicateId(link?.predicateId ?? null);
-		// Resetting should be handled by the parent if link becomes null/undefined
-		// or by changing the component key.
-	}, [link, initialTargetId]);
-
-	const handleRecordSelect = (record: RecordSelect) => {
-		setTargetId(record.id);
-		// Keep popover open to select predicate
-	};
-
-	const handlePredicateSelect = (selectedPredicateId: number) => {
-		// Target ID must be set to get here
-		if (targetId !== null) {
-			setPredicateId(selectedPredicateId); // Update internal state
-			onComplete(sourceId, targetId, selectedPredicateId); // Call parent callback
-			setIsOpen(false); // Close popover
-		} else {
-			console.error('Predicate selected without a target record.');
-			setIsOpen(false);
+		if (!open && !initialTargetId && !link) {
+			setTargetId(null);
+			setPredicateId(null);
 		}
+	}, [open, initialTargetId, link]);
+
+	const actions = useMemo<RelationshipAction[]>(() => {
+		if (!buildActions || targetId == null) return [];
+		return buildActions({ sourceId, targetId, link });
+	}, [buildActions, sourceId, targetId, link]);
+
+	const upsert = trpc.relations.upsert.useMutation({
+		onSuccess: (link) => {
+			utils.records.get.invalidate();
+			utils.records.search.invalidate();
+			utils.records.similaritySearch.invalidate();
+			onComplete(sourceId, link.targetId, link.predicateId);
+			setOpen(false);
+		},
+	});
+
+	const handleRecordSelect = (rec: RecordSelect) => setTargetId(rec.id);
+
+	const handlePredicate = (predId: number) => {
+		if (!targetId) return;
+		setPredicateId(predId);
+		upsert.mutate({ id: link?.id, sourceId, targetId, predicateId: predId });
 	};
 
-	// Calculate current predicate name based on internal state for the button label
-	const currentPredicateName = useMemo(() => {
-		return predicates.find((p) => p.id === predicateId)?.name;
-	}, [predicateId, predicates]);
+	const currentPredicateName = useMemo(
+		() => predicates.find((p) => p.id === predicateId)?.name,
+		[predicateId, predicates]
+	);
 
 	return (
-		<Popover open={isOpen} onOpenChange={setIsOpen}>
+		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
 				<Button
 					size="sm"
 					variant="outline"
-					className={cn('capitalize', buttonClassName)}
 					{...buttonProps}
+					className={cn('capitalize', buttonClassName)}
 				>
-					{/* Use label prop if provided, otherwise determine based on link/state */}
 					{label ?? (link && currentPredicateName ? currentPredicateName : 'Add relationship')}
 				</Button>
 			</PopoverTrigger>
 
 			<PopoverContent className={cn('w-80 p-0', popoverClassName)} {...popoverProps}>
-				{/* Step 1 –– choose target record (skip if already provided) */}
 				{!targetId && <RecordSearch onSelect={handleRecordSelect} />}
 
-				{/* Step 2 –– choose predicate */}
 				{targetId && (
 					<PredicateCombobox
-						// PredicateCombobox doesn't need initialId; its display is handled by PopoverTrigger
-						onSelect={handlePredicateSelect} // Use the correct handler
 						predicates={predicates}
+						onPredicate={handlePredicate}
+						actions={actions}
 					/>
 				)}
 			</PopoverContent>
