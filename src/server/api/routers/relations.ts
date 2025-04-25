@@ -106,7 +106,7 @@ export const linksRouter = createTRPCRouter({
 		return predicates;
 	}),
 
-	deleteLinks: publicProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
+	delete: publicProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
 		if (input.length === 0) {
 			return []; // Return empty array if input is empty
 		}

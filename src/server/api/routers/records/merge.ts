@@ -268,6 +268,8 @@ export const merge = publicProcedure
 						console.warn(`Merge records: Source record ID ${sourceId} not found for deletion.`);
 					}
 
+					// Log before returning from transaction
+					console.log('[Merge Transaction] Returning:', { updatedRecord, deletedRecord });
 					return {
 						updatedRecord,
 						deletedRecord,

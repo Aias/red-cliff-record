@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { PlusIcon } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import { MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
 import { RecordLink } from './record-link';
@@ -25,8 +26,38 @@ export const RelationsList = ({
 		[outgoingLinks, incomingLinks]
 	);
 	const { data: predicates } = trpc.relations.listPredicates.useQuery();
-
+	const navigate = useNavigate();
 	const upsertMutation = trpc.relations.upsert.useMutation({
+		onSuccess: () => {
+			utils.records.get.invalidate();
+			utils.records.search.invalidate();
+			utils.records.similaritySearch.invalidate();
+		},
+	});
+
+	const mergeRecordsMutation = trpc.records.merge.useMutation({
+		onSuccess: (data) => {
+			console.log('[Merge Mutation] onSuccess received:', data);
+
+			if (!data?.updatedRecord) {
+				console.error('[Merge Mutation] onSuccess error: updatedRecord missing in response', data);
+				return;
+			}
+
+			const { updatedRecord } = data;
+			utils.records.invalidate();
+			navigate({
+				to: '/records/$recordId',
+				params: { recordId: updatedRecord.id.toString() },
+				search: true,
+			});
+		},
+		onError: (error) => {
+			console.error('[Merge Mutation] onError:', error);
+		},
+	});
+
+	const deleteLinkMutation = trpc.relations.delete.useMutation({
 		onSuccess: () => {
 			utils.records.get.invalidate();
 			utils.records.search.invalidate();
@@ -70,6 +101,28 @@ export const RelationsList = ({
 						</span>
 					}
 					buttonProps={{ size: 'sm', variant: 'outline', className: 'h-[1.5lh]' }}
+					buildActions={({ sourceId, targetId }) => {
+						return [
+							{
+								key: 'merge-records',
+								label: (
+									<>
+										<MergeIcon /> Merge
+									</>
+								),
+								onSelect: () => {
+									if (typeof sourceId === 'number' && typeof targetId === 'number') {
+										mergeRecordsMutation.mutate({
+											sourceId,
+											targetId,
+										});
+									} else {
+										console.error('Invalid IDs for merge:', { sourceId, targetId });
+									}
+								},
+							},
+						];
+					}}
 					onComplete={(sourceId, targetId, predicateId) => {
 						console.log('new relationship created', sourceId, targetId, predicateId);
 					}}
@@ -92,6 +145,39 @@ export const RelationsList = ({
 										predicateId,
 									});
 								}}
+								buildActions={({ sourceId, targetId }) => {
+									return [
+										{
+											key: 'merge-records',
+											label: (
+												<>
+													<MergeIcon /> Merge
+												</>
+											),
+											onSelect: () => {
+												if (typeof sourceId === 'number' && typeof targetId === 'number') {
+													mergeRecordsMutation.mutate({
+														sourceId,
+														targetId,
+													});
+												} else {
+													console.error('Invalid IDs for merge:', { sourceId, targetId });
+												}
+											},
+										},
+										{
+											key: 'delete-link',
+											label: (
+												<>
+													<TrashIcon /> Delete
+												</>
+											),
+											onSelect: () => {
+												deleteLinkMutation.mutate([link.id]);
+											},
+										},
+									];
+								}}
 							/>
 							<RecordLink
 								toRecord={link.record}
@@ -113,6 +199,7 @@ export const RelationsList = ({
 
 export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 	const utils = trpc.useUtils();
+	const navigate = useNavigate();
 	const recordId = useMemo(() => record.id, [record.id]);
 
 	const omittedRecordIds = useMemo(() => {
@@ -144,6 +231,28 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 		},
 	});
 
+	const mergeRecordsMutation = trpc.records.merge.useMutation({
+		onSuccess: (data) => {
+			console.log('[Merge Mutation] onSuccess received:', data);
+
+			if (!data?.updatedRecord) {
+				console.error('[Merge Mutation] onSuccess error: updatedRecord missing in response', data);
+				return;
+			}
+
+			const { updatedRecord } = data;
+			utils.records.invalidate();
+			navigate({
+				to: '/records/$recordId',
+				params: { recordId: updatedRecord.id.toString() },
+				search: true,
+			});
+		},
+		onError: (error) => {
+			console.error('[Merge Mutation] onError:', error);
+		},
+	});
+
 	return record.textEmbedding ? (
 		<section className="text-xs">
 			<h3 className="mb-2">Similar Records</h3>
@@ -170,6 +279,28 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 									className: 'h-[1.5lh] font-mono text-xs text-c-secondary',
 								}}
 								popoverProps={{ side: 'left' }}
+								buildActions={({ sourceId, targetId }) => {
+									return [
+										{
+											key: 'merge-records',
+											label: (
+												<>
+													<MergeIcon /> Merge
+												</>
+											),
+											onSelect: () => {
+												if (typeof sourceId === 'number' && typeof targetId === 'number') {
+													mergeRecordsMutation.mutate({
+														sourceId,
+														targetId,
+													});
+												} else {
+													console.error('Invalid IDs for merge:', { sourceId, targetId });
+												}
+											},
+										},
+									];
+								}}
 							/>
 							<RecordLink
 								toRecord={record}

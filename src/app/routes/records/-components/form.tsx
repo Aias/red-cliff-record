@@ -104,8 +104,8 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 
 	const deleteMutation = trpc.records.delete.useMutation({
 		onSuccess: () => {
-			navigate({ to: '/records', search: true });
 			utils.records.invalidate();
+			navigate({ to: '/records', search: true });
 		},
 	});
 
@@ -470,7 +470,30 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 			</div>
 
 			<div className="flex flex-col gap-3">
-				<h2>Content</h2>
+				<div className="flex gap-4">
+					<h2 className="grow-1">Content</h2>
+					<form.Field name="isPrivate">
+						{(field) => (
+							<BooleanSwitch
+								label="Is Private"
+								id="isPrivate"
+								value={field.state.value}
+								handleChange={field.handleChange}
+							/>
+						)}
+					</form.Field>
+
+					<form.Field name="isCurated">
+						{(field) => (
+							<BooleanSwitch
+								label="Is Curated"
+								id="isCurated"
+								value={field.state.value}
+								handleChange={field.handleChange}
+							/>
+						)}
+					</form.Field>
+				</div>
 
 				<form.Field name="summary">
 					{(field) => (
@@ -581,29 +604,6 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 
 			<div className="flex flex-col gap-3">
 				<h2>Metadata</h2>
-				<div className="flex justify-between">
-					<form.Field name="isPrivate">
-						{(field) => (
-							<BooleanSwitch
-								label="Is Private"
-								id="isPrivate"
-								value={field.state.value}
-								handleChange={field.handleChange}
-							/>
-						)}
-					</form.Field>
-
-					<form.Field name="isCurated">
-						{(field) => (
-							<BooleanSwitch
-								label="Is Curated"
-								id="isCurated"
-								value={field.state.value}
-								handleChange={field.handleChange}
-							/>
-						)}
-					</form.Field>
-				</div>
 				<MetadataList
 					metadata={{
 						ID: record.id,
