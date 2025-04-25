@@ -8,10 +8,19 @@ import { records, RunType } from '@/db/schema';
 import { createRecordEmbeddingText, getRecordTitle } from '@/lib/embedding';
 
 const logger = createIntegrationLogger('services', 'embed-records');
-const BATCH_SIZE = 5000;
 
-export async function embedCuratedRecords(): Promise<number> {
-	logger.start('Embedding curated records');
+/**
+ * Maximum number of records retrieved in a single run.
+ */
+const RECORD_LIMIT = 5000;
+
+/**
+ * Number of records processed concurrently in each batch.
+ */
+const BATCH_SIZE = 25;
+
+export async function embedRecords(): Promise<number> {
+	logger.start('Embedding records');
 
 	const curatedRecords: FullRecord[] = await db.query.records.findMany({
 		with: {
@@ -52,60 +61,82 @@ export async function embedCuratedRecords(): Promise<number> {
 		orderBy: {
 			recordUpdatedAt: 'desc',
 		},
-		limit: BATCH_SIZE,
+		limit: RECORD_LIMIT,
 	});
 
-	logger.info(`Found ${curatedRecords.length} curated records to embed`);
+	logger.info(`Found ${curatedRecords.length} records without embeddings`);
 
 	let processedCount = 0;
 	let errorCount = 0;
 	let skippedCount = 0;
 
-	for (const record of curatedRecords) {
-		const textToEmbed = createRecordEmbeddingText(record);
+	for (let i = 0; i < curatedRecords.length; i += BATCH_SIZE) {
+		const batch = curatedRecords.slice(i, i + BATCH_SIZE);
 
-		if (!textToEmbed) {
-			logger.warn(`No text to embed for record ${record.id}, skipping`);
-			skippedCount++;
-			continue;
-		}
+		const batchResults = await Promise.all(
+			batch.map(async (record) => {
+				const textToEmbed = createRecordEmbeddingText(record);
 
-		logger.info(`Embedding record ${record.id}: ${getRecordTitle(record, 100)}`);
-		try {
-			const embedding = await createEmbedding(textToEmbed);
-			await db
-				.update(records)
-				.set({
-					textEmbedding: embedding,
-				})
-				.where(eq(records.id, record.id));
-			logger.info(`Successfully embedded record ${record.id}`);
-			processedCount++;
-		} catch (error) {
-			logger.error(`Error processing record ${record.id}: ${error}`);
-			errorCount++;
+				if (!textToEmbed) {
+					logger.warn(`No text to embed for record ${record.id}, skipping`);
+					return { status: 'skipped' as const };
+				}
+
+				logger.info(`Embedding record ${record.id}: ${getRecordTitle(record, 100)}`);
+
+				try {
+					const embedding = await createEmbedding(textToEmbed);
+					await db
+						.update(records)
+						.set({
+							textEmbedding: embedding,
+						})
+						.where(eq(records.id, record.id));
+
+					logger.info(`Successfully embedded record ${record.id}`);
+					return { status: 'processed' as const };
+				} catch (error) {
+					logger.error(`Error processing record ${record.id}: ${error}`);
+					return { status: 'error' as const };
+				}
+			})
+		);
+
+		for (const result of batchResults) {
+			switch (result.status) {
+				case 'processed':
+					processedCount++;
+					break;
+				case 'error':
+					errorCount++;
+					break;
+				case 'skipped':
+					skippedCount++;
+					break;
+			}
 		}
 	}
 
 	logger.complete(
 		`Processed ${processedCount} records successfully, ${errorCount} errors, ${skippedCount} skipped`
 	);
+
 	return processedCount;
 }
 
-export async function runEmbedCuratedRecordsIntegration() {
-	await runIntegration('embeddings', embedCuratedRecords, RunType.enum.sync);
+export async function runEmbedRecordsIntegration() {
+	await runIntegration('embeddings', embedRecords, RunType.enum.sync);
 }
 
 const main = async (): Promise<void> => {
 	try {
-		console.log('\n=== STARTING EMBEDDING FOR CURATED RECORDS ===\n');
-		await runEmbedCuratedRecordsIntegration();
-		console.log('\n=== EMBEDDING FOR CURATED RECORDS COMPLETED ===\n');
+		console.log('\n=== STARTING EMBEDDING FOR RECORDS ===\n');
+		await runEmbedRecordsIntegration();
+		console.log('\n=== EMBEDDING FOR RECORDS COMPLETED ===\n');
 		process.exit(0);
 	} catch (error) {
-		console.error('Error in embedding curated records:', error);
-		console.log('\n=== EMBEDDING FOR CURATED RECORDS FAILED ===\n');
+		console.error('Error in embedding records:', error);
+		console.log('\n=== EMBEDDING FOR RECORDS FAILED ===\n');
 		process.exit(1);
 	}
 };

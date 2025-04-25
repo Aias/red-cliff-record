@@ -90,21 +90,27 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 
 	const updateMutation = trpc.records.upsert.useMutation({
 		onSuccess: () => {
-			utils.records.invalidate();
+			utils.records
+				.invalidate()
+				.catch((err) => console.error('Background invalidation failed', err));
 			embedMutation.mutate(recordId);
 		},
 	});
 
 	const embedMutation = trpc.records.embed.useMutation({
 		onSuccess: (record) => {
-			utils.records.get.invalidate(record.id);
-			utils.records.similaritySearch.invalidate();
+			utils.records.get
+				.invalidate(record.id)
+				.catch((err) => console.error('Background get invalidation failed', err));
+			utils.records.similaritySearch
+				.invalidate()
+				.catch((err) => console.error('Background similarity invalidation failed', err));
 		},
 	});
 
 	const deleteMutation = trpc.records.delete.useMutation({
-		onSuccess: () => {
-			utils.records.invalidate();
+		onSuccess: async () => {
+			await utils.records.list.invalidate();
 			navigate({ to: '/records', search: true });
 		},
 	});
@@ -208,6 +214,8 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 
 			await form.handleSubmit();
 
+			await utils.records.list.invalidate();
+
 			if (nextRecordId) {
 				navigate({
 					to: '/records/$recordId',
@@ -216,7 +224,7 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 				});
 			}
 		},
-		[form, navigate, nextRecordId]
+		[form, navigate, nextRecordId, utils.records.list]
 	);
 
 	useEffect(() => {

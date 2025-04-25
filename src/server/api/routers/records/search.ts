@@ -78,16 +78,37 @@ export const similaritySearch = publicProcedure
 					},
 					media: true,
 				},
-
+				columns: {
+					textEmbedding: false,
+				},
 				extras: {
 					similarity: (t) => similarity(t.textEmbedding, vector),
 				},
-
 				where: {
 					AND: [
 						{ textEmbedding: { isNotNull: true } },
 						exclude?.length ? { id: { notIn: exclude } } : {},
 						{ isPrivate: false },
+						{
+							OR: [
+								{
+									outgoingLinks: {
+										predicate: {
+											type: {
+												ne: 'containment',
+											},
+										},
+									},
+								},
+								{
+									incomingLinks: {
+										id: {
+											isNotNull: true,
+										},
+									},
+								},
+							],
+						},
 					],
 				},
 				orderBy: (t, { desc }) => [desc(sql`similarity`), desc(t.recordUpdatedAt)],

@@ -36,7 +36,7 @@ export const RelationsList = ({
 	});
 
 	const mergeRecordsMutation = trpc.records.merge.useMutation({
-		onSuccess: (data) => {
+		onSuccess: async (data) => {
 			console.log('[Merge Mutation] onSuccess received:', data);
 
 			if (!data?.updatedRecord) {
@@ -45,7 +45,14 @@ export const RelationsList = ({
 			}
 
 			const { updatedRecord } = data;
-			utils.records.invalidate();
+			// Wait specifically for list invalidation
+			await utils.records.list.invalidate();
+			// Invalidate the target record get query, but don't wait
+			utils.records.get
+				.invalidate(updatedRecord.id)
+				.catch((err) => console.error('Background get invalidation failed', err));
+
+			// Navigate now
 			navigate({
 				to: '/records/$recordId',
 				params: { recordId: updatedRecord.id.toString() },
@@ -232,7 +239,7 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 	});
 
 	const mergeRecordsMutation = trpc.records.merge.useMutation({
-		onSuccess: (data) => {
+		onSuccess: async (data) => {
 			console.log('[Merge Mutation] onSuccess received:', data);
 
 			if (!data?.updatedRecord) {
@@ -241,7 +248,14 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 			}
 
 			const { updatedRecord } = data;
-			utils.records.invalidate();
+			// Wait specifically for list invalidation
+			await utils.records.list.invalidate();
+			// Invalidate the target record get query, but don't wait
+			utils.records.get
+				.invalidate(updatedRecord.id)
+				.catch((err) => console.error('Background get invalidation failed', err));
+
+			// Navigate now
 			navigate({
 				to: '/records/$recordId',
 				params: { recordId: updatedRecord.id.toString() },
