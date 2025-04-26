@@ -102,19 +102,32 @@ interface PredicateComboboxProps {
 	predicates: PredicateSelect[];
 	onPredicate(id: number): void;
 	actions?: RelationshipAction[];
+	includeNonCanonical?: boolean;
 }
 
-function PredicateCombobox({ predicates, onPredicate, actions = [] }: PredicateComboboxProps) {
+function PredicateCombobox({
+	predicates,
+	onPredicate,
+	actions = [],
+	includeNonCanonical = false,
+}: PredicateComboboxProps) {
 	return (
 		<Command className="w-full">
 			<CommandInput autoFocus placeholder="Select relation type…" />
 			<CommandList>
 				<CommandGroup heading="Predicates">
-					{predicates.map((p) => (
-						<CommandItem key={p.id} onSelect={() => onPredicate(p.id)} className="capitalize">
-							{p.name} ({p.type})
-						</CommandItem>
-					))}
+					{predicates
+						.filter((p) => includeNonCanonical || p.canonical)
+						.map((p) => (
+							<CommandItem
+								className="flex gap-2 capitalize"
+								key={p.id}
+								onSelect={() => onPredicate(p.id)}
+							>
+								<span className="font-medium">{p.name}</span>
+								<span className="text-c-hint">{p.type}</span>
+							</CommandItem>
+						))}
 				</CommandGroup>
 
 				{actions.length > 0 && (
@@ -223,7 +236,7 @@ export function RelationshipSelector({
 					size="sm"
 					variant="outline"
 					{...buttonProps}
-					className={cn('capitalize', buttonClassName)}
+					className={cn('font-medium capitalize shadow-none', buttonClassName)}
 				>
 					{label ?? (link && currentPredicateName ? currentPredicateName : 'Add relationship')}
 				</Button>

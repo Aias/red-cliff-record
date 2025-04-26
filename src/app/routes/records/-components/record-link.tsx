@@ -44,6 +44,7 @@ export const RecordLink = memo(({ toRecord, className, linkOptions, actions }: R
 	const {
 		type,
 		title,
+		sense,
 		content,
 		summary,
 		notes,
@@ -147,6 +148,7 @@ export const RecordLink = memo(({ toRecord, className, linkOptions, actions }: R
 						) : (
 							<strong className="mr-auto min-w-0 flex-1 truncate">{label}</strong>
 						)}
+						{sense && <span className="text-c-hint italic">{sense}</span>}
 					</div>
 					<ul className="flex items-center gap-1.5 text-[0.75em] opacity-50">
 						{sources?.map((source) => (

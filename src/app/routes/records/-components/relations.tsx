@@ -1,11 +1,12 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
+import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 import type { LinkSelect, PredicateSelect } from '@/db/schema';
+import { cn } from '@/lib/utils';
 
 interface RelationsListProps {
 	record: FullRecord;
@@ -79,21 +80,6 @@ export const RelationsList = ({
 		[predicates]
 	);
 
-	const allLinks: RecordLink[] = useMemo(() => {
-		return [
-			...outgoingLinks.map((link) => ({
-				...link,
-				record: link.target,
-				direction: 'outgoing' as const,
-			})),
-			...incomingLinks.map((link) => ({
-				...link,
-				record: link.source,
-				direction: 'incoming' as const,
-			})),
-		];
-	}, [outgoingLinks, incomingLinks]);
-
 	return (
 		<section>
 			<header className="flex items-center justify-between overflow-hidden">
@@ -136,69 +122,140 @@ export const RelationsList = ({
 					popoverProps={{ side: 'left' }}
 				/>
 			</header>
-			{totalLinks > 0 ? (
-				<ul className="flex flex-col gap-2 text-xs">
-					{allLinks.map((link) => (
-						<li key={link.id} className="flex items-center gap-2">
-							<RelationshipSelector
-								label={link.predicate.name}
-								sourceId={link.sourceId}
-								link={link}
-								onComplete={(sourceId, targetId, predicateId) => {
-									upsertMutation.mutate({
-										id: link.id,
-										sourceId,
-										targetId,
-										predicateId,
-									});
-								}}
-								buildActions={({ sourceId, targetId }) => {
-									return [
-										{
-											key: 'merge-records',
-											label: (
-												<>
-													<MergeIcon /> Merge
-												</>
-											),
-											onSelect: () => {
-												if (typeof sourceId === 'number' && typeof targetId === 'number') {
+			{outgoingLinks.length > 0 && (
+				<>
+					<h4 className="mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-c-hint uppercase">
+						<ArrowRightIcon className="h-4 w-4" /> Outgoing
+					</h4>
+					<ul className="flex flex-col gap-2 text-xs">
+						{outgoingLinks.map((link) => (
+							<li key={link.id} className="flex items-center gap-2">
+								<RelationshipSelector
+									label={link.predicate.name}
+									sourceId={link.sourceId}
+									link={link}
+									buttonProps={{
+										className: 'w-30',
+									}}
+									onComplete={(sourceId, targetId, predicateId) => {
+										upsertMutation.mutate({
+											id: link.id,
+											sourceId,
+											targetId,
+											predicateId,
+										});
+									}}
+									buildActions={({ sourceId, targetId }) => {
+										return [
+											{
+												key: 'merge-records',
+												label: (
+													<>
+														<MergeIcon /> Merge
+													</>
+												),
+												onSelect: () =>
 													mergeRecordsMutation.mutate({
 														sourceId,
 														targetId,
-													});
-												} else {
-													console.error('Invalid IDs for merge:', { sourceId, targetId });
-												}
+													}),
 											},
-										},
-										{
-											key: 'delete-link',
-											label: (
-												<>
-													<TrashIcon /> Delete
-												</>
-											),
-											onSelect: () => {
-												deleteLinkMutation.mutate([link.id]);
+											{
+												key: 'delete-link',
+												label: (
+													<>
+														<TrashIcon /> Delete
+													</>
+												),
+												onSelect: () => {
+													deleteLinkMutation.mutate([link.id]);
+												},
 											},
-										},
-									];
-								}}
-							/>
-							<RecordLink
-								toRecord={link.record}
-								linkOptions={{
-									to: '/records/$recordId',
-									search: true,
-									params: { recordId: link.record.id.toString() },
-								}}
-							/>
-						</li>
-					))}
-				</ul>
-			) : (
-				<p className="py-2 text-c-secondary">No related records.</p>
+										];
+									}}
+								/>
+								<RecordLink
+									toRecord={link.target}
+									linkOptions={{
+										to: '/records/$recordId',
+										search: true,
+										params: { recordId: link.target.id.toString() },
+									}}
+								/>
+							</li>
+						))}
+					</ul>
+				</>
+			)}
+			{incomingLinks.length > 0 && (
+				<>
+					<h4
+						className={cn(
+							'mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-c-hint uppercase',
+							outgoingLinks.length > 0 && 'mt-3'
+						)}
+					>
+						<ArrowLeftIcon className="h-4 w-4" /> Incoming
+					</h4>
+					<ul className="flex flex-col gap-2 text-xs">
+						{incomingLinks.map((link) => (
+							<li key={link.id} className="flex items-center gap-2">
+								<RelationshipSelector
+									label={link.predicate.name}
+									sourceId={link.sourceId}
+									link={link}
+									buttonProps={{
+										className: 'w-30',
+									}}
+									onComplete={(sourceId, targetId, predicateId) => {
+										upsertMutation.mutate({
+											id: link.id,
+											sourceId,
+											targetId,
+											predicateId,
+										});
+									}}
+									buildActions={({ sourceId, targetId }) => {
+										return [
+											{
+												key: 'merge-records',
+												label: (
+													<>
+														<MergeIcon /> Merge
+													</>
+												),
+												onSelect: () =>
+													mergeRecordsMutation.mutate({
+														sourceId,
+														targetId,
+													}),
+											},
+											{
+												key: 'delete-link',
+												label: (
+													<>
+														<TrashIcon /> Delete
+													</>
+												),
+												onSelect: () => {
+													deleteLinkMutation.mutate([link.id]);
+												},
+											},
+										];
+									}}
+								/>
+								<RecordLink
+									toRecord={link.source}
+									linkOptions={{
+										to: '/records/$recordId',
+										search: true,
+										params: { recordId: link.source.id.toString() },
+									}}
+								/>
+							</li>
+						))}
+					</ul>
+				</>
 			)}
 		</section>
 	);
