@@ -1,17 +1,17 @@
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
-import { IdSchema } from '../common';
+import { IdParamSchema } from '../common';
 import { records } from '@/db/schema';
 import { createRecordEmbeddingText } from '@/lib/embedding';
 import { createEmbedding } from '@/lib/server/create-embedding';
 
 export const embed = publicProcedure
-	.input(IdSchema)
-	.mutation(async ({ ctx: { db }, input: recordId }) => {
+	.input(IdParamSchema)
+	.mutation(async ({ ctx: { db }, input: { id } }) => {
 		const record = await db.query.records.findFirst({
 			where: {
-				id: recordId,
+				id,
 			},
 			with: {
 				outgoingLinks: {
@@ -48,7 +48,7 @@ export const embed = publicProcedure
 		if (!record) {
 			throw new TRPCError({
 				code: 'NOT_FOUND',
-				message: `Embed record: Record ${recordId} not found`,
+				message: `Embed record: Record ${id} not found`,
 			});
 		}
 
@@ -62,7 +62,7 @@ export const embed = publicProcedure
 				textEmbedding: embedding,
 				recordUpdatedAt: new Date(),
 			})
-			.where(eq(records.id, recordId))
+			.where(eq(records.id, id))
 			.returning({
 				id: records.id,
 				recordUpdatedAt: records.recordUpdatedAt,
@@ -71,7 +71,7 @@ export const embed = publicProcedure
 		if (!updatedRecord) {
 			throw new TRPCError({
 				code: 'INTERNAL_SERVER_ERROR',
-				message: `Embed record: Failed to embed record ${recordId}`,
+				message: `Embed record: Failed to embed record ${id}`,
 			});
 		}
 

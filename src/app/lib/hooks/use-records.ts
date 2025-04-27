@@ -68,9 +68,9 @@ export function usePredicateMap() {
 	return Object.fromEntries((data ?? []).map((p) => [p.id, p]));
 }
 
-export function useUpsertRecord() {
+export function useEmbedRecord() {
 	const utils = trpc.useUtils();
-	const embedMutation = trpc.records.embed.useMutation({
+	return trpc.records.embed.useMutation({
 		onSuccess: (data) => {
 			utils.records.get.setData({ id: data.id }, (prev) => {
 				if (!prev) return undefined;
@@ -82,6 +82,11 @@ export function useUpsertRecord() {
 			utils.records.searchByRecordId.invalidate({ id: data.id });
 		},
 	});
+}
+
+export function useUpsertRecord() {
+	const utils = trpc.useUtils();
+	const embedMutation = useEmbedRecord();
 
 	return trpc.records.upsert.useMutation({
 		onSuccess: (row) => {
@@ -90,7 +95,7 @@ export function useUpsertRecord() {
 
 			/* refresh ID tables & search index */
 			utils.records.list.invalidate();
-			embedMutation.mutate(row.id);
+			embedMutation.mutate({ id: row.id });
 		},
 	});
 }
@@ -127,7 +132,7 @@ export function useDeleteRecords() {
 export function useMergeRecords() {
 	const qc = useQueryClient();
 	const utils = trpc.useUtils();
-
+	const embedMutation = useEmbedRecord();
 	return trpc.records.merge.useMutation({
 		onSuccess: ({ updatedRecord, deletedRecordId, touchedIds }) => {
 			/* 1 ─ patch survivor */
@@ -159,12 +164,14 @@ export function useMergeRecords() {
 
 			/* 5 ─ record-ID tables */
 			utils.records.list.invalidate();
+			embedMutation.mutate({ id: updatedRecord.id });
 		},
 	});
 }
 
 export function useUpsertLink() {
 	const utils = trpc.useUtils();
+	const embedMutation = useEmbedRecord();
 
 	return trpc.links.upsert.useMutation({
 		onSuccess: (row) => {
@@ -184,6 +191,8 @@ export function useUpsertLink() {
 					return ids.includes(sourceId) || ids.includes(targetId);
 				},
 			});
+			embedMutation.mutate({ id: sourceId });
+			embedMutation.mutate({ id: targetId });
 		},
 	});
 }
