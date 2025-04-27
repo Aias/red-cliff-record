@@ -82,15 +82,15 @@ export const SearchRecordsInputSchema = z.object({
 
 export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
 
-export type RecordWithoutEmbedding = Omit<RecordSelect, 'textEmbedding'>;
+export type RecordGet = Omit<RecordSelect & { media?: MediaSelect[] }, 'textEmbedding'>;
 
-export interface RecordWithRelations extends RecordWithoutEmbedding {
-	outgoingLinks: Array<LinkSelect & { target: RecordWithoutEmbedding; predicate: PredicateSelect }>;
+export interface RecordWithRelations extends RecordGet {
+	outgoingLinks: Array<LinkSelect & { target: RecordGet; predicate: PredicateSelect }>;
 	media: Array<MediaSelect>;
 }
 
 export interface FullRecord extends RecordSelect {
-	outgoingLinks: Array<LinkSelect & { target: RecordWithoutEmbedding; predicate: PredicateSelect }>;
-	incomingLinks: Array<LinkSelect & { source: RecordWithoutEmbedding; predicate: PredicateSelect }>;
+	outgoingLinks: Array<LinkSelect & { target: RecordGet; predicate: PredicateSelect }>;
+	incomingLinks: Array<LinkSelect & { source: RecordGet; predicate: PredicateSelect }>;
 	media: Array<MediaSelect>;
 }

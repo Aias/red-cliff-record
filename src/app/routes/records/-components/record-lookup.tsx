@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { PlusCircleIcon } from 'lucide-react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
+import type { DbId } from '@/server/api/routers/common';
 import { RecordLink } from './record-link';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import {
@@ -20,7 +21,7 @@ import {
 	PopoverTrigger,
 	type PopoverContentProps,
 } from '@/components/ui/popover';
-import type { LinkSelect, PredicateSelect, RecordSelect } from '@/db/schema';
+import type { LinkSelect, PredicateSelect } from '@/db/schema';
 import { cn } from '@/lib/utils';
 
 /* --------------------------------------------------------------------------
@@ -39,7 +40,7 @@ export interface RelationshipAction {
  * No client‑side filtering; we rely entirely on server results.
  * -------------------------------------------------------------------------- */
 interface RecordSearchProps {
-	onSelect(record: RecordSelect): void;
+	onSelect(id: DbId): void;
 }
 
 function RecordSearch({ onSelect }: RecordSearchProps) {
@@ -57,7 +58,7 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 		},
 	});
 
-	const { data = [], isFetching } = trpc.records.search.useQuery(
+	const { data = [], isFetching } = trpc.records.searchByTextQuery.useQuery(
 		{ query: debounced },
 		{ enabled: debounced.length > 0 }
 	);
@@ -68,9 +69,9 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 			<CommandList>
 				<CommandGroup heading="Search results">
 					{isFetching && <CommandLoading>Loading results...</CommandLoading>}
-					{data.map((rec) => (
-						<CommandItem key={rec.id} onSelect={() => onSelect(rec)}>
-							<RecordLink toRecord={rec} />
+					{data.map(({ id }) => (
+						<CommandItem key={id} onSelect={() => onSelect(id)}>
+							<RecordLink id={id} />
 						</CommandItem>
 					))}
 					{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
@@ -209,14 +210,14 @@ export function RelationshipSelector({
 	const upsert = trpc.relations.upsert.useMutation({
 		onSuccess: (link) => {
 			utils.records.get.invalidate();
-			utils.records.search.invalidate();
-			utils.records.similaritySearch.invalidate();
+			utils.records.searchByTextQuery.invalidate();
+			utils.records.searchByRecordId.invalidate();
 			onComplete(sourceId, link.targetId, link.predicateId);
 			setOpen(false);
 		},
 	});
 
-	const handleRecordSelect = (rec: RecordSelect) => setTargetId(rec.id);
+	const handleRecordSelect = (id: DbId) => setTargetId(id);
 
 	const handlePredicate = (predId: number) => {
 		if (!targetId) return;

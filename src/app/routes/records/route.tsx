@@ -49,21 +49,21 @@ function RouteComponent() {
 	// Update the next record ID whenever the selection or list changes
 	const nextRecordId = useMemo(() => {
 		// If the list is empty, there's no next record
-		if (recordsList.length === 0) return undefined;
+		if (recordsList.ids.length === 0) return undefined;
 
 		// If no record is currently selected, there's no concept of 'next'
 		if (!currentRecordId) return undefined;
 
-		const currentIndex = recordsList.findIndex((record) => record.id === currentRecordId);
+		const currentIndex = recordsList.ids.findIndex((record) => record.id === currentRecordId);
 
 		// If the current record isn't in the list, default to the first record in the list
 		if (currentIndex === -1) {
-			return recordsList[0]?.id;
+			return recordsList.ids[0]?.id;
 		}
 
 		// Otherwise, find the next record, wrapping around to the beginning if necessary
-		const nextIndex = currentIndex + 1 < recordsList.length ? currentIndex + 1 : 0;
-		return recordsList[nextIndex]?.id;
+		const nextIndex = currentIndex + 1 < recordsList.ids.length ? currentIndex + 1 : 0;
+		return recordsList.ids[nextIndex]?.id;
 	}, [currentRecordId, recordsList]);
 
 	const handleValueChange = useCallback(
@@ -85,9 +85,9 @@ function RouteComponent() {
 				onValueChange={handleValueChange}
 				className="flex flex-col gap-1 overflow-y-auto px-3"
 			>
-				{recordsList.map((record) => (
-					<RadioCardsItem key={record.id} value={record.id.toString()}>
-						<RecordLink toRecord={record} className="w-full overflow-hidden" />
+				{recordsList.ids.map(({ id }) => (
+					<RadioCardsItem key={id} value={id.toString()}>
+						<RecordLink id={id} className="w-full overflow-hidden" />
 					</RadioCardsItem>
 				))}
 			</RadioCards>
@@ -103,7 +103,8 @@ function RouteComponent() {
 						<div className="flex shrink-0 grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-border py-3">
 							<header className="flex items-center justify-between px-3">
 								<h2 className="text-lg font-medium">
-									Records <span className="text-sm text-c-secondary">({recordsList.length})</span>
+									Records{' '}
+									<span className="text-sm text-c-secondary">({recordsList.ids.length})</span>
 								</h2>
 								<Link to="/records" search={true} className="text-sm">
 									Index

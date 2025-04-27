@@ -12,6 +12,35 @@ import { createTRPCRouter, publicProcedure } from '../init';
 import { IdSchema } from './common';
 
 export const linksRouter = createTRPCRouter({
+	listForRecord: publicProcedure
+		.input(z.object({ id: IdSchema }))
+		.query(async ({ ctx: { db }, input }) => {
+			const recordWithLinks = await db.query.records.findFirst({
+				columns: {
+					id: true,
+				},
+				where: {
+					id: input.id,
+				},
+				with: {
+					outgoingLinks: {
+						with: {
+							predicate: true,
+						},
+					},
+					incomingLinks: {
+						with: {
+							predicate: true,
+						},
+					},
+				},
+			});
+			if (!recordWithLinks) {
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
+			}
+
+			return recordWithLinks;
+		}),
 	/*  links.upsert  ------------------------------------------------------------
 	 * – Accepts LinkInsertSchema
 	 * – Re-writes non-canonical predicates to the canonical triple

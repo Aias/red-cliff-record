@@ -1,10 +1,38 @@
 import { Pool } from '@neondatabase/serverless';
 import { initTRPC } from '@trpc/server';
+import DataLoader from 'dataloader';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 import { relations } from '@/server/db/relations';
 import * as schema from '@/server/db/schema';
+import type { RecordGet } from './routers/records.types';
+import { type Db } from '@/db/connections';
+
+function createRecordLoader(db: Db) {
+	return new DataLoader<number, RecordGet>(async (ids) => {
+		const rows = await db.query.records.findMany({
+			where: {
+				id: {
+					in: ids as number[],
+				},
+			},
+			columns: {
+				textEmbedding: false,
+			},
+			with: {
+				media: true,
+			},
+		});
+
+		const byId = new Map(rows.map((r) => [r.id, r]));
+
+		return ids.map((id) => {
+			const record = byId.get(id);
+			return record ? record : new Error(`Record not found for ID: ${id}`);
+		});
+	});
+}
 
 /**
  * 1. CONTEXT
@@ -24,9 +52,14 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 	return {
 		...opts,
 		db,
+		loaders: {
+			record: createRecordLoader(db),
+		},
 		close: () => pool.end(),
 	};
 };
+
+export type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
 /**
  * 2. INITIALIZATION

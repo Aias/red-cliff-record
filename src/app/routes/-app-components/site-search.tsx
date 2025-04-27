@@ -26,17 +26,18 @@ export const SiteSearch = () => {
 	const [commandOpen, setCommandOpen] = useState(false);
 	const debouncedValue = useDebounce(inputValue, 300);
 
-	const { data: textResults, isLoading: textResultsLoading } = trpc.records.search.useQuery(
-		{
-			query: debouncedValue,
-			limit: 5,
-		},
-		{
-			enabled: debouncedValue.length > 1,
-		}
-	);
+	const { data: textResults, isLoading: textResultsLoading } =
+		trpc.records.searchByTextQuery.useQuery(
+			{
+				query: debouncedValue,
+				limit: 5,
+			},
+			{
+				enabled: debouncedValue.length > 1,
+			}
+		);
 	const { data: similarityResults, isLoading: similarityResultsLoading } =
-		trpc.records.similaritySearch.useQuery(
+		trpc.records.searchByVector.useQuery(
 			{
 				vector: textEmbedding!, // Assert non-null because enabled is true only if it exists
 				limit: 5,
@@ -138,7 +139,7 @@ export const SiteSearch = () => {
 											onSelect={() => handleSelectResult(record.id)}
 											className="flex w-full cursor-pointer px-3 py-2"
 										>
-											<RecordLink toRecord={record} className="flex-1" />
+											<RecordLink id={record.id} className="flex-1" />
 										</CommandItem>
 									))}
 								</CommandGroup>
@@ -152,7 +153,7 @@ export const SiteSearch = () => {
 											onSelect={() => handleSelectResult(record.id)}
 											className="flex w-full cursor-pointer px-3 py-2"
 										>
-											<RecordLink toRecord={record} className="flex-1" />
+											<RecordLink id={record.id} className="flex-1" />
 										</CommandItem>
 									))}
 								</CommandGroup>
