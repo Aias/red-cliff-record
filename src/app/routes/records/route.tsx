@@ -31,7 +31,7 @@ export const Route = createFileRoute('/records')({
 function RouteComponent() {
 	const navigate = Route.useNavigate();
 	const search = Route.useSearch();
-	const [recordsList] = trpc.records.list.useSuspenseQuery(search);
+	const { data: recordsList } = trpc.records.list.useQuery(search);
 	const matches = useMatches();
 
 	// Check if a record is selected by seeing if we're on a record detail route
@@ -49,7 +49,7 @@ function RouteComponent() {
 	// Update the next record ID whenever the selection or list changes
 	const nextRecordId = useMemo(() => {
 		// If the list is empty, there's no next record
-		if (recordsList.ids.length === 0) return undefined;
+		if (!recordsList || recordsList.ids.length === 0) return undefined;
 
 		// If no record is currently selected, there's no concept of 'next'
 		if (!currentRecordId) return undefined;
@@ -77,28 +77,10 @@ function RouteComponent() {
 		[navigate, search]
 	);
 
-	const recordList = useMemo(
-		() => (
-			<RadioCards
-				size="xs"
-				value={currentRecordId?.toString()}
-				onValueChange={handleValueChange}
-				className="flex flex-col gap-1 overflow-y-auto px-3"
-			>
-				{recordsList.ids.map(({ id }) => (
-					<RadioCardsItem key={id} value={id.toString()}>
-						<RecordLink id={id} className="w-full overflow-hidden" />
-					</RadioCardsItem>
-				))}
-			</RadioCards>
-		),
-		[recordsList, currentRecordId, handleValueChange]
-	);
-
 	return (
 		<NextRecordIdContext.Provider value={nextRecordId}>
 			<main className={`flex basis-full overflow-hidden ${!isRecordSelected ? 'p-3' : ''}`}>
-				{isRecordSelected ? (
+				{isRecordSelected && recordsList ? (
 					<>
 						<div className="flex shrink-0 grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-border py-3">
 							<header className="flex items-center justify-between px-3">
@@ -110,7 +92,18 @@ function RouteComponent() {
 									Index
 								</Link>
 							</header>
-							{recordList}
+							<RadioCards
+								size="xs"
+								value={currentRecordId?.toString()}
+								onValueChange={handleValueChange}
+								className="flex flex-col gap-1 overflow-y-auto px-3"
+							>
+								{recordsList.ids.map(({ id }) => (
+									<RadioCardsItem key={id} value={id.toString()}>
+										<RecordLink id={id} className="w-full overflow-hidden" />
+									</RadioCardsItem>
+								))}
+							</RadioCards>
 						</div>
 						<Outlet />
 					</>

@@ -161,7 +161,7 @@ export const byRecordId = publicProcedure
 			const { textEmbedding, outgoingLinks, incomingLinks } = recordWithLinks;
 
 			if (textEmbedding === null) {
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Record has no embedding' });
+				return [];
 			}
 
 			const omittedIds = [
