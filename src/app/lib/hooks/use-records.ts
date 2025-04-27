@@ -35,6 +35,34 @@ export function useLinksMap(ids: DbId[]) {
 	return trpc.links.map.useQuery({ recordIds: ids });
 }
 
+export function useRecordWithOutgoingLinks(id: DbId) {
+	/* 1 ▸ main record */
+	const { data: record, ...recordRest } = trpc.records.get.useQuery({ id });
+
+	/* 2 ▸ link metadata – fire immediately */
+	const { data: linksData, ...linksRest } = trpc.links.listForRecord.useQuery({ id });
+
+	/* 3 ▸ linked records */
+	const linkIds = linksData?.outgoingLinks.map((l) => l.targetId) ?? [];
+
+	const utils = trpc.useUtils();
+	const linkedQueries = useQueries({
+		queries: linkIds.map((rid) => utils.records.get.queryOptions({ id: rid })),
+	});
+
+	const linkedById = Object.fromEntries(
+		linkedQueries.filter((q) => q.data).map((q) => [q.data!.id, q.data!])
+	);
+
+	return {
+		record,
+		linkedById,
+		outgoing: linksData?.outgoingLinks ?? [],
+		isLoading: recordRest.isLoading || linksRest.isLoading,
+		isError: recordRest.isError || linksRest.isError,
+	};
+}
+
 export function usePredicateMap() {
 	const { data } = trpc.links.listPredicates.useQuery(undefined);
 	return Object.fromEntries((data ?? []).map((p) => [p.id, p]));
@@ -42,6 +70,18 @@ export function usePredicateMap() {
 
 export function useUpsertRecord() {
 	const utils = trpc.useUtils();
+	const embedMutation = trpc.records.embed.useMutation({
+		onSuccess: (data) => {
+			utils.records.get.setData({ id: data.id }, (prev) => {
+				if (!prev) return undefined;
+				return {
+					...prev,
+					recordUpdatedAt: data.recordUpdatedAt,
+				};
+			});
+			utils.records.searchByRecordId.invalidate({ id: data.id });
+		},
+	});
 
 	return trpc.records.upsert.useMutation({
 		onSuccess: (row) => {
@@ -50,7 +90,7 @@ export function useUpsertRecord() {
 
 			/* refresh ID tables & search index */
 			utils.records.list.invalidate();
-			utils.records.searchByRecordId.invalidate({ id: row.id });
+			embedMutation.mutate(row.id);
 		},
 	});
 }
@@ -90,33 +130,34 @@ export function useMergeRecords() {
 
 	return trpc.records.merge.useMutation({
 		onSuccess: ({ updatedRecord, deletedRecordId, touchedIds }) => {
-			/* survivor */
-			utils.records.get.setData({ id: updatedRecord.id }, (prev) => {
-				if (!prev) return updatedRecord;
-				return { ...prev, ...updatedRecord };
-			});
+			/* 1 ─ patch survivor */
+			utils.records.get.setData({ id: updatedRecord.id }, (prev) =>
+				prev ? { ...prev, ...updatedRecord } : updatedRecord
+			);
 
-			/* purge deleted */
-			qc.removeQueries({
-				queryKey: utils.records.get.queryOptions({ id: deletedRecordId }).queryKey,
-				exact: true,
-			});
+			/* 2 ─ freeze the deleted ID so nothing refetches it */
+			const deletedKey = utils.records.get.queryOptions({ id: deletedRecordId }).queryKey;
 
-			/* per-record link lists */
+			// stop any in-flight request
+			qc.cancelQueries({ queryKey: deletedKey, exact: true });
+
+			// mark as permanently gone
+			qc.setQueryData(deletedKey, () => undefined);
+			qc.setQueryDefaults(deletedKey, { staleTime: Infinity, retry: false });
+
+			/* 3 ─ per-record link lists */
 			touchedIds.forEach((id) => utils.links.listForRecord.invalidate({ id }));
 
-			/* any cached maps that overlap */
-			const touchedSet = new Set(touchedIds);
+			/* 4 ─ maps that overlap */
+			const touched = new Set(touchedIds);
 			utils.links.map.invalidate(undefined, {
 				predicate: (q) => {
-					const input = q.queryKey[1]?.input;
-					if (!input?.recordIds) return false;
-					const ids = input.recordIds.filter((n): n is DbId => n !== undefined);
-					return ids.some((id) => touchedSet.has(id));
+					const recIds = q.queryKey[1]?.input?.recordIds as (DbId | undefined)[] | undefined;
+					return !!recIds?.some((id) => touched.has(id as DbId));
 				},
 			});
 
-			/* record ID tables */
+			/* 5 ─ record-ID tables */
 			utils.records.list.invalidate();
 		},
 	});
@@ -160,7 +201,10 @@ export function useDeleteLinks() {
 			});
 
 			/* 1 ▸ invalidate per-record link lists */
-			touched.forEach((id) => utils.links.listForRecord.invalidate({ id }));
+			touched.forEach((id) => {
+				utils.links.listForRecord.invalidate({ id });
+				utils.records.searchByRecordId.invalidate({ id });
+			});
 
 			/* 2 ▸ drop any cached map that overlaps the touched set */
 			utils.links.map.invalidate(undefined, {

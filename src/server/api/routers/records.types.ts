@@ -95,10 +95,12 @@ export interface FullRecord extends RecordSelect {
 	media: Array<MediaSelect>;
 }
 
+export type LinkPartial = Pick<LinkSelect, 'id' | 'sourceId' | 'targetId' | 'predicateId'>;
+
 export type RecordLinks = {
 	id: DbId;
-	outgoingLinks: { targetId: DbId; predicateId: DbId }[];
-	incomingLinks: { sourceId: DbId; predicateId: DbId }[];
+	outgoingLinks: LinkPartial[];
+	incomingLinks: LinkPartial[];
 };
 
 export type RecordLinksMap = Record<DbId, RecordLinks>;

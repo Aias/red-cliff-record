@@ -1,8 +1,8 @@
-import { useContext, useEffect, useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
 import { RecordForm } from './-components/form';
+import { RelationsList, SimilarRecords } from './-components/relations';
 import { NextRecordIdContext } from './route';
-import { useRecordSuspense } from '@/lib/hooks/use-records';
 
 export const Route = createFileRoute('/records/$recordId')({
 	component: RouteComponent,
@@ -15,24 +15,19 @@ export const Route = createFileRoute('/records/$recordId')({
 });
 
 function RouteComponent() {
-	const { recordId } = Route.useParams();
-	const record = useRecordSuspense(Number(recordId));
-	const recordIdNumber = useMemo(() => Number(recordId), [recordId]);
+	const { recordId: recordIdParam } = Route.useParams();
+	const recordId = useMemo(() => Number(recordIdParam), [recordIdParam]);
 	const nextRecordId = useContext(NextRecordIdContext);
-
-	useEffect(() => {
-		console.log('New record loaded:', record);
-	}, [record]);
 
 	return (
 		<div className="flex basis-full gap-4 overflow-hidden p-4">
 			<div className="card w-[540px] overflow-y-auto">
-				<RecordForm recordId={recordIdNumber} nextRecordId={nextRecordId} />
+				<RecordForm recordId={recordId} nextRecordId={nextRecordId} />
 			</div>
-			{/* <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
-				<RelationsList record={record} />
-				<SimilarRecords record={record} />
-			</div> */}
+			<div className="flex flex-1 flex-col gap-4 overflow-y-auto">
+				<RelationsList id={recordId} />
+				<SimilarRecords id={recordId} />
+			</div>
 		</div>
 	);
 }

@@ -1,9 +1,9 @@
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { Link } from '@tanstack/react-router';
 import type { LinkOptions } from '@tanstack/react-router';
 import { RectangleEllipsisIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useRecord } from '@/app/lib/hooks/use-records';
+import { usePredicateMap, useRecordWithOutgoingLinks } from '@/app/lib/hooks/use-records';
 import type { DbId } from '@/server/api/routers/common';
 import { recordTypeIcons } from './type-icons';
 import {
@@ -34,10 +34,28 @@ interface RecordLinkProps {
 }
 
 export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordLinkProps) => {
-	const { data: record } = useRecord(id);
+	const { record, isLoading, isError, outgoing, linkedById } = useRecordWithOutgoingLinks(id);
+	const predicates = usePredicateMap();
 
-	if (!record) return <Spinner />;
+	if (isLoading) return <Spinner />;
+	if (isError || !record) return null;
 
+	/* ---------- resolve creator / parent ---------- */
+	let creatorTitle: string | undefined | null;
+	let parentTitle: string | undefined | null;
+
+	for (const edge of outgoing) {
+		const kind = predicates[edge.predicateId]?.type;
+		if (kind === 'creation' && !creatorTitle) {
+			creatorTitle = linkedById[edge.targetId]?.title;
+		}
+		if (kind === 'containment' && !parentTitle) {
+			parentTitle = linkedById[edge.targetId]?.title;
+		}
+		if (creatorTitle && parentTitle) break;
+	}
+
+	/* ---------- derive text fields ---------- */
 	const {
 		type,
 		title,
@@ -53,34 +71,22 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 		recordUpdatedAt,
 	} = record;
 
-	const TypeIcon = useMemo(() => recordTypeIcons[type].icon, [type]);
-	const label = useMemo(() => {
-		if (title) return title;
+	const label = title ?? creatorTitle ?? (parentTitle ? `↳ ${parentTitle}` : 'Untitled');
 
-		return 'Untitled';
-	}, [title]);
+	const preview =
+		summary ?? content ?? notes ?? url ?? `Updated ${recordUpdatedAt.toLocaleDateString()}`;
 
-	const mediaItem: {
-		type: MediaType;
-		altText?: string | null;
-		url: string;
-	} | null = useMemo(() => {
-		if (media && media.length > 0 && media[0]) {
-			return media[0];
-		}
-		if (avatarUrl) {
-			return {
-				type: 'image',
-				url: avatarUrl,
-			};
-		}
-		return null;
-	}, [media, avatarUrl]);
+	/* ---------- pick media thumbnail ---------- */
+	let mediaItem: { type: MediaType; url: string; altText?: string | null } | null = null;
+	if (media?.[0]) {
+		mediaItem = media[0];
+	} else if (avatarUrl) {
+		mediaItem = { type: 'image', url: avatarUrl };
+	}
 
-	const preview = useMemo(() => {
-		return summary || content || notes || url || `Updated ${recordUpdatedAt.toLocaleDateString()}`;
-	}, [summary, content, notes, url, recordUpdatedAt]);
+	const TypeIcon = recordTypeIcons[type].icon;
 
+	/* ---------------- render ---------------- */
 	return (
 		<div
 			className={cn('group relative flex grow gap-3 overflow-hidden break-all', className)}
@@ -88,6 +94,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 		>
 			<div className="flex shrink basis-full flex-col gap-[0.25em] overflow-hidden">
 				<div className="flex items-center gap-1.25 overflow-hidden">
+					{/* icon / dropdown */}
 					<div className="relative size-[1lh] shrink-0">
 						{actions && (
 							<DropdownMenu>
@@ -100,14 +107,10 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 								<DropdownMenuContent>
 									<DropdownMenuLabel>Actions</DropdownMenuLabel>
 									<DropdownMenuSeparator />
-									{actions.map((action) => (
-										<DropdownMenuItem
-											key={action.label}
-											onClick={action.onClick}
-											disabled={action.disabled}
-										>
-											{action.icon && <action.icon />}
-											{action.label}
+									{actions.map((a) => (
+										<DropdownMenuItem key={a.label} onClick={a.onClick} disabled={a.disabled}>
+											{a.icon && <a.icon />}
+											{a.label}
 										</DropdownMenuItem>
 									))}
 								</DropdownMenuContent>
@@ -116,13 +119,13 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 						<TypeIcon
 							className={cn(
 								'absolute inset-0 size-full text-c-hint',
-								// hide on group hover when selectable
 								'group-data-[selectable=true]:group-hover:opacity-0',
-								// keep hidden while the dropdown is open
 								'peer-data-[state=open]:opacity-0'
 							)}
 						/>
 					</div>
+
+					{/* title row */}
 					<div className="flex grow items-center gap-1 overflow-hidden">
 						{linkOptions ? (
 							<Link
@@ -136,18 +139,23 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 						)}
 						{sense && <span className="text-c-hint italic">{sense}</span>}
 					</div>
+
+					{/* source logos */}
 					<ul className="flex items-center gap-1.5 text-[0.75em] opacity-50">
-						{sources?.map((source) => (
-							<li key={source}>
-								<IntegrationLogo integration={source} />
+						{sources?.map((s) => (
+							<li key={s}>
+								<IntegrationLogo integration={s} />
 							</li>
 						))}
 					</ul>
 				</div>
+
 				<p className="line-clamp-1 text-[0.925em] break-all text-c-secondary">{preview}</p>
 			</div>
+
+			{/* thumbnail */}
 			{mediaItem && (
-				<div className="relative aspect-[3/2] h-[2lh] shrink-0 basis-auto self-center overflow-hidden rounded-md border border-c-divider bg-c-mist">
+				<div className="relative aspect-[3/2] h-[2lh] shrink-0 self-center overflow-hidden rounded-md border border-c-divider bg-c-mist">
 					{mediaItem.type === 'image' ? (
 						<img
 							src={mediaItem.url}

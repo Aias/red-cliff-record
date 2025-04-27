@@ -63,7 +63,10 @@ export const embed = publicProcedure
 				recordUpdatedAt: new Date(),
 			})
 			.where(eq(records.id, recordId))
-			.returning();
+			.returning({
+				id: records.id,
+				recordUpdatedAt: records.recordUpdatedAt,
+			});
 
 		if (!updatedRecord) {
 			throw new TRPCError({

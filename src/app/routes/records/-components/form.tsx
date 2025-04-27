@@ -45,7 +45,7 @@ import {
 } from '@/components';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
-import { useRecord } from '@/lib/hooks/use-records';
+import { useDeleteRecords, useRecord, useUpsertRecord } from '@/lib/hooks/use-records';
 import { readFileAsBase64 } from '@/lib/read-file';
 
 interface RecordFormProps {
@@ -60,32 +60,8 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
 	const mediaUploadRef = useRef<HTMLDivElement>(null);
 
-	const updateMutation = trpc.records.upsert.useMutation({
-		onSuccess: () => {
-			utils.records
-				.invalidate()
-				.catch((err) => console.error('Background invalidation failed', err));
-			embedMutation.mutate(recordId);
-		},
-	});
-
-	const embedMutation = trpc.records.embed.useMutation({
-		onSuccess: (record) => {
-			utils.records.get
-				.invalidate({ id: record.id })
-				.catch((err) => console.error('Background get invalidation failed', err));
-			utils.records.searchByRecordId
-				.invalidate({ id: record.id })
-				.catch((err) => console.error('Background searchByRecordId invalidation failed', err));
-		},
-	});
-
-	const deleteMutation = trpc.records.delete.useMutation({
-		onSuccess: async () => {
-			await utils.records.list.invalidate();
-			navigate({ to: '/records', search: true });
-		},
-	});
+	const updateMutation = useUpsertRecord();
+	const deleteMutation = useDeleteRecords();
 
 	const deleteMediaMutation = trpc.media.delete.useMutation({
 		onSuccess: (_data, variables) => {

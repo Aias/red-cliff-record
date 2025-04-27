@@ -1,15 +1,22 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
-import type { FullRecord, RecordGet } from '@/server/api/routers/records.types';
+import type { DbId } from '@/server/api/routers/common';
+import type { RecordGet } from '@/server/api/routers/records.types';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 import type { LinkSelect, PredicateSelect } from '@/db/schema';
+import {
+	useDeleteLinks,
+	useMergeRecords,
+	usePredicateMap,
+	useRecordLinks,
+} from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
 
 interface RelationsListProps {
-	record: FullRecord;
+	id: DbId;
 }
 
 interface RecordLink extends LinkSelect {
@@ -18,66 +25,18 @@ interface RecordLink extends LinkSelect {
 	direction: 'outgoing' | 'incoming';
 }
 
-export const RelationsList = ({
-	record: { outgoingLinks, incomingLinks, id },
-}: RelationsListProps) => {
-	const utils = trpc.useUtils();
+export const RelationsList = ({ id }: RelationsListProps) => {
+	const { data: recordLinks } = useRecordLinks(id);
+	const predicates = usePredicateMap();
+	const mergeRecordsMutation = useMergeRecords();
+	const deleteLinkMutation = useDeleteLinks();
+	const navigate = useNavigate();
+
+	const outgoingLinks = useMemo(() => recordLinks?.outgoingLinks ?? [], [recordLinks]);
+	const incomingLinks = useMemo(() => recordLinks?.incomingLinks ?? [], [recordLinks]);
 	const totalLinks = useMemo(
 		() => outgoingLinks.length + incomingLinks.length,
 		[outgoingLinks, incomingLinks]
-	);
-	const { data: predicates } = trpc.links.listPredicates.useQuery();
-	const navigate = useNavigate();
-	const upsertMutation = trpc.links.upsert.useMutation({
-		onSuccess: () => {
-			utils.records.get.invalidate();
-			utils.records.searchByTextQuery.invalidate();
-			utils.records.searchByRecordId.invalidate({ id });
-		},
-	});
-
-	const mergeRecordsMutation = trpc.records.merge.useMutation({
-		onSuccess: async (data) => {
-			console.log('[Merge Mutation] onSuccess received:', data);
-
-			if (!data?.updatedRecord) {
-				console.error('[Merge Mutation] onSuccess error: updatedRecord missing in response', data);
-				return;
-			}
-
-			const { updatedRecord } = data;
-			// Wait specifically for list invalidation
-			await utils.records.list.invalidate();
-			// Invalidate the target record get query, but don't wait
-			utils.records.get
-				.invalidate({ id: updatedRecord.id })
-				.catch((err) => console.error('Background get invalidation failed', err));
-
-			// Navigate now
-			navigate({
-				to: '/records/$recordId',
-				params: { recordId: updatedRecord.id.toString() },
-				search: true,
-			});
-		},
-		onError: (error) => {
-			console.error('[Merge Mutation] onError:', error);
-		},
-	});
-
-	const deleteLinkMutation = trpc.links.delete.useMutation({
-		onSuccess: () => {
-			utils.records.get.invalidate();
-			utils.records.searchByTextQuery.invalidate();
-			utils.records.searchByRecordId.invalidate({ id });
-		},
-	});
-
-	const _getInversePredicate = useCallback(
-		(predicate: PredicateSelect): PredicateSelect => {
-			return predicates?.find((p) => p.inverseSlug === predicate.slug) || predicate;
-		},
-		[predicates]
 	);
 
 	return (
@@ -104,20 +63,18 @@ export const RelationsList = ({
 									</>
 								),
 								onSelect: () => {
-									if (typeof sourceId === 'number' && typeof targetId === 'number') {
-										mergeRecordsMutation.mutate({
-											sourceId,
-											targetId,
-										});
-									} else {
-										console.error('Invalid IDs for merge:', { sourceId, targetId });
-									}
+									navigate({
+										to: '/records/$recordId',
+										params: { recordId: targetId.toString() },
+										search: true,
+									});
+									mergeRecordsMutation.mutate({
+										sourceId,
+										targetId,
+									});
 								},
 							},
 						];
-					}}
-					onComplete={(sourceId, targetId, predicateId) => {
-						console.log('new relationship created', sourceId, targetId, predicateId);
 					}}
 					popoverProps={{ side: 'left' }}
 				/>
@@ -129,21 +86,13 @@ export const RelationsList = ({
 					</h4>
 					<ul className="flex flex-col gap-2 text-xs">
 						{outgoingLinks.map((link) => (
-							<li key={link.id} className="flex items-center gap-2">
+							<li key={`${link.targetId}-${link.predicateId}`} className="flex items-center gap-2">
 								<RelationshipSelector
-									label={link.predicate.name}
-									sourceId={link.sourceId}
+									label={predicates[link.predicateId]?.name ?? 'Unknown'}
+									sourceId={id}
 									link={link}
 									buttonProps={{
 										className: 'w-30',
-									}}
-									onComplete={(sourceId, targetId, predicateId) => {
-										upsertMutation.mutate({
-											id: link.id,
-											sourceId,
-											targetId,
-											predicateId,
-										});
 									}}
 									buildActions={({ sourceId, targetId }) => {
 										return [
@@ -154,11 +103,17 @@ export const RelationsList = ({
 														<MergeIcon /> Merge
 													</>
 												),
-												onSelect: () =>
+												onSelect: () => {
+													navigate({
+														to: '/records/$recordId',
+														params: { recordId: targetId.toString() },
+														search: true,
+													});
 													mergeRecordsMutation.mutate({
 														sourceId,
 														targetId,
-													}),
+													});
+												},
 											},
 											{
 												key: 'delete-link',
@@ -175,11 +130,11 @@ export const RelationsList = ({
 									}}
 								/>
 								<RecordLink
-									id={link.target.id}
+									id={link.targetId}
 									linkOptions={{
 										to: '/records/$recordId',
 										search: true,
-										params: { recordId: link.target.id.toString() },
+										params: { recordId: link.targetId.toString() },
 									}}
 								/>
 							</li>
@@ -199,23 +154,15 @@ export const RelationsList = ({
 					</h4>
 					<ul className="flex flex-col gap-2 text-xs">
 						{incomingLinks.map((link) => (
-							<li key={link.id} className="flex items-center gap-2">
+							<li key={`${link.sourceId}-${link.predicateId}`} className="flex items-center gap-2">
 								<RelationshipSelector
-									label={link.predicate.name}
-									sourceId={link.sourceId}
+									label={predicates[link.predicateId]?.name ?? 'Unknown'}
+									sourceId={id}
 									link={link}
 									buttonProps={{
 										className: 'w-30',
 									}}
-									onComplete={(sourceId, targetId, predicateId) => {
-										upsertMutation.mutate({
-											id: link.id,
-											sourceId,
-											targetId,
-											predicateId,
-										});
-									}}
-									buildActions={({ sourceId, targetId }) => {
+									buildActions={() => {
 										return [
 											{
 												key: 'merge-records',
@@ -224,11 +171,17 @@ export const RelationsList = ({
 														<MergeIcon /> Merge
 													</>
 												),
-												onSelect: () =>
+												onSelect: () => {
+													navigate({
+														to: '/records/$recordId',
+														params: { recordId: link.sourceId.toString() },
+														search: true,
+													});
 													mergeRecordsMutation.mutate({
-														sourceId,
-														targetId,
-													}),
+														sourceId: link.sourceId,
+														targetId: link.targetId,
+													});
+												},
 											},
 											{
 												key: 'delete-link',
@@ -245,11 +198,11 @@ export const RelationsList = ({
 									}}
 								/>
 								<RecordLink
-									id={link.source.id}
+									id={link.sourceId}
 									linkOptions={{
 										to: '/records/$recordId',
 										search: true,
-										params: { recordId: link.source.id.toString() },
+										params: { recordId: link.sourceId.toString() },
 									}}
 								/>
 							</li>
@@ -261,58 +214,17 @@ export const RelationsList = ({
 	);
 };
 
-export const SimilarRecords = ({ record }: { record: FullRecord }) => {
-	const utils = trpc.useUtils();
+export const SimilarRecords = ({ id }: { id: DbId }) => {
 	const navigate = useNavigate();
-	const recordId = useMemo(() => record.id, [record.id]);
+	const mergeRecordsMutation = useMergeRecords();
 
 	// Fetch similar records only if textEmbedding exists
-	const { data: similarRecords, isLoading } = trpc.records.searchByRecordId.useQuery(
-		{
-			id: recordId,
-			limit: 10,
-		},
-		{
-			enabled: !!record.textEmbedding, // Only run the query if textEmbedding is present
-		}
-	);
-
-	const upsertMutation = trpc.links.upsert.useMutation({
-		onSuccess: () => {
-			utils.records.invalidate();
-		},
+	const { data: similarRecords, isLoading } = trpc.records.searchByRecordId.useQuery({
+		id: id,
+		limit: 10,
 	});
 
-	const mergeRecordsMutation = trpc.records.merge.useMutation({
-		onSuccess: async (data) => {
-			console.log('[Merge Mutation] onSuccess received:', data);
-
-			if (!data?.updatedRecord) {
-				console.error('[Merge Mutation] onSuccess error: updatedRecord missing in response', data);
-				return;
-			}
-
-			const { updatedRecord } = data;
-			// Wait specifically for list invalidation
-			await utils.records.list.invalidate();
-			// Invalidate the target record get query, but don't wait
-			utils.records.get
-				.invalidate({ id: updatedRecord.id })
-				.catch((err) => console.error('Background get invalidation failed', err));
-
-			// Navigate now
-			navigate({
-				to: '/records/$recordId',
-				params: { recordId: updatedRecord.id.toString() },
-				search: true,
-			});
-		},
-		onError: (error) => {
-			console.error('[Merge Mutation] onError:', error);
-		},
-	});
-
-	return record.textEmbedding ? (
+	return similarRecords ? (
 		<section className="text-xs">
 			<h3 className="mb-2">Similar Records</h3>
 			{isLoading ? (
@@ -322,16 +234,9 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 					{similarRecords.map((record) => (
 						<li key={record.id} className="mb-2 flex items-center gap-4">
 							<RelationshipSelector
-								sourceId={recordId}
+								sourceId={id}
 								initialTargetId={record.id}
 								label={record.similarity.toFixed(2)}
-								onComplete={(sourceId, targetId, predicateId) => {
-									upsertMutation.mutate({
-										sourceId,
-										targetId,
-										predicateId,
-									});
-								}}
 								buttonProps={{
 									size: 'sm',
 									variant: 'ghost',
@@ -348,14 +253,15 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 												</>
 											),
 											onSelect: () => {
-												if (typeof sourceId === 'number' && typeof targetId === 'number') {
-													mergeRecordsMutation.mutate({
-														sourceId,
-														targetId,
-													});
-												} else {
-													console.error('Invalid IDs for merge:', { sourceId, targetId });
-												}
+												navigate({
+													to: '/records/$recordId',
+													params: { recordId: targetId.toString() },
+													search: true,
+												});
+												mergeRecordsMutation.mutate({
+													sourceId,
+													targetId,
+												});
 											},
 										},
 									];

@@ -4,6 +4,7 @@ import { PlusCircleIcon } from 'lucide-react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
+import type { LinkPartial } from '@/server/api/routers/records.types';
 import { RecordLink } from './record-link';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import {
@@ -21,7 +22,8 @@ import {
 	PopoverTrigger,
 	type PopoverContentProps,
 } from '@/components/ui/popover';
-import type { LinkSelect, PredicateSelect } from '@/db/schema';
+import type { PredicateSelect } from '@/db/schema';
+import { useUpsertLink, useUpsertRecord } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
 
 /* --------------------------------------------------------------------------
@@ -48,15 +50,7 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 	const navigate = useNavigate();
 	const debounced = useDebounce(query, 200);
 
-	const createRecordMutation = trpc.records.upsert.useMutation({
-		onSuccess: (newRecord) => {
-			navigate({
-				to: '/records/$recordId',
-				params: { recordId: newRecord.id.toString() },
-				search: true,
-			});
-		},
-	});
+	const createRecordMutation = useUpsertRecord();
 
 	const { data = [], isFetching } = trpc.records.searchByTextQuery.useQuery(
 		{ query: debounced },
@@ -80,12 +74,17 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 				<CommandItem
 					disabled={query.length === 0}
 					key="create-record"
-					onSelect={() =>
-						createRecordMutation.mutate({
+					onSelect={async () => {
+						const newRecord = await createRecordMutation.mutateAsync({
 							type: 'artifact',
 							title: query,
-						})
-					}
+						});
+						navigate({
+							to: '/records/$recordId',
+							params: { recordId: newRecord.id.toString() },
+							search: true,
+						});
+					}}
 					className="px-3 py-2"
 				>
 					<PlusCircleIcon /> Create New Record
@@ -101,14 +100,14 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
  * -------------------------------------------------------------------------- */
 interface PredicateComboboxProps {
 	predicates: PredicateSelect[];
-	onPredicate(id: number): void;
+	onPredicateSelect(id: number): void;
 	actions?: RelationshipAction[];
 	includeNonCanonical?: boolean;
 }
 
 function PredicateCombobox({
 	predicates,
-	onPredicate,
+	onPredicateSelect,
 	actions = [],
 	includeNonCanonical = false,
 }: PredicateComboboxProps) {
@@ -123,7 +122,7 @@ function PredicateCombobox({
 							<CommandItem
 								className="flex gap-2 capitalize"
 								key={p.id}
-								onSelect={() => onPredicate(p.id)}
+								onSelect={() => onPredicateSelect(p.id)}
 							>
 								<span className="font-medium">{p.name}</span>
 								<span className="text-c-hint">{p.type}</span>
@@ -159,9 +158,9 @@ interface RelationshipSelectorProps {
 	/** Explicitly set target ID to skip record search. */
 	initialTargetId?: number;
 	/** Existing link information, if editing. */
-	link?: LinkSelect | null;
+	link?: LinkPartial | null;
 	/** Called after any predicate or action completes. */
-	onComplete(sourceId: number, targetId: number, predicateId: number): void;
+	onComplete?: (sourceId: number, targetId: number, predicateId: number) => void;
 	buttonProps?: ButtonProps;
 	popoverProps?: PopoverContentProps;
 	/** Optional extra‑action builder; receives runtime context. */
@@ -169,7 +168,7 @@ interface RelationshipSelectorProps {
 		sourceId: number;
 		/** Selected record – guaranteed non‑null */
 		targetId: number;
-		link: LinkSelect | null;
+		link: LinkPartial | null;
 	}) => RelationshipAction[];
 }
 
@@ -189,7 +188,6 @@ export function RelationshipSelector({
 	const [open, setOpen] = useState(false);
 
 	const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
-	const utils = trpc.useUtils();
 
 	/* --------------------------------------------------
 	 * Reset unsaved state when the popover closes, unless
@@ -207,22 +205,21 @@ export function RelationshipSelector({
 		return buildActions({ sourceId, targetId, link });
 	}, [buildActions, sourceId, targetId, link]);
 
-	const upsert = trpc.links.upsert.useMutation({
-		onSuccess: (link) => {
-			utils.records.get.invalidate();
-			utils.records.searchByTextQuery.invalidate();
-			utils.records.searchByRecordId.invalidate();
-			onComplete(sourceId, link.targetId, link.predicateId);
-			setOpen(false);
-		},
-	});
+	const upsertLinkMutation = useUpsertLink();
 
 	const handleRecordSelect = (id: DbId) => setTargetId(id);
 
-	const handlePredicate = (predId: number) => {
+	const handlePredicateSelect = async (predId: number) => {
 		if (!targetId) return;
 		setPredicateId(predId);
-		upsert.mutate({ id: link?.id, sourceId, targetId, predicateId: predId });
+		const updatedLink = await upsertLinkMutation.mutateAsync({
+			id: link?.id,
+			sourceId,
+			targetId,
+			predicateId: predId,
+		});
+		onComplete?.(updatedLink.sourceId, updatedLink.targetId, updatedLink.predicateId);
+		setOpen(false);
 	};
 
 	const currentPredicateName = useMemo(
@@ -249,7 +246,7 @@ export function RelationshipSelector({
 				{targetId && (
 					<PredicateCombobox
 						predicates={predicates}
-						onPredicate={handlePredicate}
+						onPredicateSelect={handlePredicateSelect}
 						actions={actions}
 					/>
 				)}

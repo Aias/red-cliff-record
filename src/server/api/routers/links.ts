@@ -84,20 +84,14 @@ export const linksRouter = createTRPCRouter({
 					outgoingLinks: [],
 					incomingLinks: [],
 					id: row.sourceId,
-				}).outgoingLinks.push({
-					targetId: row.targetId,
-					predicateId: row.predicateId,
-				});
+				}).outgoingLinks.push(row);
 				/* incoming for targetId (if different) */
 				if (row.targetId !== row.sourceId) {
 					(map[row.targetId] ??= {
 						outgoingLinks: [],
 						incomingLinks: [],
 						id: row.targetId,
-					}).incomingLinks.push({
-						sourceId: row.sourceId,
-						predicateId: row.predicateId,
-					});
+					}).incomingLinks.push(row);
 				}
 			}
 			return map;
