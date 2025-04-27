@@ -1,11 +1,10 @@
-import { eq } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
-import { ListRecordsInputSchema, type RecordWithRelations } from '../records.types';
-import { links } from '@/db/schema';
+import { type IdParamList } from '../common';
+import { ListRecordsInputSchema } from '../records.types';
 
 export const list = publicProcedure
 	.input(ListRecordsInputSchema)
-	.query(async ({ ctx: { db }, input }): Promise<RecordWithRelations[]> => {
+	.query(async ({ ctx: { db }, input }): Promise<IdParamList> => {
 		const {
 			filters: {
 				type,
@@ -26,25 +25,9 @@ export const list = publicProcedure
 			orderBy,
 		} = input;
 
-		return db.query.records.findMany({
+		const rows = await db.query.records.findMany({
 			columns: {
-				textEmbedding: false,
-			},
-			with: {
-				outgoingLinks: {
-					with: {
-						predicate: true,
-						target: {
-							columns: {
-								textEmbedding: false,
-							},
-						},
-					},
-				},
-				media: true,
-			},
-			extras: {
-				outgoingLinkCount: (table) => db.$count(links, eq(links.sourceId, table.id)),
+				id: true,
 			},
 			where: {
 				type,
@@ -143,4 +126,8 @@ export const list = publicProcedure
 				});
 			},
 		});
+
+		return {
+			ids: rows.map((row) => ({ id: row.id })),
+		};
 	});

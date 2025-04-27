@@ -2,8 +2,8 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { CheckIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
+import type { DbId } from '@/server/api/routers/common';
 import { defaultQueueOptions } from '@/server/api/routers/records.types';
-import { type RecordWithRelations } from '@/server/api/routers/records.types';
 import { RecordTypeIcon } from './type-icons';
 import {
 	ExternalLink,
@@ -35,9 +35,14 @@ import {
 	type IntegrationType,
 	type RecordType,
 } from '@/db/schema';
+import { useRecord } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
 
-const RecordRow = memo(function RecordRow({ record }: { record: RecordWithRelations }) {
+const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
+	const { data: record } = useRecord(id);
+
+	if (!record) return null;
+
 	const title = record.title || record.summary || record.content || 'Untitled Record';
 
 	return (
@@ -523,7 +528,7 @@ export const RecordsGrid = () => {
 		<div className="flex h-full grow gap-4 overflow-hidden">
 			{FilterSidebar}
 			<div className="flex grow overflow-hidden rounded border border-border bg-c-surface text-xs">
-				<Table className={cn({ 'h-full': queue.length === 0 })}>
+				<Table className={cn({ 'h-full': queue.ids.length === 0 })}>
 					<TableHeader className="sticky top-0 z-10 bg-c-surface before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-border">
 						<TableRow className="sticky top-0 z-10 bg-c-mist">
 							<TableHead className="text-center">Type</TableHead>
@@ -536,8 +541,8 @@ export const RecordsGrid = () => {
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{queue.length > 0 ? (
-							queue.map((record) => <RecordRow key={record.id} record={record} />)
+						{queue.ids.length > 0 ? (
+							queue.ids.map(({ id }) => <RecordRow key={id} id={id} />)
 						) : (
 							<TableRow>
 								<TableCell colSpan={12} className="pointer-events-none text-center">

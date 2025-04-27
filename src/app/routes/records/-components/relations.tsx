@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
-import type { FullRecord, RecordWithoutEmbedding } from '@/server/api/routers/records.types';
+import type { FullRecord, RecordGet } from '@/server/api/routers/records.types';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 import type { LinkSelect, PredicateSelect } from '@/db/schema';
@@ -14,7 +14,7 @@ interface RelationsListProps {
 
 interface RecordLink extends LinkSelect {
 	predicate: PredicateSelect;
-	record: RecordWithoutEmbedding;
+	record: RecordGet;
 	direction: 'outgoing' | 'incoming';
 }
 
@@ -31,8 +31,8 @@ export const RelationsList = ({
 	const upsertMutation = trpc.relations.upsert.useMutation({
 		onSuccess: () => {
 			utils.records.get.invalidate();
-			utils.records.search.invalidate();
-			utils.records.similaritySearch.invalidate();
+			utils.records.searchByTextQuery.invalidate();
+			utils.records.searchByRecordId.invalidate({ id });
 		},
 	});
 
@@ -50,7 +50,7 @@ export const RelationsList = ({
 			await utils.records.list.invalidate();
 			// Invalidate the target record get query, but don't wait
 			utils.records.get
-				.invalidate(updatedRecord.id)
+				.invalidate({ id: updatedRecord.id })
 				.catch((err) => console.error('Background get invalidation failed', err));
 
 			// Navigate now
@@ -68,8 +68,8 @@ export const RelationsList = ({
 	const deleteLinkMutation = trpc.relations.delete.useMutation({
 		onSuccess: () => {
 			utils.records.get.invalidate();
-			utils.records.search.invalidate();
-			utils.records.similaritySearch.invalidate();
+			utils.records.searchByTextQuery.invalidate();
+			utils.records.searchByRecordId.invalidate({ id });
 		},
 	});
 
@@ -175,7 +175,7 @@ export const RelationsList = ({
 									}}
 								/>
 								<RecordLink
-									toRecord={link.target}
+									id={link.target.id}
 									linkOptions={{
 										to: '/records/$recordId',
 										search: true,
@@ -245,7 +245,7 @@ export const RelationsList = ({
 									}}
 								/>
 								<RecordLink
-									toRecord={link.source}
+									id={link.source.id}
 									linkOptions={{
 										to: '/records/$recordId',
 										search: true,
@@ -266,23 +266,11 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 	const navigate = useNavigate();
 	const recordId = useMemo(() => record.id, [record.id]);
 
-	const omittedRecordIds = useMemo(() => {
-		const { incomingLinks, outgoingLinks } = record;
-		return [
-			record,
-			...incomingLinks.map((link) => link.source),
-			...outgoingLinks.map((link) => link.target),
-		]
-			.map((record) => record.id)
-			.filter((id): id is number => id !== undefined);
-	}, [record]);
-
 	// Fetch similar records only if textEmbedding exists
-	const { data: similarRecords, isLoading } = trpc.records.similaritySearch.useQuery(
+	const { data: similarRecords, isLoading } = trpc.records.searchByRecordId.useQuery(
 		{
-			vector: record.textEmbedding!, // Assert non-null because enabled is true only if it exists
+			id: recordId,
 			limit: 10,
-			exclude: [recordId, ...omittedRecordIds],
 		},
 		{
 			enabled: !!record.textEmbedding, // Only run the query if textEmbedding is present
@@ -309,7 +297,7 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 			await utils.records.list.invalidate();
 			// Invalidate the target record get query, but don't wait
 			utils.records.get
-				.invalidate(updatedRecord.id)
+				.invalidate({ id: updatedRecord.id })
 				.catch((err) => console.error('Background get invalidation failed', err));
 
 			// Navigate now
@@ -374,7 +362,7 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 								}}
 							/>
 							<RecordLink
-								toRecord={record}
+								id={record.id}
 								className="flex-1"
 								linkOptions={{
 									to: '/records/$recordId',

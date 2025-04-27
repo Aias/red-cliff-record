@@ -3,7 +3,8 @@ import { Link } from '@tanstack/react-router';
 import type { LinkOptions } from '@tanstack/react-router';
 import { RectangleEllipsisIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { RecordWithoutEmbedding } from '@/server/api/routers/records.types';
+import { useRecord } from '@/app/lib/hooks/use-records';
+import type { DbId } from '@/server/api/routers/common';
 import { recordTypeIcons } from './type-icons';
 import {
 	DropdownMenu,
@@ -13,8 +14,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 	IntegrationLogo,
+	Spinner,
 } from '@/components';
-import type { LinkSelect, MediaSelect, MediaType, PredicateSelect } from '@/db/schema';
+import type { MediaType } from '@/db/schema';
 import { cn } from '@/lib/utils';
 
 interface RecordAction {
@@ -24,23 +26,18 @@ interface RecordAction {
 	disabled?: boolean;
 }
 
-interface RecordWithRelations extends RecordWithoutEmbedding {
-	media?: MediaSelect[];
-	outgoingLinks?: Array<
-		LinkSelect & { predicate: PredicateSelect; target: RecordWithoutEmbedding }
-	>;
-	incomingLinks?: Array<
-		LinkSelect & { predicate: PredicateSelect; source: RecordWithoutEmbedding }
-	>;
-}
 interface RecordLinkProps {
-	toRecord: RecordWithRelations;
+	id: DbId;
 	className?: string;
 	linkOptions?: LinkOptions;
 	actions?: RecordAction[] | null;
 }
 
-export const RecordLink = memo(({ toRecord, className, linkOptions, actions }: RecordLinkProps) => {
+export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordLinkProps) => {
+	const { data: record } = useRecord(id);
+
+	if (!record) return <Spinner />;
+
 	const {
 		type,
 		title,
@@ -54,25 +51,14 @@ export const RecordLink = memo(({ toRecord, className, linkOptions, actions }: R
 		mediaCaption,
 		avatarUrl,
 		recordUpdatedAt,
-		outgoingLinks,
-	} = toRecord;
-
-	const firstCreator = useMemo(
-		() => outgoingLinks?.find((link) => link.predicate.type === 'creation')?.target,
-		[outgoingLinks]
-	);
-	const parent = useMemo(
-		() => outgoingLinks?.find((link) => link.predicate.type === 'containment')?.target,
-		[outgoingLinks]
-	);
+	} = record;
 
 	const TypeIcon = useMemo(() => recordTypeIcons[type].icon, [type]);
 	const label = useMemo(() => {
 		if (title) return title;
-		if (firstCreator) return firstCreator.title;
-		if (parent) return `↳ ${parent.title}`;
+
 		return 'Untitled';
-	}, [title, firstCreator, parent]);
+	}, [title]);
 
 	const mediaItem: {
 		type: MediaType;

@@ -35,7 +35,7 @@ export const records = pgTable(
 	{
 		id: serial('id').primaryKey(),
 		slug: text('slug').unique(),
-		type: recordTypeEnum('type').notNull(),
+		type: recordTypeEnum('type').notNull().default('artifact'),
 		title: text('title'),
 		sense: text('sense'),
 		abbreviation: text('abbreviation'),

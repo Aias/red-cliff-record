@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { useNavigate } from '@tanstack/react-router';
 import { Trash2Icon } from 'lucide-react';
@@ -8,8 +8,6 @@ import {
 	MediaSelectSchema,
 	RecordInsertSchema,
 	RecordTypeSchema,
-	type MediaSelect,
-	type RecordInsert,
 	type RecordType,
 } from '@/server/db/schema';
 import { recordTypeIcons } from './type-icons';
@@ -24,18 +22,17 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 	Avatar,
+	BooleanSwitch,
+	Button,
 	DynamicTextarea,
 	ExternalLink,
 	GhostInput,
-	MetadataList,
-} from '@/components';
-import {
-	Button,
 	IntegrationLogo,
 	Label,
+	MetadataList,
 	Separator,
 	Slider,
-	Switch,
+	Spinner,
 	Table,
 	TableBody,
 	TableCell,
@@ -48,29 +45,8 @@ import {
 } from '@/components';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
+import { useRecord } from '@/lib/hooks/use-records';
 import { readFileAsBase64 } from '@/lib/read-file';
-import { cn } from '@/lib/utils';
-
-interface BooleanSwitchProps extends React.ComponentProps<typeof Label> {
-	label: string;
-	value: boolean | undefined;
-	handleChange: (value: boolean) => void;
-}
-
-export const BooleanSwitch = ({
-	label,
-	value,
-	handleChange,
-	className,
-	...props
-}: BooleanSwitchProps) => {
-	return (
-		<Label className={cn('inline-flex items-center gap-2', className)} {...props}>
-			<Switch checked={value} onCheckedChange={handleChange} />
-			<span>{label}</span>
-		</Label>
-	);
-};
 
 interface RecordFormProps {
 	recordId: number;
@@ -80,13 +56,9 @@ interface RecordFormProps {
 export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
-	const [record] = trpc.records.get.useSuspenseQuery(recordId);
+	const { data: record, isLoading, isError } = useRecord(recordId);
 	const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
 	const mediaUploadRef = useRef<HTMLDivElement>(null);
-
-	const recordFormData: RecordInsert & { media: MediaSelect[] } = useMemo(() => {
-		return { ...record };
-	}, [record]);
 
 	const updateMutation = trpc.records.upsert.useMutation({
 		onSuccess: () => {
@@ -100,11 +72,11 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 	const embedMutation = trpc.records.embed.useMutation({
 		onSuccess: (record) => {
 			utils.records.get
-				.invalidate(record.id)
+				.invalidate({ id: record.id })
 				.catch((err) => console.error('Background get invalidation failed', err));
-			utils.records.similaritySearch
-				.invalidate()
-				.catch((err) => console.error('Background similarity invalidation failed', err));
+			utils.records.searchByRecordId
+				.invalidate({ id: record.id })
+				.catch((err) => console.error('Background searchByRecordId invalidation failed', err));
 		},
 	});
 
@@ -169,7 +141,7 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 
 	const form = useForm({
 		defaultValues: {
-			...recordFormData,
+			...record,
 		},
 		onSubmit: async ({ value }) => {
 			const {
@@ -233,7 +205,8 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 		});
 	}, [recordId, record, form]);
 
-	const { sources } = useMemo(() => record, [record]);
+	if (isLoading) return <Spinner />;
+	if (isError || !record) return <div>Error loading record</div>;
 
 	return (
 		<form
@@ -272,13 +245,17 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 						</div>
 					)}
 				</form.Field>
-				{sources && sources.length > 0 && (
-					<div className="flex items-center gap-2">
-						{sources.map((source) => (
-							<IntegrationLogo key={source} integration={source} className="text-base" />
-						))}
-					</div>
-				)}
+				<form.Field name="sources">
+					{(field) => (
+						<div className="flex items-center gap-2">
+							{field.state.value &&
+								field.state.value.length > 0 &&
+								field.state.value.map((source) => (
+									<IntegrationLogo key={source} integration={source} className="text-base" />
+								))}
+						</div>
+					)}
+				</form.Field>
 			</h1>
 
 			<div className="@container">

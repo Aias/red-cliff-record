@@ -83,6 +83,7 @@ export const trpcClient = trpc.createClient({
 		httpBatchLink({
 			url: `${getBaseUrl()}/trpc`,
 			transformer: superjson,
+			maxURLLength: 1900,
 		}),
 	],
 });

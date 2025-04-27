@@ -40,14 +40,14 @@ export async function getImageMetadata(buffer: ArrayBuffer): Promise<ImageMetada
 		throw new Error('Invalid or unsupported JPEG');
 	}
 
-	// GIF: ASCII “GIF”
+	// GIF: ASCII "GIF"
 	if (view.getUint8(0) === 0x47 && view.getUint8(1) === 0x49 && view.getUint8(2) === 0x46) {
 		const width = view.getUint16(6, true);
 		const height = view.getUint16(8, true);
 		return { format: 'gif', width, height, size };
 	}
 
-	// BMP: ASCII “BM”
+	// BMP: ASCII "BM"
 	if (view.getUint8(0) === 0x42 && view.getUint8(1) === 0x4d) {
 		const width = view.getUint32(18, true);
 		const height = view.getUint32(22, true);
@@ -68,24 +68,78 @@ export async function getImageMetadata(buffer: ArrayBuffer): Promise<ImageMetada
 		view.getUint8(11)
 	);
 	if (riff === 'RIFF' && webp === 'WEBP') {
-		const chunk = String.fromCharCode(
-			view.getUint8(12),
-			view.getUint8(13),
-			view.getUint8(14),
-			view.getUint8(15)
-		);
-		if (chunk === 'VP8X') {
-			const w = getUint24LE(21) + 1;
-			const h = getUint24LE(24) + 1;
-			return { format: 'webp', width: w, height: h, size };
+		let offset = 12; // Start scanning chunks after 'WEBP' identifier
+
+		// First pass: Look for VP8X chunk, as it defines the canonical canvas dimensions
+		while (offset + 8 <= view.byteLength) {
+			// Ensure chunk header can be read
+			const chunkId = String.fromCharCode(
+				view.getUint8(offset),
+				view.getUint8(offset + 1),
+				view.getUint8(offset + 2),
+				view.getUint8(offset + 3)
+			);
+			const chunkSize = view.getUint32(offset + 4, true);
+			const payloadOffset = offset + 8;
+
+			if (payloadOffset + chunkSize > view.byteLength) {
+				throw new Error('WebP chunk size exceeds file bounds');
+			}
+
+			if (chunkId === 'VP8X') {
+				if (chunkSize < 10) throw new Error('Invalid VP8X chunk size');
+				const width = getUint24LE(payloadOffset + 4) + 1;
+				const height = getUint24LE(payloadOffset + 7) + 1;
+				return { format: 'webp', width, height, size }; // VP8X provides definitive dimensions
+			}
+
+			const padding = chunkSize % 2 === 1 ? 1 : 0;
+			offset += 8 + chunkSize + padding; // Move to the next chunk
 		}
-		if (chunk === 'VP8L') {
-			const bits = view.getUint32(20, true);
-			const w = (bits & 0x3fff) + 1;
-			const h = ((bits >> 14) & 0x3fff) + 1;
-			return { format: 'webp', width: w, height: h, size };
+
+		// Second pass: If VP8X wasn't found, look for VP8 (lossy) or VP8L (lossless)
+		offset = 12; // Reset offset
+		while (offset + 8 <= view.byteLength) {
+			// Ensure chunk header can be read
+			const chunkId = String.fromCharCode(
+				view.getUint8(offset),
+				view.getUint8(offset + 1),
+				view.getUint8(offset + 2),
+				view.getUint8(offset + 3)
+			);
+			const chunkSize = view.getUint32(offset + 4, true);
+			const payloadOffset = offset + 8;
+
+			if (payloadOffset + chunkSize > view.byteLength) {
+				throw new Error('WebP chunk size exceeds file bounds');
+			}
+
+			if (chunkId === 'VP8 ') {
+				// Simple lossy format
+				if (chunkSize < 10) throw new Error('Invalid VP8 chunk size');
+				// Dimensions are at offset 6 & 8 within the payload, lower 14 bits
+				const width = view.getUint16(payloadOffset + 6, true) & 0x3fff;
+				const height = view.getUint16(payloadOffset + 8, true) & 0x3fff;
+				return { format: 'webp', width, height, size };
+			} else if (chunkId === 'VP8L') {
+				// Lossless format
+				if (chunkSize < 5) throw new Error('Invalid VP8L chunk size');
+				if (view.getUint8(payloadOffset) !== 0x2f) {
+					// Check signature byte
+					throw new Error('Invalid VP8L signature byte');
+				}
+				const bits = view.getUint32(payloadOffset + 1, true); // Read 4 bytes after signature
+				const width = (bits & 0x3fff) + 1; // Low 14 bits
+				const height = ((bits >> 14) & 0x3fff) + 1; // Next 14 bits
+				return { format: 'webp', width, height, size };
+			}
+
+			const padding = chunkSize % 2 === 1 ? 1 : 0;
+			offset += 8 + chunkSize + padding; // Move to the next chunk
 		}
-		throw new Error('Unsupported WebP variant (only VP8X & VP8L supported)');
+
+		// If no dimension-containing chunk (VP8X, VP8 , VP8L) was found
+		throw new Error('WebP dimension chunk not found or file invalid');
 	}
 
 	// SVG: look for an <svg> tag in the first 2KB

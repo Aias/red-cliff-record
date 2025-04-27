@@ -24,6 +24,7 @@ export * from './ui/tooltip';
 // Custom components
 export * from './avatar';
 export * from './badge';
+export * from './boolean-switch';
 export * from './checkbox';
 export * from './code-block';
 export * from './data-list';

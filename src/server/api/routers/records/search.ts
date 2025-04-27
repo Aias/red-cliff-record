@@ -2,10 +2,10 @@ import { TRPCError } from '@trpc/server';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { publicProcedure } from '../../init';
-import { similarity, SIMILARITY_THRESHOLD } from '../common';
+import { IdSchema, similarity, SIMILARITY_THRESHOLD } from '../common';
 import { SearchRecordsInputSchema } from '../records.types';
 
-export const search = publicProcedure
+export const byTextQuery = publicProcedure
 	.input(SearchRecordsInputSchema)
 	.query(({ ctx: { db }, input }) => {
 		const {
@@ -51,7 +51,7 @@ export const search = publicProcedure
 		});
 	});
 
-export const similaritySearch = publicProcedure
+export const byVector = publicProcedure
 	.input(
 		z.object({
 			vector: z.number().array(),
@@ -116,6 +116,99 @@ export const similaritySearch = publicProcedure
 			});
 
 			return results; // typed as (RecordSelect & { similarity: number })[]
+		} catch (err) {
+			console.error(err);
+			throw new TRPCError({
+				code: 'INTERNAL_SERVER_ERROR',
+				message: 'Error searching for similar records',
+			});
+		}
+	});
+
+export const byRecordId = publicProcedure
+	.input(
+		z.object({
+			id: IdSchema,
+			limit: z.number().optional().default(20),
+		})
+	)
+	.query(async ({ ctx: { db }, input: { id, limit } }) => {
+		try {
+			const recordWithLinks = await db.query.records.findFirst({
+				columns: {
+					id: true,
+					textEmbedding: true,
+				},
+				where: {
+					id,
+				},
+				with: {
+					outgoingLinks: {
+						columns: {
+							targetId: true,
+						},
+					},
+					incomingLinks: {
+						columns: {
+							sourceId: true,
+						},
+					},
+				},
+			});
+			if (!recordWithLinks) {
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
+			}
+			const { textEmbedding, outgoingLinks, incomingLinks } = recordWithLinks;
+
+			if (textEmbedding === null) {
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Record has no embedding' });
+			}
+
+			const omittedIds = [
+				id,
+				...outgoingLinks.map((l) => l.targetId),
+				...incomingLinks.map((l) => l.sourceId),
+			];
+
+			const results = await db.query.records.findMany({
+				columns: {
+					id: true,
+				},
+				extras: {
+					similarity: (t) => similarity(t.textEmbedding, textEmbedding),
+				},
+				where: {
+					AND: [
+						{ textEmbedding: { isNotNull: true } },
+						{ id: { notIn: omittedIds } },
+						{ isPrivate: false },
+						{
+							OR: [
+								{
+									outgoingLinks: {
+										predicate: {
+											type: {
+												ne: 'containment',
+											},
+										},
+									},
+								},
+								{
+									incomingLinks: {
+										id: {
+											isNotNull: true,
+										},
+									},
+								},
+							],
+						},
+					],
+				},
+				orderBy: (t, { desc }) => [desc(sql`similarity`), desc(t.recordUpdatedAt)],
+				limit,
+			});
+
+			return results;
 		} catch (err) {
 			console.error(err);
 			throw new TRPCError({

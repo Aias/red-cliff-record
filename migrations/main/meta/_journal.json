@@ -260,6 +260,13 @@
       "when": 1745444913457,
       "tag": "0036_petite_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1745768307088,
+      "tag": "0037_broad_namor",
+      "breakpoints": true
     }
   ]
 }
