@@ -26,9 +26,9 @@ export const RelationsList = ({
 		() => outgoingLinks.length + incomingLinks.length,
 		[outgoingLinks, incomingLinks]
 	);
-	const { data: predicates } = trpc.relations.listPredicates.useQuery();
+	const { data: predicates } = trpc.links.listPredicates.useQuery();
 	const navigate = useNavigate();
-	const upsertMutation = trpc.relations.upsert.useMutation({
+	const upsertMutation = trpc.links.upsert.useMutation({
 		onSuccess: () => {
 			utils.records.get.invalidate();
 			utils.records.searchByTextQuery.invalidate();
@@ -65,7 +65,7 @@ export const RelationsList = ({
 		},
 	});
 
-	const deleteLinkMutation = trpc.relations.delete.useMutation({
+	const deleteLinkMutation = trpc.links.delete.useMutation({
 		onSuccess: () => {
 			utils.records.get.invalidate();
 			utils.records.searchByTextQuery.invalidate();
@@ -277,7 +277,7 @@ export const SimilarRecords = ({ record }: { record: FullRecord }) => {
 		}
 	);
 
-	const upsertMutation = trpc.relations.upsert.useMutation({
+	const upsertMutation = trpc.links.upsert.useMutation({
 		onSuccess: () => {
 			utils.records.invalidate();
 		},

@@ -23,11 +23,12 @@ import {
 	twitterMedia,
 	twitterTweets,
 	twitterUsers,
+	type RecordSelect,
 } from '@/db/schema';
 
 export const deleteRecords = publicProcedure
 	.input(z.array(IdSchema))
-	.mutation(async ({ ctx: { db }, input }) => {
+	.mutation(async ({ ctx: { db }, input }): Promise<RecordSelect[]> => {
 		const recordsToDelete = await db.query.records.findMany({
 			where: {
 				id: {
