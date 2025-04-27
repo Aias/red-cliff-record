@@ -9,12 +9,13 @@ import {
 	type PredicateSelect,
 } from '@/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
-import { IdSchema } from './common';
+import { IdSchema, type DbId } from './common';
+import type { RecordLinks, RecordLinksMap } from './records.types';
 
 export const linksRouter = createTRPCRouter({
 	listForRecord: publicProcedure
 		.input(z.object({ id: IdSchema }))
-		.query(async ({ ctx: { db }, input }) => {
+		.query(async ({ ctx: { db }, input }): Promise<RecordLinks> => {
 			const recordWithLinks = await db.query.records.findFirst({
 				columns: {
 					id: true,
@@ -24,13 +25,19 @@ export const linksRouter = createTRPCRouter({
 				},
 				with: {
 					outgoingLinks: {
-						with: {
-							predicate: true,
+						columns: {
+							id: true,
+							sourceId: true,
+							targetId: true,
+							predicateId: true,
 						},
 					},
 					incomingLinks: {
-						with: {
-							predicate: true,
+						columns: {
+							id: true,
+							sourceId: true,
+							targetId: true,
+							predicateId: true,
 						},
 					},
 				},
@@ -41,13 +48,61 @@ export const linksRouter = createTRPCRouter({
 
 			return recordWithLinks;
 		}),
-	/*  links.upsert  ------------------------------------------------------------
-	 * – Accepts LinkInsertSchema
-	 * – Re-writes non-canonical predicates to the canonical triple
-	 * – Rejects self-links and unreversible predicates
-	 * – Uses a single Drizzle transaction
-	 * – Writes only the fields you explicitly allow
-	 * ------------------------------------------------------------------------- */
+
+	map: publicProcedure
+		.input(z.object({ recordIds: z.array(IdSchema).min(1) }))
+		.query(async ({ ctx: { db }, input: { recordIds } }): Promise<RecordLinksMap> => {
+			const rows = await db.query.links.findMany({
+				columns: {
+					id: true,
+					sourceId: true,
+					targetId: true,
+					predicateId: true,
+				},
+				where: {
+					OR: [
+						{
+							sourceId: {
+								in: recordIds,
+							},
+						},
+						{
+							targetId: {
+								in: recordIds,
+							},
+						},
+					],
+				},
+			});
+
+			/* shape:  { 7: { outgoing:[], incoming:[] }, 42: { … } } */
+			const map: Record<DbId, RecordLinks> = {};
+
+			for (const row of rows) {
+				/* outgoing for sourceId */
+				(map[row.sourceId] ??= {
+					outgoingLinks: [],
+					incomingLinks: [],
+					id: row.sourceId,
+				}).outgoingLinks.push({
+					targetId: row.targetId,
+					predicateId: row.predicateId,
+				});
+				/* incoming for targetId (if different) */
+				if (row.targetId !== row.sourceId) {
+					(map[row.targetId] ??= {
+						outgoingLinks: [],
+						incomingLinks: [],
+						id: row.targetId,
+					}).incomingLinks.push({
+						sourceId: row.sourceId,
+						predicateId: row.predicateId,
+					});
+				}
+			}
+			return map;
+		}),
+
 	upsert: publicProcedure.input(LinkInsertSchema).mutation(async ({ ctx: { db }, input }) => {
 		const result = await db.transaction(async (tx) => {
 			/* 1 ─ fetch predicate + inverse inside the tx */

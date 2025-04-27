@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DEFAULT_LIMIT } from './common';
+import { DEFAULT_LIMIT, type DbId } from './common';
 import {
 	IntegrationTypeSchema,
 	RecordTypeSchema,
@@ -94,3 +94,11 @@ export interface FullRecord extends RecordSelect {
 	incomingLinks: Array<LinkSelect & { source: RecordGet; predicate: PredicateSelect }>;
 	media: Array<MediaSelect>;
 }
+
+export type RecordLinks = {
+	id: DbId;
+	outgoingLinks: { targetId: DbId; predicateId: DbId }[];
+	incomingLinks: { sourceId: DbId; predicateId: DbId }[];
+};
+
+export type RecordLinksMap = Record<DbId, RecordLinks>;

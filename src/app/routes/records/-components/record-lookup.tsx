@@ -188,7 +188,7 @@ export function RelationshipSelector({
 	const [predicateId, setPredicateId] = useState<number | null>(link?.predicateId ?? null);
 	const [open, setOpen] = useState(false);
 
-	const { data: predicates = [] } = trpc.relations.listPredicates.useQuery();
+	const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
 	const utils = trpc.useUtils();
 
 	/* --------------------------------------------------
@@ -207,7 +207,7 @@ export function RelationshipSelector({
 		return buildActions({ sourceId, targetId, link });
 	}, [buildActions, sourceId, targetId, link]);
 
-	const upsert = trpc.relations.upsert.useMutation({
+	const upsert = trpc.links.upsert.useMutation({
 		onSuccess: (link) => {
 			utils.records.get.invalidate();
 			utils.records.searchByTextQuery.invalidate();
