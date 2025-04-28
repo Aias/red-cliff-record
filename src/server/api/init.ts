@@ -1,15 +1,24 @@
-import { Pool } from '@neondatabase/serverless';
+import { neon, neonConfig } from '@neondatabase/serverless';
 import { initTRPC } from '@trpc/server';
 import DataLoader from 'dataloader';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import superjson from 'superjson';
+import ws from 'ws';
 import { ZodError } from 'zod';
 import { relations } from '@/server/db/relations';
 import * as schema from '@/server/db/schema';
 import type { RecordGet } from './routers/records.types';
-import { type Db } from '@/db/connections';
 
-function createRecordLoader(db: Db) {
+neonConfig.webSocketConstructor = ws;
+
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle({
+	client: sql,
+	schema,
+	relations,
+});
+
+function createRecordLoader() {
 	return new DataLoader<number, RecordGet>(async (ids) => {
 		const rows = await db.query.records.findMany({
 			where: {
@@ -34,6 +43,10 @@ function createRecordLoader(db: Db) {
 	});
 }
 
+const loaders = {
+	record: createRecordLoader(),
+};
+
 /**
  * 1. CONTEXT
  *
@@ -47,15 +60,10 @@ function createRecordLoader(db: Db) {
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-	const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
-	const db = drizzle(pool, { schema, relations });
 	return {
 		...opts,
 		db,
-		loaders: {
-			record: createRecordLoader(db),
-		},
-		close: () => pool.end(),
+		loaders,
 	};
 };
 
