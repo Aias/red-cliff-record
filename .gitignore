@@ -12,3 +12,7 @@
 
 # App uses paid fonts, don't commit to public repo
 public/fonts
+
+# Cloudflare
+.dev.vars
+.wrangler

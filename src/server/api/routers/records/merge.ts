@@ -134,182 +134,180 @@ export const merge = publicProcedure
 				// Remove id from the update payload
 				const { id: _sourceId, ...updatePayload } = mergedRecordData;
 
-				const transactionResult = await db.transaction(async (tx) => {
-					try {
-						// If the source record has a slug, nullify it first to avoid unique constraint conflict
-						if (source.slug) {
-							await tx.update(records).set({ slug: null }).where(eq(records.id, sourceId));
-						}
+				try {
+					// If the source record has a slug, nullify it first to avoid unique constraint conflict
+					if (source.slug) {
+						await db.update(records).set({ slug: null }).where(eq(records.id, sourceId));
+					}
 
-						// Update the target record with the merged data
-						const [updatedRecord] = await tx
-							.update(records)
-							.set(updatePayload)
-							.where(eq(records.id, targetId))
-							.returning();
+					// Update the target record with the merged data
+					const [updatedRecord] = await db
+						.update(records)
+						.set(updatePayload)
+						.where(eq(records.id, targetId))
+						.returning();
 
-						if (!updatedRecord) {
-							throw new TRPCError({
-								code: 'INTERNAL_SERVER_ERROR',
-								message: 'Merge records: Failed to update target record',
-							});
-						}
+					if (!updatedRecord) {
+						throw new TRPCError({
+							code: 'INTERNAL_SERVER_ERROR',
+							message: 'Merge records: Failed to update target record',
+						});
+					}
 
-						// 1. Update media records to point to the target record
-						await tx
-							.update(media)
+					// 1. Update media records to point to the target record
+					await db
+						.update(media)
+						.set({
+							recordId: targetId,
+							recordUpdatedAt: new Date(),
+						})
+						.where(eq(media.recordId, sourceId));
+
+					// 2. Update integration tables that reference the source record
+					const integrationTables = [
+						airtableCreators,
+						airtableExtracts,
+						airtableFormats,
+						airtableSpaces,
+						githubRepositories,
+						githubUsers,
+						lightroomImages,
+						raindropBookmarks,
+						raindropCollections,
+						raindropTags,
+						readwiseAuthors,
+						readwiseDocuments,
+						readwiseTags,
+						twitterTweets,
+						twitterUsers,
+					] as const;
+
+					for (const table of integrationTables) {
+						await db
+							.update(table)
 							.set({
 								recordId: targetId,
 								recordUpdatedAt: new Date(),
 							})
-							.where(eq(media.recordId, sourceId));
+							.where(eq(table.recordId, sourceId));
+					}
 
-						// 2. Update integration tables that reference the source record
-						const integrationTables = [
-							airtableCreators,
-							airtableExtracts,
-							airtableFormats,
-							airtableSpaces,
-							githubRepositories,
-							githubUsers,
-							lightroomImages,
-							raindropBookmarks,
-							raindropCollections,
-							raindropTags,
-							readwiseAuthors,
-							readwiseDocuments,
-							readwiseTags,
-							twitterTweets,
-							twitterUsers,
-						] as const;
-
-						for (const table of integrationTables) {
-							await tx
-								.update(table)
-								.set({
-									recordId: targetId,
-									recordUpdatedAt: new Date(),
-								})
-								.where(eq(table.recordId, sourceId));
-						}
-
-						// 3. Handle merging links
-						const linksToMerge = await tx.query.links.findMany({
-							where: {
-								OR: [
-									{
-										sourceId: {
-											in: ids,
-										},
+					// 3. Handle merging links
+					const linksToMerge = await db.query.links.findMany({
+						where: {
+							OR: [
+								{
+									sourceId: {
+										in: ids,
 									},
-									{
-										targetId: {
-											in: ids,
-										},
+								},
+								{
+									targetId: {
+										in: ids,
 									},
-								],
-							},
-						});
+								},
+							],
+						},
+					});
 
-						// Store original IDs to delete them later
-						const linkIdsToDelete = linksToMerge.map((link) => link.id);
+					// Store original IDs to delete them later
+					const linkIdsToDelete = linksToMerge.map((link) => link.id);
 
-						// Delete all original links involving either record
-						if (linkIdsToDelete.length > 0) {
-							await tx.delete(links).where(inArray(links.id, linkIdsToDelete));
+					// Delete all original links involving either record
+					if (linkIdsToDelete.length > 0) {
+						await db.delete(links).where(inArray(links.id, linkIdsToDelete));
+					}
+
+					// Update links to replace sourceId with targetId
+					const updatedLinks = linksToMerge.map((link) => ({
+						// Keep original notes and predicateId
+						predicateId: link.predicateId,
+						notes: link.notes,
+						// Update source/target IDs and timestamp
+						sourceId: link.sourceId === sourceId ? targetId : link.sourceId,
+						targetId: link.targetId === sourceId ? targetId : link.targetId,
+						recordUpdatedAt: new Date(),
+					}));
+
+					// Deduplicate based on the composite key (sourceId, targetId, predicateId)
+					// and filter out self-references
+					const dedupedLinksToInsert: LinkInsert[] = [];
+					const seenLinkKeys = new Set<string>();
+
+					for (const link of updatedLinks) {
+						// Skip self-references created by the merge
+						if (link.sourceId === link.targetId) {
+							continue;
 						}
 
-						// Update links to replace sourceId with targetId
-						const updatedLinks = linksToMerge.map((link) => ({
-							// Keep original notes and predicateId
-							predicateId: link.predicateId,
-							notes: link.notes,
-							// Update source/target IDs and timestamp
-							sourceId: link.sourceId === sourceId ? targetId : link.sourceId,
-							targetId: link.targetId === sourceId ? targetId : link.targetId,
-							recordUpdatedAt: new Date(),
-						}));
-
-						// Deduplicate based on the composite key (sourceId, targetId, predicateId)
-						// and filter out self-references
-						const dedupedLinksToInsert: LinkInsert[] = [];
-						const seenLinkKeys = new Set<string>();
-
-						for (const link of updatedLinks) {
-							// Skip self-references created by the merge
-							if (link.sourceId === link.targetId) {
-								continue;
-							}
-
-							const key = `${link.sourceId}-${link.targetId}-${link.predicateId}`;
-							if (!seenLinkKeys.has(key)) {
-								seenLinkKeys.add(key);
-								// Only include fields needed for insertion
-								dedupedLinksToInsert.push({
-									sourceId: link.sourceId,
-									targetId: link.targetId,
-									predicateId: link.predicateId,
-									notes: link.notes,
-									recordUpdatedAt: link.recordUpdatedAt,
-									// id will be generated by the database
-								});
-							}
-						}
-
-						let newLinks: LinkSelect[] = [];
-						// Insert the merged and deduplicated links
-						if (dedupedLinksToInsert.length > 0) {
-							newLinks = await tx.insert(links).values(dedupedLinksToInsert).returning();
-						}
-
-						// Collect all unique IDs that were affected by the link changes
-						// Exclude the original source ID (since it's deleted) but include the target ID
-						const touchedIds: DbId[] = Array.from(
-							new Set([
-								targetId,
-								...newLinks
-									.flatMap((link) => [link.sourceId, link.targetId])
-									.filter((id) => id !== sourceId),
-							])
-						);
-
-						// Finally, delete the source record
-						const [deletedRecord] = await tx
-							.delete(records)
-							.where(eq(records.id, sourceId))
-							.returning();
-
-						if (!deletedRecord) {
-							// This case might indicate the source record was already deleted,
-							// but the transaction should ideally prevent this state. Log it.
-							throw new TRPCError({
-								code: 'INTERNAL_SERVER_ERROR',
-								message: `Merge records: Source record ID ${sourceId} not found for deletion.`,
+						const key = `${link.sourceId}-${link.targetId}-${link.predicateId}`;
+						if (!seenLinkKeys.has(key)) {
+							seenLinkKeys.add(key);
+							// Only include fields needed for insertion
+							dedupedLinksToInsert.push({
+								sourceId: link.sourceId,
+								targetId: link.targetId,
+								predicateId: link.predicateId,
+								notes: link.notes,
+								recordUpdatedAt: link.recordUpdatedAt,
+								// id will be generated by the database
 							});
 						}
+					}
 
-						// Log before returning from transaction
-						console.log('[Merge Transaction] Returning:', {
-							updatedRecord,
-							deletedRecord,
-							touchedIds,
-						});
-						return {
-							updatedRecord,
-							deletedRecordId: sourceId,
-							touchedIds,
-						};
-					} catch (error) {
-						console.error('Transaction error:', error);
-						// Rollback is handled automatically by db.transaction
+					let newLinks: LinkSelect[] = [];
+					// Insert the merged and deduplicated links
+					if (dedupedLinksToInsert.length > 0) {
+						newLinks = await db.insert(links).values(dedupedLinksToInsert).returning();
+					}
+
+					// Collect all unique IDs that were affected by the link changes
+					// Exclude the original source ID (since it's deleted) but include the target ID
+					const touchedIds: DbId[] = Array.from(
+						new Set([
+							targetId,
+							...newLinks
+								.flatMap((link) => [link.sourceId, link.targetId])
+								.filter((id) => id !== sourceId),
+						])
+					);
+
+					// Finally, delete the source record
+					const [deletedRecord] = await db
+						.delete(records)
+						.where(eq(records.id, sourceId))
+						.returning();
+
+					if (!deletedRecord) {
+						// This case might indicate the source record was already deleted,
+						// but the sequence of operations should ideally prevent this state. Log it.
 						throw new TRPCError({
 							code: 'INTERNAL_SERVER_ERROR',
-							message: `Transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+							message: `Merge records: Source record ID ${sourceId} not found for deletion.`,
 						});
 					}
-				});
 
-				return transactionResult;
+					// Log before returning
+					console.log('[Merge Operation] Returning:', {
+						updatedRecord,
+						deletedRecordId: sourceId,
+						touchedIds,
+					});
+					return {
+						updatedRecord,
+						deletedRecordId: sourceId,
+						touchedIds,
+					};
+				} catch (error) {
+					console.error('Merge error:', error);
+					if (error instanceof TRPCError) {
+						throw error;
+					}
+					throw new TRPCError({
+						code: 'INTERNAL_SERVER_ERROR',
+						message: `Failed to merge records: ${error instanceof Error ? error.message : 'Unknown error'}`,
+					});
+				}
 			} catch (error) {
 				console.error('Merge error:', error);
 				if (error instanceof TRPCError) {
