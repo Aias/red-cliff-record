@@ -98,85 +98,84 @@ export const linksRouter = createTRPCRouter({
 		}),
 
 	upsert: publicProcedure.input(LinkInsertSchema).mutation(async ({ ctx: { db }, input }) => {
-		const result = await db.transaction(async (tx) => {
-			/* 1 ─ fetch predicate + inverse inside the tx */
-			const predicate = await tx.query.predicates.findFirst({
-				where: { id: input.predicateId },
-				with: { inverse: true },
-			});
-			if (!predicate) {
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Predicate not found' });
-			}
+		/* 1 ─ fetch predicate + inverse */
+		const predicate = await db.query.predicates.findFirst({
+			where: { id: input.predicateId },
+			with: { inverse: true },
+		});
+		if (!predicate) {
+			throw new TRPCError({ code: 'NOT_FOUND', message: 'Predicate not found' });
+		}
 
-			/* 2 ─ compute canonical direction */
-			let { sourceId, targetId, predicateId } = input;
-			if (!predicate.canonical) {
-				const inv = predicate.inverse;
-				if (!inv?.canonical) {
-					throw new TRPCError({
-						code: 'BAD_REQUEST',
-						message: 'Non-canonical predicate is not reversible',
-					});
-				}
-				sourceId = input.targetId;
-				targetId = input.sourceId;
-				predicateId = inv.id;
-			}
-
-			if (sourceId === targetId) {
+		/* 2 ─ compute canonical direction */
+		let { sourceId, targetId, predicateId } = input;
+		if (!predicate.canonical) {
+			const inv = predicate.inverse;
+			if (!inv?.canonical) {
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
-					message: 'sourceId and targetId cannot be identical',
+					message: 'Non-canonical predicate is not reversible',
 				});
 			}
+			sourceId = input.targetId;
+			targetId = input.sourceId;
+			predicateId = inv.id;
+		}
 
-			const now = new Date();
-
-			/* 3 ─ build write payload with only safe fields                */
-			const linkData = {
-				sourceId,
-				targetId,
-				predicateId,
-				notes: input.notes ?? null,
-				recordUpdatedAt: now,
-			} satisfies Partial<LinkInsert>;
-
-			let row: LinkSelect | undefined;
-
-			if (input.id) {
-				/* UPDATE --------------------------------------------------- */
-				[row] = await tx.update(links).set(linkData).where(eq(links.id, input.id)).returning();
-				if (!row) {
-					throw new TRPCError({ code: 'NOT_FOUND', message: 'Link not found for update' });
-				}
-			} else {
-				/* INSERT … ON CONFLICT ------------------------------------ */
-				[row] = await tx
-					.insert(links)
-					.values(linkData)
-					.onConflictDoUpdate({
-						target: [links.sourceId, links.targetId, links.predicateId],
-						set: { ...linkData, recordUpdatedAt: now },
-					})
-					.returning();
-				if (!row) {
-					throw new TRPCError({
-						code: 'INTERNAL_SERVER_ERROR',
-						message: 'Failed to insert or update link',
-					});
-				}
-			}
-
-			return row;
-		}); /* end transaction */
-
-		if (!result) {
+		if (sourceId === targetId) {
 			throw new TRPCError({
-				code: 'INTERNAL_SERVER_ERROR',
-				message: 'Transaction returned no result',
+				code: 'BAD_REQUEST',
+				message: 'sourceId and targetId cannot be identical',
 			});
 		}
-		return result;
+
+		const now = new Date();
+
+		/* 3 ─ build write payload with only safe fields                */
+		const linkData = {
+			sourceId,
+			targetId,
+			predicateId,
+			notes: input.notes ?? null,
+			recordUpdatedAt: now,
+		} satisfies Partial<LinkInsert>;
+
+		let row: LinkSelect | undefined;
+
+		if (input.id) {
+			/* UPDATE --------------------------------------------------- */
+			[row] = await db.update(links).set(linkData).where(eq(links.id, input.id)).returning();
+			if (!row) {
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Link not found for update' });
+			}
+		} else {
+			/* INSERT … ON CONFLICT ------------------------------------ */
+			[row] = await db
+				.insert(links)
+				.values(linkData)
+				.onConflictDoUpdate({
+					target: [links.sourceId, links.targetId, links.predicateId],
+					set: { ...linkData, recordUpdatedAt: now },
+				})
+				.returning();
+			if (!row) {
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: 'Failed to insert or update link',
+				});
+			}
+		}
+
+		if (!row) {
+			// This case should theoretically be unreachable due to checks above,
+			// but included for exhaustive handling.
+			throw new TRPCError({
+				code: 'INTERNAL_SERVER_ERROR',
+				message: 'Failed to obtain result from upsert operation',
+			});
+		}
+
+		return row;
 	}),
 
 	listPredicates: publicProcedure.query(async ({ ctx: { db } }): Promise<PredicateSelect[]> => {

@@ -82,57 +82,53 @@ export const mediaRouter = createTRPCRouter({
 		}
 
 		try {
-			const deletedMedia = await db.transaction(async (tx) => {
-				const now = new Date();
+			const now = new Date();
 
-				// Update all associated tables with a soft delete
-				// For each table with a mediaId field, set deletedAt to now
+			// Update all associated tables with a soft delete
+			// For each table with a mediaId field, set deletedAt to now
 
-				// Airtable
-				const deletedAirtableAttachments = await tx
-					.update(airtableAttachments)
-					.set({ deletedAt: now })
-					.where(inArray(airtableAttachments.mediaId, input))
-					.returning();
-				for (const attachment of deletedAirtableAttachments) {
-					console.log(`Deleted Airtable attachment ${attachment.filename} (${attachment.id})`);
-				}
+			// Airtable
+			const deletedAirtableAttachments = await db
+				.update(airtableAttachments)
+				.set({ deletedAt: now })
+				.where(inArray(airtableAttachments.mediaId, input))
+				.returning();
+			for (const attachment of deletedAirtableAttachments) {
+				console.log(`Deleted Airtable attachment ${attachment.filename} (${attachment.id})`);
+			}
 
-				// Lightroom
-				const deletedLightroomImages = await tx
-					.update(lightroomImages)
-					.set({ deletedAt: now })
-					.where(inArray(lightroomImages.mediaId, input))
-					.returning();
-				for (const image of deletedLightroomImages) {
-					console.log(`Deleted Lightroom image ${image.fileName} (${image.id})`);
-				}
+			// Lightroom
+			const deletedLightroomImages = await db
+				.update(lightroomImages)
+				.set({ deletedAt: now })
+				.where(inArray(lightroomImages.mediaId, input))
+				.returning();
+			for (const image of deletedLightroomImages) {
+				console.log(`Deleted Lightroom image ${image.fileName} (${image.id})`);
+			}
 
-				// Raindrop
-				const deletedRaindropImages = await tx
-					.update(raindropImages)
-					.set({ deletedAt: now })
-					.where(inArray(raindropImages.mediaId, input))
-					.returning();
-				for (const image of deletedRaindropImages) {
-					console.log(`Deleted Raindrop image ${image.url} (${image.id})`);
-				}
+			// Raindrop
+			const deletedRaindropImages = await db
+				.update(raindropImages)
+				.set({ deletedAt: now })
+				.where(inArray(raindropImages.mediaId, input))
+				.returning();
+			for (const image of deletedRaindropImages) {
+				console.log(`Deleted Raindrop image ${image.url} (${image.id})`);
+			}
 
-				// Twitter
-				const deletedTwitterMedia = await tx
-					.update(twitterMedia)
-					.set({ deletedAt: now })
-					.where(inArray(twitterMedia.mediaId, input))
-					.returning();
-				for (const m of deletedTwitterMedia) {
-					console.log(`Deleted Twitter media ${m.mediaUrl} (${m.id})`);
-				}
+			// Twitter
+			const deletedTwitterMedia = await db
+				.update(twitterMedia)
+				.set({ deletedAt: now })
+				.where(inArray(twitterMedia.mediaId, input))
+				.returning();
+			for (const m of deletedTwitterMedia) {
+				console.log(`Deleted Twitter media ${m.mediaUrl} (${m.id})`);
+			}
 
-				// Delete the main media records
-				const deletedMedia = await tx.delete(media).where(inArray(media.id, input)).returning();
-
-				return deletedMedia;
-			});
+			// Delete the main media records
+			const deletedMedia = await db.delete(media).where(inArray(media.id, input)).returning();
 
 			return deletedMedia;
 		} catch (error) {

@@ -84,6 +84,12 @@ export const trpcClient = trpc.createClient({
 			url: `${getBaseUrl()}/trpc`,
 			transformer: superjson,
 			maxURLLength: 1900,
+			fetch: (url, options) => {
+				return fetch(url, {
+					...options,
+					credentials: 'include',
+				});
+			},
 		}),
 	],
 });
