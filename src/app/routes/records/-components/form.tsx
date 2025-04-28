@@ -45,7 +45,13 @@ import {
 } from '@/components';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
-import { useDeleteRecords, useRecord, useUpsertRecord } from '@/lib/hooks/use-records';
+import {
+	useCreateMedia,
+	useDeleteMedia,
+	useDeleteRecords,
+	useRecord,
+	useUpsertRecord,
+} from '@/lib/hooks/use-records';
 import { readFileAsBase64 } from '@/lib/read-file';
 
 interface RecordFormProps {
@@ -62,35 +68,8 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 
 	const updateMutation = useUpsertRecord();
 	const deleteMutation = useDeleteRecords();
-
-	const deleteMediaMutation = trpc.media.delete.useMutation({
-		onSuccess: (_data, variables) => {
-			const deletedMediaIds = new Set(variables);
-			const updatedMedia =
-				form.getFieldValue('media')?.filter((m) => !deletedMediaIds.has(m.id)) ?? [];
-			form.setFieldValue('media', updatedMedia);
-
-			if (updatedMedia.length === 0) {
-				setTimeout(() => {
-					mediaUploadRef.current?.focus();
-				}, 0);
-			}
-		},
-	});
-
-	const createMediaMutation = trpc.media.create.useMutation({
-		onSuccess: (createdMedia) => {
-			if (createdMedia) {
-				form.setFieldValue('media', [...(form.getFieldValue('media') ?? []), createdMedia]);
-				setTimeout(() => {
-					mediaCaptionRef.current?.focus();
-				}, 0);
-			}
-		},
-		onError: (error) => {
-			console.error('Media upload failed:', error);
-		},
-	});
+	const createMediaMutation = useCreateMedia(recordId);
+	const deleteMediaMutation = useDeleteMedia();
 
 	const handleUpload = useCallback(
 		async (file: File) => {
@@ -526,7 +505,7 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 								<h2>Media</h2>
 								<MediaGrid
 									media={field.state.value}
-									onDelete={(media) => deleteMediaMutation.mutateAsync([media.id])}
+									onDelete={(media) => deleteMediaMutation.mutate([media.id])}
 								/>
 
 								<form.Field name="mediaCaption">

@@ -44,10 +44,6 @@ function createRecordLoader() {
 	});
 }
 
-const loaders = {
-	record: createRecordLoader(),
-};
-
 /**
  * 1. CONTEXT
  *
@@ -64,7 +60,9 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 	return {
 		...opts,
 		db,
-		loaders,
+		loaders: {
+			record: createRecordLoader(),
+		},
 	};
 };
 
