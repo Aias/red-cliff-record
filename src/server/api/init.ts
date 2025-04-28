@@ -10,6 +10,7 @@ import * as schema from '@/server/db/schema';
 import type { RecordGet } from './routers/records.types';
 
 neonConfig.webSocketConstructor = ws;
+neonConfig.poolQueryViaFetch = true;
 
 const sql = neon(process.env.DATABASE_URL!);
 const db = drizzle({
