@@ -178,8 +178,8 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 														search: true,
 													});
 													mergeRecordsMutation.mutate({
-														sourceId: link.sourceId,
-														targetId: link.targetId,
+														sourceId: link.targetId,
+														targetId: link.sourceId,
 													});
 												},
 											},
