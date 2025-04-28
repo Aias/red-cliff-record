@@ -64,7 +64,7 @@
 		"@octokit/types": "14.0.0",
 		"@types/eslint": "9.6.1",
 		"@types/mime-types": "^2.1.4",
-		"@types/node": "^22.15.2",
+		"@types/node": "^22.15.3",
 		"@types/react": "^19.1.2",
 		"@types/react-dom": "^19.1.2",
 		"@types/ws": "^8.18.1",

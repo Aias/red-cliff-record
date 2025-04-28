@@ -38,6 +38,7 @@ export const RecordFiltersSchema = z.object({
 	isCurated: z.boolean().optional(),
 	hasReminder: z.boolean().optional(),
 	hasEmbedding: z.boolean().optional(),
+	hasMedia: z.boolean().optional(),
 	source: IntegrationTypeSchema.optional(),
 });
 export const LimitSchema = z.number().int().positive();

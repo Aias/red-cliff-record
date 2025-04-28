@@ -101,7 +101,18 @@ export const RecordsGrid = () => {
 	const { data: queue } = trpc.records.list.useQuery(search);
 
 	const {
-		filters: { type, title, url, isCurated, isPrivate, source, hasParent, text, hasEmbedding },
+		filters: {
+			type,
+			title,
+			url,
+			isCurated,
+			isPrivate,
+			source,
+			hasParent,
+			text,
+			hasEmbedding,
+			hasMedia,
+		},
 		limit,
 	} = search;
 
@@ -112,8 +123,9 @@ export const RecordsGrid = () => {
 			privateValue: isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No',
 			hasParentValue: hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No',
 			hasEmbeddingValue: hasEmbedding === undefined ? 'All' : hasEmbedding ? 'Yes' : 'No',
+			hasMediaValue: hasMedia === undefined ? 'All' : hasMedia ? 'Yes' : 'No',
 		}),
-		[isCurated, isPrivate, hasParent, hasEmbedding]
+		[isCurated, isPrivate, hasParent, hasEmbedding, hasMedia]
 	);
 
 	// State for input fields
@@ -294,6 +306,21 @@ export const RecordsGrid = () => {
 		[navigate]
 	);
 
+	const handleHasMediaChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						hasMedia: value === 'All' ? undefined : value === 'Yes',
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
+
 	const handleLimitChange = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const value = e.target.value;
@@ -454,6 +481,27 @@ export const RecordsGrid = () => {
 						type="single"
 						value={filterValues.hasEmbeddingValue}
 						onValueChange={handleHasEmbeddingChange}
+						variant="outline"
+						className="w-full"
+					>
+						<ToggleGroupItem value="All" className="flex-1">
+							All
+						</ToggleGroupItem>
+						<ToggleGroupItem value="Yes" className="flex-1">
+							Yes
+						</ToggleGroupItem>
+						<ToggleGroupItem value="No" className="flex-1">
+							No
+						</ToggleGroupItem>
+					</ToggleGroup>
+				</div>
+				<div className="flex flex-col gap-1.5">
+					<Label htmlFor="hasMedia">Has Media?</Label>
+					<ToggleGroup
+						id="hasMedia"
+						type="single"
+						value={filterValues.hasMediaValue}
+						onValueChange={handleHasMediaChange}
 						variant="outline"
 						className="w-full"
 					>

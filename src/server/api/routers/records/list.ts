@@ -18,6 +18,7 @@ export const list = publicProcedure
 				isCurated,
 				hasReminder,
 				hasEmbedding,
+				hasMedia,
 				source,
 			},
 			limit,
@@ -86,6 +87,7 @@ export const list = publicProcedure
 								},
 							}
 						: {}),
+				media: hasMedia,
 				reminderAt: hasReminder
 					? {
 							isNotNull: true,
