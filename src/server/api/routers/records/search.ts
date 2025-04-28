@@ -129,7 +129,7 @@ export const byRecordId = publicProcedure
 	.input(
 		z.object({
 			id: IdSchema,
-			limit: z.number().optional().default(20),
+			limit: z.number().optional().default(10),
 		})
 	)
 	.query(async ({ ctx: { db }, input: { id, limit } }) => {

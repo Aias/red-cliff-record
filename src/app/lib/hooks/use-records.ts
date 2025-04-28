@@ -174,6 +174,18 @@ export function useUpsertLink() {
 	const embedMutation = useEmbedRecord();
 
 	return trpc.links.upsert.useMutation({
+		onMutate: ({ sourceId, targetId }) => {
+			const ids = [sourceId, targetId];
+			// TODO: Loop over all regardless of limit param.
+			utils.records.searchByRecordId.setData({ id: sourceId, limit: 10 }, (prev) => {
+				if (!prev) return undefined;
+				return prev.filter((r) => !ids.includes(r.id));
+			});
+			utils.records.searchByRecordId.setData({ id: targetId, limit: 10 }, (prev) => {
+				if (!prev) return undefined;
+				return prev.filter((r) => !ids.includes(r.id));
+			});
+		},
 		onSuccess: (row) => {
 			const { sourceId, targetId } = row;
 
