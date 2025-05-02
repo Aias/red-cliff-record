@@ -39,7 +39,7 @@ export const SiteSearch = () => {
 	const { data: similarityResults, isLoading: similarityResultsLoading } =
 		trpc.records.searchByVector.useQuery(
 			{
-				vector: textEmbedding!, // Assert non-null because enabled is true only if it exists
+				query: debouncedValue,
 				limit: 5,
 			},
 			{

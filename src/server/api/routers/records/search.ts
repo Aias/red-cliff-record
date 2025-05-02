@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { publicProcedure } from '../../init';
 import { IdSchema, similarity, SIMILARITY_THRESHOLD } from '../common';
 import { SearchRecordsInputSchema } from '../records.types';
+import { createEmbedding } from '@/lib/server/create-embedding';
 
 export const byTextQuery = publicProcedure
 	.input(SearchRecordsInputSchema)
@@ -51,17 +52,19 @@ export const byTextQuery = publicProcedure
 		});
 	});
 
-export const byVector = publicProcedure
+export const similarityByQuery = publicProcedure
 	.input(
 		z.object({
-			vector: z.number().array(),
+			query: z.string(),
 			limit: z.number().optional().default(20),
 			exclude: z.number().array().optional(),
 		})
 	)
 	.query(async ({ ctx: { db }, input }) => {
 		try {
-			const { vector, limit, exclude } = input;
+			const { query, limit, exclude } = input;
+
+			const vector = await createEmbedding(query);
 
 			const results = await db.query.records.findMany({
 				with: {
@@ -115,7 +118,7 @@ export const byVector = publicProcedure
 				limit,
 			});
 
-			return results; // typed as (RecordSelect & { similarity: number })[]
+			return results;
 		} catch (err) {
 			console.error(err);
 			throw new TRPCError({
