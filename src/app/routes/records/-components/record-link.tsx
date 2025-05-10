@@ -59,6 +59,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 	const {
 		type,
 		title,
+		abbreviation,
 		sense,
 		content,
 		summary,
@@ -71,10 +72,15 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 		recordUpdatedAt,
 	} = record;
 
-	const label = title ?? creatorTitle ?? (parentTitle ? `↳ ${parentTitle}` : 'Untitled');
-
 	const preview =
 		summary ?? content ?? notes ?? url ?? `Updated ${recordUpdatedAt.toLocaleDateString()}`;
+
+	const labelElement = (
+		<>
+			{title ?? creatorTitle ?? (parentTitle ? `↳ ${parentTitle}` : 'Untitled')}
+			{abbreviation && <span className="ml-1 text-c-hint">({abbreviation})</span>}
+		</>
+	);
 
 	/* ---------- pick media thumbnail ---------- */
 	let mediaItem: { type: MediaType; url: string; altText?: string | null } | null = null;
@@ -86,7 +92,6 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 
 	const TypeIcon = recordTypeIcons[type].icon;
 
-	/* ---------------- render ---------------- */
 	return (
 		<div
 			className={cn('group relative flex grow gap-3 overflow-hidden break-all', className)}
@@ -132,12 +137,12 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 								className="mr-auto min-w-0 flex-1 truncate focus-visible:underline"
 								{...linkOptions}
 							>
-								{label}
+								{labelElement}
 							</Link>
 						) : (
-							<strong className="mr-auto min-w-0 flex-1 truncate">{label}</strong>
+							<strong className="mr-auto min-w-0 flex-1 truncate">{labelElement}</strong>
 						)}
-						{sense && <span className="text-c-hint italic">{sense}</span>}
+						{sense && <span className="shrink-1 truncate text-c-hint italic">{sense}</span>}
 					</div>
 
 					{/* source logos */}
