@@ -74,7 +74,7 @@ function RootComponent() {
 
 	return (
 		<RootDocument appearance={appearance}>
-			<TooltipProvider>
+			<TooltipProvider delayDuration={300}>
 				<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
 					<Outlet />
 				</AppLayout>

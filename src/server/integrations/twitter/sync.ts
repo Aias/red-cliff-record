@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'fs';
+import { mkdirSync, readdirSync, readFileSync, renameSync } from 'fs';
 import { homedir } from 'os';
 import { resolve } from 'path';
 import { db } from '@/server/db/connections';
@@ -28,6 +28,38 @@ const BOOKMARK_FILE_SUFFIX = '.json';
 const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
 
 /**
+ * Archives processed files by moving them to the Archive subdirectory
+ *
+ * @param files - Array of file paths to archive
+ * @param archiveDir - The archive directory path
+ */
+function archiveProcessedFiles(files: string[], archiveDir: string): void {
+	try {
+		// Create archive directory if it doesn't exist
+		mkdirSync(archiveDir, { recursive: true });
+
+		for (const filePath of files) {
+			// Get the filename from the path
+			const fileName = filePath.split('/').pop();
+			if (!fileName) {
+				console.error('Invalid file path:', filePath);
+				continue;
+			}
+
+			// Create the archive path
+			const archivePath = resolve(archiveDir, fileName);
+
+			// Move the file to the archive directory
+			renameSync(filePath, archivePath);
+			console.log(`Archived file: ${fileName}`);
+		}
+	} catch (error) {
+		console.error('Error archiving files:', error);
+		throw error;
+	}
+}
+
+/**
  * Loads Twitter bookmarks data from local JSON files
  *
  * This function:
@@ -35,10 +67,13 @@ const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
  * 2. Reads and parses each file
  * 3. Combines the data into a single array
  *
- * @returns Array of Twitter bookmark data
+ * @returns Object containing the bookmark data and array of processed file paths
  * @throws Error if JSON parsing fails
  */
-export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
+export async function loadBookmarksData(): Promise<{
+	data: TwitterBookmarksArray;
+	processedFiles: string[];
+}> {
 	try {
 		// Read the directory entries with file types
 		const entries = readdirSync(TWITTER_DATA_DIR, { withFileTypes: true });
@@ -56,11 +91,13 @@ export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 
 		if (bookmarkFiles.length === 0) {
 			console.log('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');
-			return [];
+			return { data: [], processedFiles: [] };
 		}
 
 		// Process each file and combine the data
 		const combinedData: TwitterBookmarksArray = [];
+		const processedFiles: string[] = [];
+
 		for (const fileName of bookmarkFiles) {
 			const filePath = resolve(TWITTER_DATA_DIR, fileName);
 			console.log(`Processing Twitter bookmarks file: ${filePath}`);
@@ -68,14 +105,15 @@ export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 			const fileContent = readFileSync(filePath, 'utf-8');
 			const parsedData = JSON.parse(fileContent);
 			combinedData.push(...parsedData);
+			processedFiles.push(filePath);
 		}
 
-		return combinedData;
+		return { data: combinedData, processedFiles };
 	} catch (error) {
 		// Handle directory not found error
 		if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
 			console.log(`Twitter data directory not found at: ${TWITTER_DATA_DIR}`);
-			return [];
+			return { data: [], processedFiles: [] };
 		}
 
 		// Rethrow other errors (e.g., JSON parsing issues)
@@ -101,7 +139,7 @@ export async function loadBookmarksData(): Promise<TwitterBookmarksArray> {
 async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 	try {
 		// Step 1: Load bookmarks data
-		const bookmarkResponses = await loadBookmarksData();
+		const { data: bookmarkResponses, processedFiles } = await loadBookmarksData();
 		if (bookmarkResponses.length === 0) {
 			console.log('No Twitter bookmarks data found');
 			return 0;
@@ -125,6 +163,10 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 
 		// Step 5: Create records from Twitter data
 		await createRelatedRecords();
+
+		// Step 6: Archive processed files
+		const archiveDir = resolve(TWITTER_DATA_DIR, 'Archive');
+		archiveProcessedFiles(processedFiles, archiveDir);
 
 		return updatedCount;
 	} catch (error) {
