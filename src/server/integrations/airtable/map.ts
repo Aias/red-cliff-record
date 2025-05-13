@@ -416,27 +416,16 @@ export async function createRecordsFromAirtableExtracts() {
 
 	logger.info(`Found ${extracts.length} unmapped Airtable extracts`);
 
-	// Map to store new record IDs keyed by their Airtable extract id.
+	// Map to store new record IDs keyed by their Airtable extract id (string).
 	const recordMap = new Map<string, number>();
 
-	const createdByPredicateId = await getPredicateId('created_by', db);
-	const taggedWithPredicateId = await getPredicateId('tagged_with', db);
-	const relatedToPredicateId = await getPredicateId('related_to', db);
-	const hasFormatPredicateId = await getPredicateId('has_format', db);
-	const containedByPredicateId = await getPredicateId('contained_by', db);
-
-	// Prepare bulk insert arrays
-	const recordCreatorsValues: LinkInsert[] = [];
-	const recordRelationsValues: LinkInsert[] = [];
-	const recordFormatsValues: LinkInsert[] = [];
-	const recordParentValues: LinkInsert[] = [];
-	const recordTagsValues: LinkInsert[] = [];
-
-	// Step 1: Create records
+	// ------------------------------------------------------------------------
+	// Pass 1: Create records and link media
+	// ------------------------------------------------------------------------
+	logger.info('Starting Pass 1: Create records and link media');
 	for (const extract of extracts) {
 		const recordPayload = mapAirtableExtractToRecord(extract);
 
-		// Insert the record into the main records table.
 		const [insertedRecord] = await db
 			.insert(records)
 			.values(recordPayload)
@@ -453,7 +442,6 @@ export async function createRecordsFromAirtableExtracts() {
 			continue;
 		}
 
-		// Update the Airtable extract with the new record id.
 		await db
 			.update(airtableExtracts)
 			.set({ recordId: insertedRecord.id })
@@ -462,77 +450,94 @@ export async function createRecordsFromAirtableExtracts() {
 		recordMap.set(extract.id, insertedRecord.id);
 		logger.info(`Created record ${insertedRecord.id} for Airtable extract ${extract.id}`);
 
-		// Link media if attachments exist and have been mapped.
 		for (const attachment of extract.attachments) {
 			if (attachment.mediaId) {
 				await db
 					.update(media)
 					.set({ recordId: insertedRecord.id })
 					.where(eq(media.id, attachment.mediaId));
-
 				logger.info(`Linked media ${attachment.mediaId} to record ${insertedRecord.id}`);
 			}
 		}
+	}
+	logger.info('Completed Pass 1.');
 
-		// Prepare parent–child links
-		if (extract.parent?.recordId) {
-			recordParentValues.push({
-				sourceId: insertedRecord.id,
-				targetId: extract.parent.recordId,
-				predicateId: containedByPredicateId,
-			});
+	// ------------------------------------------------------------------------
+	// Pass 2: Create relationships
+	// ------------------------------------------------------------------------
+	logger.info('Starting Pass 2: Create relationships');
+
+	const createdByPredicateId = await getPredicateId('created_by', db);
+	const taggedWithPredicateId = await getPredicateId('tagged_with', db);
+	const hasFormatPredicateId = await getPredicateId('has_format', db);
+	const containedByPredicateId = await getPredicateId('contained_by', db);
+
+	const recordCreatorsValues: LinkInsert[] = [];
+	const recordFormatsValues: LinkInsert[] = [];
+	const recordParentValues: LinkInsert[] = [];
+	const recordTagsValues: LinkInsert[] = [];
+
+	for (const extract of extracts) {
+		const sourceRecordId = recordMap.get(extract.id);
+		if (!sourceRecordId) {
+			logger.warn(
+				`Could not find created recordId for extract ${extract.id} in Pass 2. Skipping relationship creation for this extract.`
+			);
+			continue;
 		}
 
-		// Prepare format links
+		// Parent-child links
+		if (extract.parent?.id) {
+			const parentRecordId = extract.parent.recordId ?? recordMap.get(extract.parent.id);
+			if (parentRecordId) {
+				recordParentValues.push({
+					sourceId: sourceRecordId,
+					targetId: parentRecordId,
+					predicateId: containedByPredicateId,
+				});
+			} else {
+				logger.warn(
+					`Parent extract Airtable ID ${extract.parent.id} for child ${extract.id} (Record ID: ${sourceRecordId}) not found in recordMap and has no existing recordId. Parent link cannot be created.`
+				);
+			}
+		}
+
+		// Format links
 		if (extract.format?.recordId) {
 			recordFormatsValues.push({
-				sourceId: insertedRecord.id,
+				sourceId: sourceRecordId,
 				targetId: extract.format.recordId,
 				predicateId: hasFormatPredicateId,
 			});
 		}
 
-		// Prepare creator links
+		// Creator links
 		for (const creator of extract.creators) {
 			if (creator.recordId) {
 				recordCreatorsValues.push({
-					sourceId: insertedRecord.id,
+					sourceId: sourceRecordId,
 					targetId: creator.recordId,
 					predicateId: createdByPredicateId,
 				});
+			} else {
+				logger.warn(
+					`Creator ${creator.id} for extract ${extract.id} does not have a recordId. It may not have been processed yet.`
+				);
 			}
 		}
 
-		// Prepare space links
+		// Space links
 		for (const space of extract.spaces) {
 			if (space.recordId) {
 				recordTagsValues.push({
-					sourceId: insertedRecord.id,
+					sourceId: sourceRecordId,
 					targetId: space.recordId,
 					predicateId: taggedWithPredicateId,
 				});
-			}
-		}
-
-		// Prepare outgoing connection links
-		for (const connection of extract.outgoingConnections) {
-			if (connection.recordId) {
-				recordRelationsValues.push({
-					sourceId: insertedRecord.id,
-					targetId: connection.recordId,
-					predicateId: relatedToPredicateId,
-				});
-			}
-		}
-
-		// Prepare incoming connection links
-		for (const connection of extract.incomingConnections) {
-			if (connection.recordId) {
-				recordRelationsValues.push({
-					sourceId: connection.recordId,
-					targetId: insertedRecord.id,
-					predicateId: relatedToPredicateId,
-				});
+			} else {
+				logger.warn(
+					`Space ${space.id} for extract ${extract.id} does not have a recordId. It may not have been processed yet.`
+				);
 			}
 		}
 	}
@@ -541,11 +546,6 @@ export async function createRecordsFromAirtableExtracts() {
 	if (recordCreatorsValues.length > 0) {
 		await bulkInsertLinks(recordCreatorsValues, db);
 		logger.info(`Linked ${recordCreatorsValues.length} creators to records`);
-	}
-
-	if (recordRelationsValues.length > 0) {
-		await bulkInsertLinks(recordRelationsValues, db);
-		logger.info(`Created ${recordRelationsValues.length} record relationships`);
 	}
 
 	if (recordFormatsValues.length > 0) {
@@ -562,6 +562,7 @@ export async function createRecordsFromAirtableExtracts() {
 		await bulkInsertLinks(recordTagsValues, db);
 		logger.info(`Linked ${recordTagsValues.length} tags to records`);
 	}
+	logger.info('Completed Pass 2.');
 
 	logger.complete(`Processed ${extracts.length} Airtable extracts`);
 }

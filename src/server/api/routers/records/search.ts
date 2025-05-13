@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { sql } from 'drizzle-orm';
+import { cosineDistance, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { publicProcedure } from '../../init';
 import { IdSchema, similarity, SIMILARITY_THRESHOLD } from '../common';
@@ -187,6 +187,10 @@ export const byRecordId = publicProcedure
 						{ isPrivate: false },
 						{
 							OR: [
+								{
+									RAW: (t, { sql }) =>
+										sql`1 - (${cosineDistance(t.textEmbedding, textEmbedding)}) > ${SIMILARITY_THRESHOLD}`,
+								},
 								{
 									outgoingLinks: {
 										predicate: {
