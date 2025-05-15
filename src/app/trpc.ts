@@ -1,4 +1,11 @@
-import { httpBatchLink, loggerLink, TRPCClientError, type TRPCLink } from '@trpc/client';
+import {
+	httpBatchLink,
+	httpLink,
+	loggerLink,
+	splitLink,
+	TRPCClientError,
+	type TRPCLink,
+} from '@trpc/client';
 import { createTRPCReact } from '@trpc/react-query';
 import { type createServerSideHelpers } from '@trpc/react-query/server';
 import { observable } from '@trpc/server/observable';
@@ -80,16 +87,29 @@ export const trpcClient = trpc.createClient({
 		loggerLink({
 			enabled: () => ENABLE_LOGGING && process.env.NODE_ENV === 'development',
 		}),
-		httpBatchLink({
-			url: `${getBaseUrl()}/trpc`,
-			transformer: superjson,
-			maxURLLength: 1900,
-			fetch: (url, options) => {
-				return fetch(url, {
-					...options,
-					credentials: 'include',
-				});
-			},
+		splitLink({
+			condition: (op) => op.context.skipBatch === true,
+			false: httpBatchLink({
+				url: `${getBaseUrl()}/trpc`,
+				transformer: superjson,
+				maxURLLength: 1900,
+				fetch: (url, options) => {
+					return fetch(url, {
+						...options,
+						credentials: 'include',
+					});
+				},
+			}),
+			true: httpLink({
+				url: `${getBaseUrl()}/trpc`,
+				transformer: superjson,
+				fetch: (url, options) => {
+					return fetch(url, {
+						...options,
+						credentials: 'include',
+					});
+				},
+			}),
 		}),
 	],
 });

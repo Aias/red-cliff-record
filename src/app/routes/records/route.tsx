@@ -82,7 +82,7 @@ function RouteComponent() {
 			<main className={`flex basis-full overflow-hidden ${!isRecordSelected ? 'p-3' : ''}`}>
 				{isRecordSelected && recordsList ? (
 					<>
-						<div className="flex shrink-0 grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-border py-3">
+						<div className="flex min-w-60 shrink grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-border py-3">
 							<header className="flex items-center justify-between px-3">
 								<h2 className="text-lg font-medium">
 									Records{' '}

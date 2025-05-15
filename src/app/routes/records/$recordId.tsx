@@ -20,11 +20,11 @@ function RouteComponent() {
 	const nextRecordId = useContext(NextRecordIdContext);
 
 	return (
-		<div className="flex basis-full gap-4 overflow-hidden p-4">
-			<div className="card w-[540px] overflow-y-auto">
+		<div className="flex flex-1 gap-4 overflow-x-auto p-4">
+			<div className="card max-w-160 min-w-100 shrink basis-1/2 overflow-y-auto">
 				<RecordForm recordId={recordId} nextRecordId={nextRecordId} />
 			</div>
-			<div className="flex flex-1 flex-col gap-4 overflow-y-auto">
+			<div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto">
 				<RelationsList id={recordId} />
 				<SimilarRecords id={recordId} />
 			</div>

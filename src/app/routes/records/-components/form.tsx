@@ -580,7 +580,22 @@ export function RecordForm({ recordId, nextRecordId }: RecordFormProps) {
 										<Button variant="destructive" asChild>
 											<AlertDialogAction
 												onClick={async () => {
-													await deleteMutation.mutateAsync([recordId]);
+													await deleteMutation.mutateAsync([recordId], {
+														onSuccess: () => {
+															if (nextRecordId) {
+																navigate({
+																	to: '/records/$recordId',
+																	params: { recordId: nextRecordId.toString() },
+																	search: true,
+																});
+															} else {
+																navigate({
+																	to: '/records',
+																	search: true,
+																});
+															}
+														},
+													});
 												}}
 											>
 												Continue

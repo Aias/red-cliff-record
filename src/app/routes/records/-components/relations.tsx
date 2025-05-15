@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
@@ -31,6 +31,21 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 	const mergeRecordsMutation = useMergeRecords();
 	const deleteLinkMutation = useDeleteLinks();
 	const navigate = useNavigate();
+	const addRelationshipButtonRef = useRef<HTMLButtonElement | null>(null);
+
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.metaKey && event.altKey && (event.key === '+' || event.code === 'Equal')) {
+				event.preventDefault();
+				addRelationshipButtonRef.current?.click();
+			}
+		};
+
+		document.addEventListener('keydown', handleKeyDown);
+		return () => {
+			document.removeEventListener('keydown', handleKeyDown);
+		};
+	}, []);
 
 	const outgoingLinks = useMemo(() => recordLinks?.outgoingLinks ?? [], [recordLinks]);
 	const incomingLinks = useMemo(() => recordLinks?.incomingLinks ?? [], [recordLinks]);
@@ -52,7 +67,12 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 							<PlusIcon /> Add
 						</span>
 					}
-					buttonProps={{ size: 'sm', variant: 'outline', className: 'h-[1.5lh]' }}
+					buttonProps={{
+						ref: addRelationshipButtonRef,
+						size: 'sm',
+						variant: 'outline',
+						className: 'h-[1.5lh]',
+					}}
 					buildActions={({ sourceId, targetId }) => {
 						return [
 							{
@@ -76,7 +96,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 							},
 						];
 					}}
-					popoverProps={{ side: 'left' }}
 				/>
 			</header>
 			{outgoingLinks.length > 0 && (

@@ -131,10 +131,6 @@ export function useUpsertRecord() {
 	});
 }
 
-function isIdInput(v: unknown): v is { input?: { id?: DbId } } {
-	return typeof v === 'object' && v !== null && 'input' in v;
-}
-
 export function useDeleteRecords() {
 	const qc = useQueryClient();
 	const utils = trpc.useUtils();
@@ -149,8 +145,9 @@ export function useDeleteRecords() {
 				});
 
 				/* 2 ▸ drop any cached search entry for this ID */
-				utils.records.searchByRecordId.invalidate(undefined, {
-					predicate: (q) => isIdInput(q.queryKey[1]) && q.queryKey[1].input?.id === id,
+				qc.removeQueries({
+					queryKey: utils.records.searchByRecordId.queryOptions({ id }).queryKey,
+					exact: true,
 				});
 			});
 

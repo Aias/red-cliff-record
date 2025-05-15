@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { PlusCircleIcon } from 'lucide-react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
 import type { LinkPartial } from '@/server/api/routers/records.types';
-import { RecordLink } from './record-link';
+import { SearchResultItem } from './search-result-item';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import {
 	Command,
@@ -47,43 +46,42 @@ interface RecordSearchProps {
 
 function RecordSearch({ onSelect }: RecordSearchProps) {
 	const [query, setQuery] = useState('');
-	const navigate = useNavigate();
 	const debounced = useDebounce(query, 200);
 
 	const createRecordMutation = useUpsertRecord();
 
 	const { data = [], isFetching } = trpc.records.searchByTextQuery.useQuery(
-		{ query: debounced },
+		{ query: debounced, limit: 5 },
 		{ enabled: debounced.length > 0 }
 	);
 
 	return (
-		<Command shouldFilter={false} loop={true} className="w-full">
+		<Command shouldFilter={false} loop className="w-full">
 			<CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
 			<CommandList>
 				<CommandGroup heading="Search results">
 					{isFetching && <CommandLoading>Loading results...</CommandLoading>}
-					{data.map(({ id }) => (
-						<CommandItem key={id} onSelect={() => onSelect(id)}>
-							<RecordLink id={id} />
+					{data.map((result) => (
+						<CommandItem
+							key={result.id}
+							value={`${result.title ?? 'Untitled'}--${result.id}`}
+							onSelect={() => onSelect(result.id)}
+						>
+							<SearchResultItem result={result} />
 						</CommandItem>
 					))}
 					{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
 				</CommandGroup>
 				<CommandSeparator alwaysRender />
 				<CommandItem
-					disabled={query.length === 0}
+					disabled={query.length === 0 || isFetching}
 					key="create-record"
 					onSelect={async () => {
 						const newRecord = await createRecordMutation.mutateAsync({
 							type: 'artifact',
 							title: query,
 						});
-						navigate({
-							to: '/records/$recordId',
-							params: { recordId: newRecord.id.toString() },
-							search: true,
-						});
+						onSelect(newRecord.id);
 					}}
 					className="px-3 py-2"
 				>
@@ -240,7 +238,18 @@ export function RelationshipSelector({
 				</Button>
 			</PopoverTrigger>
 
-			<PopoverContent className={cn('w-80 p-0', popoverClassName)} {...popoverProps}>
+			<PopoverContent
+				className={cn(
+					'w-[33vw] max-w-140 min-w-120 p-0',
+					targetId && 'w-60 min-w-60',
+					popoverClassName
+				)}
+				side="left"
+				align="start"
+				avoidCollisions
+				collisionPadding={8}
+				{...popoverProps}
+			>
 				{!targetId && <RecordSearch onSelect={handleRecordSelect} />}
 
 				{targetId && (

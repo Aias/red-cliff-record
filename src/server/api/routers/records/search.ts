@@ -4,11 +4,53 @@ import { z } from 'zod';
 import { publicProcedure } from '../../init';
 import { IdSchema, similarity, SIMILARITY_THRESHOLD } from '../common';
 import { SearchRecordsInputSchema } from '../records.types';
+import type { IntegrationType, MediaType, RecordType } from '@/db/schema';
 import { createEmbedding } from '@/lib/server/create-embedding';
+
+export type SearchResult = {
+	id: number;
+	type: RecordType;
+	title?: string | null;
+	content?: string | null;
+	summary?: string | null;
+	sense?: string | null;
+	abbreviation?: string | null;
+	url?: string | null;
+	avatarUrl?: string | null;
+	rating: number;
+	recordUpdatedAt: Date;
+	recordCreatedAt: Date;
+	contentCreatedAt?: Date | null;
+	contentUpdatedAt?: Date | null;
+	sources?: IntegrationType[] | null;
+	mediaCaption?: string | null;
+	media: {
+		id: number;
+		type: MediaType;
+		url: string;
+		altText?: string | null;
+	}[];
+	outgoingLinks: {
+		id: number;
+		predicate: {
+			id: number;
+		};
+		target: {
+			id: number;
+			type: RecordType;
+			title?: string | null;
+			abbreviation?: string | null;
+			sense?: string | null;
+			summary?: string | null;
+			avatarUrl?: string | null;
+		};
+	}[];
+	similarity?: number;
+};
 
 export const byTextQuery = publicProcedure
 	.input(SearchRecordsInputSchema)
-	.query(({ ctx: { db }, input }) => {
+	.query(({ ctx: { db }, input }): Promise<SearchResult[]> => {
 		const {
 			query,
 			filters: { recordType },
@@ -20,34 +62,79 @@ export const byTextQuery = publicProcedure
 					sql`(
 						${records.title} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
 						${records.content} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-						${records.notes} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-						${records.summary} <-> ${query} < ${SIMILARITY_THRESHOLD}
+						${records.summary} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
+						${records.abbreviation} <-> ${query} < ${SIMILARITY_THRESHOLD}
 					)`,
 				type: recordType,
 			},
 			limit,
 			orderBy: (records, { desc, sql }) => [
 				sql`LEAST(
-				${records.title} <-> ${query},
-				${records.content} <-> ${query},
-				${records.notes} <-> ${query},
-				${records.summary} <-> ${query}
-			)`,
+					${records.title} <-> ${query},
+					${records.content} <-> ${query},
+					${records.summary} <-> ${query},
+					${records.abbreviation} <-> ${query}
+				)`,
 				desc(records.recordUpdatedAt),
 			],
+			columns: {
+				id: true,
+				type: true,
+				title: true,
+				content: true,
+				summary: true,
+				sense: true,
+				abbreviation: true,
+				url: true,
+				avatarUrl: true,
+				mediaCaption: true,
+				rating: true,
+				recordUpdatedAt: true,
+				recordCreatedAt: true,
+				contentCreatedAt: true,
+				contentUpdatedAt: true,
+				sources: true,
+				textEmbedding: false,
+			},
 			with: {
 				outgoingLinks: {
+					columns: {
+						id: true,
+					},
 					with: {
-						predicate: true,
+						predicate: {
+							columns: {
+								id: true,
+							},
+						},
 						target: {
 							columns: {
-								textEmbedding: false,
+								id: true,
+								type: true,
+								title: true,
+								abbreviation: true,
+								sense: true,
+								summary: true,
+								avatarUrl: true,
 							},
 						},
 					},
-					limit: 5,
+					where: {
+						predicate: {
+							type: {
+								in: ['containment', 'creation', 'description', 'identity'],
+							},
+						},
+					},
 				},
-				media: true,
+				media: {
+					columns: {
+						id: true,
+						type: true,
+						url: true,
+						altText: true,
+					},
+				},
 			},
 		});
 	});
@@ -60,29 +147,71 @@ export const similarityByQuery = publicProcedure
 			exclude: z.number().array().optional(),
 		})
 	)
-	.query(async ({ ctx: { db }, input }) => {
+	.query(async ({ ctx: { db }, input }): Promise<SearchResult[]> => {
 		try {
 			const { query, limit, exclude } = input;
 
 			const vector = await createEmbedding(query);
 
 			const results = await db.query.records.findMany({
+				columns: {
+					id: true,
+					type: true,
+					title: true,
+					content: true,
+					summary: true,
+					sense: true,
+					abbreviation: true,
+					url: true,
+					avatarUrl: true,
+					mediaCaption: true,
+					rating: true,
+					recordUpdatedAt: true,
+					recordCreatedAt: true,
+					contentCreatedAt: true,
+					contentUpdatedAt: true,
+					sources: true,
+					textEmbedding: false,
+				},
 				with: {
 					outgoingLinks: {
+						columns: {
+							id: true,
+						},
 						with: {
-							predicate: true,
+							predicate: {
+								columns: {
+									id: true,
+								},
+							},
 							target: {
 								columns: {
-									textEmbedding: false,
+									id: true,
+									type: true,
+									title: true,
+									abbreviation: true,
+									sense: true,
+									summary: true,
+									avatarUrl: true,
 								},
 							},
 						},
-						limit: 5,
+						where: {
+							predicate: {
+								type: {
+									in: ['containment', 'creation', 'description', 'identity'],
+								},
+							},
+						},
 					},
-					media: true,
-				},
-				columns: {
-					textEmbedding: false,
+					media: {
+						columns: {
+							id: true,
+							type: true,
+							url: true,
+							altText: true,
+						},
+					},
 				},
 				extras: {
 					similarity: (t) => similarity(t.textEmbedding, vector),

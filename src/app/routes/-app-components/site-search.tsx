@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { SearchIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { defaultQueueOptions } from '@/server/api/routers/records.types';
-import { RecordLink } from '../records/-components/record-link';
+import { SearchResultItem } from '../records/-components/search-result-item';
 import {
 	Button,
 	Command,
@@ -15,6 +15,7 @@ import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
+	Spinner,
 } from '@/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { cn } from '@/lib/utils';
@@ -22,7 +23,6 @@ import { cn } from '@/lib/utils';
 export const SiteSearch = () => {
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState('');
-	const [textEmbedding, setTextEmbedding] = useState<number[] | null>(null);
 	const [commandOpen, setCommandOpen] = useState(false);
 	const debouncedValue = useDebounce(inputValue, 300);
 
@@ -30,10 +30,15 @@ export const SiteSearch = () => {
 		trpc.records.searchByTextQuery.useQuery(
 			{
 				query: debouncedValue,
-				limit: 5,
+				limit: 10,
 			},
 			{
 				enabled: debouncedValue.length > 1,
+				trpc: {
+					context: {
+						skipBatch: true,
+					},
+				},
 			}
 		);
 	const { data: similarityResults, isLoading: similarityResultsLoading } =
@@ -43,14 +48,14 @@ export const SiteSearch = () => {
 				limit: 5,
 			},
 			{
-				enabled: textEmbedding !== null,
+				enabled: debouncedValue.length > 1,
+				trpc: {
+					context: {
+						skipBatch: true,
+					},
+				},
 			}
 		);
-	const embedMutation = trpc.admin.createEmbedding.useMutation({
-		onSuccess: (data) => {
-			setTextEmbedding(data);
-		},
-	});
 
 	const handleInputChange = (search: string) => {
 		setInputValue(search);
@@ -87,14 +92,6 @@ export const SiteSearch = () => {
 		return () => document.removeEventListener('keydown', down);
 	}, []);
 
-	useEffect(() => {
-		if (debouncedValue.length > 1) {
-			embedMutation.mutate(debouncedValue);
-		} else {
-			setTextEmbedding(null);
-		}
-	}, [debouncedValue]);
-
 	return (
 		<>
 			<Popover open={commandOpen} onOpenChange={setCommandOpen}>
@@ -115,7 +112,7 @@ export const SiteSearch = () => {
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent className="w-150 overflow-auto p-0" align="end">
-					<Command shouldFilter={false}>
+					<Command shouldFilter={false} loop>
 						<CommandInput
 							placeholder="Search records..."
 							value={inputValue}
@@ -123,39 +120,55 @@ export const SiteSearch = () => {
 						/>
 						<CommandList className="max-h-[75vh]">
 							<CommandEmpty>
-								{(textResultsLoading ||
-									(embedMutation.isPending && debouncedValue.length > 1) ||
-									similarityResultsLoading) &&
-								debouncedValue.length > 1
-									? 'Loading...'
-									: 'No results found.'}
+								{debouncedValue.length <= 1
+									? 'Type to search...'
+									: !textResultsLoading &&
+										  !similarityResultsLoading &&
+										  (!textResults || textResults.length === 0) &&
+										  (!similarityResults || similarityResults.length === 0)
+										? 'No results found.'
+										: ''}
 							</CommandEmpty>
-							{debouncedValue.length > 1 && !textResultsLoading && textResults && (
+
+							{/* Text Search Section */}
+							{debouncedValue.length > 1 && (
 								<CommandGroup heading="Text Search Results">
-									{textResults.map((record) => (
-										<CommandItem
-											key={`text-${record.id}`}
-											value={record.title ?? record.id.toString()}
-											onSelect={() => handleSelectResult(record.id)}
-											className="flex w-full cursor-pointer px-3 py-2"
-										>
-											<RecordLink id={record.id} className="flex-1" />
+									{textResultsLoading ? (
+										<CommandItem disabled className="flex items-center justify-center">
+											<Spinner className="size-4" />
 										</CommandItem>
-									))}
+									) : (
+										textResults?.map((record) => (
+											<CommandItem
+												key={`text-${record.id}`}
+												value={`${record.title || 'Untitled'}--${record.id}--text`}
+												onSelect={() => handleSelectResult(record.id)}
+											>
+												<SearchResultItem result={record} />
+											</CommandItem>
+										))
+									)}
 								</CommandGroup>
 							)}
-							{!similarityResultsLoading && similarityResults && similarityResults.length > 0 && (
+
+							{/* Similarity Search Section */}
+							{debouncedValue.length > 1 && (
 								<CommandGroup heading="Similar Records">
-									{similarityResults.map((record) => (
-										<CommandItem
-											key={`sim-${record.id}-${record.similarity}`}
-											value={`${record.title ?? record.id.toString()} (Similarity: ${record.similarity.toFixed(2)})`}
-											onSelect={() => handleSelectResult(record.id)}
-											className="flex w-full cursor-pointer px-3 py-2"
-										>
-											<RecordLink id={record.id} className="flex-1" />
+									{similarityResultsLoading ? (
+										<CommandItem disabled className="flex items-center justify-center">
+											<Spinner className="size-4" />
 										</CommandItem>
-									))}
+									) : (
+										similarityResults?.map((record) => (
+											<CommandItem
+												key={`sim-${record.id}`}
+												value={`${record.title || 'Untitled'}--${record.id}--similarity`}
+												onSelect={() => handleSelectResult(record.id)}
+											>
+												<SearchResultItem result={record} />
+											</CommandItem>
+										))
+									)}
 								</CommandGroup>
 							)}
 						</CommandList>
