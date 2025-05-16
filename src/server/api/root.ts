@@ -4,12 +4,14 @@ import { adminRouter } from './routers/admin';
 import { linksRouter } from './routers/links';
 import { mediaRouter } from './routers/media';
 import { recordsRouter } from './routers/records';
+import { searchRouter } from './routers/search';
 
 export const appRouter = createTRPCRouter({
 	admin: adminRouter,
+	links: linksRouter,
 	media: mediaRouter,
 	records: recordsRouter,
-	links: linksRouter,
+	search: searchRouter,
 });
 
 export type AppRouter = typeof appRouter;

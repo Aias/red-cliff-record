@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { publicProcedure } from '../../init';
 import { IdParamSchema } from '../common';
-import type { RecordGet } from '../records.types';
+import type { RecordGet } from '../types';
 
 export const get = publicProcedure
 	.input(IdParamSchema)

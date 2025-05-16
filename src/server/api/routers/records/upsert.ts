@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { publicProcedure } from '../../init';
-import type { RecordGet } from '../records.types';
+import type { RecordGet } from '../types';
 import { RecordInsertSchema, records } from '@/db/schema';
 
 export const upsert = publicProcedure

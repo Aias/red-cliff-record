@@ -1,4 +1,4 @@
-import type { SearchResult } from '@/server/api/routers/records/search';
+import type { SearchResult } from '@/server/api/routers/search';
 import { recordTypeIcons } from './type-icons';
 import { IntegrationLogo } from '@/components';
 import type { MediaType } from '@/db/schema';

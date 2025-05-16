@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { createEmbedding } from '../../app/lib/server/create-embedding';
-import type { FullRecord } from '../api/routers/records.types';
+import type { FullRecord } from '../api/routers/types';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';
 import { db } from '@/db/connections';

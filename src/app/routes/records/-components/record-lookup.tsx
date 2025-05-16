@@ -3,7 +3,7 @@ import { PlusCircleIcon } from 'lucide-react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
-import type { LinkPartial } from '@/server/api/routers/records.types';
+import type { LinkPartial } from '@/server/api/routers/types';
 import { SearchResultItem } from './search-result-item';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import {
@@ -50,7 +50,7 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 
 	const createRecordMutation = useUpsertRecord();
 
-	const { data = [], isFetching } = trpc.records.searchByTextQuery.useQuery(
+	const { data = [], isFetching } = trpc.search.byTextQuery.useQuery(
 		{ query: debounced, limit: 5 },
 		{ enabled: debounced.length > 0 }
 	);

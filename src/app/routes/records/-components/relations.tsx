@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
-import type { RecordGet } from '@/server/api/routers/records.types';
+import type { RecordGet } from '@/server/api/routers/types';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 import type { LinkSelect, PredicateSelect } from '@/db/schema';
@@ -238,7 +238,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 	const mergeRecordsMutation = useMergeRecords();
 
 	// Fetch similar records only if textEmbedding exists
-	const { data: similarRecords, isLoading } = trpc.records.searchByRecordId.useQuery({
+	const { data: similarRecords, isLoading } = trpc.search.byRecordId.useQuery({
 		id: id,
 		limit: 10,
 	});

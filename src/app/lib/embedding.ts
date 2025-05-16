@@ -1,4 +1,4 @@
-import type { FullRecord } from '@/server/api/routers/records.types';
+import type { FullRecord } from '@/server/api/routers/types';
 
 const truncateText = (text: string, maxLength: number = 200) => {
 	if (text.length <= maxLength) {

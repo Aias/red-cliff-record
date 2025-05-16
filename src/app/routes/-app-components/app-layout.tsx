@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ArchiveIcon, MoonIcon, SunIcon } from 'lucide-react';
-import { defaultQueueOptions } from '@/server/api/routers/records.types';
+import { defaultQueueOptions } from '@/server/api/routers/types';
 import { SiteSearch } from './site-search';
 import { Button, Separator } from '@/components';
 import { setTheme } from '@/lib/server/theme';

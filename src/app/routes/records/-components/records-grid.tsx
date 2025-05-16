@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { CheckIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
-import { defaultQueueOptions } from '@/server/api/routers/records.types';
+import { defaultQueueOptions } from '@/server/api/routers/types';
 import { RecordTypeIcon } from './type-icons';
 import {
 	ExternalLink,

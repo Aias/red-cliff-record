@@ -1,7 +1,7 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
-import type { ListRecordsInput } from '@/server/api/routers/records.types';
+import type { ListRecordsInput } from '@/server/api/routers/types';
 
 export function useRecord(id: DbId) {
 	return trpc.records.get.useQuery({ id });
@@ -25,6 +25,10 @@ export function useRecordList(args: ListRecordsInput) {
 	const records = recordQueries.map((q) => q.data).filter((r) => r !== undefined);
 
 	return { ...rest, records };
+}
+
+export function useRecordTree(id: DbId) {
+	return trpc.records.tree.useQuery({ id });
 }
 
 export function useRecordLinks(id: DbId) {
@@ -110,7 +114,7 @@ export function useEmbedRecord() {
 					recordUpdatedAt: data.recordUpdatedAt,
 				};
 			});
-			utils.records.searchByRecordId.invalidate({ id: data.id });
+			utils.search.byRecordId.invalidate({ id: data.id });
 		},
 	});
 }
@@ -146,7 +150,7 @@ export function useDeleteRecords() {
 
 				/* 2 ▸ drop any cached search entry for this ID */
 				qc.removeQueries({
-					queryKey: utils.records.searchByRecordId.queryOptions({ id }).queryKey,
+					queryKey: utils.search.byRecordId.queryOptions({ id }).queryKey,
 					exact: true,
 				});
 			});
@@ -205,11 +209,11 @@ export function useUpsertLink() {
 		onMutate: ({ sourceId, targetId }) => {
 			const ids = [sourceId, targetId];
 			// TODO: Loop over all regardless of limit param.
-			utils.records.searchByRecordId.setData({ id: sourceId, limit: 10 }, (prev) => {
+			utils.search.byRecordId.setData({ id: sourceId, limit: 10 }, (prev) => {
 				if (!prev) return undefined;
 				return prev.filter((r) => !ids.includes(r.id));
 			});
-			utils.records.searchByRecordId.setData({ id: targetId, limit: 10 }, (prev) => {
+			utils.search.byRecordId.setData({ id: targetId, limit: 10 }, (prev) => {
 				if (!prev) return undefined;
 				return prev.filter((r) => !ids.includes(r.id));
 			});
@@ -252,7 +256,7 @@ export function useDeleteLinks() {
 			/* 1 ▸ invalidate per-record link lists */
 			touched.forEach((id) => {
 				utils.links.listForRecord.invalidate({ id });
-				utils.records.searchByRecordId.invalidate({ id });
+				utils.search.byRecordId.invalidate({ id });
 			});
 
 			/* 2 ▸ drop any cached map that overlaps the touched set */

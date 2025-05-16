@@ -10,7 +10,7 @@ import {
 } from '@/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { IdSchema, type DbId } from './common';
-import type { RecordLinks, RecordLinksMap } from './records.types';
+import type { RecordLinks, RecordLinksMap } from './types';
 
 export const linksRouter = createTRPCRouter({
 	listForRecord: publicProcedure

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { SearchIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
-import { defaultQueueOptions } from '@/server/api/routers/records.types';
+import { defaultQueueOptions } from '@/server/api/routers/types';
 import { SearchResultItem } from '../records/-components/search-result-item';
 import {
 	Button,
@@ -26,23 +26,22 @@ export const SiteSearch = () => {
 	const [commandOpen, setCommandOpen] = useState(false);
 	const debouncedValue = useDebounce(inputValue, 300);
 
-	const { data: textResults, isLoading: textResultsLoading } =
-		trpc.records.searchByTextQuery.useQuery(
-			{
-				query: debouncedValue,
-				limit: 10,
-			},
-			{
-				enabled: debouncedValue.length > 1,
-				trpc: {
-					context: {
-						skipBatch: true,
-					},
+	const { data: textResults, isLoading: textResultsLoading } = trpc.search.byTextQuery.useQuery(
+		{
+			query: debouncedValue,
+			limit: 10,
+		},
+		{
+			enabled: debouncedValue.length > 1,
+			trpc: {
+				context: {
+					skipBatch: true,
 				},
-			}
-		);
+			},
+		}
+	);
 	const { data: similarityResults, isLoading: similarityResultsLoading } =
-		trpc.records.searchByVector.useQuery(
+		trpc.search.byVector.useQuery(
 			{
 				query: debouncedValue,
 				limit: 5,
