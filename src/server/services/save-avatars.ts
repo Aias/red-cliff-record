@@ -18,7 +18,7 @@ const MAX_RETRIES = 2;
  *
  * Looks for records with:
  * 1. Non-null avatarUrl
- * 2. isCurated set to false
+ * 2. isCurated set to true
  *
  * Then:
  * 1. Uploads the avatar image to R2
