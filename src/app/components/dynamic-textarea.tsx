@@ -1,17 +1,27 @@
-import * as React from 'react';
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	type ComponentProps,
+	type ForwardedRef,
+	type RefCallback,
+	type RefObject,
+} from 'react';
 import { Textarea } from './ui/textarea';
 import { cn } from '@/lib/utils';
 
-interface DynamicTextareaProps extends Omit<React.ComponentProps<'textarea'>, 'rows'> {
+interface DynamicTextareaProps extends Omit<ComponentProps<'textarea'>, 'rows'> {
 	minRows?: number;
 }
 
-const DynamicTextarea = React.forwardRef<HTMLTextAreaElement, DynamicTextareaProps>(
+const DynamicTextarea = forwardRef<HTMLTextAreaElement, DynamicTextareaProps>(
 	({ className, minRows = 1, style, ...props }, ref) => {
-		const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+		const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 		const combinedRef = useCombinedRefs(ref, textareaRef);
 
-		const adjustHeight = React.useCallback(() => {
+		const adjustHeight = useCallback(() => {
 			const textarea = textareaRef.current;
 			if (!textarea) return;
 
@@ -30,29 +40,29 @@ const DynamicTextarea = React.forwardRef<HTMLTextAreaElement, DynamicTextareaPro
 		}, [minRows]);
 
 		// Adjust immediately after DOM updates
-		React.useLayoutEffect(() => {
+		useLayoutEffect(() => {
 			adjustHeight();
 		}, [adjustHeight]);
 
 		// If using a controlled component (value prop), adjust when it changes
-		React.useEffect(() => {
+		useEffect(() => {
 			if ('value' in props) {
 				adjustHeight();
 			}
 		}, [props.value, adjustHeight]);
 
 		// For uncontrolled components, watch for changes in defaultValue and update the value manually.
-                React.useEffect(() => {
-                        if (!('value' in props) && props.defaultValue !== undefined) {
-                                if (textareaRef.current) {
-                                        textareaRef.current.value = props.defaultValue as string;
-                                        adjustHeight();
-                                }
-                        }
-                }, [props.defaultValue, adjustHeight]);
+		useEffect(() => {
+			if (!('value' in props) && props.defaultValue !== undefined) {
+				if (textareaRef.current) {
+					textareaRef.current.value = props.defaultValue as string;
+					adjustHeight();
+				}
+			}
+		}, [props.defaultValue, adjustHeight]);
 
 		// Use a ResizeObserver to adjust the height if layout or font loading affects the content.
-		React.useEffect(() => {
+		useEffect(() => {
 			const textarea = textareaRef.current;
 			if (!textarea) return;
 
@@ -81,17 +91,15 @@ const DynamicTextarea = React.forwardRef<HTMLTextAreaElement, DynamicTextareaPro
 DynamicTextarea.displayName = 'DynamicTextarea';
 
 // Helper to combine multiple refs into one callback ref
-function useCombinedRefs<T>(
-	...refs: Array<React.ForwardedRef<T> | React.RefObject<T> | null>
-): React.RefCallback<T> {
-	return React.useCallback(
+function useCombinedRefs<T>(...refs: Array<ForwardedRef<T> | RefObject<T> | null>): RefCallback<T> {
+	return useCallback(
 		(element: T | null) => {
 			refs.forEach((ref) => {
 				if (!ref) return;
 				if (typeof ref === 'function') {
 					ref(element);
 				} else {
-					(ref as React.MutableRefObject<T | null>).current = element;
+					(ref as RefObject<T | null>).current = element;
 				}
 			});
 		},
