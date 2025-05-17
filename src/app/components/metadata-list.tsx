@@ -39,7 +39,7 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
 	};
 
 	const formatValue = (value: unknown) => {
-		if (!value) return null;
+                if (value === null || value === undefined) return null;
 		if (value instanceof Date) return value.toLocaleString();
 		if (value instanceof Object) {
 			return (
@@ -64,20 +64,20 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
 				<DataListItem key={key}>
 					<DataListLabel>{key}</DataListLabel>
 					<DataListValue className="group relative">
-						{value ? (
-							<div className="flex items-baseline gap-2">
-								<div className="flex-1" onClick={() => handleCopy(key, value)}>
-									{formatValue(value)}
-								</div>
-								{copiedKey === key ? (
-									<div className="absolute top-0 right-0 text-xs text-c-hint">Copied!</div>
-								) : (
-									<CopyIcon className="absolute right-0 text-c-hint opacity-0 transition-opacity group-hover:opacity-100" />
-								)}
-							</div>
-						) : (
-							<span className="text-c-hint">—</span>
-						)}
+                                                {value === null || value === undefined ? (
+                                                        <span className="text-c-hint">—</span>
+                                                ) : (
+                                                        <div className="flex items-baseline gap-2">
+                                                                <div className="flex-1" onClick={() => handleCopy(key, value)}>
+                                                                        {formatValue(value)}
+                                                                </div>
+                                                                {copiedKey === key ? (
+                                                                        <div className="absolute top-0 right-0 text-xs text-c-hint">Copied!</div>
+                                                                ) : (
+                                                                        <CopyIcon className="absolute right-0 text-c-hint opacity-0 transition-opacity group-hover:opacity-100" />
+                                                                )}
+                                                        </div>
+                                                )}
 					</DataListValue>
 				</DataListItem>
 			))}
