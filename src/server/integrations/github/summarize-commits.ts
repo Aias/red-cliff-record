@@ -89,7 +89,7 @@ You will be given the following as input:
 - If the commit is a refactoring, focus on the intent of the refactoring and the functional relevance of the changes.
 - If the commit is a bug fix, focus on the intent of the fix and the functional relevance of the changes.
 - If the commit is a new feature, focus on the intent of the feature and the functional relevance of the changes.
-- If the commit it a dependency update, focus on which were updated and their relevance to the project.
+- If the commit is a dependency update, focus on which were updated and their relevance to the project.
 
 </style-rules>`;
 
