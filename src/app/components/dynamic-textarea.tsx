@@ -42,14 +42,14 @@ const DynamicTextarea = React.forwardRef<HTMLTextAreaElement, DynamicTextareaPro
 		}, [props.value, adjustHeight]);
 
 		// For uncontrolled components, watch for changes in defaultValue and update the value manually.
-		React.useEffect(() => {
-			if (!('value' in props) && props.defaultValue !== undefined) {
-				if (textareaRef.current) {
-					textareaRef.current.value = props.defaultValue as string;
-					adjustHeight();
-				}
-			}
-		}, [props.defaultValue, adjustHeight, props]);
+                React.useEffect(() => {
+                        if (!('value' in props) && props.defaultValue !== undefined) {
+                                if (textareaRef.current) {
+                                        textareaRef.current.value = props.defaultValue as string;
+                                        adjustHeight();
+                                }
+                        }
+                }, [props.defaultValue, adjustHeight]);
 
 		// Use a ResizeObserver to adjust the height if layout or font loading affects the content.
 		React.useEffect(() => {
