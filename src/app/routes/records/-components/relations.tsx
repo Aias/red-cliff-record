@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useMemo, useRef } from 'react';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
@@ -7,12 +6,9 @@ import type { RecordGet } from '@/server/api/routers/types';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 import type { LinkSelect, PredicateSelect } from '@/db/schema';
-import {
-	useDeleteLinks,
-	useMergeRecords,
-	usePredicateMap,
-	useRecordLinks,
-} from '@/lib/hooks/use-records';
+import { usePredicateMap, useRecordLinks } from '@/lib/hooks/use-records';
+import { useAddRelationShortcut } from '@/lib/hooks/use-add-relation-shortcut';
+import { useRelationActions } from '@/lib/hooks/use-relation-actions';
 import { cn } from '@/lib/utils';
 
 interface RelationsListProps {
@@ -28,24 +24,12 @@ interface RecordLink extends LinkSelect {
 export const RelationsList = ({ id }: RelationsListProps) => {
 	const { data: recordLinks } = useRecordLinks(id);
 	const predicates = usePredicateMap();
-	const mergeRecordsMutation = useMergeRecords();
-	const deleteLinkMutation = useDeleteLinks();
-	const navigate = useNavigate();
-	const addRelationshipButtonRef = useRef<HTMLButtonElement | null>(null);
+       const { merge, deleteLink } = useRelationActions();
+       const addRelationshipButtonRef = useRef<HTMLButtonElement | null>(null);
 
-	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.metaKey && event.altKey && (event.key === '+' || event.code === 'Equal')) {
-				event.preventDefault();
-				addRelationshipButtonRef.current?.click();
-			}
-		};
-
-		document.addEventListener('keydown', handleKeyDown);
-		return () => {
-			document.removeEventListener('keydown', handleKeyDown);
-		};
-	}, []);
+       useAddRelationShortcut(() => {
+               addRelationshipButtonRef.current?.click();
+       });
 
 	const outgoingLinks = useMemo(() => recordLinks?.outgoingLinks ?? [], [recordLinks]);
 	const incomingLinks = useMemo(
@@ -88,21 +72,11 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 										<MergeIcon /> Merge
 									</>
 								),
-								onSelect: () => {
-									navigate({
-										to: '/records/$recordId',
-										params: { recordId: targetId.toString() },
-										search: true,
-									});
-									mergeRecordsMutation.mutate({
-										sourceId,
-										targetId,
-									});
-								},
-							},
-						];
-					}}
-				/>
+                                                                onSelect: () => merge(sourceId, targetId),
+                                                        },
+                                                ];
+                                        }}
+                                />
 			</header>
 			{outgoingLinks.length > 0 && (
 				<>
@@ -128,32 +102,20 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 														<MergeIcon /> Merge
 													</>
 												),
-												onSelect: () => {
-													navigate({
-														to: '/records/$recordId',
-														params: { recordId: targetId.toString() },
-														search: true,
-													});
-													mergeRecordsMutation.mutate({
-														sourceId,
-														targetId,
-													});
-												},
-											},
-											{
-												key: 'delete-link',
-												label: (
-													<>
-														<TrashIcon /> Delete
-													</>
-												),
-												onSelect: () => {
-													deleteLinkMutation.mutate([link.id]);
-												},
-											},
-										];
-									}}
-								/>
+                                                                               onSelect: () => merge(sourceId, targetId),
+                                                                               },
+                                                                               {
+                                                                               key: 'delete-link',
+                                                                               label: (
+                                                                               <>
+                                                                               <TrashIcon /> Delete
+                                                                               </>
+                                                                               ),
+                                                                               onSelect: () => deleteLink(link.id),
+                                                                               },
+                                                                               ];
+                                                                       }}
+                                                               />
 								<RecordLink
 									id={link.targetId}
 									linkOptions={{
@@ -197,31 +159,21 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 													</>
 												),
 												onSelect: () => {
-													navigate({
-														to: '/records/$recordId',
-														params: { recordId: link.sourceId.toString() },
-														search: true,
-													});
-													mergeRecordsMutation.mutate({
-														sourceId: link.targetId,
-														targetId: link.sourceId,
-													});
-												},
-											},
-											{
-												key: 'delete-link',
-												label: (
-													<>
-														<TrashIcon /> Delete
-													</>
-												),
-												onSelect: () => {
-													deleteLinkMutation.mutate([link.id]);
-												},
-											},
-										];
-									}}
-								/>
+                                                                               merge(link.targetId, link.sourceId);
+                                                                               },
+                                                                               },
+                                                                               {
+                                                                               key: 'delete-link',
+                                                                               label: (
+                                                                               <>
+                                                                               <TrashIcon /> Delete
+                                                                               </>
+                                                                               ),
+                                                                               onSelect: () => deleteLink(link.id),
+                                                                               },
+                                                                               ];
+                                                                       }}
+                                                               />
 								<RecordLink
 									id={link.sourceId}
 									linkOptions={{
@@ -240,8 +192,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 };
 
 export const SimilarRecords = ({ id }: { id: DbId }) => {
-	const navigate = useNavigate();
-	const mergeRecordsMutation = useMergeRecords();
+       const { merge } = useRelationActions();
 
 	// Fetch similar records only if textEmbedding exists
 	const { data: similarRecords, isLoading } = trpc.search.byRecordId.useQuery(
@@ -287,20 +238,12 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 												</>
 											),
 											onSelect: () => {
-												navigate({
-													to: '/records/$recordId',
-													params: { recordId: targetId.toString() },
-													search: true,
-												});
-												mergeRecordsMutation.mutate({
-													sourceId,
-													targetId,
-												});
-											},
-										},
-									];
-								}}
-							/>
+                                                                               merge(sourceId, targetId);
+                                                                               },
+                                                                               },
+                                                                       ];
+                                                               }}
+                                                       />
 							<RecordLink
 								id={record.id}
 								className="flex-1"
