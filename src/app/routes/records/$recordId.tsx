@@ -1,11 +1,11 @@
-import { useCallback, useContext, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
 import { useDeleteRecords, useMarkAsCurated, useRecordTree } from '@/app/lib/hooks/use-records';
+import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
 import type { FamilyTree } from '@/server/api/routers/records/tree';
 import { RecordForm } from './-components/form';
 import { RelationsList, SimilarRecords } from './-components/relations';
-import { NextRecordIdContext } from './route';
 
 export const Route = createFileRoute('/records/$recordId')({
 	component: RouteComponent,
@@ -75,59 +75,89 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 		nodes.push({ predicateId: childPredicateId, id: childId, title: childTitle });
 	});
 
-	return nodes;
+        return nodes;
+};
+
+const getNextRecord = (
+        ids: DbId[],
+        currentId: DbId,
+        skip: Set<DbId>
+): DbId | undefined => {
+        if (ids.length === 0) return undefined;
+
+        const currentIndex = ids.findIndex((id) => id === currentId);
+        const start = currentIndex === -1 ? 0 : (currentIndex + 1) % ids.length;
+
+        for (let i = 0; i < ids.length; i++) {
+                const idx = (start + i) % ids.length;
+                const id = ids[idx];
+                if (!skip.has(id)) return id;
+        }
+
+        return undefined;
 };
 
 function RouteComponent() {
-	const navigate = Route.useNavigate();
-	const { recordId: recordIdParam } = Route.useParams();
-	const recordId = useMemo(() => Number(recordIdParam), [recordIdParam]);
-	const nextRecordId = useContext(NextRecordIdContext);
-	const { data: tree } = useRecordTree(recordId);
-	const markAsCurated = useMarkAsCurated();
-	const deleteMutation = useDeleteRecords();
+        const navigate = Route.useNavigate();
+        const search = Route.useSearch({ from: '/records' });
+        const { data: recordsList } = trpc.records.list.useQuery(search, {
+                placeholderData: (prev) => prev,
+        });
+        const { recordId: recordIdParam } = Route.useParams();
+        const recordId = useMemo(() => Number(recordIdParam), [recordIdParam]);
+        const { data: tree } = useRecordTree(recordId);
+        const markAsCurated = useMarkAsCurated();
+        const deleteMutation = useDeleteRecords();
 
 	const nodes = useMemo(() => {
 		if (!tree) return [];
 		return flattenTree(tree);
 	}, [tree]);
 
-	const handleFinalize = useCallback(() => {
-		markAsCurated.mutate({
-			ids: nodes.map((t) => t.id),
-		});
-		if (nextRecordId) {
-			navigate({
-				to: '/records/$recordId',
-				params: { recordId: nextRecordId.toString() },
-				search: true,
-			});
-		} else {
-			navigate({
-				to: '/records',
-				search: true,
-			});
-		}
-	}, [markAsCurated, nodes]);
+        const handleFinalize = useCallback(() => {
+                const idsToCurate = nodes.map((t) => t.id);
+                markAsCurated.mutate({ ids: idsToCurate });
 
-	const handleDelete = useCallback(
-		(id: DbId) => {
-			deleteMutation.mutate([id]);
-			if (nextRecordId) {
-				navigate({
-					to: '/records/$recordId',
-					params: { recordId: nextRecordId.toString() },
-					search: true,
-				});
-			} else {
-				navigate({
-					to: '/records',
-					search: true,
-				});
-			}
-		},
-		[deleteMutation]
-	);
+                const listIds = recordsList?.ids.map((r) => r.id) ?? [];
+                const skip = new Set(idsToCurate);
+                const nextId = getNextRecord(listIds, recordId, skip);
+
+                if (nextId) {
+                        navigate({
+                                to: '/records/$recordId',
+                                params: { recordId: nextId.toString() },
+                                search: true,
+                        });
+                } else {
+                        navigate({
+                                to: '/records',
+                                search: true,
+                        });
+                }
+        }, [markAsCurated, nodes, recordsList, recordId, navigate]);
+
+        const handleDelete = useCallback(
+                (id: DbId) => {
+                        deleteMutation.mutate([id]);
+                        const listIds = recordsList?.ids.map((r) => r.id) ?? [];
+                        const skip = new Set([id]);
+                        const nextId = getNextRecord(listIds, recordId, skip);
+
+                        if (nextId) {
+                                navigate({
+                                        to: '/records/$recordId',
+                                        params: { recordId: nextId.toString() },
+                                        search: true,
+                                });
+                        } else {
+                                navigate({
+                                        to: '/records',
+                                        search: true,
+                                });
+                        }
+                },
+                [deleteMutation, recordsList, recordId, navigate]
+        );
 
 	return (
 		<div className="flex flex-1 overflow-x-auto">

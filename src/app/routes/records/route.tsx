@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { createContext } from 'react';
 import {
 	createFileRoute,
 	Link,
@@ -12,9 +11,6 @@ import { ListRecordsInputSchema } from '@/server/api/routers/types';
 import { RecordLink } from './-components/record-link';
 import { RecordsGrid } from './-components/records-grid';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
-
-// Create context for sharing data between parent and child routes
-export const NextRecordIdContext = createContext<number | undefined>(undefined);
 
 export const Route = createFileRoute('/records')({
 	validateSearch: ListRecordsInputSchema,
@@ -79,9 +75,8 @@ function RouteComponent() {
 		[navigate, search]
 	);
 
-	return (
-		<NextRecordIdContext.Provider value={nextRecordId}>
-			<main className={`flex basis-full overflow-hidden ${!isRecordSelected ? 'p-3' : ''}`}>
+       return (
+               <main className={`flex basis-full overflow-hidden ${!isRecordSelected ? 'p-3' : ''}`}>
 				{isRecordSelected && recordsList ? (
 					<>
 						<div className="flex min-w-60 shrink grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-border py-3">
@@ -113,6 +108,5 @@ function RouteComponent() {
 					<RecordsGrid />
 				)}
 			</main>
-		</NextRecordIdContext.Provider>
 	);
 }
