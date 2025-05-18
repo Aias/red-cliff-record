@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash2Icon } from 'lucide-react';
 import type { MediaSelect } from '@/server/db/schema/media';
+import { LazyVideo } from './lazy-video';
 import { Button } from './ui/button';
 
 interface MediaGridProps {
@@ -35,7 +36,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 
 					{/* Render video or image based on media type */}
 					{item.type === 'video' ? (
-						<video
+						<LazyVideo
 							src={item.url}
 							className="h-full w-full object-cover"
 							controls
@@ -43,13 +44,14 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 							loop
 							autoPlay
 							playsInline
-							preload="metadata"
 						/>
 					) : (
 						<img
 							src={item.url}
 							alt={item.altText || `Media ${index + 1}`}
 							className="h-full w-full object-cover"
+							loading="lazy"
+							decoding="async"
 						/>
 					)}
 

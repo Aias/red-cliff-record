@@ -7,6 +7,7 @@ import { usePredicateMap, useRecordWithOutgoingLinks } from '@/app/lib/hooks/use
 import type { DbId } from '@/server/api/routers/common';
 import { recordTypeIcons } from './type-icons';
 import { IntegrationLogo } from '@/components/integration-logo';
+import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
 import {
 	DropdownMenu,
@@ -166,9 +167,11 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 							src={mediaItem.url}
 							alt={mediaItem.altText ?? mediaCaption ?? ''}
 							className="absolute inset-0 size-full object-cover"
+							loading="lazy"
+							decoding="async"
 						/>
 					) : (
-						<video src={mediaItem.url} className="absolute inset-0 object-cover" />
+						<LazyVideo src={mediaItem.url} className="absolute inset-0 object-cover" />
 					)}
 				</div>
 			)}

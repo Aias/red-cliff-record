@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
+import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
 import { useRecordList } from '@/lib/hooks/use-records';
 
@@ -39,20 +40,21 @@ function Home() {
 							{/* Gradient from bottom 50% with semi-transparent black */}
 							<div className="pointer-events-none absolute inset-x-0 top-1/2 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent opacity-75" />
 							{item.type === 'video' ? (
-								<video
+								<LazyVideo
 									src={item.url}
 									className="absolute inset-0 size-full object-cover"
 									muted
 									loop
 									playsInline
 									autoPlay
-									preload="metadata"
 								/>
 							) : (
 								<img
 									src={item.url}
 									alt={item.altText || record.title || `Media for record ${record.id}`}
 									className="absolute inset-0 size-full object-cover"
+									loading="lazy"
+									decoding="async"
 								/>
 							)}
 							{/* White text with semi-transparent black shadow */}
