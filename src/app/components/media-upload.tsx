@@ -1,9 +1,11 @@
 import * as React from 'react';
 import { forwardRef, useCallback, useRef, useState } from 'react';
 import { UploadIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { Spinner } from './spinner';
 import { Button } from '@/components/ui/button';
+import type { RecordUploadResult } from '@/lib/hooks/use-record-upload';
 import { cn } from '@/lib/utils';
 
 const mediaFileSchema = z
@@ -14,7 +16,7 @@ const mediaFileSchema = z
 	);
 
 type MediaUploadProps = {
-	onUpload: (file: File) => void | Promise<void>;
+	onUpload: (file: File) => Promise<RecordUploadResult>;
 	className?: string;
 	validationSchema?: z.ZodSchema<File>;
 };
@@ -44,8 +46,13 @@ export const MediaUpload = forwardRef<HTMLDivElement, MediaUploadProps>(
 				try {
 					const validatedFile = validationSchema.parse(file);
 					setStatusMessage(`Uploading ${validatedFile.name}...`);
-					await onUpload(validatedFile);
-					setStatusMessage('Upload successful!');
+					const result = await onUpload(validatedFile);
+					if (result.success) {
+						setStatusMessage('Upload successful!');
+					} else {
+						setError(result.error);
+						setStatusMessage('Drag file here, paste, or click to upload');
+					}
 					// Optionally reset after a delay
 					// setTimeout(() => setStatusMessage('Drag file here, paste, or click to upload'), 2000);
 				} catch (err) {
@@ -57,7 +64,7 @@ export const MediaUpload = forwardRef<HTMLDivElement, MediaUploadProps>(
 					}
 					setError(errorMessage);
 					setStatusMessage('Drag file here, paste, or click to upload');
-					console.error('File validation or upload error:', err);
+					toast.error(errorMessage);
 				} finally {
 					// Reset file input to allow uploading the same file again
 					if (fileInputRef.current) {

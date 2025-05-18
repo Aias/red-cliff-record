@@ -43,13 +43,8 @@ import {
 } from '@/components';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
-import {
-	useCreateMedia,
-	useDeleteMedia,
-	useRecord,
-	useUpsertRecord,
-} from '@/lib/hooks/use-records';
-import { readFileAsBase64 } from '@/lib/read-file';
+import { useRecordUpload } from '@/lib/hooks/use-record-upload';
+import { useDeleteMedia, useRecord, useUpsertRecord } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
@@ -116,31 +111,8 @@ export function RecordForm({
 	const mediaUploadRef = useRef<HTMLDivElement>(null);
 
 	const updateMutation = useUpsertRecord();
-	const createMediaMutation = useCreateMedia(recordId);
 	const deleteMediaMutation = useDeleteMedia();
-
-	const handleUpload = useCallback(
-		async (file: File) => {
-			console.log('File selected:', file.name, file.type, file.size);
-			try {
-				const fileData = await readFileAsBase64(file);
-				await createMediaMutation.mutateAsync({
-					recordId: recordId,
-					fileData: fileData,
-					fileName: file.name,
-					fileType: file.type,
-				});
-			} catch (error) {
-				console.error('Failed to read or upload file:', error);
-				if (error instanceof Error) {
-					throw new Error(`Upload processing failed: ${error.message}`);
-				} else {
-					throw new Error('An unknown error occurred during file processing or upload.');
-				}
-			}
-		},
-		[recordId, createMediaMutation, readFileAsBase64]
-	);
+	const { upload: handleUpload } = useRecordUpload(recordId);
 
 	const form = useForm({
 		defaultValues: record ?? defaultData,
