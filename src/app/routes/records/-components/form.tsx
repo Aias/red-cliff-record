@@ -1,10 +1,8 @@
-import { useCallback, useMemo, useRef } from 'react';
-import { useForm } from '@tanstack/react-form';
+import { useCallback, useMemo } from 'react';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
 import { z } from 'zod';
-import type { RecordGet } from '@/server/api/routers/types';
-import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@/server/db/schema';
+import { RecordTypeSchema, type RecordType } from '@/server/db/schema';
 import { recordTypeIcons } from './type-icons';
 import {
 	AlertDialog,
@@ -22,9 +20,8 @@ import {
 	DynamicTextarea,
 	ExternalLink,
 	GhostInput,
-	IntegrationLogo,
-	Label,
-	MetadataList,
+        IntegrationLogo,
+        Label,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -41,16 +38,11 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@/components';
-import MediaGrid from '@/components/media-grid';
-import { MediaUpload } from '@/components/media-upload';
-import {
-	useCreateMedia,
-	useDeleteMedia,
-	useRecord,
-	useUpsertRecord,
-} from '@/lib/hooks/use-records';
-import { readFileAsBase64 } from '@/lib/read-file';
 import { cn } from '@/lib/utils';
+import { MetadataSection } from './MetadataSection';
+import { MediaSection } from './MediaSection';
+import { ContentSection } from './ContentSection';
+import { useRecordForm } from './use-record-form';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
 	recordId: number;
@@ -58,48 +50,6 @@ interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
 	onDelete: () => void;
 }
 
-const MetadataSection = ({ record }: { record: RecordGet }) => {
-	return (
-		<div className="flex flex-col gap-3">
-			<h2>Record Metadata</h2>
-			<MetadataList
-				metadata={{
-					ID: record.id,
-					Slug: record.slug,
-					Created: record.recordCreatedAt,
-					Updated: record.recordUpdatedAt,
-					'Content Created': record.contentCreatedAt,
-					'Content Updated': record.contentUpdatedAt,
-				}}
-			/>
-		</div>
-	);
-};
-
-const defaultData: RecordGet = {
-	id: 0,
-	slug: null,
-	type: 'artifact',
-	title: null,
-	sense: null,
-	abbreviation: null,
-	url: null,
-	avatarUrl: null,
-	summary: null,
-	content: null,
-	notes: null,
-	mediaCaption: null,
-	isCurated: false,
-	isPrivate: false,
-	rating: 0,
-	reminderAt: null,
-	sources: [],
-	media: [],
-	recordCreatedAt: new Date(),
-	recordUpdatedAt: new Date(),
-	contentCreatedAt: new Date(),
-	contentUpdatedAt: new Date(),
-} as const;
 
 export function RecordForm({
 	recordId,
@@ -111,75 +61,7 @@ export function RecordForm({
 	const navigate = useNavigate();
 	const params = useParams({ from: '/records/$recordId' });
 	const urlRecordId = useMemo(() => Number(params.recordId), [params.recordId]);
-	const { data: record, isLoading, isError } = useRecord(recordId);
-	const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
-	const mediaUploadRef = useRef<HTMLDivElement>(null);
-
-	const updateMutation = useUpsertRecord();
-	const createMediaMutation = useCreateMedia(recordId);
-	const deleteMediaMutation = useDeleteMedia();
-
-	const handleUpload = useCallback(
-		async (file: File) => {
-			console.log('File selected:', file.name, file.type, file.size);
-			try {
-				const fileData = await readFileAsBase64(file);
-				await createMediaMutation.mutateAsync({
-					recordId: recordId,
-					fileData: fileData,
-					fileName: file.name,
-					fileType: file.type,
-				});
-			} catch (error) {
-				console.error('Failed to read or upload file:', error);
-				if (error instanceof Error) {
-					throw new Error(`Upload processing failed: ${error.message}`);
-				} else {
-					throw new Error('An unknown error occurred during file processing or upload.');
-				}
-			}
-		},
-		[recordId, createMediaMutation, readFileAsBase64]
-	);
-
-	const form = useForm({
-		defaultValues: record ?? defaultData,
-		onSubmit: async ({ value }) => {
-			const {
-				title,
-				url,
-				avatarUrl,
-				abbreviation,
-				sense,
-				summary,
-				content,
-				notes,
-				mediaCaption,
-				...rest
-			} = value;
-			await updateMutation.mutateAsync({
-				...rest,
-				title: title || null,
-				url: url || null,
-				avatarUrl: avatarUrl || null,
-				abbreviation: abbreviation || null,
-				sense: sense || null,
-				summary: summary || null,
-				content: content || null,
-				notes: notes || null,
-				mediaCaption: mediaCaption || null,
-			});
-		},
-		validators: {
-			onSubmit: ({ value }) => {
-				const parsed = RecordInsertSchema.safeParse(value);
-				if (!parsed.success) {
-					return parsed.error.flatten().fieldErrors;
-				}
-				return undefined;
-			},
-		},
-	});
+        const { form, record, isLoading, isError } = useRecordForm(recordId);
 
 	const curateAndNextHandler = useCallback(
 		async (e: React.KeyboardEvent<HTMLFormElement>) => {
@@ -474,104 +356,8 @@ export function RecordForm({
 						)}
 					</form.Field>
 				</div>
-
-				<form.Field name="summary">
-					{(field) => (
-						<div className="flex flex-col gap-1.5">
-							<Label htmlFor="summary">Summary</Label>
-							<DynamicTextarea
-								id="summary"
-								value={field.state.value ?? ''}
-								placeholder="A brief summary of this record"
-								onChange={(e) => field.handleChange(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter' && !e.shiftKey) {
-										e.preventDefault();
-										form.handleSubmit();
-									}
-								}}
-							/>
-						</div>
-					)}
-				</form.Field>
-
-				<form.Field name="content">
-					{(field) => (
-						<div className="flex flex-col gap-1.5">
-							<Label htmlFor="content">Content</Label>
-							<DynamicTextarea
-								id="content"
-								value={field.state.value ?? ''}
-								placeholder="Main content"
-								onChange={(e) => field.handleChange(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter' && !e.shiftKey) {
-										e.preventDefault();
-										form.handleSubmit();
-									}
-								}}
-							/>
-						</div>
-					)}
-				</form.Field>
-
-				<form.Field name="media">
-					{(field) =>
-						field.state.value && field.state.value.length > 0 ? (
-							<div className="flex flex-col gap-3">
-								<MediaGrid
-									media={field.state.value}
-									onDelete={(media) => deleteMediaMutation.mutate([media.id])}
-								/>
-
-								<form.Field name="mediaCaption">
-									{(captionField) => (
-										<div className="flex flex-col gap-1">
-											<Label htmlFor="mediaCaption">Caption</Label>
-											<DynamicTextarea
-												ref={mediaCaptionRef}
-												id="mediaCaption"
-												value={captionField.state.value ?? ''}
-												placeholder="Media caption"
-												onChange={(e) => captionField.handleChange(e.target.value)}
-												onKeyDown={(e) => {
-													if (e.key === 'Enter' && !e.shiftKey) {
-														e.preventDefault();
-														form.handleSubmit();
-													}
-												}}
-											/>
-										</div>
-									)}
-								</form.Field>
-							</div>
-						) : (
-							<MediaUpload ref={mediaUploadRef} onUpload={handleUpload} />
-						)
-					}
-				</form.Field>
-
-				<Separator />
-
-				<form.Field name="notes">
-					{(field) => (
-						<div className="flex flex-col gap-1.5">
-							<Label htmlFor="notes">Notes</Label>
-							<DynamicTextarea
-								id="notes"
-								value={field.state.value ?? ''}
-								placeholder="Additional notes"
-								onChange={(e) => field.handleChange(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter' && !e.shiftKey) {
-										e.preventDefault();
-										form.handleSubmit();
-									}
-								}}
-							/>
-						</div>
-					)}
-				</form.Field>
+        <ContentSection form={form} />
+        <MediaSection recordId={recordId} form={form} />
 			</div>
 			<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
 				{([canSubmit, isSubmitting]) => (
