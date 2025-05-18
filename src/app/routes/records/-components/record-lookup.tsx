@@ -1,20 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { PlusCircleIcon } from 'lucide-react';
-import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
 import type { LinkPartial } from '@/server/api/routers/types';
-import { SearchResultItem } from './search-result-item';
 import { Button, type ButtonProps } from '@/components/ui/button';
-import {
-	Command,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-	CommandLoading,
-	CommandSeparator,
-} from '@/components/ui/command';
 import {
 	Popover,
 	PopoverContent,
@@ -22,127 +10,20 @@ import {
 	type PopoverContentProps,
 } from '@/components/ui/popover';
 import type { PredicateSelect } from '@/db/schema';
-import { useUpsertLink, useUpsertRecord } from '@/lib/hooks/use-records';
+import { useUpsertLink } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
+import { RecordSearch } from './record-search';
+import { PredicateCombobox } from './predicate-combobox';
 
 /* --------------------------------------------------------------------------
  * Types for extra, runtime‑supplied actions shown after the predicate list.
  * -------------------------------------------------------------------------- */
 export interface RelationshipAction {
-	/** Stable key for React */
-	key: string;
-	/** Rendered content – can be any React node (icons, styled spans, etc.) */
-	label: ReactNode;
-	onSelect(): void;
-}
-
-/* --------------------------------------------------------------------------
- * RecordSearch –– picks a target record by querying the server.
- * No client‑side filtering; we rely entirely on server results.
- * -------------------------------------------------------------------------- */
-interface RecordSearchProps {
-	onSelect(id: DbId): void;
-}
-
-function RecordSearch({ onSelect }: RecordSearchProps) {
-	const [query, setQuery] = useState('');
-	const debounced = useDebounce(query, 200);
-
-	const createRecordMutation = useUpsertRecord();
-
-	const { data = [], isFetching } = trpc.search.byTextQuery.useQuery(
-		{ query: debounced, limit: 5 },
-		{ enabled: debounced.length > 0 }
-	);
-
-	return (
-		<Command shouldFilter={false} loop className="w-full">
-			<CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
-			<CommandList>
-				<CommandGroup heading="Search results">
-					{isFetching && <CommandLoading>Loading results...</CommandLoading>}
-					{data.map((result) => (
-						<CommandItem
-							key={result.id}
-							value={`${result.title ?? 'Untitled'}--${result.id}`}
-							onSelect={() => onSelect(result.id)}
-						>
-							<SearchResultItem result={result} />
-						</CommandItem>
-					))}
-					{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
-				</CommandGroup>
-				<CommandSeparator alwaysRender />
-				<CommandItem
-					disabled={query.length === 0 || isFetching}
-					key="create-record"
-					onSelect={async () => {
-						const newRecord = await createRecordMutation.mutateAsync({
-							type: 'artifact',
-							title: query,
-						});
-						onSelect(newRecord.id);
-					}}
-					className="px-3 py-2"
-				>
-					<PlusCircleIcon /> Create New Record
-				</CommandItem>
-			</CommandList>
-		</Command>
-	);
-}
-
-/* --------------------------------------------------------------------------
- * PredicateCombobox –– chooses a predicate (relation type) and shows
- * extra runtime actions (delete link, merge, open record, …).
- * -------------------------------------------------------------------------- */
-interface PredicateComboboxProps {
-	predicates: PredicateSelect[];
-	onPredicateSelect(id: number): void;
-	actions?: RelationshipAction[];
-	includeNonCanonical?: boolean;
-}
-
-function PredicateCombobox({
-	predicates,
-	onPredicateSelect,
-	actions = [],
-	includeNonCanonical = false,
-}: PredicateComboboxProps) {
-	return (
-		<Command className="w-full">
-			<CommandInput autoFocus placeholder="Select relation type…" />
-			<CommandList>
-				<CommandGroup heading="Predicates">
-					{predicates
-						.filter((p) => includeNonCanonical || p.canonical)
-						.map((p) => (
-							<CommandItem
-								className="flex gap-2 capitalize"
-								key={p.id}
-								onSelect={() => onPredicateSelect(p.id)}
-							>
-								<span className="font-medium">{p.name}</span>
-								<span className="text-c-hint">{p.type}</span>
-							</CommandItem>
-						))}
-				</CommandGroup>
-
-				{actions.length > 0 && (
-					<>
-						<CommandSeparator />
-						<CommandGroup heading="Actions">
-							{actions.map((a) => (
-								<CommandItem key={a.key} onSelect={a.onSelect}>
-									{a.label}
-								</CommandItem>
-							))}
-						</CommandGroup>
-					</>
-				)}
-			</CommandList>
-		</Command>
-	);
+       /** Stable key for React */
+       key: string;
+       /** Rendered content – can be any React node (icons, styled spans, etc.) */
+       label: ReactNode;
+       onSelect(): void;
 }
 
 /* --------------------------------------------------------------------------
