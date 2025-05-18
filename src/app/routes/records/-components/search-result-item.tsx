@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { SearchResult } from '@/server/api/routers/search';
 import { recordTypeIcons } from './type-icons';
 import { IntegrationLogo } from '@/components/integration-logo';
@@ -6,7 +7,11 @@ import type { MediaType } from '@/db/schema';
 import { toTitleCase } from '@/lib/formatting';
 import { usePredicateMap } from '@/lib/hooks/use-records';
 
-export const SearchResultItem = ({ result }: { result: SearchResult }) => {
+export const SearchResultItem = memo(function SearchResultItem({
+	result,
+}: {
+	result: SearchResult;
+}) {
 	const predicates = usePredicateMap();
 	const {
 		type,
@@ -93,4 +98,4 @@ export const SearchResultItem = ({ result }: { result: SearchResult }) => {
 			) : null}
 		</div>
 	);
-};
+});
