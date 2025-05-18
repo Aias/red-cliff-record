@@ -4,6 +4,7 @@ import { UploadIcon } from 'lucide-react';
 import { z } from 'zod';
 import { Spinner } from './spinner';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const mediaFileSchema = z
@@ -43,9 +44,10 @@ export const MediaUpload = forwardRef<HTMLDivElement, MediaUploadProps>(
 
 				try {
 					const validatedFile = validationSchema.parse(file);
-					setStatusMessage(`Uploading ${validatedFile.name}...`);
-					await onUpload(validatedFile);
-					setStatusMessage('Upload successful!');
+                                setStatusMessage(`Uploading ${validatedFile.name}...`);
+                                        await onUpload(validatedFile);
+                                        setStatusMessage('Upload successful!');
+                                        toast.success('Upload successful');
 					// Optionally reset after a delay
 					// setTimeout(() => setStatusMessage('Drag file here, paste, or click to upload'), 2000);
 				} catch (err) {
@@ -55,9 +57,9 @@ export const MediaUpload = forwardRef<HTMLDivElement, MediaUploadProps>(
 					} else if (err instanceof Error) {
 						errorMessage = `Upload failed: ${err.message}`;
 					}
-					setError(errorMessage);
-					setStatusMessage('Drag file here, paste, or click to upload');
-					console.error('File validation or upload error:', err);
+                                        setError(errorMessage);
+                                        setStatusMessage('Drag file here, paste, or click to upload');
+                                        toast.error(errorMessage);
 				} finally {
 					// Reset file input to allow uploading the same file again
 					if (fileInputRef.current) {
