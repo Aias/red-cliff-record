@@ -122,8 +122,8 @@ export const RecordsGrid = () => {
 	const [limitInput, setLimitInput] = useState(limit?.toString() ?? '');
 
 	// Debounced navigation handlers
-	const handleTitleChange = useMemo(() => {
-		const handler = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleTitleChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const value = e.target.value;
 			setTitleInput(value);
 			navigate({
@@ -135,12 +135,12 @@ export const RecordsGrid = () => {
 					},
 				}),
 			});
-		};
-		return handler;
-	}, [navigate]);
+		},
+		[navigate]
+	);
 
-	const handleUrlChange = useMemo(() => {
-		const handler = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleUrlChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const value = e.target.value;
 			setUrlInput(value);
 			navigate({
@@ -152,12 +152,12 @@ export const RecordsGrid = () => {
 					},
 				}),
 			});
-		};
-		return handler;
-	}, [navigate]);
+		},
+		[navigate]
+	);
 
-	const handleTextChange = useMemo(() => {
-		const handler = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleTextChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const value = e.target.value;
 			setTextInput(value);
 			navigate({
@@ -169,9 +169,9 @@ export const RecordsGrid = () => {
 					},
 				}),
 			});
-		};
-		return handler;
-	}, [navigate]);
+		},
+		[navigate]
+	);
 
 	const handleTypeChange = useCallback(
 		(value: string) => {
