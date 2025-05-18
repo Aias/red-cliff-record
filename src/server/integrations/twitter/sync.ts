@@ -1,4 +1,5 @@
-import { mkdirSync, readdirSync, readFileSync, renameSync } from 'fs';
+import { mkdirSync, readdirSync, readFileSync } from 'fs';
+import { rename } from 'fs/promises';
 import { homedir } from 'os';
 import { resolve } from 'path';
 import { db } from '@/server/db/connections';
@@ -33,26 +34,23 @@ const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
  * @param files - Array of file paths to archive
  * @param archiveDir - The archive directory path
  */
-function archiveProcessedFiles(files: string[], archiveDir: string): void {
+async function archiveProcessedFiles(files: string[], archiveDir: string): Promise<void> {
 	try {
-		// Create archive directory if it doesn't exist
 		mkdirSync(archiveDir, { recursive: true });
 
-		for (const filePath of files) {
-			// Get the filename from the path
-			const fileName = filePath.split('/').pop();
-			if (!fileName) {
-				console.error('Invalid file path:', filePath);
-				continue;
-			}
+		await Promise.all(
+			files.map(async (filePath) => {
+				const fileName = filePath.split('/').pop();
+				if (!fileName) {
+					console.error('Invalid file path:', filePath);
+					return;
+				}
 
-			// Create the archive path
-			const archivePath = resolve(archiveDir, fileName);
-
-			// Move the file to the archive directory
-			renameSync(filePath, archivePath);
-			console.log(`Archived file: ${fileName}`);
-		}
+				const archivePath = resolve(archiveDir, fileName);
+				await rename(filePath, archivePath);
+				console.log(`Archived file: ${fileName}`);
+			})
+		);
 	} catch (error) {
 		console.error('Error archiving files:', error);
 		throw error;
@@ -166,7 +164,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 
 		// Step 6: Archive processed files
 		const archiveDir = resolve(TWITTER_DATA_DIR, 'Archive');
-		archiveProcessedFiles(processedFiles, archiveDir);
+		await archiveProcessedFiles(processedFiles, archiveDir);
 
 		return updatedCount;
 	} catch (error) {

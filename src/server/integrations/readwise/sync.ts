@@ -1,5 +1,7 @@
 import { db } from '@/server/db/connections';
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@/server/db/schema/readwise';
+import { requireEnv } from '../common/env';
+import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {
 	createReadwiseAuthors,
@@ -18,7 +20,9 @@ import {
  * Configuration constants
  */
 const API_BASE_URL = 'https://readwise.io/api/v3/list/';
-const RETRY_DELAY_BASE = 1000; // 1 second in millisecondså
+const RETRY_DELAY_BASE = 1000; // 1 second in milliseconds
+const READWISE_TOKEN = requireEnv('READWISE_TOKEN');
+const logger = createIntegrationLogger('readwise', 'sync');
 
 /**
  * Retrieves the most recent update time from the database
@@ -37,12 +41,12 @@ async function getMostRecentUpdateTime(): Promise<Date | null> {
 		},
 	});
 	if (mostRecent) {
-		console.log(
+		logger.info(
 			`Last known readwise date: ${mostRecent.contentUpdatedAt?.toLocaleString() ?? 'none'}`
 		);
 		return mostRecent.contentUpdatedAt;
 	}
-	console.log('No existing documents found');
+	logger.info('No existing documents found');
 	return null;
 }
 
@@ -60,44 +64,45 @@ async function fetchReadwiseDocuments(
 	pageCursor?: string,
 	updatedAfter?: Date
 ): Promise<ReadwiseArticlesResponse> {
-	// Build query parameters
 	const params = new URLSearchParams();
-	if (pageCursor) {
-		params.append('pageCursor', pageCursor);
-	}
+	if (pageCursor) params.append('pageCursor', pageCursor);
 	if (updatedAfter) {
-		// Add 1ms to avoid duplicates at the boundary
 		const afterDate = new Date(updatedAfter.getTime() + 1);
 		params.append('updatedAfter', afterDate.toISOString());
 	}
 	params.append('withHtmlContent', 'true');
 
-	// Make the API request
-	console.log(`Fetching Readwise documents${pageCursor ? ' (with cursor)' : ''}...`);
-	const response = await fetch(`${API_BASE_URL}?${params.toString()}`, {
-		headers: {
-			Authorization: `Token ${process.env.READWISE_TOKEN}`,
-			'Content-Type': 'application/json',
-		},
-	});
+	let attempt = 0;
+	while (true) {
+		logger.info(`Fetching Readwise documents${pageCursor ? ' (with cursor)' : ''}`);
+		const response = await fetch(`${API_BASE_URL}?${params.toString()}`, {
+			headers: {
+				Authorization: `Token ${READWISE_TOKEN}`,
+				'Content-Type': 'application/json',
+			},
+		});
 
-	// Handle rate limiting
-	if (!response.ok) {
+		if (response.ok) {
+			const data = await response.json();
+			return ReadwiseArticlesResponseSchema.parse(data);
+		}
+
 		if (response.status === 429) {
 			const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
-			console.warn(`Rate limit hit, waiting ${retryAfter} seconds before retrying...`);
-			await new Promise((resolve) => setTimeout(resolve, retryAfter * RETRY_DELAY_BASE));
-			return fetchReadwiseDocuments(pageCursor, updatedAfter);
+			logger.warn(`Rate limit hit, waiting ${retryAfter} seconds before retrying...`);
+			await new Promise((r) => setTimeout(r, retryAfter * RETRY_DELAY_BASE));
+			continue;
 		}
-		throw new Error(
-			`Failed to fetch Readwise documents: ${response.statusText} (${response.status})`
-		);
+
+		attempt++;
+		if (attempt >= 3) {
+			throw new Error(
+				`Failed to fetch Readwise documents: ${response.statusText} (${response.status})`
+			);
+		}
+		logger.warn(`Request failed with status ${response.status}, retrying...`);
+		await new Promise((r) => setTimeout(r, RETRY_DELAY_BASE));
 	}
-
-	// Parse and validate the response
-	const data = await response.json();
-
-	return ReadwiseArticlesResponseSchema.parse(data);
 }
 
 /**
@@ -122,7 +127,7 @@ const mapReadwiseArticleToDocument = (
 				validSourceUrl = article.source_url;
 			}
 		} catch {
-			console.warn(`Skipping invalid source_url: ${article.source_url}`);
+			logger.warn(`Skipping invalid source_url: ${article.source_url}`);
 		}
 	}
 
@@ -135,7 +140,7 @@ const mapReadwiseArticleToDocument = (
 				validImageUrl = article.image_url;
 			}
 		} catch {
-			console.warn(`Skipping invalid image_url: ${article.image_url}`);
+			logger.warn(`Skipping invalid image_url: ${article.image_url}`);
 		}
 	}
 
@@ -223,13 +228,13 @@ function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle
  */
 async function syncReadwiseDocuments(integrationRunId: number): Promise<number> {
 	try {
-		console.log('Starting Readwise documents sync...');
+		logger.start('Starting Readwise documents sync');
 
 		// Step 1: Determine last sync point
 		const lastUpdateTime = await getMostRecentUpdateTime();
 
 		// Step 2: Fetch all documents
-		console.log('Fetching documents from Readwise API...');
+		logger.info('Fetching documents from Readwise API');
 		const allDocuments: ReadwiseArticle[] = [];
 		let nextPageCursor: string | null = null;
 
@@ -241,13 +246,13 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 			allDocuments.push(...response.results);
 			nextPageCursor = response.nextPageCursor;
 
-			console.log(`Retrieved ${response.results.length} documents (total: ${allDocuments.length})`);
+			logger.info(`Retrieved ${response.results.length} documents (total: ${allDocuments.length})`);
 		} while (nextPageCursor);
 
 		// Step 3: Process documents
 		let successCount = 0;
 		if (allDocuments.length > 0) {
-			console.log(`Processing ${allDocuments.length} documents...`);
+			logger.info(`Processing ${allDocuments.length} documents`);
 
 			// Sort documents to ensure parents are processed before children
 			const sortedDocuments = sortDocumentsByHierarchy(allDocuments);
@@ -269,10 +274,10 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 
 					// Log progress periodically
 					if (successCount % 20 === 0) {
-						console.log(`Processed ${successCount} of ${sortedDocuments.length} documents`);
+						logger.info(`Processed ${successCount} of ${sortedDocuments.length} documents`);
 					}
 				} catch (error) {
-					console.error('Error processing document:', {
+					logger.error('Error processing document', {
 						documentId: doc.id,
 						error: error instanceof Error ? error.message : String(error),
 					});
@@ -280,7 +285,7 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 			}
 
 			// Step 4: Create related entities
-			console.log('Creating related entities...');
+			logger.info('Creating related entities');
 			await createReadwiseAuthors();
 			await createReadwiseTags(integrationRunId);
 			await createRecordsFromReadwiseAuthors();
@@ -288,10 +293,10 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 			await createRecordsFromReadwiseDocuments();
 		}
 
-		console.log(`Successfully processed ${successCount} documents`);
+		logger.complete('Processed documents', successCount);
 		return successCount;
 	} catch (error) {
-		console.error('Error syncing Readwise documents:', error);
+		logger.error('Error syncing Readwise documents', error);
 		throw error;
 	}
 }
@@ -301,15 +306,15 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
  */
 const main = async (): Promise<void> => {
 	try {
-		console.log('\n=== STARTING READWISE SYNC ===\n');
+		logger.start('=== STARTING READWISE SYNC ===');
 		await runIntegration('readwise', syncReadwiseDocuments);
-		console.log('\n=== READWISE SYNC COMPLETED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
+		logger.complete('=== READWISE SYNC COMPLETED ===');
+		logger.info('-'.repeat(50));
 		process.exit(0);
 	} catch (error) {
-		console.error('Error in Readwise sync main function:', error);
-		console.log('\n=== READWISE SYNC FAILED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
+		logger.error('Error in Readwise sync main function', error);
+		logger.error('=== READWISE SYNC FAILED ===');
+		logger.info('-'.repeat(50));
 		process.exit(1);
 	}
 };

@@ -254,49 +254,49 @@ export async function createMediaFromRaindropBookmarks() {
 
 	logger.info(`Found ${unmappedImages.length} Raindrop images without media`);
 
-	for (const image of unmappedImages) {
-		const newMedia = await mapRaindropImageToMedia(image);
-		if (!newMedia) {
-			logger.warn(`Invalid image for image ${image.id}, deleting...`);
+	await Promise.all(
+		unmappedImages.map(async (image) => {
+			const newMedia = await mapRaindropImageToMedia(image);
+			if (!newMedia) {
+				logger.warn(`Invalid image for image ${image.id}, deleting...`);
+				await db.delete(raindropImages).where(eq(raindropImages.id, image.id));
+				return;
+			}
 
-			await db.delete(raindropImages).where(eq(raindropImages.id, image.id));
+			logger.info(`Creating media for image ${image.id}`, newMedia.url, newMedia.contentTypeString);
 
-			continue;
-		}
+			const [newMediaRecord] = await db
+				.insert(media)
+				.values(newMedia)
+				.onConflictDoUpdate({
+					target: [media.url, media.recordId],
+					set: {
+						recordUpdatedAt: new Date(),
+					},
+				})
+				.returning({ id: media.id });
 
-		logger.info(`Creating media for image ${image.id}`, newMedia.url, newMedia.contentTypeString);
+			if (!newMediaRecord) {
+				throw new Error('Failed to create media');
+			}
 
-		const [newMediaRecord] = await db
-			.insert(media)
-			.values(newMedia)
-			.onConflictDoUpdate({
-				target: [media.url, media.recordId],
-				set: {
-					recordUpdatedAt: new Date(),
-				},
-			})
-			.returning({ id: media.id });
-
-		if (!newMediaRecord) {
-			throw new Error('Failed to create media');
-		}
-
-		logger.info(`Created media ${newMediaRecord.id} for image ${image.id}, linking to image...`);
-
-		await db
-			.update(raindropImages)
-			.set({ mediaId: newMediaRecord.id })
-			.where(eq(raindropImages.id, image.id));
-
-		if (image.bookmark.recordId) {
-			logger.info(`Linking associated media to record ${image.bookmark.recordId}`);
+			logger.info(`Created media ${newMediaRecord.id} for image ${image.id}, linking to image...`);
 
 			await db
-				.update(media)
-				.set({ recordId: image.bookmark.recordId })
-				.where(eq(media.id, newMediaRecord.id));
-		}
-	}
+				.update(raindropImages)
+				.set({ mediaId: newMediaRecord.id })
+				.where(eq(raindropImages.id, image.id));
+
+			if (image.bookmark.recordId) {
+				logger.info(`Linking associated media to record ${image.bookmark.recordId}`);
+
+				await db
+					.update(media)
+					.set({ recordId: image.bookmark.recordId })
+					.where(eq(media.id, newMediaRecord.id));
+			}
+		})
+	);
 
 	logger.complete(`Processed ${unmappedImages.length} Raindrop bookmark media`);
 }

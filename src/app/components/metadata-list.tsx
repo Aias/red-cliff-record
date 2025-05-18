@@ -1,22 +1,24 @@
 import { useState } from 'react';
 import { CopyIcon } from 'lucide-react';
 import { z } from 'zod';
-import { ScrollArea } from './ui/scroll-area';
 import {
-	Button,
 	DataListItem,
 	DataListLabel,
 	DataListRoot,
 	DataListValue,
+	type DataListRootProps,
+} from './data-list';
+import { ExternalLink } from './external-link';
+import { Button } from './ui/button';
+import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-	ExternalLink,
-	type DataListRootProps,
-} from '.';
+} from './ui/dialog';
+import { ScrollArea } from './ui/scroll-area';
 
 interface MetadataListProps extends DataListRootProps {
 	metadata: Record<string, unknown>;

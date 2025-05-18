@@ -6,7 +6,7 @@ alwaysApply: false
 # Component Development Guidelines
 
 ## Component Organization
-- Reusable components go in `src/app/components/` with kebab-case naming (e.g., `example-component.tsx`). Add new components to the barrel export at `index.ts`, and import all components from that barrel file.
+- Reusable components go in `src/app/components/` with kebab-case naming (e.g., `example-component.tsx`).
 - Shadcn components are installed manually into `src/app/components/ui`, and components in there should not be touched or modified without explicit instructions to do so.
 - Page-specific components should be in the page's directory with `-` prefix (e.g., `-page-component.tsx`)
 - Use `-components/` directory for page-specific component groups
