@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useDeferredValue, useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { SearchIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
@@ -22,7 +22,8 @@ export const SiteSearch = () => {
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState('');
 	const [commandOpen, setCommandOpen] = useState(false);
-	const debouncedValue = useDebounce(inputValue, 300);
+	const deferredValue = useDeferredValue(inputValue);
+	const debouncedValue = useDebounce(deferredValue, 300);
 
 	const { data: textResults, isLoading: textResultsLoading } = trpc.search.byTextQuery.useQuery(
 		{
