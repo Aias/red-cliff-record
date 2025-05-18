@@ -41,11 +41,12 @@ export const updateRecordsSources = async (): Promise<void> => {
 
 			console.log(`Processing batch with ${recordList.length} records`);
 
-			// Process each record in the batch
-			for (const record of recordList) {
-				await updateRecordSources(record);
-				totalProcessed++;
-			}
+			await Promise.all(
+				recordList.map(async (record) => {
+					await updateRecordSources(record);
+					totalProcessed++;
+				})
+			);
 
 			// Move to next batch
 			offset += BATCH_SIZE;
