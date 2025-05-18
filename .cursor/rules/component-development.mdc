@@ -1,0 +1,37 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Component Development Guidelines
+
+## Component Organization
+- Reusable components go in `src/app/components/` with kebab-case naming (e.g., `example-component.tsx`). Add new components to the barrel export at `index.ts`, and import all components from that barrel file.
+- Shadcn components are installed manually into `src/app/components/ui`, and components in there should not be touched or modified without explicit instructions to do so.
+- Page-specific components should be in the page's directory with `-` prefix (e.g., `-page-component.tsx`)
+- Use `-components/` directory for page-specific component groups
+
+## Component Structure
+- Use semantic HTML elements for layout and structure
+- Implement Tailwind for styling with v4 syntax.
+- Use Shadcn UI for interactive elements and complex components
+- Import Lucide icons as components (e.g., `import { HomeIcon } from 'lucide-react'`). Always use the <Name>Icon suffix, not just <Name>, e.g. `HomeIcon` rather than simply `Home`.
+
+## TypeScript Requirements
+- All components must be fully typed
+- Never use the `any` keyword, and avoid using `unknown` types except in rare cases.
+- Similarly, *never* use `as` for type casting. The project must be fully type safe.
+- Import and reuse existing types from schemas and database types
+
+## Form Handling
+- Use Tanstack Forms for form management
+- Implement Zod schemas for validation
+- Integrate with tRPC for API communication
+- Handle form state and validation properly
+
+## Performance Considerations
+- Implement proper memoization where needed
+- Optimize re-renders
+- Use proper loading states
+- Implement proper error boundaries
+- Consider code splitting for larger components

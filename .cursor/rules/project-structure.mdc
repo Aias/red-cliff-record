@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Project Structure
+
+This project follows a well-organized structure with clear separation of concerns:
+
+## Frontend (`src/app/`)
+- `routes/`: Contains all Tanstack React Router routes
+- `components/`: Reusable frontend components (aliased as `@/components`)
+- `lib/`: Utility functions and helpers (aliased as `@/lib`). Helpers that require server-only functionality should go into `@lib/server`.
+
+## Backend (`src/server/`)
+- `api/`: tRPC API routes and routers
+- `db/`: Drizzle database schema and migrations (aliased as `@/db`)
+- `integrations/`: External API integrations and sync scripts
+
+## Configuration Files
+- `app.config.ts`: Tanstack/Vite application configuration
+- `components.json`: Shadcn UI configuration
+- `drizzle.config.ts`: Database configuration
+- `tsconfig.json`: TypeScript configuration
+- `eslint.config.js`: ESLint configuration
+- `.prettierrc` and `.prettierignore`: Prettier configuration
+
+## Development Guidelines
+- All components should be fully typed with TypeScript
+- Use Tailwind for styling and Shadcn UI for complex components
+- Follow semantic HTML practices
+- Implement form handling with Tanstack Forms
+- Use Lucide icons with proper component imports
+- Handle database operations via tRPC and Drizzle
+- Maintain performance optimization as a priority
