@@ -6,6 +6,8 @@ import type { LucideIcon } from 'lucide-react';
 import { usePredicateMap, useRecordWithOutgoingLinks } from '@/app/lib/hooks/use-records';
 import type { DbId } from '@/server/api/routers/common';
 import { recordTypeIcons } from './type-icons';
+import { IntegrationLogo } from '@/components/integration-logo';
+import { Spinner } from '@/components/spinner';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -13,9 +15,7 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-	IntegrationLogo,
-	Spinner,
-} from '@/components';
+} from '@/components/ui/dropdown-menu';
 import type { MediaType } from '@/db/schema';
 import { cn } from '@/lib/utils';
 

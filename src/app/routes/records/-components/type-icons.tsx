@@ -1,5 +1,5 @@
 import { FileTextIcon, LightbulbIcon, UserIcon } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { type RecordType } from '@/db/schema';
 
 // Map record types to their corresponding icons and descriptions

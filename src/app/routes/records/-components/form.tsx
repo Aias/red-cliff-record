@@ -6,6 +6,16 @@ import { z } from 'zod';
 import type { RecordGet } from '@/server/api/routers/types';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@/server/db/schema';
 import { recordTypeIcons } from './type-icons';
+import { Avatar } from '@/components/avatar';
+import { BooleanSwitch } from '@/components/boolean-switch';
+import { DynamicTextarea } from '@/components/dynamic-textarea';
+import { ExternalLink } from '@/components/external-link';
+import { GhostInput } from '@/components/ghost-input';
+import { IntegrationLogo } from '@/components/integration-logo';
+import MediaGrid from '@/components/media-grid';
+import { MediaUpload } from '@/components/media-upload';
+import { MetadataList } from '@/components/metadata-list';
+import { Spinner } from '@/components/spinner';
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -16,33 +26,15 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	AlertDialogTrigger,
-	Avatar,
-	BooleanSwitch,
-	Button,
-	DynamicTextarea,
-	ExternalLink,
-	GhostInput,
-	IntegrationLogo,
-	Label,
-	MetadataList,
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-	Separator,
-	Slider,
-	Spinner,
-	Table,
-	TableBody,
-	TableCell,
-	TableRow,
-	ToggleGroup,
-	ToggleGroupItem,
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from '@/components';
-import MediaGrid from '@/components/media-grid';
-import { MediaUpload } from '@/components/media-upload';
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useRecordUpload } from '@/lib/hooks/use-record-upload';
 import { useDeleteMedia, useRecord, useUpsertRecord } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
-import { Spinner } from '@/components';
+import { Spinner } from '@/components/spinner';
 import { useRecordList } from '@/lib/hooks/use-records';
 
 export const Route = createFileRoute('/')({
