@@ -260,7 +260,7 @@ export function RecordForm({
 				<form.Field name="rating">
 					{(field) => (
 						<div className="mx-5 mb-1.5 flex flex-col gap-3">
-							<div className="flex items-center justify-between text-xs text-muted-foreground">
+							<div className="flex items-center justify-between text-xs text-c-secondary">
 								<Label htmlFor="rating" className="inline-flex w-[0px] justify-center">
 									Rating
 								</Label>
