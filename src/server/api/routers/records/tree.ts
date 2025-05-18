@@ -120,3 +120,5 @@ export const getFamilyTree = publicProcedure
 
 		return family;
 	});
+
+export type FamilyTree = Awaited<ReturnType<typeof getFamilyTree>>;

@@ -28,7 +28,7 @@ export function useRecordList(args: ListRecordsInput) {
 }
 
 export function useRecordTree(id: DbId) {
-	return trpc.records.tree.useQuery({ id });
+	return trpc.records.tree.useQuery({ id }, { placeholderData: (previousData) => previousData });
 }
 
 export function useRecordLinks(id: DbId) {
@@ -115,6 +115,22 @@ export function useEmbedRecord() {
 				};
 			});
 			utils.search.byRecordId.invalidate({ id: data.id });
+		},
+	});
+}
+
+export function useMarkAsCurated() {
+	const utils = trpc.useUtils();
+
+	return trpc.records.markAsCurated.useMutation({
+		onSuccess: (ids) => {
+			utils.records.list.invalidate();
+			ids.forEach((id) => {
+				utils.records.get.setData({ id }, (prev) => {
+					if (!prev) return undefined;
+					return { ...prev, isCurated: true };
+				});
+			});
 		},
 	});
 }

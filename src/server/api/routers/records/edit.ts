@@ -1,5 +1,8 @@
 import { TRPCError } from '@trpc/server';
+import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { publicProcedure } from '../../init';
+import { IdSchema, type DbId } from '../common';
 import type { RecordGet } from '../types';
 import { RecordInsertSchema, records } from '@/db/schema';
 
@@ -37,4 +40,25 @@ export const upsert = publicProcedure
 		}
 
 		return record;
+	});
+
+export const markAsCurated = publicProcedure
+	.input(z.object({ ids: z.array(IdSchema) }))
+	.mutation(async ({ ctx: { db }, input }): Promise<DbId[]> => {
+		const updatedRecords = await db
+			.update(records)
+			.set({ isCurated: true, recordUpdatedAt: new Date() })
+			.where(inArray(records.id, input.ids))
+			.returning({
+				id: records.id,
+			});
+
+		if (updatedRecords.length !== input.ids.length) {
+			throw new TRPCError({
+				code: 'INTERNAL_SERVER_ERROR',
+				message: `Failed to update records. Input data:\n\n${JSON.stringify(input, null, 2)}`,
+			});
+		}
+
+		return updatedRecords.map((r) => r.id);
 	});

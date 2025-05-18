@@ -48,7 +48,13 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 	}, []);
 
 	const outgoingLinks = useMemo(() => recordLinks?.outgoingLinks ?? [], [recordLinks]);
-	const incomingLinks = useMemo(() => recordLinks?.incomingLinks ?? [], [recordLinks]);
+	const incomingLinks = useMemo(
+		() =>
+			recordLinks?.incomingLinks.filter(
+				(link) => predicates[link.predicateId]?.type !== 'containment'
+			) ?? [],
+		[recordLinks]
+	);
 	const totalLinks = useMemo(
 		() => outgoingLinks.length + incomingLinks.length,
 		[outgoingLinks, incomingLinks]
@@ -238,10 +244,19 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 	const mergeRecordsMutation = useMergeRecords();
 
 	// Fetch similar records only if textEmbedding exists
-	const { data: similarRecords, isLoading } = trpc.search.byRecordId.useQuery({
-		id: id,
-		limit: 10,
-	});
+	const { data: similarRecords, isLoading } = trpc.search.byRecordId.useQuery(
+		{
+			id: id,
+			limit: 10,
+		},
+		{
+			trpc: {
+				context: {
+					skipBatch: true,
+				},
+			},
+		}
+	);
 
 	return similarRecords ? (
 		<section className="text-xs">
@@ -255,10 +270,10 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 							<RelationshipSelector
 								sourceId={id}
 								initialTargetId={record.id}
-								label={record.similarity.toFixed(2)}
+								label={`${Math.round(record.similarity * 100)}%`}
 								buttonProps={{
 									size: 'sm',
-									variant: 'ghost',
+									variant: 'outline',
 									className: 'h-[1.5lh] font-mono text-xs text-c-secondary',
 								}}
 								popoverProps={{ side: 'left' }}

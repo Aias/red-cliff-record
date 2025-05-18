@@ -31,7 +31,9 @@ export const Route = createFileRoute('/records')({
 function RouteComponent() {
 	const navigate = Route.useNavigate();
 	const search = Route.useSearch();
-	const { data: recordsList } = trpc.records.list.useQuery(search);
+	const { data: recordsList } = trpc.records.list.useQuery(search, {
+		placeholderData: (prev) => prev,
+	});
 	const matches = useMatches();
 
 	// Check if a record is selected by seeing if we're on a record detail route
