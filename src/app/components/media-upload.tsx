@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { forwardRef, useCallback, useRef, useState } from 'react';
 import { UploadIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { Spinner } from './spinner';
 import { Button } from '@/components/ui/button';
@@ -57,7 +58,7 @@ export const MediaUpload = forwardRef<HTMLDivElement, MediaUploadProps>(
 					}
 					setError(errorMessage);
 					setStatusMessage('Drag file here, paste, or click to upload');
-					console.error('File validation or upload error:', err);
+					toast.error(errorMessage);
 				} finally {
 					// Reset file input to allow uploading the same file again
 					if (fileInputRef.current) {
