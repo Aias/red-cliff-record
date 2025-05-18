@@ -12,6 +12,7 @@ export const getFamilyTree = publicProcedure
 			columns: {
 				id: true,
 				title: true,
+				recordCreatedAt: true,
 			},
 			with: {
 				outgoingLinks: {
@@ -28,6 +29,7 @@ export const getFamilyTree = publicProcedure
 							columns: {
 								id: true, // Parent
 								title: true,
+								recordCreatedAt: true,
 							},
 							with: {
 								outgoingLinks: {
@@ -44,6 +46,7 @@ export const getFamilyTree = publicProcedure
 											columns: {
 												id: true, // Grandparent
 												title: true,
+												recordCreatedAt: true,
 											},
 										},
 									},
@@ -62,6 +65,7 @@ export const getFamilyTree = publicProcedure
 											columns: {
 												id: true, // Siblings
 												title: true,
+												recordCreatedAt: true,
 											},
 										},
 									},
@@ -84,6 +88,7 @@ export const getFamilyTree = publicProcedure
 							columns: {
 								id: true, // Children
 								title: true,
+								recordCreatedAt: true,
 							},
 							with: {
 								outgoingLinks: {
@@ -100,6 +105,7 @@ export const getFamilyTree = publicProcedure
 											columns: {
 												id: true, // Grandchildren
 												title: true,
+												recordCreatedAt: true,
 											},
 										},
 									},

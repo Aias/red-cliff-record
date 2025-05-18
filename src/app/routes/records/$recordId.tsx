@@ -21,56 +21,118 @@ type TreeNode = {
 	predicateId?: DbId;
 	title?: string | null;
 	id: DbId;
+	recordCreatedAt: Date;
+};
+
+const sortByRecordCreatedAt = <T extends { recordCreatedAt: Date }>(records: T[]): T[] => {
+	return [...records].sort((a, b) => a.recordCreatedAt.getTime() - b.recordCreatedAt.getTime());
 };
 
 const flattenTree = (tree: FamilyTree): TreeNode[] => {
 	const nodes: TreeNode[] = [];
-	const { id, incomingLinks, outgoingLinks, title } = tree;
-	outgoingLinks.forEach((parent) => {
+	const { id, incomingLinks, outgoingLinks, title, recordCreatedAt } = tree;
+
+	// Sort outgoing links by recordCreatedAt
+	const sortedOutgoingLinks = sortByRecordCreatedAt(
+		outgoingLinks.map((link) => ({
+			...link,
+			recordCreatedAt: link.target.recordCreatedAt,
+		}))
+	);
+
+	sortedOutgoingLinks.forEach((parent) => {
 		const {
 			predicateId: parentPredicateId,
 			target: {
 				id: parentId,
 				title: parentTitle,
+				recordCreatedAt: parentRecordCreatedAt,
 				incomingLinks: parentIncomingLinks,
 				outgoingLinks: parentOutgoingLinks,
 			},
 		} = parent;
 
-		parentOutgoingLinks.forEach((grandparent) => {
+		// Sort grandparent links by recordCreatedAt
+		const sortedGrandparentLinks = sortByRecordCreatedAt(
+			parentOutgoingLinks.map((link) => ({
+				...link,
+				recordCreatedAt: link.target.recordCreatedAt,
+			}))
+		);
+
+		sortedGrandparentLinks.forEach((grandparent) => {
 			const {
 				predicateId: grandparentPredicateId,
-				target: { id: grandparentId, title: grandparentTitle },
+				target: {
+					id: grandparentId,
+					title: grandparentTitle,
+					recordCreatedAt: grandparentRecordCreatedAt,
+				},
 			} = grandparent;
 
 			nodes.push({
 				predicateId: grandparentPredicateId,
 				id: grandparentId,
 				title: grandparentTitle,
+				recordCreatedAt: grandparentRecordCreatedAt,
 			});
 		});
 
-		nodes.push({ predicateId: parentPredicateId, id: parentId, title: parentTitle });
+		nodes.push({
+			predicateId: parentPredicateId,
+			id: parentId,
+			title: parentTitle,
+			recordCreatedAt: parentRecordCreatedAt,
+		});
 
-		parentIncomingLinks.forEach((child) => {
+		// Sort child links by recordCreatedAt
+		const sortedChildLinks = sortByRecordCreatedAt(
+			parentIncomingLinks.map((link) => ({
+				...link,
+				recordCreatedAt: link.source.recordCreatedAt,
+			}))
+		);
+
+		sortedChildLinks.forEach((child) => {
 			const {
 				predicateId: childPredicateId,
-				source: { id: childId, title: childTitle },
+				source: { id: childId, title: childTitle, recordCreatedAt: childRecordCreatedAt },
 			} = child;
 
-			nodes.push({ predicateId: childPredicateId, id: childId, title: childTitle });
+			nodes.push({
+				predicateId: childPredicateId,
+				id: childId,
+				title: childTitle,
+				recordCreatedAt: childRecordCreatedAt,
+			});
 		});
 	});
 
-	nodes.push({ id, title });
+	// Only add if there are no outgoing links, otherwise we'll get duplicates from parent's child nodes.
+	if (outgoingLinks.length === 0) {
+		nodes.push({ id, title, recordCreatedAt: recordCreatedAt });
+	}
 
-	incomingLinks.forEach((child) => {
+	// Sort incoming links by recordCreatedAt
+	const sortedIncomingLinks = sortByRecordCreatedAt(
+		incomingLinks.map((link) => ({
+			...link,
+			recordCreatedAt: link.source.recordCreatedAt,
+		}))
+	);
+
+	sortedIncomingLinks.forEach((child) => {
 		const {
 			predicateId: childPredicateId,
-			source: { id: childId, title: childTitle },
+			source: { id: childId, title: childTitle, recordCreatedAt: childRecordCreatedAt },
 		} = child;
 
-		nodes.push({ predicateId: childPredicateId, id: childId, title: childTitle });
+		nodes.push({
+			predicateId: childPredicateId,
+			id: childId,
+			title: childTitle,
+			recordCreatedAt: childRecordCreatedAt,
+		});
 	});
 
 	return nodes;
@@ -85,6 +147,7 @@ const getNextRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId | un
 	for (let i = 0; i < ids.length; i++) {
 		const idx = (start + i) % ids.length;
 		const id = ids[idx];
+		if (id === undefined) continue;
 		if (!skip.has(id)) return id;
 	}
 
@@ -93,7 +156,7 @@ const getNextRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId | un
 
 function RouteComponent() {
 	const navigate = Route.useNavigate();
-	const search = Route.useSearch({ from: '/records' });
+	const search = Route.useSearch();
 	const { data: recordsList } = trpc.records.list.useQuery(search, {
 		placeholderData: (prev) => prev,
 	});
