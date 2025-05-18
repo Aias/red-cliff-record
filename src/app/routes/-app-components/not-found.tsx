@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { Button } from '@/components';
+import { Button } from '@/components/ui/button';
 
 export function NotFound() {
 	return (

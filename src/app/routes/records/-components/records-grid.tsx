@@ -5,30 +5,29 @@ import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
 import { defaultQueueOptions } from '@/server/api/routers/types';
 import { RecordTypeIcon } from './type-icons';
+import { ExternalLink } from '@/components/external-link';
+import { IntegrationLogo } from '@/components/integration-logo';
+import { Placeholder } from '@/components/placeholder';
+import { Spinner } from '@/components/spinner';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
-	ExternalLink,
-	Input,
-	IntegrationLogo,
-	Label,
-	Placeholder,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Spinner,
+} from '@/components/ui/select';
+import {
 	Table,
 	TableBody,
 	TableCell,
 	TableHead,
 	TableHeader,
 	TableRow,
-	ToggleGroup,
-	ToggleGroupItem,
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from '@/components';
+} from '@/components/ui/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
 	IntegrationTypeSchema,
 	RecordTypeSchema,

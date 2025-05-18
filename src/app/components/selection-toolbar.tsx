@@ -1,12 +1,12 @@
 import type { HTMLAttributes } from 'react';
 import { ChevronDownIcon, XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
-	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from '@/components';
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 interface SelectionActionsProps extends HTMLAttributes<HTMLDivElement> {

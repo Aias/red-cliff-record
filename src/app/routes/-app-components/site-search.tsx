@@ -4,19 +4,17 @@ import { SearchIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { defaultQueueOptions } from '@/server/api/routers/types';
 import { SearchResultItem } from '../records/-components/search-result-item';
+import { Spinner } from '@/components/spinner';
+import { Button } from '@/components/ui/button';
 import {
-	Button,
 	Command,
 	CommandEmpty,
 	CommandGroup,
 	CommandInput,
 	CommandItem,
 	CommandList,
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-	Spinner,
-} from '@/components';
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 
