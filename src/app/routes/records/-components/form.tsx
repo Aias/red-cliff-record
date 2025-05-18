@@ -46,7 +46,7 @@ import { MediaUpload } from '@/components/media-upload';
 import {
 	useCreateMedia,
 	useDeleteMedia,
-	useRecordSuspense,
+	useRecord,
 	useUpsertRecord,
 } from '@/lib/hooks/use-records';
 import { readFileAsBase64 } from '@/lib/read-file';
@@ -76,6 +76,31 @@ const MetadataSection = ({ record }: { record: RecordGet }) => {
 	);
 };
 
+const defaultData: RecordGet = {
+	id: 0,
+	slug: null,
+	type: 'artifact',
+	title: null,
+	sense: null,
+	abbreviation: null,
+	url: null,
+	avatarUrl: null,
+	summary: null,
+	content: null,
+	notes: null,
+	mediaCaption: null,
+	isCurated: false,
+	isPrivate: false,
+	rating: 0,
+	reminderAt: null,
+	sources: [],
+	media: [],
+	recordCreatedAt: new Date(),
+	recordUpdatedAt: new Date(),
+	contentCreatedAt: new Date(),
+	contentUpdatedAt: new Date(),
+} as const;
+
 export function RecordForm({
 	recordId,
 	onFinalize,
@@ -86,7 +111,7 @@ export function RecordForm({
 	const navigate = useNavigate();
 	const params = useParams({ from: '/records/$recordId' });
 	const urlRecordId = useMemo(() => Number(params.recordId), [params.recordId]);
-	const [record] = useRecordSuspense(recordId);
+	const { data: record, isLoading, isError } = useRecord(recordId);
 	const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
 	const mediaUploadRef = useRef<HTMLDivElement>(null);
 
@@ -118,7 +143,7 @@ export function RecordForm({
 	);
 
 	const form = useForm({
-		defaultValues: record,
+		defaultValues: record ?? defaultData,
 		onSubmit: async ({ value }) => {
 			const {
 				title,
@@ -164,6 +189,9 @@ export function RecordForm({
 		},
 		[form, onFinalize]
 	);
+
+	if (isLoading || !record) return <Spinner />;
+	if (isError) return <div>Error loading record</div>;
 
 	return (
 		<form
