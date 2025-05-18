@@ -1,6 +1,7 @@
 import type { SearchResult } from '@/server/api/routers/search';
 import { recordTypeIcons } from './type-icons';
 import { IntegrationLogo } from '@/components/integration-logo';
+import { LazyVideo } from '@/components/lazy-video';
 import type { MediaType } from '@/db/schema';
 import { toTitleCase } from '@/lib/formatting';
 import { usePredicateMap } from '@/lib/hooks/use-records';
@@ -73,9 +74,11 @@ export const SearchResultItem = ({ result }: { result: SearchResult }) => {
 							src={mediaItem.url}
 							alt={mediaItem.altText ?? mediaCaption ?? ''}
 							className="absolute inset-0 size-full object-cover"
+							loading="lazy"
+							decoding="async"
 						/>
 					) : (
-						<video src={mediaItem.url} className="absolute inset-0 object-cover" />
+						<LazyVideo src={mediaItem.url} className="absolute inset-0 object-cover" />
 					)}
 				</div>
 			)}
