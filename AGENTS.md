@@ -1,0 +1,1 @@
+Instructions for agents are created using the Cursor Rules format. They can be found in `.cursor/rules`. Always check these rules before implementing any changes. If a refactor would cause a rule to be outdated or broken, update the rule.
