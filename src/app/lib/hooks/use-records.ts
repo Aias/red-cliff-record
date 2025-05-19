@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
@@ -101,6 +102,11 @@ export function useDeleteMedia() {
 export function usePredicateMap() {
 	const { data } = trpc.links.listPredicates.useQuery(undefined);
 	return Object.fromEntries((data ?? []).map((p) => [p.id, p]));
+}
+
+export function usePredicateSlugMap() {
+	const { data } = trpc.links.listPredicates.useQuery(undefined);
+	return useMemo(() => Object.fromEntries((data ?? []).map((p) => [p.slug, p])), [data]);
 }
 
 export function useEmbedRecord() {

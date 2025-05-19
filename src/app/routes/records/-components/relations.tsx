@@ -11,6 +11,7 @@ import {
 	useDeleteLinks,
 	useMergeRecords,
 	usePredicateMap,
+	usePredicateSlugMap,
 	useRecordLinks,
 } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ interface RecordLink extends LinkSelect {
 export const RelationsList = ({ id }: RelationsListProps) => {
 	const { data: recordLinks } = useRecordLinks(id);
 	const predicates = usePredicateMap();
+	const predicatesBySlug = usePredicateSlugMap();
 	const mergeRecordsMutation = useMergeRecords();
 	const deleteLinkMutation = useDeleteLinks();
 	const navigate = useNavigate();
@@ -181,7 +183,12 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 						{incomingLinks.map((link) => (
 							<li key={`${link.sourceId}-${link.predicateId}`} className="flex items-center gap-2">
 								<RelationshipSelector
-									label={predicates[link.predicateId]?.name ?? 'Unknown'}
+									label={(() => {
+										const p = predicates[link.predicateId];
+										if (!p) return 'Unknown';
+										const slug = p.inverseSlug ?? p.slug;
+										return predicatesBySlug[slug]?.name ?? p.name;
+									})()}
 									sourceId={id}
 									link={link}
 									buttonProps={{
