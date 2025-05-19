@@ -1,11 +1,5 @@
 import { useCallback } from 'react';
-import {
-	createFileRoute,
-	Link,
-	Outlet,
-	retainSearchParams,
-	useMatches,
-} from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet, useMatches } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
 import { ListRecordsInputSchema } from '@/server/api/routers/types';
 import { RecordLink } from './-components/record-link';
@@ -19,9 +13,6 @@ export const Route = createFileRoute('/records')({
 		await queryClient.ensureQueryData(trpc.records.list.queryOptions(search));
 	},
 	component: RouteComponent,
-	search: {
-		middlewares: [retainSearchParams(true)],
-	},
 });
 
 function RouteComponent() {
@@ -49,10 +40,9 @@ function RouteComponent() {
 			navigate({
 				to: '/records/$recordId',
 				params: { recordId: value },
-				search,
 			});
 		},
-		[navigate, search]
+		[navigate]
 	);
 
 	return (
@@ -64,7 +54,7 @@ function RouteComponent() {
 							<h2 className="text-lg font-medium">
 								Records <span className="text-sm text-c-secondary">({recordsList.ids.length})</span>
 							</h2>
-							<Link to="/records" search={true} className="text-sm">
+							<Link to="/records" className="text-sm">
 								Index
 							</Link>
 						</header>
