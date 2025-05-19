@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { SaveIcon, Trash2Icon } from 'lucide-react';
+import { MergeIcon, RectangleEllipsisIcon, SaveIcon, Trash2Icon } from 'lucide-react';
 import { z } from 'zod';
 import type { RecordGet } from '@/server/api/routers/types';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@/server/db/schema';
@@ -28,6 +28,14 @@ import {
 	AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
@@ -43,6 +51,8 @@ interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
 	recordId: number;
 	onFinalize: () => void;
 	onDelete: () => void;
+	prevRecordId?: number;
+	onMerge?: () => void;
 }
 
 const MetadataSection = ({ record }: { record: RecordGet }) => {
@@ -92,6 +102,8 @@ export function RecordForm({
 	recordId,
 	onFinalize,
 	onDelete,
+	prevRecordId,
+	onMerge,
 	className,
 	...props
 }: RecordFormProps) {
@@ -563,27 +575,43 @@ export function RecordForm({
 						<Button size="icon" variant="ghost" type="submit" disabled={!canSubmit || isSubmitting}>
 							{isSubmitting ? <Spinner /> : <SaveIcon />}
 						</Button>
-						<AlertDialog>
-							<AlertDialogTrigger asChild>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
 								<Button size="icon" variant="ghost" type="button">
-									<Trash2Icon />
+									<RectangleEllipsisIcon />
 								</Button>
-							</AlertDialogTrigger>
-							<AlertDialogContent>
-								<AlertDialogHeader>
-									<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-									<AlertDialogDescription>
-										This action cannot be undone. This will permanently delete this record.
-									</AlertDialogDescription>
-								</AlertDialogHeader>
-								<AlertDialogFooter>
-									<AlertDialogCancel>Cancel</AlertDialogCancel>
-									<Button variant="destructive" asChild>
-										<AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
-									</Button>
-								</AlertDialogFooter>
-							</AlertDialogContent>
-						</AlertDialog>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent>
+								<DropdownMenuLabel>Actions</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								{prevRecordId !== undefined && onMerge && (
+									<DropdownMenuItem onClick={onMerge}>
+										<MergeIcon /> Merge
+									</DropdownMenuItem>
+								)}
+								<AlertDialog>
+									<AlertDialogTrigger asChild>
+										<DropdownMenuItem variant="destructive">
+											<Trash2Icon /> Delete
+										</DropdownMenuItem>
+									</AlertDialogTrigger>
+									<AlertDialogContent>
+										<AlertDialogHeader>
+											<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+											<AlertDialogDescription>
+												This action cannot be undone. This will permanently delete this record.
+											</AlertDialogDescription>
+										</AlertDialogHeader>
+										<AlertDialogFooter>
+											<AlertDialogCancel>Cancel</AlertDialogCancel>
+											<Button variant="destructive" asChild>
+												<AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+											</Button>
+										</AlertDialogFooter>
+									</AlertDialogContent>
+								</AlertDialog>
+							</DropdownMenuContent>
+						</DropdownMenu>
 					</div>
 				)}
 			</form.Subscribe>

@@ -1,6 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
-import { useDeleteRecords, useMarkAsCurated, useRecordTree } from '@/app/lib/hooks/use-records';
+import {
+	useDeleteRecords,
+	useMarkAsCurated,
+	useMergeRecords,
+	useRecordTree,
+} from '@/app/lib/hooks/use-records';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
 import type { FamilyTree } from '@/server/api/routers/records/tree';
@@ -165,6 +170,7 @@ function RouteComponent() {
 	const { data: tree } = useRecordTree(recordId);
 	const markAsCurated = useMarkAsCurated();
 	const deleteMutation = useDeleteRecords();
+	const mergeMutation = useMergeRecords();
 
 	const nodes = useMemo(() => {
 		if (!tree) return [];
@@ -216,20 +222,38 @@ function RouteComponent() {
 		[deleteMutation, recordsList, recordId, navigate]
 	);
 
+	const handleMerge = useCallback(
+		(sourceId: DbId, targetId: DbId) => {
+			navigate({
+				to: '/records/$recordId',
+				params: { recordId: targetId.toString() },
+				search: true,
+			});
+			mergeMutation.mutate({ sourceId, targetId });
+		},
+		[mergeMutation, navigate]
+	);
+
 	return (
 		<div className="flex flex-1 overflow-x-auto">
 			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider bg-c-mist p-3">
-				{nodes.map((node) => (
-					<li id={`record-${node.id}`} key={node.id} className="shrink-0">
-						<RecordForm
-							recordId={node.id}
-							className="card py-3 transition-colors not-data-active:opacity-80 data-active:border-c-edge"
-							data-active={node.id === recordId ? true : undefined}
-							onFinalize={handleFinalize}
-							onDelete={() => handleDelete(node.id)}
-						/>
-					</li>
-				))}
+				{nodes.map((node, idx) => {
+					const prevNode = idx > 0 ? nodes[idx - 1] : undefined;
+					const prevId = prevNode?.id;
+					return (
+						<li id={`record-${node.id}`} key={node.id} className="shrink-0">
+							<RecordForm
+								recordId={node.id}
+								className="card py-3 transition-colors not-data-active:opacity-80 data-active:border-c-edge"
+								data-active={node.id === recordId ? true : undefined}
+								onFinalize={handleFinalize}
+								onDelete={() => handleDelete(node.id)}
+								prevRecordId={prevId}
+								onMerge={prevId ? () => handleMerge(node.id, prevId) : undefined}
+							/>
+						</li>
+					);
+				})}
 			</ul>
 			<div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto p-4">
 				<RelationsList id={recordId} />
