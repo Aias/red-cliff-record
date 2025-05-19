@@ -1,6 +1,7 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { CheckIcon } from 'lucide-react';
+import { StarIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
 import { defaultQueueOptions } from '@/server/api/routers/types';
@@ -36,6 +37,26 @@ import {
 } from '@/db/schema';
 import { useRecord } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
+
+const sortFields = [
+	'recordCreatedAt',
+	'recordUpdatedAt',
+	'contentCreatedAt',
+	'contentUpdatedAt',
+	'title',
+	'rating',
+	'id',
+] as const;
+type SortField = (typeof sortFields)[number];
+const sortLabels: Record<SortField, string> = {
+	recordCreatedAt: 'Record Added',
+	recordUpdatedAt: 'Record Updated',
+	contentCreatedAt: 'Content Added',
+	contentUpdatedAt: 'Content Updated',
+	title: 'Title',
+	rating: 'Stars',
+	id: 'ID',
+};
 
 const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 	const { data: record } = useRecord(id);
@@ -100,8 +121,20 @@ export const RecordsGrid = () => {
 	const { data: queue } = trpc.records.list.useQuery(search);
 
 	const {
-		filters: { type, title, url, isCurated, isPrivate, source, hasParent, text, hasMedia },
+		filters: {
+			type,
+			title,
+			url,
+			isCurated,
+			isPrivate,
+			source,
+			hasParent,
+			text,
+			hasMedia,
+			minRating,
+		},
 		limit,
+		orderBy,
 	} = search;
 
 	// Memoize filter values
@@ -114,6 +147,10 @@ export const RecordsGrid = () => {
 		}),
 		[isCurated, isPrivate, hasParent, hasMedia]
 	);
+
+	const ratingValue = minRating ?? 0;
+	const sortField = orderBy?.[0]?.field ?? 'recordCreatedAt';
+	const sortDirection = orderBy?.[0]?.direction ?? 'desc';
 
 	// State for input fields
 	const [titleInput, setTitleInput] = useState(title ?? '');
@@ -293,6 +330,55 @@ export const RecordsGrid = () => {
 		[navigate]
 	);
 
+	const handleMinRatingChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					filters: {
+						...prev.filters,
+						minRating: value ? parseInt(value, 10) : undefined,
+					},
+				}),
+			});
+		},
+		[navigate]
+	);
+
+	const handleSortFieldChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					orderBy: [
+						{
+							field: value as SortField,
+							direction: sortDirection,
+						},
+					],
+				}),
+			});
+		},
+		[navigate, sortDirection]
+	);
+
+	const handleSortDirectionChange = useCallback(
+		(value: string) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					orderBy: [
+						{
+							field: sortField,
+							direction: (value as 'asc' | 'desc') || 'desc',
+						},
+					],
+				}),
+			});
+		},
+		[navigate, sortField]
+	);
+
 	const handleLimitChange = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const value = e.target.value;
@@ -405,6 +491,29 @@ export const RecordsGrid = () => {
 				</div>
 
 				<div className="flex flex-col gap-1.5">
+					<Label htmlFor="minRating">Min Stars</Label>
+					<ToggleGroup
+						id="minRating"
+						type="single"
+						value={ratingValue ? ratingValue.toString() : ''}
+						onValueChange={handleMinRatingChange}
+						variant="outline"
+						className="w-full justify-center"
+					>
+						{[1, 2, 3].map((n) => (
+							<ToggleGroupItem key={n} value={n.toString()} className="flex-1">
+								<StarIcon
+									className={cn('size-4', {
+										'fill-yellow-500 stroke-yellow-500': ratingValue >= n,
+										'stroke-yellow-500': ratingValue < n,
+									})}
+								/>
+							</ToggleGroupItem>
+						))}
+					</ToggleGroup>
+				</div>
+
+				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="curated">Is Curated?</Label>
 					<ToggleGroup
 						id="curated"
@@ -499,6 +608,39 @@ export const RecordsGrid = () => {
 						onChange={handleLimitChange}
 					/>
 				</div>
+				<div className="flex flex-col gap-1.5">
+					<Label htmlFor="sortField">Sort Field</Label>
+					<Select value={sortField} onValueChange={handleSortFieldChange}>
+						<SelectTrigger id="sortField" className="w-full">
+							<SelectValue placeholder="Sort field" />
+						</SelectTrigger>
+						<SelectContent>
+							{sortFields.map((field) => (
+								<SelectItem key={field} value={field}>
+									{sortLabels[field]}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+				<div className="flex flex-col gap-1.5">
+					<Label htmlFor="sortDirection">Direction</Label>
+					<ToggleGroup
+						id="sortDirection"
+						type="single"
+						value={sortDirection}
+						onValueChange={handleSortDirectionChange}
+						variant="outline"
+						className="w-full"
+					>
+						<ToggleGroupItem value="asc" className="flex-1">
+							Asc
+						</ToggleGroupItem>
+						<ToggleGroupItem value="desc" className="flex-1">
+							Desc
+						</ToggleGroupItem>
+					</ToggleGroup>
+				</div>
 			</div>
 		),
 		[
@@ -514,6 +656,12 @@ export const RecordsGrid = () => {
 			handleTextChange,
 			limitInput,
 			handleLimitChange,
+			ratingValue,
+			handleMinRatingChange,
+			sortField,
+			sortDirection,
+			handleSortFieldChange,
+			handleSortDirectionChange,
 			filterValues,
 			handleCuratedChange,
 			handleIndexNodeChange,
