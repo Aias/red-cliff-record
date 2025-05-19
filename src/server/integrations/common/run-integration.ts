@@ -34,6 +34,21 @@ export async function runIntegration(
 ): Promise<void> {
 	console.log(`Starting ${integrationType} integration run for ${runType}...`);
 
+	// Prevent overlapping runs of the same integration type
+	const existingRun = await db.query.integrationRuns.findFirst({
+		columns: { id: true },
+		where: {
+			integrationType,
+			status: IntegrationStatus.enum.in_progress,
+		},
+	});
+	if (existingRun) {
+		console.warn(
+			`Integration ${integrationType} already in progress (run ${existingRun.id}). Skipping.`
+		);
+		return;
+	}
+
 	// Create a new integration run record
 	const [run] = await db
 		.insert(integrationRuns)

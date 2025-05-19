@@ -8,6 +8,7 @@ import {
 	type RaindropCollectionInsert,
 } from '@/server/db/schema/raindrop';
 import { requireEnv } from '../common/env';
+import { fetchWithRetry } from '../common/fetch-with-retry';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {
@@ -78,7 +79,7 @@ async function syncCollections(integrationRunId: number): Promise<number> {
  * @throws Error if the API request fails
  */
 async function fetchRaindropCollections(url: string) {
-	const response = await fetch(url, {
+	const response = await fetchWithRetry(url, {
 		headers: {
 			Authorization: `Bearer ${RAINDROP_TOKEN}`,
 		},
@@ -209,30 +210,18 @@ async function fetchNewRaindrops(lastKnownDate?: Date): Promise<Raindrop[]> {
 	let page = 0;
 	let hasMore = true;
 	let totalFetched = 0;
-	const RETRY_BASE = 1000;
 
 	while (hasMore) {
 		logger.info(`Fetching page ${page + 1}`);
 		const url = `${API_BASE_URL}/raindrops/0?perpage=${RAINDROPS_PAGE_SIZE}&page=${page}`;
 
-		const response = await fetch(url, {
+		const response = await fetchWithRetry(url, {
 			headers: {
 				Authorization: `Bearer ${RAINDROP_TOKEN}`,
 			},
 		});
 
 		if (!response.ok) {
-			if (response.status === 429) {
-				const retry = parseInt(response.headers.get('Retry-After') || '1', 10);
-				logger.warn(`Rate limit hit, retrying in ${retry} seconds`);
-				await new Promise((r) => setTimeout(r, retry * RETRY_BASE));
-				continue;
-			}
-			if (response.status >= 500) {
-				logger.warn(`Server error ${response.status}, retrying...`);
-				await new Promise((r) => setTimeout(r, RETRY_BASE));
-				continue;
-			}
 			throw new Error(`Raindrops API request failed with status ${response.status}`);
 		}
 

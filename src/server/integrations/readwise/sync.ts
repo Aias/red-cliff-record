@@ -1,6 +1,7 @@
 import { db } from '@/server/db/connections';
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@/server/db/schema/readwise';
 import { requireEnv } from '../common/env';
+import { fetchWithRetry } from '../common/fetch-with-retry';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {
@@ -20,7 +21,6 @@ import {
  * Configuration constants
  */
 const API_BASE_URL = 'https://readwise.io/api/v3/list/';
-const RETRY_DELAY_BASE = 1000; // 1 second in milliseconds
 const READWISE_TOKEN = requireEnv('READWISE_TOKEN');
 const logger = createIntegrationLogger('readwise', 'sync');
 
@@ -72,37 +72,26 @@ async function fetchReadwiseDocuments(
 	}
 	params.append('withHtmlContent', 'true');
 
-	let attempt = 0;
-	while (true) {
-		logger.info(`Fetching Readwise documents${pageCursor ? ' (with cursor)' : ''}`);
-		const response = await fetch(`${API_BASE_URL}?${params.toString()}`, {
+	logger.info(`Fetching Readwise documents${pageCursor ? ' (with cursor)' : ''}`);
+	const response = await fetchWithRetry(
+		`${API_BASE_URL}?${params.toString()}`,
+		{
 			headers: {
 				Authorization: `Token ${READWISE_TOKEN}`,
 				'Content-Type': 'application/json',
 			},
-		});
+		},
+		{ logger }
+	);
 
-		if (response.ok) {
-			const data = await response.json();
-			return ReadwiseArticlesResponseSchema.parse(data);
-		}
-
-		if (response.status === 429) {
-			const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
-			logger.warn(`Rate limit hit, waiting ${retryAfter} seconds before retrying...`);
-			await new Promise((r) => setTimeout(r, retryAfter * RETRY_DELAY_BASE));
-			continue;
-		}
-
-		attempt++;
-		if (attempt >= 3) {
-			throw new Error(
-				`Failed to fetch Readwise documents: ${response.statusText} (${response.status})`
-			);
-		}
-		logger.warn(`Request failed with status ${response.status}, retrying...`);
-		await new Promise((r) => setTimeout(r, RETRY_DELAY_BASE));
+	if (!response.ok) {
+		throw new Error(
+			`Failed to fetch Readwise documents: ${response.statusText} (${response.status})`
+		);
 	}
+
+	const data = await response.json();
+	return ReadwiseArticlesResponseSchema.parse(data);
 }
 
 /**
