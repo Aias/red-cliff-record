@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { SaveIcon, Trash2Icon } from 'lucide-react';
+import { Trash2Icon } from 'lucide-react';
 import { z } from 'zod';
 import type { RecordGet } from '@/server/api/routers/types';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@/server/db/schema';
@@ -145,6 +145,10 @@ export function RecordForm({
 		},
 	});
 
+	const autoSave = useCallback(() => {
+		void form.handleSubmit();
+	}, [form]);
+
 	const curateAndNextHandler = useCallback(
 		async (e: React.KeyboardEvent<HTMLFormElement>) => {
 			e.preventDefault();
@@ -165,9 +169,10 @@ export function RecordForm({
 				e.stopPropagation();
 				form.handleSubmit();
 			}}
-			onClickCapture={(e) => {
+			onClickCapture={async (e) => {
 				if (!isNaN(urlRecordId) && urlRecordId !== recordId) {
 					e.stopPropagation();
+					await form.handleSubmit();
 					navigate({
 						to: '/records/$recordId',
 						params: { recordId: recordId.toString() },
@@ -196,6 +201,7 @@ export function RecordForm({
 									value={field.state.value ?? ''}
 									placeholder="Untitled Record"
 									onChange={(e) => field.handleChange(e.target.value)}
+									onBlur={autoSave}
 								/>
 								{field.state.meta.errors && (
 									<p className="text-sm text-destructive">{field.state.meta.errors.join(', ')}</p>
@@ -224,6 +230,7 @@ export function RecordForm({
 								value={field.state.value}
 								onValueChange={(value) => {
 									if (value) field.handleChange(value as RecordType);
+									autoSave();
 								}}
 								variant="outline"
 								className="w-full"
@@ -274,7 +281,10 @@ export function RecordForm({
 								max={3}
 								step={1}
 								value={[field.state.value ?? 0]}
-								onValueChange={(values) => field.handleChange(values[0] ?? 0)}
+								onValueChange={(values) => {
+									field.handleChange(values[0] ?? 0);
+									autoSave();
+								}}
 							/>
 						</div>
 					)}
@@ -309,6 +319,7 @@ export function RecordForm({
 														value={field.state.value ?? ''}
 														placeholder="https://example.com"
 														onChange={(e) => field.handleChange(e.target.value)}
+														onBlur={autoSave}
 													/>
 													{field.state.value && (
 														<ExternalLink href={field.state.value} children={null} />
@@ -351,6 +362,7 @@ export function RecordForm({
 														value={field.state.value ?? ''}
 														placeholder="https://example.com/image.jpg"
 														onChange={(e) => field.handleChange(e.target.value)}
+														onBlur={autoSave}
 													/>
 													{field.state.value && (
 														<ExternalLink href={field.state.value} children={null} />
@@ -382,6 +394,7 @@ export function RecordForm({
 												value={field.state.value ?? ''}
 												placeholder="Short form"
 												onChange={(e) => field.handleChange(e.target.value)}
+												onBlur={autoSave}
 											/>
 										)}
 									</form.Field>
@@ -403,6 +416,7 @@ export function RecordForm({
 												value={field.state.value ?? ''}
 												placeholder="Meaning or definition"
 												onChange={(e) => field.handleChange(e.target.value)}
+												onBlur={autoSave}
 											/>
 										)}
 									</form.Field>
@@ -422,7 +436,10 @@ export function RecordForm({
 								label="Is Private"
 								id="isPrivate"
 								value={field.state.value}
-								handleChange={field.handleChange}
+								handleChange={(v) => {
+									field.handleChange(v);
+									autoSave();
+								}}
 							/>
 						)}
 					</form.Field>
@@ -433,7 +450,10 @@ export function RecordForm({
 								label="Is Curated"
 								id="isCurated"
 								value={field.state.value}
-								handleChange={field.handleChange}
+								handleChange={(v) => {
+									field.handleChange(v);
+									autoSave();
+								}}
 							/>
 						)}
 					</form.Field>
@@ -454,6 +474,7 @@ export function RecordForm({
 										form.handleSubmit();
 									}
 								}}
+								onBlur={autoSave}
 							/>
 						</div>
 					)}
@@ -474,6 +495,7 @@ export function RecordForm({
 										form.handleSubmit();
 									}
 								}}
+								onBlur={autoSave}
 							/>
 						</div>
 					)}
@@ -504,6 +526,7 @@ export function RecordForm({
 														form.handleSubmit();
 													}
 												}}
+												onBlur={autoSave}
 											/>
 										</div>
 									)}
@@ -532,13 +555,14 @@ export function RecordForm({
 										form.handleSubmit();
 									}
 								}}
+								onBlur={autoSave}
 							/>
 						</div>
 					)}
 				</form.Field>
 			</div>
 			<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
-				{([canSubmit, isSubmitting]) => (
+				{([_canSubmit, isSubmitting]) => (
 					<div className="order-first -mt-1 mb-3 flex items-center border-b border-c-divider pb-1">
 						<Popover>
 							<PopoverTrigger asChild>
@@ -560,9 +584,7 @@ export function RecordForm({
 						>
 							{`${record.type} #${record.id}, ${record.recordCreatedAt.toLocaleString()}`}
 						</Link>
-						<Button size="icon" variant="ghost" type="submit" disabled={!canSubmit || isSubmitting}>
-							{isSubmitting ? <Spinner /> : <SaveIcon />}
-						</Button>
+						{isSubmitting && <Spinner />}
 						<AlertDialog>
 							<AlertDialogTrigger asChild>
 								<Button size="icon" variant="ghost" type="button">
