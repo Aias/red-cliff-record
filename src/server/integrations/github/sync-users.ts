@@ -3,6 +3,7 @@ import { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { githubUsers, type GithubUserInsert } from '@/server/db/schema/github';
+import { requireEnv } from '../common/env';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 
 /**
@@ -71,7 +72,7 @@ export async function ensureGithubUserExists(
  */
 export async function updatePartialUsers(): Promise<number> {
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN,
+		auth: requireEnv('GITHUB_TOKEN'),
 	});
 
 	console.log('Fetching full user information for partial users...');

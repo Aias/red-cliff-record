@@ -10,6 +10,7 @@ import {
 	type GithubCommitInsert,
 	type GithubRepositoryInsert,
 } from '@/server/db/schema/github';
+import { requireEnv } from '../common/env';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { syncCommitSummaries } from './summarize-commits';
 import { ensureGithubUserExists } from './sync-users';
@@ -139,7 +140,7 @@ async function ensureRepositoryExists(
  */
 async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN,
+		auth: requireEnv('GITHUB_TOKEN'),
 	});
 
 	console.log('Fetching GitHub commits...');

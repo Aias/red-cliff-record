@@ -1,5 +1,7 @@
 import { db } from '@/server/db/connections';
 import { lightroomImages } from '@/server/db/schema/adobe';
+import { requireEnv } from '../common/env';
+import { fetchWithRetry } from '../common/fetch-with-retry';
 import { runIntegration } from '../common/run-integration';
 import { createMediaFromLightroomImages } from './map';
 import { LightroomJsonResponseSchema, type LightroomJsonResponse } from './types';
@@ -28,9 +30,9 @@ async function syncLightroomImages(integrationRunId: number): Promise<number> {
 		console.log('Fetching Lightroom album data...');
 
 		// Step 1: Fetch data from the Lightroom API
-		const response = await fetch(ALBUM_URL, {
+		const response = await fetchWithRetry(ALBUM_URL, {
 			headers: {
-				Authorization: `Bearer ${process.env.ADOBE_API_TOKEN}`,
+				Authorization: `Bearer ${requireEnv('ADOBE_API_TOKEN')}`,
 			},
 		});
 

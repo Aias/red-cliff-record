@@ -10,6 +10,7 @@ import type {
 } from '@/server/db/schema/github';
 import { githubCommits } from '@/server/db/schema/github';
 import { GithubCommitType } from '@/server/db/schema/github';
+import { requireEnv } from '../common/env';
 
 export const CommitSummaryInputSchema = z.object({
 	message: z.string(),
@@ -57,7 +58,7 @@ export const CommitSummaryResponseSchema = z.object({
 export type CommitSummaryResponse = z.infer<typeof CommitSummaryResponseSchema>;
 
 export const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
+	apiKey: requireEnv('OPENAI_API_KEY'),
 });
 
 export const commitSummarizerInstructions = `

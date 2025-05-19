@@ -1,17 +1,17 @@
 import Airtable from 'airtable';
-import 'dotenv/config';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import type { AirtableAttachmentSelect, AirtableExtractSelect } from '@/server/db/schema/airtable';
 import { airtableAttachments } from '@/server/db/schema/airtable';
+import { requireEnv } from '../common/env';
 import { AirtableAttachmentSchema } from './types';
 import { uploadMediaToR2 } from '@/lib/server/media-helpers';
 
 Airtable.configure({
-	apiKey: process.env.AIRTABLE_ACCESS_TOKEN,
+	apiKey: requireEnv('AIRTABLE_ACCESS_TOKEN'),
 });
 
-export const airtableBase = Airtable.base(process.env.AIRTABLE_BASE_ID!);
+export const airtableBase = Airtable.base(requireEnv('AIRTABLE_BASE_ID'));
 
 type AttachmentWithExtract = AirtableAttachmentSelect & {
 	extract: AirtableExtractSelect;
@@ -94,7 +94,7 @@ export async function storeMedia() {
 		},
 		where: {
 			url: {
-				notIlike: `%${process.env.ASSETS_DOMAIN}%`,
+				notIlike: `%${requireEnv('ASSETS_DOMAIN')}%`,
 			},
 		},
 	});

@@ -2,6 +2,7 @@ import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { db } from '@/server/db/connections';
 import { githubRepositories, type GithubRepositoryInsert } from '@/server/db/schema/github';
+import { requireEnv } from '../common/env';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { ensureGithubUserExists } from './sync-users';
 import { GithubStarredReposResponseSchema } from './types';
@@ -55,7 +56,7 @@ async function getMostRecentStarredAt(): Promise<Date | null> {
  */
 export async function syncGitHubStars(integrationRunId: number): Promise<number> {
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN,
+		auth: requireEnv('GITHUB_TOKEN'),
 	});
 
 	console.log('Fetching GitHub starred repos...');
