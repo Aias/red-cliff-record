@@ -68,6 +68,9 @@ export const records = pgTable(
 			table.notes,
 			table.mediaCaption
 		),
+		index('idx_records_sources').using('gin', table.sources),
+		index().on(table.recordCreatedAt),
+		index().on(table.recordUpdatedAt),
 		index().on(table.rating),
 		index().on(table.isPrivate),
 		index().on(table.isCurated),
