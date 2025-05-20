@@ -16,9 +16,9 @@
 		"node": ">=22"
 	},
 	"dependencies": {
-		"@libsql/client": "0.15.6",
+		"@libsql/client": "0.15.7",
 		"@neondatabase/serverless": "^1.0.0",
-		"@octokit/request-error": "^6.1.8",
+		"@octokit/request-error": "^7.0.0",
 		"@octokit/rest": "^21.1.1",
 		"@tailwindcss/vite": "^4.1.7",
 		"@tanstack/react-form": "^1.11.2",
@@ -41,7 +41,7 @@
 		"drizzle-orm": "1.0.0-beta.1-c0277c0",
 		"drizzle-zod": "^0.7.1",
 		"lucide-react": "0.511.0",
-		"marked": "^15.0.11",
+		"marked": "^15.0.12",
 		"marked-linkify-it": "^3.1.12",
 		"marked-smartypants": "^1.1.9",
 		"mime-types": "3.0.1",
@@ -57,14 +57,14 @@
 		"unenv": "^1.10.0",
 		"vinxi": "0.5.6",
 		"ws": "^8.18.2",
-		"zod": "^3.24.4"
+		"zod": "^3.25.7"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.27.0",
 		"@octokit/types": "14.0.0",
 		"@types/eslint": "9.6.1",
 		"@types/mime-types": "^2.1.4",
-		"@types/node": "^22.15.18",
+		"@types/node": "^22.15.19",
 		"@types/react": "^19.1.4",
 		"@types/react-dom": "^19.1.5",
 		"@types/ws": "^8.18.1",
