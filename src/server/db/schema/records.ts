@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
 	boolean,
 	index,
@@ -68,10 +69,16 @@ export const records = pgTable(
 			table.notes,
 			table.mediaCaption
 		),
+		index('idx_records_sources').using('gin', table.sources),
+		index().on(table.recordCreatedAt),
+		index().on(table.recordUpdatedAt),
 		index().on(table.rating),
 		index().on(table.isPrivate),
 		index().on(table.isCurated),
 		index().using('hnsw', table.textEmbedding.op('vector_cosine_ops')),
+		index('idx_records_text_embedding_not_null')
+			.on(table.textEmbedding)
+			.where(sql`${table.textEmbedding} IS NOT NULL`),
 	]
 );
 
