@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
-import { z } from 'zod/v4';
+import { zodTextFormat } from 'openai/helpers/zod.mjs';
+import { z } from 'zod'; // TODO: Update to v4 when OpenAI supports it
 import { db } from '@/server/db/connections';
 import type {
 	GithubCommitChangeSelect,
@@ -8,7 +9,7 @@ import type {
 	GithubRepositorySelect,
 } from '@/server/db/schema/github';
 import { githubCommits } from '@/server/db/schema/github';
-import { GithubCommitType } from '@/server/db/schema/github';
+import { githubCommitTypes } from '@/server/db/schema/github';
 
 export const CommitSummaryInputSchema = z.object({
 	message: z.string(),
@@ -38,9 +39,9 @@ export const CommitSummaryInputSchema = z.object({
 export type CommitSummaryInput = z.infer<typeof CommitSummaryInputSchema>;
 
 export const CommitSummaryResponseSchema = z.object({
-	primary_purpose: GithubCommitType.describe(
-		'The primary purpose of the commit based on conventional commit types.'
-	),
+	primary_purpose: z
+		.enum(githubCommitTypes)
+		.describe('The primary purpose of the commit based on conventional commit types.'),
 	summary: z
 		.string()
 		.describe(
@@ -54,8 +55,6 @@ export const CommitSummaryResponseSchema = z.object({
 });
 
 export type CommitSummaryResponse = z.infer<typeof CommitSummaryResponseSchema>;
-
-const commitSummaryResponseJsonSchema = z.toJSONSchema(CommitSummaryResponseSchema);
 
 export const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
@@ -100,12 +99,7 @@ export const summarizeCommit = async (
 	const response = await openai.responses.create({
 		model: 'gpt-4.1',
 		text: {
-			format: {
-				type: 'json_schema',
-				name: 'commit_summary',
-				strict: true,
-				schema: commitSummaryResponseJsonSchema,
-			},
+			format: zodTextFormat(CommitSummaryResponseSchema, 'commit_summary'),
 		},
 		input: [
 			{ role: 'system', content: commitSummarizerInstructions },
