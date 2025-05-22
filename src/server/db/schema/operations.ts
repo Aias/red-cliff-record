@@ -33,8 +33,8 @@ export const integrationTypeEnum = pgEnum('integration_type', [
 	'readwise',
 	'twitter',
 ]);
-export const IntegrationType = z.enum(integrationTypeEnum.enumValues);
-export type IntegrationType = z.infer<typeof IntegrationType>;
+export const IntegrationTypeSchema = z.enum(integrationTypeEnum.enumValues);
+export type IntegrationType = z.infer<typeof IntegrationTypeSchema>;
 
 export const runTypeEnum = pgEnum('run_type', ['seed', 'sync']);
 export const RunType = z.enum(runTypeEnum.enumValues);

@@ -21,7 +21,7 @@ export const ReadwiseArticleSchema = z.object({
 	category: ReadwiseCategory,
 	location: ReadwiseLocation.nullable(),
 	tags: z
-		.record(ReadwiseTagSchema)
+		.record(z.string(), ReadwiseTagSchema)
 		.nullable()
 		.transform((val) => {
 			const keys = Object.keys(val ?? {});

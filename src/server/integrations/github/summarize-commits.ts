@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
-import { zodTextFormat } from 'openai/helpers/zod.mjs';
 import { z } from 'zod/v4';
 import { db } from '@/server/db/connections';
 import type {
@@ -56,6 +55,8 @@ export const CommitSummaryResponseSchema = z.object({
 
 export type CommitSummaryResponse = z.infer<typeof CommitSummaryResponseSchema>;
 
+const commitSummaryResponseJsonSchema = z.toJSONSchema(CommitSummaryResponseSchema);
+
 export const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
@@ -99,7 +100,12 @@ export const summarizeCommit = async (
 	const response = await openai.responses.create({
 		model: 'gpt-4.1',
 		text: {
-			format: zodTextFormat(CommitSummaryResponseSchema, 'commit_summary'),
+			format: {
+				type: 'json_schema',
+				name: 'commit_summary',
+				strict: true,
+				schema: commitSummaryResponseJsonSchema,
+			},
 		},
 		input: [
 			{ role: 'system', content: commitSummarizerInstructions },

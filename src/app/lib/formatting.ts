@@ -67,12 +67,12 @@ export function validateAndFormatUrl(
 	url: string,
 	safe: true,
 	options?: UrlOptions
-): z.ZodSafeParseResult<string, string>;
+): z.ZodSafeParseResult<string>;
 export function validateAndFormatUrl(
 	url: string,
 	safe?: boolean,
 	options?: UrlOptions
-): string | z.ZodSafeParseResult<string, string> {
+): string | z.ZodSafeParseResult<string> {
 	// Default options
 	const { skipHttps = false } = options || {};
 

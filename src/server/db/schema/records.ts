@@ -26,8 +26,8 @@ export const recordTypeEnum = pgEnum('record_type', [
 	'concept', // a category, idea, or abstraction
 	'artifact', // physical or digital objects, content, or media
 ]);
-export const RecordType = z.enum(recordTypeEnum.enumValues);
-export type RecordType = z.infer<typeof RecordType>;
+export const RecordTypeSchema = z.enum(recordTypeEnum.enumValues);
+export type RecordType = z.infer<typeof RecordTypeSchema>;
 
 // Main index table
 export const records = pgTable(
