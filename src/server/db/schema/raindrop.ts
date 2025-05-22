@@ -24,7 +24,7 @@ export const raindropTypeEnum = pgEnum('raindrop_type', [
 	'image',
 	'audio',
 	'article',
-] as const);
+]);
 export const RaindropType = z.enum(raindropTypeEnum.enumValues);
 export type RaindropType = z.infer<typeof RaindropType>;
 

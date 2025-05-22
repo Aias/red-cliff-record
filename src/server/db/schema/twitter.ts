@@ -54,14 +54,13 @@ export type TwitterTweetSelect = typeof twitterTweets.$inferSelect;
 export const TwitterTweetInsertSchema = createInsertSchema(twitterTweets);
 export type TwitterTweetInsert = typeof twitterTweets.$inferInsert;
 
-export const TwitterMediaType = z.enum(['photo', 'video', 'animated_gif']);
-export type TwitterMediaType = z.infer<typeof TwitterMediaType>;
-
 export const twitterMediaTypeEnum = pgEnum('twitter_media_type', [
 	'photo',
 	'video',
 	'animated_gif',
-] as const);
+]);
+export const TwitterMediaType = z.enum(twitterMediaTypeEnum.enumValues);
+export type TwitterMediaType = z.infer<typeof TwitterMediaType>;
 
 export const twitterMedia = pgTable(
 	'twitter_media',

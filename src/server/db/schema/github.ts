@@ -113,20 +113,7 @@ export type GithubRepositorySelect = typeof githubRepositories.$inferSelect;
 export const GithubRepositoryInsertSchema = createInsertSchema(githubRepositories);
 export type GithubRepositoryInsert = typeof githubRepositories.$inferInsert;
 
-export const GithubCommitType = z.enum([
-	'feature',
-	'enhancement',
-	'bugfix',
-	'refactor',
-	'documentation',
-	'style',
-	'chore',
-	'test',
-	'build',
-]);
-export type GithubCommitType = z.infer<typeof GithubCommitType>;
-
-export const GithubCommitChangeStatus = z.enum([
+export const githubCommitChangeStatusEnum = pgEnum('github_commit_change_status', [
 	'added',
 	'modified',
 	'removed',
@@ -135,6 +122,7 @@ export const GithubCommitChangeStatus = z.enum([
 	'changed',
 	'unchanged',
 ]);
+export const GithubCommitChangeStatus = z.enum(githubCommitChangeStatusEnum.enumValues);
 export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatus>;
 
 export const githubCommitTypesEnum = pgEnum('github_commit_types', [
@@ -147,7 +135,9 @@ export const githubCommitTypesEnum = pgEnum('github_commit_types', [
 	'chore',
 	'test',
 	'build',
-] as const);
+]);
+export const GithubCommitType = z.enum(githubCommitTypesEnum.enumValues);
+export type GithubCommitType = z.infer<typeof GithubCommitType>;
 
 export const githubCommits = pgTable(
 	'github_commits',
@@ -180,16 +170,6 @@ export const GithubCommitSelectSchema = createSelectSchema(githubCommits);
 export type GithubCommitSelect = typeof githubCommits.$inferSelect;
 export const GithubCommitInsertSchema = createInsertSchema(githubCommits);
 export type GithubCommitInsert = typeof githubCommits.$inferInsert;
-
-export const githubCommitChangeStatusEnum = pgEnum('github_commit_change_status', [
-	'added',
-	'modified',
-	'removed',
-	'renamed',
-	'copied',
-	'changed',
-	'unchanged',
-] as const);
 
 export const githubCommitChanges = pgTable(
 	'github_commit_changes',

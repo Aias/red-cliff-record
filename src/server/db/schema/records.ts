@@ -21,13 +21,13 @@ import {
 } from './operations';
 import { emptyStringToNull } from '@/lib/formatting';
 
-export const RecordTypeSchema = z.enum([
+export const recordTypeEnum = pgEnum('record_type', [
 	'entity', // an actor in the world, has will
 	'concept', // a category, idea, or abstraction
 	'artifact', // physical or digital objects, content, or media
 ]);
-export type RecordType = z.infer<typeof RecordTypeSchema>;
-export const recordTypeEnum = pgEnum('record_type', ['entity', 'concept', 'artifact'] as const);
+export const RecordType = z.enum(recordTypeEnum.enumValues);
+export type RecordType = z.infer<typeof RecordType>;
 
 // Main index table
 export const records = pgTable(
@@ -127,7 +127,7 @@ export type LinkSelect = typeof links.$inferSelect;
 export const LinkInsertSchema = createInsertSchema(links);
 export type LinkInsert = typeof links.$inferInsert;
 
-export const PredicateTypeSchema = z.enum([
+export const predicateTypeEnum = pgEnum('predicate_type', [
 	'creation', // authorship, ownership …
 	'containment', // has_part, sequence …
 	'description', // about, tag …
@@ -135,15 +135,8 @@ export const PredicateTypeSchema = z.enum([
 	'reference', // cites, responds_to …
 	'identity', // instance_of, same_as …
 ]);
-export type PredicateType = z.infer<typeof PredicateTypeSchema>;
-export const predicateTypeEnum = pgEnum('predicate_type', [
-	'creation',
-	'containment',
-	'description',
-	'association',
-	'reference',
-	'identity',
-] as const);
+export const PredicateType = z.enum(predicateTypeEnum.enumValues);
+export type PredicateType = z.infer<typeof PredicateType>;
 
 export const predicates = pgTable(
 	'predicates',

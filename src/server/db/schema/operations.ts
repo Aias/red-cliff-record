@@ -12,29 +12,14 @@ import {
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod/v4';
 
-export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
-export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
-
 export const integrationStatusEnum = pgEnum('integration_status', [
 	'success',
 	'fail',
 	'in_progress',
-] as const);
-
-export const IntegrationTypeSchema = z.enum([
-	'ai_chat',
-	'airtable',
-	'browser_history',
-	'crawler',
-	'embeddings',
-	'github',
-	'lightroom',
-	'manual',
-	'raindrop',
-	'readwise',
-	'twitter',
 ]);
-export type IntegrationType = z.infer<typeof IntegrationTypeSchema>;
+export const IntegrationStatus = z.enum(integrationStatusEnum.enumValues);
+export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
+
 export const integrationTypeEnum = pgEnum('integration_type', [
 	'ai_chat',
 	'airtable',
@@ -47,11 +32,13 @@ export const integrationTypeEnum = pgEnum('integration_type', [
 	'raindrop',
 	'readwise',
 	'twitter',
-] as const);
+]);
+export const IntegrationType = z.enum(integrationTypeEnum.enumValues);
+export type IntegrationType = z.infer<typeof IntegrationType>;
 
-export const RunType = z.enum(['seed', 'sync']);
+export const runTypeEnum = pgEnum('run_type', ['seed', 'sync']);
+export const RunType = z.enum(runTypeEnum.enumValues);
 export type RunType = z.infer<typeof RunType>;
-export const runTypeEnum = pgEnum('run_type', ['seed', 'sync'] as const);
 
 const recordCreatedAt = timestamp('created_at', {
 	withTimezone: true,
