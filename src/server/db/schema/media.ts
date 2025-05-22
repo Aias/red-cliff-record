@@ -9,11 +9,11 @@ import {
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { databaseTimestamps } from './operations';
 import { records } from './records';
 
-export const MediaType = z.enum([
+export const mediaTypeEnum = pgEnum('media_type', [
 	'application', // application or binary data
 	'audio', // audio files
 	'font', // font/typeface files
@@ -24,9 +24,9 @@ export const MediaType = z.enum([
 	'text', // plain text, markdown, etc.
 	'video', // video files
 ]);
-export type MediaType = z.infer<typeof MediaType>;
 
-export const mediaTypeEnum = pgEnum('media_type', MediaType.options);
+export const MediaType = z.enum(mediaTypeEnum.enumValues);
+export type MediaType = z.infer<typeof MediaType>;
 
 export const media = pgTable(
 	'media',
@@ -62,6 +62,6 @@ export const media = pgTable(
 export const MediaSelectSchema = createSelectSchema(media);
 export type MediaSelect = typeof media.$inferSelect;
 export const MediaInsertSchema = createInsertSchema(media).extend({
-	url: z.string().url(),
+	url: z.url(),
 });
 export type MediaInsert = typeof media.$inferInsert;
