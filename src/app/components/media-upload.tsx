@@ -2,7 +2,7 @@ import * as React from 'react';
 import { forwardRef, useCallback, useRef, useState } from 'react';
 import { UploadIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { Spinner } from './spinner';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -52,7 +52,7 @@ export const MediaUpload = forwardRef<HTMLDivElement, MediaUploadProps>(
 				} catch (err) {
 					let errorMessage = 'Invalid file.';
 					if (err instanceof z.ZodError) {
-						errorMessage = err.errors[0]?.message ?? errorMessage;
+						errorMessage = err.issues[0]?.message ?? errorMessage;
 					} else if (err instanceof Error) {
 						errorMessage = `Upload failed: ${err.message}`;
 					}

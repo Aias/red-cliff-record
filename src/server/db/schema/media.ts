@@ -24,7 +24,6 @@ export const mediaTypeEnum = pgEnum('media_type', [
 	'text', // plain text, markdown, etc.
 	'video', // video files
 ]);
-
 export const MediaType = z.enum(mediaTypeEnum.enumValues);
 export type MediaType = z.infer<typeof MediaType>;
 

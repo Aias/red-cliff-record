@@ -8,7 +8,7 @@ import {
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { media } from './media';
 import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
@@ -54,10 +54,13 @@ export type TwitterTweetSelect = typeof twitterTweets.$inferSelect;
 export const TwitterTweetInsertSchema = createInsertSchema(twitterTweets);
 export type TwitterTweetInsert = typeof twitterTweets.$inferInsert;
 
-export const TwitterMediaType = z.enum(['photo', 'video', 'animated_gif']);
+export const twitterMediaTypeEnum = pgEnum('twitter_media_type', [
+	'photo',
+	'video',
+	'animated_gif',
+]);
+export const TwitterMediaType = z.enum(twitterMediaTypeEnum.enumValues);
 export type TwitterMediaType = z.infer<typeof TwitterMediaType>;
-
-export const twitterMediaTypeEnum = pgEnum('twitter_media_type', TwitterMediaType.options);
 
 export const twitterMedia = pgTable(
 	'twitter_media',

@@ -12,7 +12,7 @@ import {
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import {
 	contentTimestamps,
 	databaseTimestamps,
@@ -21,13 +21,13 @@ import {
 } from './operations';
 import { emptyStringToNull } from '@/lib/formatting';
 
-export const RecordTypeSchema = z.enum([
+export const recordTypeEnum = pgEnum('record_type', [
 	'entity', // an actor in the world, has will
 	'concept', // a category, idea, or abstraction
 	'artifact', // physical or digital objects, content, or media
 ]);
+export const RecordTypeSchema = z.enum(recordTypeEnum.enumValues);
 export type RecordType = z.infer<typeof RecordTypeSchema>;
-export const recordTypeEnum = pgEnum('record_type', RecordTypeSchema.options);
 
 // Main index table
 export const records = pgTable(
@@ -81,8 +81,8 @@ export const records = pgTable(
 export const RecordSelectSchema = createSelectSchema(records);
 export type RecordSelect = typeof records.$inferSelect;
 export const RecordInsertSchema = createInsertSchema(records).extend({
-	url: emptyStringToNull(z.string().url()).optional(),
-	avatarUrl: emptyStringToNull(z.string().url()).optional(),
+	url: emptyStringToNull(z.url()).optional(),
+	avatarUrl: emptyStringToNull(z.url()).optional(),
 	rating: z.number().int().min(0).max(3).default(0),
 });
 export type RecordInsert = typeof records.$inferInsert;
@@ -127,7 +127,7 @@ export type LinkSelect = typeof links.$inferSelect;
 export const LinkInsertSchema = createInsertSchema(links);
 export type LinkInsert = typeof links.$inferInsert;
 
-export const PredicateTypeSchema = z.enum([
+export const predicateTypeEnum = pgEnum('predicate_type', [
 	'creation', // authorship, ownership …
 	'containment', // has_part, sequence …
 	'description', // about, tag …
@@ -135,8 +135,8 @@ export const PredicateTypeSchema = z.enum([
 	'reference', // cites, responds_to …
 	'identity', // instance_of, same_as …
 ]);
-export type PredicateType = z.infer<typeof PredicateTypeSchema>;
-export const predicateTypeEnum = pgEnum('predicate_type', PredicateTypeSchema.options);
+export const PredicateType = z.enum(predicateTypeEnum.enumValues);
+export type PredicateType = z.infer<typeof PredicateType>;
 
 export const predicates = pgTable(
 	'predicates',

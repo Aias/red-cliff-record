@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { emptyStringToNull } from '@/app/lib/formatting';
 
 const sanitizeString = (str: string | null): string | null => {

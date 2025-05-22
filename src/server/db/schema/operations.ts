@@ -10,14 +10,17 @@ import {
 	vector,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
-export const IntegrationStatus = z.enum(['success', 'fail', 'in_progress']);
+export const integrationStatusEnum = pgEnum('integration_status', [
+	'success',
+	'fail',
+	'in_progress',
+]);
+export const IntegrationStatus = z.enum(integrationStatusEnum.enumValues);
 export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
 
-export const integrationStatusEnum = pgEnum('integration_status', IntegrationStatus.options);
-
-export const IntegrationTypeSchema = z.enum([
+export const integrationTypeEnum = pgEnum('integration_type', [
 	'ai_chat',
 	'airtable',
 	'browser_history',
@@ -30,12 +33,12 @@ export const IntegrationTypeSchema = z.enum([
 	'readwise',
 	'twitter',
 ]);
+export const IntegrationTypeSchema = z.enum(integrationTypeEnum.enumValues);
 export type IntegrationType = z.infer<typeof IntegrationTypeSchema>;
-export const integrationTypeEnum = pgEnum('integration_type', IntegrationTypeSchema.options);
 
-export const RunType = z.enum(['seed', 'sync']);
+export const runTypeEnum = pgEnum('run_type', ['seed', 'sync']);
+export const RunType = z.enum(runTypeEnum.enumValues);
 export type RunType = z.infer<typeof RunType>;
-export const runTypeEnum = pgEnum('run_type', RunType.options);
 
 const recordCreatedAt = timestamp('created_at', {
 	withTimezone: true,

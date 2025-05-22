@@ -9,14 +9,13 @@ import {
 	timestamp,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { databaseTimestamps, databaseTimestampsNonUpdatable } from './operations';
 import { integrationRuns } from './operations';
 
-export const Browser = z.enum(['arc', 'chrome', 'firefox', 'safari', 'edge']);
+export const browserEnum = pgEnum('browser', ['arc', 'chrome', 'firefox', 'safari', 'edge']);
+export const Browser = z.enum(browserEnum.enumValues);
 export type Browser = z.infer<typeof Browser>;
-
-export const browserEnum = pgEnum('browser', Browser.options);
 
 export const browsingHistory = pgTable(
 	'browsing_history',

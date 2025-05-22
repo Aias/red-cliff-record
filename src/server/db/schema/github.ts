@@ -9,7 +9,7 @@ import {
 	timestamp,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import {
 	contentTimestamps,
 	contentTimestampsNonUpdatable,
@@ -113,7 +113,19 @@ export type GithubRepositorySelect = typeof githubRepositories.$inferSelect;
 export const GithubRepositoryInsertSchema = createInsertSchema(githubRepositories);
 export type GithubRepositoryInsert = typeof githubRepositories.$inferInsert;
 
-export const GithubCommitType = z.enum([
+export const githubCommitChangeStatusEnum = pgEnum('github_commit_change_status', [
+	'added',
+	'modified',
+	'removed',
+	'renamed',
+	'copied',
+	'changed',
+	'unchanged',
+]);
+export const GithubCommitChangeStatus = z.enum(githubCommitChangeStatusEnum.enumValues);
+export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatus>;
+
+export const githubCommitTypes = [
 	'feature',
 	'enhancement',
 	'bugfix',
@@ -123,21 +135,10 @@ export const GithubCommitType = z.enum([
 	'chore',
 	'test',
 	'build',
-]);
+] as const;
+export const githubCommitTypesEnum = pgEnum('github_commit_types', githubCommitTypes);
+export const GithubCommitType = z.enum(githubCommitTypesEnum.enumValues);
 export type GithubCommitType = z.infer<typeof GithubCommitType>;
-
-export const GithubCommitChangeStatus = z.enum([
-	'added',
-	'modified',
-	'removed',
-	'renamed',
-	'copied',
-	'changed',
-	'unchanged',
-]);
-export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatus>;
-
-export const githubCommitTypesEnum = pgEnum('github_commit_types', GithubCommitType.options);
 
 export const githubCommits = pgTable(
 	'github_commits',
@@ -170,11 +171,6 @@ export const GithubCommitSelectSchema = createSelectSchema(githubCommits);
 export type GithubCommitSelect = typeof githubCommits.$inferSelect;
 export const GithubCommitInsertSchema = createInsertSchema(githubCommits);
 export type GithubCommitInsert = typeof githubCommits.$inferInsert;
-
-export const githubCommitChangeStatusEnum = pgEnum(
-	'github_commit_change_status',
-	GithubCommitChangeStatus.options
-);
 
 export const githubCommitChanges = pgTable(
 	'github_commit_changes',
