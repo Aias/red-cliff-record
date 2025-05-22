@@ -79,7 +79,7 @@ export async function embedRecords(): Promise<number> {
 
 				if (!textToEmbed) {
 					logger.warn(`No text to embed for record ${record.id}, skipping`);
-					return { status: 'skipped' as const };
+					return { status: 'skipped' };
 				}
 
 				logger.info(`Embedding record ${record.id}: ${getRecordTitle(record, 100)}`);
@@ -94,10 +94,10 @@ export async function embedRecords(): Promise<number> {
 						.where(eq(records.id, record.id));
 
 					logger.info(`Successfully embedded record ${record.id}`);
-					return { status: 'processed' as const };
+					return { status: 'processed' };
 				} catch (error) {
 					logger.error(`Error processing record ${record.id}: ${error}`);
-					return { status: 'error' as const };
+					return { status: 'error' };
 				}
 			})
 		);
