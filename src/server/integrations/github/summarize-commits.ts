@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod.mjs';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { db } from '@/server/db/connections';
 import type {
 	GithubCommitChangeSelect,

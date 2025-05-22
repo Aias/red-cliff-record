@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { emptyStringToNull } from '@/app/lib/formatting';
 import { ReadwiseCategory, ReadwiseLocation } from '@/server/db/schema/readwise';
 
@@ -28,9 +28,9 @@ export const ReadwiseArticleSchema = z.object({
 			return keys.length > 0 ? keys : null;
 		}),
 	word_count: z.number().int().nullable(),
-	url: z.string().url(), // Internal Readwise URL
-	source_url: emptyStringToNull(z.string().url().nullable()),
-	image_url: emptyStringToNull(z.string().url().nullable()),
+	url: z.url(), // Internal Readwise URL
+	source_url: emptyStringToNull(z.url().nullable()),
+	image_url: emptyStringToNull(z.url().nullable()),
 	parent_id: z.string().nullable(),
 	reading_progress: z.number().min(0).max(1),
 	saved_at: z.coerce.date(),

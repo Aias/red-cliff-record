@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const toTitleCase = (str: string) => str.replace(/\b\w/g, (char) => char.toUpperCase());
 
@@ -43,8 +43,8 @@ export const formatCreatorDescription = (
 };
 
 // More robust URL schema with custom error message
-const urlSchema = z.string().url({
-	message: 'Invalid URL format. Please provide a valid URL.',
+const urlSchema = z.url({
+	error: 'Invalid URL format. Please provide a valid URL.',
 });
 
 type UrlOptions = {
@@ -67,12 +67,12 @@ export function validateAndFormatUrl(
 	url: string,
 	safe: true,
 	options?: UrlOptions
-): z.SafeParseReturnType<string, string>;
+): z.ZodSafeParseResult<string, string>;
 export function validateAndFormatUrl(
 	url: string,
 	safe?: boolean,
 	options?: UrlOptions
-): string | z.SafeParseReturnType<string, string> {
+): string | z.ZodSafeParseResult<string, string> {
 	// Default options
 	const { skipHttps = false } = options || {};
 
@@ -128,9 +128,5 @@ export function mapUrl(url?: string | null): string | undefined {
  * const nameSchema = emptyStringToNull(z.string())
  * // '' -> null, 'value' -> 'value'
  */
-export const emptyStringToNull = <T extends z.ZodType>(schema: T) =>
-	z
-		.string()
-		.nullable()
-		.transform((str) => (str === '' ? null : str))
-		.pipe(schema.nullable());
+export const emptyStringToNull = <T extends z.ZodTypeAny>(schema: T) =>
+	z.preprocess((val) => (val === '' ? null : val), schema.nullable());

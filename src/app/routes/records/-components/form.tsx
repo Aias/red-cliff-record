@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import type { RecordGet } from '@/server/api/routers/types';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@/server/db/schema';
 import { recordTypeIcons } from './type-icons';

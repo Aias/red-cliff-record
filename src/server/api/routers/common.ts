@@ -1,5 +1,5 @@
 import { cosineDistance, sql, type Column } from 'drizzle-orm';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const DEFAULT_LIMIT = 50;
 export const SIMILARITY_THRESHOLD = 0.8; // Lower is more strict

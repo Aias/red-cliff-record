@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { publicProcedure } from '../../init';
 import type { DbId } from '../common';
 import {

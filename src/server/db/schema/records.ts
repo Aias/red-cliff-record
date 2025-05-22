@@ -12,7 +12,7 @@ import {
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import {
 	contentTimestamps,
 	databaseTimestamps,
@@ -27,7 +27,7 @@ export const RecordTypeSchema = z.enum([
 	'artifact', // physical or digital objects, content, or media
 ]);
 export type RecordType = z.infer<typeof RecordTypeSchema>;
-export const recordTypeEnum = pgEnum('record_type', RecordTypeSchema.options);
+export const recordTypeEnum = pgEnum('record_type', ['entity', 'concept', 'artifact'] as const);
 
 // Main index table
 export const records = pgTable(
@@ -81,8 +81,8 @@ export const records = pgTable(
 export const RecordSelectSchema = createSelectSchema(records);
 export type RecordSelect = typeof records.$inferSelect;
 export const RecordInsertSchema = createInsertSchema(records).extend({
-	url: emptyStringToNull(z.string().url()).optional(),
-	avatarUrl: emptyStringToNull(z.string().url()).optional(),
+	url: emptyStringToNull(z.url()).optional(),
+	avatarUrl: emptyStringToNull(z.url()).optional(),
 	rating: z.number().int().min(0).max(3).default(0),
 });
 export type RecordInsert = typeof records.$inferInsert;
@@ -136,7 +136,14 @@ export const PredicateTypeSchema = z.enum([
 	'identity', // instance_of, same_as …
 ]);
 export type PredicateType = z.infer<typeof PredicateTypeSchema>;
-export const predicateTypeEnum = pgEnum('predicate_type', PredicateTypeSchema.options);
+export const predicateTypeEnum = pgEnum('predicate_type', [
+	'creation',
+	'containment',
+	'description',
+	'association',
+	'reference',
+	'identity',
+] as const);
 
 export const predicates = pgTable(
 	'predicates',

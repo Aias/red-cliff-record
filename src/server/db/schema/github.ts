@@ -9,7 +9,7 @@ import {
 	timestamp,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import {
 	contentTimestamps,
 	contentTimestampsNonUpdatable,
@@ -137,7 +137,17 @@ export const GithubCommitChangeStatus = z.enum([
 ]);
 export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatus>;
 
-export const githubCommitTypesEnum = pgEnum('github_commit_types', GithubCommitType.options);
+export const githubCommitTypesEnum = pgEnum('github_commit_types', [
+	'feature',
+	'enhancement',
+	'bugfix',
+	'refactor',
+	'documentation',
+	'style',
+	'chore',
+	'test',
+	'build',
+] as const);
 
 export const githubCommits = pgTable(
 	'github_commits',
@@ -171,10 +181,15 @@ export type GithubCommitSelect = typeof githubCommits.$inferSelect;
 export const GithubCommitInsertSchema = createInsertSchema(githubCommits);
 export type GithubCommitInsert = typeof githubCommits.$inferInsert;
 
-export const githubCommitChangeStatusEnum = pgEnum(
-	'github_commit_change_status',
-	GithubCommitChangeStatus.options
-);
+export const githubCommitChangeStatusEnum = pgEnum('github_commit_change_status', [
+	'added',
+	'modified',
+	'removed',
+	'renamed',
+	'copied',
+	'changed',
+	'unchanged',
+] as const);
 
 export const githubCommitChanges = pgTable(
 	'github_commit_changes',

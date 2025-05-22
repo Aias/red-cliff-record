@@ -23,7 +23,7 @@ export const readwiseLocationEnum = pgEnum('readwise_location', [
 	'shortlist',
 	'archive',
 	'feed',
-]);
+] as const);
 export const ReadwiseLocation = z.enum(readwiseLocationEnum.enumValues);
 export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;
 
@@ -37,7 +37,7 @@ export const readwiseCategoryEnum = pgEnum('readwise_category', [
 	'epub',
 	'tweet',
 	'video',
-]);
+] as const);
 export const ReadwiseCategory = z.enum(readwiseCategoryEnum.enumValues);
 export type ReadwiseCategory = z.infer<typeof ReadwiseCategory>;
 
