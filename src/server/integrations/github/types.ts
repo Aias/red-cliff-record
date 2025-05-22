@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { emptyStringToNull } from '@/app/lib/formatting';
 
 export const GithubEventSchema = z.object({
@@ -15,7 +15,7 @@ const GithubLicenseSchema = z.object({
 	key: z.string(),
 	name: z.string(),
 	spdx_id: z.string(),
-	url: z.string().url().nullable(),
+	url: z.url().nullable(),
 	node_id: z.string(),
 });
 
@@ -23,15 +23,15 @@ const GithubOwnerSchema = z.object({
 	id: z.number().int().positive(),
 	login: z.string(),
 	node_id: z.string(),
-	avatar_url: z.string().url(),
-	html_url: z.string().url(),
+	avatar_url: z.url(),
+	html_url: z.url(),
 	type: z.enum(['User', 'Organization']),
 });
 
 const GithubRepositoryDetailsSchema = z.object({
 	id: z.number().int().positive(),
 	node_id: z.string(),
-	html_url: z.string().url(),
+	html_url: z.url(),
 	name: z.string(),
 	full_name: z.string(),
 	description: emptyStringToNull(z.string()),
@@ -44,7 +44,7 @@ const GithubRepositoryDetailsSchema = z.object({
 				}
 				return str;
 			})
-			.pipe(z.string().url())
+			.pipe(z.url())
 	),
 	created_at: z.coerce.date(),
 	updated_at: z.coerce.date(),

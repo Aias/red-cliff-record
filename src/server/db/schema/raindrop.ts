@@ -11,15 +11,22 @@ import {
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { media } from './media';
 import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
 
-export const RaindropType = z.enum(['link', 'document', 'video', 'image', 'audio', 'article']);
+export const raindropTypeEnum = pgEnum('raindrop_type', [
+	'link',
+	'document',
+	'video',
+	'image',
+	'audio',
+	'article',
+]);
+export const RaindropType = z.enum(raindropTypeEnum.enumValues);
 export type RaindropType = z.infer<typeof RaindropType>;
-export const raindropTypeEnum = pgEnum('raindrop_type', RaindropType.options);
 
 export const raindropBookmarks = pgTable(
 	'raindrop_bookmarks',
@@ -61,7 +68,7 @@ export const raindropBookmarks = pgTable(
 export const RaindropBookmarkSelectSchema = createSelectSchema(raindropBookmarks);
 export type RaindropBookmarkSelect = typeof raindropBookmarks.$inferSelect;
 export const RaindropBookmarkInsertSchema = createInsertSchema(raindropBookmarks).extend({
-	linkUrl: z.string().url(),
+	linkUrl: z.url(),
 });
 export type RaindropBookmarkInsert = typeof raindropBookmarks.$inferInsert;
 
@@ -143,7 +150,7 @@ export const raindropCollections = pgTable(
 export const RaindropCollectionSelectSchema = createSelectSchema(raindropCollections);
 export type RaindropCollectionSelect = typeof raindropCollections.$inferSelect;
 export const RaindropCollectionInsertSchema = createInsertSchema(raindropCollections).extend({
-	coverUrl: z.string().url().optional().nullable(),
+	coverUrl: z.url().optional().nullable(),
 });
 export type RaindropCollectionInsert = typeof raindropCollections.$inferInsert;
 
@@ -173,6 +180,6 @@ export const raindropImages = pgTable(
 export const RaindropImageSelectSchema = createSelectSchema(raindropImages);
 export type RaindropImageSelect = typeof raindropImages.$inferSelect;
 export const RaindropImageInsertSchema = createInsertSchema(raindropImages).extend({
-	url: z.string().url(),
+	url: z.url(),
 });
 export type RaindropImageInsert = typeof raindropImages.$inferInsert;

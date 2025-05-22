@@ -78,8 +78,8 @@ importers:
         specifier: 1.0.0-beta.1-c0277c0
         version: 1.0.0-beta.1-c0277c0(@libsql/client@0.15.7)(@neondatabase/serverless@1.0.0)(@types/pg@8.15.2)
       drizzle-zod:
-        specifier: ^0.7.1
-        version: 0.7.1(drizzle-orm@1.0.0-beta.1-c0277c0(@libsql/client@0.15.7)(@neondatabase/serverless@1.0.0)(@types/pg@8.15.2))(zod@3.25.20)
+        specifier: ^0.8.1
+        version: 0.8.1(drizzle-orm@1.0.0-beta.1-c0277c0(@libsql/client@0.15.7)(@neondatabase/serverless@1.0.0)(@types/pg@8.15.2))(zod@3.25.20)
       lucide-react:
         specifier: 0.511.0
         version: 0.511.0(react@19.1.0)
@@ -96,8 +96,8 @@ importers:
         specifier: 3.0.1
         version: 3.0.1
       openai:
-        specifier: 4.100.0
-        version: 4.100.0(ws@8.18.2)(zod@3.25.20)
+        specifier: 4.102.0
+        version: 4.102.0(ws@8.18.2)(zod@3.25.20)
       radix-ui:
         specifier: ^1.4.2
         version: 1.4.2(@types/react-dom@19.1.5(@types/react@19.1.5))(@types/react@19.1.5)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -3554,11 +3554,11 @@ packages:
       sqlite3:
         optional: true
 
-  drizzle-zod@0.7.1:
-    resolution: {integrity: sha512-nZzALOdz44/AL2U005UlmMqaQ1qe5JfanvLujiTHiiT8+vZJTBFhj3pY4Vk+L6UWyKFfNmLhk602Hn4kCTynKQ==}
+  drizzle-zod@0.8.1:
+    resolution: {integrity: sha512-k2/2cwBz3Vjb7CWPVCeMNajZpG43V7SqhNrZ8LsWJOz8TztQ5YtU2ifgnfnxqZXsxeHmdQnsl6eXm7GwDZnq/Q==}
     peerDependencies:
       drizzle-orm: '>=0.36.0'
-      zod: '>=3.0.0'
+      zod: ^3.25.1
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -4941,8 +4941,8 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
-  openai@4.100.0:
-    resolution: {integrity: sha512-9soq/wukv3utxcuD7TWFqKdKp0INWdeyhUCvxwrne5KwnxaCp4eHL4GdT/tMFhYolxgNhxFzg5GFwM331Z5CZg==}
+  openai@4.102.0:
+    resolution: {integrity: sha512-CWk15CMhPSHNZnjz+6rwVYV551xaC8CwOd7/zxImrC1btEo37dX/Ii5tBKWfqqxqyzpJ6p3Y4bICzzKhW03WhQ==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -9915,7 +9915,7 @@ snapshots:
       '@neondatabase/serverless': 1.0.0
       '@types/pg': 8.15.2
 
-  drizzle-zod@0.7.1(drizzle-orm@1.0.0-beta.1-c0277c0(@libsql/client@0.15.7)(@neondatabase/serverless@1.0.0)(@types/pg@8.15.2))(zod@3.25.20):
+  drizzle-zod@0.8.1(drizzle-orm@1.0.0-beta.1-c0277c0(@libsql/client@0.15.7)(@neondatabase/serverless@1.0.0)(@types/pg@8.15.2))(zod@3.25.20):
     dependencies:
       drizzle-orm: 1.0.0-beta.1-c0277c0(@libsql/client@0.15.7)(@neondatabase/serverless@1.0.0)(@types/pg@8.15.2)
       zod: 3.25.20
@@ -11544,7 +11544,7 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@4.100.0(ws@8.18.2)(zod@3.25.20):
+  openai@4.102.0(ws@8.18.2)(zod@3.25.20):
     dependencies:
       '@types/node': 18.19.103
       '@types/node-fetch': 2.6.12

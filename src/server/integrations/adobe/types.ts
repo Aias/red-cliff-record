@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const LightroomAssetLinksSchema = z.object({
 	self: z.object({ href: z.string() }),
@@ -97,7 +97,7 @@ export const LightroomAestheticsSchema = z.object({
 });
 export type LightroomAesthetics = z.infer<typeof LightroomAestheticsSchema>;
 export const LightroomAutoTagsSchema = z.object({
-	tags: z.record(z.number().min(0).max(100)),
+	tags: z.record(z.string(), z.number().min(0).max(100)),
 	application: z.string(),
 	version: z.number(),
 	created: z.coerce.date(),
@@ -139,6 +139,7 @@ const LightroomAssetPayloadSchema = z.object({
 	xmp: LightroomAssetXmpSchema,
 	ratings: z
 		.record(
+			z.string(),
 			z.object({
 				rating: z.number(),
 				date: z.string().optional(),
@@ -153,6 +154,7 @@ const LightroomAssetPayloadSchema = z.object({
 	order: z.string().optional(),
 	aux: z
 		.record(
+			z.string(),
 			z.object({
 				digest: z.string(),
 				fileSize: z.number(),

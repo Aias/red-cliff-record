@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CopyIcon } from 'lucide-react';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import {
 	DataListItem,
 	DataListLabel,
@@ -24,7 +24,7 @@ interface MetadataListProps extends DataListRootProps {
 	metadata: Record<string, unknown>;
 }
 
-const urlSchema = z.string().url();
+const urlSchema = z.url();
 
 export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
 	const [copiedKey, setCopiedKey] = useState<string | null>(null);

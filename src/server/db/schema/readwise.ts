@@ -12,15 +12,22 @@ import {
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
 
-export const ReadwiseLocation = z.enum(['new', 'later', 'shortlist', 'archive', 'feed']);
+export const readwiseLocationEnum = pgEnum('readwise_location', [
+	'new',
+	'later',
+	'shortlist',
+	'archive',
+	'feed',
+]);
+export const ReadwiseLocation = z.enum(readwiseLocationEnum.enumValues);
 export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;
 
-export const ReadwiseCategory = z.enum([
+export const readwiseCategoryEnum = pgEnum('readwise_category', [
 	'article',
 	'email',
 	'rss',
@@ -31,11 +38,8 @@ export const ReadwiseCategory = z.enum([
 	'tweet',
 	'video',
 ]);
+export const ReadwiseCategory = z.enum(readwiseCategoryEnum.enumValues);
 export type ReadwiseCategory = z.infer<typeof ReadwiseCategory>;
-
-export const readwiseLocationEnum = pgEnum('readwise_location', ReadwiseLocation.options);
-
-export const readwiseCategoryEnum = pgEnum('readwise_category', ReadwiseCategory.options);
 
 export const readwiseDocuments = pgTable(
 	'readwise_documents',
@@ -102,9 +106,9 @@ export const readwiseDocuments = pgTable(
 export const ReadwiseDocumentSelectSchema = createSelectSchema(readwiseDocuments);
 export type ReadwiseDocumentSelect = typeof readwiseDocuments.$inferSelect;
 export const ReadwiseDocumentInsertSchema = createInsertSchema(readwiseDocuments).extend({
-	url: z.string().url(),
-	sourceUrl: z.string().url().optional().nullable(),
-	imageUrl: z.string().url().optional().nullable(),
+	url: z.url(),
+	sourceUrl: z.url().optional().nullable(),
+	imageUrl: z.url().optional().nullable(),
 });
 export type ReadwiseDocumentInsert = typeof readwiseDocuments.$inferInsert;
 
@@ -134,7 +138,7 @@ export const readwiseAuthors = pgTable(
 export const ReadwiseAuthorSelectSchema = createSelectSchema(readwiseAuthors);
 export type ReadwiseAuthorSelect = typeof readwiseAuthors.$inferSelect;
 export const ReadwiseAuthorInsertSchema = createInsertSchema(readwiseAuthors).extend({
-	origin: z.string().url().optional().nullable(),
+	origin: z.url().optional().nullable(),
 });
 export type ReadwiseAuthorInsert = typeof readwiseAuthors.$inferInsert;
 

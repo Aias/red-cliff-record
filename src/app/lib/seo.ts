@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const robotsEnum = z.enum([
 	'all',
@@ -18,14 +18,14 @@ export const metaTypeEnum = z.enum(['website', 'article', 'blog']);
 const seoSchema = z.object({
 	title: z.string().min(1),
 	description: z.string().optional(),
-	imageUrl: z.string().url().optional(),
+	imageUrl: z.url().optional(),
 	keywords: z.array(z.string()).optional(),
 	author: z.string().optional(),
 	twitterCreator: z.string().regex(/^@/, 'Twitter handle must start with @').optional(),
 	robots: z.array(robotsEnum).optional(),
 	locale: z.string().optional(),
-	canonicalUrl: z.string().url().optional(),
-	publishedTime: z.string().datetime().optional(),
+	canonicalUrl: z.url().optional(),
+	publishedTime: z.iso.datetime().optional(),
 	type: metaTypeEnum.optional(),
 });
 
@@ -53,11 +53,11 @@ function createTags({
 	keywords,
 	author = 'Nick Trombley',
 	twitterCreator = '@redcliffrecord',
-	robots = [robotsEnum.Enum.index, robotsEnum.Enum.follow],
+	robots = [robotsEnum.enum.index, robotsEnum.enum.follow],
 	locale = 'en_US',
 	canonicalUrl,
 	publishedTime,
-	type = metaTypeEnum.Enum.website,
+	type = metaTypeEnum.enum.website,
 }: SeoProps) {
 	const tags = [
 		// Basic meta tags

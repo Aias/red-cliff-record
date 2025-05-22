@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { emptyStringToNull } from '@/app/lib/formatting';
 
 const RaindropRefSchema = z.object({
@@ -7,7 +7,7 @@ const RaindropRefSchema = z.object({
 });
 
 const RaindropMediaSchema = z.object({
-	link: z.string().url(),
+	link: z.url(),
 	type: z.string(),
 });
 
@@ -48,9 +48,9 @@ const RaindropHighlightSchema = z.object({
 
 const RaindropCreatorSchema = z.object({
 	_id: z.number().int().positive(),
-	avatar: z.string().url().optional(),
+	avatar: z.url().optional(),
 	name: z.string(),
-	email: emptyStringToNull(z.string().email()),
+	email: emptyStringToNull(z.email()),
 });
 
 const RaindropCacheSchema = z.discriminatedUnion('status', [
@@ -71,13 +71,13 @@ const RaindropCacheSchema = z.discriminatedUnion('status', [
 
 export const RaindropSchema = z.object({
 	_id: z.number().int().positive(),
-	link: z.string().url(),
+	link: z.url(),
 	title: z.string(),
 	excerpt: emptyStringToNull(z.string()),
 	note: emptyStringToNull(z.string()),
 	type: z.enum(['link', 'article', 'image', 'video', 'document', 'audio']),
 	user: RaindropRefSchema,
-	cover: emptyStringToNull(z.string().url()),
+	cover: emptyStringToNull(z.url()),
 	media: z.array(RaindropMediaSchema),
 	tags: z.array(z.string()),
 	important: z.coerce.boolean(),

@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 // Convert Airtable Attachment type to Zod schema
 export const AirtableAttachmentSchema = z.object({
 	id: z.string(),
-	url: z.string().url(),
+	url: z.url(),
 	filename: z.string(),
 	size: z.number().int().min(0).optional(),
 	type: z.string(),
@@ -16,7 +16,7 @@ export const ExtractFieldSetSchema = z.object({
 	title: z.string(),
 	format: z.string(),
 	michelinStars: z.number().int().min(0).max(3).default(0),
-	source: z.string().url().optional(),
+	source: z.url().optional(),
 	creators: z.array(z.string()).optional(),
 	extract: z.string().optional(),
 	parent: z.array(z.string()).optional(),
@@ -66,7 +66,7 @@ export const CreatorFieldSetSchema = z.object({
 	name: z.string(),
 	type: z.string().optional(),
 	primaryProject: z.string().optional(),
-	site: z.string().url().optional(),
+	site: z.url().optional(),
 	professions: z.array(z.string()).optional(),
 	organizations: z.array(z.string()).optional(),
 	nationality: z.array(z.string()).optional(),
