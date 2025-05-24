@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { PlusCircleIcon } from 'lucide-react';
+import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
 import type { LinkPartial } from '@/server/api/routers/types';
 import { SearchResultItem } from './search-result-item';
+import { RecordTypeIcon } from './type-icons';
+import { Badge } from '@/components/badge';
+import { Spinner } from '@/components/spinner';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import {
 	Command,
@@ -56,9 +59,10 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 	);
 
 	return (
-		<Command shouldFilter={false} loop className="w-full">
+		<Command shouldFilter={false} loop className="w-full" defaultValue="">
 			<CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
 			<CommandList>
+				<CommandItem value="-" className="hidden" />
 				<CommandGroup heading="Search results">
 					{isFetching && <CommandLoading>Loading results...</CommandLoading>}
 					{data.map((result) => (
@@ -110,9 +114,10 @@ function PredicateCombobox({
 	includeNonCanonical = false,
 }: PredicateComboboxProps) {
 	return (
-		<Command className="w-full">
+		<Command className="w-full" defaultValue="">
 			<CommandInput autoFocus placeholder="Select relation type…" />
 			<CommandList>
+				<CommandItem value="-" className="hidden" />
 				<CommandGroup heading="Predicates">
 					{predicates
 						.filter((p) => includeNonCanonical || p.canonical)
@@ -185,7 +190,7 @@ export function RelationshipSelector({
 	const [predicateId, setPredicateId] = useState<number | null>(link?.predicateId ?? null);
 	const [open, setOpen] = useState(false);
 	const altRef = useRef(false);
-	const [, setAltPressed] = useState(false);
+	const [altPressed, setAltPressed] = useState(false);
 
 	const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
 	const { data: targetRecord } = trpc.records.get.useQuery(
@@ -286,9 +291,13 @@ export function RelationshipSelector({
 
 				{targetId && (
 					<>
-						<div className="border-b px-3 py-2 text-sm font-medium">
-							{targetRecord ? (targetRecord.title ?? 'Untitled') : 'Loading...'}
-						</div>
+						<Badge className="m-1 flex items-center justify-center gap-2 overflow-hidden border border-c-divider whitespace-nowrap">
+							{altPressed ? <ArrowLeftIcon /> : <ArrowRightIcon />}
+							<span className="flex-1 truncate text-center">
+								{targetRecord ? targetRecord.title || targetRecord.id : <Spinner />}
+							</span>
+							{targetRecord && <RecordTypeIcon type={targetRecord.type} />}
+						</Badge>
 						<PredicateCombobox
 							predicates={predicates}
 							onPredicateSelect={handlePredicateSelect}
