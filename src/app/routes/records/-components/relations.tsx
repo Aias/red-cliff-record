@@ -258,7 +258,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 		}
 	);
 
-	return similarRecords ? (
+	return (
 		<section className="text-xs">
 			<h3 className="mb-2">Similar Records</h3>
 			{isLoading ? (
@@ -319,5 +319,5 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 				<p>No similar records found.</p>
 			)}
 		</section>
-	) : null;
+	);
 };

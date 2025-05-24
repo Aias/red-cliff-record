@@ -240,6 +240,9 @@ export function useUpsertLink() {
 			utils.links.listForRecord.invalidate({ id: sourceId });
 			utils.links.listForRecord.invalidate({ id: targetId });
 
+			utils.records.tree.invalidate({ id: sourceId });
+			utils.records.tree.invalidate({ id: targetId });
+
 			utils.links.map.invalidate(undefined, {
 				predicate: (q) => {
 					const input = q.queryKey[1]?.input;
@@ -272,6 +275,7 @@ export function useDeleteLinks() {
 			/* 1 ▸ invalidate per-record link lists */
 			touched.forEach((id) => {
 				utils.links.listForRecord.invalidate({ id });
+				utils.records.tree.invalidate({ id });
 				utils.search.byRecordId.invalidate({ id });
 			});
 
