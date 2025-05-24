@@ -114,13 +114,14 @@ export const SiteSearch = () => {
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent className="w-150 overflow-auto p-0" align="end">
-					<Command shouldFilter={false} loop>
+					<Command shouldFilter={false} loop defaultValue="">
 						<CommandInput
 							placeholder="Search records..."
 							value={inputValue}
 							onValueChange={handleInputChange}
 						/>
 						<CommandList className="max-h-[75vh]">
+							<CommandItem value="-" className="hidden" />
 							<CommandEmpty>
 								{debouncedValue.length <= 1
 									? 'Type to search...'
@@ -174,8 +175,8 @@ export const SiteSearch = () => {
 								</CommandGroup>
 							)}
 
-							<CommandSeparator alwaysRender />
-
+							{debouncedValue.length > 1 && <CommandSeparator alwaysRender />}
+              
 							<CommandItem
 								disabled={inputValue.length === 0 || textResultsLoading || similarityResultsLoading}
 								key="create-record"

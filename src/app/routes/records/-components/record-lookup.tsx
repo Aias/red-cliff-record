@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { PlusCircleIcon } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
 import type { LinkPartial } from '@/server/api/routers/types';
 import { SearchResultItem } from './search-result-item';
+import { RecordTypeIcon } from './type-icons';
+import { Badge } from '@/components/badge';
+import { Spinner } from '@/components/spinner';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import {
 	Command,
@@ -56,9 +59,10 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 	);
 
 	return (
-		<Command shouldFilter={false} loop className="w-full">
+		<Command shouldFilter={false} loop className="w-full" defaultValue="">
 			<CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
 			<CommandList>
+				<CommandItem value="-" className="hidden" />
 				<CommandGroup heading="Search results">
 					{isFetching && <CommandLoading>Loading results...</CommandLoading>}
 					{data.map((result) => (
@@ -110,9 +114,10 @@ function PredicateCombobox({
 	includeNonCanonical = false,
 }: PredicateComboboxProps) {
 	return (
-		<Command className="w-full">
+		<Command className="w-full" defaultValue="">
 			<CommandInput autoFocus placeholder="Select relation type…" />
 			<CommandList>
+				<CommandItem value="-" className="hidden" />
 				<CommandGroup heading="Predicates">
 					{predicates
 						.filter((p) => includeNonCanonical || p.canonical)
@@ -184,8 +189,14 @@ export function RelationshipSelector({
 	const [targetId, setTargetId] = useState<number | null>(initialTarget);
 	const [predicateId, setPredicateId] = useState<number | null>(link?.predicateId ?? null);
 	const [open, setOpen] = useState(false);
+	const altRef = useRef(false);
+	const [altPressed, setAltPressed] = useState(false);
 
 	const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
+	const { data: targetRecord } = trpc.records.get.useQuery(
+		{ id: targetId! },
+		{ enabled: targetId != null }
+	);
 
 	/* --------------------------------------------------
 	 * Reset unsaved state when the popover closes, unless
@@ -196,7 +207,30 @@ export function RelationshipSelector({
 			setTargetId(null);
 			setPredicateId(null);
 		}
+		if (!open) {
+			altRef.current = false;
+			setAltPressed(false);
+		}
 	}, [open, initialTargetId, link]);
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.altKey) {
+				altRef.current = true;
+				setAltPressed(true);
+			}
+		};
+		const handleKeyUp = () => {
+			altRef.current = false;
+			setAltPressed(false);
+		};
+		window.addEventListener('keydown', handleKeyDown);
+		window.addEventListener('keyup', handleKeyUp);
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown);
+			window.removeEventListener('keyup', handleKeyUp);
+		};
+	}, []);
 
 	const actions = useMemo<RelationshipAction[]>(() => {
 		if (!buildActions || targetId == null) return [];
@@ -210,10 +244,13 @@ export function RelationshipSelector({
 	const handlePredicateSelect = async (predId: number) => {
 		if (!targetId) return;
 		setPredicateId(predId);
+		const swap = altRef.current;
+		altRef.current = false;
+		setAltPressed(false);
 		const updatedLink = await upsertLinkMutation.mutateAsync({
 			id: link?.id,
-			sourceId,
-			targetId,
+			sourceId: swap ? targetId : sourceId,
+			targetId: swap ? sourceId : targetId,
 			predicateId: predId,
 		});
 		onComplete?.(updatedLink.sourceId, updatedLink.targetId, updatedLink.predicateId);
@@ -253,11 +290,20 @@ export function RelationshipSelector({
 				{!targetId && <RecordSearch onSelect={handleRecordSelect} />}
 
 				{targetId && (
-					<PredicateCombobox
-						predicates={predicates}
-						onPredicateSelect={handlePredicateSelect}
-						actions={actions}
-					/>
+					<>
+						<Badge className="m-1 flex items-center justify-center gap-2 overflow-hidden border border-c-divider whitespace-nowrap">
+							{altPressed ? <ArrowLeftIcon /> : <ArrowRightIcon />}
+							<span className="flex-1 truncate text-center">
+								{targetRecord ? targetRecord.title || targetRecord.id : <Spinner />}
+							</span>
+							{targetRecord && <RecordTypeIcon type={targetRecord.type} />}
+						</Badge>
+						<PredicateCombobox
+							predicates={predicates}
+							onPredicateSelect={handlePredicateSelect}
+							actions={actions}
+						/>
+					</>
 				)}
 			</PopoverContent>
 		</Popover>

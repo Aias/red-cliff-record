@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { FileTextIcon, LightbulbIcon, UserIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { type RecordType } from '@/db/schema';
@@ -14,7 +15,7 @@ interface RecordTypeIconProps extends React.HTMLAttributes<SVGElement> {
 	type: RecordType;
 }
 
-export const RecordTypeIcon = ({ type, ...props }: RecordTypeIconProps) => {
+export const RecordTypeIcon = memo(({ type, ...props }: RecordTypeIconProps) => {
 	const { icon: Icon, description } = recordTypeIcons[type];
 	return (
 		<Tooltip>
@@ -24,4 +25,4 @@ export const RecordTypeIcon = ({ type, ...props }: RecordTypeIconProps) => {
 			<TooltipContent>{description}</TooltipContent>
 		</Tooltip>
 	);
-};
+});
