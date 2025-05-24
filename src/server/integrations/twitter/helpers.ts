@@ -6,18 +6,11 @@ import type {
 import type { Media, TweetData, User } from './types';
 
 export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRunId'> => {
-	const { rest_id, legacy } = user;
-	const {
-		created_at,
-		description,
-		location,
-		entities,
-		name,
-		profile_banner_url,
-		profile_image_url_https,
-		screen_name,
-		url,
-	} = legacy;
+	const { rest_id, legacy, core, location, avatar } = user;
+	const { description, entities, profile_banner_url, url } = legacy;
+
+	// User creation date is now in core, not legacy
+	const { created_at, name, screen_name } = core;
 
 	// First try entities.url.urls then fallback to entities.description.urls
 	let userExternalLinkEntry = entities?.url?.urls?.[0];
@@ -25,17 +18,24 @@ export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRun
 		userExternalLinkEntry = entities?.description?.urls?.[0];
 	}
 
+	// Safely parse the creation date with fallback to null
+	let contentCreatedAt: Date | null = null;
+	if (created_at) {
+		const parsedDate = new Date(created_at);
+		contentCreatedAt = isNaN(parsedDate.getTime()) ? null : parsedDate;
+	}
+
 	return {
 		id: rest_id,
 		description,
 		displayName: name,
 		username: screen_name,
-		location,
-		profileImageUrl: profile_image_url_https,
+		location: location?.location || null, // Extract location string from location object
+		profileImageUrl: avatar?.image_url || null, // Profile image is now in avatar object
 		profileBannerUrl: profile_banner_url,
 		url: url,
 		externalUrl: userExternalLinkEntry?.expanded_url,
-		contentCreatedAt: new Date(created_at),
+		contentCreatedAt,
 	};
 };
 
@@ -43,12 +43,19 @@ export const processTweet = (tweet: TweetData): Omit<TwitterTweetInsert, 'integr
 	const { rest_id, legacy, note_tweet, isQuoted, quotedTweetId } = tweet;
 	const { created_at, full_text, user_id_str } = legacy;
 
+	// Safely parse the creation date with fallback to null
+	let contentCreatedAt: Date | null = null;
+	if (created_at) {
+		const parsedDate = new Date(created_at);
+		contentCreatedAt = isNaN(parsedDate.getTime()) ? null : parsedDate;
+	}
+
 	return {
 		id: rest_id,
 		userId: user_id_str,
 		text: note_tweet ? note_tweet.note_tweet_results.result.text : full_text,
 		quotedTweetId: isQuoted ? undefined : quotedTweetId,
-		contentCreatedAt: new Date(created_at),
+		contentCreatedAt,
 	};
 };
 
@@ -81,6 +88,13 @@ export const processMedia = (
 		}
 	}
 
+	// Safely parse the creation date with fallback to null
+	let contentCreatedAt: Date | null = null;
+	if (tweet.legacy.created_at) {
+		const parsedDate = new Date(tweet.legacy.created_at);
+		contentCreatedAt = isNaN(parsedDate.getTime()) ? null : parsedDate;
+	}
+
 	return {
 		id,
 		type,
@@ -88,6 +102,6 @@ export const processMedia = (
 		mediaUrl: finalMediaUrl,
 		thumbnailUrl,
 		tweetId: tweet.rest_id,
-		contentCreatedAt: new Date(tweet.legacy.created_at),
+		contentCreatedAt,
 	};
 };

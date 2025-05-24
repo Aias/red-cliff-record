@@ -19,6 +19,7 @@ import {
 	createRecordsFromTwitterUsers,
 } from './map';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
+import { TwitterBookmarksArraySchema } from './types';
 
 /**
  * Configuration constants
@@ -101,8 +102,16 @@ export async function loadBookmarksData(): Promise<{
 			console.log(`Processing Twitter bookmarks file: ${filePath}`);
 
 			const fileContent = readFileSync(filePath, 'utf-8');
-			const parsedData = JSON.parse(fileContent);
-			combinedData.push(...parsedData);
+			const rawData = JSON.parse(fileContent);
+
+			// Validate the data using Zod schema
+			const validationResult = TwitterBookmarksArraySchema.safeParse(rawData);
+			if (!validationResult.success) {
+				console.error(`Validation failed for file ${fileName}:`, validationResult.error.issues);
+				throw new Error(`Invalid Twitter bookmarks data format in ${fileName}`);
+			}
+
+			combinedData.push(...validationResult.data);
 			processedFiles.push(filePath);
 		}
 
@@ -192,11 +201,12 @@ function extractTweetsFromBookmarks(bookmarkResponses: TwitterBookmarksArray): T
 		.map((entry) => entry.content)
 		.filter((item) => !FILTERED_TWEET_TYPES.includes(item.__typename))
 		.map((item) => {
-			const result = item.itemContent.tweet_results.result;
-			return result.__typename === 'TweetWithVisibilityResults'
+			const result = item.itemContent?.tweet_results.result;
+			return result?.__typename === 'TweetWithVisibilityResults'
 				? { __typename: 'TweetWithVisibilityResults', ...result.tweet }
 				: (result as Tweet);
-		});
+		})
+		.filter((result) => result);
 
 	// Process each tweet, handling quoted tweets
 	rawTweets.forEach((tweet) => {
@@ -257,7 +267,7 @@ function processTweetData(tweets: TweetData[], integrationRunId: number) {
 		processedUsers.push({ ...user, integrationRunId });
 
 		// Process any media attached to the tweet
-		t.legacy.entities.media?.forEach((m) => {
+		t.legacy.entities?.media?.forEach((m) => {
 			const mediaData = processMedia(m, t);
 			processedMedia.push({ ...mediaData });
 		});
