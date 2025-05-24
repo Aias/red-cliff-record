@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { SearchIcon } from 'lucide-react';
+import { PlusCircleIcon, SearchIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { defaultQueueOptions } from '@/server/api/routers/types';
 import { SearchResultItem } from '../records/-components/search-result-item';
@@ -13,9 +13,11 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
+	CommandSeparator,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useDebounce } from '@/lib/hooks/use-debounce';
+import { useUpsertRecord } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
 
 export const SiteSearch = () => {
@@ -24,6 +26,8 @@ export const SiteSearch = () => {
 	const [commandOpen, setCommandOpen] = useState(false);
 	const deferredValue = useDeferredValue(inputValue);
 	const debouncedValue = useDebounce(deferredValue, 300);
+
+	const createRecordMutation = useUpsertRecord();
 
 	const { data: textResults, isLoading: textResultsLoading } = trpc.search.byTextQuery.useQuery(
 		{
@@ -169,6 +173,23 @@ export const SiteSearch = () => {
 									)}
 								</CommandGroup>
 							)}
+
+							<CommandSeparator alwaysRender />
+
+							<CommandItem
+								disabled={inputValue.length === 0 || textResultsLoading || similarityResultsLoading}
+								key="create-record"
+								onSelect={async () => {
+									const newRecord = await createRecordMutation.mutateAsync({
+										type: 'artifact',
+										title: inputValue,
+									});
+									handleSelectResult(newRecord.id);
+								}}
+								className="px-3 py-2"
+							>
+								<PlusCircleIcon /> Create New Record
+							</CommandItem>
 						</CommandList>
 					</Command>
 				</PopoverContent>
