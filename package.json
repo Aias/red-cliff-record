@@ -87,7 +87,8 @@
 	"scripts": {
 		"format": "prettier --write .",
 		"lint": "prettier --write . && eslint . --fix && tsc --noEmit",
-		"typecheck": "tsc --noEmit --watch",
+		"tsc": "tsc --noEmit",
+		"tsc:watch": "tsc --noEmit --watch",
 		"cache-clear": "rm -rf node_modules/.vinxi node_modules/.cache",
 		"dev": "pnpm cache-clear && vinxi dev",
 		"build": "vinxi build",
