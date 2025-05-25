@@ -176,7 +176,7 @@ export const SiteSearch = () => {
 							)}
 
 							{debouncedValue.length > 1 && <CommandSeparator alwaysRender />}
-              
+
 							<CommandItem
 								disabled={inputValue.length === 0 || textResultsLoading || similarityResultsLoading}
 								key="create-record"

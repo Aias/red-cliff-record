@@ -1,7 +1,9 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/server/api/routers/common';
-import type { ListRecordsInput } from '@/server/api/routers/types';
+import type { ListRecordsInput, RecordGet, RecordLinks } from '@/server/api/routers/types';
+import { mergeRecords } from '@/lib/merge-records';
 
 export function useRecord(id: DbId) {
 	return trpc.records.get.useQuery({ id });
@@ -123,6 +125,18 @@ export function useMarkAsCurated() {
 	const utils = trpc.useUtils();
 
 	return trpc.records.markAsCurated.useMutation({
+		onMutate: async ({ ids }) => {
+			await Promise.all(ids.map((id) => utils.records.get.cancel({ id })));
+			const previous = new Map<DbId, RecordGet | undefined>();
+			ids.forEach((id) => {
+				const data = utils.records.get.getData({ id });
+				previous.set(id, data);
+				if (data) {
+					utils.records.get.setData({ id }, { ...data, isCurated: true });
+				}
+			});
+			return { previous };
+		},
 		onSuccess: (ids) => {
 			utils.records.list.invalidate();
 			ids.forEach((id) => {
@@ -132,6 +146,12 @@ export function useMarkAsCurated() {
 				});
 			});
 		},
+		onError: (err, _vars, ctx) => {
+			ctx?.previous.forEach((data, id) => {
+				utils.records.get.setData({ id }, data);
+			});
+			toast.error(err instanceof Error ? err.message : 'Failed to mark as curated');
+		},
 	});
 }
 
@@ -140,6 +160,16 @@ export function useUpsertRecord() {
 	const embedMutation = useEmbedRecord();
 
 	return trpc.records.upsert.useMutation({
+		onMutate: async (input) => {
+			if (input.id === undefined) return;
+			await utils.records.get.cancel({ id: input.id });
+			const previous = utils.records.get.getData({ id: input.id });
+			if (previous) {
+				const changes = input as Partial<RecordGet>;
+				utils.records.get.setData({ id: input.id }, (p) => (p ? { ...p, ...changes } : p));
+			}
+			return { previous };
+		},
 		onSuccess: (row) => {
 			/* patch point cache */
 			utils.records.get.setData({ id: row.id }, row);
@@ -147,6 +177,12 @@ export function useUpsertRecord() {
 			/* refresh ID tables & search index */
 			utils.records.list.invalidate();
 			embedMutation.mutate({ id: row.id });
+		},
+		onError: (err, input, ctx) => {
+			if (input.id !== undefined && ctx?.previous) {
+				utils.records.get.setData({ id: input.id }, ctx.previous);
+			}
+			toast.error(err instanceof Error ? err.message : 'Failed to update record');
 		},
 	});
 }
@@ -156,6 +192,30 @@ export function useDeleteRecords() {
 	const utils = trpc.useUtils();
 
 	return trpc.records.delete.useMutation({
+		onMutate: async (ids) => {
+			await Promise.all(
+				ids.map((id) =>
+					qc.cancelQueries({
+						queryKey: utils.records.get.queryOptions({ id }).queryKey,
+						exact: true,
+					})
+				)
+			);
+			const previous = new Map<DbId, RecordGet | undefined>();
+			ids.forEach((id) => {
+				const data = qc.getQueryData(utils.records.get.queryOptions({ id }).queryKey);
+				previous.set(id, data);
+				qc.removeQueries({
+					queryKey: utils.records.get.queryOptions({ id }).queryKey,
+					exact: true,
+				});
+				qc.removeQueries({
+					queryKey: utils.search.byRecordId.queryOptions({ id }).queryKey,
+					exact: true,
+				});
+			});
+			return { previous };
+		},
 		onSuccess: (rows) => {
 			rows.forEach(({ id }) => {
 				/* 1 ▸ remove point-query cache completely */
@@ -174,6 +234,12 @@ export function useDeleteRecords() {
 			/* 3 ▸ refetch record lists (IDs only) */
 			utils.records.list.invalidate();
 		},
+		onError: (err, ids, ctx) => {
+			ctx?.previous.forEach((data, id) => {
+				qc.setQueryData(utils.records.get.queryOptions({ id }).queryKey, data);
+			});
+			toast.error(err instanceof Error ? err.message : 'Failed to delete records');
+		},
 	});
 }
 
@@ -182,8 +248,34 @@ export function useMergeRecords() {
 	const utils = trpc.useUtils();
 	const embedMutation = useEmbedRecord();
 	return trpc.records.merge.useMutation({
+		onMutate: async ({ sourceId, targetId }) => {
+			// Cancel any outgoing refetches for these records
+			await Promise.all([
+				utils.records.get.cancel({ id: sourceId }),
+				utils.records.get.cancel({ id: targetId }),
+			]);
+
+			// Snapshot the previous values
+			const previousSource = utils.records.get.getData({ id: sourceId });
+			const previousTarget = utils.records.get.getData({ id: targetId });
+
+			// Optimistically merge the records if both exist
+			if (previousSource && previousTarget) {
+				const mergedData = mergeRecords(previousSource, previousTarget);
+				const optimisticUpdate = { ...previousTarget, ...mergedData };
+
+				// Update the target record with merged data
+				utils.records.get.setData({ id: targetId }, optimisticUpdate);
+
+				// Remove the source record from cache
+				const sourceKey = utils.records.get.queryOptions({ id: sourceId }).queryKey;
+				qc.setQueryData(sourceKey, () => undefined);
+			}
+
+			return { previousSource, previousTarget };
+		},
 		onSuccess: ({ updatedRecord, deletedRecordId, touchedIds }) => {
-			/* 1 ─ patch survivor */
+			/* 1 ─ patch survivor with real data */
 			utils.records.get.setData({ id: updatedRecord.id }, (prev) =>
 				prev ? { ...prev, ...updatedRecord } : updatedRecord
 			);
@@ -205,7 +297,9 @@ export function useMergeRecords() {
 			const touched = new Set(touchedIds);
 			utils.links.map.invalidate(undefined, {
 				predicate: (q) => {
-					const recIds = q.queryKey[1]?.input?.recordIds as (DbId | undefined)[] | undefined;
+					const recIds = Array.isArray(q.queryKey[1]?.input?.recordIds)
+						? q.queryKey[1].input.recordIds
+						: undefined;
 					return !!recIds?.some((id) => touched.has(id as DbId));
 				},
 			});
@@ -213,6 +307,16 @@ export function useMergeRecords() {
 			/* 5 ─ record-ID tables */
 			utils.records.list.invalidate();
 			embedMutation.mutate({ id: updatedRecord.id });
+		},
+		onError: (err, vars, ctx) => {
+			// Revert optimistic updates
+			if (ctx?.previousSource) {
+				utils.records.get.setData({ id: vars.sourceId }, ctx.previousSource);
+			}
+			if (ctx?.previousTarget) {
+				utils.records.get.setData({ id: vars.targetId }, ctx.previousTarget);
+			}
+			toast.error(err instanceof Error ? err.message : 'Failed to merge records');
 		},
 	});
 }
@@ -222,9 +326,34 @@ export function useUpsertLink() {
 	const embedMutation = useEmbedRecord();
 
 	return trpc.links.upsert.useMutation({
-		onMutate: ({ sourceId, targetId }) => {
+		onMutate: async ({ sourceId, targetId, predicateId, id }) => {
+			await Promise.all([
+				utils.links.listForRecord.cancel({ id: sourceId }),
+				utils.links.listForRecord.cancel({ id: targetId }),
+			]);
+
+			const prevSource = utils.links.listForRecord.getData({ id: sourceId });
+			const prevTarget = utils.links.listForRecord.getData({ id: targetId });
+
+			const optimisticId = id ?? -Date.now();
+			const link = { id: optimisticId, sourceId, targetId, predicateId } as const;
+
+			utils.links.listForRecord.setData({ id: sourceId }, (data) => {
+				if (!data) return data;
+				return {
+					...data,
+					outgoingLinks: [...data.outgoingLinks.filter((l) => l.id !== id), link],
+				};
+			});
+			utils.links.listForRecord.setData({ id: targetId }, (data) => {
+				if (!data) return data;
+				return {
+					...data,
+					incomingLinks: [...data.incomingLinks.filter((l) => l.id !== id), link],
+				};
+			});
+
 			const ids = [sourceId, targetId];
-			// TODO: Loop over all regardless of limit param.
 			utils.search.byRecordId.setData({ id: sourceId, limit: 10 }, (prev) => {
 				if (!prev) return undefined;
 				return prev.filter((r) => !ids.includes(r.id));
@@ -233,6 +362,8 @@ export function useUpsertLink() {
 				if (!prev) return undefined;
 				return prev.filter((r) => !ids.includes(r.id));
 			});
+
+			return { prevSource, prevTarget };
 		},
 		onSuccess: (row) => {
 			const { sourceId, targetId } = row;
@@ -257,13 +388,39 @@ export function useUpsertLink() {
 			embedMutation.mutate({ id: sourceId });
 			embedMutation.mutate({ id: targetId });
 		},
+		onError: (err, variables, ctx) => {
+			if (ctx?.prevSource) {
+				utils.links.listForRecord.setData({ id: variables.sourceId }, ctx.prevSource);
+			}
+			if (ctx?.prevTarget) {
+				utils.links.listForRecord.setData({ id: variables.targetId }, ctx.prevTarget);
+			}
+			toast.error(err instanceof Error ? err.message : 'Failed to upsert link');
+		},
 	});
 }
 
 export function useDeleteLinks() {
 	const utils = trpc.useUtils();
+	const qc = useQueryClient();
 
 	return trpc.links.delete.useMutation({
+		onMutate: (ids) => {
+			const entries = qc.getQueriesData<RecordLinks>({
+				queryKey: ['links', 'listForRecord'],
+			});
+			const previous = entries.map(([key, data]) => [key, data] as const);
+			const idSet = new Set(ids);
+			entries.forEach(([key, data]) => {
+				if (!data) return;
+				qc.setQueryData(key, {
+					...data,
+					outgoingLinks: data.outgoingLinks.filter((l) => !idSet.has(l.id)),
+					incomingLinks: data.incomingLinks.filter((l) => !idSet.has(l.id)),
+				});
+			});
+			return { previous };
+		},
 		onSuccess: (rows) => {
 			/* collect every record whose link list changed */
 			const touched = new Set<DbId>();
@@ -289,6 +446,12 @@ export function useDeleteLinks() {
 					return ids.some((id) => touched.has(id));
 				},
 			});
+		},
+		onError: (err, _ids, ctx) => {
+			ctx?.previous.forEach(([key, data]) => {
+				qc.setQueryData(key, data);
+			});
+			toast.error(err instanceof Error ? err.message : 'Failed to delete links');
 		},
 	});
 }

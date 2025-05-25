@@ -111,7 +111,10 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 					</h4>
 					<ul className="flex flex-col gap-2 text-xs">
 						{outgoingLinks.map((link) => (
-							<li key={`${link.targetId}-${link.predicateId}`} className="flex items-center gap-2">
+							<li
+								key={`${link.sourceId}-${link.targetId}-${link.predicateId}`}
+								className="flex items-center gap-2"
+							>
 								<RelationshipSelector
 									label={predicates[link.predicateId]?.name ?? 'Unknown'}
 									sourceId={id}
@@ -179,7 +182,10 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 					</h4>
 					<ul className="flex flex-col gap-2 text-xs">
 						{incomingLinks.map((link) => (
-							<li key={`${link.sourceId}-${link.predicateId}`} className="flex items-center gap-2">
+							<li
+								key={`${link.sourceId}-${link.targetId}-${link.predicateId}`}
+								className="flex items-center gap-2"
+							>
 								<RelationshipSelector
 									label={predicates[link.predicateId]?.name ?? 'Unknown'}
 									sourceId={id}
