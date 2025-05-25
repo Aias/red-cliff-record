@@ -17,7 +17,7 @@ alwaysApply: false
 
 ## API Development
 - Create tRPC routers in `src/server/api/routers/`
-- Use Zod for input validation
+- Use Zod for input validation (Note: we use Zod v4 - when working with Zod make sure to look up the most recent docs)
 - Implement proper error handling
 - Follow RESTful principles for endpoint design
 - Use proper HTTP status codes
@@ -32,7 +32,7 @@ alwaysApply: false
 ## Type Safety
 - Use database types from Drizzle schema
 - Implement proper input/output types for all procedures
-- Use Zod schemas for runtime validation
+- Use Zod v4 schemas for runtime validation
 - Avoid type assertions unless absolutely necessary
 
 ## Performance
