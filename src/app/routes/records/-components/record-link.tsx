@@ -5,6 +5,7 @@ import { RectangleEllipsisIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { usePredicateMap, useRecordWithOutgoingLinks } from '@/app/lib/hooks/use-records';
 import type { DbId } from '@/server/api/routers/common';
+import { RecordPreview } from './record-preview';
 import { recordTypeIcons } from './type-icons';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
@@ -17,6 +18,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import type { MediaType } from '@/db/schema';
 import { cn } from '@/lib/utils';
 
@@ -132,19 +134,26 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 					</div>
 
 					{/* title row */}
-					<div className="flex grow items-center gap-1 overflow-hidden">
-						{linkOptions ? (
-							<Link
-								className="mr-auto min-w-0 flex-1 truncate focus-visible:underline"
-								{...linkOptions}
-							>
-								{labelElement}
-							</Link>
-						) : (
-							<strong className="mr-auto min-w-0 flex-1 truncate">{labelElement}</strong>
-						)}
-						{sense && <span className="shrink-1 truncate text-c-hint italic">{sense}</span>}
-					</div>
+					<HoverCard openDelay={750} closeDelay={100}>
+						<HoverCardTrigger asChild>
+							<div className="flex grow items-center gap-1 overflow-hidden">
+								{linkOptions ? (
+									<Link
+										className="mr-auto min-w-0 flex-1 truncate focus-visible:underline"
+										{...linkOptions}
+									>
+										{labelElement}
+									</Link>
+								) : (
+									<strong className="mr-auto min-w-0 flex-1 truncate">{labelElement}</strong>
+								)}
+								{sense && <span className="shrink-1 truncate text-c-hint italic">{sense}</span>}
+							</div>
+						</HoverCardTrigger>
+						<HoverCardContent className="w-96">
+							<RecordPreview id={id} />
+						</HoverCardContent>
+					</HoverCard>
 
 					{/* source logos */}
 					<ul className="flex items-center gap-1.5 text-[0.75em] opacity-50">
