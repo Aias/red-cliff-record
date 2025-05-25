@@ -102,6 +102,8 @@ export function RecordForm({
 
 	const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
 	const mediaUploadRef = useRef<HTMLDivElement>(null);
+	const formRef = useRef<HTMLFormElement>(null);
+	const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const updateMutation = useUpsertRecord();
 	const deleteMediaMutation = useDeleteMedia();
@@ -154,15 +156,54 @@ export function RecordForm({
 		}
 	}, [record?.media]);
 
-	const curateAndNextHandler = useCallback(
-		(e: React.KeyboardEvent<HTMLFormElement>) => {
-			e.preventDefault();
-			// Submit form optimistically without waiting
+	// Auto-save functionality
+	const debouncedSave = useCallback(() => {
+		if (saveTimeoutRef.current) {
+			clearTimeout(saveTimeoutRef.current);
+		}
+		saveTimeoutRef.current = setTimeout(() => {
 			form.handleSubmit();
-			// Navigate immediately - tree structure unaffected by curation
+		}, 1000); // Save after 1 second of inactivity
+	}, [form]);
+
+	const immediateSave = useCallback(async () => {
+		if (saveTimeoutRef.current) {
+			clearTimeout(saveTimeoutRef.current);
+			saveTimeoutRef.current = null;
+		}
+		await form.handleSubmit();
+	}, [form]);
+
+
+	// Save immediately before navigation or form blur
+	useEffect(() => {
+		const handleBeforeUnload = () => {
+			if (saveTimeoutRef.current) {
+				// Note: beforeunload can't wait for async operations, so we trigger it but can't guarantee completion
+				immediateSave();
+			}
+		};
+
+		// Save when navigating away or closing
+		window.addEventListener('beforeunload', handleBeforeUnload);
+		
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+			if (saveTimeoutRef.current) {
+				clearTimeout(saveTimeoutRef.current);
+			}
+		};
+	}, [immediateSave]);
+
+	const curateAndNextHandler = useCallback(
+		async (e: React.KeyboardEvent<HTMLFormElement>) => {
+			e.preventDefault();
+			// Save immediately before navigation and wait for completion
+			await immediateSave();
+			// Navigate after save completes
 			onFinalize();
 		},
-		[form, onFinalize]
+		[immediateSave, onFinalize]
 	);
 
 	if (isLoading || !record) return <Spinner />;
@@ -170,11 +211,18 @@ export function RecordForm({
 
 	return (
 		<form
+			ref={formRef}
 			key={recordId}
 			onSubmit={(e) => {
 				e.preventDefault();
 				e.stopPropagation();
 				form.handleSubmit();
+			}}
+			onBlur={(e) => {
+				// If focus is leaving the form entirely, save immediately
+				if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+					immediateSave();
+				}
 			}}
 			onClickCapture={(e) => {
 				// Only navigate on actual mouse clicks, not synthetic/keyboard events
@@ -211,7 +259,11 @@ export function RecordForm({
 								<GhostInput
 									value={field.state.value ?? ''}
 									placeholder="Untitled Record"
-									onChange={(e) => field.handleChange(e.target.value)}
+									onChange={(e) => {
+										field.handleChange(e.target.value);
+										debouncedSave();
+									}}
+									onBlur={() => debouncedSave()}
 								/>
 								{field.state.meta.errors && (
 									<p className="text-sm text-destructive">{field.state.meta.errors.join(', ')}</p>
@@ -239,7 +291,10 @@ export function RecordForm({
 								type="single"
 								value={field.state.value}
 								onValueChange={(value) => {
-									if (value) field.handleChange(value as RecordType);
+									if (value) {
+										field.handleChange(value as RecordType);
+										debouncedSave();
+									}
 								}}
 								variant="outline"
 								className="w-full"
@@ -290,7 +345,10 @@ export function RecordForm({
 								max={3}
 								step={1}
 								value={[field.state.value ?? 0]}
-								onValueChange={(values) => field.handleChange(values[0] ?? 0)}
+								onValueChange={(values) => {
+									field.handleChange(values[0] ?? 0);
+									debouncedSave();
+								}}
 							/>
 						</div>
 					)}
@@ -324,7 +382,11 @@ export function RecordForm({
 														className="w-full"
 														value={field.state.value ?? ''}
 														placeholder="https://example.com"
-														onChange={(e) => field.handleChange(e.target.value)}
+														onChange={(e) => {
+															field.handleChange(e.target.value);
+															debouncedSave();
+														}}
+														onBlur={() => debouncedSave()}
 													/>
 													{field.state.value && (
 														<ExternalLink href={field.state.value} children={null} />
@@ -366,7 +428,11 @@ export function RecordForm({
 														className="w-full"
 														value={field.state.value ?? ''}
 														placeholder="https://example.com/image.jpg"
-														onChange={(e) => field.handleChange(e.target.value)}
+														onChange={(e) => {
+															field.handleChange(e.target.value);
+															debouncedSave();
+														}}
+														onBlur={() => debouncedSave()}
 													/>
 													{field.state.value && (
 														<ExternalLink href={field.state.value} children={null} />
@@ -397,7 +463,11 @@ export function RecordForm({
 												className="w-full"
 												value={field.state.value ?? ''}
 												placeholder="Short form"
-												onChange={(e) => field.handleChange(e.target.value)}
+												onChange={(e) => {
+													field.handleChange(e.target.value);
+													debouncedSave();
+												}}
+												onBlur={() => debouncedSave()}
 											/>
 										)}
 									</form.Field>
@@ -418,7 +488,11 @@ export function RecordForm({
 												className="w-full"
 												value={field.state.value ?? ''}
 												placeholder="Meaning or definition"
-												onChange={(e) => field.handleChange(e.target.value)}
+												onChange={(e) => {
+													field.handleChange(e.target.value);
+													debouncedSave();
+												}}
+												onBlur={() => debouncedSave()}
 											/>
 										)}
 									</form.Field>
@@ -438,7 +512,10 @@ export function RecordForm({
 								label="Is Private"
 								id="isPrivate"
 								value={field.state.value}
-								handleChange={field.handleChange}
+								handleChange={(value) => {
+									field.handleChange(value);
+									debouncedSave();
+								}}
 							/>
 						)}
 					</form.Field>
@@ -449,7 +526,10 @@ export function RecordForm({
 								label="Is Curated"
 								id="isCurated"
 								value={field.state.value}
-								handleChange={field.handleChange}
+								handleChange={(value) => {
+									field.handleChange(value);
+									debouncedSave();
+								}}
 							/>
 						)}
 					</form.Field>
@@ -463,11 +543,15 @@ export function RecordForm({
 								id="summary"
 								value={field.state.value ?? ''}
 								placeholder="A brief summary of this record"
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={(e) => {
+									field.handleChange(e.target.value);
+									debouncedSave();
+								}}
+								onBlur={() => debouncedSave()}
 								onKeyDown={(e) => {
 									if (e.key === 'Enter' && !e.shiftKey) {
 										e.preventDefault();
-										form.handleSubmit();
+										immediateSave();
 									}
 								}}
 							/>
@@ -483,11 +567,15 @@ export function RecordForm({
 								id="content"
 								value={field.state.value ?? ''}
 								placeholder="Main content"
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={(e) => {
+									field.handleChange(e.target.value);
+									debouncedSave();
+								}}
+								onBlur={() => debouncedSave()}
 								onKeyDown={(e) => {
 									if (e.key === 'Enter' && !e.shiftKey) {
 										e.preventDefault();
-										form.handleSubmit();
+										immediateSave();
 									}
 								}}
 							/>
@@ -513,11 +601,15 @@ export function RecordForm({
 												id="mediaCaption"
 												value={captionField.state.value ?? ''}
 												placeholder="Media caption"
-												onChange={(e) => captionField.handleChange(e.target.value)}
+												onChange={(e) => {
+													captionField.handleChange(e.target.value);
+													debouncedSave();
+												}}
+												onBlur={() => debouncedSave()}
 												onKeyDown={(e) => {
 													if (e.key === 'Enter' && !e.shiftKey) {
 														e.preventDefault();
-														form.handleSubmit();
+														immediateSave();
 													}
 												}}
 											/>
@@ -541,11 +633,15 @@ export function RecordForm({
 								id="notes"
 								value={field.state.value ?? ''}
 								placeholder="Additional notes"
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={(e) => {
+									field.handleChange(e.target.value);
+									debouncedSave();
+								}}
+								onBlur={() => debouncedSave()}
 								onKeyDown={(e) => {
 									if (e.key === 'Enter' && !e.shiftKey) {
 										e.preventDefault();
-										form.handleSubmit();
+										immediateSave();
 									}
 								}}
 							/>
