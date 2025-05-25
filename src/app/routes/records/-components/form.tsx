@@ -99,6 +99,7 @@ export function RecordForm({
 	const params = useParams({ from: '/records/$recordId' });
 	const urlRecordId = useMemo(() => Number(params.recordId), [params.recordId]);
 	const { data: record, isLoading, isError } = useRecord(recordId);
+
 	const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
 	const mediaUploadRef = useRef<HTMLDivElement>(null);
 
@@ -154,9 +155,11 @@ export function RecordForm({
 	}, [record?.media]);
 
 	const curateAndNextHandler = useCallback(
-		async (e: React.KeyboardEvent<HTMLFormElement>) => {
+		(e: React.KeyboardEvent<HTMLFormElement>) => {
 			e.preventDefault();
-			await form.handleSubmit();
+			// Submit form optimistically without waiting
+			form.handleSubmit();
+			// Navigate immediately - tree structure unaffected by curation
 			onFinalize();
 		},
 		[form, onFinalize]
@@ -174,6 +177,11 @@ export function RecordForm({
 				form.handleSubmit();
 			}}
 			onClickCapture={(e) => {
+				// Only navigate on actual mouse clicks, not synthetic/keyboard events
+				if (e.detail === 0 || e.detail === undefined || !e.detail) {
+					return;
+				}
+
 				if (!isNaN(urlRecordId) && urlRecordId !== recordId) {
 					e.stopPropagation();
 					navigate({

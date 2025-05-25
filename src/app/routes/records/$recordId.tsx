@@ -214,12 +214,16 @@ function RouteComponent() {
 
 	const handleFinalize = useCallback(() => {
 		const idsToCurate = Array.from(new Set(nodes.map((t) => t.id)));
-		markAsCurated.mutate({ ids: idsToCurate });
 
+		// Calculate next ID before triggering mutations to avoid race conditions
 		const listIds = recordsList?.ids.map((r) => r.id) ?? [];
 		const skip = new Set(idsToCurate);
 		const nextId = getNextRecord(listIds, recordId, skip);
 
+		// Trigger mutation optimistically
+		markAsCurated.mutate({ ids: idsToCurate });
+
+		// Navigate immediately - tree structure is unaffected by curation
 		if (nextId) {
 			navigate({
 				to: '/records/$recordId',
