@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
@@ -144,6 +144,14 @@ export function RecordForm({
 			},
 		},
 	});
+
+	useEffect(() => {
+		if (record) {
+			form.setFieldValue('media', record.media ?? [], {
+				dontUpdateMeta: true,
+			});
+		}
+	}, [record?.media]);
 
 	const curateAndNextHandler = useCallback(
 		async (e: React.KeyboardEvent<HTMLFormElement>) => {
