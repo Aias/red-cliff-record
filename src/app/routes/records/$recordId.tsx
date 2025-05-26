@@ -6,6 +6,7 @@ import type { DbId } from '@/server/api/routers/common';
 import type { FamilyTree } from '@/server/api/routers/records/tree';
 import { RecordForm } from './-components/form';
 import { RelationsList, SimilarRecords } from './-components/relations';
+import { Spinner } from '@/components/spinner';
 
 export const Route = createFileRoute('/records/$recordId')({
 	component: RouteComponent,
@@ -162,9 +163,30 @@ function RouteComponent() {
 	});
 	const { recordId: recordIdParam } = Route.useParams();
 	const recordId = useMemo(() => Number(recordIdParam), [recordIdParam]);
-	const { data: tree } = useRecordTree(recordId);
+	const { data: tree, isError: treeError, isLoading: treeLoading } = useRecordTree(recordId);
 	const markAsCurated = useMarkAsCurated();
 	const deleteMutation = useDeleteRecords();
+
+	// If tree query fails, it likely means the record doesn't exist (deleted or invalid ID)
+	useEffect(() => {
+		if (treeError && recordsList?.ids.length) {
+			// Navigate to first available record
+			const firstAvailableId = recordsList.ids[0]?.id;
+			if (firstAvailableId && firstAvailableId !== recordId) {
+				navigate({
+					to: '/records/$recordId',
+					params: { recordId: firstAvailableId.toString() },
+					search: true,
+				});
+			} else {
+				// No records available, go to records list
+				navigate({
+					to: '/records',
+					search: true,
+				});
+			}
+		}
+	}, [treeError, recordsList, recordId, navigate]);
 
 	const nodes = useMemo(() => {
 		if (!tree) return [];
@@ -260,6 +282,27 @@ function RouteComponent() {
 		},
 		[deleteMutation, recordsList, recordId, navigate]
 	);
+
+	// Show loading state while tree is loading
+	if (treeLoading) {
+		return (
+			<div className="flex flex-1 items-center justify-center">
+				<Spinner />
+			</div>
+		);
+	}
+
+	// Show error state if tree failed and we couldn't navigate away
+	if (treeError) {
+		return (
+			<div className="flex flex-1 items-center justify-center">
+				<div className="text-center">
+					<div className="mb-2 text-destructive">Record not found</div>
+					<div className="text-sm text-c-hint">This record may have been deleted or moved.</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-1 overflow-x-auto">

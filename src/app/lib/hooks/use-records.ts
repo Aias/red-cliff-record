@@ -1,7 +1,7 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
-import type { DbId } from '@/server/api/routers/common';
+import type { DbId, IdParamList } from '@/server/api/routers/common';
 import type { ListRecordsInput, RecordGet, RecordLinks } from '@/server/api/routers/types';
 import { mergeRecords } from '@/lib/merge-records';
 
@@ -201,10 +201,14 @@ export function useDeleteRecords() {
 					})
 				)
 			);
-			const previous = new Map<DbId, RecordGet | undefined>();
+
+			// Cancel any pending mutations for these records
+			qc.getMutationCache().clear();
+
+			const previousRecords = new Map<DbId, RecordGet | undefined>();
 			ids.forEach((id) => {
 				const data = qc.getQueryData(utils.records.get.queryOptions({ id }).queryKey);
-				previous.set(id, data);
+				previousRecords.set(id, data);
 				qc.removeQueries({
 					queryKey: utils.records.get.queryOptions({ id }).queryKey,
 					exact: true,
@@ -213,30 +217,62 @@ export function useDeleteRecords() {
 					queryKey: utils.search.byRecordId.queryOptions({ id }).queryKey,
 					exact: true,
 				});
+				qc.removeQueries({
+					queryKey: utils.records.tree.queryOptions({ id }).queryKey,
+					exact: true,
+				});
+				qc.removeQueries({
+					queryKey: utils.links.listForRecord.queryOptions({ id }).queryKey,
+					exact: true,
+				});
 			});
-			return { previous };
+
+			// Optimistically remove deleted records from all record lists
+			const listEntries = qc.getQueriesData<IdParamList>({ queryKey: ['records', 'list'] });
+			const previousLists = listEntries.map(([key, data]) => [key, data] as const);
+			const idSet = new Set(ids);
+			listEntries.forEach(([key, data]) => {
+				if (!data) return;
+				qc.setQueryData(key, {
+					...data,
+					ids: data.ids.filter(({ id }) => !idSet.has(id)),
+				});
+			});
+
+			return { previousRecords, previousLists };
 		},
 		onSuccess: (rows) => {
+			// Cleanup is already done in onMutate, just ensure consistency
 			rows.forEach(({ id }) => {
-				/* 1 ▸ remove point-query cache completely */
 				qc.removeQueries({
 					queryKey: utils.records.get.queryOptions({ id }).queryKey,
 					exact: true,
 				});
-
-				/* 2 ▸ drop any cached search entry for this ID */
 				qc.removeQueries({
 					queryKey: utils.search.byRecordId.queryOptions({ id }).queryKey,
 					exact: true,
 				});
+				qc.removeQueries({
+					queryKey: utils.records.tree.queryOptions({ id }).queryKey,
+					exact: true,
+				});
+				qc.removeQueries({
+					queryKey: utils.links.listForRecord.queryOptions({ id }).queryKey,
+					exact: true,
+				});
 			});
 
-			/* 3 ▸ refetch record lists (IDs only) */
-			utils.records.list.invalidate();
+			/* Invalidate targeted caches that might reference deleted records */
+			utils.records.tree.invalidate(); // Tree queries may contain deleted records as children
+			utils.links.listForRecord.invalidate(); // Link queries may reference deleted records
+			utils.links.map.invalidate(); // Link maps may reference deleted records
 		},
-		onError: (err, ids, ctx) => {
-			ctx?.previous.forEach((data, id) => {
+		onError: (err, _ids, ctx) => {
+			ctx?.previousRecords.forEach((data, id) => {
 				qc.setQueryData(utils.records.get.queryOptions({ id }).queryKey, data);
+			});
+			ctx?.previousLists.forEach(([key, data]) => {
+				qc.setQueryData(key, data);
 			});
 			toast.error(err instanceof Error ? err.message : 'Failed to delete records');
 		},

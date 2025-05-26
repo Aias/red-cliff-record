@@ -39,7 +39,15 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 	const predicates = usePredicateMap();
 
 	if (isLoading) return <Spinner />;
-	if (isError || !record) return null;
+	if (isError || !record) {
+		// Record might be deleted or not found, show placeholder instead of breaking
+		return (
+			<div className="flex items-center gap-2 text-c-hint italic opacity-75">
+				<RectangleEllipsisIcon className="size-4" />
+				<span>Record not found (ID: {id})</span>
+			</div>
+		);
+	}
 
 	/* ---------- resolve creator / parent ---------- */
 	let creatorTitle: string | undefined | null;

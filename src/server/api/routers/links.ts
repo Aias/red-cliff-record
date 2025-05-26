@@ -13,6 +13,15 @@ import { IdSchema, type DbId } from './common';
 import type { RecordLinks, RecordLinksMap } from './types';
 
 export const linksRouter = createTRPCRouter({
+	/**
+	 * Get all incoming and outgoing links for a specific record
+	 * 
+	 * @param id - Record ID to fetch links for
+	 * @returns Object containing the record ID and arrays of incoming/outgoing links
+	 * @throws NOT_FOUND if record doesn't exist
+	 * 
+	 * Used by: Record detail views, relationship components
+	 */
 	listForRecord: publicProcedure
 		.input(z.object({ id: IdSchema }))
 		.query(async ({ ctx: { db }, input }): Promise<RecordLinks> => {
@@ -49,6 +58,17 @@ export const linksRouter = createTRPCRouter({
 			return recordWithLinks;
 		}),
 
+	/**
+	 * Get a map of links for multiple records in a single query
+	 * 
+	 * @param recordIds - Array of record IDs to fetch links for (minimum 1)
+	 * @returns Map where keys are record IDs and values are RecordLinks objects
+	 * 
+	 * Efficiently fetches all links where any of the provided record IDs appear
+	 * as either source or target. Useful for bulk operations and tree structures.
+	 * 
+	 * Used by: Tree views, bulk relationship operations, record grids
+	 */
 	map: publicProcedure
 		.input(z.object({ recordIds: z.array(IdSchema).min(1) }))
 		.query(async ({ ctx: { db }, input: { recordIds } }): Promise<RecordLinksMap> => {
@@ -97,6 +117,23 @@ export const linksRouter = createTRPCRouter({
 			return map;
 		}),
 
+	/**
+	 * Create or update a relationship link between two records
+	 * 
+	 * @param input - Link data including sourceId, targetId, predicateId, and optional notes
+	 * @returns The created or updated link
+	 * @throws NOT_FOUND if predicate doesn't exist
+	 * @throws BAD_REQUEST if predicate is non-canonical and not reversible, or if sourceId equals targetId
+	 * @throws INTERNAL_SERVER_ERROR if database operation fails
+	 * 
+	 * Features:
+	 * - Automatically handles predicate canonicalization (flips source/target if needed)
+	 * - Prevents self-links (sourceId === targetId)
+	 * - Updates existing links or creates new ones based on unique constraint
+	 * - Supports both INSERT and UPDATE operations via optional ID
+	 * 
+	 * Used by: Relationship creation/editing, record linking interfaces
+	 */
 	upsert: publicProcedure.input(LinkInsertSchema).mutation(async ({ ctx: { db }, input }) => {
 		/* 1 ─ fetch predicate + inverse */
 		const predicate = await db.query.predicates.findFirst({
@@ -178,11 +215,33 @@ export const linksRouter = createTRPCRouter({
 		return row;
 	}),
 
+	/**
+	 * Get all available relationship predicates
+	 * 
+	 * @returns Array of all predicate definitions
+	 * 
+	 * Predicates define the types of relationships that can exist between records
+	 * (e.g., "contains", "created by", "similar to"). Used to populate relationship
+	 * type selectors and validate relationship creation.
+	 * 
+	 * Used by: Relationship creation forms, predicate selectors
+	 */
 	listPredicates: publicProcedure.query(async ({ ctx: { db } }): Promise<PredicateSelect[]> => {
 		const predicates = await db.query.predicates.findMany();
 		return predicates;
 	}),
 
+	/**
+	 * Delete multiple links by their IDs
+	 * 
+	 * @param input - Array of link IDs to delete
+	 * @returns Array of deleted link records
+	 * 
+	 * Performs bulk deletion of relationship links. Returns the actual deleted
+	 * records for confirmation and potential rollback scenarios.
+	 * 
+	 * Used by: Relationship management, bulk operations, cleanup processes
+	 */
 	delete: publicProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
 		if (input.length === 0) {
 			return []; // Return empty array if input is empty
