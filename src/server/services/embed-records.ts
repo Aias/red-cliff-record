@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { createEmbedding } from '../../app/lib/server/create-embedding';
-import type { FullRecord } from '../api/routers/types';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';
 import { db } from '@/db/connections';
 import { records, RunType } from '@/db/schema';
 import { createRecordEmbeddingText, getRecordTitle } from '@/shared/lib/embedding';
+import type { FullRecord } from '@/shared/types';
 
 const logger = createIntegrationLogger('services', 'embed-records');
 

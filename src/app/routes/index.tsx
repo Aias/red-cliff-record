@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
-import { useRecordList } from '@/lib/hooks/use-records';
+import { useRecordList } from '@/lib/hooks/record-queries';
 
 export const Route = createFileRoute('/')({
 	component: Home,

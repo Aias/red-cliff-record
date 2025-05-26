@@ -3,8 +3,6 @@ import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
 import { z } from 'zod/v4';
-import type { RecordGet } from '@/server/api/routers/types';
-import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@/server/db/schema';
 import { recordTypeIcons } from './type-icons';
 import { Avatar } from '@/components/avatar';
 import { BooleanSwitch } from '@/components/boolean-switch';
@@ -35,9 +33,17 @@ import { Slider } from '@/components/ui/slider';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useDeleteMedia } from '@/lib/hooks/media-mutations';
+import { useUpsertRecord } from '@/lib/hooks/record-mutations';
+import { useRecord } from '@/lib/hooks/record-queries';
 import { useRecordUpload } from '@/lib/hooks/use-record-upload';
-import { useDeleteMedia, useRecord, useUpsertRecord } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
+import {
+	RecordInsertSchema,
+	RecordTypeSchema,
+	type RecordGet,
+	type RecordType,
+} from '@/shared/types';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
 	recordId: number;

@@ -7,10 +7,10 @@ import {
 	useMatches,
 } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
-import { ListRecordsInputSchema } from '@/server/api/routers/types';
 import { RecordLink } from './-components/record-link';
 import { RecordsGrid } from './-components/records-grid';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
+import { ListRecordsInputSchema } from '@/shared/types';
 
 export const Route = createFileRoute('/records')({
 	validateSearch: ListRecordsInputSchema,

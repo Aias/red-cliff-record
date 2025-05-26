@@ -2,7 +2,6 @@ import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod/v4';
 import { publicProcedure } from '../../init';
-import { IdSchema } from '../common';
 import {
 	airtableAttachments,
 	airtableCreators,
@@ -25,6 +24,7 @@ import {
 	twitterUsers,
 	type RecordSelect,
 } from '@/db/schema';
+import { IdSchema } from '@/shared/types';
 
 export const deleteRecords = publicProcedure
 	.input(z.array(IdSchema))

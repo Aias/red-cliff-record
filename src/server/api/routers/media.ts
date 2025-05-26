@@ -3,7 +3,6 @@ import { inArray } from 'drizzle-orm';
 import { z } from 'zod/v4';
 import { getMediaInsertData, uploadClientFileToR2 } from '@/server/lib/media';
 import { createTRPCRouter, publicProcedure } from '../init';
-import { IdSchema } from './common';
 import {
 	airtableAttachments,
 	lightroomImages,
@@ -11,6 +10,7 @@ import {
 	raindropImages,
 	twitterMedia,
 } from '@/db/schema';
+import { IdSchema } from '@/shared/types';
 
 // Schema for file upload input
 const MediaCreateInputSchema = z.object({

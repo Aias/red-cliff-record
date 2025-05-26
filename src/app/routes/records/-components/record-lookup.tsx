@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
-import type { DbId } from '@/server/api/routers/common';
-import type { LinkPartial } from '@/server/api/routers/types';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
 import { Badge } from '@/components/badge';
@@ -24,9 +22,12 @@ import {
 	PopoverTrigger,
 	type PopoverContentProps,
 } from '@/components/ui/popover';
-import type { PredicateSelect } from '@/db/schema';
-import { useUpsertLink, useUpsertRecord } from '@/lib/hooks/use-records';
+import { useUpsertLink } from '@/lib/hooks/link-mutations';
+import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { cn } from '@/lib/utils';
+import type { PredicateSelect } from '@/shared/types';
+import type { DbId } from '@/shared/types';
+import type { LinkPartial } from '@/shared/types';
 
 /* --------------------------------------------------------------------------
  * Types for extra, runtime‑supplied actions shown after the predicate list.

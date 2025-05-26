@@ -1,7 +1,7 @@
 import { useQueries } from '@tanstack/react-query';
 import { trpc } from '@/app/trpc';
-import type { DbId } from '@/server/api/routers/common';
-import type { ListRecordsInput } from '@/server/api/routers/types';
+import type { ListRecordsInput } from '@/shared/types';
+import type { DbId } from '@/shared/types';
 
 export function useRecord(id: DbId) {
 	return trpc.records.get.useQuery({ id });

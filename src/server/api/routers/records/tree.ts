@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { publicProcedure } from '../../init';
-import { IdParamSchema } from '../common';
+import { IdParamSchema } from '@/shared/types';
 
 export const getFamilyTree = publicProcedure
 	.input(IdParamSchema)

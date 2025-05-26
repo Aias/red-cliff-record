@@ -1,5 +1,5 @@
 import { trpc } from '@/app/trpc';
-import type { DbId } from '@/server/api/routers/common';
+import type { DbId } from '@/shared/types';
 
 export function useCreateMedia(id: DbId) {
 	const utils = trpc.useUtils();

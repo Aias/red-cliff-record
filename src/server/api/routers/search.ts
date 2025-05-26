@@ -1,11 +1,11 @@
 import { TRPCError } from '@trpc/server';
 import { cosineDistance, sql } from 'drizzle-orm';
 import { z } from 'zod/v4';
+import { similarity, SIMILARITY_THRESHOLD } from '@/server/lib/constants';
 import { createTRPCRouter, publicProcedure } from '../init';
-import { IdSchema, similarity, SIMILARITY_THRESHOLD } from './common';
-import { SearchRecordsInputSchema } from './types';
 import type { IntegrationType, MediaType, RecordType } from '@/db/schema';
 import { createEmbedding } from '@/lib/server/create-embedding';
+import { IdSchema, SearchRecordsInputSchema } from '@/shared/types';
 
 export type SearchResult = {
 	id: number;

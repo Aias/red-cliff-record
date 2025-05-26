@@ -1,11 +1,11 @@
 import { type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ArchiveIcon, MoonIcon, SunIcon } from 'lucide-react';
-import { defaultQueueOptions } from '@/server/api/routers/types';
 import { SiteSearch } from './site-search';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { setTheme } from '@/lib/server/theme';
+import { defaultQueueOptions } from '@/shared/types';
 
 interface AppLayoutProps {
 	children: ReactNode;

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**IMPORTANT**: This project uses both `CLAUDE.md` and `.cursor/rules/` files for development guidelines. When making significant refactoring or architectural changes, both files must be updated to stay in sync. Always check and update both locations to ensure consistency.
+**IMPORTANT**: This file is the single source of truth for development guidelines and architectural patterns. When making significant refactoring or architectural changes, update this file to reflect the new patterns and keep it current.
 
 ## Project Overview
 
@@ -34,7 +34,11 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - `routes/` - TanStack Router file-based routing
 - `components/` - Reusable components (aliased as `@/components`)
 - `lib/` - Client-side utility functions (aliased as `@/lib`)
-  - `hooks/` - React hooks split into focused modules (record-queries, record-mutations, media-mutations, link-mutations)
+  - `hooks/` - React hooks split into focused modules:
+    - `record-queries.ts` - Read operations (useRecord, useRecordList, useRecordTree)
+    - `record-mutations.ts` - CRUD operations (useUpsertRecord, useDeleteRecords, useMergeRecords)
+    - `media-mutations.ts` - Media operations (useCreateMedia, useDeleteMedia)
+    - `link-mutations.ts` - Link operations (useUpsertLink, useDeleteLinks)
 
 **Backend (`/src/server/`):**
 
@@ -44,6 +48,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
   - `media.ts` - Complete media handling (R2 uploads, metadata extraction, MIME detection)
   - `image-metadata.ts` - Pure image format parsing utility
   - `url-utils.ts` - Server-side URL validation and formatting
+  - `constants.ts` - Server-specific constants (SIMILARITY_THRESHOLD, similarity function)
 - `integrations/` - External API integrations and sync scripts
 
 **Shared (`/src/shared/`):**
@@ -52,6 +57,12 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
   - `formatting.ts` - Text formatting and Zod transformers (`toTitleCase`, `emptyStringToNull`)
   - `embedding.ts` - Text processing for embeddings (`getRecordTitle`, `createRecordEmbeddingText`)
   - `merge-records.ts` - Record merging logic (`mergeRecords`, `mergeTextFields`)
+- `types/` - Universal types (aliased as `@/shared/types`) - shared between client and server
+  - `database.ts` - Re-exports of database types that frontend needs (avoids direct database imports)
+  - `api.ts` - API contract types and schemas (`ListRecordsInput`, `SearchRecordsInput`, `DbId`)
+  - `domain.ts` - Core business object types (`RecordGet`, `FullRecord`, `RecordLinks`)
+  - `media.ts` - Media-related types (`MediaMetadata`)
+  - `index.ts` - Convenient re-export of all shared types
 
 **Database:**
 
@@ -130,8 +141,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 **Before Every Commit:**
 
 - Run `pnpm lint` AND `pnpm tsc`
-- Check .cursor/rules for any updated guidelines
-- Update rules if refactoring makes them outdated
+- Update CLAUDE.md if refactoring changes architectural patterns or introduces new conventions
 
 ## Import Aliases
 
@@ -161,6 +171,14 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - ✅ Client code can import from shared and other client modules
 - ❌ NEVER import server code from client code
 - ❌ NEVER import client code from server code
+- ❌ NEVER create backward compatibility files during refactoring - update all imports directly
+
+**Refactoring Rules:**
+
+- When moving or splitting files, update ALL imports immediately - no re-export files for backward compatibility
+- When removing deprecated exports, find and update all consumers first
+- Always prefer direct imports from the correct location over convenience re-exports
+- During large refactors, complete the entire migration in one go rather than leaving transitional files
 
 **Media & File Handling:**
 

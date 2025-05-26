@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
-import type { DbId, IdParamList } from '@/server/api/routers/common';
-import type { RecordGet } from '@/server/api/routers/types';
 import { mergeRecords } from '@/shared/lib/merge-records';
+import type { RecordGet } from '@/shared/types';
+import type { DbId, IdParamList } from '@/shared/types';
 
 export function useEmbedRecord() {
 	const utils = trpc.useUtils();

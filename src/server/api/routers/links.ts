@@ -9,8 +9,8 @@ import {
 	type PredicateSelect,
 } from '@/server/db/schema';
 import { createTRPCRouter, publicProcedure } from '../init';
-import { IdSchema, type DbId } from './common';
-import type { RecordLinks, RecordLinksMap } from './types';
+import { IdSchema, type DbId } from '@/shared/types';
+import type { RecordLinks, RecordLinksMap } from '@/shared/types';
 
 export const linksRouter = createTRPCRouter({
 	/**

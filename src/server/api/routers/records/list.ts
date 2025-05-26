@@ -1,6 +1,5 @@
 import { publicProcedure } from '../../init';
-import { type IdParamList } from '../common';
-import { ListRecordsInputSchema } from '../types';
+import { ListRecordsInputSchema, type IdParamList } from '@/shared/types';
 
 export const list = publicProcedure
 	.input(ListRecordsInputSchema)

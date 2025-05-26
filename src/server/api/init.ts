@@ -7,7 +7,7 @@ import ws from 'ws';
 import { ZodError } from 'zod/v4';
 import { relations } from '@/server/db/relations';
 import * as schema from '@/server/db/schema';
-import type { RecordGet } from './routers/types';
+import type { RecordGet } from '@/shared/types';
 
 neonConfig.webSocketConstructor = ws;
 neonConfig.poolQueryViaFetch = true;

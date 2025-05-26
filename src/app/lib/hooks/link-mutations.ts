@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
-import type { DbId } from '@/server/api/routers/common';
-import type { RecordLinks } from '@/server/api/routers/types';
 import { useEmbedRecord } from './record-mutations';
+import type { RecordLinks } from '@/shared/types';
+import type { DbId } from '@/shared/types';
 
 export function useUpsertLink() {
 	const utils = trpc.useUtils();

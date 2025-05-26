@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { FileTextIcon, LightbulbIcon, UserIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { type RecordType } from '@/db/schema';
+import { type RecordType } from '@/shared/types';
 
 // Map record types to their corresponding icons and descriptions
 export const recordTypeIcons: Record<RecordType, { icon: React.ElementType; description: string }> =

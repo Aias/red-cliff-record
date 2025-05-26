@@ -1,5 +1,5 @@
-import type { RecordGet } from '@/server/api/routers/types';
 import type { RecordSelect } from '@/db/schema';
+import type { RecordGet } from '@/shared/types';
 
 /**
  * Helper function to merge text fields during record merging.

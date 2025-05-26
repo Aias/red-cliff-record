@@ -1,14 +1,19 @@
 import { z } from 'zod/v4';
-import { DEFAULT_LIMIT, type DbId } from './common';
-import {
-	IntegrationTypeSchema,
-	RecordTypeSchema,
-	type LinkSelect,
-	type MediaSelect,
-	type PredicateSelect,
-	type RecordSelect,
-} from '@/db/schema';
+import { IntegrationTypeSchema, RecordTypeSchema } from './database';
 
+export const DEFAULT_LIMIT = 50;
+
+// Core ID types used throughout the API
+export const IdSchema = z.number().int().positive();
+export const IdParamSchema = z.object({ id: IdSchema });
+export type DbId = z.infer<typeof IdSchema>;
+export type IdParam = z.infer<typeof IdParamSchema>;
+
+export type IdParamList = {
+	ids: Array<IdParam>;
+};
+
+// API Input/Output Schemas
 const OrderByFieldSchema = z.enum([
 	'recordUpdatedAt',
 	'recordCreatedAt',
@@ -41,6 +46,7 @@ export const RecordFiltersSchema = z.object({
 	hasMedia: z.boolean().optional(),
 	source: IntegrationTypeSchema.optional(),
 });
+
 export const LimitSchema = z.number().int().positive();
 export const OffsetSchema = z.number().int().gte(0);
 export const OrderBySchema = z.array(OrderCriteriaSchema);
@@ -85,26 +91,3 @@ export const SearchRecordsInputSchema = z.object({
 });
 
 export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
-
-export type RecordGet = Omit<RecordSelect & { media?: MediaSelect[] }, 'textEmbedding'>;
-
-export interface RecordWithRelations extends RecordGet {
-	outgoingLinks: Array<LinkSelect & { target: RecordGet; predicate: PredicateSelect }>;
-	media: Array<MediaSelect>;
-}
-
-export interface FullRecord extends RecordSelect {
-	outgoingLinks: Array<LinkSelect & { target: RecordGet; predicate: PredicateSelect }>;
-	incomingLinks: Array<LinkSelect & { source: RecordGet; predicate: PredicateSelect }>;
-	media: Array<MediaSelect>;
-}
-
-export type LinkPartial = Pick<LinkSelect, 'id' | 'sourceId' | 'targetId' | 'predicateId'>;
-
-export type RecordLinks = {
-	id: DbId;
-	outgoingLinks: LinkPartial[];
-	incomingLinks: LinkPartial[];
-};
-
-export type RecordLinksMap = Record<DbId, RecordLinks>;

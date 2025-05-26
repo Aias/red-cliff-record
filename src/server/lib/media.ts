@@ -4,6 +4,7 @@ import type { MediaInsert } from '@/server/db/schema';
 import { MediaType } from '@/server/db/schema/media';
 import { getImageMetadata } from './image-metadata';
 import { validateAndFormatUrl } from './url-utils';
+import type { MediaMetadata } from '@/shared/types';
 
 /* ---------------------------------------------------------------------------
  * Constants & Defaults
@@ -102,17 +103,6 @@ export const getMediaTypeFromURL = (url: string): MediaType => {
 	} catch {
 		return DEFAULT_MEDIA_TYPE;
 	}
-};
-
-export type MediaMetadata = {
-	mediaType: MediaType;
-	mediaFormat: string;
-	contentTypeString: string;
-	size?: number;
-	width?: number;
-	height?: number;
-	format?: string;
-	hasAlpha?: boolean;
 };
 
 /**

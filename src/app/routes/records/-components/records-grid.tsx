@@ -2,8 +2,6 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { CheckIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
-import type { DbId } from '@/server/api/routers/common';
-import { defaultQueueOptions } from '@/server/api/routers/types';
 import { RecordTypeIcon } from './type-icons';
 import { ExternalLink } from '@/components/external-link';
 import { IntegrationLogo } from '@/components/integration-logo';
@@ -28,14 +26,16 @@ import {
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useRecord } from '@/lib/hooks/record-queries';
+import { cn } from '@/lib/utils';
 import {
 	IntegrationTypeSchema,
 	RecordTypeSchema,
 	type IntegrationType,
 	type RecordType,
-} from '@/db/schema';
-import { useRecord } from '@/lib/hooks/use-records';
-import { cn } from '@/lib/utils';
+} from '@/shared/types';
+import { defaultQueueOptions } from '@/shared/types';
+import type { DbId } from '@/shared/types';
 
 const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 	const { data: record } = useRecord(id);

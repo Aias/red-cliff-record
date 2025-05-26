@@ -2,7 +2,6 @@ import { useDeferredValue, useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PlusCircleIcon, SearchIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
-import { defaultQueueOptions } from '@/server/api/routers/types';
 import { SearchResultItem } from '../records/-components/search-result-item';
 import { Spinner } from '@/components/spinner';
 import { Button } from '@/components/ui/button';
@@ -16,9 +15,10 @@ import {
 	CommandSeparator,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useDebounce } from '@/lib/hooks/use-debounce';
-import { useUpsertRecord } from '@/lib/hooks/use-records';
 import { cn } from '@/lib/utils';
+import { defaultQueueOptions } from '@/shared/types';
 
 export const SiteSearch = () => {
 	const navigate = useNavigate();

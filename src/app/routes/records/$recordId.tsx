@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
-import { useDeleteRecords, useMarkAsCurated, useRecordTree } from '@/app/lib/hooks/use-records';
 import { trpc } from '@/app/trpc';
-import type { DbId } from '@/server/api/routers/common';
 import type { FamilyTree } from '@/server/api/routers/records/tree';
 import { RecordForm } from './-components/form';
 import { RelationsList, SimilarRecords } from './-components/relations';
 import { Spinner } from '@/components/spinner';
+import { useDeleteRecords, useMarkAsCurated } from '@/lib/hooks/record-mutations';
+import { useRecordTree } from '@/lib/hooks/record-queries';
+import type { DbId } from '@/shared/types';
 
 export const Route = createFileRoute('/records/$recordId')({
 	component: RouteComponent,

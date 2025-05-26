@@ -2,9 +2,9 @@ import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod/v4';
 import { publicProcedure } from '../../init';
-import { IdSchema, type DbId } from '../common';
-import type { RecordGet } from '../types';
 import { RecordInsertSchema, records } from '@/db/schema';
+import { IdSchema, type DbId } from '@/shared/types';
+import type { RecordGet } from '@/shared/types';
 
 export const upsert = publicProcedure
 	.input(RecordInsertSchema)

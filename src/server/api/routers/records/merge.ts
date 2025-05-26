@@ -2,7 +2,6 @@ import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod/v4';
 import { publicProcedure } from '../../init';
-import type { DbId } from '../common';
 import {
 	airtableCreators,
 	airtableExtracts,
@@ -25,6 +24,7 @@ import {
 } from '@/db/schema';
 import type { LinkInsert, LinkSelect, RecordSelect } from '@/db/schema';
 import { mergeRecords } from '@/shared/lib/merge-records';
+import type { DbId } from '@/shared/types';
 
 export const merge = publicProcedure
 	.input(
