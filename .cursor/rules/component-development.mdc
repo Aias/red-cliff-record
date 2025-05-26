@@ -1,6 +1,11 @@
 ---
 description: 
 globs: 
+alwaysApply: true
+---
+---
+description: 
+globs: 
 alwaysApply: false
 ---
 # Component Development Guidelines
@@ -16,6 +21,7 @@ alwaysApply: false
 - Implement Tailwind for styling with v4 syntax.
 - Use Shadcn UI for interactive elements and complex components
 - Import Lucide icons as components (e.g., `import { HomeIcon } from 'lucide-react'`). Always use the <Name>Icon suffix, not just <Name>, e.g. `HomeIcon` rather than simply `Home`.
+- Use `<Spinner />` component from `@/components/spinner` for loading states either in place of or in addition to text (e.g., "Loading...", "loading", etc.)
 
 ## TypeScript Requirements
 - All components must be fully typed

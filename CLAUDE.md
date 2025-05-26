@@ -60,6 +60,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Tailwind CSS v4 syntax for styling
 - Shadcn UI for interactive elements and complex components
 - Lucide icons with `Icon` suffix (e.g., `HomeIcon` not `Home`)
+- Use `<Spinner />` component from `@/components/spinner` for loading states, either in place of or in addition to text (e.g., "Loading...", "loading", etc.)
 
 **TypeScript Requirements:**
 

@@ -6,6 +6,7 @@ import type { DbId } from '@/server/api/routers/common';
 import type { RecordGet } from '@/server/api/routers/types';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
+import { Spinner } from '@/components/spinner';
 import type { LinkSelect, PredicateSelect } from '@/db/schema';
 import {
 	useDeleteLinks,
@@ -268,7 +269,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 		<section className="text-xs">
 			<h3 className="mb-2">Similar Records</h3>
 			{isLoading ? (
-				<p>Loading...</p>
+				<Spinner />
 			) : similarRecords && similarRecords.length > 0 ? (
 				<ul>
 					{similarRecords.map((record) => (
