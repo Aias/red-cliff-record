@@ -4,8 +4,8 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import type { AirtableAttachmentSelect, AirtableExtractSelect } from '@/server/db/schema/airtable';
 import { airtableAttachments } from '@/server/db/schema/airtable';
+import { uploadMediaToR2 } from '@/server/lib/media';
 import { AirtableAttachmentSchema } from './types';
-import { uploadMediaToR2 } from '@/lib/server/media-helpers';
 
 Airtable.configure({
 	apiKey: process.env.AIRTABLE_ACCESS_TOKEN,

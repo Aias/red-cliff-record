@@ -1,6 +1,6 @@
 import { z } from 'zod/v4';
 
-export const robotsEnum = z.enum([
+const robotsEnum = z.enum([
 	'all',
 	'index',
 	'noindex',
@@ -13,7 +13,7 @@ export const robotsEnum = z.enum([
 	'noimageindex',
 ]);
 
-export const metaTypeEnum = z.enum(['website', 'article', 'blog']);
+const metaTypeEnum = z.enum(['website', 'article', 'blog']);
 
 const seoSchema = z.object({
 	title: z.string().min(1),
@@ -43,7 +43,7 @@ export const seo = (props: SeoProps) => {
 	return createTags(result.data);
 };
 
-export const TWITTER_SITE = '@redcliffrecord';
+const TWITTER_SITE = '@redcliffrecord';
 export const SITE_NAME = 'Red Cliff Record';
 
 function createTags({

@@ -40,6 +40,7 @@
 			"@/lib": ["./src/app/lib"],
 			"@/lib/*": ["./src/app/lib/*"],
 			"@/db/*": ["./src/server/db/*"],
+			"@/server/*": ["./src/server/*"],
 			"@/*": ["./src/*"]
 		}
 	},

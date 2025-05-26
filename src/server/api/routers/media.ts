@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod/v4';
+import { getMediaInsertData, uploadClientFileToR2 } from '@/server/lib/media';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { IdSchema } from './common';
 import {
@@ -10,7 +11,6 @@ import {
 	raindropImages,
 	twitterMedia,
 } from '@/db/schema';
-import { getMediaInsertData, uploadClientFileToR2 } from '@/lib/server/media-helpers';
 
 // Schema for file upload input
 const MediaCreateInputSchema = z.object({

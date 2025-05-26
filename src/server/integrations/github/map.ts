@@ -1,5 +1,4 @@
 import { eq } from 'drizzle-orm';
-import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
 	githubRepositories,
@@ -9,6 +8,7 @@ import {
 	type GithubUserSelect,
 	type RecordInsert,
 } from '@/server/db/schema';
+import { mapUrl } from '@/server/lib/url-utils';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 

@@ -13,9 +13,9 @@ import {
 	type RaindropTagSelect,
 	type RecordInsert,
 } from '@/server/db/schema';
+import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { getMediaInsertData, uploadMediaToR2 } from '@/lib/server/media-helpers';
 
 const logger = createIntegrationLogger('raindrop', 'map');
 

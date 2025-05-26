@@ -1,5 +1,4 @@
 import { eq, inArray } from 'drizzle-orm';
-import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
 	readwiseAuthors,
@@ -14,6 +13,7 @@ import {
 	type ReadwiseTagSelect,
 	type RecordInsert,
 } from '@/server/db/schema';
+import { mapUrl } from '@/server/lib/url-utils';
 import { bulkInsertLinks, getPredicateId, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 

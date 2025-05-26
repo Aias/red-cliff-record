@@ -1,5 +1,4 @@
 import { eq } from 'drizzle-orm';
-import { mapUrl } from '@/app/lib/formatting';
 import { db } from '@/server/db/connections';
 import {
 	airtableAttachments,
@@ -18,9 +17,10 @@ import {
 	type MediaInsert,
 	type RecordInsert,
 } from '@/server/db/schema';
+import { getMediaInsertData } from '@/server/lib/media';
+import { mapUrl } from '@/server/lib/url-utils';
 import { bulkInsertLinks, getPredicateId } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import { getMediaInsertData } from '@/lib/server/media-helpers';
 
 const logger = createIntegrationLogger('airtable', 'map');
 

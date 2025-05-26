@@ -174,7 +174,6 @@ export function RecordForm({
 		await form.handleSubmit();
 	}, [form]);
 
-
 	// Save immediately before navigation or form blur
 	useEffect(() => {
 		const handleBeforeUnload = () => {
@@ -186,7 +185,7 @@ export function RecordForm({
 
 		// Save when navigating away or closing
 		window.addEventListener('beforeunload', handleBeforeUnload);
-		
+
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
 			if (saveTimeoutRef.current) {
