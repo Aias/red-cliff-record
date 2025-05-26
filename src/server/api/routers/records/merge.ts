@@ -24,7 +24,7 @@ import {
 	twitterUsers,
 } from '@/db/schema';
 import type { LinkInsert, LinkSelect, RecordSelect } from '@/db/schema';
-import { mergeRecords } from '@/lib/merge-records';
+import { mergeRecords } from '@/shared/lib/merge-records';
 
 export const merge = publicProcedure
 	.input(

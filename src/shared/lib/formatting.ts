@@ -1,5 +1,9 @@
 import { z } from 'zod/v4';
 
+/**
+ * Converts string to title case (first letter of each word capitalized)
+ * Works in both client and server environments
+ */
 export const toTitleCase = (str: string) => str.replace(/\b\w/g, (char) => char.toUpperCase());
 
 /**

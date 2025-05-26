@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import type { DbId, IdParamList } from '@/server/api/routers/common';
 import type { RecordGet } from '@/server/api/routers/types';
-import { mergeRecords } from '@/lib/merge-records';
+import { mergeRecords } from '@/shared/lib/merge-records';
 
 export function useEmbedRecord() {
 	const utils = trpc.useUtils();

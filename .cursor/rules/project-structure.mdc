@@ -7,15 +7,48 @@ alwaysApply: true
 
 This project follows a well-organized structure with clear separation of concerns:
 
+**IMPORTANT**: This project uses both `CLAUDE.md` and `.cursor/rules/` files for development guidelines. When making significant refactoring or architectural changes, both files must be updated to stay in sync.
+
 ## Frontend (`src/app/`)
 - `routes/`: Contains all Tanstack React Router routes
 - `components/`: Reusable frontend components (aliased as `@/components`)
-- `lib/`: Utility functions and helpers (aliased as `@/lib`). Helpers that require server-only functionality should go into `@lib/server`.
+- `lib/`: Client-side utility functions and helpers (aliased as `@/lib`)
+  - `hooks/`: React hooks split into focused modules (record-queries, record-mutations, media-mutations, link-mutations)
 
 ## Backend (`src/server/`)
 - `api/`: tRPC API routes and routers
 - `db/`: Drizzle database schema and migrations (aliased as `@/db`)
+- `lib/`: Server-only utilities (aliased as `@/server/lib`)
+  - `media.ts`: Complete media handling (R2 uploads, metadata extraction, MIME detection)
+  - `image-metadata.ts`: Pure image format parsing utility
+  - `url-utils.ts`: Server-side URL validation and formatting
 - `integrations/`: External API integrations and sync scripts
+
+## Shared (`src/shared/`)
+- `lib/`: Universal utilities (aliased as `@/shared/lib`) - work in both client and server environments
+  - `formatting.ts`: Text formatting and Zod transformers (toTitleCase, emptyStringToNull)
+  - `embedding.ts`: Text processing for embeddings (getRecordTitle, createRecordEmbeddingText)
+  - `merge-records.ts`: Record merging logic (mergeRecords, mergeTextFields)
+
+## Three-Tier Utility Organization
+1. **Shared utilities** (`src/shared/lib/`): Universal code that works in both client and server environments
+2. **Client utilities** (`src/app/lib/`): Browser-only code (React hooks, client APIs)
+3. **Server utilities** (`src/server/lib/`): Server-only code (Node.js, databases, file systems)
+
+## Import Rules
+- ✅ Shared code can be imported by both client and server
+- ✅ Server code can import from shared and other server modules
+- ✅ Client code can import from shared and other client modules
+- ❌ NEVER import server code from client code
+- ❌ NEVER import client code from server code
+
+## Import Aliases
+- `@/` - src directory
+- `@/shared/` - universal utilities that work in both client and server environments
+- `@/server/` - server code (includes `@/server/lib/` for server utilities)
+- `@/components` - frontend components  
+- `@/lib` - client-side utility functions
+- `@/db` - database schema
 
 ## Configuration Files
 - `app.config.ts`: Tanstack/Vite application configuration

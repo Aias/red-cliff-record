@@ -3,8 +3,8 @@ import { eq } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
 import { IdParamSchema } from '../common';
 import { records } from '@/db/schema';
-import { createRecordEmbeddingText } from '@/lib/embedding';
 import { createEmbedding } from '@/lib/server/create-embedding';
+import { createRecordEmbeddingText } from '@/shared/lib/embedding';
 
 export const embed = publicProcedure
 	.input(IdParamSchema)

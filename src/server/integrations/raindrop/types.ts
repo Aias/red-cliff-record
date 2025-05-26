@@ -1,5 +1,5 @@
 import { z } from 'zod/v4';
-import { emptyStringToNull } from '@/app/lib/formatting';
+import { emptyStringToNull } from '@/shared/lib/formatting';
 
 const RaindropRefSchema = z.object({
 	$ref: z.string(),

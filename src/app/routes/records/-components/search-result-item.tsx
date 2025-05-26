@@ -4,8 +4,8 @@ import { recordTypeIcons } from './type-icons';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
 import type { MediaType } from '@/db/schema';
-import { toTitleCase } from '@/lib/formatting';
 import { usePredicateMap } from '@/lib/hooks/use-records';
+import { toTitleCase } from '@/shared/lib/formatting';
 
 export const SearchResultItem = memo(function SearchResultItem({
 	result,

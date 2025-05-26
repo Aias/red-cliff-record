@@ -39,6 +39,7 @@
 			"@/components/*": ["./src/app/components/*"],
 			"@/lib": ["./src/app/lib"],
 			"@/lib/*": ["./src/app/lib/*"],
+			"@/shared/*": ["./src/shared/*"],
 			"@/db/*": ["./src/server/db/*"],
 			"@/server/*": ["./src/server/*"],
 			"@/*": ["./src/*"]

@@ -19,7 +19,7 @@ import {
 	integrationTypeEnum,
 	textEmbeddingColumns,
 } from './operations';
-import { emptyStringToNull } from '@/lib/formatting';
+import { emptyStringToNull } from '@/shared/lib/formatting';
 
 export const recordTypeEnum = pgEnum('record_type', [
 	'entity', // an actor in the world, has will

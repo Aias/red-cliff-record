@@ -1,12 +1,7 @@
 ---
-description: 
-globs: 
+description: Component development and React patterns
+globs: ["src/app/components/**", "src/app/routes/**"]
 alwaysApply: true
----
----
-description: 
-globs: 
-alwaysApply: false
 ---
 # Component Development Guidelines
 
