@@ -180,6 +180,15 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Always prefer direct imports from the correct location over convenience re-exports
 - During large refactors, complete the entire migration in one go rather than leaving transitional files
 
+**File Editing Guidelines:**
+
+- This project uses **tabs for indentation** (not spaces)
+- When doing exact string replacements with MultiEdit, always verify whitespace by reading the exact lines first
+- Use `sed -n 'start,end p' filename` to see exact content with proper formatting
+- For complex multi-line replacements, prefer smaller, targeted changes over large blocks
+- When uncertain about whitespace, use the Bash tool with `grep -A/-B` to see context
+- Test with TypeScript compilation (`pnpm tsc`) after file modifications
+
 **Media & File Handling:**
 
 - All media operations use `@/server/lib/media` (R2 uploads, metadata extraction)
