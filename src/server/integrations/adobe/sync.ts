@@ -28,11 +28,7 @@ async function syncLightroomImages(integrationRunId: number): Promise<number> {
 		console.log('Fetching Lightroom album data...');
 
 		// Step 1: Fetch data from the Lightroom API
-		const response = await fetch(ALBUM_URL, {
-			headers: {
-				Authorization: `Bearer ${process.env.ADOBE_API_TOKEN}`,
-			},
-		});
+		const response = await fetch(ALBUM_URL);
 
 		if (!response.ok) {
 			throw new Error(`Lightroom API request failed with status ${response.status}`);

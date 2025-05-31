@@ -4,6 +4,7 @@
 /dist
 .env
 .env.*
+!.env.example
 .yarn
 /.temp
 /.output
