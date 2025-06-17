@@ -21,7 +21,5 @@
 		"**/dist": true,
 		"**/.vinxi": true,
 		"**/.output": true
-	},
-	"typescript.tsserver.maxTsServerMemory": 8000,
-	"typescript.tsserver.nodePath": "node"
+	}
 }
