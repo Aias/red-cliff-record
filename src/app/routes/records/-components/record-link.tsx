@@ -179,7 +179,13 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 							decoding="async"
 						/>
 					) : (
-						<LazyVideo src={mediaItem.url} className="absolute inset-0 object-cover" />
+						<LazyVideo
+							src={mediaItem.url}
+							className="absolute inset-0 size-full object-cover"
+							autoPlay
+							muted
+							loop
+						/>
 					)}
 				</div>
 			)}
