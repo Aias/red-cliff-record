@@ -117,12 +117,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 								className="flex items-center gap-2"
 							>
 								<RelationshipSelector
-									label={(() => {
-										const inv = predicates[link.predicateId]?.inverseSlug;
-										return inv
-											? (predicatesBySlug[inv]?.name ?? 'Unknown')
-											: (predicates[link.predicateId]?.name ?? 'Unknown');
-									})()}
+									label={predicates[link.predicateId]?.name ?? 'Unknown'}
 									sourceId={link.sourceId}
 									initialTargetId={link.targetId}
 									link={link}
@@ -200,10 +195,10 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 											? (predicatesBySlug[inv]?.name ?? 'Unknown')
 											: (predicates[link.predicateId]?.name ?? 'Unknown');
 									})()}
-									sourceId={link.sourceId}
-									initialTargetId={link.targetId}
-									link={link}
+									sourceId={link.targetId}
+									initialTargetId={link.sourceId}
 									incoming
+									link={link}
 									buttonProps={{
 										className: 'w-30',
 									}}
