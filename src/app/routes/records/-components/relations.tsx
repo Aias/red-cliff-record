@@ -25,6 +25,10 @@ interface RecordLink extends LinkSelect {
 export const RelationsList = ({ id }: RelationsListProps) => {
 	const { data: recordLinks } = useRecordLinks(id);
 	const predicates = usePredicateMap();
+	const predicatesBySlug = useMemo(
+		() => Object.fromEntries(Object.values(predicates).map((p) => [p.slug, p])),
+		[predicates]
+	);
 	const mergeRecordsMutation = useMergeRecords();
 	const deleteLinkMutation = useDeleteLinks();
 	const navigate = useNavigate();
@@ -113,8 +117,14 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 								className="flex items-center gap-2"
 							>
 								<RelationshipSelector
-									label={predicates[link.predicateId]?.name ?? 'Unknown'}
-									sourceId={id}
+									label={(() => {
+										const inv = predicates[link.predicateId]?.inverseSlug;
+										return inv
+											? (predicatesBySlug[inv]?.name ?? 'Unknown')
+											: (predicates[link.predicateId]?.name ?? 'Unknown');
+									})()}
+									sourceId={link.sourceId}
+									initialTargetId={link.targetId}
 									link={link}
 									buttonProps={{
 										className: 'w-30',
@@ -184,9 +194,16 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 								className="flex items-center gap-2"
 							>
 								<RelationshipSelector
-									label={predicates[link.predicateId]?.name ?? 'Unknown'}
-									sourceId={id}
+									label={(() => {
+										const inv = predicates[link.predicateId]?.inverseSlug;
+										return inv
+											? (predicatesBySlug[inv]?.name ?? 'Unknown')
+											: (predicates[link.predicateId]?.name ?? 'Unknown');
+									})()}
+									sourceId={link.sourceId}
+									initialTargetId={link.targetId}
 									link={link}
+									incoming
 									buttonProps={{
 										className: 'w-30',
 									}}

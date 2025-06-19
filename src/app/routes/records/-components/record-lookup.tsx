@@ -174,6 +174,11 @@ interface RelationshipSelectorProps {
 		targetId: number;
 		link: LinkPartial | null;
 	}) => RelationshipAction[];
+	/**
+	 * Show predicates from the opposite direction. Used for incoming
+	 * relations so the dropdown displays the inverse labels.
+	 */
+	incoming?: boolean;
 }
 
 export function RelationshipSelector({
@@ -181,6 +186,7 @@ export function RelationshipSelector({
 	initialTargetId,
 	link = null,
 	label,
+	incoming = false,
 	onComplete,
 	buildActions,
 	buttonProps: { className: buttonClassName, ...buttonProps } = {},
@@ -194,6 +200,21 @@ export function RelationshipSelector({
 	const [altPressed, setAltPressed] = useState(false);
 
 	const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
+	const predicatesBySlug = useMemo(
+		() => Object.fromEntries(predicates.map((p) => [p.slug, p])),
+		[predicates]
+	);
+	const canonicalPredicates = useMemo(() => predicates.filter((p) => p.canonical), [predicates]);
+	const displayPredicates = useMemo(() => {
+		if (!incoming) return canonicalPredicates;
+		const list = canonicalPredicates.map((p) => {
+			const slug = p.inverseSlug;
+			return slug ? (predicatesBySlug[slug] ?? p) : p;
+		});
+		const map = new Map<number, PredicateSelect>();
+		list.forEach((p) => map.set(p.id, p));
+		return Array.from(map.values());
+	}, [incoming, canonicalPredicates, predicatesBySlug]);
 	const { data: targetRecord } = trpc.records.get.useQuery(
 		{ id: targetId! },
 		{ enabled: targetId != null }
@@ -300,7 +321,8 @@ export function RelationshipSelector({
 							{targetRecord && <RecordTypeIcon type={targetRecord.type} />}
 						</Badge>
 						<PredicateCombobox
-							predicates={predicates}
+							predicates={displayPredicates}
+							includeNonCanonical={incoming}
 							onPredicateSelect={handlePredicateSelect}
 							actions={actions}
 						/>
