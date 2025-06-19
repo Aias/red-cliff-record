@@ -8,9 +8,22 @@ import type { DbId } from '@/shared/types';
 export function useUpsertLink() {
 	const utils = trpc.useUtils();
 	const embedMutation = useEmbedRecord();
+	const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
 
 	return trpc.links.upsert.useMutation({
 		onMutate: async ({ sourceId, targetId, predicateId, id }) => {
+			// For updates, skip optimistic updates entirely - let the server handle it
+			// This avoids the complexity of tracking which direction the link was originally
+			// and how the server's canonicalization might change it
+			if (id) {
+				await Promise.all([
+					utils.links.listForRecord.invalidate({ id: sourceId }),
+					utils.links.listForRecord.invalidate({ id: targetId }),
+				]);
+				return {};
+			}
+
+			// For new links, we need to predict the server's canonicalization
 			await Promise.all([
 				utils.links.listForRecord.cancel({ id: sourceId }),
 				utils.links.listForRecord.cancel({ id: targetId }),
@@ -19,21 +32,43 @@ export function useUpsertLink() {
 			const prevSource = utils.links.listForRecord.getData({ id: sourceId });
 			const prevTarget = utils.links.listForRecord.getData({ id: targetId });
 
-			const optimisticId = id ?? -Date.now();
-			const link = { id: optimisticId, sourceId, targetId, predicateId } as const;
+			// Check if the predicate will be canonicalized by the server
+			const predicate = predicates.find((p) => p.id === predicateId);
+			let finalSourceId = sourceId;
+			let finalTargetId = targetId;
+			let finalPredicateId = predicateId;
 
-			utils.links.listForRecord.setData({ id: sourceId }, (data) => {
+			if (predicate && !predicate.canonical) {
+				// The server will flip this - mirror that behavior
+				const inversePredicate = predicates.find((p) => p.slug === predicate.inverseSlug);
+				if (inversePredicate?.canonical) {
+					finalSourceId = targetId;
+					finalTargetId = sourceId;
+					finalPredicateId = inversePredicate.id;
+				}
+			}
+
+			const optimisticId = -Date.now();
+			const link = {
+				id: optimisticId,
+				sourceId: finalSourceId,
+				targetId: finalTargetId,
+				predicateId: finalPredicateId,
+			} as const;
+
+			// Add the link to the correct arrays based on the final (canonicalized) direction
+			utils.links.listForRecord.setData({ id: finalSourceId }, (data) => {
 				if (!data) return data;
 				return {
 					...data,
-					outgoingLinks: [...data.outgoingLinks.filter((l) => l.id !== id), link],
+					outgoingLinks: [...data.outgoingLinks, link],
 				};
 			});
-			utils.links.listForRecord.setData({ id: targetId }, (data) => {
+			utils.links.listForRecord.setData({ id: finalTargetId }, (data) => {
 				if (!data) return data;
 				return {
 					...data,
-					incomingLinks: [...data.incomingLinks.filter((l) => l.id !== id), link],
+					incomingLinks: [...data.incomingLinks, link],
 				};
 			});
 
