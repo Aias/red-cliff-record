@@ -183,6 +183,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 							src={mediaItem.url}
 							className="absolute inset-0 size-full object-cover"
 							autoPlay
+							playsInline
 							muted
 							loop
 						/>

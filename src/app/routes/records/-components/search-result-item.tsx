@@ -83,7 +83,7 @@ export const SearchResultItem = memo(function SearchResultItem({
 							decoding="async"
 						/>
 					) : (
-						<LazyVideo src={mediaItem.url} className="absolute inset-0 object-cover" />
+						<LazyVideo src={mediaItem.url} className="absolute inset-0 object-cover" playsInline />
 					)}
 				</div>
 			)}
