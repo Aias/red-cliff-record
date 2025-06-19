@@ -1,14 +1,32 @@
+import { useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import { useEmbedRecord } from './record-mutations';
-import type { RecordLinks } from '@/shared/types';
+import type { PredicateSelect, RecordLinks } from '@/shared/types';
 import type { DbId } from '@/shared/types';
 
 export function useUpsertLink() {
 	const utils = trpc.useUtils();
 	const embedMutation = useEmbedRecord();
 	const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
+
+	// Memoize predicate lookups for O(1) access
+	const predicatesById = useMemo(() => {
+		const map = new Map<number, PredicateSelect>();
+		for (const predicate of predicates) {
+			map.set(predicate.id, predicate);
+		}
+		return map;
+	}, [predicates]);
+
+	const predicatesBySlug = useMemo(() => {
+		const map = new Map<string, PredicateSelect>();
+		for (const predicate of predicates) {
+			map.set(predicate.slug, predicate);
+		}
+		return map;
+	}, [predicates]);
 
 	return trpc.links.upsert.useMutation({
 		onMutate: async ({ sourceId, targetId, predicateId, id }) => {
@@ -33,14 +51,16 @@ export function useUpsertLink() {
 			const prevTarget = utils.links.listForRecord.getData({ id: targetId });
 
 			// Check if the predicate will be canonicalized by the server
-			const predicate = predicates.find((p) => p.id === predicateId);
+			const predicate = predicatesById.get(predicateId);
 			let finalSourceId = sourceId;
 			let finalTargetId = targetId;
 			let finalPredicateId = predicateId;
 
 			if (predicate && !predicate.canonical) {
 				// The server will flip this - mirror that behavior
-				const inversePredicate = predicates.find((p) => p.slug === predicate.inverseSlug);
+				const inversePredicate = predicate.inverseSlug
+					? predicatesBySlug.get(predicate.inverseSlug)
+					: undefined;
 				if (inversePredicate?.canonical) {
 					finalSourceId = targetId;
 					finalTargetId = sourceId;
@@ -72,14 +92,15 @@ export function useUpsertLink() {
 				};
 			});
 
-			const ids = [sourceId, targetId];
+			// Use Set for O(1) lookups when filtering
+			const idSet = new Set([sourceId, targetId]);
 			utils.search.byRecordId.setData({ id: sourceId, limit: 10 }, (prev) => {
 				if (!prev) return undefined;
-				return prev.filter((r) => !ids.includes(r.id));
+				return prev.filter((r) => !idSet.has(r.id));
 			});
 			utils.search.byRecordId.setData({ id: targetId, limit: 10 }, (prev) => {
 				if (!prev) return undefined;
-				return prev.filter((r) => !ids.includes(r.id));
+				return prev.filter((r) => !idSet.has(r.id));
 			});
 
 			return { prevSource, prevTarget };

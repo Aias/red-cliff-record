@@ -199,40 +199,46 @@ function RouteComponent() {
 		// Wait for the DOM to update and data to be loaded
 		if (!tree || nodes.length === 0) return;
 
-		// Use requestAnimationFrame to ensure DOM is fully rendered
-		const scrollToRecord = () => {
-			const element = document.getElementById(`record-${recordId}`);
-			if (element) {
-				// Check if element is already in view to avoid unnecessary scrolling
-				const rect = element.getBoundingClientRect();
-				const container = element.closest('.overflow-y-auto');
+		// Add a small delay to allow forms to render with their loading states
+		const timeoutId = setTimeout(() => {
+			// Use requestAnimationFrame to ensure DOM is fully rendered
+			const scrollToRecord = () => {
+				const element = document.getElementById(`record-${recordId}`);
+				if (element) {
+					// Check if element is already in view to avoid unnecessary scrolling
+					const rect = element.getBoundingClientRect();
+					const container = element.closest('.overflow-y-auto');
 
-				if (container) {
-					const containerRect = container.getBoundingClientRect();
-					const isInView = rect.top >= containerRect.top && rect.bottom <= containerRect.bottom;
+					if (container) {
+						const containerRect = container.getBoundingClientRect();
+						const isInView = rect.top >= containerRect.top && rect.bottom <= containerRect.bottom;
 
-					if (!isInView) {
+						if (!isInView) {
+							// Add a subtle highlight animation after scrolling
+							element.scrollIntoView({
+								behavior: 'smooth',
+								block: 'center',
+								inline: 'nearest',
+							});
+						}
+					} else {
+						// Fallback if container not found
 						element.scrollIntoView({
 							behavior: 'smooth',
 							block: 'center',
 							inline: 'nearest',
 						});
 					}
-				} else {
-					// Fallback if container not found
-					element.scrollIntoView({
-						behavior: 'smooth',
-						block: 'center',
-						inline: 'nearest',
-					});
 				}
-			}
-		};
+			};
 
-		// Double requestAnimationFrame to ensure layout is complete
-		requestAnimationFrame(() => {
-			requestAnimationFrame(scrollToRecord);
-		});
+			// Double requestAnimationFrame to ensure layout is complete
+			requestAnimationFrame(() => {
+				requestAnimationFrame(scrollToRecord);
+			});
+		}, 50); // 50ms delay to allow forms to stabilize
+
+		return () => clearTimeout(timeoutId);
 	}, [recordId, tree]); // Only depend on recordId and tree, not nodes to avoid unnecessary re-runs
 
 	const handleFinalize = useCallback(() => {

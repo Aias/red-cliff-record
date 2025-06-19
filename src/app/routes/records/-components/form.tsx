@@ -111,12 +111,15 @@ export function RecordForm({
 	const formRef = useRef<HTMLFormElement>(null);
 	const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+	const formData = record ?? defaultData;
+	const isFormLoading = isLoading || !record;
+
 	const updateMutation = useUpsertRecord();
 	const deleteMediaMutation = useDeleteMedia();
 	const { uploadFile } = useRecordUpload(recordId);
 
 	const form = useForm({
-		defaultValues: record ?? defaultData,
+		defaultValues: formData,
 		onSubmit: async ({ value }) => {
 			const {
 				title,
@@ -160,7 +163,7 @@ export function RecordForm({
 				dontUpdateMeta: true,
 			});
 		}
-	}, [record?.media]);
+	}, [record, form]);
 
 	// Auto-save functionality
 	const debouncedSave = useCallback(() => {
@@ -211,7 +214,6 @@ export function RecordForm({
 		[immediateSave, onFinalize]
 	);
 
-	if (isLoading || !record) return <Spinner />;
 	if (isError) return <div>Error loading record</div>;
 
 	return (
@@ -253,9 +255,14 @@ export function RecordForm({
 					curateAndNextHandler(e);
 				}
 			}}
-			className={cn('flex flex-col', className)}
+			className={cn('relative flex flex-col', className)}
 			{...props}
 		>
+			{isFormLoading && (
+				<div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/50 backdrop-blur-sm">
+					<Spinner />
+				</div>
+			)}
 			<div className="flex flex-col gap-4">
 				<h1 className="flex items-center gap-3">
 					<form.Field name="title">
@@ -269,6 +276,7 @@ export function RecordForm({
 										debouncedSave();
 									}}
 									onBlur={() => debouncedSave()}
+									readOnly={isFormLoading}
 								/>
 								{field.state.meta.errors && (
 									<p className="text-sm text-destructive">{field.state.meta.errors.join(', ')}</p>
@@ -303,6 +311,7 @@ export function RecordForm({
 								}}
 								variant="outline"
 								className="w-full"
+								disabled={isFormLoading}
 							>
 								{RecordTypeSchema.options.map((type) => {
 									const { icon: Icon, description } = recordTypeIcons[type];
@@ -354,6 +363,7 @@ export function RecordForm({
 									field.handleChange(values[0] ?? 0);
 									debouncedSave();
 								}}
+								disabled={isFormLoading}
 							/>
 						</div>
 					)}
@@ -392,6 +402,7 @@ export function RecordForm({
 															debouncedSave();
 														}}
 														onBlur={() => debouncedSave()}
+														readOnly={isFormLoading}
 													/>
 													{field.state.value && (
 														<ExternalLink href={field.state.value} children={null} />
@@ -438,6 +449,7 @@ export function RecordForm({
 															debouncedSave();
 														}}
 														onBlur={() => debouncedSave()}
+														readOnly={isFormLoading}
 													/>
 													{field.state.value && (
 														<ExternalLink href={field.state.value} children={null} />
@@ -473,6 +485,7 @@ export function RecordForm({
 													debouncedSave();
 												}}
 												onBlur={() => debouncedSave()}
+												readOnly={isFormLoading}
 											/>
 										)}
 									</form.Field>
@@ -498,6 +511,7 @@ export function RecordForm({
 													debouncedSave();
 												}}
 												onBlur={() => debouncedSave()}
+												readOnly={isFormLoading}
 											/>
 										)}
 									</form.Field>
@@ -521,6 +535,7 @@ export function RecordForm({
 									field.handleChange(value);
 									debouncedSave();
 								}}
+								switchProps={{ disabled: isFormLoading }}
 							/>
 						)}
 					</form.Field>
@@ -535,6 +550,7 @@ export function RecordForm({
 									field.handleChange(value);
 									debouncedSave();
 								}}
+								switchProps={{ disabled: isFormLoading }}
 							/>
 						)}
 					</form.Field>
@@ -559,6 +575,7 @@ export function RecordForm({
 										immediateSave();
 									}
 								}}
+								disabled={isFormLoading}
 							/>
 						</div>
 					)}
@@ -583,6 +600,7 @@ export function RecordForm({
 										immediateSave();
 									}
 								}}
+								disabled={isFormLoading}
 							/>
 						</div>
 					)}
@@ -617,6 +635,7 @@ export function RecordForm({
 														immediateSave();
 													}
 												}}
+												disabled={isFormLoading}
 											/>
 										</div>
 									)}
@@ -649,6 +668,7 @@ export function RecordForm({
 										immediateSave();
 									}
 								}}
+								disabled={isFormLoading}
 							/>
 						</div>
 					)}
@@ -660,13 +680,13 @@ export function RecordForm({
 						<Popover>
 							<PopoverTrigger asChild>
 								<Avatar
-									src={record.avatarUrl ?? undefined}
-									fallback={(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
+									src={formData.avatarUrl ?? undefined}
+									fallback={(formData.title?.charAt(0) ?? formData.type.charAt(0)).toUpperCase()}
 									className="mr-2 cursor-pointer"
 								/>
 							</PopoverTrigger>
 							<PopoverContent className="min-w-84">
-								<MetadataSection record={record} />
+								<MetadataSection record={formData} />
 							</PopoverContent>
 						</Popover>
 						<Link
@@ -675,7 +695,7 @@ export function RecordForm({
 							search={true}
 							className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
 						>
-							{`${record.type} #${record.id}, ${record.recordCreatedAt.toLocaleString()}`}
+							{`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleString()}`}
 						</Link>
 						<Button size="icon" variant="ghost" type="submit" disabled={!canSubmit || isSubmitting}>
 							{isSubmitting ? <Spinner /> : <SaveIcon />}
