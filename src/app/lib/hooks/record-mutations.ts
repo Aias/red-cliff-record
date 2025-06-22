@@ -217,10 +217,11 @@ export function useMergeRecords() {
 			return { previousSource, previousTarget };
 		},
 		onSuccess: ({ updatedRecord, deletedRecordId, touchedIds }) => {
-			/* 1 ─ invalidate the target record to refetch with media */
 			utils.records.get.invalidate({ id: updatedRecord.id });
+			utils.search.byRecordId.invalidate({ id: updatedRecord.id });
+			utils.records.tree.invalidate();
 
-			/* 2 ─ freeze the deleted ID so nothing refetches it */
+			/* freeze the deleted ID so nothing refetches it */
 			const deletedKey = utils.records.get.queryOptions({ id: deletedRecordId }).queryKey;
 
 			// stop any in-flight request
@@ -230,10 +231,10 @@ export function useMergeRecords() {
 			qc.setQueryData(deletedKey, () => undefined);
 			qc.setQueryDefaults(deletedKey, { staleTime: Infinity, retry: false });
 
-			/* 3 ─ per-record link lists */
+			/* per-record link lists */
 			touchedIds.forEach((id) => utils.links.listForRecord.invalidate({ id }));
 
-			/* 4 ─ maps that overlap */
+			/* maps that overlap */
 			const touched = new Set(touchedIds);
 			utils.links.map.invalidate(undefined, {
 				predicate: (q) => {
@@ -244,8 +245,11 @@ export function useMergeRecords() {
 				},
 			});
 
-			/* 5 ─ record-ID tables */
+			/* record-ID tables */
 			utils.records.list.invalidate();
+			utils.records.tree.invalidate();
+
+			/* re-embed the target record */
 			embedMutation.mutate({ id: updatedRecord.id });
 		},
 		onError: (err, vars, ctx) => {
