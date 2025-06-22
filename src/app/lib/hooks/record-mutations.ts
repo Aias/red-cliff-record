@@ -198,7 +198,13 @@ export function useMergeRecords() {
 			// Optimistically merge the records if both exist
 			if (previousSource && previousTarget) {
 				const mergedData = mergeRecords(previousSource, previousTarget);
-				const optimisticUpdate = { ...previousTarget, ...mergedData };
+				const allMedia = Array.from(
+					new Set([...(previousSource.media ?? []), ...(previousTarget.media ?? [])])
+				).map((media) => ({
+					...media,
+					recordId: targetId,
+				}));
+				const optimisticUpdate = { ...previousTarget, ...mergedData, media: allMedia };
 
 				// Update the target record with merged data
 				utils.records.get.setData({ id: targetId }, optimisticUpdate);
@@ -211,10 +217,8 @@ export function useMergeRecords() {
 			return { previousSource, previousTarget };
 		},
 		onSuccess: ({ updatedRecord, deletedRecordId, touchedIds }) => {
-			/* 1 ─ patch survivor with real data */
-			utils.records.get.setData({ id: updatedRecord.id }, (prev) =>
-				prev ? { ...prev, ...updatedRecord } : updatedRecord
-			);
+			/* 1 ─ invalidate the target record to refetch with media */
+			utils.records.get.invalidate({ id: updatedRecord.id });
 
 			/* 2 ─ freeze the deleted ID so nothing refetches it */
 			const deletedKey = utils.records.get.queryOptions({ id: deletedRecordId }).queryKey;
