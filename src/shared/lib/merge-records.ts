@@ -24,6 +24,32 @@ export function mergeTextFields(
 }
 
 /**
+ * Helper function to get the earliest date from two nullable dates
+ * @param date1 First date (nullable)
+ * @param date2 Second date (nullable)
+ * @returns The earliest date, or null if both are null
+ */
+function getEarliestDate(date1: Date | null, date2: Date | null): Date | null {
+	if (date1 && date2) {
+		return date1 < date2 ? date1 : date2;
+	}
+	return date1 || date2;
+}
+
+/**
+ * Helper function to get the most recent date from two nullable dates
+ * @param date1 First date (nullable)
+ * @param date2 Second date (nullable)
+ * @returns The most recent date, or null if both are null
+ */
+function getMostRecentDate(date1: Date | null, date2: Date | null): Date | null {
+	if (date1 && date2) {
+		return date1 > date2 ? date1 : date2;
+	}
+	return date1 || date2;
+}
+
+/**
  * Merges two records, returning the merged record data.
  * This function is used by both optimistic updates and backend operations.
  *
@@ -56,6 +82,9 @@ export function mergeRecords<T extends RecordSelect | RecordGet>(
 						'isPrivate',
 						'isCurated',
 						'recordUpdatedAt',
+						'recordCreatedAt',
+						'contentCreatedAt',
+						'contentUpdatedAt',
 						'textEmbedding',
 					].includes(key)
 				) {
@@ -72,7 +101,11 @@ export function mergeRecords<T extends RecordSelect | RecordGet>(
 		sources: allSources.length > 0 ? allSources : null,
 		rating: Math.max(source.rating, target.rating),
 		isPrivate: source.isPrivate || target.isPrivate,
-		isCurated: source.isCurated || target.isCurated,
+		isCurated: source.isCurated && target.isCurated,
+		// Use earliest dates for creation timestamps, most recent for update timestamps
+		recordCreatedAt: getEarliestDate(source.recordCreatedAt, target.recordCreatedAt),
+		contentCreatedAt: getEarliestDate(source.contentCreatedAt, target.contentCreatedAt),
+		contentUpdatedAt: getMostRecentDate(source.contentUpdatedAt, target.contentUpdatedAt),
 		recordUpdatedAt: new Date(),
 		textEmbedding: null, // Changes require recalculating the embedding
 	};
