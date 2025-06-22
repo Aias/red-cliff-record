@@ -15,6 +15,7 @@ import {
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
+import { decodeHtmlEntities } from '@/shared/lib/formatting';
 
 const logger = createIntegrationLogger('twitter', 'map');
 
@@ -28,9 +29,9 @@ export const mapTwitterUserToRecord = (user: TwitterUserSelect): RecordInsert =>
 	return {
 		id: user.recordId ?? undefined,
 		type: 'entity',
-		title: user.displayName,
+		title: user.displayName ? decodeHtmlEntities(user.displayName) : user.displayName,
 		abbreviation: `@${user.username}`,
-		summary: user.description || null,
+		summary: user.description ? decodeHtmlEntities(user.description) : null,
 		url: user.externalUrl ?? `https://x.com/${user.username}`,
 		avatarUrl: user.profileImageUrl,
 		isCurated: false,
@@ -109,12 +110,12 @@ type TweetData = TwitterTweetSelect & {
  * @returns A record insert object
  */
 export const mapTwitterTweetToRecord = (tweet: TweetData): RecordInsert => {
-	// Remove t.co URLs from the beginning or end of the tweet text
-	const cleanedContent =
-		tweet.text
-			?.trim()
-			.replace(/^https?:\/\/t\.co\/[^\s]+|https?:\/\/t\.co\/[^\s]+$/g, '')
-			.trim() ?? '';
+	// Decode HTML entities and remove t.co URLs from the beginning or end of the tweet text
+	const decodedText = tweet.text ? decodeHtmlEntities(tweet.text) : '';
+	const cleanedContent = decodedText
+		.trim()
+		.replace(/^https?:\/\/t\.co\/[^\s]+|https?:\/\/t\.co\/[^\s]+$/g, '')
+		.trim();
 
 	return {
 		id: tweet.recordId ?? undefined,
