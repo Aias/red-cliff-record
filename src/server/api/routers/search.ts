@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { cosineDistance, sql } from 'drizzle-orm';
 import { z } from 'zod/v4';
 import { similarity, SIMILARITY_THRESHOLD } from '@/server/lib/constants';
+import { seriateRecordsByEmbedding } from '@/server/lib/seriation';
 import { createTRPCRouter, publicProcedure } from '../init';
 import type { IntegrationType, MediaType, RecordType } from '@/db/schema';
 import { createEmbedding } from '@/lib/server/create-embedding';
@@ -172,7 +173,7 @@ export const searchRouter = createTRPCRouter({
 						contentCreatedAt: true,
 						contentUpdatedAt: true,
 						sources: true,
-						textEmbedding: false,
+						textEmbedding: true,
 					},
 					with: {
 						outgoingLinks: {
@@ -248,7 +249,14 @@ export const searchRouter = createTRPCRouter({
 					limit,
 				});
 
-				return results;
+				// Apply seriation to reorder results
+				const seriated = seriateRecordsByEmbedding(results);
+
+				// Return results without the textEmbedding field
+				return seriated.map((r) => {
+					const { textEmbedding: _textEmbedding, ...rest } = r;
+					return rest;
+				});
 			} catch (err) {
 				console.error(err);
 				throw new TRPCError({
@@ -262,7 +270,7 @@ export const searchRouter = createTRPCRouter({
 		.input(
 			z.object({
 				id: IdSchema,
-				limit: z.number().optional().default(10),
+				limit: z.number().optional().default(20),
 			})
 		)
 		.query(async ({ ctx: { db }, input: { id, limit } }) => {
@@ -306,6 +314,7 @@ export const searchRouter = createTRPCRouter({
 				const results = await db.query.records.findMany({
 					columns: {
 						id: true,
+						textEmbedding: true,
 					},
 					extras: {
 						similarity: (t) => similarity(t.textEmbedding, textEmbedding),
@@ -345,7 +354,14 @@ export const searchRouter = createTRPCRouter({
 					limit,
 				});
 
-				return results;
+				// Apply seriation to reorder results
+				const seriated = seriateRecordsByEmbedding(results);
+
+				// Return only id and similarity without the textEmbedding field
+				return seriated.map((r) => ({
+					id: r.id,
+					similarity: r.similarity,
+				}));
 			} catch (err) {
 				console.error(err);
 				throw new TRPCError({

@@ -183,7 +183,8 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 						<ArrowLeftIcon className="h-4 w-4" /> Incoming
 					</h4>
 					<ul className="flex flex-col gap-2 text-xs">
-						{incomingLinks.map((link) => (
+						{/* For incoming links, more recent is more relevant */}
+						{incomingLinks.toReversed().map((link) => (
 							<li
 								key={`${link.sourceId}-${link.targetId}-${link.predicateId}`}
 								className="flex items-center gap-2"
@@ -262,7 +263,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 	const { data: similarRecords, isLoading } = trpc.search.byRecordId.useQuery(
 		{
 			id: id,
-			limit: 10,
+			limit: 20,
 		},
 		{
 			trpc: {
