@@ -9,7 +9,7 @@
 		"resolveJsonModule": true,
 		"moduleDetection": "force",
 		"isolatedModules": true,
-		// "types": ["vite/client"],
+		"types": ["vite/client"],
 		// "noErrorTruncation": true, // Toggle comment to see full Intellisense errors and types.
 
 		/* Strictness */

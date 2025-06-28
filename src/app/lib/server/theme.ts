@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getCookie, setCookie } from 'vinxi/http';
+import { getCookie, setCookie } from '@tanstack/react-start/server';
 import { z } from 'zod/v4';
 
 export const ThemeCookieSchema = z.enum(['light', 'dark']).default('dark');
