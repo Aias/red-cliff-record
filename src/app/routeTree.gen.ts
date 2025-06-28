@@ -8,62 +8,123 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { createServerRootRoute } from '@tanstack/react-start/server'
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as RecordsRouteImport } from './routes/records/route'
-import { Route as IndexImport } from './routes/index'
-import { Route as RecordsRecordIdImport } from './routes/records/$recordId'
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as RecordsRouteRouteImport } from './routes/records/route'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
+import { ServerRoute as ApiTrpcSplatServerRouteImport } from './routes/api/trpc/$'
 
-// Create/Update Routes
+const rootServerRouteImport = createServerRootRoute()
 
-const RecordsRouteRoute = RecordsRouteImport.update({
+const RecordsRouteRoute = RecordsRouteRouteImport.update({
   id: '/records',
   path: '/records',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const IndexRoute = IndexImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const RecordsRecordIdRoute = RecordsRecordIdImport.update({
+const RecordsRecordIdRoute = RecordsRecordIdRouteImport.update({
   id: '/$recordId',
   path: '/$recordId',
   getParentRoute: () => RecordsRouteRoute,
 } as any)
+const ApiTrpcSplatServerRoute = ApiTrpcSplatServerRouteImport.update({
+  id: '/api/trpc/$',
+  path: '/api/trpc/$',
+  getParentRoute: () => rootServerRouteImport,
+} as any)
 
-// Populate the FileRoutesByPath interface
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/records': typeof RecordsRouteRouteWithChildren
+  '/records/$recordId': typeof RecordsRecordIdRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/records': typeof RecordsRouteRouteWithChildren
+  '/records/$recordId': typeof RecordsRecordIdRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/records': typeof RecordsRouteRouteWithChildren
+  '/records/$recordId': typeof RecordsRecordIdRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/records' | '/records/$recordId'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/records' | '/records/$recordId'
+  id: '__root__' | '/' | '/records' | '/records/$recordId'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  RecordsRouteRoute: typeof RecordsRouteRouteWithChildren
+}
+export interface FileServerRoutesByFullPath {
+  '/api/trpc/$': typeof ApiTrpcSplatServerRoute
+}
+export interface FileServerRoutesByTo {
+  '/api/trpc/$': typeof ApiTrpcSplatServerRoute
+}
+export interface FileServerRoutesById {
+  __root__: typeof rootServerRouteImport
+  '/api/trpc/$': typeof ApiTrpcSplatServerRoute
+}
+export interface FileServerRouteTypes {
+  fileServerRoutesByFullPath: FileServerRoutesByFullPath
+  fullPaths: '/api/trpc/$'
+  fileServerRoutesByTo: FileServerRoutesByTo
+  to: '/api/trpc/$'
+  id: '__root__' | '/api/trpc/$'
+  fileServerRoutesById: FileServerRoutesById
+}
+export interface RootServerRouteChildren {
+  ApiTrpcSplatServerRoute: typeof ApiTrpcSplatServerRoute
+}
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
     '/records': {
       id: '/records'
       path: '/records'
       fullPath: '/records'
-      preLoaderRoute: typeof RecordsRouteImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof RecordsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/records/$recordId': {
       id: '/records/$recordId'
       path: '/$recordId'
       fullPath: '/records/$recordId'
-      preLoaderRoute: typeof RecordsRecordIdImport
-      parentRoute: typeof RecordsRouteImport
+      preLoaderRoute: typeof RecordsRecordIdRouteImport
+      parentRoute: typeof RecordsRouteRoute
     }
   }
 }
-
-// Create and export the route tree
+declare module '@tanstack/react-start/server' {
+  interface ServerFileRoutesByPath {
+    '/api/trpc/$': {
+      id: '/api/trpc/$'
+      path: '/api/trpc/$'
+      fullPath: '/api/trpc/$'
+      preLoaderRoute: typeof ApiTrpcSplatServerRouteImport
+      parentRoute: typeof rootServerRouteImport
+    }
+  }
+}
 
 interface RecordsRouteRouteChildren {
   RecordsRecordIdRoute: typeof RecordsRecordIdRoute
@@ -77,71 +138,16 @@ const RecordsRouteRouteWithChildren = RecordsRouteRoute._addFileChildren(
   RecordsRouteRouteChildren,
 )
 
-export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/records': typeof RecordsRouteRouteWithChildren
-  '/records/$recordId': typeof RecordsRecordIdRoute
-}
-
-export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/records': typeof RecordsRouteRouteWithChildren
-  '/records/$recordId': typeof RecordsRecordIdRoute
-}
-
-export interface FileRoutesById {
-  __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/records': typeof RecordsRouteRouteWithChildren
-  '/records/$recordId': typeof RecordsRecordIdRoute
-}
-
-export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/records' | '/records/$recordId'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/records' | '/records/$recordId'
-  id: '__root__' | '/' | '/records' | '/records/$recordId'
-  fileRoutesById: FileRoutesById
-}
-
-export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  RecordsRouteRoute: typeof RecordsRouteRouteWithChildren
-}
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RecordsRouteRoute: RecordsRouteRouteWithChildren,
 }
-
-export const routeTree = rootRoute
+export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/records"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/records": {
-      "filePath": "records/route.tsx",
-      "children": [
-        "/records/$recordId"
-      ]
-    },
-    "/records/$recordId": {
-      "filePath": "records/$recordId.tsx",
-      "parent": "/records"
-    }
-  }
+const rootServerRouteChildren: RootServerRouteChildren = {
+  ApiTrpcSplatServerRoute: ApiTrpcSplatServerRoute,
 }
-ROUTE_MANIFEST_END */
+export const serverRouteTree = rootServerRouteImport
+  ._addFileChildren(rootServerRouteChildren)
+  ._addFileTypes<FileServerRouteTypes>()

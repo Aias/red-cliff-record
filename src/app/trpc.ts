@@ -90,7 +90,7 @@ export const trpcClient = trpc.createClient({
 		splitLink({
 			condition: (op) => op.context.skipBatch === true,
 			false: httpBatchLink({
-				url: `${getBaseUrl()}/trpc`,
+				url: `${getBaseUrl()}/api/trpc`,
 				transformer: superjson,
 				maxURLLength: 1900,
 				fetch: (url, options) => {
@@ -101,7 +101,7 @@ export const trpcClient = trpc.createClient({
 				},
 			}),
 			true: httpLink({
-				url: `${getBaseUrl()}/trpc`,
+				url: `${getBaseUrl()}/api/trpc`,
 				transformer: superjson,
 				fetch: (url, options) => {
 					return fetch(url, {
