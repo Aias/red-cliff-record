@@ -89,7 +89,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 **TypeScript Requirements:**
 
-- NEVER use `any` keyword or `unknown` types (rare exceptions only)
+- NEVER use `any` keyword or `unknown` types
 - NEVER use `as` for type casting - must be fully type safe
 - Import and reuse existing types from schemas and database types
 - All components must be fully typed

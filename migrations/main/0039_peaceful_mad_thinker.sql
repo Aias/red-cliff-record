@@ -1,0 +1,1 @@
+ALTER TYPE "public"."browser" ADD VALUE 'dia' BEFORE 'chrome';

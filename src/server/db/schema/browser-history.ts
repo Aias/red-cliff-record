@@ -7,13 +7,14 @@ import {
 	serial,
 	text,
 	timestamp,
+	unique,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod/v4';
 import { databaseTimestamps, databaseTimestampsNonUpdatable } from './operations';
 import { integrationRuns } from './operations';
 
-export const browserEnum = pgEnum('browser', ['arc', 'chrome', 'firefox', 'safari', 'edge']);
+export const browserEnum = pgEnum('browser', ['arc', 'dia', 'chrome', 'firefox', 'safari', 'edge']);
 export const Browser = z.enum(browserEnum.enumValues);
 export type Browser = z.infer<typeof Browser>;
 
@@ -44,6 +45,12 @@ export const browsingHistory = pgTable(
 		index('browsing_history_url_idx').on(table.url),
 		index().on(table.viewEpochMicroseconds),
 		index().on(table.hostname),
+		// Unique constraint to prevent duplicate entries when browsers import from each other
+		unique('browsing_history_unique_idx').on(
+			table.hostname,
+			table.viewEpochMicroseconds,
+			table.url
+		),
 	]
 );
 
