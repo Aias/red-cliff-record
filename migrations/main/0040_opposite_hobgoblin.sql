@@ -1,0 +1,1 @@
+ALTER TABLE "browsing_history" ADD CONSTRAINT "browsing_history_unique_idx" UNIQUE("hostname","view_epoch_microseconds","url");

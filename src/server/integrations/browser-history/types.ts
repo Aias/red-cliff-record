@@ -1,4 +1,7 @@
+import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { z } from 'zod/v4';
+import type { Browser } from '@/db/schema/browser-history';
+import type * as browserHistorySchema from '@/db/schema/browser-history';
 import { emptyStringToNull } from '@/shared/lib/formatting';
 
 const sanitizeString = (str: string | null): string | null => {
@@ -18,3 +21,12 @@ export const DailyVisitsQueryRowSchema = z.object({
 export type DailyVisitsQueryRow = z.infer<typeof DailyVisitsQueryRowSchema>;
 
 export const DailyVisitsQueryResultSchema = z.array(DailyVisitsQueryRowSchema);
+
+export interface BrowserConfig {
+	name: Browser;
+	displayName: string;
+	createConnection: () => LibSQLDatabase<typeof browserHistorySchema>;
+	// Optional cutoff date to avoid fetching history before this date
+	// Useful for browsers that import history from other browsers
+	cutoffDate?: Date;
+}
