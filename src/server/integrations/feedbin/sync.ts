@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { feedEntries, feeds } from '@/server/db/schema/feeds';
 import { createEmbedding } from '../../../app/lib/server/create-embedding';
@@ -306,6 +306,30 @@ async function syncFeedEntries(
 }
 
 /**
+ * Get existing starred entry IDs from database
+ */
+async function getExistingStarredEntryIds(): Promise<Set<number>> {
+	const starredEntries = await db.query.feedEntries.findMany({
+		columns: { id: true },
+		where: { starred: true },
+	});
+	return new Set(starredEntries.map((e) => e.id));
+}
+
+/**
+ * Bulk update starred status for multiple entries
+ */
+async function bulkUpdateStarredStatus(entryIds: number[], starred: boolean): Promise<void> {
+	if (entryIds.length === 0) return;
+
+	const BATCH_SIZE = 1000; // Process in batches to avoid query size limits
+	for (let i = 0; i < entryIds.length; i += BATCH_SIZE) {
+		const batch = entryIds.slice(i, i + BATCH_SIZE);
+		await db.update(feedEntries).set({ starred }).where(inArray(feedEntries.id, batch));
+	}
+}
+
+/**
  * Generate embeddings for feed entries that don't have them
  */
 async function generateFeedEntryEmbeddings(): Promise<void> {
@@ -429,28 +453,43 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 			await syncFeeds(newSubscriptions, icons, integrationRunId);
 		}
 
-		// Step 2: Fetch entry IDs
+		// Step 2: Fetch entry IDs and existing starred entries
 		logger.start('Fetching entry IDs');
-		const [unreadIds, starredIds, recentlyReadIds] = await Promise.all([
+		const [unreadIds, starredIds, recentlyReadIds, existingStarredIds] = await Promise.all([
 			fetchUnreadEntryIds(),
 			fetchStarredEntryIds(),
 			fetchRecentlyReadEntryIds(),
+			getExistingStarredEntryIds(),
 		]);
 
-		// Combine all unique entry IDs
-		const allEntryIds = new Set<number>([...unreadIds, ...starredIds, ...recentlyReadIds]);
+		// Calculate starred status changes
+		const starredSet = new Set(starredIds);
+		const newlyStarredIds = starredIds.filter((id) => !existingStarredIds.has(id));
+		const unstarredIds = Array.from(existingStarredIds).filter((id) => !starredSet.has(id));
 
-		logger.info(`Found ${allEntryIds.size} unique entries to sync`);
+		logger.info(
+			`Starred changes: ${newlyStarredIds.length} newly starred, ${unstarredIds.length} unstarred`
+		);
+
+		// Combine entry IDs we need to fetch (unread, recently read, and newly starred)
+		const entriesToFetch = new Set<number>([...unreadIds, ...recentlyReadIds, ...newlyStarredIds]);
+
+		logger.info(`Found ${entriesToFetch.size} entries to fetch`);
 
 		// Step 3: Fetch full entry data
-		const entries = await fetchEntriesByIds(Array.from(allEntryIds));
+		const entries = await fetchEntriesByIds(Array.from(entriesToFetch));
 
-		// Step 4: Sync entries WITHOUT embeddings
+		// Step 4: Update unstarred entries
+		if (unstarredIds.length > 0) {
+			logger.info(`Updating ${unstarredIds.length} entries to unstarred`);
+			await bulkUpdateStarredStatus(unstarredIds, false);
+		}
+
+		// Step 5: Sync entries WITHOUT embeddings
 		const unreadSet = new Set(unreadIds);
-		const starredSet = new Set(starredIds);
 		const entriesCreated = await syncFeedEntries(entries, unreadSet, starredSet, integrationRunId);
 
-		// Step 5: Update feeds for synced entries
+		// Step 6: Update feeds for synced entries
 		const uniqueFeedIds = Array.from(new Set(entries.map((entry) => entry.feed_id)));
 		const feedsToUpdate = uniqueFeedIds.filter((feedId) => !syncedFeedIds.has(feedId));
 
@@ -513,7 +552,7 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 			}
 		}
 
-		// Step 6: Generate embeddings for entries
+		// Step 7: Generate embeddings for entries
 		await generateFeedEntryEmbeddings();
 
 		logger.complete('Feedbin sync completed successfully');
