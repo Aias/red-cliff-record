@@ -393,6 +393,11 @@ async function getLastFeedSyncTime(): Promise<Date | null> {
 		columns: {
 			contentCreatedAt: true,
 		},
+		where: {
+			contentCreatedAt: {
+				isNotNull: true,
+			},
+		},
 		orderBy: {
 			contentCreatedAt: 'desc',
 		},
@@ -447,8 +452,8 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 
 		// Step 5: Update feeds for synced entries
 		const uniqueFeedIds = Array.from(new Set(entries.map((entry) => entry.feed_id)));
-		const feedsToUpdate = uniqueFeedIds.filter(feedId => !syncedFeedIds.has(feedId));
-		
+		const feedsToUpdate = uniqueFeedIds.filter((feedId) => !syncedFeedIds.has(feedId));
+
 		if (feedsToUpdate.length > 0) {
 			logger.info(`Updating ${feedsToUpdate.length} feeds from synced entries`);
 
@@ -461,11 +466,13 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 			// Process feeds in batches
 			const FEED_BATCH_SIZE = 20;
 			let feedUpdateCount = 0;
-			
+
 			for (let i = 0; i < feedsToUpdate.length; i += FEED_BATCH_SIZE) {
 				const batch = feedsToUpdate.slice(i, i + FEED_BATCH_SIZE);
-				logger.info(`Processing feed batch ${Math.floor(i / FEED_BATCH_SIZE) + 1} of ${Math.ceil(feedsToUpdate.length / FEED_BATCH_SIZE)}`);
-				
+				logger.info(
+					`Processing feed batch ${Math.floor(i / FEED_BATCH_SIZE) + 1} of ${Math.ceil(feedsToUpdate.length / FEED_BATCH_SIZE)}`
+				);
+
 				await Promise.all(
 					batch.map(async (feedId) => {
 						try {
@@ -495,7 +502,9 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 								})
 								.where(eq(feeds.id, feedId));
 
-							logger.info(`Updated feed "${feed.title}" (${feedUpdateCount} of ${feedsToUpdate.length})`);
+							logger.info(
+								`Updated feed "${feed.title}" (${feedUpdateCount} of ${feedsToUpdate.length})`
+							);
 						} catch (error) {
 							logger.warn(`Failed to update feed ${feedId}`, error);
 						}
