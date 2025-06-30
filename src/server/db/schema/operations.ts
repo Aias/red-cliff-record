@@ -26,6 +26,7 @@ export const integrationTypeEnum = pgEnum('integration_type', [
 	'browser_history',
 	'crawler',
 	'embeddings',
+	'feedbin',
 	'github',
 	'lightroom',
 	'manual',

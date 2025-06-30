@@ -25,7 +25,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 **Data Sync:**
 
 - `pnpm sync:daily` - Run all integrations
-- Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, etc.
+- Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, `pnpm sync:raindrop`, `pnpm sync:readwise`, `pnpm sync:feedbin`, etc.
 
 ## Architecture
 
@@ -106,8 +106,10 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 - Use Drizzle ORM exclusively
 - Prefer relational queries: `db.query.<table>` over `db.select().from(<table>)`
+- Avoid raw SQL - use Drizzle's query builder APIs instead of `sql` template literals
 - Use proper mutation methods: `db.insert()`, `db.update()`, `db.delete()`
-- Always handle conflicts gracefully on insertions
+- Always handle conflicts gracefully on insertions with `.onConflictDoUpdate()`
+- When defining primary keys for integration tables, use `integer('id').primaryKey()` instead of `serial('id').primaryKey()` when the ID comes from an external source
 
 **API Development:**
 
@@ -200,3 +202,35 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Large hook files are split into focused modules
 - Import from specific modules: `@/lib/hooks/record-queries`, `@/lib/hooks/record-mutations`, etc.
 - Main `use-records.ts` re-exports all hooks for backward compatibility
+
+## Integration Development Guidelines
+
+**Creating New Integrations:**
+
+1. **File Structure** - Each integration should have:
+   - `types.ts` - Zod schemas (v4) for API responses and TypeScript types
+   - `client.ts` - API client with authenticated requests
+   - `sync.ts` - Main sync logic using `runIntegration` wrapper
+   - `embedding.ts` - (if needed) Text generation for embeddings
+   - `map.ts` - (if needed) Mapping logic from integration data to records
+
+2. **Authentication:**
+   - Use environment variables for credentials (e.g., `FEEDBIN_USERNAME`, `FEEDBIN_PASSWORD`)
+   - Use `requireEnv` from `../common/env` to ensure variables exist
+
+3. **Sync Patterns:**
+   - Fetch only what's needed (use `since` parameters when available)
+   - Use upsert patterns with `.onConflictDoUpdate()` for idempotent syncs
+   - Track integration runs with proper status updates
+   - Batch operations when possible (respect API rate limits)
+
+4. **Embedding Generation:**
+   - Use `createEmbedding` from `@/app/lib/server/create-embedding`
+   - Respect OpenAI's token limits (8192 tokens ≈ 24000 characters)
+   - Include relevant metadata (title, author, content, URL)
+   - Strip HTML when appropriate for cleaner embeddings
+
+5. **Error Handling:**
+   - Log errors with context using integration logger
+   - Continue processing other items on individual failures
+   - Return count of successfully processed items

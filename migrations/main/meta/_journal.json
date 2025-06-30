@@ -288,6 +288,41 @@
       "when": 1751118332440,
       "tag": "0040_opposite_hobgoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1751207210504,
+      "tag": "0041_slim_morgan_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1751208654951,
+      "tag": "0042_green_gravity",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1751209973640,
+      "tag": "0043_safe_warbound",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1751211727718,
+      "tag": "0044_bouncy_blob",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1751212543779,
+      "tag": "0045_friendly_puck",
+      "breakpoints": true
     }
   ]
 }

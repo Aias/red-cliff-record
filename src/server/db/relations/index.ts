@@ -1,4 +1,5 @@
 import { defineRelations } from 'drizzle-orm';
+import { feedEntries, feeds } from '../schema/feeds';
 import {
 	airtableAttachments,
 	airtableCreators,
@@ -44,6 +45,8 @@ export const relations = defineRelations(
 		airtableFormats,
 		airtableSpaces,
 		browsingHistory,
+		feeds,
+		feedEntries,
 		githubCommitChanges,
 		githubCommits,
 		githubRepositories,
@@ -196,6 +199,39 @@ export const relations = defineRelations(
 			integrationRun: r.one.integrationRuns({
 				from: r.browsingHistory.integrationRunId,
 				to: r.integrationRuns.id,
+			}),
+		},
+		feeds: {
+			owner: r.one.records({
+				from: r.feeds.ownerId,
+				to: r.records.id,
+			}),
+			entries: r.many.feedEntries({
+				from: r.feeds.id,
+				to: r.feedEntries.feedId,
+			}),
+			records: r.many.records({
+				from: r.feeds.id.through(r.feedEntries.feedId),
+				to: r.records.id.through(r.feedEntries.recordId),
+			}),
+		},
+		feedEntries: {
+			feed: r.one.feeds({
+				from: r.feedEntries.feedId,
+				to: r.feeds.id,
+				optional: false,
+			}),
+			integrationRun: r.one.integrationRuns({
+				from: r.feedEntries.integrationRunId,
+				to: r.integrationRuns.id,
+			}),
+			record: r.one.records({
+				from: r.feedEntries.recordId,
+				to: r.records.id,
+			}),
+			author: r.one.records({
+				from: r.feedEntries.feedId.through(r.feeds.id),
+				to: r.records.id.through(r.feeds.ownerId),
 			}),
 		},
 		githubCommits: {

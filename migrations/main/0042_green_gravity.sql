@@ -1,0 +1,1 @@
+ALTER TYPE "public"."integration_type" ADD VALUE 'feedbin' BEFORE 'github';
