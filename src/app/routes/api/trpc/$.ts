@@ -10,7 +10,7 @@ const handle = async ({ request }: { request: Request }) =>
 		req: request,
 		router: appRouter,
 		createContext: () => createTRPCContext({ headers: request.headers }),
-	})
+	});
 
 export const ServerRoute = createServerFileRoute('/api/trpc/$').methods({
 	GET: handle, // queries
