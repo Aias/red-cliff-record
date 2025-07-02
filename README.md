@@ -30,6 +30,8 @@ Before you begin, ensure you have the following installed:
 - **Adobe Lightroom** - for Adobe Lightroom integration
 - **Airtable** - for Airtable integration
 - **Arc Browser** - for Arc Browser integration
+- **Dia Browser** - for Dia Browser integration
+- **Feedbin** - for RSS feed integration
 - **GitHub** - for GitHub integration
 - **Raindrop.io** - for Raindrop.io integration
 - **Readwise** - for Readwise integration
@@ -145,6 +147,15 @@ Each integration is optional. Only configure the ones you need:
 
   [Get your token](https://readwise.io/access_token)
 
+- **Feedbin** - For syncing RSS feeds and entries
+
+  ```
+  FEEDBIN_USERNAME=your@email.com
+  FEEDBIN_PASSWORD=your-password
+  ```
+
+  Sign up at [feedbin.com](https://feedbin.com)
+
 - **Adobe Lightroom** - For syncing photos from a Lightroom album
 
   Note: Currently hardcoded to the author's album. See [INTEGRATIONS.md](./INTEGRATIONS.md#adobe-lightroom-integration) for setup details.
@@ -192,8 +203,11 @@ pnpm sync:github
 pnpm sync:airtable
 pnpm sync:raindrop
 pnpm sync:readwise
+pnpm sync:feedbin
 pnpm sync:adobe
-pnpm sync:arc  # macOS only
+pnpm sync:arc       # macOS only
+pnpm sync:dia       # macOS only
+pnpm sync:browsing  # Both Arc and Dia
 ```
 
 ## Production Build & Deployment
@@ -259,11 +273,25 @@ pnpm db:backup-remote # Remote backup
 - Check rate limits for external services
 - Run individual syncs with verbose logging: `DEBUG=* pnpm sync:github`
 
-### Arc Browser Integration (macOS)
+### Browser History Integration (macOS)
+
+#### Arc Browser
 
 - Ensure Arc browser is installed and has been used
 - The integration reads from: `~/Library/Application Support/Arc/User Data/Default/History`
 - May require security permissions in System Preferences
+
+#### Dia Browser
+
+- Ensure Dia browser is installed and has been used
+- The integration reads from: `~/Library/Application Support/Dia/`
+- May require security permissions in System Preferences
+
+#### Browser Sync Details
+
+- The sync runs Arc and Dia sequentially under one integration run
+- Each browser maintains its own sync timestamp per hostname
+- The browser sync works for any Chromium-based browser with path configuration
 
 ## License
 

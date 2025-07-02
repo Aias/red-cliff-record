@@ -33,4 +33,3 @@ const main = async (): Promise<void> => {
 if (import.meta.url === import.meta.resolve('./sync-dia.ts')) {
 	main();
 }
-

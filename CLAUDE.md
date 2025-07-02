@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Cloudflare Pages.
+Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Cloudflare Pages.
 
 ## Essential Commands
 
@@ -25,7 +25,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 **Data Sync:**
 
 - `pnpm sync:daily` - Run all integrations
-- Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, `pnpm sync:raindrop`, `pnpm sync:readwise`, `pnpm sync:feedbin`, etc.
+- Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, `pnpm sync:raindrop`, `pnpm sync:readwise`, `pnpm sync:feedbin`, `pnpm sync:browsing`
 
 ## Architecture
 
@@ -229,8 +229,19 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
    - Respect OpenAI's token limits (8192 tokens ≈ 24000 characters)
    - Include relevant metadata (title, author, content, URL)
    - Strip HTML when appropriate for cleaner embeddings
+   - For feeds/RSS: Generate embeddings asynchronously after initial sync
 
 5. **Error Handling:**
    - Log errors with context using integration logger
    - Continue processing other items on individual failures
    - Return count of successfully processed items
+
+6. **Differential Sync Patterns:**
+   - For starred/bookmarked items: Fetch ID lists, diff with database, sync only changes
+   - Example: Feedbin starred entries - compare API starred IDs with DB starred IDs
+   - Benefits: Constant sync time regardless of total item count
+
+7. **Multi-Step Integration Patterns:**
+   - For integrations with multiple data sources, use orchestration pattern
+   - Call `runIntegration` once at the top level for the entire sync
+   - Example: Browser history sync-all runs both Arc and Dia under one integration run, Github sync handles sync for both starred repositories and commit history
