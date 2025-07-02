@@ -498,15 +498,13 @@ async function insertHistoryEntries(processedHistory: BrowsingHistoryInsert[]): 
  * @param browserConfig - The browser configuration
  * @returns A function that syncs the browser's history
  */
+export { syncBrowserHistory };
+
 export function createBrowserSyncFunction(browserConfig: BrowserConfig) {
 	return async (): Promise<void> => {
 		try {
-			console.log(`Starting ${browserConfig.displayName} browser history synchronization`);
 			await runIntegration('browser_history', (integrationRunId) =>
 				syncBrowserHistory(browserConfig, integrationRunId)
-			);
-			console.log(
-				`${browserConfig.displayName} browser history synchronization completed successfully`
 			);
 		} catch (error) {
 			console.error(`Error syncing ${browserConfig.displayName} browser history:`, error);

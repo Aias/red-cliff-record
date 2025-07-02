@@ -1,10 +1,15 @@
+import { runIntegration } from '../common/run-integration';
 import { diaConfig } from './browsers/dia';
-import { createBrowserSyncFunction } from './sync';
+import { syncBrowserHistory } from './sync';
 
 /**
  * Synchronizes Dia browser history with the database
  */
-export const syncDiaBrowserData = createBrowserSyncFunction(diaConfig);
+export async function syncDiaBrowserData(): Promise<void> {
+	await runIntegration('browser_history', (integrationRunId) =>
+		syncBrowserHistory(diaConfig, integrationRunId)
+	);
+}
 
 /**
  * Main execution function when run as a standalone script
@@ -14,12 +19,12 @@ const main = async (): Promise<void> => {
 		console.log('\n=== STARTING DIA BROWSER SYNC ===\n');
 		await syncDiaBrowserData();
 		console.log('\n=== DIA BROWSER SYNC COMPLETED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
+		console.log('-'.repeat(50) + '\n');
 		process.exit(0);
 	} catch (error) {
 		console.error('Error in Dia browser sync main function:', error);
 		console.log('\n=== DIA BROWSER SYNC FAILED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
+		console.log('-'.repeat(50) + '\n');
 		process.exit(1);
 	}
 };
@@ -28,3 +33,4 @@ const main = async (): Promise<void> => {
 if (import.meta.url === import.meta.resolve('./sync-dia.ts')) {
 	main();
 }
+
