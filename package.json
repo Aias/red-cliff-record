@@ -98,7 +98,7 @@
 		"db:backup-remote": "bash src/server/db/db-manager.sh backup remote",
 		"db:restore-local": "bash src/server/db/db-manager.sh restore local",
 		"db:restore-remote": "bash src/server/db/db-manager.sh restore remote",
-		"sync:daily": "bun sync:browsing && bun sync:raindrop && bun sync:readwise && bun sync:github && bun sync:airtable && bun sync:embeddings",
+		"sync:daily": "bun sync:browsing && bun sync:feedbin && bun sync:raindrop && bun sync:readwise && bun sync:github && bun sync:airtable && bun sync:embeddings",
 		"sync:adobe": "bun src/server/integrations/adobe/sync.ts",
 		"sync:airtable": "bun src/server/integrations/airtable/sync.ts",
 		"sync:browsing": "bun src/server/integrations/browser-history/sync-all.ts",

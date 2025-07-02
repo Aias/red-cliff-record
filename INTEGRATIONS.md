@@ -112,22 +112,60 @@ Syncs your reading highlights and notes.
 pnpm sync:readwise
 ```
 
-## Arc Browser Integration (macOS Only)
+## Feedbin Integration
 
-Syncs your Arc browser history locally.
+Syncs your RSS feed subscriptions and entries from Feedbin.
 
 ### Setup
+
+1. Create a [Feedbin](https://feedbin.com) account if you don't have one
+2. Add your Feedbin credentials to `.env`:
+   ```
+   FEEDBIN_USERNAME=your@email.com
+   FEEDBIN_PASSWORD=your-password
+   ```
+
+### What Gets Synced
+
+- All feed subscriptions
+- Feed entries (unread, starred, and recently read)
+- Feed metadata and icons
+- Read/starred status
+- Differential sync for starred items (only syncs changes)
+- Embeddings generated after initial sync
+
+### Sync Command
+
+```bash
+pnpm sync:feedbin
+```
+
+### Features
+
+- Incremental sync based on last sync time
+- Efficient starred entry syncing (only fetches new starred items)
+- Automatic feed discovery for entries without feeds
+- Batch processing for embeddings
+- Enclosure/podcast support
+
+## Browser History Integration (macOS Only)
+
+Syncs browsing history from Chromium-based browsers locally. Currently configured for Arc and Dia browsers, but the same approach works for any Chromium-based browser (Chrome, Edge, Brave, etc.) with path adjustments.
+
+### Arc Browser
+
+#### Setup
 
 1. Install Arc browser and use it normally
 2. No API key required - reads local history database
 
-### Requirements
+#### Requirements
 
 - macOS only
 - Arc browser must be installed
 - Script needs read access to: `~/Library/Application Support/Arc/`
 
-### What Gets Synced
+#### What Gets Synced
 
 - Browsing history
 - Page titles
@@ -144,6 +182,55 @@ pnpm sync:arc
 
 - If sync fails, check System Preferences > Security & Privacy
 - May need to grant terminal/IDE file access permissions
+
+### Dia Browser
+
+#### Setup
+
+1. Install Dia browser and use it normally
+2. No API key required - reads local history database
+
+#### Requirements
+
+- macOS only
+- Dia browser must be installed
+- Script needs read access to: `~/Library/Application Support/Dia/`
+
+#### What Gets Synced
+
+- Browsing history
+- Page titles
+- Visit timestamps
+- Search terms
+
+### Sync Command
+
+```bash
+pnpm sync:dia
+```
+
+### All Browser Sync
+
+```bash
+pnpm sync:browsing
+```
+
+This runs both Arc and Dia syncs sequentially under a single integration run.
+
+### Adding Other Chromium Browsers
+
+To add support for other Chromium-based browsers:
+
+1. Create a new browser config in `src/server/integrations/browser-history/browsers/`
+2. Update the database connection to point to the browser's history file
+3. Add the browser to the `browserEnum` in the database schema
+4. Create a sync script following the Arc/Dia pattern
+
+Common browser history locations on macOS:
+
+- Chrome: `~/Library/Application Support/Google/Chrome/Default/History`
+- Edge: `~/Library/Application Support/Microsoft Edge/Default/History`
+- Brave: `~/Library/Application Support/BraveSoftware/Brave-Browser/Default/History`
 
 ## Adobe Lightroom Integration
 
@@ -217,7 +304,7 @@ To sync all configured integrations at once:
 pnpm sync:daily
 ```
 
-This runs all integrations that have valid API keys configured. Manually updated integrations (Twitter and Adobe) are not run by this command.
+This runs all integrations that have valid API keys configured, including browser history and feed syncs. Manually updated integrations (Twitter and Adobe) are not run by this command.
 
 ## Rate Limits and Best Practices
 
@@ -225,7 +312,8 @@ This runs all integrations that have valid API keys configured. Manually updated
 - **Airtable**: 5 requests/second per base
 - **Raindrop**: 120 requests/minute
 - **Readwise**: Reasonable use expected
-- **Arc**: Local only, no rate limits
+- **Feedbin**: Reasonable use expected
+- **Arc/Dia**: Local only, no rate limits
 
 ### Scheduling Syncs
 

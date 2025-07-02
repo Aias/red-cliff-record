@@ -70,4 +70,3 @@ if (import.meta.url === import.meta.resolve('./sync-all.ts')) {
 }
 
 export { syncAllBrowserData };
-
