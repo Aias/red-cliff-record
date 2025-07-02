@@ -1,30 +1,44 @@
-import { syncArcBrowserData } from './sync-arc';
-import { syncDiaBrowserData } from './sync-dia';
+import { runIntegration } from '../common/run-integration';
+import { arcConfig } from './browsers/arc';
+import { diaConfig } from './browsers/dia';
+import { syncBrowserHistory } from './sync';
 
 /**
  * Synchronizes all browser history (Arc and Dia) with the database
+ * This function orchestrates multiple browser syncs under a single integration run
  */
-export async function syncAllBrowserData(): Promise<void> {
+async function syncAllBrowserData(integrationRunId: number): Promise<number> {
 	console.log('Starting all browser history synchronization');
+	let totalEntriesCreated = 0;
 
-	// Run both browser syncs in sequence
-	// We run them in sequence rather than parallel to avoid overwhelming the system
-	// and to make the output easier to read
-
+	// Run Arc browser sync
 	try {
-		await syncArcBrowserData();
+		console.log('\n--- Starting Arc Browser Sync ---');
+		const arcEntries = await syncBrowserHistory(arcConfig, integrationRunId);
+		totalEntriesCreated += arcEntries;
+		console.log(`--- Arc Browser Sync Complete: ${arcEntries} entries ---\n`);
 	} catch (error) {
 		console.error('Arc browser sync failed:', error);
 		// Continue with Dia sync even if Arc fails
 	}
 
+	// Add a small delay between syncs to ensure clean separation
+	await new Promise((resolve) => setTimeout(resolve, 500));
+
+	// Run Dia browser sync
 	try {
-		await syncDiaBrowserData();
+		console.log('\n--- Starting Dia Browser Sync ---');
+		const diaEntries = await syncBrowserHistory(diaConfig, integrationRunId);
+		totalEntriesCreated += diaEntries;
+		console.log(`--- Dia Browser Sync Complete: ${diaEntries} entries ---\n`);
 	} catch (error) {
 		console.error('Dia browser sync failed:', error);
 	}
 
-	console.log('All browser history synchronization completed');
+	console.log(
+		`All browser history synchronization completed. Total entries: ${totalEntriesCreated}`
+	);
+	return totalEntriesCreated;
 }
 
 /**
@@ -32,15 +46,20 @@ export async function syncAllBrowserData(): Promise<void> {
  */
 const main = async (): Promise<void> => {
 	try {
-		console.log('\n=== STARTING ALL BROWSER SYNC ===\n');
-		await syncAllBrowserData();
-		console.log('\n=== ALL BROWSER SYNC COMPLETED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
+		console.log('\n=== STARTING ALL BROWSER SYNC ===');
+		console.log(`Process ID: ${process.pid}`);
+		console.log('-'.repeat(50) + '\n');
+
+		// Use runIntegration to wrap the entire sync process
+		await runIntegration('browser_history', syncAllBrowserData);
+
+		console.log('\n=== ALL BROWSER SYNC COMPLETED ===');
+		console.log('-'.repeat(50) + '\n');
 		process.exit(0);
 	} catch (error) {
 		console.error('Error in all browser sync main function:', error);
-		console.log('\n=== ALL BROWSER SYNC FAILED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
+		console.log('\n=== ALL BROWSER SYNC FAILED ===');
+		console.log('-'.repeat(50) + '\n');
 		process.exit(1);
 	}
 };
@@ -49,3 +68,6 @@ const main = async (): Promise<void> => {
 if (import.meta.url === import.meta.resolve('./sync-all.ts')) {
 	main();
 }
+
+export { syncAllBrowserData };
+
