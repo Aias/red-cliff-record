@@ -30,3 +30,13 @@ export interface BrowserConfig {
 	// Useful for browsers that import history from other browsers
 	cutoffDate?: Date;
 }
+
+/**
+ * Custom error for when a browser is not installed (history file missing)
+ */
+export class BrowserNotInstalledError extends Error {
+	constructor(browserName: string, filePath: string) {
+		super(`${browserName} browser not installed (missing file: ${filePath})`);
+		this.name = 'BrowserNotInstalledError';
+	}
+}

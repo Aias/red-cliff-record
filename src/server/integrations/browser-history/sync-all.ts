@@ -2,6 +2,7 @@ import { runIntegration } from '../common/run-integration';
 import { arcConfig } from './browsers/arc';
 import { diaConfig } from './browsers/dia';
 import { syncBrowserHistory } from './sync';
+import { BrowserNotInstalledError } from './types';
 
 /**
  * Synchronizes all browser history (Arc and Dia) with the database
@@ -18,7 +19,11 @@ async function syncAllBrowserData(integrationRunId: number): Promise<number> {
 		totalEntriesCreated += arcEntries;
 		console.log(`--- Arc Browser Sync Complete: ${arcEntries} entries ---\n`);
 	} catch (error) {
-		console.error('Arc browser sync failed:', error);
+		if (error instanceof BrowserNotInstalledError) {
+			console.warn(error.message + ' Skipping Arc sync.');
+		} else {
+			console.error('Arc browser sync failed:', error);
+		}
 		// Continue with Dia sync even if Arc fails
 	}
 
@@ -32,7 +37,11 @@ async function syncAllBrowserData(integrationRunId: number): Promise<number> {
 		totalEntriesCreated += diaEntries;
 		console.log(`--- Dia Browser Sync Complete: ${diaEntries} entries ---\n`);
 	} catch (error) {
-		console.error('Dia browser sync failed:', error);
+		if (error instanceof BrowserNotInstalledError) {
+			console.warn(error.message + ' Skipping Dia sync.');
+		} else {
+			console.error('Dia browser sync failed:', error);
+		}
 	}
 
 	console.log(

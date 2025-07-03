@@ -11,7 +11,11 @@ import {
 	collapseSequentialVisits,
 	createDailyVisitsQuery,
 } from './helpers';
-import { DailyVisitsQueryResultSchema, type BrowserConfig } from './types';
+import {
+	BrowserNotInstalledError,
+	DailyVisitsQueryResultSchema,
+	type BrowserConfig,
+} from './types';
 import type * as browserHistorySchema from '@/db/schema/browser-history';
 import {
 	browsingHistory,
@@ -192,6 +196,9 @@ async function syncBrowserHistory(
 
 		return processedHistory.length;
 	} catch (error) {
+		if (error instanceof BrowserNotInstalledError) {
+			throw error;
+		}
 		console.error(`Error syncing ${browserConfig.displayName} browser history:`, error);
 		throw new Error(
 			`Failed to sync ${browserConfig.displayName} browser history: ${
@@ -208,14 +215,14 @@ async function syncBrowserHistory(
  * @param browser - The browser type
  * @returns Promise that resolves to true if the sync should proceed, false otherwise
  */
-async function checkHostname(currentHostname: string, browser: Browser): Promise<boolean> {
+async function checkHostname(currentHostname: string, _browser: Browser): Promise<boolean> {
 	// Get all unique hostnames from the database
 	const uniqueHostnames = await db
 		.select({
 			hostname: browsingHistory.hostname,
 		})
 		.from(browsingHistory)
-		.where(eq(browsingHistory.browser, browser))
+		// .where(eq(browsingHistory.browser, browser))
 		.groupBy(browsingHistory.hostname);
 
 	const knownHostnames = new Set(uniqueHostnames.map((h) => h.hostname));

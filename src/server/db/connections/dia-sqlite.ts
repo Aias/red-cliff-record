@@ -1,8 +1,10 @@
 import { copyFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
+import { BrowserNotInstalledError } from '@/server/integrations/browser-history/types';
 import * as schema from '../schema/browser-history';
 
 const diaHistoryPath = 'Library/Application Support/Dia/User Data/Default/History';
@@ -13,6 +15,9 @@ export const diaDbCopyPath = join(homedir(), `${diaHistoryPath}-copy`);
 export const connectionUrl = `file:${diaDbCopyPath}`;
 
 export const createDiaConnection = () => {
+	if (!existsSync(diaDbPath)) {
+		throw new BrowserNotInstalledError('Dia', diaDbPath);
+	}
 	copyFileSync(diaDbPath, diaDbCopyPath);
 
 	const client = createClient({
