@@ -5,9 +5,11 @@ alwaysApply: true
 ---
 # Project Structure
 
-This project follows a well-organized structure with clear separation of concerns:
+Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Cloudflare Pages.
 
 **IMPORTANT**: This project uses both `CLAUDE.md` and `.cursor/rules/` files for development guidelines. When making significant refactoring or architectural changes, both files must be updated to stay in sync.
+
+**IMPORTANT**: Never run any sync scripts without checking with the user first.
 
 ## Frontend (`src/app/`)
 - `routes/`: Contains all Tanstack React Router routes
@@ -22,6 +24,7 @@ This project follows a well-organized structure with clear separation of concern
   - `media.ts`: Complete media handling (R2 uploads, metadata extraction, MIME detection)
   - `image-metadata.ts`: Pure image format parsing utility
   - `url-utils.ts`: Server-side URL validation and formatting
+  - `constants.ts`: Server-specific constants (SIMILARITY_THRESHOLD, similarity function)
 - `integrations/`: External API integrations and sync scripts
 
 ## Shared (`src/shared/`)
@@ -58,11 +61,43 @@ This project follows a well-organized structure with clear separation of concern
 - `eslint.config.js`: ESLint configuration
 - `.prettierrc` and `.prettierignore`: Prettier configuration
 
+## Essential Commands
+
+**Development:**
+- `pnpm dev` - Start development server
+- `pnpm build` - Build for production
+- `pnpm lint` - Format, lint, and type check
+
+**Database:**
+- `pnpm db:migrate` - Run database migrations
+- `pnpm db:studio` - Open Drizzle Studio for database inspection
+
+**Data Sync:**
+- `pnpm sync:daily` - Run all integrations
+- Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, `pnpm sync:raindrop`, `pnpm sync:readwise`, `pnpm sync:twitter`, `pnpm sync:feedbin`, `pnpm sync:browsing`
+
+## Critical Development Rules
+
+**Type Safety:**
+- End-to-end TypeScript with _no type assertions_. This is a hard rule. Never use `any`, never use `as` for type casting, never disable type checking, and never use `@ts-ignore` or `@ts-expect-error`.
+- Use Zod v4 for runtime validation
+- Use database types from Drizzle schema
+
+**Performance:**
+- Implement proper memoization where needed
+- Implement proper error boundaries
+- Consider code splitting for larger components
+- Use efficient query patterns and proper indexing
+
+**Before Every Commit:**
+- Run `pnpm lint`
+- Update CLAUDE.md if refactoring changes architectural patterns or introduces new conventions
+
 ## Development Guidelines
 - All components should be fully typed with TypeScript
 - Use Tailwind for styling and Shadcn UI for complex components
 - Follow semantic HTML practices
-- Implement form handling with Tanstack Forms
+- Implement form handling with TanStack Forms
 - Use Lucide icons with proper component imports
 - Handle database operations via tRPC and Drizzle
 - Maintain performance optimization as a priority

@@ -8,7 +8,7 @@ alwaysApply: true
 ## Component Organization
 - Reusable components go in `src/app/components/` with kebab-case naming (e.g., `example-component.tsx`).
 - Shadcn components are installed manually into `src/app/components/ui`, and components in there should not be touched or modified without explicit instructions to do so.
-- Page-specific components should be in the page's directory with `-` prefix (e.g., `-page-component.tsx`)
+- Page-specific components: `-components/` directory or `-component.tsx` suffix
 - Use `-components/` directory for page-specific component groups
 
 ## Component Structure
@@ -20,12 +20,13 @@ alwaysApply: true
 
 ## TypeScript Requirements
 - All components must be fully typed
-- Never use the `any` keyword, and avoid using `unknown` types except in rare cases.
-- Similarly, *never* use `as` for type casting. The project must be fully type safe.
+- NEVER use `any` keyword or `unknown` types
+- NEVER use `as` for type casting - must be fully type safe
 - Import and reuse existing types from schemas and database types
+- End-to-end TypeScript with _no type assertions_. This is a hard rule. Never disable type checking, and never use `@ts-ignore` or `@ts-expect-error`.
 
 ## Form Handling
-- Use Tanstack Forms for form management
+- Use TanStack Forms for form management
 - Implement Zod schemas for validation
 - Integrate with tRPC for API communication
 - Handle form state and validation properly

@@ -26,6 +26,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 - `pnpm sync:daily` - Run all integrations
 - Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, `pnpm sync:raindrop`, `pnpm sync:readwise`, `pnpm sync:feedbin`, `pnpm sync:browsing`
+- **IMPORTANT**: Never run any sync scripts without checking with the user first
 
 ## Architecture
 
@@ -135,7 +136,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 **Performance:**
 
-- React Compiler is enabled - avoid manual memoization
+- Implement proper memoization where needed
 - Implement proper error boundaries
 - Consider code splitting for larger components
 - Use efficient query patterns and proper indexing

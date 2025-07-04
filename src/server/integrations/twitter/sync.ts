@@ -59,6 +59,33 @@ async function archiveProcessedFiles(files: string[], archiveDir: string): Promi
 }
 
 /**
+ * Retries a filesystem operation if it fails with EINTR
+ * @param operation - The operation to retry
+ * @param maxRetries - Maximum number of retries (default: 3)
+ * @returns The result of the operation
+ */
+async function retryOnEINTR<T>(
+	operation: () => T,
+	maxRetries: number = 3
+): Promise<T> {
+	let lastError: unknown;
+	for (let i = 0; i < maxRetries; i++) {
+		try {
+			return operation();
+		} catch (error) {
+			lastError = error;
+			if (error instanceof Error && 'code' in error && error.code === 'EINTR') {
+				// Wait a bit before retrying
+				await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
+				continue;
+			}
+			throw error;
+		}
+	}
+	throw lastError;
+}
+
+/**
  * Loads Twitter bookmarks data from local JSON files
  *
  * This function:
@@ -74,8 +101,10 @@ export async function loadBookmarksData(): Promise<{
 	processedFiles: string[];
 }> {
 	try {
-		// Read the directory entries with file types
-		const entries = readdirSync(TWITTER_DATA_DIR, { withFileTypes: true });
+		// Read the directory entries with file types, with retry on EINTR
+		const entries = await retryOnEINTR(() => 
+			readdirSync(TWITTER_DATA_DIR, { withFileTypes: true })
+		);
 
 		// Filter for bookmark files and sort them
 		const bookmarkFiles = entries
@@ -101,7 +130,7 @@ export async function loadBookmarksData(): Promise<{
 			const filePath = resolve(TWITTER_DATA_DIR, fileName);
 			console.log(`Processing Twitter bookmarks file: ${filePath}`);
 
-			const fileContent = readFileSync(filePath, 'utf-8');
+			const fileContent = await retryOnEINTR(() => readFileSync(filePath, 'utf-8'));
 			const rawData = JSON.parse(fileContent);
 
 			// Validate the data using Zod schema

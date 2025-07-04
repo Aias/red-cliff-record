@@ -30,6 +30,7 @@ alwaysApply: true
   - `media.ts`: Complete media pipeline (R2 uploads, metadata extraction)
   - `image-metadata.ts`: Pure image format parsing (PNG, JPEG, WebP, etc.)
   - `url-utils.ts`: Server-side URL validation and formatting
+  - `constants.ts`: Server-specific constants (SIMILARITY_THRESHOLD, similarity function)
 
 ## Media & File Handling Rules
 
@@ -71,4 +72,15 @@ alwaysApply: true
 5. **❌ NEVER import client code from server code**
 6. **Always use appropriate import aliases** (`@/shared/lib/`, `@/server/lib/`, `@/lib/`)
 7. **Split large utility files into focused modules**
-8. **Maintain backward compatibility with re-exports when refactoring**
+8. **NEVER create backward compatibility files during refactoring - update all imports directly**
+9. **When moving or splitting files, update ALL imports immediately**
+10. **Always prefer direct imports from the correct location over convenience re-exports**
+11. **During large refactors, complete the entire migration in one go rather than leaving transitional files**
+
+## File Editing Guidelines
+
+- This project uses **tabs for indentation** (not spaces)
+- When doing exact string replacements with MultiEdit, always verify whitespace by reading the exact lines first
+- Use `sed -n 'start,end p' filename` to see exact content with proper formatting
+- For complex multi-line replacements, prefer smaller, targeted changes over large blocks
+- When uncertain about whitespace, use the Bash tool with `grep -A/-B` to see context

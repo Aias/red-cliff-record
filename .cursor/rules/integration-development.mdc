@@ -1,0 +1,78 @@
+---
+description: Guidelines for developing external API integrations
+globs: ["src/server/integrations/**"]
+alwaysApply: true
+---
+# Integration Development Guidelines
+
+## Creating New Integrations
+
+### 1. File Structure
+Each integration should have:
+- `types.ts` - Zod schemas (v4) for API responses and TypeScript types
+- `client.ts` - API client with authenticated requests
+- `sync.ts` - Main sync logic using `runIntegration` wrapper
+- `embedding.ts` - (if needed) Text generation for embeddings
+- `map.ts` - (if needed) Mapping logic from integration data to records
+
+### 2. Authentication
+- Use environment variables for credentials (e.g., `FEEDBIN_USERNAME`, `FEEDBIN_PASSWORD`)
+- Use `requireEnv` from `../common/env` to ensure variables exist
+
+### 3. Sync Patterns
+- Fetch only what's needed (use `since` parameters when available)
+- Use upsert patterns with `.onConflictDoUpdate()` for idempotent syncs
+- Track integration runs with proper status updates
+- Batch operations when possible (respect API rate limits)
+
+### 4. Embedding Generation
+- Use `createEmbedding` from `@/app/lib/server/create-embedding`
+- Respect OpenAI's token limits (8192 tokens ≈ 24000 characters)
+- Include relevant metadata (title, author, content, URL)
+- Strip HTML when appropriate for cleaner embeddings
+- For feeds/RSS: Generate embeddings asynchronously after initial sync
+
+### 5. Error Handling
+- Log errors with context using integration logger
+- Continue processing other items on individual failures
+- Return count of successfully processed items
+
+### 6. Differential Sync Patterns
+- For starred/bookmarked items: Fetch ID lists, diff with database, sync only changes
+- Example: Feedbin starred entries - compare API starred IDs with DB starred IDs
+- Benefits: Constant sync time regardless of total item count
+
+### 7. Multi-Step Integration Patterns
+- For integrations with multiple data sources, use orchestration pattern
+- Call `runIntegration` once at the top level for the entire sync
+- Example: Browser history sync-all runs both Arc and Dia under one integration run, Github sync handles sync for both starred repositories and commit history
+
+## Best Practices
+
+### API Rate Limiting
+- Implement proper rate limiting for external APIs
+- Use batch processing where supported
+- Add delays between requests if necessary
+
+### Data Consistency
+- Always use database transactions for related operations
+- Handle partial failures gracefully
+- Implement proper rollback strategies
+
+### Performance Optimization
+- Use efficient database queries
+- Implement proper indexing for integration tables
+- Consider pagination for large datasets
+- Use streaming for large data transfers where possible
+
+### Testing
+- Test with both empty and existing data states
+- Verify idempotency of sync operations
+- Test error handling and recovery
+- Validate data transformations
+
+### Documentation
+- Document API endpoints and parameters
+- Include examples of API responses
+- Document any special handling or edge cases
+- Keep authentication requirements clear

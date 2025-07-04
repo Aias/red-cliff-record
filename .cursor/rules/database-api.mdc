@@ -8,11 +8,13 @@ alwaysApply: true
 ## Database Operations
 - Use Drizzle ORM for all database operations
 - Prefer relational queries: `db.query.<table>` over `db.select().from(<table>)`
+- Avoid raw SQL - use Drizzle's query builder APIs instead of `sql` template literals
 - Use proper methods for mutations:
   - `db.insert()` for creating records
   - `db.update()` for updating records
   - `db.delete()` for deleting records
-- Always handle conflicts gracefully on insertions
+- Always handle conflicts gracefully on insertions with `.onConflictDoUpdate()`
+- When defining primary keys for integration tables, use `integer('id').primaryKey()` instead of `serial('id').primaryKey()` when the ID comes from an external source
 - Keep database schema in `src/server/db/`
 
 ## API Development
@@ -33,7 +35,7 @@ alwaysApply: true
 - Use database types from Drizzle schema
 - Implement proper input/output types for all procedures
 - Use Zod v4 schemas for runtime validation
-- Avoid type assertions unless absolutely necessary
+- End-to-end TypeScript with _no type assertions_. This is a hard rule. Never use `any`, never use `as` for type casting, never disable type checking, and never use `@ts-ignore` or `@ts-expect-error`.
 
 ## Performance
 - Implement proper indexing
