@@ -190,6 +190,14 @@ Visit http://localhost:3000 to see the application.
 
 Once configured, you can sync data from your connected services:
 
+### Server Operations CLI
+
+Run the interactive CLI to select and execute any sync script:
+
+```bash
+pnpm cli
+```
+
 ### Sync All Services
 
 ```bash

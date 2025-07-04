@@ -40,6 +40,8 @@
 		"dotenv": "^17.0.1",
 		"drizzle-orm": "1.0.0-beta.1-c0277c0",
 		"drizzle-zod": "^0.8.2",
+		"ink": "^4.4.1",
+		"ink-select-input": "^5.0.0",
 		"lucide-react": "0.525.0",
 		"marked": "^16.0.0",
 		"marked-linkify-it": "^3.1.13",
@@ -108,7 +110,8 @@
 		"sync:twitter": "bun src/server/integrations/twitter/sync.ts",
 		"sync:feedbin": "bun src/server/integrations/feedbin/sync.ts",
 		"sync:avatars": "bun src/server/services/save-avatars.ts",
-		"sync:embeddings": "bun src/server/services/embed-records.ts"
+		"sync:embeddings": "bun src/server/services/embed-records.ts",
+		"cli": "bun src/server/cli.tsx"
 	},
 	"packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
 }
