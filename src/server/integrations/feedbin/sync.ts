@@ -29,6 +29,45 @@ const EMBEDDING_BATCH_SIZE = 20;
 const syncedFeedIds = new Set<number>();
 
 /**
+ * Get the most recent feed entry IDs with read/starred status
+ */
+async function getRecentEntryStatuses(
+	limit = 1000
+): Promise<Map<number, { read: boolean; starred: boolean }>> {
+	const rows = await db.query.feedEntries.findMany({
+		columns: { id: true, read: true, starred: true },
+		orderBy: { recordCreatedAt: 'desc' },
+		limit,
+	});
+	return new Map(rows.map((r) => [r.id, { read: r.read, starred: r.starred }]));
+}
+
+/**
+ * Get the most recent feed IDs
+ */
+async function getRecentFeedIds(limit = 1000): Promise<Set<number>> {
+	const rows = await db.query.feeds.findMany({
+		columns: { id: true },
+		orderBy: { recordCreatedAt: 'desc' },
+		limit,
+	});
+	return new Set(rows.map((r) => r.id));
+}
+
+/**
+ * Bulk update read status for multiple entries
+ */
+async function bulkUpdateReadStatus(entryIds: number[], read: boolean): Promise<void> {
+	if (entryIds.length === 0) return;
+
+	const BATCH_SIZE = 1000;
+	for (let i = 0; i < entryIds.length; i += BATCH_SIZE) {
+		const batch = entryIds.slice(i, i + BATCH_SIZE);
+		await db.update(feedEntries).set({ read }).where(inArray(feedEntries.id, batch));
+	}
+}
+
+/**
  * Sync a single feed from Feedbin
  */
 async function syncSingleFeed(feedId: number): Promise<void> {
@@ -306,17 +345,6 @@ async function syncFeedEntries(
 }
 
 /**
- * Get existing starred entry IDs from database
- */
-async function getExistingStarredEntryIds(): Promise<Set<number>> {
-	const starredEntries = await db.query.feedEntries.findMany({
-		columns: { id: true },
-		where: { starred: true },
-	});
-	return new Set(starredEntries.map((e) => e.id));
-}
-
-/**
  * Bulk update starred status for multiple entries
  */
 async function bulkUpdateStarredStatus(entryIds: number[], starred: boolean): Promise<void> {
@@ -438,6 +466,13 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 		// Clear the synced feed cache
 		syncedFeedIds.clear();
 
+		// Get existing IDs for recent entries and feeds
+		const [existingEntryStatuses, existingFeedIds] = await Promise.all([
+			getRecentEntryStatuses(),
+			getRecentFeedIds(),
+		]);
+		const existingEntryIds = new Set(existingEntryStatuses.keys());
+
 		// Step 1: Get last sync time and fetch new subscriptions
 		const lastSyncTime = await getLastFeedSyncTime();
 		logger.info(`Last feed sync: ${lastSyncTime?.toISOString() || 'never'}`);
@@ -453,45 +488,69 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 			await syncFeeds(newSubscriptions, icons, integrationRunId);
 		}
 
-		// Step 2: Fetch entry IDs and existing starred entries
+		// Step 2: Fetch entry IDs from Feedbin
 		logger.start('Fetching entry IDs');
-		const [unreadIds, starredIds, recentlyReadIds, existingStarredIds] = await Promise.all([
+		const [unreadIds, starredIds, recentlyReadIds] = await Promise.all([
 			fetchUnreadEntryIds(),
 			fetchStarredEntryIds(),
 			fetchRecentlyReadEntryIds(),
-			getExistingStarredEntryIds(),
 		]);
 
-		// Calculate starred status changes
+		const unreadSet = new Set(unreadIds);
 		const starredSet = new Set(starredIds);
-		const newlyStarredIds = starredIds.filter((id) => !existingStarredIds.has(id));
-		const unstarredIds = Array.from(existingStarredIds).filter((id) => !starredSet.has(id));
 
-		logger.info(
-			`Starred changes: ${newlyStarredIds.length} newly starred, ${unstarredIds.length} unstarred`
-		);
+		// Determine status changes for existing entries
+		const toStar: number[] = [];
+		const toUnstar: number[] = [];
+		const toMarkRead: number[] = [];
+		const toMarkUnread: number[] = [];
 
-		// Combine entry IDs we need to fetch (unread, recently read, and newly starred)
-		const entriesToFetch = new Set<number>([...unreadIds, ...recentlyReadIds, ...newlyStarredIds]);
+		for (const [id, status] of existingEntryStatuses) {
+			const shouldStar = starredSet.has(id);
+			if (shouldStar && !status.starred) toStar.push(id);
+			if (!shouldStar && status.starred) toUnstar.push(id);
 
-		logger.info(`Found ${entriesToFetch.size} entries to fetch`);
+			const shouldUnread = unreadSet.has(id);
+			if (shouldUnread && status.read) toMarkUnread.push(id);
+			if (!shouldUnread && !status.read) toMarkRead.push(id);
+		}
+
+		logger.info(`Starred changes: ${toStar.length} newly starred, ${toUnstar.length} unstarred`);
+
+		const idsToConsider = new Set<number>([...unreadSet, ...recentlyReadIds, ...starredSet]);
+		const entriesToFetch = Array.from(idsToConsider).filter((id) => !existingEntryIds.has(id));
+
+		logger.info(`Found ${entriesToFetch.length} new entries to fetch`);
 
 		// Step 3: Fetch full entry data
-		const entries = await fetchEntriesByIds(Array.from(entriesToFetch));
+		const entries = await fetchEntriesByIds(entriesToFetch);
 
-		// Step 4: Update unstarred entries
-		if (unstarredIds.length > 0) {
-			logger.info(`Updating ${unstarredIds.length} entries to unstarred`);
-			await bulkUpdateStarredStatus(unstarredIds, false);
+		// Step 4: Update existing entry states
+		if (toUnstar.length > 0) {
+			logger.info(`Updating ${toUnstar.length} entries to unstarred`);
+			await bulkUpdateStarredStatus(toUnstar, false);
+		}
+		if (toStar.length > 0) {
+			logger.info(`Updating ${toStar.length} entries to starred`);
+			await bulkUpdateStarredStatus(toStar, true);
+		}
+		if (toMarkRead.length > 0) {
+			logger.info(`Marking ${toMarkRead.length} entries read`);
+			await bulkUpdateReadStatus(toMarkRead, true);
+		}
+		if (toMarkUnread.length > 0) {
+			logger.info(`Marking ${toMarkUnread.length} entries unread`);
+			await bulkUpdateReadStatus(toMarkUnread, false);
 		}
 
 		// Step 5: Sync entries WITHOUT embeddings
-		const unreadSet = new Set(unreadIds);
 		const entriesCreated = await syncFeedEntries(entries, unreadSet, starredSet, integrationRunId);
 
 		// Step 6: Update feeds for synced entries
 		const uniqueFeedIds = Array.from(new Set(entries.map((entry) => entry.feed_id)));
-		const feedsToUpdate = uniqueFeedIds.filter((feedId) => !syncedFeedIds.has(feedId));
+		const feedsToUpdate = uniqueFeedIds.filter(
+			(feedId) => !existingFeedIds.has(feedId) && !syncedFeedIds.has(feedId)
+		);
 
 		if (feedsToUpdate.length > 0) {
 			logger.info(`Updating ${feedsToUpdate.length} feeds from synced entries`);
