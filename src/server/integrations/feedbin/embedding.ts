@@ -8,43 +8,40 @@ const MAX_EMBEDDING_LENGTH = 24000;
 
 /**
  * Create embedding text for a feed entry
- * Combines title, author, content, and summary for semantic search
+ * Combines title, content, and summary for semantic search
  */
 export function createFeedEntryEmbeddingText(entry: FeedbinEntry): string {
 	const parts: string[] = [];
 
 	// Add title if present
 	if (entry.title) {
-		parts.push(`Title: ${entry.title}`);
+		parts.push(`${entry.title}`);
 	}
 
-	// Add author if present
-	if (entry.author) {
-		parts.push(`Author: ${entry.author}`);
-	}
+	// Don't add author or URL, focus purely on content semantics
+	// if (entry.author) {
+	// 	parts.push(`Author: ${entry.author}`);
+	// }
+
+	//parts.push(`URL: ${entry.url}`);
 
 	// Add summary if present
 	if (entry.summary) {
-		parts.push(`Summary: ${entry.summary}`);
+		parts.push(`${entry.summary}`);
 	}
 
 	// Add content if present
 	if (entry.content) {
 		// Calculate remaining space after other parts
-		const currentLength = parts.join('\n').length + entry.url.length + 10; // +10 for "URL: " and newlines
+		const currentLength = parts.join('\n').length;
 		const remainingSpace = MAX_EMBEDDING_LENGTH - currentLength;
 
 		if (remainingSpace > 100) {
 			// Only add content if we have meaningful space
-			const contentToAdd = entry.content.slice(0, remainingSpace - 10); // -10 for "Content: " and potential "..."
-			parts.push(
-				`Content: ${contentToAdd}${entry.content.length > remainingSpace - 10 ? '...' : ''}`
-			);
+			const contentToAdd = entry.content.slice(0, remainingSpace);
+			parts.push(`${contentToAdd}${entry.content.length > remainingSpace ? '...' : ''}`);
 		}
 	}
-
-	// Add URL for context
-	parts.push(`URL: ${entry.url}`);
 
 	// Join with newlines for better embedding separation
 	const result = parts.join('\n');

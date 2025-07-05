@@ -64,10 +64,7 @@ async function archiveProcessedFiles(files: string[], archiveDir: string): Promi
  * @param maxRetries - Maximum number of retries (default: 3)
  * @returns The result of the operation
  */
-async function retryOnEINTR<T>(
-	operation: () => T,
-	maxRetries: number = 3
-): Promise<T> {
+async function retryOnEINTR<T>(operation: () => T, maxRetries: number = 3): Promise<T> {
 	let lastError: unknown;
 	for (let i = 0; i < maxRetries; i++) {
 		try {
@@ -76,7 +73,7 @@ async function retryOnEINTR<T>(
 			lastError = error;
 			if (error instanceof Error && 'code' in error && error.code === 'EINTR') {
 				// Wait a bit before retrying
-				await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
+				await new Promise((resolve) => setTimeout(resolve, 100 * (i + 1)));
 				continue;
 			}
 			throw error;
@@ -102,7 +99,7 @@ export async function loadBookmarksData(): Promise<{
 }> {
 	try {
 		// Read the directory entries with file types, with retry on EINTR
-		const entries = await retryOnEINTR(() => 
+		const entries = await retryOnEINTR(() =>
 			readdirSync(TWITTER_DATA_DIR, { withFileTypes: true })
 		);
 
