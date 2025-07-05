@@ -12,6 +12,7 @@ import {
 	fetchStarredEntryIds,
 	fetchSubscriptions,
 	fetchUnreadEntryIds,
+	fetchUpdatedEntryIds,
 } from './client';
 import { createCleanFeedEntryEmbeddingText } from './embedding';
 import type { FeedbinEntry, FeedbinIcon, FeedbinSubscription } from './types';
@@ -55,15 +56,30 @@ async function getRecentFeedIds(limit = 1000): Promise<Set<number>> {
 }
 
 /**
+ * Get ALL existing entry IDs from the database
+ */
+async function getAllExistingEntryIds(): Promise<Set<number>> {
+	const rows = await db.query.feedEntries.findMany({
+		columns: { id: true },
+	});
+	return new Set(rows.map((r) => r.id));
+}
+
+/**
  * Bulk update read status for multiple entries
  */
 async function bulkUpdateReadStatus(entryIds: number[], read: boolean): Promise<void> {
 	if (entryIds.length === 0) return;
 
+	const now = new Date();
+
 	const BATCH_SIZE = 1000;
 	for (let i = 0; i < entryIds.length; i += BATCH_SIZE) {
 		const batch = entryIds.slice(i, i + BATCH_SIZE);
-		await db.update(feedEntries).set({ read }).where(inArray(feedEntries.id, batch));
+		await db
+			.update(feedEntries)
+			.set({ read, recordUpdatedAt: now })
+			.where(inArray(feedEntries.id, batch));
 	}
 }
 
@@ -107,7 +123,7 @@ async function syncSingleFeed(feedId: number): Promise<void> {
 					feedUrl: feed.feed_url,
 					siteUrl: feed.site_url,
 					iconUrl,
-					contentUpdatedAt: new Date(),
+					recordUpdatedAt: new Date(),
 				},
 			});
 	} catch (error) {
@@ -166,7 +182,7 @@ async function syncFeeds(
 						feedUrl: subscription.feed_url,
 						siteUrl: subscription.site_url,
 						iconUrl,
-						contentUpdatedAt: new Date(),
+						recordUpdatedAt: new Date(),
 					},
 				});
 
@@ -186,7 +202,8 @@ async function syncFeedEntries(
 	entries: FeedbinEntry[],
 	unreadIds: Set<number>,
 	starredIds: Set<number>,
-	integrationRunId: number
+	integrationRunId: number,
+	updatedEntryIds?: Set<number>
 ): Promise<number> {
 	logger.start(`Syncing ${entries.length} entries`);
 
@@ -200,9 +217,25 @@ async function syncFeedEntries(
 			batch.map(async (entry, batchIndex) => {
 				const globalIndex = i + batchIndex + 1;
 				try {
-					// Determine read/starred status
-					const isRead = !unreadIds.has(entry.id);
-					const isStarred = starredIds.has(entry.id);
+					// For updated entries, preserve existing read/starred status
+					// For new entries, use the status from Feedbin
+					const isUpdatedEntry = updatedEntryIds?.has(entry.id) ?? false;
+					let isRead = !unreadIds.has(entry.id);
+					let isStarred = starredIds.has(entry.id);
+
+					if (isUpdatedEntry) {
+						// Fetch current status from database for updated entries
+						const existingEntry = await db.query.feedEntries.findFirst({
+							where: {
+								id: entry.id,
+							},
+							columns: { read: true, starred: true },
+						});
+						if (existingEntry) {
+							isRead = existingEntry.read;
+							isStarred = existingEntry.starred;
+						}
+					}
 
 					// Extract image URLs from content if available
 					let imageUrls: string[] | null = null;
@@ -274,6 +307,7 @@ async function syncFeedEntries(
 									read: isRead,
 									starred: isStarred,
 									publishedAt: entry.published,
+									recordUpdatedAt: new Date(),
 								},
 							});
 					} catch (error: unknown) {
@@ -316,6 +350,7 @@ async function syncFeedEntries(
 											read: isRead,
 											starred: isStarred,
 											publishedAt: entry.published,
+											recordUpdatedAt: new Date(),
 										},
 									});
 							} else {
@@ -459,6 +494,26 @@ async function getLastFeedSyncTime(): Promise<Date | null> {
 }
 
 /**
+ * Get the most recent entry sync timestamp
+ */
+async function getLastEntrySyncTime(): Promise<Date | null> {
+	const result = await db.query.integrationRuns.findFirst({
+		columns: {
+			runStartTime: true,
+		},
+		where: {
+			integrationType: 'feedbin',
+			status: 'success',
+		},
+		orderBy: {
+			runStartTime: 'desc',
+		},
+	});
+
+	return result?.runStartTime || null;
+}
+
+/**
  * Main sync function for Feedbin integration
  */
 async function syncFeedbin(integrationRunId: number): Promise<number> {
@@ -467,11 +522,11 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 		syncedFeedIds.clear();
 
 		// Get existing IDs for recent entries and feeds
-		const [existingEntryStatuses, existingFeedIds] = await Promise.all([
+		const [existingEntryStatuses, existingFeedIds, allExistingEntryIds] = await Promise.all([
 			getRecentEntryStatuses(),
 			getRecentFeedIds(),
+			getAllExistingEntryIds(),
 		]);
-		const existingEntryIds = new Set(existingEntryStatuses.keys());
 
 		// Step 1: Get last sync time and fetch new subscriptions
 		const lastSyncTime = await getLastFeedSyncTime();
@@ -488,12 +543,17 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 			await syncFeeds(newSubscriptions, icons, integrationRunId);
 		}
 
-		// Step 2: Fetch entry IDs from Feedbin
+		// Step 2: Get last entry sync time for updated entries
+		const lastEntrySyncTime = await getLastEntrySyncTime();
+		logger.info(`Last entry sync: ${lastEntrySyncTime?.toISOString() || 'never'}`);
+
+		// Step 3: Fetch entry IDs from Feedbin
 		logger.start('Fetching entry IDs');
-		const [unreadIds, starredIds, recentlyReadIds] = await Promise.all([
+		const [unreadIds, starredIds, recentlyReadIds, updatedIds] = await Promise.all([
 			fetchUnreadEntryIds(),
 			fetchStarredEntryIds(),
 			fetchRecentlyReadEntryIds(),
+			fetchUpdatedEntryIds(lastEntrySyncTime || undefined),
 		]);
 
 		const unreadSet = new Set(unreadIds);
@@ -517,15 +577,23 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 
 		logger.info(`Starred changes: ${toStar.length} newly starred, ${toUnstar.length} unstarred`);
 
+		// Combine all IDs we need to consider
 		const idsToConsider = new Set<number>([...unreadSet, ...recentlyReadIds, ...starredSet]);
-		const entriesToFetch = Array.from(idsToConsider).filter((id) => !existingEntryIds.has(id));
 
-		logger.info(`Found ${entriesToFetch.length} new entries to fetch`);
+		// Split between new entries to fetch and updated entries to re-fetch
+		const newEntriesToFetch = Array.from(idsToConsider).filter(
+			(id) => !allExistingEntryIds.has(id)
+		);
+		const updatedEntriesToFetch = updatedIds.filter((id) => allExistingEntryIds.has(id));
 
-		// Step 3: Fetch full entry data
+		logger.info(`Found ${newEntriesToFetch.length} new entries to fetch`);
+		logger.info(`Found ${updatedEntriesToFetch.length} updated entries to re-fetch`);
+
+		// Step 4: Fetch full entry data
+		const entriesToFetch = [...newEntriesToFetch, ...updatedEntriesToFetch];
 		const entries = await fetchEntriesByIds(entriesToFetch);
 
-		// Step 4: Update existing entry states
+		// Step 5: Update existing entry states
 		if (toUnstar.length > 0) {
 			logger.info(`Updating ${toUnstar.length} entries to unstarred`);
 			await bulkUpdateStarredStatus(toUnstar, false);
@@ -543,10 +611,17 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 			await bulkUpdateReadStatus(toMarkUnread, false);
 		}
 
-		// Step 5: Sync entries WITHOUT embeddings
-		const entriesCreated = await syncFeedEntries(entries, unreadSet, starredSet, integrationRunId);
+		// Step 6: Sync entries WITHOUT embeddings
+		const updatedEntrySet = new Set(updatedEntriesToFetch);
+		const entriesCreated = await syncFeedEntries(
+			entries,
+			unreadSet,
+			starredSet,
+			integrationRunId,
+			updatedEntrySet
+		);
 
-		// Step 6: Update feeds for synced entries
+		// Step 7: Update feeds for synced entries
 		const uniqueFeedIds = Array.from(new Set(entries.map((entry) => entry.feed_id)));
 		const feedsToUpdate = uniqueFeedIds.filter(
 			(feedId) => !existingFeedIds.has(feedId) && !syncedFeedIds.has(feedId)
@@ -564,6 +639,7 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 			// Process feeds in batches
 			const FEED_BATCH_SIZE = 20;
 			let feedUpdateCount = 0;
+			const now = new Date();
 
 			for (let i = 0; i < feedsToUpdate.length; i += FEED_BATCH_SIZE) {
 				const batch = feedsToUpdate.slice(i, i + FEED_BATCH_SIZE);
@@ -596,7 +672,7 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 									feedUrl: feed.feed_url,
 									siteUrl: feed.site_url,
 									iconUrl,
-									contentUpdatedAt: new Date(),
+									recordUpdatedAt: now,
 								})
 								.where(eq(feeds.id, feedId));
 
@@ -611,7 +687,7 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 			}
 		}
 
-		// Step 7: Generate embeddings for entries
+		// Step 8: Generate embeddings for entries
 		await generateFeedEntryEmbeddings();
 
 		logger.complete('Feedbin sync completed successfully');

@@ -112,6 +112,22 @@ export async function fetchRecentlyReadEntryIds(): Promise<number[]> {
 }
 
 /**
+ * Fetch updated entry IDs (entries that have been modified after initial publication)
+ * @param since Optional date to fetch only entries updated after this time
+ */
+export async function fetchUpdatedEntryIds(since?: Date): Promise<number[]> {
+	logger.start('Fetching updated entry IDs');
+	let endpoint = '/updated_entries.json';
+	if (since) {
+		endpoint += `?since=${since.toISOString()}`;
+	}
+	const { data } = await makeRequest<unknown>(endpoint);
+	const entryIds = FeedbinEntryIdsResponseSchema.parse(data);
+	logger.complete(`Fetched ${entryIds.length} updated entry IDs`);
+	return entryIds;
+}
+
+/**
  * Fetch entries by IDs with pagination support
  * @param ids Array of entry IDs to fetch (max 100 per request)
  * @param includeEnclosure Whether to include podcast/media enclosure data
