@@ -101,7 +101,7 @@ export function mergeRecords<T extends RecordSelect | RecordGet>(
 		sources: allSources.length > 0 ? allSources : null,
 		rating: Math.max(source.rating, target.rating),
 		isPrivate: source.isPrivate || target.isPrivate,
-		isCurated: source.isCurated && target.isCurated,
+		isCurated: source.isCurated || target.isCurated,
 		// Use earliest dates for creation timestamps, most recent for update timestamps
 		recordCreatedAt: getEarliestDate(source.recordCreatedAt, target.recordCreatedAt),
 		contentCreatedAt: getEarliestDate(source.contentCreatedAt, target.contentCreatedAt),
