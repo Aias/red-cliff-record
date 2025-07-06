@@ -22,7 +22,7 @@ const logger = createIntegrationLogger('feedbin', 'sync');
 /**
  * Batch size for processing embeddings
  */
-const EMBEDDING_BATCH_SIZE = 20; // Reduced to avoid rate limits
+const EMBEDDING_BATCH_SIZE = 20;
 
 /**
  * Cache of synced feed IDs to avoid repeated fetches
@@ -288,6 +288,7 @@ async function syncFeedEntries(
 								url: entry.url,
 								title: entry.title,
 								author: entry.author,
+								summary: entry.summary,
 								content: entry.content,
 								imageUrls,
 								enclosure,
@@ -301,6 +302,7 @@ async function syncFeedEntries(
 								set: {
 									title: entry.title,
 									author: entry.author,
+									summary: entry.summary,
 									content: entry.content,
 									imageUrls,
 									enclosure,
@@ -308,6 +310,7 @@ async function syncFeedEntries(
 									starred: isStarred,
 									publishedAt: entry.published,
 									recordUpdatedAt: new Date(),
+									textEmbedding: null, // Updated entries should re-generate embeddings
 								},
 							});
 					} catch (error: unknown) {
@@ -331,6 +334,7 @@ async function syncFeedEntries(
 										url: entry.url,
 										title: entry.title,
 										author: entry.author,
+										summary: entry.summary,
 										content: entry.content,
 										imageUrls,
 										enclosure,
@@ -344,6 +348,7 @@ async function syncFeedEntries(
 										set: {
 											title: entry.title,
 											author: entry.author,
+											summary: entry.summary,
 											content: entry.content,
 											imageUrls,
 											enclosure,
@@ -351,6 +356,7 @@ async function syncFeedEntries(
 											starred: isStarred,
 											publishedAt: entry.published,
 											recordUpdatedAt: new Date(),
+											textEmbedding: null,
 										},
 									});
 							} else {
@@ -404,6 +410,7 @@ async function generateFeedEntryEmbeddings(): Promise<void> {
 			id: true,
 			title: true,
 			author: true,
+			summary: true,
 			content: true,
 			url: true,
 			publishedAt: true,
@@ -433,43 +440,44 @@ async function generateFeedEntryEmbeddings(): Promise<void> {
 			`Processing batch ${Math.floor(i / EMBEDDING_BATCH_SIZE) + 1} of ${Math.ceil(entriesWithoutEmbeddings.length / EMBEDDING_BATCH_SIZE)}`
 		);
 
-		// Process entries sequentially within batch to better handle rate limits
-		for (const entry of batch) {
-			try {
-				// Create embedding text
-				const embeddingText = createCleanFeedEntryEmbeddingText({
-					title: entry.title,
-					author: entry.author,
-					content: entry.content,
-					summary: entry.content, // Use content as summary if not available
-					url: entry.url,
-					published: entry.publishedAt || new Date(),
-				} as FeedbinEntry);
+		// Process entries in parallel within the batch
+		const _results = await Promise.all(
+			batch.map(async (entry) => {
+				try {
+					// Create embedding text
+					const embeddingText = createCleanFeedEntryEmbeddingText({
+						title: entry.title,
+						author: entry.author,
+						summary: entry.summary,
+						content: entry.content,
+						url: entry.url,
+						published: entry.publishedAt || new Date(),
+					} as FeedbinEntry);
 
-				// Generate embedding with retry logic
-				const embedding = await createEmbedding(embeddingText);
+					// Generate embedding with retry logic
+					const embedding = await createEmbedding(embeddingText);
 
-				// Update entry with embedding
-				await db
-					.update(feedEntries)
-					.set({ textEmbedding: embedding })
-					.where(eq(feedEntries.id, entry.id));
+					// Update entry with embedding
+					await db
+						.update(feedEntries)
+						.set({ textEmbedding: embedding })
+						.where(eq(feedEntries.id, entry.id));
 
-				embeddingCount++;
+					embeddingCount++;
+					return { success: true };
+				} catch (error) {
+					errorCount++;
+					logger.warn(`Failed to generate embedding for entry ${entry.id}`, error);
 
-				// Add a small delay between individual embeddings to avoid hitting rate limits
-				await new Promise((resolve) => setTimeout(resolve, 100));
-			} catch (error) {
-				errorCount++;
-				logger.warn(`Failed to generate embedding for entry ${entry.id}`, error);
-
-				// If we hit a rate limit despite retries, wait longer before continuing
-				if (error instanceof Error && error.message.includes('rate limit')) {
-					logger.info('Hit rate limit despite retries, waiting 30 seconds before continuing...');
-					await new Promise((resolve) => setTimeout(resolve, 30000));
+					// If we hit a rate limit despite retries, wait longer before continuing
+					if (error instanceof Error && error.message.includes('rate limit')) {
+						logger.info('Hit rate limit despite retries, waiting 10 seconds before continuing...');
+						await new Promise((resolve) => setTimeout(resolve, 10000));
+					}
+					return { success: false };
 				}
-			}
-		}
+			})
+		);
 
 		// Add a delay between batches
 		if (i + EMBEDDING_BATCH_SIZE < entriesWithoutEmbeddings.length) {

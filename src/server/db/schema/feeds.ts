@@ -56,6 +56,7 @@ export const feedEntries = pgTable(
 		url: text('url').notNull(),
 		title: text('title'),
 		author: text('author'),
+		summary: text('summary'),
 		content: text('content'),
 		imageUrls: text('image_urls').array(),
 		enclosure: jsonb('enclosure').$type<FeedEnclosure>(),
