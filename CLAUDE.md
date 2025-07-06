@@ -257,3 +257,34 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
    - For integrations with multiple data sources, use orchestration pattern
    - Call `runIntegration` once at the top level for the entire sync
    - Example: Browser history sync-all runs both Arc and Dia under one integration run, Github sync handles sync for both starred repositories and commit history
+
+## Database Management and Migration Guidelines
+
+**Backup and Restore:**
+
+1. **Database URLs:**
+   - `DATABASE_URL_LOCAL` - Local PostgreSQL instance
+   - `DATABASE_URL_REMOTE` - Production Neon database
+   - `DATABASE_URL` - Active database connection (usually points to local or remote)
+
+2. **Schema Divergence:**
+   - Local and remote databases may have different schemas due to pending migrations
+   - Use clean restore (`-c` flag) when schema conflicts occur during restore
+   - Clean restore drops the entire database and recreates it with proper extensions
+
+3. **Required PostgreSQL Extensions:**
+   - `pg_trgm` - For text similarity search using trigrams
+   - `vector` - For vector similarity search and embeddings
+   - Both installed in `extensions` schema
+   - Database search_path must include `extensions` for vector operators to work
+
+4. **Common Issues and Solutions:**
+   - **Foreign key violations during restore**: Use clean restore to drop and recreate database
+   - **Vector operator not found errors**: Run `ALTER DATABASE dbname SET search_path TO public, extensions;`
+   - **Migration history too complex**: Use backup/restore instead of running all migrations
+
+5. **Best Practices:**
+   - Always backup before major database operations
+   - Check schema compatibility before restoring between environments
+   - Use `db-manager.sh` script for consistent backup/restore operations
+   - Never run destructive database operations without user permission
