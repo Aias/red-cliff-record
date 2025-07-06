@@ -88,7 +88,7 @@
 		"lint": "prettier --write . && eslint . --fix && tsc --noEmit",
 		"tsc": "tsc --noEmit",
 		"tsc:watch": "tsc --noEmit --watch",
-		"dev": "vite dev",
+		"dev": "bunx --bun vite",
 		"build": "vite build",
 		"start": "node --env-file=.env .output/server/index.mjs",
 		"db:migrate": "pnpm drizzle-kit migrate",

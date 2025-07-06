@@ -21,12 +21,21 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 - `pnpm db:migrate` - Run database migrations
 - `pnpm db:studio` - Open Drizzle Studio for database inspection
+- `pnpm db:backup-local` - Backup local database
+- `pnpm db:backup-remote` - Backup remote database  
+- `pnpm db:restore-local` - Restore to local database
+- `pnpm db:restore-remote` - Restore to remote database
+- `./src/server/db/db-manager.sh -c restore local` - Clean restore (drop & recreate database with extensions)
 
 **Data Sync:**
 
 - `pnpm sync:daily` - Run all integrations
 - Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, `pnpm sync:raindrop`, `pnpm sync:readwise`, `pnpm sync:feedbin`, `pnpm sync:browsing`
 - **IMPORTANT**: Never run any sync scripts without checking with the user first
+
+**Data Operations:**
+
+- **IMPORTANT**: Never run any operations that modify data or could have destructive effects (including creating new data, schemas, or running database migrations) without first prompting the user for permission
 
 ## Architecture
 
@@ -71,6 +80,8 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Integration-specific tables for external data sources
 - Vector embeddings for semantic search
 - PostgreSQL with Drizzle ORM
+- Extensions: `pg_trgm` and `vector` (installed in `extensions` schema)
+- Search path must include `extensions` schema for vector operations
 
 ## Component Development Rules
 

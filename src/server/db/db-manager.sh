@@ -6,19 +6,20 @@ set -e
 # Default values
 DATABASE_NAME="redcliffrecord"
 BACKUP_DIR="$HOME/Documents/Red Cliff Record/Backups"
+CLEAN_RESTORE=false
 
-# Parse connection details from DATABASE_URL_REMOTE
+# Parse connection details from .env
 if [ -f .env ]; then
     source .env
-    SUPABASE_URL="${DATABASE_URL_REMOTE}"
+    # Ensure required environment variables exist
+    if [ -z "$DATABASE_URL_LOCAL" ] || [ -z "$DATABASE_URL_REMOTE" ]; then
+        echo "Error: DATABASE_URL_LOCAL or DATABASE_URL_REMOTE not found in .env"
+        exit 1
+    fi
 else
     echo "Error: .env file not found"
     exit 1
 fi
-
-SUPABASE_HOST="aws-0-us-west-1.pooler.supabase.com"
-SUPABASE_PORT="6543"
-SUPABASE_USER="postgres.febiwifjeueentvcovkr"
 
 # Function to print usage
 print_usage() {
@@ -31,6 +32,7 @@ print_usage() {
     echo "Options:"
     echo "  -d, --database NAME    Database name (default: redcliffrecord)"
     echo "  -b, --backup-dir DIR   Backup directory (default: ~/Documents/Red Cliff Record/Backups)"
+    echo "  -c, --clean           Clean restore (drop & recreate database, local only)"
     echo "  -h, --help            Show this help message"
     echo
     echo "Examples:"
@@ -39,6 +41,7 @@ print_usage() {
     echo "  $0 restore local          # Restore to local database"
     echo "  $0 restore remote         # Restore to remote database"
     echo "  $0 -d mydb backup local   # Backup local database with custom name"
+    echo "  $0 -c restore local       # Clean restore to local (drop & recreate)"
 }
 
 # Parse options
@@ -46,6 +49,7 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         -d|--database) DATABASE_NAME="$2"; shift ;;
         -b|--backup-dir) BACKUP_DIR="$2"; shift ;;
+        -c|--clean) CLEAN_RESTORE=true ;;
         -h|--help) print_usage; exit 0 ;;
         *) break ;;
     esac
@@ -73,7 +77,7 @@ do_backup() {
     echo "Creating backup from $source database..."
     
     if [ "$source" = "local" ]; then
-        pg_dump -U postgres \
+        pg_dump "$DATABASE_URL_LOCAL" \
             --format=custom \
             --verbose \
             --no-owner \
@@ -81,9 +85,9 @@ do_backup() {
             --no-comments \
             --schema 'public' \
             --schema 'drizzle' \
-            "$DATABASE_NAME" > "$backup_file"
+            > "$backup_file"
     else
-        pg_dump "$SUPABASE_URL" \
+        pg_dump "$DATABASE_URL_REMOTE" \
             --format=custom \
             --verbose \
             --no-owner \
@@ -95,6 +99,41 @@ do_backup() {
     fi
 
     echo "Backup created at: $backup_file"
+}
+
+# Function to perform clean database setup for local restore
+do_clean_setup() {
+    echo "Performing clean database setup..."
+    
+    # Parse postgres URL to get connection details
+    local postgres_url=$(echo "$DATABASE_URL_LOCAL" | sed 's/\/redcliffrecord/\/postgres/')
+    
+    # Terminate all connections to the database
+    psql "$postgres_url" -c "
+        SELECT pg_terminate_backend(pg_stat_activity.pid)
+        FROM pg_stat_activity
+        WHERE pg_stat_activity.datname = '$DATABASE_NAME'
+        AND pid <> pg_backend_pid();"
+    
+    # Drop the database
+    echo "Dropping database $DATABASE_NAME..."
+    psql "$postgres_url" -c "DROP DATABASE IF EXISTS $DATABASE_NAME;"
+    
+    # Recreate the database
+    echo "Creating database $DATABASE_NAME..."
+    psql "$postgres_url" -c "CREATE DATABASE $DATABASE_NAME;"
+    
+    # Create extensions
+    echo "Creating required extensions..."
+    psql "$DATABASE_URL_LOCAL" -c "CREATE SCHEMA IF NOT EXISTS extensions;"
+    psql "$DATABASE_URL_LOCAL" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;"
+    psql "$DATABASE_URL_LOCAL" -c "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;"
+    
+    # Set up search path to include extensions schema for vector operations
+    echo "Setting up search path for vector operations..."
+    psql "$DATABASE_URL_LOCAL" -c "ALTER DATABASE $DATABASE_NAME SET search_path TO public, extensions;"
+    
+    echo "Clean setup completed"
 }
 
 # Function to perform restore
@@ -112,26 +151,33 @@ do_restore() {
     echo "Using backup file: $dump_file"
 
     if [ "$target" = "local" ]; then
-        echo "Restoring data to local database..."
-        # Terminate existing connections except our own
-        psql -U postgres -d "$DATABASE_NAME" -c "
-            SELECT pg_terminate_backend(pg_stat_activity.pid)
-            FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
-            AND pid <> pg_backend_pid();"
+        # Check if clean restore was requested
+        if [ "$CLEAN_RESTORE" = true ]; then
+            echo "Clean restore requested for local database"
+            do_clean_setup
+        else
+            echo "Restoring data to local database..."
+            # Terminate existing connections except our own
+            psql "$DATABASE_URL_LOCAL" -c "
+                SELECT pg_terminate_backend(pg_stat_activity.pid)
+                FROM pg_stat_activity
+                WHERE pg_stat_activity.datname = '$DATABASE_NAME'
+                AND pid <> pg_backend_pid();"
+        fi
 
-        pg_restore -U postgres -d "$DATABASE_NAME" \
+        pg_restore --dbname="$DATABASE_URL_LOCAL" \
             --clean \
             --if-exists \
             --no-owner \
             --no-privileges \
             -v "$dump_file"
     else
+        if [ "$CLEAN_RESTORE" = true ]; then
+            echo "Warning: Clean restore is only supported for local databases"
+            echo "Proceeding with standard restore to remote database..."
+        fi
         echo "Restoring data to remote database..."
-        pg_restore -h $SUPABASE_HOST \
-            -p $SUPABASE_PORT \
-            -U $SUPABASE_USER \
-            -d postgres \
+        pg_restore "$DATABASE_URL_REMOTE" \
             --clean \
             --if-exists \
             --no-owner \

@@ -1,10 +1,8 @@
-import { Pool } from '@neondatabase/serverless';
 import 'dotenv/config';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { drizzle } from 'drizzle-orm/bun-sql';
 import { relations } from '@/server/db/relations';
 import * as schema from '@/server/db/schema';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
-export const db = drizzle(pool, { schema, relations });
+export const db = drizzle(process.env.DATABASE_URL!, { schema, relations });
 
 export type Db = typeof db;
