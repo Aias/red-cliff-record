@@ -22,7 +22,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - `pnpm db:migrate` - Run database migrations
 - `pnpm db:studio` - Open Drizzle Studio for database inspection
 - `pnpm db:backup-local` - Backup local database
-- `pnpm db:backup-remote` - Backup remote database  
+- `pnpm db:backup-remote` - Backup remote database
 - `pnpm db:restore-local` - Restore to local database
 - `pnpm db:restore-remote` - Restore to remote database
 - `./src/server/db/db-manager.sh -c restore local` - Clean restore (drop & recreate database with extensions)
