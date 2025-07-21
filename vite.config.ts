@@ -21,7 +21,7 @@ export default defineConfig({
 		},
 		tailwindcss(),
 		tanstackStart({
-			target: 'cloudflare-pages',
+			target: 'bun',
 			tsr: {
 				srcDirectory: './src/app',
 			},
