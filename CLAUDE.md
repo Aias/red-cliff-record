@@ -222,9 +222,10 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 1. **File Structure** - Each integration should have:
    - `types.ts` - Zod schemas (v4) for API responses and TypeScript types
    - `client.ts` - API client with authenticated requests
-   - `sync.ts` - Main sync logic using `runIntegration` wrapper
+   - `sync.ts` - Main sync logic using `runIntegration` wrapper (pure function, no CLI code)
    - `embedding.ts` - (if needed) Text generation for embeddings
    - `map.ts` - (if needed) Mapping logic from integration data to records
+   - CLI entry point in `src/server/cli/sync-[integration].ts` for command-line execution
 
 2. **Authentication:**
    - Use environment variables for credentials (e.g., `FEEDBIN_USERNAME`, `FEEDBIN_PASSWORD`)
@@ -257,6 +258,39 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
    - For integrations with multiple data sources, use orchestration pattern
    - Call `runIntegration` once at the top level for the entire sync
    - Example: Browser history sync-all runs both Arc and Dia under one integration run, Github sync handles sync for both starred repositories and commit history
+
+8. **CLI Entry Points Pattern:**
+   - Integration sync functions should be pure - no CLI-specific code, no runtime detection
+   - Create separate CLI entry points in `src/server/cli/` directory
+   - CLI files handle process.exit(), console formatting, and other terminal concerns
+   - Example structure:
+
+     ```typescript
+     // src/server/integrations/[name]/sync.ts
+     export async function syncData() {
+       // Pure sync logic using runIntegration
+     }
+
+     // src/server/cli/sync-[name].ts
+     #!/usr/bin/env bun
+     import { syncData } from '../integrations/[name]/sync';
+     const logger = createIntegrationLogger('[name]', 'cli');
+
+     async function main() {
+       try {
+         logger.start('=== STARTING SYNC ===');
+         await syncData();
+         logger.complete('=== SYNC COMPLETED ===');
+         process.exit(0);
+       } catch (error) {
+         logger.error('Sync failed', error);
+         process.exit(1);
+       }
+     }
+     main();
+     ```
+
+   - Update package.json to point to CLI entry: `"sync:[name]": "bun src/server/cli/sync-[name].ts"`
 
 ## Database Management and Migration Guidelines
 

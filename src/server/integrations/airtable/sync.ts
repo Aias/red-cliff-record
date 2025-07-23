@@ -19,6 +19,7 @@ import {
 	type AirtableSpaceInsert,
 } from '@/server/db/schema/airtable';
 import { uploadMediaToR2 } from '@/server/lib/media';
+import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import { airtableBase, storeMedia } from './helpers';
 import {
@@ -30,6 +31,8 @@ import {
 	createRecordsFromAirtableSpaces,
 } from './map';
 import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
+
+const logger = createIntegrationLogger('airtable', 'sync');
 
 /**
  * Synchronizes Airtable creators with the database
@@ -44,7 +47,7 @@ import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } fro
  */
 async function syncCreators(integrationRunId: number): Promise<void> {
 	try {
-		console.log('Syncing creators...');
+		logger.start('Syncing creators');
 
 		// Step 1: Determine last sync point
 		const lastUpdatedCreator = await db.query.airtableCreators.findFirst({
@@ -58,10 +61,10 @@ async function syncCreators(integrationRunId: number): Promise<void> {
 			},
 		});
 		const lastUpdatedTime = lastUpdatedCreator?.contentUpdatedAt;
-		console.log(`Last updated creator: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
+		logger.info(`Last updated creator: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
 
 		// Step 2: Fetch new or updated creators
-		console.log(
+		logger.info(
 			`Filter formula: ${lastUpdatedTime ? `lastUpdated > ${lastUpdatedTime.toISOString()}` : 'none'}`
 		);
 
@@ -74,7 +77,7 @@ async function syncCreators(integrationRunId: number): Promise<void> {
 			.all();
 
 		if (updatedRecords.length === 0) {
-			console.log('No new creators to sync');
+			logger.info('No new creators to sync');
 			return;
 		}
 
@@ -96,12 +99,12 @@ async function syncCreators(integrationRunId: number): Promise<void> {
 			};
 		});
 
-		console.log(`Syncing ${creatorsToSync.length} creators`);
+		logger.info(`Syncing ${creatorsToSync.length} creators`);
 
 		// Use a transaction to ensure all creators are synced atomically
 		await db.transaction(async (tx) => {
 			for (const creator of creatorsToSync) {
-				console.log(`Syncing creator ${creator.name}`);
+				logger.info(`Syncing creator ${creator.name}`);
 				await tx
 					.insert(airtableCreators)
 					.values(creator)
@@ -114,9 +117,9 @@ async function syncCreators(integrationRunId: number): Promise<void> {
 			}
 		});
 
-		console.log(`Successfully synced ${creatorsToSync.length} creators`);
+		logger.complete(`Synced creators`, creatorsToSync.length);
 	} catch (error) {
-		console.error('Error syncing creators:', error);
+		logger.error('Error syncing creators', error);
 		throw new Error(
 			`Failed to sync creators: ${error instanceof Error ? error.message : String(error)}`
 		);
@@ -136,7 +139,7 @@ async function syncCreators(integrationRunId: number): Promise<void> {
  */
 async function syncSpaces(integrationRunId: number): Promise<void> {
 	try {
-		console.log('Syncing spaces...');
+		logger.start('Syncing spaces');
 
 		// Step 1: Determine last sync point
 		const lastUpdatedSpace = await db.query.airtableSpaces.findFirst({
@@ -150,7 +153,7 @@ async function syncSpaces(integrationRunId: number): Promise<void> {
 			},
 		});
 		const lastUpdatedTime = lastUpdatedSpace?.contentUpdatedAt;
-		console.log(`Last updated space: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
+		logger.info(`Last updated space: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
 
 		// Step 2: Fetch new or updated spaces
 		const updatedRecords = await airtableBase('Spaces')
@@ -162,7 +165,7 @@ async function syncSpaces(integrationRunId: number): Promise<void> {
 			.all();
 
 		if (updatedRecords.length === 0) {
-			console.log('No new spaces to sync');
+			logger.info('No new spaces to sync');
 			return;
 		}
 
@@ -181,12 +184,12 @@ async function syncSpaces(integrationRunId: number): Promise<void> {
 			};
 		});
 
-		console.log(`Syncing ${spacesToSync.length} spaces`);
+		logger.info(`Syncing ${spacesToSync.length} spaces`);
 
 		// Use a transaction to ensure all spaces are synced atomically
 		await db.transaction(async (tx) => {
 			for (const space of spacesToSync) {
-				console.log(`Syncing space ${space.name}`);
+				logger.info(`Syncing space ${space.name}`);
 				await tx
 					.insert(airtableSpaces)
 					.values(space)
@@ -199,9 +202,9 @@ async function syncSpaces(integrationRunId: number): Promise<void> {
 			}
 		});
 
-		console.log(`Successfully synced ${spacesToSync.length} spaces`);
+		logger.complete(`Synced spaces`, spacesToSync.length);
 	} catch (error) {
-		console.error('Error syncing spaces:', error);
+		logger.error('Error syncing spaces', error);
 		throw new Error(
 			`Failed to sync spaces: ${error instanceof Error ? error.message : String(error)}`
 		);
@@ -226,7 +229,7 @@ async function syncExtracts(integrationRunId: number): Promise<{
 	updatedExtractIds: string[];
 }> {
 	try {
-		console.log('Syncing extracts...');
+		logger.start('Syncing extracts');
 
 		// Step 1: Determine last sync point
 		const lastUpdatedExtract = await db.query.airtableExtracts.findFirst({
@@ -240,7 +243,7 @@ async function syncExtracts(integrationRunId: number): Promise<{
 			},
 		});
 		const lastUpdatedTime = lastUpdatedExtract?.contentUpdatedAt;
-		console.log(`Last updated extract: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
+		logger.info(`Last updated extract: ${lastUpdatedTime?.toLocaleString() ?? 'none'}`);
 
 		// Step 2: Fetch new or updated extracts
 		const updatedRecords = await airtableBase('Extracts')
@@ -252,7 +255,7 @@ async function syncExtracts(integrationRunId: number): Promise<{
 			.all();
 
 		if (updatedRecords.length === 0) {
-			console.log('No new extracts to sync');
+			logger.info('No new extracts to sync');
 			return { updatedExtractIds: [] };
 		}
 
@@ -262,7 +265,7 @@ async function syncExtracts(integrationRunId: number): Promise<{
 			fields: ExtractFieldSetSchema.parse(record.fields),
 		}));
 
-		console.log(`Syncing ${parsedRecords.length} extracts`);
+		logger.info(`Syncing ${parsedRecords.length} extracts`);
 
 		// Step 4: First pass - Upsert extracts and their relationships
 		await db.transaction(async (tx) => {
@@ -287,7 +290,7 @@ async function syncExtracts(integrationRunId: number): Promise<{
 					integrationRunId,
 				};
 
-				console.log(`Syncing extract ${newExtract.title}`);
+				logger.info(`Syncing extract ${newExtract.title}`);
 
 				// Insert or update the extract
 				await tx
@@ -303,11 +306,11 @@ async function syncExtracts(integrationRunId: number): Promise<{
 				// Process attachments
 				if (fields.images) {
 					for (const image of fields.images) {
-						console.log(`Uploading media ${image.filename} for extract ${record.id}`);
+						logger.info(`Uploading media ${image.filename} for extract ${record.id}`);
 
 						// Upload the image to R2 storage
 						const permanentUrl = await uploadMediaToR2(image.url);
-						console.log(`Uploaded to ${permanentUrl}, inserting attachment...`);
+						logger.info(`Uploaded to ${permanentUrl}, inserting attachment...`);
 
 						// Create the attachment record
 						const attachment: AirtableAttachmentInsert = {
@@ -363,7 +366,7 @@ async function syncExtracts(integrationRunId: number): Promise<{
 
 		return { updatedExtractIds: parsedRecords.map((record) => record.id) };
 	} catch (error) {
-		console.error('Error syncing extracts:', error);
+		logger.error('Error syncing extracts', error);
 		throw new Error(
 			`Failed to sync extracts: ${error instanceof Error ? error.message : String(error)}`
 		);
@@ -414,7 +417,7 @@ async function updateExtractRelationships(
  */
 async function syncFormats(integrationRunId: number): Promise<void> {
 	try {
-		console.log('Syncing formats...');
+		logger.start('Syncing formats');
 
 		// Find extracts without a linked format
 		const unlinkedExtracts = await db.query.airtableExtracts.findMany({
@@ -432,18 +435,18 @@ async function syncFormats(integrationRunId: number): Promise<void> {
 		});
 
 		if (unlinkedExtracts.length === 0) {
-			console.log('No new formats to sync');
+			logger.info('No new formats to sync');
 			return;
 		}
 
-		console.log(`Syncing ${unlinkedExtracts.length} formats`);
+		logger.info(`Syncing ${unlinkedExtracts.length} formats`);
 
 		// Process each unlinked extract
 		await db.transaction(async (tx) => {
 			for (const extract of unlinkedExtracts) {
 				// Skip if no format string
 				if (!extract.formatString) {
-					console.log(`Extract ${extract.id} has no format string, skipping`);
+					logger.info(`Extract ${extract.id} has no format string, skipping`);
 					continue;
 				}
 
@@ -462,7 +465,7 @@ async function syncFormats(integrationRunId: number): Promise<void> {
 						.where(eq(airtableExtracts.id, extract.id));
 				} else {
 					// Create a new format
-					console.log(`Format ${extract.formatString} not found, creating new format...`);
+					logger.info(`Format ${extract.formatString} not found, creating new format...`);
 					const formatPayload: AirtableFormatInsert = {
 						name: extract.formatString,
 						integrationRunId,
@@ -481,7 +484,7 @@ async function syncFormats(integrationRunId: number): Promise<void> {
 						.returning();
 
 					if (!newFormat) {
-						console.error(`Failed to create new format ${extract.formatString}`);
+						logger.error(`Failed to create new format ${extract.formatString}`);
 						continue;
 					}
 
@@ -494,9 +497,9 @@ async function syncFormats(integrationRunId: number): Promise<void> {
 			}
 		});
 
-		console.log(`Successfully linked ${unlinkedExtracts.length} extracts to formats`);
+		logger.complete(`Linked extracts to formats`, unlinkedExtracts.length);
 	} catch (error) {
-		console.error('Error syncing formats:', error);
+		logger.error('Error syncing formats', error);
 		throw new Error(
 			`Failed to sync formats: ${error instanceof Error ? error.message : String(error)}`
 		);
@@ -519,7 +522,7 @@ async function syncFormats(integrationRunId: number): Promise<void> {
  */
 async function syncAirtableData(integrationRunId: number): Promise<number> {
 	try {
-		console.log('Starting Airtable data synchronization');
+		logger.start('Starting Airtable data synchronization');
 
 		// Step 1: Sync creators
 		await syncCreators(integrationRunId);
@@ -541,7 +544,7 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 
 		// Step 5: Store media and create records
 		const updatedMediaCount = await storeMedia();
-		console.log(`Updated ${updatedMediaCount} media records`);
+		logger.info(`Updated ${updatedMediaCount} media records`);
 
 		await createRecordsFromAirtableFormats();
 		await createRecordsFromAirtableCreators();
@@ -550,10 +553,10 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 		await createRecordsFromAirtableExtracts();
 		await createConnectionsBetweenRecords(updatedExtractIds);
 
-		console.log('Airtable data synchronization completed successfully');
+		logger.complete('Airtable data synchronization completed', count);
 		return count;
 	} catch (error) {
-		console.error('Error syncing Airtable data:', error);
+		logger.error('Error syncing Airtable data', error);
 		throw new Error(
 			`Failed to sync Airtable data: ${error instanceof Error ? error.message : String(error)}`
 		);
@@ -561,26 +564,10 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 }
 
 /**
- * Main execution function when run as a standalone script
+ * Wrapper function that uses runIntegration
  */
-const main = async (): Promise<void> => {
-	try {
-		console.log('\n=== STARTING AIRTABLE SYNC ===\n');
-		await runIntegration('airtable', syncAirtableData);
-		console.log('\n=== AIRTABLE SYNC COMPLETED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
-		process.exit(0);
-	} catch (error) {
-		console.error('Error in Airtable sync main function:', error);
-		console.log('\n=== AIRTABLE SYNC FAILED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
-		process.exit(1);
-	}
-};
-
-// Execute main function if this file is run directly
-if (import.meta.url === import.meta.resolve('./sync.ts')) {
-	main();
+async function syncAirtableDataWithIntegration(): Promise<void> {
+	await runIntegration('airtable', syncAirtableData);
 }
 
-export { syncAirtableData };
+export { syncAirtableDataWithIntegration as syncAirtableData };

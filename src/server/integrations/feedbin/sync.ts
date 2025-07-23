@@ -714,25 +714,18 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 	}
 }
 
-// Main function for direct execution
-const main = async () => {
+/**
+ * Orchestrates the Feedbin data synchronization process
+ */
+async function syncFeedbinData(): Promise<void> {
 	try {
-		logger.start('=== STARTING FEEDBIN SYNC ===');
+		logger.start('Starting Feedbin data synchronization');
 		await runIntegration('feedbin', syncFeedbin);
-		logger.complete('=== FEEDBIN SYNC COMPLETED ===');
-		logger.info('-'.repeat(50));
-		process.exit(0);
+		logger.complete('Feedbin data synchronization completed successfully');
 	} catch (error) {
-		logger.error('Error in Feedbin sync main function', error);
-		logger.error('=== FEEDBIN SYNC FAILED ===');
-		logger.info('-'.repeat(50));
-		process.exit(1);
+		logger.error('Error syncing Feedbin data', error);
+		throw error;
 	}
-};
-
-// Execute main function if this file is run directly
-if (import.meta.url === import.meta.resolve('./sync.ts')) {
-	main();
 }
 
-export { syncFeedbin };
+export { syncFeedbinData as syncFeedbin };

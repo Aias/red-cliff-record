@@ -11,6 +11,7 @@ import {
 	type TwitterTweetInsert,
 	type TwitterUserInsert,
 } from '@/server/db/schema/twitter';
+import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import { processMedia, processTweet, processUser } from './helpers';
 import {
@@ -20,6 +21,8 @@ import {
 } from './map';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
 import { TwitterBookmarksArraySchema } from './types';
+
+const logger = createIntegrationLogger('twitter', 'sync');
 
 /**
  * Configuration constants
@@ -43,17 +46,17 @@ async function archiveProcessedFiles(files: string[], archiveDir: string): Promi
 			files.map(async (filePath) => {
 				const fileName = filePath.split('/').pop();
 				if (!fileName) {
-					console.error('Invalid file path:', filePath);
+					logger.error('Invalid file path', filePath);
 					return;
 				}
 
 				const archivePath = resolve(archiveDir, fileName);
 				await rename(filePath, archivePath);
-				console.log(`Archived file: ${fileName}`);
+				logger.info(`Archived file: ${fileName}`);
 			})
 		);
 	} catch (error) {
-		console.error('Error archiving files:', error);
+		logger.error('Error archiving files', error);
 		throw error;
 	}
 }
@@ -115,7 +118,7 @@ export async function loadBookmarksData(): Promise<{
 			.sort(); // Ascending order since the filenames are in ISO format
 
 		if (bookmarkFiles.length === 0) {
-			console.log('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');
+			logger.info('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');
 			return { data: [], processedFiles: [] };
 		}
 
@@ -125,7 +128,7 @@ export async function loadBookmarksData(): Promise<{
 
 		for (const fileName of bookmarkFiles) {
 			const filePath = resolve(TWITTER_DATA_DIR, fileName);
-			console.log(`Processing Twitter bookmarks file: ${filePath}`);
+			logger.info(`Processing Twitter bookmarks file: ${filePath}`);
 
 			const fileContent = await retryOnEINTR(() => readFileSync(filePath, 'utf-8'));
 			const rawData = JSON.parse(fileContent);
@@ -133,7 +136,7 @@ export async function loadBookmarksData(): Promise<{
 			// Validate the data using Zod schema
 			const validationResult = TwitterBookmarksArraySchema.safeParse(rawData);
 			if (!validationResult.success) {
-				console.error(`Validation failed for file ${fileName}:`, validationResult.error.issues);
+				logger.error(`Validation failed for file ${fileName}`, validationResult.error.issues);
 				throw new Error(`Invalid Twitter bookmarks data format in ${fileName}`);
 			}
 
@@ -145,12 +148,12 @@ export async function loadBookmarksData(): Promise<{
 	} catch (error) {
 		// Handle directory not found error
 		if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-			console.log(`Twitter data directory not found at: ${TWITTER_DATA_DIR}`);
+			logger.info(`Twitter data directory not found at: ${TWITTER_DATA_DIR}`);
 			return { data: [], processedFiles: [] };
 		}
 
 		// Rethrow other errors (e.g., JSON parsing issues)
-		console.error('Error loading Twitter bookmarks data:', error);
+		logger.error('Error loading Twitter bookmarks data', error);
 		throw error;
 	}
 }
@@ -174,13 +177,13 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 		// Step 1: Load bookmarks data
 		const { data: bookmarkResponses, processedFiles } = await loadBookmarksData();
 		if (bookmarkResponses.length === 0) {
-			console.log('No Twitter bookmarks data found');
+			logger.info('No Twitter bookmarks data found');
 			return 0;
 		}
 
 		// Step 2: Extract tweets from bookmarks
 		const tweets = extractTweetsFromBookmarks(bookmarkResponses);
-		console.log(`Extracted ${tweets.length} tweets from bookmarks`);
+		logger.info(`Extracted ${tweets.length} tweets from bookmarks`);
 
 		// Step 3: Process tweets, users, and media
 		const { processedTweets, processedQuoteTweets, processedUsers, processedMedia } =
@@ -203,7 +206,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 
 		return updatedCount;
 	} catch (error) {
-		console.error('Error syncing Twitter bookmarks:', error);
+		logger.error('Error syncing Twitter bookmarks', error);
 		throw new Error(
 			`Failed to sync Twitter bookmarks: ${error instanceof Error ? error.message : String(error)}`
 		);
@@ -325,7 +328,7 @@ async function storeTweetData(
 	return db.transaction(
 		async (tx) => {
 			// 1. Insert Users
-			console.log(`Inserting ${processedUsers.length} users...`);
+			logger.info(`Inserting ${processedUsers.length} users...`);
 			for (const user of processedUsers) {
 				await tx
 					.insert(usersTable)
@@ -340,7 +343,7 @@ async function storeTweetData(
 			}
 
 			// 2. Insert Regular Tweets
-			console.log(`Inserting ${processedTweets.length} regular tweets...`);
+			logger.info(`Inserting ${processedTweets.length} regular tweets...`);
 			for (const tweet of processedTweets) {
 				await tx
 					.insert(tweetsTable)
@@ -352,7 +355,7 @@ async function storeTweetData(
 			}
 
 			// 3. Insert Quoted Tweets
-			console.log(`Inserting ${processedQuoteTweets.length} tweets with quotes...`);
+			logger.info(`Inserting ${processedQuoteTweets.length} tweets with quotes...`);
 			for (const tweet of processedQuoteTweets) {
 				await tx
 					.insert(tweetsTable)
@@ -364,13 +367,13 @@ async function storeTweetData(
 			}
 
 			// 4. Insert Media
-			console.log(`Inserting ${processedMedia.length} media items...`);
+			logger.info(`Inserting ${processedMedia.length} media items...`);
 			for (const mediaItem of processedMedia) {
 				await tx.insert(mediaTable).values(mediaItem).onConflictDoNothing();
 			}
 
 			const totalTweets = processedTweets.length + processedQuoteTweets.length;
-			console.log(`Successfully processed ${totalTweets} tweets`);
+			logger.complete(`Processed tweets`, totalTweets);
 			return totalTweets;
 		},
 		{
@@ -393,36 +396,13 @@ async function createRelatedRecords(): Promise<void> {
  */
 async function syncTwitterData(): Promise<void> {
 	try {
-		console.log('Starting Twitter data synchronization');
+		logger.start('Starting Twitter data synchronization');
 		await runIntegration('twitter', syncTwitterBookmarks);
-		console.log('Twitter data synchronization completed successfully');
+		logger.complete('Twitter data synchronization completed');
 	} catch (error) {
-		console.error('Error syncing Twitter data:', error);
+		logger.error('Error syncing Twitter data', error);
 		throw error;
 	}
-}
-
-/**
- * Main execution function when run as a standalone script
- */
-const main = async (): Promise<void> => {
-	try {
-		console.log('\n=== STARTING TWITTER SYNC ===\n');
-		await syncTwitterData();
-		console.log('\n=== TWITTER SYNC COMPLETED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
-		process.exit(0);
-	} catch (error) {
-		console.error('Error in Twitter sync main function:', error);
-		console.log('\n=== TWITTER SYNC FAILED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
-		process.exit(1);
-	}
-};
-
-// Execute main function if this file is run directly
-if (import.meta.url === import.meta.resolve('./sync.ts')) {
-	main();
 }
 
 export { syncTwitterData };

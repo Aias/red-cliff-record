@@ -80,6 +80,14 @@ export default tseslint.config(
 		},
 	},
 	{
-		ignores: ['**/build/**', '**/dist/**', '.output/**', '.vinxi/**'],
+		ignores: [
+			'**/build/**',
+			'**/dist/**',
+			'.output/**',
+			'.vinxi/**',
+			'.nitro/**',
+			'.tanstack/**',
+			'.temp/**',
+		],
 	}
 );

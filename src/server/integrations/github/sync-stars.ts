@@ -3,8 +3,11 @@ import { Octokit } from '@octokit/rest';
 import { db } from '@/server/db/connections';
 import { githubRepositories, type GithubRepositoryInsert } from '@/server/db/schema/github';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
+import { createIntegrationLogger } from '../common/logging';
 import { ensureGithubUserExists } from './sync-users';
 import { GithubStarredReposResponseSchema } from './types';
+
+const logger = createIntegrationLogger('github', 'sync-stars');
 
 /**
  * Configuration constants
@@ -58,14 +61,14 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 		auth: process.env.GITHUB_TOKEN,
 	});
 
-	console.log('Fetching GitHub starred repos...');
+	logger.start('Fetching GitHub starred repos');
 
 	// Get the most recent star date to use as a cutoff
 	const mostRecentStarredAt = await getMostRecentStarredAt();
 	if (mostRecentStarredAt) {
-		console.log(`Most recent star in database: ${mostRecentStarredAt.toLocaleString()}`);
+		logger.info(`Most recent star in database: ${mostRecentStarredAt.toLocaleString()}`);
 	} else {
-		console.log('No existing stars in database');
+		logger.info('No existing stars in database');
 	}
 
 	let page = 1;
@@ -74,7 +77,7 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 
 	while (hasMore) {
 		try {
-			console.log(`Fetching page ${page}...`);
+			logger.info(`Fetching page ${page}...`);
 			const response = await octokit.rest.activity.listReposStarredByAuthenticatedUser({
 				mediaType: {
 					format: 'vnd.github.star+json',
@@ -102,7 +105,7 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 					parsedResponse.data[0]!.starred_at
 				);
 				if (oldestStarOnPage <= mostRecentStarredAt) {
-					console.log(
+					logger.info(
 						`Reached stars older than ${mostRecentStarredAt.toLocaleString()}, stopping pagination`
 					);
 					hasMore = false;
@@ -153,7 +156,7 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 
 					totalStars++;
 				} catch (error) {
-					console.error(`Error processing starred repo ${repo.full_name}:`, {
+					logger.error(`Error processing starred repo ${repo.full_name}`, {
 						error: error instanceof Error ? error.message : String(error),
 						repoId: repo.id,
 					});
@@ -161,14 +164,14 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 				}
 			}
 
-			console.log(`Processed new stars from page ${page}`);
+			logger.info(`Processed new stars from page ${page}`);
 
 			// Add a small delay between requests to avoid rate limiting
 			await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
 			page++;
 		} catch (error) {
 			if (error instanceof RequestError) {
-				console.error('GitHub API Error:', {
+				logger.error('GitHub API Error', {
 					status: error.status,
 					message: error.message,
 					headers: error.response?.headers,
@@ -186,6 +189,6 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 		}
 	}
 
-	console.log(`Successfully synced ${totalStars} new starred repositories`);
+	logger.complete('Synced starred repositories', totalStars);
 	return totalStars;
 }
