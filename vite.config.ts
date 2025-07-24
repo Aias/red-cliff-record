@@ -20,6 +20,7 @@ export default defineConfig({
 			}),
 		},
 		tanstackStart({
+			target: 'bun',
 			// customViteReactPlugin: true, TODO: Revisit this, causing errors with process.env
 			tsr: {
 				srcDirectory: './src/app',
