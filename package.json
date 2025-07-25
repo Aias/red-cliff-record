@@ -36,7 +36,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "dataloader": "^2.2.3",
-    "dotenv": "^17.2.0",
+    "dotenv": "^17.2.1",
     "drizzle-orm": "1.0.0-beta.1-c0277c0",
     "drizzle-zod": "^0.8.2",
     "lucide-react": "0.525.0",
@@ -48,14 +48,14 @@
     "radix-ui": "^1.4.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-scan": "^0.4.0",
+    "react-scan": "^0.4.3",
     "sonner": "^2.0.6",
     "superjson": "^2.2.2",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "vite": "^7.0.6",
     "ws": "^8.18.3",
-    "zod": "^4.0.8"
+    "zod": "^4.0.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
