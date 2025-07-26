@@ -12,6 +12,7 @@ import { observable } from '@trpc/server/observable';
 import { toast } from 'sonner';
 import superjson from 'superjson';
 import type { AppRouter } from '@/server/api/root';
+import { PortSchema } from '@/shared/lib/env';
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -45,7 +46,7 @@ function getBaseUrl() {
 		// Development server (assume anything not 'production' is development)
 		// Use localhost and the port (default 3000)
 		// Ensure PORT env var matches your dev server if not 3000
-		const port = process.env.PORT ?? 3000;
+		const port = PortSchema.parse(process.env.PUBLIC_DEV_PORT);
 		return `http://localhost:${port}`;
 	}
 }
