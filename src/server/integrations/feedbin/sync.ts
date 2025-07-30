@@ -72,14 +72,42 @@ async function bulkUpdateReadStatus(entryIds: number[], read: boolean): Promise<
 	if (entryIds.length === 0) return;
 
 	const now = new Date();
-
 	const BATCH_SIZE = 1000;
+	const BATCH_TIMEOUT_MS = 30000; // 30 seconds per batch
+
 	for (let i = 0; i < entryIds.length; i += BATCH_SIZE) {
 		const batch = entryIds.slice(i, i + BATCH_SIZE);
-		await db
-			.update(feedEntries)
-			.set({ read, recordUpdatedAt: now })
-			.where(inArray(feedEntries.id, batch));
+		const batchStartTime = Date.now();
+
+		logger.info(
+			`Updating read status for batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} entries)`
+		);
+
+		try {
+			await Promise.race([
+				db
+					.update(feedEntries)
+					.set({ read, recordUpdatedAt: now })
+					.where(inArray(feedEntries.id, batch)),
+				new Promise((_, reject) =>
+					setTimeout(
+						() => reject(new Error(`Bulk update timeout after ${BATCH_TIMEOUT_MS}ms`)),
+						BATCH_TIMEOUT_MS
+					)
+				),
+			]);
+
+			const batchDuration = Date.now() - batchStartTime;
+			logger.info(`Bulk update batch completed in ${batchDuration}ms`);
+		} catch (error) {
+			logger.error(`Bulk update batch failed or timed out`, error);
+			// Continue with next batch even if this one fails
+		}
+
+		// Add small delay between batches
+		if (i + BATCH_SIZE < entryIds.length) {
+			await new Promise((resolve) => setTimeout(resolve, 500));
+		}
 	}
 }
 
@@ -87,45 +115,57 @@ async function bulkUpdateReadStatus(entryIds: number[], read: boolean): Promise<
  * Sync a single feed from Feedbin
  */
 async function syncSingleFeed(feedId: number): Promise<void> {
+	const FEED_TIMEOUT_MS = 15000; // 15 seconds per feed
+
 	try {
-		const feed = await fetchFeed(feedId);
+		await Promise.race([
+			(async () => {
+				const feed = await fetchFeed(feedId);
 
-		// Extract icon URL
-		let iconUrl: string | null = null;
-		if (feed.site_url) {
-			try {
-				const icons = await fetchIcons();
-				const iconMap = new Map<string, string>();
-				for (const icon of icons) {
-					iconMap.set(icon.host, icon.url);
+				// Extract icon URL
+				let iconUrl: string | null = null;
+				if (feed.site_url) {
+					try {
+						const icons = await fetchIcons();
+						const iconMap = new Map<string, string>();
+						for (const icon of icons) {
+							iconMap.set(icon.host, icon.url);
+						}
+						const url = new URL(feed.site_url);
+						iconUrl = iconMap.get(url.hostname) || null;
+					} catch {
+						// Ignore URL parsing errors
+					}
 				}
-				const url = new URL(feed.site_url);
-				iconUrl = iconMap.get(url.hostname) || null;
-			} catch {
-				// Ignore URL parsing errors
-			}
-		}
 
-		await db
-			.insert(feeds)
-			.values({
-				id: feed.id,
-				name: feed.title,
-				feedUrl: feed.feed_url,
-				siteUrl: feed.site_url,
-				iconUrl,
-				sources: ['feedbin'],
-			})
-			.onConflictDoUpdate({
-				target: feeds.id,
-				set: {
-					name: feed.title,
-					feedUrl: feed.feed_url,
-					siteUrl: feed.site_url,
-					iconUrl,
-					recordUpdatedAt: new Date(),
-				},
-			});
+				await db
+					.insert(feeds)
+					.values({
+						id: feed.id,
+						name: feed.title,
+						feedUrl: feed.feed_url,
+						siteUrl: feed.site_url,
+						iconUrl,
+						sources: ['feedbin'],
+					})
+					.onConflictDoUpdate({
+						target: feeds.id,
+						set: {
+							name: feed.title,
+							feedUrl: feed.feed_url,
+							siteUrl: feed.site_url,
+							iconUrl,
+							recordUpdatedAt: new Date(),
+						},
+					});
+			})(),
+			new Promise((_, reject) =>
+				setTimeout(
+					() => reject(new Error(`Single feed sync timeout after ${FEED_TIMEOUT_MS}ms`)),
+					FEED_TIMEOUT_MS
+				)
+			),
+		]);
 	} catch (error) {
 		logger.warn(`Failed to sync feed ${feedId}`, error);
 		throw error;
@@ -148,51 +188,261 @@ async function syncFeeds(
 		iconMap.set(icon.host, icon.url);
 	}
 
+	const FEED_TIMEOUT_MS = 15000; // 15 seconds per feed
+	let successCount = 0;
+	let errorCount = 0;
+
 	for (const [index, subscription] of subscriptions.entries()) {
+		const feedStartTime = Date.now();
+
 		try {
-			// Extract domain from site URL for icon lookup
-			const siteUrl = subscription.site_url;
-			let iconUrl: string | null = null;
+			// Set up timeout for individual feed processing
+			await Promise.race([
+				(async () => {
+					// Extract domain from site URL for icon lookup
+					const siteUrl = subscription.site_url;
+					let iconUrl: string | null = null;
 
-			if (siteUrl) {
-				try {
-					const url = new URL(siteUrl);
-					iconUrl = iconMap.get(url.hostname) || null;
-				} catch {
-					// Ignore URL parsing errors
-				}
-			}
+					if (siteUrl) {
+						try {
+							const url = new URL(siteUrl);
+							iconUrl = iconMap.get(url.hostname) || null;
+						} catch {
+							// Ignore URL parsing errors
+						}
+					}
 
-			// Upsert feed
-			await db
-				.insert(feeds)
-				.values({
-					id: subscription.feed_id,
-					name: subscription.title,
-					feedUrl: subscription.feed_url,
-					siteUrl: subscription.site_url,
-					iconUrl,
-					sources: ['feedbin'],
-					contentCreatedAt: subscription.created_at,
-				})
-				.onConflictDoUpdate({
-					target: feeds.id,
-					set: {
-						name: subscription.title,
-						feedUrl: subscription.feed_url,
-						siteUrl: subscription.site_url,
-						iconUrl,
-						recordUpdatedAt: new Date(),
-					},
-				});
+					// Upsert feed
+					await db
+						.insert(feeds)
+						.values({
+							id: subscription.feed_id,
+							name: subscription.title,
+							feedUrl: subscription.feed_url,
+							siteUrl: subscription.site_url,
+							iconUrl,
+							sources: ['feedbin'],
+							contentCreatedAt: subscription.created_at,
+						})
+						.onConflictDoUpdate({
+							target: feeds.id,
+							set: {
+								name: subscription.title,
+								feedUrl: subscription.feed_url,
+								siteUrl: subscription.site_url,
+								iconUrl,
+								recordUpdatedAt: new Date(),
+							},
+						});
+				})(),
+				new Promise((_, reject) =>
+					setTimeout(
+						() => reject(new Error(`Feed sync timeout after ${FEED_TIMEOUT_MS}ms`)),
+						FEED_TIMEOUT_MS
+					)
+				),
+			]);
 
-			logger.info(`Synced feed "${subscription.title}" (${index + 1} of ${subscriptions.length})`);
+			successCount++;
+			const feedDuration = Date.now() - feedStartTime;
+			logger.info(
+				`Synced feed "${subscription.title}" (${index + 1} of ${subscriptions.length}) in ${feedDuration}ms`
+			);
 		} catch (error) {
-			logger.warn(`Failed to sync feed ${subscription.feed_id}`, error);
+			errorCount++;
+			logger.warn(
+				`Failed to sync feed ${subscription.feed_id} (${index + 1} of ${subscriptions.length})`,
+				error
+			);
+		}
+
+		// Add small delay between feeds to prevent overwhelming the system
+		if (index < subscriptions.length - 1) {
+			await new Promise((resolve) => setTimeout(resolve, 100));
 		}
 	}
 
-	logger.complete(`Synced ${subscriptions.length} feeds`);
+	logger.complete(`Synced ${successCount} feeds (${errorCount} errors)`);
+}
+
+/**
+ * Process a single entry with timeout
+ */
+async function processSingleEntry(
+	entry: FeedbinEntry,
+	unreadIds: Set<number>,
+	starredIds: Set<number>,
+	integrationRunId: number,
+	updatedEntryIds: Set<number> | undefined,
+	timeoutMs: number = 10000
+): Promise<boolean> {
+	return new Promise((resolve) => {
+		const timeout = setTimeout(() => {
+			logger.error(`Timeout processing entry ${entry.id} after ${timeoutMs}ms`);
+			resolve(false);
+		}, timeoutMs);
+
+		(async () => {
+			try {
+				// For updated entries, preserve existing read/starred status
+				// For new entries, use the status from Feedbin
+				const isUpdatedEntry = updatedEntryIds?.has(entry.id) ?? false;
+				let isRead = !unreadIds.has(entry.id);
+				let isStarred = starredIds.has(entry.id);
+
+				if (isUpdatedEntry) {
+					// Fetch current status from database for updated entries
+					const existingEntry = await db.query.feedEntries.findFirst({
+						where: {
+							id: entry.id,
+						},
+						columns: { read: true, starred: true },
+					});
+					if (existingEntry) {
+						isRead = existingEntry.read;
+						isStarred = existingEntry.starred;
+					}
+				}
+
+				// Extract image URLs from content if available
+				let imageUrls: string[] | null = null;
+				if (entry.images?.original_url) {
+					imageUrls = [entry.images.original_url];
+				}
+
+				// Process enclosure - skip if it has invalid data
+				let enclosure = null;
+				if (entry.enclosure) {
+					const enc = entry.enclosure;
+					// Skip if enclosure_type is "false", false, null, or if URLs are objects
+					if (
+						enc.enclosure_type !== 'false' &&
+						enc.enclosure_type !== false &&
+						enc.enclosure_type !== null &&
+						typeof enc.enclosure_url !== 'object' &&
+						enc.enclosure_url !== null
+					) {
+						let enclosureUrl = '';
+						if (typeof enc.enclosure_url === 'string') {
+							enclosureUrl = enc.enclosure_url;
+						}
+
+						let itunesImage = null;
+						if (typeof enc.itunes_image === 'string') {
+							itunesImage = enc.itunes_image;
+						}
+
+						if (enclosureUrl) {
+							enclosure = {
+								enclosureUrl,
+								enclosureType: typeof enc.enclosure_type === 'string' ? enc.enclosure_type : '',
+								enclosureLength:
+									typeof enc.enclosure_length === 'number' ? enc.enclosure_length : 0,
+								itunesDuration: enc.itunes_duration || null,
+								itunesImage,
+							};
+						}
+					}
+				}
+
+				// Upsert entry (without embedding - will be done in post-process)
+				try {
+					await db
+						.insert(feedEntries)
+						.values({
+							id: entry.id,
+							feedId: entry.feed_id,
+							url: entry.url,
+							title: entry.title,
+							author: entry.author,
+							summary: entry.summary,
+							content: entry.content,
+							imageUrls,
+							enclosure,
+							read: isRead,
+							starred: isStarred,
+							publishedAt: entry.published,
+							integrationRunId,
+						})
+						.onConflictDoUpdate({
+							target: feedEntries.id,
+							set: {
+								title: entry.title,
+								author: entry.author,
+								summary: entry.summary,
+								content: entry.content,
+								imageUrls,
+								enclosure,
+								read: isRead,
+								starred: isStarred,
+								publishedAt: entry.published,
+								recordUpdatedAt: new Date(),
+								textEmbedding: null, // Updated entries should re-generate embeddings
+							},
+						});
+				} catch (error: unknown) {
+					// Check if it's a foreign key constraint error
+					if (
+						error instanceof Error &&
+						error.message.includes('feed_entries_feed_id_feeds_id_fk')
+					) {
+						// Feed doesn't exist, fetch and sync it
+						if (!syncedFeedIds.has(entry.feed_id)) {
+							logger.info(`Fetching missing feed ${entry.feed_id} for entry ${entry.id}`);
+							await syncSingleFeed(entry.feed_id);
+							syncedFeedIds.add(entry.feed_id);
+
+							// Retry the insert
+							await db
+								.insert(feedEntries)
+								.values({
+									id: entry.id,
+									feedId: entry.feed_id,
+									url: entry.url,
+									title: entry.title,
+									author: entry.author,
+									summary: entry.summary,
+									content: entry.content,
+									imageUrls,
+									enclosure,
+									read: isRead,
+									starred: isStarred,
+									publishedAt: entry.published,
+									integrationRunId,
+								})
+								.onConflictDoUpdate({
+									target: feedEntries.id,
+									set: {
+										title: entry.title,
+										author: entry.author,
+										summary: entry.summary,
+										content: entry.content,
+										imageUrls,
+										enclosure,
+										read: isRead,
+										starred: isStarred,
+										publishedAt: entry.published,
+										recordUpdatedAt: new Date(),
+										textEmbedding: null,
+									},
+								});
+						} else {
+							throw error;
+						}
+					} else {
+						throw error;
+					}
+				}
+
+				clearTimeout(timeout);
+				resolve(true);
+			} catch (error) {
+				clearTimeout(timeout);
+				logger.warn(`Failed to sync entry ${entry.id}`, error);
+				resolve(false);
+			}
+		})();
+	});
 }
 
 /**
@@ -208,177 +458,63 @@ async function syncFeedEntries(
 	logger.start(`Syncing ${entries.length} entries`);
 
 	let successCount = 0;
+	const BATCH_TIMEOUT_MS = 30000; // 30 seconds per batch
+	const ENTRY_TIMEOUT_MS = 10000; // 10 seconds per entry
 
 	// Process entries in batches
 	for (let i = 0; i < entries.length; i += EMBEDDING_BATCH_SIZE) {
 		const batch = entries.slice(i, i + EMBEDDING_BATCH_SIZE);
+		const batchStartTime = Date.now();
 
-		await Promise.all(
+		logger.info(
+			`Processing batch ${Math.floor(i / EMBEDDING_BATCH_SIZE) + 1} of ${Math.ceil(entries.length / EMBEDDING_BATCH_SIZE)} (${batch.length} entries)`
+		);
+
+		// Set up batch timeout
+		const batchPromise = Promise.all(
 			batch.map(async (entry, batchIndex) => {
 				const globalIndex = i + batchIndex + 1;
-				try {
-					// For updated entries, preserve existing read/starred status
-					// For new entries, use the status from Feedbin
-					const isUpdatedEntry = updatedEntryIds?.has(entry.id) ?? false;
-					let isRead = !unreadIds.has(entry.id);
-					let isStarred = starredIds.has(entry.id);
-
-					if (isUpdatedEntry) {
-						// Fetch current status from database for updated entries
-						const existingEntry = await db.query.feedEntries.findFirst({
-							where: {
-								id: entry.id,
-							},
-							columns: { read: true, starred: true },
-						});
-						if (existingEntry) {
-							isRead = existingEntry.read;
-							isStarred = existingEntry.starred;
-						}
-					}
-
-					// Extract image URLs from content if available
-					let imageUrls: string[] | null = null;
-					if (entry.images?.original_url) {
-						imageUrls = [entry.images.original_url];
-					}
-
-					// Process enclosure - skip if it has invalid data
-					let enclosure = null;
-					if (entry.enclosure) {
-						const enc = entry.enclosure;
-						// Skip if enclosure_type is "false", false, null, or if URLs are objects
-						if (
-							enc.enclosure_type !== 'false' &&
-							enc.enclosure_type !== false &&
-							enc.enclosure_type !== null &&
-							typeof enc.enclosure_url !== 'object' &&
-							enc.enclosure_url !== null
-						) {
-							let enclosureUrl = '';
-							if (typeof enc.enclosure_url === 'string') {
-								enclosureUrl = enc.enclosure_url;
-							}
-
-							let itunesImage = null;
-							if (typeof enc.itunes_image === 'string') {
-								itunesImage = enc.itunes_image;
-							}
-
-							if (enclosureUrl) {
-								enclosure = {
-									enclosureUrl,
-									enclosureType: typeof enc.enclosure_type === 'string' ? enc.enclosure_type : '',
-									enclosureLength:
-										typeof enc.enclosure_length === 'number' ? enc.enclosure_length : 0,
-									itunesDuration: enc.itunes_duration || null,
-									itunesImage,
-								};
-							}
-						}
-					}
-
-					// Upsert entry (without embedding - will be done in post-process)
-					try {
-						await db
-							.insert(feedEntries)
-							.values({
-								id: entry.id,
-								feedId: entry.feed_id,
-								url: entry.url,
-								title: entry.title,
-								author: entry.author,
-								summary: entry.summary,
-								content: entry.content,
-								imageUrls,
-								enclosure,
-								read: isRead,
-								starred: isStarred,
-								publishedAt: entry.published,
-								integrationRunId,
-							})
-							.onConflictDoUpdate({
-								target: feedEntries.id,
-								set: {
-									title: entry.title,
-									author: entry.author,
-									summary: entry.summary,
-									content: entry.content,
-									imageUrls,
-									enclosure,
-									read: isRead,
-									starred: isStarred,
-									publishedAt: entry.published,
-									recordUpdatedAt: new Date(),
-									textEmbedding: null, // Updated entries should re-generate embeddings
-								},
-							});
-					} catch (error: unknown) {
-						// Check if it's a foreign key constraint error
-						if (
-							error instanceof Error &&
-							error.message.includes('feed_entries_feed_id_feeds_id_fk')
-						) {
-							// Feed doesn't exist, fetch and sync it
-							if (!syncedFeedIds.has(entry.feed_id)) {
-								logger.info(`Fetching missing feed ${entry.feed_id} for entry ${entry.id}`);
-								await syncSingleFeed(entry.feed_id);
-								syncedFeedIds.add(entry.feed_id);
-
-								// Retry the insert
-								await db
-									.insert(feedEntries)
-									.values({
-										id: entry.id,
-										feedId: entry.feed_id,
-										url: entry.url,
-										title: entry.title,
-										author: entry.author,
-										summary: entry.summary,
-										content: entry.content,
-										imageUrls,
-										enclosure,
-										read: isRead,
-										starred: isStarred,
-										publishedAt: entry.published,
-										integrationRunId,
-									})
-									.onConflictDoUpdate({
-										target: feedEntries.id,
-										set: {
-											title: entry.title,
-											author: entry.author,
-											summary: entry.summary,
-											content: entry.content,
-											imageUrls,
-											enclosure,
-											read: isRead,
-											starred: isStarred,
-											publishedAt: entry.published,
-											recordUpdatedAt: new Date(),
-											textEmbedding: null,
-										},
-									});
-							} else {
-								throw error;
-							}
-						} else {
-							throw error;
-						}
-					}
-
+				const success = await processSingleEntry(
+					entry,
+					unreadIds,
+					starredIds,
+					integrationRunId,
+					updatedEntryIds,
+					ENTRY_TIMEOUT_MS
+				);
+				if (success) {
 					successCount++;
 					logger.info(
 						`Synced entry "${entry.title || 'Untitled'}" (${entry.id}) - ${globalIndex} of ${entries.length}`
 					);
-				} catch (error) {
-					logger.warn(
-						`Failed to sync entry ${entry.id} (${globalIndex} of ${entries.length})`,
-						error
-					);
+				} else {
+					logger.warn(`Failed to sync entry ${entry.id} (${globalIndex} of ${entries.length})`);
 				}
 			})
 		);
+
+		try {
+			await Promise.race([
+				batchPromise,
+				new Promise((_, reject) =>
+					setTimeout(
+						() => reject(new Error(`Batch timeout after ${BATCH_TIMEOUT_MS}ms`)),
+						BATCH_TIMEOUT_MS
+					)
+				),
+			]);
+			const batchDuration = Date.now() - batchStartTime;
+			logger.info(`Batch completed in ${batchDuration}ms`);
+		} catch (error) {
+			logger.error(`Batch processing failed or timed out`, error);
+			// Continue with next batch even if this one fails
+		}
+
+		// Add delay between batches to prevent overwhelming the system
+		if (i + EMBEDDING_BATCH_SIZE < entries.length) {
+			logger.info('Waiting 2 seconds before next batch...');
+			await new Promise((resolve) => setTimeout(resolve, 2000));
+		}
 	}
 
 	logger.complete(`Synced ${successCount} of ${entries.length} entries`);
@@ -391,10 +527,39 @@ async function syncFeedEntries(
 async function bulkUpdateStarredStatus(entryIds: number[], starred: boolean): Promise<void> {
 	if (entryIds.length === 0) return;
 
-	const BATCH_SIZE = 1000; // Process in batches to avoid query size limits
+	const BATCH_SIZE = 1000;
+	const BATCH_TIMEOUT_MS = 30000; // 30 seconds per batch
+
 	for (let i = 0; i < entryIds.length; i += BATCH_SIZE) {
 		const batch = entryIds.slice(i, i + BATCH_SIZE);
-		await db.update(feedEntries).set({ starred }).where(inArray(feedEntries.id, batch));
+		const batchStartTime = Date.now();
+
+		logger.info(
+			`Updating starred status for batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} entries)`
+		);
+
+		try {
+			await Promise.race([
+				db.update(feedEntries).set({ starred }).where(inArray(feedEntries.id, batch)),
+				new Promise((_, reject) =>
+					setTimeout(
+						() => reject(new Error(`Bulk update timeout after ${BATCH_TIMEOUT_MS}ms`)),
+						BATCH_TIMEOUT_MS
+					)
+				),
+			]);
+
+			const batchDuration = Date.now() - batchStartTime;
+			logger.info(`Bulk update batch completed in ${batchDuration}ms`);
+		} catch (error) {
+			logger.error(`Bulk update batch failed or timed out`, error);
+			// Continue with next batch even if this one fails
+		}
+
+		// Add small delay between batches
+		if (i + BATCH_SIZE < entryIds.length) {
+			await new Promise((resolve) => setTimeout(resolve, 500));
+		}
 	}
 }
 
@@ -431,56 +596,101 @@ async function generateFeedEntryEmbeddings(): Promise<void> {
 
 	let embeddingCount = 0;
 	let errorCount = 0;
+	const BATCH_TIMEOUT_MS = 60000; // 60 seconds per batch (longer for embeddings)
+	const ENTRY_TIMEOUT_MS = 15000; // 15 seconds per entry
 
 	// Process in batches
 	for (let i = 0; i < entriesWithoutEmbeddings.length; i += EMBEDDING_BATCH_SIZE) {
 		const batch = entriesWithoutEmbeddings.slice(i, i + EMBEDDING_BATCH_SIZE);
+		const batchStartTime = Date.now();
 
 		logger.info(
-			`Processing batch ${Math.floor(i / EMBEDDING_BATCH_SIZE) + 1} of ${Math.ceil(entriesWithoutEmbeddings.length / EMBEDDING_BATCH_SIZE)}`
+			`Processing batch ${Math.floor(i / EMBEDDING_BATCH_SIZE) + 1} of ${Math.ceil(entriesWithoutEmbeddings.length / EMBEDDING_BATCH_SIZE)} (${batch.length} entries)`
 		);
 
-		// Process entries in parallel within the batch
-		const _results = await Promise.all(
+		// Set up batch timeout
+		const batchPromise = Promise.all(
 			batch.map(async (entry) => {
-				try {
-					// Create embedding text
-					const embeddingText = createCleanFeedEntryEmbeddingText({
-						title: entry.title,
-						author: entry.author,
-						summary: entry.summary,
-						content: entry.content,
-						url: entry.url,
-						published: entry.publishedAt || new Date(),
-					} as FeedbinEntry);
+				return new Promise<{ success: boolean }>((resolve) => {
+					const timeout = setTimeout(() => {
+						logger.error(
+							`Timeout generating embedding for entry ${entry.id} after ${ENTRY_TIMEOUT_MS}ms`
+						);
+						resolve({ success: false });
+					}, ENTRY_TIMEOUT_MS);
 
-					// Generate embedding with retry logic
-					const embedding = await createEmbedding(embeddingText);
+					(async () => {
+						try {
+							// Create embedding text
+							const embeddingText = createCleanFeedEntryEmbeddingText({
+								title: entry.title,
+								author: entry.author,
+								summary: entry.summary,
+								content: entry.content,
+								url: entry.url,
+								published: entry.publishedAt || new Date(),
+							} as FeedbinEntry);
 
-					// Update entry with embedding
-					await db
-						.update(feedEntries)
-						.set({ textEmbedding: embedding })
-						.where(eq(feedEntries.id, entry.id));
+							// Generate embedding with retry logic
+							const embedding = await createEmbedding(embeddingText);
 
-					embeddingCount++;
-					return { success: true };
-				} catch (error) {
-					errorCount++;
-					logger.warn(`Failed to generate embedding for entry ${entry.id}`, error);
+							// Update entry with embedding
+							await db
+								.update(feedEntries)
+								.set({ textEmbedding: embedding })
+								.where(eq(feedEntries.id, entry.id));
 
-					// If we hit a rate limit despite retries, wait longer before continuing
-					if (error instanceof Error && error.message.includes('rate limit')) {
-						logger.info('Hit rate limit despite retries, waiting 10 seconds before continuing...');
-						await new Promise((resolve) => setTimeout(resolve, 10000));
-					}
-					return { success: false };
-				}
+							clearTimeout(timeout);
+							resolve({ success: true });
+						} catch (error) {
+							clearTimeout(timeout);
+							logger.warn(`Failed to generate embedding for entry ${entry.id}`, error);
+
+							// If we hit a rate limit despite retries, wait longer before continuing
+							if (error instanceof Error && error.message.includes('rate limit')) {
+								logger.info(
+									'Hit rate limit despite retries, waiting 10 seconds before continuing...'
+								);
+								await new Promise((resolve) => setTimeout(resolve, 10000));
+							}
+							resolve({ success: false });
+						}
+					})();
+				});
 			})
 		);
 
+		try {
+			const results = await Promise.race([
+				batchPromise,
+				new Promise<{ success: boolean }[]>((_, reject) =>
+					setTimeout(
+						() => reject(new Error(`Batch timeout after ${BATCH_TIMEOUT_MS}ms`)),
+						BATCH_TIMEOUT_MS
+					)
+				),
+			]);
+
+			// Count successes and failures
+			for (const result of results) {
+				if (result.success) {
+					embeddingCount++;
+				} else {
+					errorCount++;
+				}
+			}
+
+			const batchDuration = Date.now() - batchStartTime;
+			logger.info(`Batch completed in ${batchDuration}ms`);
+		} catch (error) {
+			logger.error(`Batch processing failed or timed out`, error);
+			// Continue with next batch even if this one fails
+			errorCount += batch.length;
+		}
+
 		// Add a delay between batches
 		if (i + EMBEDDING_BATCH_SIZE < entriesWithoutEmbeddings.length) {
+			logger.info('Waiting 2 seconds before next batch...');
 			await new Promise((resolve) => setTimeout(resolve, 2000));
 		}
 	}

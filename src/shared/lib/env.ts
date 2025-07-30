@@ -7,17 +7,17 @@ export const PortSchema = z.coerce.number().default(3000);
 export const EnvSchema = z.object({
 	// Node environment
 	NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-	
+
 	// Public URLs
 	PUBLIC_URL: z.string().optional(),
 	PUBLIC_DEV_PORT: z.string().default('5173'),
-	
+
 	// Database
 	DATABASE_URL: z.string(),
 	DATABASE_URL_LOCAL: z.string().optional(),
 	DATABASE_URL_REMOTE: z.string().optional(),
 	DATABASE_URL_DEV: z.string().optional(),
-	
+
 	// Cloudflare R2 / S3
 	CLOUDFLARE_ACCOUNT_ID: z.string(),
 	S3_ACCESS_KEY_ID: z.string(),
@@ -26,7 +26,7 @@ export const EnvSchema = z.object({
 	S3_ENDPOINT: z.string(),
 	S3_BUCKET: z.string(),
 	ASSETS_DOMAIN: z.string(),
-	
+
 	// External Services
 	AIRTABLE_BASE_ID: z.string(),
 	AIRTABLE_ACCESS_TOKEN: z.string(),
