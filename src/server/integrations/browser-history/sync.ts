@@ -63,6 +63,18 @@ const REMOVABLE_QUERY_PARAMS = [
 ];
 
 /**
+ * Returns a LibSQL connection for the given browser history file. If no path
+ * is provided, the browser config's defaultPath is used.
+ */
+function gatherBrowserHistoryConnection(
+	browserConfig: BrowserConfig,
+	historyPath?: string
+): LibSQLDatabase<typeof browserHistorySchema> {
+	const path = historyPath ?? browserConfig.defaultPath;
+	return browserConfig.createConnection(path);
+}
+
+/**
  * Creates a readline interface for user input
  *
  * @returns A readline interface
@@ -144,7 +156,8 @@ function sanitizeUrl(url: string): string | null {
  */
 async function syncBrowserHistory(
 	browserConfig: BrowserConfig,
-	integrationRunId: number
+	integrationRunId: number,
+	historyPath?: string
 ): Promise<number> {
 	try {
 		// Get current hostname
@@ -165,7 +178,7 @@ async function syncBrowserHistory(
 
 		// Step 3: Fetch new history entries
 		logger.info('Retrieving new history entries...');
-		const browserDb = browserConfig.createConnection();
+		const browserDb = gatherBrowserHistoryConnection(browserConfig, historyPath);
 
 		// Calculate effective cutoff time (use the later of lastKnownTime or browser cutoff date)
 		let effectiveCutoff = lastKnownTime;
@@ -508,13 +521,12 @@ async function insertHistoryEntries(processedHistory: BrowsingHistoryInsert[]): 
  * @param browserConfig - The browser configuration
  * @returns A function that syncs the browser's history
  */
-export { syncBrowserHistory };
 
-export function createBrowserSyncFunction(browserConfig: BrowserConfig) {
-	return async (): Promise<void> => {
+function createBrowserSyncFunction(browserConfig: BrowserConfig) {
+	return async (historyPath?: string): Promise<void> => {
 		try {
 			await runIntegration('browser_history', (integrationRunId) =>
-				syncBrowserHistory(browserConfig, integrationRunId)
+				syncBrowserHistory(browserConfig, integrationRunId, historyPath)
 			);
 		} catch (error) {
 			logger.error(`Error syncing ${browserConfig.displayName} browser history`, error);
@@ -522,3 +534,5 @@ export function createBrowserSyncFunction(browserConfig: BrowserConfig) {
 		}
 	};
 }
+
+export { createBrowserSyncFunction, gatherBrowserHistoryConnection, syncBrowserHistory };

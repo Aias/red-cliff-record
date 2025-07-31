@@ -9,17 +9,23 @@ import * as schema from '../schema/browser-history';
 
 const diaHistoryPath = 'Library/Application Support/Dia/User Data/Default/History';
 
-// Path to Dia's History database (Mac OS Only)
-export const diaDbPath = join(homedir(), diaHistoryPath);
-export const diaDbCopyPath = join(homedir(), `${diaHistoryPath}-copy`);
-export const connectionUrl = `file:${diaDbCopyPath}`;
+/**
+ * Returns the default path to the Dia browser history file.
+ */
+export const getDiaHistoryPath = () => join(homedir(), diaHistoryPath);
 
-export const createDiaConnection = () => {
-	if (!existsSync(diaDbPath)) {
-		throw new BrowserNotInstalledError('Dia', diaDbPath);
+/**
+ * Creates a database connection from a Dia history file.
+ */
+export const createDiaConnection = (historyPath: string = getDiaHistoryPath()) => {
+	if (!existsSync(historyPath)) {
+		throw new BrowserNotInstalledError('Dia', historyPath);
 	}
-	copyFileSync(diaDbPath, diaDbCopyPath);
 
+	const copyPath = `${historyPath}-copy`;
+	copyFileSync(historyPath, copyPath);
+
+	const connectionUrl = `file:${copyPath}`;
 	const client = createClient({
 		url: connectionUrl,
 		intMode: 'bigint',
@@ -27,3 +33,6 @@ export const createDiaConnection = () => {
 
 	return drizzle(client, { schema });
 };
+
+// Convenience export used by Drizzle config files
+export const connectionUrl = `file:${getDiaHistoryPath()}-copy`;
