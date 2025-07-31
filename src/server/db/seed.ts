@@ -75,6 +75,22 @@ export const predicateSeed = [
 		canonical: false,
 	},
 
+	{
+		slug: 'translated_by',
+		name: 'translated by',
+		type: 'creation',
+		role: 'translator',
+		inverseSlug: 'translator_of',
+		canonical: true,
+	},
+	{
+		slug: 'translator_of',
+		name: 'translator of',
+		type: 'creation',
+		role: 'translator',
+		inverseSlug: 'translated_by',
+		canonical: false,
+	},
 	/* ─────── Containment (child → parent) ─────── */
 	{
 		slug: 'contained_by',
