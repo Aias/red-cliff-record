@@ -28,14 +28,14 @@ function getBaseUrl() {
 	// Use standard NODE_ENV to check environment
 	if (process.env.NODE_ENV === 'production') {
 		// Production server/worker: Use the PUBLIC_URL from env vars
-		// PUBLIC_URL MUST be set in your Cloudflare environment
+		// PUBLIC_URL MUST be set in your deployment environment
 		const publicUrl = process.env.PUBLIC_URL;
 		if (!publicUrl) {
 			// Log a more prominent error in production if the URL is missing
 			console.error(
 				"\n🔴 CRITICAL ERROR: The 'PUBLIC_URL' environment variable is not set in your production environment." +
 					'\n   This is required for server-side tRPC requests to function correctly.' +
-					'\n   Please set it in your Cloudflare Pages/Worker environment settings.\n'
+					'\n   Please set it in your production environment configuration.\n'
 			);
 			// Throwing an error might be better to halt deployment/startup if misconfigured
 			// throw new Error("PUBLIC_URL environment variable is not set in production.");

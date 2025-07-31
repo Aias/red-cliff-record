@@ -1,6 +1,6 @@
 # Red Cliff Record
 
-A personal knowledge repository that aggregates data from multiple external sources into a searchable, relational database. Built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Cloudflare Pages.
+A personal knowledge repository that aggregates data from multiple external sources into a searchable, relational database. Built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Bun server.
 
 **⚠️ Important Notice**: Red Cliff Record is still very much in progress and optimized for a single individual (the repository author) and his own idiosyncratic set of data sources, apps, and tools. It would probably be much less effective for anyone who doesn't use that exact set of tools. This is experimental software and could have breaking changes at any time—fork at your own risk!
 
@@ -8,7 +8,7 @@ A personal knowledge repository that aggregates data from multiple external sour
 
 - **Frontend**: React 19 + TanStack (Start, Router, Query) + Tailwind CSS v4
 - **Backend**: tRPC + Drizzle ORM + PostgreSQL
-- **Deployment/Hosting**: Cloudflare Pages + R2 Storage + Neon Postgres
+- **Deployment/Hosting**: Bun server + local PostgreSQL on a Tailscale network
 - **Search**: PostgreSQL full-text search + OpenAI embeddings
 
 For detailed development guidelines, see [CLAUDE.md](./CLAUDE.md) and cursor rules in [.cursor/rules/](./.cursor/rules/). Plenty of AI was used in the development of this project.
@@ -18,16 +18,13 @@ For detailed development guidelines, see [CLAUDE.md](./CLAUDE.md) and cursor rul
 Before you begin, ensure you have the following installed:
 
 - **Node.js v22+** (check with `node --version`)
-- **pnpm** package manager (`npm install -g pnpm`)
+- **Bun** runtime & package manager (`curl -fsSL https://bun.sh/install | bash`)
 - **PostgreSQL** (v14+ recommended)
-- **Bun** runtime for sync scripts (`curl -fsSL https://bun.sh/install | bash`)
 - **Git** for version control
-- **Cloudflare Account** - for R2 storage and deployment
+- **Cloudflare Account** - for R2 storage
 
 ### Optional Requirements
 
-- **Neon** - for PostgreSQL database (if you're not using Neon, you'll need to modify `src/server/db/connections/postgres.ts` to use the standard `pg` driver instead of `@neondatabase/serverless`)
-- **Adobe Lightroom** - for Adobe Lightroom integration
 - **Airtable** - for Airtable integration
 - **Arc Browser** - for Arc Browser integration
 - **Dia Browser** - for Dia Browser integration
@@ -36,6 +33,7 @@ Before you begin, ensure you have the following installed:
 - **Raindrop.io** - for Raindrop.io integration
 - **Readwise** - for Readwise integration
 - **Twitter/X** - for Twitter/X bookmarks integration
+- **Adobe Lightroom** - for Adobe Lightroom integration
 
 ## Setup Instructions
 
@@ -49,12 +47,12 @@ cd red-cliff-record
 ### 2. Install Dependencies
 
 ```bash
-pnpm install
+bun install
 ```
 
 ### 3. Database Setup
 
-**Note about database providers**: This project currently uses Neon's serverless driver for PostgreSQL connections. If you're using a different PostgreSQL provider (local PostgreSQL, Supabase, Railway, etc.), you'll need to modify `src/server/db/connections/postgres.ts` to use the appropriate driver instead of `@neondatabase/serverless`.
+**Note about database providers**: The app connects to a local PostgreSQL database. If you use a different provider, update `src/server/db/connections/postgres.ts` accordingly.
 
 #### Create PostgreSQL Database
 
@@ -92,11 +90,11 @@ DATABASE_URL="postgresql://username:password@localhost:5432/redcliffrecord"
 3. Consider using the database studio to manually inspect and fix any migration issues:
 
 ```bash
-pnpm db:studio
+bun run db:studio
 ```
 
 ```bash
-pnpm db:migrate
+bun run db:migrate
 ```
 
 ### 4. Configure External Services
@@ -160,7 +158,7 @@ Each integration is optional. Only configure the ones you need:
 
   Note: Currently hardcoded to the author's album. See [INTEGRATIONS.md](./INTEGRATIONS.md#adobe-lightroom-integration) for setup details.
 
-### 5. Configure Cloudflare R2 Storage
+### Configure Cloudflare R2 Storage
 
 For media storage, you'll need a Cloudflare R2 bucket:
 
@@ -178,36 +176,24 @@ For media storage, you'll need a Cloudflare R2 bucket:
    ASSETS_DOMAIN=https://your-assets-domain.com
    ```
 
-### 6. Start Development Server
+### Start Development Server
 
 ```bash
-pnpm dev
-```
-
-Visit http://localhost:3000 to see the application.
-
-## Running Data Syncs
-
-Once configured, you can sync data from your connected services:
-
-### Sync All Services
-
-```bash
-pnpm sync:daily
+bun run dev
 ```
 
 ### Sync Individual Services
 
 ```bash
-pnpm sync:github
-pnpm sync:airtable
-pnpm sync:raindrop
-pnpm sync:readwise
-pnpm sync:feedbin
-pnpm sync:adobe
-pnpm sync:arc       # macOS only
-pnpm sync:dia       # macOS only
-pnpm sync:browsing  # Both Arc and Dia
+bun run sync:github
+bun run sync:airtable
+bun run sync:raindrop
+bun run sync:readwise
+bun run sync:feedbin
+bun run sync:adobe
+bun run sync:arc       # macOS only
+bun run sync:dia       # macOS only
+bun run sync:browsing  # Both Arc and Dia
 ```
 
 ## Production Build & Deployment
@@ -217,40 +203,38 @@ pnpm sync:browsing  # Both Arc and Dia
 ### Build for Production
 
 ```bash
-pnpm build
+bun run build
 ```
 
-### Deploy to Cloudflare Pages
+### Deploy
 
-1. Connect your GitHub repository to Cloudflare Pages
-2. Set build command: `pnpm build`
-3. Set build output directory: `dist`
-4. Add all environment variables from your `.env` to Cloudflare Pages settings
+1. Upload the `dist` folder to your server and start the Bun server.
+2. Ensure all environment variables from `.env` are configured on your host.
 
 ## Development Commands
 
 ```bash
 # Start development server
-pnpm dev
+bun run dev
 
 # Build for production
-pnpm build
+bun run build
 
 # Type check
-pnpm tsc
+bun run tsc
 
 # Lint, format, and type check (run before commits)
-pnpm lint
+bun run lint
 
 # Open database studio
-pnpm db:studio
+bun run db:studio
 
 # Run migrations
-pnpm db:migrate
+bun run db:migrate
 
 # Backup database
-pnpm db:backup-local  # Local backup
-pnpm db:backup-remote # Remote backup
+bun run db:backup-local  # Local backup
+bun run db:backup-remote # Remote backup
 ```
 
 ## Troubleshooting
@@ -263,15 +247,15 @@ pnpm db:backup-remote # Remote backup
 
 ### Build Errors
 
-- Clear cache: `rm -rf node_modules .vinxi dist && pnpm install`
+- Clear cache: `rm -rf node_modules bun.lock dist && bun install`
 - Check Node version: Should be v22+ as specified in `.nvmrc`
-- Run type checking: `pnpm tsc`
+- Run type checking: `bun run tsc`
 
 ### Integration Sync Failures
 
 - Verify API keys are correct and have proper permissions
 - Check rate limits for external services
-- Run individual syncs with verbose logging: `DEBUG=* pnpm sync:github`
+- Run individual syncs with verbose logging: `DEBUG=* bun run sync:github`
 
 ### Browser History Integration (macOS)
 

@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 # Project Structure
 
-Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Cloudflare Pages.
+Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Bun.
 
 **IMPORTANT**: This project uses both `CLAUDE.md` and `.cursor/rules/` files for development guidelines. When making significant refactoring or architectural changes, both files must be updated to stay in sync.
 
@@ -64,17 +64,17 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 ## Essential Commands
 
 **Development:**
-- `pnpm dev` - Start development server
-- `pnpm build` - Build for production
-- `pnpm lint` - Format, lint, and type check
+- `bun run dev` - Start development server
+- `bun run build` - Build for production
+- `bun run lint` - Format, lint, and type check
 
 **Database:**
-- `pnpm db:migrate` - Run database migrations
-- `pnpm db:studio` - Open Drizzle Studio for database inspection
+- `bun run db:migrate` - Run database migrations
+- `bun run db:studio` - Open Drizzle Studio for database inspection
 
 **Data Sync:**
-- `pnpm sync:daily` - Run all integrations
-- Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, `pnpm sync:raindrop`, `pnpm sync:readwise`, `pnpm sync:twitter`, `pnpm sync:feedbin`, `pnpm sync:browsing`
+- `bun run sync:daily` - Run all integrations
+- Individual sync: `bun run sync:github`, `bun run sync:airtable`, `bun run sync:raindrop`, `bun run sync:readwise`, `bun run sync:twitter`, `bun run sync:feedbin`, `bun run sync:browsing`
 
 ## Critical Development Rules
 
@@ -90,7 +90,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Use efficient query patterns and proper indexing
 
 **Before Every Commit:**
-- Run `pnpm lint`
+- Run `bun run lint`
 - Update CLAUDE.md if refactoring changes architectural patterns or introduces new conventions
 
 ## Development Guidelines
