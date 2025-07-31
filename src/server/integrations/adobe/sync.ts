@@ -1,8 +1,11 @@
 import { db } from '@/server/db/connections';
 import { lightroomImages } from '@/server/db/schema/adobe';
+import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import { createMediaFromLightroomImages } from './map';
 import { LightroomJsonResponseSchema, type LightroomJsonResponse } from './types';
+
+const logger = createIntegrationLogger('adobe', 'sync');
 
 /**
  * Configuration constants
@@ -25,7 +28,7 @@ const ALBUM_URL =
  */
 async function syncLightroomImages(integrationRunId: number): Promise<number> {
 	try {
-		console.log('Fetching Lightroom album data...');
+		logger.start('Fetching Lightroom album data');
 
 		// Step 1: Fetch data from the Lightroom API
 		const response = await fetch(ALBUM_URL);
@@ -41,7 +44,7 @@ async function syncLightroomImages(integrationRunId: number): Promise<number> {
 			JSON.parse(textData.replace(/^while\s*\(1\)\s*{\s*}\s*/, ''))
 		);
 
-		console.log(`Retrieved ${jsonData.resources.length} resources from Lightroom`);
+		logger.info(`Retrieved ${jsonData.resources.length} resources from Lightroom`);
 
 		// Step 3: Process and store each image
 		const baseUrl = jsonData.base;
@@ -52,23 +55,22 @@ async function syncLightroomImages(integrationRunId: number): Promise<number> {
 				await processLightroomImage(resource, baseUrl, integrationRunId);
 				successCount++;
 			} catch (error) {
-				console.error('Error processing image:', {
+				logger.error('Error processing image', {
 					imageId: resource.asset.id,
 					error: error instanceof Error ? error.message : String(error),
 				});
 			}
 		}
 
-		console.log(
-			`Successfully processed ${successCount} out of ${jsonData.resources.length} images`
-		);
+		logger.complete(`Processed images`, successCount);
+		logger.info(`Total images in album: ${jsonData.resources.length}`);
 
 		// Step 4: Create media records from the Lightroom images
 		await createMediaFromLightroomImages();
 
 		return successCount;
 	} catch (error) {
-		console.error('Error syncing Lightroom images:', error);
+		logger.error('Error syncing Lightroom images', error);
 		throw new Error(
 			`Failed to sync Lightroom images: ${error instanceof Error ? error.message : String(error)}`
 		);
@@ -148,26 +150,17 @@ async function processLightroomImage(
 }
 
 /**
- * Main execution function when run as a standalone script
+ * Orchestrates the Adobe Lightroom data synchronization process
  */
-const main = async (): Promise<void> => {
+async function syncAdobeData(): Promise<void> {
 	try {
-		console.log('\n=== STARTING ADOBE LIGHTROOM SYNC ===\n');
+		logger.start('Starting Adobe Lightroom data synchronization');
 		await runIntegration('lightroom', syncLightroomImages);
-		console.log('\n=== ADOBE LIGHTROOM SYNC COMPLETED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
-		process.exit(0);
+		logger.complete('Adobe Lightroom data synchronization completed');
 	} catch (error) {
-		console.error('Error in Lightroom sync main function:', error);
-		console.log('\n=== ADOBE LIGHTROOM SYNC FAILED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
-		process.exit(1);
+		logger.error('Error syncing Adobe Lightroom data', error);
+		throw error;
 	}
-};
-
-// Execute main function if this file is run directly
-if (import.meta.url === import.meta.resolve('./sync.ts')) {
-	main();
 }
 
-export { syncLightroomImages };
+export { syncAdobeData as syncLightroomImages };

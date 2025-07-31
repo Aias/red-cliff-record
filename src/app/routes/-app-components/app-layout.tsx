@@ -1,10 +1,11 @@
 import { type ReactNode } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, type LinkComponentProps } from '@tanstack/react-router';
 import { ArchiveIcon, MoonIcon, SunIcon } from 'lucide-react';
 import { SiteSearch } from './site-search';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { setTheme } from '@/lib/server/theme';
+import { cn } from '@/lib/utils';
 import { defaultQueueOptions } from '@/shared/types';
 
 interface AppLayoutProps {
@@ -12,6 +13,10 @@ interface AppLayoutProps {
 	currentTheme: 'light' | 'dark';
 	onThemeChange: (newTheme: 'light' | 'dark') => void;
 }
+
+const NavLink = ({ className, ...props }: LinkComponentProps) => {
+	return <Link {...props} className={cn('rounded-lg p-2 hover:bg-c-splash', className)} />;
+};
 
 export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutProps) => {
 	const toggleTheme = async () => {
@@ -29,9 +34,10 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 						<span className="font-mono font-medium">The Red Cliff Record</span>
 					</Link>
 					<Separator orientation="vertical" className="h-5! border-c-border" />
-					<Link to={'/records'} search={defaultQueueOptions}>
+					<NavLink to={'/records'} search={defaultQueueOptions}>
 						Records
-					</Link>
+					</NavLink>
+					<NavLink to={'/integrations'}>Integrations</NavLink>
 				</li>
 				<li className="flex items-center gap-2">
 					<SiteSearch />

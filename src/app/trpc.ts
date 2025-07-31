@@ -12,6 +12,7 @@ import { observable } from '@trpc/server/observable';
 import { toast } from 'sonner';
 import superjson from 'superjson';
 import type { AppRouter } from '@/server/api/root';
+import { PortSchema } from '@/shared/lib/env';
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -27,14 +28,14 @@ function getBaseUrl() {
 	// Use standard NODE_ENV to check environment
 	if (process.env.NODE_ENV === 'production') {
 		// Production server/worker: Use the PUBLIC_URL from env vars
-		// PUBLIC_URL MUST be set in your Cloudflare environment
+		// PUBLIC_URL MUST be set in your deployment environment
 		const publicUrl = process.env.PUBLIC_URL;
 		if (!publicUrl) {
 			// Log a more prominent error in production if the URL is missing
 			console.error(
 				"\n🔴 CRITICAL ERROR: The 'PUBLIC_URL' environment variable is not set in your production environment." +
 					'\n   This is required for server-side tRPC requests to function correctly.' +
-					'\n   Please set it in your Cloudflare Pages/Worker environment settings.\n'
+					'\n   Please set it in your production environment configuration.\n'
 			);
 			// Throwing an error might be better to halt deployment/startup if misconfigured
 			// throw new Error("PUBLIC_URL environment variable is not set in production.");
@@ -45,7 +46,7 @@ function getBaseUrl() {
 		// Development server (assume anything not 'production' is development)
 		// Use localhost and the port (default 3000)
 		// Ensure PORT env var matches your dev server if not 3000
-		const port = process.env.PORT ?? 3000;
+		const port = PortSchema.parse(process.env.PUBLIC_DEV_PORT);
 		return `http://localhost:${port}`;
 	}
 }

@@ -130,7 +130,7 @@ async function processCollections(
 
 			successCount++;
 		} catch (error) {
-			console.error('Error processing collection:', {
+			logger.error('Error processing collection', {
 				collectionId: collection._id,
 				error: error instanceof Error ? error.message : String(error),
 			});
@@ -375,29 +375,6 @@ async function syncRaindropData(): Promise<void> {
 		logger.error('Error syncing Raindrop data', error);
 		throw error;
 	}
-}
-
-/**
- * Main execution function when run as a standalone script
- */
-const main = async (): Promise<void> => {
-	try {
-		logger.start('=== STARTING RAINDROP SYNC ===');
-		await syncRaindropData();
-		logger.complete('=== RAINDROP SYNC COMPLETED ===');
-		logger.info('-'.repeat(50));
-		process.exit(0);
-	} catch (error) {
-		logger.error('Error in Raindrop sync main function', error);
-		logger.error('=== RAINDROP SYNC FAILED ===');
-		logger.info('-'.repeat(50));
-		process.exit(1);
-	}
-};
-
-// Execute main function if this file is run directly
-if (import.meta.url === import.meta.resolve('./sync.ts')) {
-	main();
 }
 
 export { syncRaindropData };

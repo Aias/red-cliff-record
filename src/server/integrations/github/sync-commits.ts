@@ -11,8 +11,11 @@ import {
 	type GithubRepositoryInsert,
 } from '@/server/db/schema/github';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
+import { createIntegrationLogger } from '../common/logging';
 import { syncCommitSummaries } from './summarize-commits';
 import { ensureGithubUserExists } from './sync-users';
+
+const logger = createIntegrationLogger('github', 'sync-commits');
 
 /**
  * Type definitions
@@ -142,16 +145,16 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 		auth: process.env.GITHUB_TOKEN,
 	});
 
-	console.log('Fetching GitHub commits...');
+	logger.start('Fetching GitHub commits');
 
 	// Get the most recent commit date to use as a cutoff
 	const mostRecentCommitDate = await getMostRecentCommitDate();
 	if (mostRecentCommitDate) {
-		console.log(
+		logger.info(
 			`Most recent commit activity in database: ${mostRecentCommitDate.toLocaleString()}`
 		);
 	} else {
-		console.log('No existing commits in database');
+		logger.info('No existing commits in database');
 	}
 
 	let page = 1;
@@ -160,7 +163,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 	while (hasMore) {
 		try {
-			console.log(`Fetching page ${page}...`);
+			logger.info(`Fetching page ${page}...`);
 
 			// Use the committer-date qualifier so that any push/merge update (reflected by committer date)
 			// after our mostRecentCommitDate will be included
@@ -201,7 +204,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 					});
 
 					if (existingCommit) {
-						console.log(`Skipping existing commit ${item.sha}`);
+						logger.info(`Skipping existing commit ${item.sha}`);
 						continue;
 					}
 
@@ -221,7 +224,7 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 						const forkDate = new Date(repoResponse.data.created_at);
 
 						if (commitDate < forkDate) {
-							console.log(`Skipping commit ${item.sha} as it predates fork creation`);
+							logger.info(`Skipping commit ${item.sha} as it predates fork creation`);
 							continue;
 						}
 					}
@@ -270,13 +273,13 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 						await db.insert(githubCommitChanges).values(newChange);
 					}
 
-					console.log(`Inserted commit ${item.sha} for ${item.repository.full_name}`);
+					logger.info(`Inserted commit ${item.sha} for ${item.repository.full_name}`);
 					totalCommits++;
 
 					// Add a small delay between requests to avoid rate limiting
 					await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
 				} catch (error) {
-					console.error(`Error processing commit ${item.sha}:`, {
+					logger.error(`Error processing commit ${item.sha}`, {
 						error: error instanceof Error ? error.message : String(error),
 						repository: item.repository?.full_name,
 					});
@@ -286,16 +289,16 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 			// If we didn't process any new commits on this page, we can stop
 			if (!processedAnyNewCommits) {
-				console.log('No new commits found on this page, stopping pagination');
+				logger.info('No new commits found on this page, stopping pagination');
 				hasMore = false;
 				break;
 			}
 
-			console.log(`Processed new commits from page ${page}`);
+			logger.info(`Processed new commits from page ${page}`);
 			page++;
 		} catch (error) {
 			if (error instanceof RequestError) {
-				console.error('GitHub API Error:', {
+				logger.error('GitHub API Error', {
 					status: error.status,
 					message: error.message,
 					headers: error.response?.headers,
@@ -312,11 +315,11 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 		}
 	}
 
-	console.log(`Successfully synced ${totalCommits} new commits`);
+	logger.complete('Synced commits', totalCommits);
 
 	// Generate summaries and embeddings for the new commits
 	if (totalCommits > 0) {
-		console.log('Generating commit summaries...');
+		logger.info('Generating commit summaries...');
 		await syncCommitSummaries();
 	}
 

@@ -1,23 +1,9 @@
-import { neon, neonConfig } from '@neondatabase/serverless';
 import { initTRPC } from '@trpc/server';
 import DataLoader from 'dataloader';
-import { drizzle } from 'drizzle-orm/neon-http';
 import superjson from 'superjson';
-import ws from 'ws';
 import { ZodError } from 'zod/v4';
-import { relations } from '@/server/db/relations';
-import * as schema from '@/server/db/schema';
+import { db } from '@/server/db/connections/postgres';
 import type { RecordGet } from '@/shared/types';
-
-neonConfig.webSocketConstructor = ws;
-neonConfig.poolQueryViaFetch = true;
-
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle({
-	client: sql,
-	schema,
-	relations,
-});
 
 function createRecordLoader() {
 	return new DataLoader<number, RecordGet>(async (ids) => {

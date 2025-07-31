@@ -4,6 +4,9 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { githubUsers, type GithubUserInsert } from '@/server/db/schema/github';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
+import { createIntegrationLogger } from '../common/logging';
+
+const logger = createIntegrationLogger('github', 'sync-users');
 
 /**
  * Configuration constants
@@ -74,7 +77,7 @@ export async function updatePartialUsers(): Promise<number> {
 		auth: process.env.GITHUB_TOKEN,
 	});
 
-	console.log('Fetching full user information for partial users...');
+	logger.start('Fetching full user information for partial users');
 
 	// Find all users marked as partial
 	const partialUsers = await db.query.githubUsers.findMany({
@@ -86,12 +89,12 @@ export async function updatePartialUsers(): Promise<number> {
 		},
 	});
 
-	console.log(`Found ${partialUsers.length} partial users to update`);
+	logger.info(`Found ${partialUsers.length} partial users to update`);
 	let updatedCount = 0;
 
 	for (const user of partialUsers) {
 		try {
-			console.log(`Fetching full information for user ${user.login}...`);
+			logger.info(`Fetching full information for user ${user.login}...`);
 			const response = await octokit.rest.users.getByUsername({
 				username: user.login,
 				headers: {
@@ -125,13 +128,13 @@ export async function updatePartialUsers(): Promise<number> {
 				.where(eq(githubUsers.id, user.id));
 
 			updatedCount++;
-			console.log(`Updated user ${user.login}`);
+			logger.info(`Updated user ${user.login}`);
 
 			// Add a small delay between requests to avoid rate limiting
 			await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
 		} catch (error) {
 			if (error instanceof RequestError) {
-				console.error(`Error fetching user ${user.login}:`, {
+				logger.error(`Error fetching user ${user.login}`, {
 					status: error.status,
 					message: error.message,
 					headers: error.response?.headers,
@@ -147,13 +150,13 @@ export async function updatePartialUsers(): Promise<number> {
 				}
 
 				// For other errors, continue with next user
-				console.warn(`Skipping user ${user.login} due to error`);
+				logger.warn(`Skipping user ${user.login} due to error`);
 				continue;
 			}
 			throw error;
 		}
 	}
 
-	console.log(`Successfully updated ${updatedCount} users with full information`);
+	logger.complete('Updated users with full information', updatedCount);
 	return updatedCount;
 }

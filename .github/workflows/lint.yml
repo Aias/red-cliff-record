@@ -1,8 +1,6 @@
 name: Lint and Format
 
-on:
-  push:
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   lint:
@@ -10,13 +8,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
+
+      # 1 – Install Bun
+      - uses: oven-sh/setup-bun@v2 # official action
         with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run lint
-      - run: pnpm run tsc
+          bun-version: latest
+
+      # 2 – Install locked deps (fails if package.json ↔ bun.lock mismatch)
+      - run: bun ci # same as `bun install --frozen-lockfile`
+
+      # 3 – Run your scripts through Bun
+      - run: bun run lint
+      - run: bun run tsc # or `bunx tsc --noEmit` if you don't have a script

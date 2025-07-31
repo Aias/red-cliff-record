@@ -6,27 +6,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Cloudflare Pages.
+Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Bun server.
 
 ## Essential Commands
 
 **Development:**
 
-- `pnpm dev` - Start development server
-- `pnpm build` - Build for production
-- `pnpm lint` - Format, lint, and type check (REQUIRED before commits)
-- `pnpm tsc` - Type check only (REQUIRED before commits)
+- `bun run dev` - Start development server
+- `bun run build` - Build for production
+- `bun run lint` - Format, lint, and type check (REQUIRED before commits)
+- `bun run tsc` - Type check only (REQUIRED before commits)
 
 **Database:**
 
-- `pnpm db:migrate` - Run database migrations
-- `pnpm db:studio` - Open Drizzle Studio for database inspection
+- `bun run db:migrate` - Run database migrations
+- `bun run db:studio` - Open Drizzle Studio for database inspection
+- `bun run db:backup-local` - Backup local database
+- `bun run db:backup-remote` - Backup remote database
+- `bun run db:restore-local` - Restore to local database
+- `bun run db:restore-remote` - Restore to remote database
+- `./src/server/db/db-manager.sh -c restore local` - Clean restore (drop & recreate database with extensions)
 
 **Data Sync:**
 
-- `pnpm sync:daily` - Run all integrations
-- Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, `pnpm sync:raindrop`, `pnpm sync:readwise`, `pnpm sync:feedbin`, `pnpm sync:browsing`
+- `bun run sync:daily` - Run all integrations
+- Individual sync: `bun run sync:github`, `bun run sync:airtable`, `bun run sync:raindrop`, `bun run sync:readwise`, `bun run sync:feedbin`, `bun run sync:browsing`
 - **IMPORTANT**: Never run any sync scripts without checking with the user first
+
+**Data Operations:**
+
+- **IMPORTANT**: Never run any operations that modify data or could have destructive effects (including creating new data, schemas, or running database migrations) without first prompting the user for permission
 
 ## Architecture
 
@@ -71,6 +80,8 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Integration-specific tables for external data sources
 - Vector embeddings for semantic search
 - PostgreSQL with Drizzle ORM
+- Extensions: `pg_trgm` and `vector` (installed in `extensions` schema)
+- Search path must include `extensions` schema for vector operations
 
 ## Component Development Rules
 
@@ -143,7 +154,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 **Before Every Commit:**
 
-- Run `pnpm lint` AND `pnpm tsc`
+- Run `bun run lint` AND `bun run tsc`
 - Update CLAUDE.md if refactoring changes architectural patterns or introduces new conventions
 
 ## Import Aliases
@@ -190,7 +201,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Use `sed -n 'start,end p' filename` to see exact content with proper formatting
 - For complex multi-line replacements, prefer smaller, targeted changes over large blocks
 - When uncertain about whitespace, use the Bash tool with `grep -A/-B` to see context
-- Test with TypeScript compilation (`pnpm tsc`) after file modifications
+- Test with TypeScript compilation (`bun run tsc`) after file modifications
 
 **Media & File Handling:**
 
@@ -211,9 +222,10 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 1. **File Structure** - Each integration should have:
    - `types.ts` - Zod schemas (v4) for API responses and TypeScript types
    - `client.ts` - API client with authenticated requests
-   - `sync.ts` - Main sync logic using `runIntegration` wrapper
+   - `sync.ts` - Main sync logic using `runIntegration` wrapper (pure function, no CLI code)
    - `embedding.ts` - (if needed) Text generation for embeddings
    - `map.ts` - (if needed) Mapping logic from integration data to records
+   - CLI entry point in `src/server/cli/sync-[integration].ts` for command-line execution
 
 2. **Authentication:**
    - Use environment variables for credentials (e.g., `FEEDBIN_USERNAME`, `FEEDBIN_PASSWORD`)
@@ -246,3 +258,67 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
    - For integrations with multiple data sources, use orchestration pattern
    - Call `runIntegration` once at the top level for the entire sync
    - Example: Browser history sync-all runs both Arc and Dia under one integration run, Github sync handles sync for both starred repositories and commit history
+
+8. **CLI Entry Points Pattern:**
+   - Integration sync functions should be pure - no CLI-specific code, no runtime detection
+   - Create separate CLI entry points in `src/server/cli/` directory
+   - CLI files handle process.exit(), console formatting, and other terminal concerns
+   - Example structure:
+
+     ```typescript
+     // src/server/integrations/[name]/sync.ts
+     export async function syncData() {
+       // Pure sync logic using runIntegration
+     }
+
+     // src/server/cli/sync-[name].ts
+     #!/usr/bin/env bun
+     import { syncData } from '../integrations/[name]/sync';
+     const logger = createIntegrationLogger('[name]', 'cli');
+
+     async function main() {
+       try {
+         logger.start('=== STARTING SYNC ===');
+         await syncData();
+         logger.complete('=== SYNC COMPLETED ===');
+         process.exit(0);
+       } catch (error) {
+         logger.error('Sync failed', error);
+         process.exit(1);
+       }
+     }
+     main();
+     ```
+
+   - Update package.json to point to CLI entry: `"sync:[name]": "bun src/server/cli/sync-[name].ts"`
+
+## Database Management and Migration Guidelines
+
+**Backup and Restore:**
+
+1. **Database URLs:**
+   - `DATABASE_URL_LOCAL` - Local PostgreSQL instance
+   - `DATABASE_URL_REMOTE` - Remote production database
+   - `DATABASE_URL` - Active database connection (usually points to local or remote)
+
+2. **Schema Divergence:**
+   - Local and remote databases may have different schemas due to pending migrations
+   - Use clean restore (`-c` flag) when schema conflicts occur during restore
+   - Clean restore drops the entire database and recreates it with proper extensions
+
+3. **Required PostgreSQL Extensions:**
+   - `pg_trgm` - For text similarity search using trigrams
+   - `vector` - For vector similarity search and embeddings
+   - Both installed in `extensions` schema
+   - Database search_path must include `extensions` for vector operators to work
+
+4. **Common Issues and Solutions:**
+   - **Foreign key violations during restore**: Use clean restore to drop and recreate database
+   - **Vector operator not found errors**: Run `ALTER DATABASE dbname SET search_path TO public, extensions;`
+   - **Migration history too complex**: Use backup/restore instead of running all migrations
+
+5. **Best Practices:**
+   - Always backup before major database operations
+   - Check schema compatibility before restoring between environments
+   - Use `db-manager.sh` script for consistent backup/restore operations
+   - Never run destructive database operations without user permission

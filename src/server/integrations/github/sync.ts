@@ -1,8 +1,11 @@
+import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import { createRecordsFromGithubRepositories, createRecordsFromGithubUsers } from './map';
 import { syncGitHubCommits } from './sync-commits';
 import { syncGitHubStars } from './sync-stars';
 import { updatePartialUsers } from './sync-users';
+
+const logger = createIntegrationLogger('github', 'sync');
 
 /**
  * Orchestrates the GitHub data synchronization process
@@ -21,7 +24,7 @@ import { updatePartialUsers } from './sync-users';
  */
 async function syncGitHubData(): Promise<void> {
 	try {
-		console.log('Starting GitHub data synchronization');
+		logger.start('Starting GitHub data synchronization');
 
 		// Step 1: Sync starred repositories
 		await runIntegration('github', syncGitHubStars);
@@ -36,34 +39,11 @@ async function syncGitHubData(): Promise<void> {
 		await createRecordsFromGithubUsers();
 		await createRecordsFromGithubRepositories();
 
-		console.log('GitHub data synchronization completed successfully');
+		logger.complete('GitHub data synchronization completed');
 	} catch (error) {
-		console.error('Error syncing GitHub data:', error);
+		logger.error('Error syncing GitHub data', error);
 		throw error;
 	}
-}
-
-/**
- * Main execution function when run as a standalone script
- */
-const main = async (): Promise<void> => {
-	try {
-		console.log('\n=== STARTING GITHUB SYNC ===\n');
-		await syncGitHubData();
-		console.log('\n=== GITHUB SYNC COMPLETED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
-		process.exit(0);
-	} catch (error) {
-		console.error('Error in GitHub sync main function:', error);
-		console.log('\n=== GITHUB SYNC FAILED ===\n');
-		console.log('\n' + '-'.repeat(50) + '\n');
-		process.exit(1);
-	}
-};
-
-// Execute main function if this file is run directly
-if (import.meta.url === import.meta.resolve('./sync.ts')) {
-	main();
 }
 
 export { syncGitHubData };

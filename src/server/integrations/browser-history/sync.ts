@@ -4,6 +4,7 @@ import { and, eq, gt, isNotNull, ne, notLike, sql } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { db } from '@/server/db/connections';
 import { urls, visits } from '@/server/db/schema/arc';
+import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {
 	CHROME_EPOCH_TO_UNIX_SECONDS,
@@ -22,6 +23,8 @@ import {
 	type Browser,
 	type BrowsingHistoryInsert,
 } from '@/db/schema/browser-history';
+
+const logger = createIntegrationLogger('browser-history', 'sync');
 
 /**
  * Configuration constants
@@ -119,7 +122,7 @@ function sanitizeUrl(url: string): string | null {
 			return null; // Still too long
 		}
 	} catch (error) {
-		console.warn('Failed to parse URL, excluding record:', url, error);
+		logger.warn('Failed to parse URL, excluding record: ' + url, error);
 		return null;
 	}
 }
@@ -150,18 +153,18 @@ async function syncBrowserHistory(
 		// Step 1: Check if the current hostname is known
 		const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
 		if (!shouldProceed) {
-			console.log('Sync cancelled by user');
+			logger.info('Sync cancelled by user');
 			return 0;
 		}
 
-		console.log(`Starting ${browserConfig.displayName} browser history incremental update...`);
+		logger.start(`Starting ${browserConfig.displayName} browser history incremental update`);
 
 		// Step 2: Get the most recent history entry
 		const lastKnownTime = await getLastSyncPoint(currentHostname, browserConfig.name);
 		logLastSyncPoint(lastKnownTime);
 
 		// Step 3: Fetch new history entries
-		console.log('Retrieving new history entries...');
+		logger.info('Retrieving new history entries...');
 		const browserDb = browserConfig.createConnection();
 
 		// Calculate effective cutoff time (use the later of lastKnownTime or browser cutoff date)
@@ -172,12 +175,12 @@ async function syncBrowserHistory(
 			);
 			if (!effectiveCutoff || cutoffMicroseconds > effectiveCutoff) {
 				effectiveCutoff = cutoffMicroseconds;
-				console.log(`Using browser cutoff date: ${browserConfig.cutoffDate.toISOString()}`);
+				logger.info(`Using browser cutoff date: ${browserConfig.cutoffDate.toISOString()}`);
 			}
 		}
 
 		const rawHistory = await fetchNewHistoryEntries(browserDb, effectiveCutoff);
-		console.log(`Retrieved ${rawHistory.length} new history entries`);
+		logger.info(`Retrieved ${rawHistory.length} new history entries`);
 
 		// Step 4: Process and sanitize the entries
 		const processedHistory = processHistoryEntries(
@@ -191,7 +194,7 @@ async function syncBrowserHistory(
 		if (processedHistory.length > 0) {
 			await insertHistoryEntries(processedHistory);
 		} else {
-			console.log('No new history entries to insert');
+			logger.info('No new history entries to insert');
 		}
 
 		return processedHistory.length;
@@ -199,7 +202,7 @@ async function syncBrowserHistory(
 		if (error instanceof BrowserNotInstalledError) {
 			throw error;
 		}
-		console.error(`Error syncing ${browserConfig.displayName} browser history:`, error);
+		logger.error(`Error syncing ${browserConfig.displayName} browser history`, error);
 		throw new Error(
 			`Failed to sync ${browserConfig.displayName} browser history: ${
 				error instanceof Error ? error.message : String(error)
@@ -229,7 +232,7 @@ async function checkHostname(currentHostname: string, _browser: Browser): Promis
 
 	// If current hostname is not in the database, ask for confirmation
 	if (!knownHostnames.has(currentHostname)) {
-		console.log('Known hostnames:', Array.from(knownHostnames).join(', '));
+		logger.info('Known hostnames: ' + Array.from(knownHostnames).join(', '));
 		return askForConfirmation(
 			`Current hostname "${currentHostname}" has not been seen before. Proceed with sync?`
 		);
@@ -273,9 +276,9 @@ async function getLastSyncPoint(hostname: string, browser: Browser): Promise<big
 function logLastSyncPoint(lastKnownTime: bigint | null): void {
 	if (lastKnownTime) {
 		const date = chromeEpochMicrosecondsToDatetime(lastKnownTime);
-		console.log(`Last known visit time: ${date.toLocaleString()} (${date.toISOString()})`);
+		logger.info(`Last known visit time: ${date.toLocaleString()} (${date.toISOString()})`);
 	} else {
-		console.log('Last known visit time: none');
+		logger.info('Last known visit time: none');
 	}
 }
 
@@ -325,7 +328,7 @@ function processHistoryEntries(
 
 	// Collapse sequential visits to the same URL
 	const collapsedHistory = collapseSequentialVisits(dailyHistory);
-	console.log(`Collapsed into ${collapsedHistory.length} entries`);
+	logger.info(`Collapsed into ${collapsedHistory.length} entries`);
 
 	// Convert to database format
 	const history: BrowsingHistoryInsert[] = collapsedHistory.map((h) => ({
@@ -445,7 +448,7 @@ async function checkForMillisecondDuplicates(
 
 	const skipped = entries.length - dedupedEntries.length;
 	if (skipped > 0) {
-		console.log(`Pre-filtered ${skipped} entries that already exist at millisecond precision`);
+		logger.info(`Pre-filtered ${skipped} entries that already exist at millisecond precision`);
 	}
 
 	return dedupedEntries;
@@ -457,13 +460,13 @@ async function checkForMillisecondDuplicates(
  * @param processedHistory - The processed history entries
  */
 async function insertHistoryEntries(processedHistory: BrowsingHistoryInsert[]): Promise<void> {
-	console.log(`Inserting ${processedHistory.length} new history entries`);
+	logger.info(`Inserting ${processedHistory.length} new history entries`);
 
 	// Pre-filter entries that might already exist at millisecond precision
 	const dedupedHistory = await checkForMillisecondDuplicates(processedHistory);
 
 	if (dedupedHistory.length === 0) {
-		console.log('All entries already exist (detected at millisecond precision)');
+		logger.info('All entries already exist (detected at millisecond precision)');
 		return;
 	}
 
@@ -488,15 +491,15 @@ async function insertHistoryEntries(processedHistory: BrowsingHistoryInsert[]): 
 			skippedCount += expectedCount - insertedCount;
 		}
 
-		console.log(
+		logger.info(
 			`Inserted batch ${Math.floor(i / BATCH_SIZE) + 1} of ${totalBatches} (${insertedCount}/${expectedCount} entries)`
 		);
 	}
 
 	if (skippedCount > 0) {
-		console.log(`Skipped ${skippedCount} duplicate entries`);
+		logger.info(`Skipped ${skippedCount} duplicate entries`);
 	}
-	console.log('New history entries inserted');
+	logger.complete('New history entries inserted');
 }
 
 /**
@@ -514,7 +517,7 @@ export function createBrowserSyncFunction(browserConfig: BrowserConfig) {
 				syncBrowserHistory(browserConfig, integrationRunId)
 			);
 		} catch (error) {
-			console.error(`Error syncing ${browserConfig.displayName} browser history:`, error);
+			logger.error(`Error syncing ${browserConfig.displayName} browser history`, error);
 			throw error;
 		}
 	};
