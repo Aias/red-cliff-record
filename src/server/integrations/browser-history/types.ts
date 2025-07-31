@@ -25,7 +25,13 @@ export const DailyVisitsQueryResultSchema = z.array(DailyVisitsQueryRowSchema);
 export interface BrowserConfig {
 	name: Browser;
 	displayName: string;
-	createConnection: () => LibSQLDatabase<typeof browserHistorySchema>;
+	/** Default location of the browser history file */
+	defaultPath: string;
+	/**
+	 * Create a connection from a history file path.
+	 * The caller is responsible for providing the path or using defaultPath.
+	 */
+	createConnection: (historyPath: string) => LibSQLDatabase<typeof browserHistorySchema>;
 	// Optional cutoff date to avoid fetching history before this date
 	// Useful for browsers that import history from other browsers
 	cutoffDate?: Date;

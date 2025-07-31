@@ -27,7 +27,9 @@ const logger = createIntegrationLogger('twitter', 'sync');
 /**
  * Configuration constants
  */
-const TWITTER_DATA_DIR = resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');
+export const getDefaultTwitterDataDir = () =>
+	resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');
+const TWITTER_DATA_DIR = getDefaultTwitterDataDir();
 const BOOKMARK_FILE_PREFIX = 'bookmarks-';
 const BOOKMARK_FILE_SUFFIX = '.json';
 const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
@@ -96,15 +98,13 @@ async function retryOnEINTR<T>(operation: () => T, maxRetries: number = 3): Prom
  * @returns Object containing the bookmark data and array of processed file paths
  * @throws Error if JSON parsing fails
  */
-export async function loadBookmarksData(): Promise<{
+export async function loadBookmarksData(dataDir: string = TWITTER_DATA_DIR): Promise<{
 	data: TwitterBookmarksArray;
 	processedFiles: string[];
 }> {
 	try {
 		// Read the directory entries with file types, with retry on EINTR
-		const entries = await retryOnEINTR(() =>
-			readdirSync(TWITTER_DATA_DIR, { withFileTypes: true })
-		);
+		const entries = await retryOnEINTR(() => readdirSync(dataDir, { withFileTypes: true }));
 
 		// Filter for bookmark files and sort them
 		const bookmarkFiles = entries
@@ -127,7 +127,7 @@ export async function loadBookmarksData(): Promise<{
 		const processedFiles: string[] = [];
 
 		for (const fileName of bookmarkFiles) {
-			const filePath = resolve(TWITTER_DATA_DIR, fileName);
+			const filePath = resolve(dataDir, fileName);
 			logger.info(`Processing Twitter bookmarks file: ${filePath}`);
 
 			const fileContent = await retryOnEINTR(() => readFileSync(filePath, 'utf-8'));
@@ -148,7 +148,7 @@ export async function loadBookmarksData(): Promise<{
 	} catch (error) {
 		// Handle directory not found error
 		if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-			logger.info(`Twitter data directory not found at: ${TWITTER_DATA_DIR}`);
+			logger.info(`Twitter data directory not found at: ${dataDir}`);
 			return { data: [], processedFiles: [] };
 		}
 
@@ -172,10 +172,13 @@ export async function loadBookmarksData(): Promise<{
  * @returns The number of successfully processed tweets
  * @throws Error if processing fails
  */
-async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
+async function syncTwitterBookmarks(
+	integrationRunId: number,
+	dataDir: string = TWITTER_DATA_DIR
+): Promise<number> {
 	try {
 		// Step 1: Load bookmarks data
-		const { data: bookmarkResponses, processedFiles } = await loadBookmarksData();
+		const { data: bookmarkResponses, processedFiles } = await loadBookmarksData(dataDir);
 		if (bookmarkResponses.length === 0) {
 			logger.info('No Twitter bookmarks data found');
 			return 0;
@@ -201,7 +204,7 @@ async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
 		await createRelatedRecords();
 
 		// Step 6: Archive processed files
-		const archiveDir = resolve(TWITTER_DATA_DIR, 'Archive');
+		const archiveDir = resolve(dataDir, 'Archive');
 		await archiveProcessedFiles(processedFiles, archiveDir);
 
 		return updatedCount;
@@ -394,10 +397,10 @@ async function createRelatedRecords(): Promise<void> {
 /**
  * Orchestrates the Twitter data synchronization process
  */
-async function syncTwitterData(): Promise<void> {
+async function syncTwitterData(dataDir: string = TWITTER_DATA_DIR): Promise<void> {
 	try {
 		logger.start('Starting Twitter data synchronization');
-		await runIntegration('twitter', syncTwitterBookmarks);
+		await runIntegration('twitter', (id) => syncTwitterBookmarks(id, dataDir));
 		logger.complete('Twitter data synchronization completed');
 	} catch (error) {
 		logger.error('Error syncing Twitter data', error);

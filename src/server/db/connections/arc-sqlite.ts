@@ -9,17 +9,24 @@ import * as schema from '../schema/browser-history';
 
 const arcHistoryPath = 'Library/Application Support/Arc/User Data/Default/History';
 
-// Path to Arc's History database (Mac OS Only)
-export const arcDbPath = join(homedir(), arcHistoryPath);
-export const arcDbCopyPath = join(homedir(), `${arcHistoryPath}-copy`);
-export const connectionUrl = `file:${arcDbCopyPath}`;
+/**
+ * Returns the default path to the Arc browser history file.
+ */
+export const getArcHistoryPath = () => join(homedir(), arcHistoryPath);
 
-export const createArcConnection = () => {
-	if (!existsSync(arcDbPath)) {
-		throw new BrowserNotInstalledError('Arc', arcDbPath);
+/**
+ * Creates a database connection from a browser history file.
+ * A temporary copy of the file is created to avoid locking issues.
+ */
+export const createArcConnection = (historyPath: string = getArcHistoryPath()) => {
+	if (!existsSync(historyPath)) {
+		throw new BrowserNotInstalledError('Arc', historyPath);
 	}
-	copyFileSync(arcDbPath, arcDbCopyPath);
 
+	const copyPath = `${historyPath}-copy`;
+	copyFileSync(historyPath, copyPath);
+
+	const connectionUrl = `file:${copyPath}`;
 	const client = createClient({
 		url: connectionUrl,
 		intMode: 'bigint',
@@ -27,3 +34,6 @@ export const createArcConnection = () => {
 
 	return drizzle(client, { schema });
 };
+
+// Convenience export used by Drizzle config files
+export const connectionUrl = `file:${getArcHistoryPath()}-copy`;
