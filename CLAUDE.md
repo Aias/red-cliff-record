@@ -6,31 +6,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Cloudflare Pages.
+Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Bun server.
 
 ## Essential Commands
 
 **Development:**
 
-- `pnpm dev` - Start development server
-- `pnpm build` - Build for production
-- `pnpm lint` - Format, lint, and type check (REQUIRED before commits)
-- `pnpm tsc` - Type check only (REQUIRED before commits)
+- `bun run dev` - Start development server
+- `bun run build` - Build for production
+- `bun run lint` - Format, lint, and type check (REQUIRED before commits)
+- `bun run tsc` - Type check only (REQUIRED before commits)
 
 **Database:**
 
-- `pnpm db:migrate` - Run database migrations
-- `pnpm db:studio` - Open Drizzle Studio for database inspection
-- `pnpm db:backup-local` - Backup local database
-- `pnpm db:backup-remote` - Backup remote database
-- `pnpm db:restore-local` - Restore to local database
-- `pnpm db:restore-remote` - Restore to remote database
+- `bun run db:migrate` - Run database migrations
+- `bun run db:studio` - Open Drizzle Studio for database inspection
+- `bun run db:backup-local` - Backup local database
+- `bun run db:backup-remote` - Backup remote database
+- `bun run db:restore-local` - Restore to local database
+- `bun run db:restore-remote` - Restore to remote database
 - `./src/server/db/db-manager.sh -c restore local` - Clean restore (drop & recreate database with extensions)
 
 **Data Sync:**
 
-- `pnpm sync:daily` - Run all integrations
-- Individual sync: `pnpm sync:github`, `pnpm sync:airtable`, `pnpm sync:raindrop`, `pnpm sync:readwise`, `pnpm sync:feedbin`, `pnpm sync:browsing`
+- `bun run sync:daily` - Run all integrations
+- Individual sync: `bun run sync:github`, `bun run sync:airtable`, `bun run sync:raindrop`, `bun run sync:readwise`, `bun run sync:feedbin`, `bun run sync:browsing`
 - **IMPORTANT**: Never run any sync scripts without checking with the user first
 
 **Data Operations:**
@@ -154,7 +154,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 **Before Every Commit:**
 
-- Run `pnpm lint` AND `pnpm tsc`
+- Run `bun run lint` AND `bun run tsc`
 - Update CLAUDE.md if refactoring changes architectural patterns or introduces new conventions
 
 ## Import Aliases
@@ -201,7 +201,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Use `sed -n 'start,end p' filename` to see exact content with proper formatting
 - For complex multi-line replacements, prefer smaller, targeted changes over large blocks
 - When uncertain about whitespace, use the Bash tool with `grep -A/-B` to see context
-- Test with TypeScript compilation (`pnpm tsc`) after file modifications
+- Test with TypeScript compilation (`bun run tsc`) after file modifications
 
 **Media & File Handling:**
 
@@ -298,7 +298,7 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 1. **Database URLs:**
    - `DATABASE_URL_LOCAL` - Local PostgreSQL instance
-   - `DATABASE_URL_REMOTE` - Production Neon database
+   - `DATABASE_URL_REMOTE` - Remote production database
    - `DATABASE_URL` - Active database connection (usually points to local or remote)
 
 2. **Schema Divergence:**

@@ -18,7 +18,7 @@ export const EnvSchema = z.object({
 	DATABASE_URL_REMOTE: z.string().optional(),
 	DATABASE_URL_DEV: z.string().optional(),
 
-	// Cloudflare R2 / S3
+	// Cloudflare R2 / S3 Storage
 	CLOUDFLARE_ACCOUNT_ID: z.string(),
 	S3_ACCESS_KEY_ID: z.string(),
 	S3_SECRET_ACCESS_KEY: z.string(),

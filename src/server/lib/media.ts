@@ -25,7 +25,7 @@ type EnvKey =
 	| 'ASSETS_DOMAIN';
 
 function getEnv(key: EnvKey): string {
-	// Runtime access needs access to process.env or the Cloudflare env object
+	// Runtime access needs access to process.env
 	// This assumes process.env is available during initialization or build
 	// or that this runs in an environment where process.env is populated.
 	const value = process.env[key];

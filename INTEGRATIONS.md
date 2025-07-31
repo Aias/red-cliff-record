@@ -26,7 +26,7 @@ Syncs your GitHub repositories, stars, and commits.
 ### Sync Command
 
 ```bash
-pnpm sync:github
+bun run sync:github
 ```
 
 ## Airtable Integration
@@ -59,7 +59,7 @@ Syncs records from Airtable bases with a specific structure.
 ### Sync Command
 
 ```bash
-pnpm sync:airtable
+bun run sync:airtable
 ```
 
 ## Raindrop.io Integration
@@ -85,7 +85,7 @@ Syncs your bookmarks and collections.
 ### Sync Command
 
 ```bash
-pnpm sync:raindrop
+bun run sync:raindrop
 ```
 
 ## Readwise Integration
@@ -109,7 +109,7 @@ Syncs your reading highlights and notes.
 ### Sync Command
 
 ```bash
-pnpm sync:readwise
+bun run sync:readwise
 ```
 
 ## Feedbin Integration
@@ -137,7 +137,7 @@ Syncs your RSS feed subscriptions and entries from Feedbin.
 ### Sync Command
 
 ```bash
-pnpm sync:feedbin
+bun run sync:feedbin
 ```
 
 ### Features
@@ -175,7 +175,7 @@ Syncs browsing history from Chromium-based browsers locally. Currently configure
 ### Sync Command
 
 ```bash
-pnpm sync:arc
+bun run sync:arc
 ```
 
 ### Troubleshooting
@@ -206,13 +206,13 @@ pnpm sync:arc
 ### Sync Command
 
 ```bash
-pnpm sync:dia
+bun run sync:dia
 ```
 
 ### All Browser Sync
 
 ```bash
-pnpm sync:browsing
+bun run sync:browsing
 ```
 
 This runs both Arc and Dia syncs sequentially under a single integration run.
@@ -260,7 +260,7 @@ Syncs photos from a publicly shared Adobe Lightroom album.
 ### Sync Command
 
 ```bash
-pnpm sync:adobe
+bun run sync:adobe
 ```
 
 ## Twitter/X Integration
@@ -293,7 +293,7 @@ Captures Twitter bookmarks (manual process).
 
 ```bash
 # After manual capture
-pnpm sync:twitter
+bun run sync:twitter
 ```
 
 ## Running All Integrations
@@ -301,7 +301,7 @@ pnpm sync:twitter
 To sync all configured integrations at once:
 
 ```bash
-pnpm sync:daily
+bun run sync:daily
 ```
 
 This runs all integrations that have valid API keys configured, including browser history and feed syncs. Manually updated integrations (Twitter and Adobe) are not run by this command.
@@ -321,7 +321,7 @@ For production use, consider setting up a cron job:
 
 ```bash
 # Sync daily at 2 AM
-0 2 * * * cd /path/to/red-cliff-record && pnpm sync:daily
+0 2 * * * cd /path/to/red-cliff-record && bun run sync:daily
 ```
 
 ## Debugging Integration Issues
@@ -329,13 +329,13 @@ For production use, consider setting up a cron job:
 Enable debug logging:
 
 ```bash
-DEBUG=* pnpm sync:github
+DEBUG=* bun run sync:github
 ```
 
 Check integration-specific tables in the database:
 
 ```bash
-pnpm db:studio
+bun run db:studio
 ```
 
 View sync logs in the `operations` table for detailed error messages.
