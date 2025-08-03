@@ -1,4 +1,4 @@
-import { AwsClient } from 'aws4fetch';
+import { S3Client } from 'bun';
 import mime from 'mime-types';
 import type { MediaInsert } from '@/server/db/schema';
 import { MediaType } from '@/server/db/schema/media';
@@ -34,20 +34,20 @@ function getEnv(key: EnvKey): string {
 }
 
 /* ---------------------------------------------------------------------------
- * AwsClient signer (works in Workers + Node18+)
+ * S3 Client setup using Bun's native S3 API
  * -------------------------------------------------------------------------*/
-const signer = new AwsClient({
-	accessKeyId: getEnv('S3_ACCESS_KEY_ID'),
-	secretAccessKey: getEnv('S3_SECRET_ACCESS_KEY'),
-	service: 's3',
-	region: getEnv('S3_REGION') || 'auto', // R2 ignores the region
-});
-
 const BUCKET = getEnv('S3_BUCKET');
-const ENDPOINT = getEnv('S3_ENDPOINT').replace(/\/$/, ''); // trim trailing slash
 const PUBLIC_DOMAIN = getEnv('ASSETS_DOMAIN');
 
-const r2ObjectURL = (key: string) => `${ENDPOINT}/${BUCKET}/${key}`;
+// Create S3 client with credentials from environment
+const s3Client = new S3Client({
+	accessKeyId: getEnv('S3_ACCESS_KEY_ID'),
+	secretAccessKey: getEnv('S3_SECRET_ACCESS_KEY'),
+	bucket: BUCKET,
+	endpoint: getEnv('S3_ENDPOINT'),
+	region: getEnv('S3_REGION') || 'auto',
+});
+
 const publicURL = (key: string) => `https://${PUBLIC_DOMAIN}/${key}`;
 
 /* ---------------------------------------------------------------------------
@@ -174,26 +174,6 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
 }
 
 /* ---------------------------------------------------------------------------
- * Core R2 helpers – PUT & DELETE
- * -------------------------------------------------------------------------*/
-async function r2Put(key: string, body: BodyInit, contentType: string) {
-	const res = await signer.fetch(r2ObjectURL(key), {
-		method: 'PUT',
-		body,
-		headers: { 'content-type': contentType },
-	});
-	if (!res.ok) throw new Error(`R2 PUT failed: ${res.status} ${res.statusText}`);
-}
-
-async function r2Delete(key: string) {
-	const res = await signer.fetch(r2ObjectURL(key), { method: 'DELETE' });
-	// treat 404 as success (object already gone)
-	if (!res.ok && res.status !== 404) {
-		throw new Error(`R2 DELETE failed: ${res.status} ${res.statusText}`);
-	}
-}
-
-/* ---------------------------------------------------------------------------
  * Public API – Upload & Delete Functions
  * -------------------------------------------------------------------------*/
 
@@ -206,22 +186,23 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 		return mediaUrl;
 	}
 
-	// 1 Download
+	// 1. Download
 	const resp = await fetch(mediaUrl);
 	if (!resp.ok) {
 		throw new Error(`Failed to download: HTTP ${resp.status} from ${mediaUrl}`);
 	}
-	const buffer = Buffer.from(await resp.arrayBuffer());
 
-	// 2 Content‑type detection
+	// 2. Content-type detection
 	let contentType = resp.headers.get('content-type') ?? '';
 	if (!contentType) contentType = getMimeTypeFromURL(mediaUrl);
 
-	// 3 Key generation
+	// 3. Key generation
 	const key = `${crypto.randomUUID()}.${mime.extension(contentType) || 'bin'}`;
 
-	// 4 PUT to R2
-	await r2Put(key, buffer, contentType);
+	// 4. Upload to R2 using Bun's S3 API
+	const s3File = s3Client.file(key);
+	await s3File.write(resp, { type: contentType });
+	
 	console.log(`Successfully uploaded ${mediaUrl} → ${publicURL(key)}`);
 	return publicURL(key);
 }
@@ -246,7 +227,10 @@ export async function uploadClientFileToR2(
 		return `${crypto.randomUUID()}.${ext || 'bin'}`;
 	})();
 
-	await r2Put(key, fileBuffer, contentType);
+	// Upload to R2 using Bun's S3 API
+	const s3File = s3Client.file(key);
+	await s3File.write(fileBuffer, { type: contentType });
+	
 	console.log(`[uploadClientFileToR2] uploaded ${key}`);
 	return publicURL(key);
 }
@@ -255,7 +239,8 @@ export async function uploadClientFileToR2(
  * Deletes a media asset from R2.
  */
 export async function deleteMediaFromR2(assetId: string): Promise<void> {
-	await r2Delete(assetId);
+	const s3File = s3Client.file(assetId);
+	await s3File.delete();
 	console.log(`Successfully deleted ${assetId} from R2 bucket ${BUCKET}`);
 }
 

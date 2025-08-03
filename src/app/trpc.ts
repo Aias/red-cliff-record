@@ -95,20 +95,54 @@ export const trpcClient = trpc.createClient({
 				transformer: superjson,
 				maxURLLength: 1900,
 				fetch: (url, options) => {
-					return fetch(url, {
-						...options,
+					const { body, ...restOptions } = options || {};
+					const fetchOptions: RequestInit = {
+						...restOptions,
 						credentials: 'include',
-					});
+					};
+					
+					// Handle body if it exists
+					if (body !== undefined) {
+						// If body is a Uint8Array, convert to ArrayBuffer
+						if (body instanceof Uint8Array) {
+							// Create a new ArrayBuffer and copy the data
+							const arrayBuffer = new ArrayBuffer(body.byteLength);
+							const view = new Uint8Array(arrayBuffer);
+							view.set(body);
+							fetchOptions.body = arrayBuffer;
+						} else {
+							fetchOptions.body = body;
+						}
+					}
+					
+					return fetch(url, fetchOptions);
 				},
 			}),
 			true: httpLink({
 				url: `${getBaseUrl()}/api/trpc`,
 				transformer: superjson,
 				fetch: (url, options) => {
-					return fetch(url, {
-						...options,
+					const { body, ...restOptions } = options || {};
+					const fetchOptions: RequestInit = {
+						...restOptions,
 						credentials: 'include',
-					});
+					};
+					
+					// Handle body if it exists
+					if (body !== undefined) {
+						// If body is a Uint8Array, convert to ArrayBuffer
+						if (body instanceof Uint8Array) {
+							// Create a new ArrayBuffer and copy the data
+							const arrayBuffer = new ArrayBuffer(body.byteLength);
+							const view = new Uint8Array(arrayBuffer);
+							view.set(body);
+							fetchOptions.body = arrayBuffer;
+						} else {
+							fetchOptions.body = body;
+						}
+					}
+					
+					return fetch(url, fetchOptions);
 				},
 			}),
 		}),
