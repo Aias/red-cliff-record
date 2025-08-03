@@ -7,6 +7,19 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+const fileToBase64 = (file: File): Promise<string> => {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => {
+			const result = reader.result as string;
+			const base64 = result.split(',')[1] ?? '';
+			resolve(base64);
+		};
+		reader.onerror = () => reject(reader.error);
+		reader.readAsDataURL(file);
+	});
+};
+
 export const Route = createFileRoute('/integrations/')({
 	component: RouteComponent,
 });
@@ -19,6 +32,9 @@ interface LogMessage {
 
 function RouteComponent() {
 	const [messages, setMessages] = useState<LogMessage[]>([]);
+	const [arcData, setArcData] = useState<string | undefined>(undefined);
+	const [diaData, setDiaData] = useState<string | undefined>(undefined);
+	const [twitterFiles, setTwitterFiles] = useState<string[]>([]);
 
 	const raindropMutation = trpc.integrations.runRaindrop.useMutation({
 		onSuccess: (data) => {
@@ -144,6 +160,48 @@ function RouteComponent() {
 	const handleRunGithub = () => {
 		setMessages([]);
 		githubMutation.mutate();
+	};
+
+	const browsingMutation = trpc.integrations.runBrowsing.useMutation({
+		onSuccess: (data) => {
+			setMessages(data.messages);
+		},
+		onError: (error) => {
+			setMessages((prev) => [
+				...prev,
+				{
+					type: 'error',
+					message: error.message,
+					timestamp: new Date(),
+				},
+			]);
+		},
+	});
+
+	const handleRunBrowsing = () => {
+		setMessages([]);
+		browsingMutation.mutate({ arc: arcData, dia: diaData });
+	};
+
+	const twitterMutation = trpc.integrations.runTwitter.useMutation({
+		onSuccess: (data) => {
+			setMessages(data.messages);
+		},
+		onError: (error) => {
+			setMessages((prev) => [
+				...prev,
+				{
+					type: 'error',
+					message: error.message,
+					timestamp: new Date(),
+				},
+			]);
+		},
+	});
+
+	const handleRunTwitter = () => {
+		setMessages([]);
+		twitterMutation.mutate({ files: twitterFiles });
 	};
 
 	const getMessageIcon = (type: LogMessage['type']) => {
@@ -313,6 +371,82 @@ function RouteComponent() {
 							className="flex items-center gap-2"
 						>
 							{feedbinMutation.isPending ? (
+								<>
+									<Spinner className="size-4" />
+									Running...
+								</>
+							) : (
+								<>
+									<PlayIcon className="size-4" />
+									Run Sync
+								</>
+							)}
+						</Button>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader>
+						<CardTitle>Browser History</CardTitle>
+						<CardDescription>Sync history from Arc and Dia</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="mb-2 flex flex-col gap-2">
+							<input
+								type="file"
+								onChange={async (e) => {
+									const f = e.target.files?.[0];
+									if (f) setArcData(await fileToBase64(f));
+								}}
+							/>
+							<input
+								type="file"
+								onChange={async (e) => {
+									const f = e.target.files?.[0];
+									if (f) setDiaData(await fileToBase64(f));
+								}}
+							/>
+						</div>
+						<Button
+							onClick={handleRunBrowsing}
+							disabled={browsingMutation.isPending}
+							className="flex items-center gap-2"
+						>
+							{browsingMutation.isPending ? (
+								<>
+									<Spinner className="size-4" />
+									Running...
+								</>
+							) : (
+								<>
+									<PlayIcon className="size-4" />
+									Run Sync
+								</>
+							)}
+						</Button>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader>
+						<CardTitle>Twitter</CardTitle>
+						<CardDescription>Import local Twitter bookmarks</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<input
+							type="file"
+							multiple
+							onChange={async (e) => {
+								const files = e.target.files ? [...e.target.files] : [];
+								const bases = await Promise.all(files.map(fileToBase64));
+								setTwitterFiles(bases);
+							}}
+							className="mb-2"
+						/>
+						<Button
+							onClick={handleRunTwitter}
+							disabled={twitterMutation.isPending}
+							className="flex items-center gap-2"
+						>
+							{twitterMutation.isPending ? (
 								<>
 									<Spinner className="size-4" />
 									Running...
