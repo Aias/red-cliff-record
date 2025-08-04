@@ -202,7 +202,7 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 	// 4. Upload to R2 using Bun's S3 API
 	const s3File = s3Client.file(key);
 	await s3File.write(resp, { type: contentType });
-	
+
 	console.log(`Successfully uploaded ${mediaUrl} → ${publicURL(key)}`);
 	return publicURL(key);
 }
@@ -230,7 +230,7 @@ export async function uploadClientFileToR2(
 	// Upload to R2 using Bun's S3 API
 	const s3File = s3Client.file(key);
 	await s3File.write(fileBuffer, { type: contentType });
-	
+
 	console.log(`[uploadClientFileToR2] uploaded ${key}`);
 	return publicURL(key);
 }

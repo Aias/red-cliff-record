@@ -19,3 +19,7 @@ public/fonts
 # Cloudflare
 .dev.vars
 .wrangler
+
+# Logs
+logs/
+*.log

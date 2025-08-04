@@ -100,7 +100,7 @@ export const trpcClient = trpc.createClient({
 						...restOptions,
 						credentials: 'include',
 					};
-					
+
 					// Handle body if it exists
 					if (body !== undefined) {
 						// If body is a Uint8Array, convert to ArrayBuffer
@@ -114,7 +114,7 @@ export const trpcClient = trpc.createClient({
 							fetchOptions.body = body;
 						}
 					}
-					
+
 					return fetch(url, fetchOptions);
 				},
 			}),
@@ -127,7 +127,7 @@ export const trpcClient = trpc.createClient({
 						...restOptions,
 						credentials: 'include',
 					};
-					
+
 					// Handle body if it exists
 					if (body !== undefined) {
 						// If body is a Uint8Array, convert to ArrayBuffer
@@ -141,7 +141,7 @@ export const trpcClient = trpc.createClient({
 							fetchOptions.body = body;
 						}
 					}
-					
+
 					return fetch(url, fetchOptions);
 				},
 			}),
