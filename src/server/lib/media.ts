@@ -186,24 +186,41 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
 		return mediaUrl;
 	}
 
+	const startTime = Date.now();
+	console.log(`[Media Upload] Starting download: ${mediaUrl}`);
+
 	// 1. Download
 	const resp = await fetch(mediaUrl);
 	if (!resp.ok) {
 		throw new Error(`Failed to download: HTTP ${resp.status} from ${mediaUrl}`);
 	}
 
-	// 2. Content-type detection
-	let contentType = resp.headers.get('content-type') ?? '';
-	if (!contentType) contentType = getMimeTypeFromURL(mediaUrl);
+	// 2. Get content size and type
+	const contentLength = resp.headers.get('content-length');
+	const contentType = resp.headers.get('content-type') ?? getMimeTypeFromURL(mediaUrl);
+	const sizeMB = contentLength ? (parseInt(contentLength) / (1024 * 1024)).toFixed(2) : 'unknown';
+
+	console.log(
+		`[Media Upload] Downloaded ${sizeMB}MB of ${contentType} in ${Date.now() - startTime}ms`
+	);
 
 	// 3. Key generation
 	const key = `${crypto.randomUUID()}.${mime.extension(contentType) || 'bin'}`;
 
 	// 4. Upload to R2 using Bun's S3 API
+	const uploadStartTime = Date.now();
+	console.log(`[Media Upload] Uploading to R2: ${key} (${sizeMB}MB)`);
+
 	const s3File = s3Client.file(key);
 	await s3File.write(resp, { type: contentType });
 
-	console.log(`Successfully uploaded ${mediaUrl} → ${publicURL(key)}`);
+	const totalTime = Date.now() - startTime;
+	const uploadTime = Date.now() - uploadStartTime;
+	console.log(`[Media Upload] ✓ Complete: ${mediaUrl} → ${publicURL(key)}`);
+	console.log(
+		`[Media Upload]   Size: ${sizeMB}MB | Download: ${uploadStartTime - startTime}ms | Upload: ${uploadTime}ms | Total: ${totalTime}ms`
+	);
+
 	return publicURL(key);
 }
 

@@ -330,53 +330,85 @@ export async function createMediaFromTweets() {
 
 	logger.info(`Found ${mediaWithTweets.length} Twitter media items to process`);
 
-	for (const item of mediaWithTweets) {
-		const mediaItem = await mapTwitterMediaToMedia(item);
-		if (!mediaItem) {
-			logger.error(
-				`Failed to create media for tweet ${item.tweetUrl}: ${item.mediaUrl}, deleting source media`
-			);
+	// Process media in batches for parallelization
+	const BATCH_SIZE = 3; // Process 3 media items at a time
+	let processed = 0;
 
-			await db
-				.update(twitterMedia)
-				.set({ mediaId: null, deletedAt: new Date() })
-				.where(eq(twitterMedia.id, item.id));
+	for (let i = 0; i < mediaWithTweets.length; i += BATCH_SIZE) {
+		const batch = mediaWithTweets.slice(i, i + BATCH_SIZE);
 
-			continue;
-		}
+		logger.info(
+			`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(mediaWithTweets.length / BATCH_SIZE)} (${batch.length} items)`
+		);
 
-		logger.info(`Creating media for ${mediaItem.url}`);
+		// Process batch in parallel
+		await Promise.all(
+			batch.map(async (item) => {
+				try {
+					logger.info(
+						`[${++processed}/${mediaWithTweets.length}] Processing media: ${item.mediaUrl}`
+					);
 
-		const [newMedia] = await db
-			.insert(media)
-			.values(mediaItem)
-			.onConflictDoUpdate({
-				target: [media.url, media.recordId],
-				set: {
-					recordUpdatedAt: new Date(),
-				},
+					const mediaItem = await mapTwitterMediaToMedia(item);
+					if (!mediaItem) {
+						logger.error(
+							`Failed to create media for tweet ${item.tweetUrl}: ${item.mediaUrl}, deleting source media`
+						);
+
+						await db
+							.update(twitterMedia)
+							.set({ mediaId: null, deletedAt: new Date() })
+							.where(eq(twitterMedia.id, item.id));
+
+						return;
+					}
+
+					logger.info(
+						`[${processed}/${mediaWithTweets.length}] Creating media record for ${mediaItem.url}`
+					);
+
+					const [newMedia] = await db
+						.insert(media)
+						.values(mediaItem)
+						.onConflictDoUpdate({
+							target: [media.url, media.recordId],
+							set: {
+								recordUpdatedAt: new Date(),
+							},
+						})
+						.returning({ id: media.id });
+
+					if (!newMedia) {
+						throw new Error('Failed to create media');
+					}
+
+					logger.info(
+						`[${processed}/${mediaWithTweets.length}] ✓ Created media ${newMedia.id} for ${mediaItem.url}`
+					);
+
+					await db
+						.update(twitterMedia)
+						.set({ mediaId: newMedia.id, mediaUrl: mediaItem.url })
+						.where(eq(twitterMedia.id, item.id));
+
+					if (item.tweet.recordId) {
+						logger.info(`Linking media ${newMedia.id} to record ${item.tweet.recordId}`);
+
+						await db
+							.update(media)
+							.set({ recordId: item.tweet.recordId })
+							.where(eq(media.id, newMedia.id));
+					}
+				} catch (error) {
+					logger.error(`Failed to process media ${item.mediaUrl}:`, error);
+					// Mark as deleted to skip in future runs
+					await db
+						.update(twitterMedia)
+						.set({ mediaId: null, deletedAt: new Date() })
+						.where(eq(twitterMedia.id, item.id));
+				}
 			})
-			.returning({ id: media.id });
-
-		if (!newMedia) {
-			throw new Error('Failed to create media');
-		}
-
-		logger.info(`Created media ${newMedia.id} for ${mediaItem.url}`);
-
-		await db
-			.update(twitterMedia)
-			.set({ mediaId: newMedia.id, mediaUrl: mediaItem.url })
-			.where(eq(twitterMedia.id, item.id));
-
-		if (item.tweet.recordId) {
-			logger.info(`Linking media ${newMedia.id} to record ${item.tweet.recordId}`);
-
-			await db
-				.update(media)
-				.set({ recordId: item.tweet.recordId })
-				.where(eq(media.id, newMedia.id));
-		}
+		);
 	}
 
 	logger.complete(`Processed ${mediaWithTweets.length} Twitter media items`);

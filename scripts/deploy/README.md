@@ -7,6 +7,7 @@ This directory contains scripts for automatically deploying Red Cliff Record whe
 ### Prerequisites
 
 1. Install PM2 globally:
+
    ```bash
    npm install -g pm2
    ```
@@ -16,11 +17,13 @@ This directory contains scripts for automatically deploying Red Cliff Record whe
 ### Installation
 
 1. Clone the repository and navigate to it:
+
    ```bash
    cd /path/to/red-cliff-record
    ```
 
 2. Run the setup script:
+
    ```bash
    ./scripts/deploy/setup-pm2.sh
    ```
@@ -35,6 +38,7 @@ This directory contains scripts for automatically deploying Red Cliff Record whe
 ### Configuration
 
 The `ecosystem.config.js` file in the root directory manages both:
+
 - **red-cliff-record**: The main application
 - **red-cliff-deploy**: The auto-deployment monitor that checks for updates every 60 seconds
 

@@ -386,9 +386,23 @@ async function storeTweetData(
  * Creates records from Twitter data
  */
 async function createRelatedRecords(): Promise<void> {
+	logger.info('Creating related records from Twitter data...');
+
+	const startTime = Date.now();
+
 	await createRecordsFromTwitterUsers();
 	await createRecordsFromTweets();
+
+	const mediaStartTime = Date.now();
+	logger.info('Starting media processing (this may take a while for videos)...');
 	await createMediaFromTweets();
+
+	const mediaTime = Date.now() - mediaStartTime;
+	const totalTime = Date.now() - startTime;
+
+	logger.info(
+		`Record creation complete - Total: ${totalTime}ms (Media processing: ${mediaTime}ms)`
+	);
 }
 
 /**
