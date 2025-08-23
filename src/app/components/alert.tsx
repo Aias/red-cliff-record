@@ -9,7 +9,7 @@ const alertVariants = cva(
 			variant: {
 				default: 'bg-c-component text-c-primary border-c-border',
 				destructive:
-					'bg-destructive/10 text-destructive border-destructive/20 [&>svg]:text-destructive',
+					'bg-c-destructive/10 text-c-destructive border-c-destructive/20 [&>svg]:text-c-destructive',
 				success:
 					'bg-c-theme-splash text-c-theme-primary border-c-theme-border [&>svg]:text-c-theme-accent',
 			},
@@ -50,7 +50,7 @@ function AlertDescription({ className, ...props }: React.ComponentProps<'div'>) 
 		<div
 			data-slot="alert-description"
 			className={cn(
-				'col-start-2 grid justify-items-start gap-1 text-sm text-muted-foreground [&_p]:leading-relaxed',
+				'col-start-2 grid justify-items-start gap-1 text-sm text-c-secondary [&_p]:leading-relaxed',
 				className
 			)}
 			{...props}

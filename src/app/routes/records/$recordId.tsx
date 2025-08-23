@@ -304,7 +304,7 @@ function RouteComponent() {
 		return (
 			<div className="flex flex-1 items-center justify-center">
 				<div className="text-center">
-					<div className="mb-2 text-destructive">Record not found</div>
+					<div className="mb-2 text-c-destructive">Record not found</div>
 					<div className="text-sm text-c-hint">This record may have been deleted or moved.</div>
 				</div>
 			</div>

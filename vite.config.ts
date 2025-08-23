@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
 		},
 		envPrefix: ['PUBLIC_', 'VITE_'],
 		define: {
-			// This is...fine...for now, but need to be careful to make sure environment variables don't make it into client-side code, and ideally shouldn't even make it into the server bundle.
+			// Not good if you plan on deploying to a cloud environment rather than a local network.
 			'process.env': JSON.stringify(processEnv),
 		},
 		plugins: [

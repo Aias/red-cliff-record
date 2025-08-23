@@ -4,9 +4,6 @@ import type { LinkOptions } from '@tanstack/react-router';
 import { RectangleEllipsisIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { recordTypeIcons } from './type-icons';
-import { IntegrationLogo } from '@/components/integration-logo';
-import { LazyVideo } from '@/components/lazy-video';
-import { Spinner } from '@/components/spinner';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,7 +11,10 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/dropdown-menu';
+import { IntegrationLogo } from '@/components/integration-logo';
+import { LazyVideo } from '@/components/lazy-video';
+import { Spinner } from '@/components/spinner';
 import { usePredicateMap, useRecordWithOutgoingLinks } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
 import type { MediaType } from '@/shared/types';

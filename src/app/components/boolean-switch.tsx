@@ -1,5 +1,5 @@
-import { Label } from './ui/label';
-import { Switch } from './ui/switch';
+import { Label } from './label';
+import { Switch } from './switch';
 import { cn } from '@/lib/utils';
 
 interface BooleanSwitchProps extends React.ComponentProps<typeof Label> {

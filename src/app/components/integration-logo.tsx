@@ -7,7 +7,7 @@ import githubLogo from './logos/github.svg?url';
 import raindropLogo from './logos/raindrop.svg?url';
 import readwiseLogo from './logos/readwise.svg?url';
 import xLogo from './logos/x.svg?url';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
 import { type IntegrationType } from '@/shared/types';
 
 interface IntegrationLogoProps extends Omit<AvatarProps, 'src' | 'fallback'> {

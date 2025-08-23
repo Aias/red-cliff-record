@@ -4,28 +4,15 @@ import { CheckIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { RecordTypeIcon } from './type-icons';
 import { ExternalLink } from '@/components/external-link';
+import { Input } from '@/components/input';
 import { IntegrationLogo } from '@/components/integration-logo';
+import { Label } from '@/components/label';
 import { Placeholder } from '@/components/placeholder';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/select';
 import { Spinner } from '@/components/spinner';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@/components/ui/table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
 import {
@@ -526,9 +513,9 @@ export const RecordsGrid = () => {
 	return queue ? (
 		<div className="flex h-full grow gap-4 overflow-hidden">
 			{FilterSidebar}
-			<div className="flex grow overflow-hidden rounded border border-border bg-c-surface text-xs">
+			<div className="flex grow overflow-hidden rounded border border-c-divider bg-c-surface text-xs">
 				<Table className={cn({ 'h-full': queue.ids.length === 0 })}>
-					<TableHeader className="sticky top-0 z-10 bg-c-surface before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-border">
+					<TableHeader className="sticky top-0 z-10 bg-c-surface before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-c-divider">
 						<TableRow className="sticky top-0 z-10 bg-c-mist">
 							<TableHead className="text-center">Type</TableHead>
 							<TableHead>Record</TableHead>

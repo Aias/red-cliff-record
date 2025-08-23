@@ -5,8 +5,7 @@ import { trpc } from '@/app/trpc';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
 import { Badge } from '@/components/badge';
-import { Spinner } from '@/components/spinner';
-import { Button, type ButtonProps } from '@/components/ui/button';
+import { Button, type ButtonProps } from '@/components/button';
 import {
 	Command,
 	CommandGroup,
@@ -15,13 +14,14 @@ import {
 	CommandList,
 	CommandLoading,
 	CommandSeparator,
-} from '@/components/ui/command';
+} from '@/components/command';
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 	type PopoverContentProps,
-} from '@/components/ui/popover';
+} from '@/components/popover';
+import { Spinner } from '@/components/spinner';
 import { useUpsertLink } from '@/lib/hooks/link-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { cn } from '@/lib/utils';

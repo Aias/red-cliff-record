@@ -4,7 +4,7 @@ import { UploadIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 import { Spinner } from './spinner';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/button';
 import { cn } from '@/lib/utils';
 
 const mediaFileSchema = z
@@ -162,9 +162,9 @@ export const MediaUpload = forwardRef<HTMLDivElement, MediaUploadProps>(
 				ref={ref} // Attach the forwarded ref here
 				tabIndex={0}
 				className={cn(
-					'flex h-24 w-full flex-col items-center justify-center gap-0.5 rounded-sm border border-dashed border-border bg-c-mist p-4 text-center transition-colors duration-200 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none',
-					isDragging && !isLoading ? 'border-primary bg-primary/10' : '', // Only show drag state if not loading
-					error ? 'border-destructive' : '',
+					'flex h-24 w-full flex-col items-center justify-center gap-0.5 rounded-sm border border-dashed border-c-divider bg-c-mist p-4 text-center transition-colors duration-200 focus:ring-2 focus:ring-c-focus focus:ring-offset-2 focus:outline-none',
+					isDragging && !isLoading ? 'border-c-main bg-c-main/10' : '', // Only show drag state if not loading
+					error ? 'border-c-destructive' : '',
 					isLoading ? 'cursor-not-allowed opacity-50' : '', // Apply disabled styles when loading
 					className
 				)}
@@ -189,10 +189,10 @@ export const MediaUpload = forwardRef<HTMLDivElement, MediaUploadProps>(
 					<UploadIcon className="mr-2 h-4 w-4" />
 					Upload Media
 				</Button>
-				<p className="flex items-center gap-1 text-sm text-muted-foreground">
+				<p className="flex items-center gap-1 text-sm text-c-secondary">
 					{isLoading && <Spinner className="size-3" />} {/* Show spinner when loading */}
 					{error ? (
-						<span className="text-destructive">{error}</span>
+						<span className="text-c-destructive">{error}</span>
 					) : (
 						<span>{statusMessage}</span> // Wrap status message for layout
 					)}

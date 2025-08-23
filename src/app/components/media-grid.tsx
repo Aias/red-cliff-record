@@ -1,7 +1,7 @@
 import React from 'react';
 import { Trash2Icon } from 'lucide-react';
+import { Button } from './button';
 import { LazyVideo } from './lazy-video';
-import { Button } from './ui/button';
 import type { MediaSelect } from '@/shared/types';
 
 interface MediaGridProps {

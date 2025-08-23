@@ -4,16 +4,6 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
 import { z } from 'zod/v4';
 import { recordTypeIcons } from './type-icons';
-import { Avatar } from '@/components/avatar';
-import { BooleanSwitch } from '@/components/boolean-switch';
-import { DynamicTextarea } from '@/components/dynamic-textarea';
-import { ExternalLink } from '@/components/external-link';
-import { GhostInput } from '@/components/ghost-input';
-import { IntegrationLogo } from '@/components/integration-logo';
-import MediaGrid from '@/components/media-grid';
-import { MediaUpload } from '@/components/media-upload';
-import { MetadataList } from '@/components/metadata-list';
-import { Spinner } from '@/components/spinner';
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -24,15 +14,25 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
-import { Slider } from '@/components/ui/slider';
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+} from '@/components/alert-dialog';
+import { Avatar } from '@/components/avatar';
+import { BooleanSwitch } from '@/components/boolean-switch';
+import { Button } from '@/components/button';
+import { DynamicTextarea } from '@/components/dynamic-textarea';
+import { ExternalLink } from '@/components/external-link';
+import { GhostInput } from '@/components/ghost-input';
+import { IntegrationLogo } from '@/components/integration-logo';
+import { Label } from '@/components/label';
+import MediaGrid from '@/components/media-grid';
+import { MediaUpload } from '@/components/media-upload';
+import { MetadataList } from '@/components/metadata-list';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
+import { Separator } from '@/components/separator';
+import { Slider } from '@/components/slider';
+import { Spinner } from '@/components/spinner';
+import { Table, TableBody, TableCell, TableRow } from '@/components/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { useDeleteMedia } from '@/lib/hooks/media-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
@@ -259,7 +259,7 @@ export function RecordForm({
 			{...props}
 		>
 			{isFormLoading && (
-				<div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/50 backdrop-blur-sm">
+				<div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-c-background/50 backdrop-blur-sm">
 					<Spinner />
 				</div>
 			)}
@@ -279,7 +279,7 @@ export function RecordForm({
 									readOnly={isFormLoading}
 								/>
 								{field.state.meta.errors && (
-									<p className="text-sm text-destructive">{field.state.meta.errors.join(', ')}</p>
+									<p className="text-sm text-c-destructive">{field.state.meta.errors.join(', ')}</p>
 								)}
 							</div>
 						)}
@@ -345,7 +345,7 @@ export function RecordForm({
 				<form.Field name="rating">
 					{(field) => (
 						<div className="mx-5 mb-1.5 flex flex-col gap-3">
-							<div className="flex items-center justify-between text-xs text-muted-foreground">
+							<div className="flex items-center justify-between text-xs text-c-secondary">
 								<Label htmlFor="rating" className="inline-flex w-[0px] justify-center">
 									Rating
 								</Label>
@@ -369,7 +369,7 @@ export function RecordForm({
 					)}
 				</form.Field>
 
-				<div className="rounded-md border border-border">
+				<div className="rounded-md border border-c-divider">
 					<Table>
 						<TableBody>
 							<TableRow>
@@ -409,7 +409,7 @@ export function RecordForm({
 													)}
 												</div>
 												{field.state.meta.errors && (
-													<p className="text-sm text-destructive">
+													<p className="text-sm text-c-destructive">
 														{field.state.meta.errors.join(', ')}
 													</p>
 												)}
@@ -456,7 +456,7 @@ export function RecordForm({
 													)}
 												</div>
 												{field.state.meta.errors && (
-													<p className="text-sm text-destructive">
+													<p className="text-sm text-c-destructive">
 														{field.state.meta.errors.join(', ')}
 													</p>
 												)}

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { FileTextIcon, LightbulbIcon, UserIcon } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { type RecordType } from '@/shared/types';
 
 // Map record types to their corresponding icons and descriptions

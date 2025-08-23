@@ -3,8 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { PlusCircleIcon, SearchIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { SearchResultItem } from '../records/-components/search-result-item';
-import { Spinner } from '@/components/spinner';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/button';
 import {
 	Command,
 	CommandEmpty,
@@ -13,8 +12,9 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+} from '@/components/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
+import { Spinner } from '@/components/spinner';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { cn } from '@/lib/utils';
