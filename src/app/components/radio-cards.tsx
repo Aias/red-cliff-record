@@ -1,37 +1,14 @@
 import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
 import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
-const radioCardsVariants = cva('grid', {
-	variants: {
-		size: {
-			xs: 'text-xs',
-			sm: 'text-sm',
-			md: 'text-base',
-			lg: 'text-lg',
-		},
-	},
-	defaultVariants: {
-		size: 'md',
-	},
-});
-
-type RadioCardsVariantProps = VariantProps<typeof radioCardsVariants>;
-
-interface RadioCardsProps extends React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root> {
-	size?: RadioCardsVariantProps['size'];
-}
+type RadioCardsProps = React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>;
 
 const RadioCards = React.forwardRef<
 	React.ComponentRef<typeof RadioGroupPrimitive.Root>,
 	RadioCardsProps
->(({ className, size = 'md', children, ...props }, ref) => (
-	<RadioGroupPrimitive.Root
-		ref={ref}
-		className={cn(radioCardsVariants({ size }), className)}
-		{...props}
-	>
+>(({ className, children, ...props }, ref) => (
+	<RadioGroupPrimitive.Root ref={ref} className={className} {...props}>
 		{children}
 	</RadioGroupPrimitive.Root>
 ));
@@ -44,7 +21,7 @@ const RadioCardsItem = React.forwardRef<
 	<RadioGroupPrimitive.Item
 		ref={ref}
 		className={cn(
-			'border-c-border bg-c-surface text-c-primary hover:bg-c-splash hover:text-c-display focus-visible:ring-c-focus data-[state=checked]:border-c-main data-[state=checked]:ring-c-main relative flex min-h-max cursor-pointer items-center justify-center rounded-md border p-[0.75em] text-left shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:ring-1',
+			'relative flex min-h-max cursor-pointer items-center justify-center rounded-md border border-c-border bg-c-page p-[0.75em] text-left text-c-primary shadow-xs transition-all hover:bg-c-mist hover:text-c-display focus:outline-none focus-visible:ring-2 focus-visible:ring-c-focus focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-c-focus data-[state=checked]:bg-c-splash data-[state=checked]:themed',
 			className
 		)}
 		{...props}

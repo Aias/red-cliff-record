@@ -313,7 +313,7 @@ function RouteComponent() {
 
 	return (
 		<div className="flex flex-1 overflow-x-auto">
-			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider bg-c-mist p-3">
+			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider p-3">
 				{nodes.map((node) => (
 					<li id={`record-${node.id}`} key={node.id} className="shrink-0">
 						<RecordForm
@@ -326,7 +326,7 @@ function RouteComponent() {
 					</li>
 				))}
 			</ul>
-			<div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto p-4">
+			<div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto bg-c-container p-4">
 				<RelationsList id={recordId} />
 				<SimilarRecords id={recordId} />
 			</div>

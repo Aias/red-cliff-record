@@ -29,9 +29,12 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 		<div className="fixed inset-0 flex flex-col overflow-hidden">
 			<menu className="relative z-100 flex shrink-0 basis-auto items-center justify-between gap-4 border-b border-c-border surface px-4 py-2">
 				<li className="flex items-center gap-4">
-					<Link to={'/'} className="flex shrink-0 cursor-pointer items-center gap-3">
-						<ArchiveIcon />
-						<span className="font-mono font-medium">The Red Cliff Record</span>
+					<Link
+						to={'/'}
+						className="flex shrink-0 cursor-pointer items-center gap-2 rounded bg-c-main px-2.5 py-1.5 font-mono text-sm font-medium tracking-normal text-c-main-contrast no-underline transition-colors hover:bg-c-main-active hover:no-underline"
+					>
+						<ArchiveIcon className="opacity-75" />
+						<span>Red Cliff Record</span>
 					</Link>
 					<Separator orientation="vertical" className="h-5! border-c-border" />
 					<NavLink to={'/records'} search={defaultQueueOptions}>

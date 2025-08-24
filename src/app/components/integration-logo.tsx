@@ -14,7 +14,13 @@ interface IntegrationLogoProps {
 	className?: string;
 }
 
-const LogoComponent = ({ service, className }: { service: IntegrationType; className?: string }) => {
+const LogoComponent = ({
+	service,
+	className,
+}: {
+	service: IntegrationType;
+	className?: string;
+}) => {
 	switch (service) {
 		case 'lightroom':
 			return <AdobeLogo className={className} />;

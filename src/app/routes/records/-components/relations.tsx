@@ -107,8 +107,8 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 			</header>
 			{outgoingLinks.length > 0 && (
 				<>
-					<h4 className="mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-c-hint uppercase">
-						<ArrowRightIcon className="h-4 w-4" /> Outgoing
+					<h4 className="mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-c-secondary uppercase">
+						<ArrowRightIcon className="size-4 text-c-hint" /> Outgoing
 					</h4>
 					<ul className="flex flex-col gap-2 text-xs">
 						{outgoingLinks.map((link) => (

@@ -105,7 +105,7 @@ function RootDocument({
 			<head>
 				<HeadContent />
 			</head>
-			<body className="size-full bg-c-background text-c-primary">
+			<body className="size-full bg-c-app text-c-primary">
 				{children}
 				<Toaster />
 				<Scripts />

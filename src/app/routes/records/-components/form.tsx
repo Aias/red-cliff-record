@@ -259,7 +259,7 @@ export function RecordForm({
 			{...props}
 		>
 			{isFormLoading && (
-				<div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-c-background/50 backdrop-blur-sm">
+				<div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-c-app/50 backdrop-blur-sm">
 					<Spinner />
 				</div>
 			)}
@@ -395,7 +395,7 @@ export function RecordForm({
 												<div className="flex items-center gap-1">
 													<GhostInput
 														id="url"
-														className="w-full"
+														className="w-full text-c-display"
 														value={field.state.value ?? ''}
 														placeholder="https://example.com"
 														onChange={(e) => {
@@ -442,7 +442,7 @@ export function RecordForm({
 												<div className="flex items-center gap-1">
 													<GhostInput
 														id="avatarUrl"
-														className="w-full"
+														className="w-full text-c-display"
 														value={field.state.value ?? ''}
 														placeholder="https://example.com/image.jpg"
 														onChange={(e) => {
@@ -478,7 +478,7 @@ export function RecordForm({
 										{(field) => (
 											<GhostInput
 												id="abbreviation"
-												className="w-full"
+												className="w-full text-c-display"
 												value={field.state.value ?? ''}
 												placeholder="Short form"
 												onChange={(e) => {
@@ -504,7 +504,7 @@ export function RecordForm({
 										{(field) => (
 											<GhostInput
 												id="sense"
-												className="w-full"
+												className="w-full text-c-display"
 												value={field.state.value ?? ''}
 												placeholder="Meaning or definition"
 												onChange={(e) => {

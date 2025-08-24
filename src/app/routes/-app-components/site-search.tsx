@@ -106,7 +106,7 @@ export const SiteSearch = () => {
 						role="combobox"
 						aria-expanded={commandOpen}
 					>
-						<SearchIcon />
+						<SearchIcon className="text-c-hint" />
 						<span>Search records...</span>
 						<kbd className="pointer-events-none inline-flex items-center gap-1 rounded border border-c-border bg-c-mist px-1.5 font-mono font-medium text-c-secondary select-none">
 							<span className="text-xs text-c-hint">⌘</span>K

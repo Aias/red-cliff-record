@@ -59,7 +59,7 @@ function RouteComponent() {
 		<main className={`flex basis-full overflow-hidden ${!isRecordSelected ? 'p-3' : ''}`}>
 			{isRecordSelected && recordsList ? (
 				<>
-					<div className="flex min-w-60 shrink grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-c-divider py-3">
+					<div className="bg-c-container flex min-w-60 shrink grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-c-divider py-3">
 						<header className="flex items-center justify-between px-3">
 							<h2 className="text-lg font-medium">
 								Records <span className="text-sm text-c-secondary">({recordsList.ids.length})</span>
@@ -69,10 +69,9 @@ function RouteComponent() {
 							</Link>
 						</header>
 						<RadioCards
-							size="xs"
 							value={currentRecordId?.toString()}
 							onValueChange={handleValueChange}
-							className="flex flex-col gap-1 overflow-y-auto px-3"
+							className="flex flex-col gap-1 overflow-y-auto px-3 text-xs"
 						>
 							{recordsList.ids.map(({ id }) => (
 								<RadioCardsItem key={id} value={id.toString()}>

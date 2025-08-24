@@ -24,10 +24,11 @@
 	--color-c-fg: var(--c-fg);
 	--color-c-bg: var(--c-bg);
 
-	--color-c-background: var(--c-neutral-background);
-	--color-c-surface: var(--c-neutral-surface);
-	--color-c-component: var(--c-neutral-component);
-	--color-c-overlay: var(--c-neutral-overlay);
+	--color-c-app: var(--c-neutral-elevation-core);
+	--color-c-page: var(--c-neutral-elevation-hill);
+	--color-c-container: var(--c-neutral-elevation-ground);
+	--color-c-float: var(--c-neutral-elevation-peak);
+	--color-c-background-accent: var(--c-neutral-elevation-ground);
 
 	--color-c-display: var(--c-neutral-display);
 	--color-c-primary: var(--c-neutral-primary);
@@ -57,10 +58,10 @@
 }
 
 @utility themed {
-	--color-c-background: var(--c-theme-background);
-	--color-c-overlay: var(--c-theme-surface);
-	--color-c-component: var(--c-theme-component);
-	--color-c-surface: var(--c-theme-surface);
+	--color-c-app: var(--c-theme-elevation-core);
+	--color-c-float: var(--c-theme-elevation-ground);
+	--color-c-container: var(--c-theme-elevation-hill);
+	--color-c-page: var(--c-theme-elevation-ground);
 
 	--color-c-display: var(--c-theme-display);
 	--color-c-primary: var(--c-theme-primary);
@@ -150,7 +151,7 @@
 	}
 
 	hr {
-		@apply bg-c-divider m-0 block h-[1px] w-full border-0 border-none border-transparent;
+		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-c-divider;
 	}
 
 	pre,
@@ -165,7 +166,7 @@
 
 	a:where(:any-link, button),
 	.link {
-		@apply text-c-accent hover:text-c-accent-active font-medium hover:underline;
+		@apply font-medium text-c-accent hover:text-c-accent-active hover:underline;
 		text-decoration-line: none;
 		text-decoration-style: solid;
 		text-decoration-thickness: min(2px, max(1px, 0.05em));
@@ -201,11 +202,11 @@
 }
 
 @utility surface {
-	@apply bg-c-surface;
+	@apply bg-c-page;
 }
 
 @utility card {
-	@apply border-c-divider surface relative block overflow-hidden rounded-md border p-4;
+	@apply relative block overflow-hidden rounded-md border border-c-divider surface p-4;
 }
 
 @utility icon {
@@ -219,22 +220,22 @@
 }
 
 @utility code {
-	@apply bg-c-splash px-1.25 themed rounded-sm font-mono text-[0.875em];
+	@apply rounded-sm bg-c-splash px-1.25 font-mono text-[0.875em] themed;
 }
 
 @utility checkbox {
-	@apply rounded-xs border-c-border focus-visible:ring-c-focus size-[1em] overflow-hidden border text-[1.125em] focus-visible:outline-none focus-visible:ring-1;
+	@apply size-[1em] overflow-hidden rounded-xs border border-c-border text-[1.125em] focus-visible:ring-1 focus-visible:ring-c-focus focus-visible:outline-none;
 	&:checked,
 	&[data-state~='checked'] {
 		@apply border-c-main bg-c-main text-c-main-contrast;
 	}
 	&:disabled {
-		@apply border-c-divider bg-c-splash text-c-symbol cursor-not-allowed opacity-90;
+		@apply cursor-not-allowed border-c-divider bg-c-splash text-c-symbol opacity-90;
 	}
 }
 
 @utility selectable {
-	@apply border-c-divider cursor-pointer;
+	@apply cursor-pointer border-c-divider;
 	&:hover {
 		@apply border-c-divider bg-c-mist;
 	}

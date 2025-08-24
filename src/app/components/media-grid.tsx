@@ -19,7 +19,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 
 	return (
 		<div
-			className={`relative grid aspect-[3/2] w-full gap-px overflow-hidden rounded-md bg-c-background ${className}`}
+			className={`relative grid aspect-[3/2] w-full gap-px overflow-hidden rounded-md bg-c-app ${className}`}
 			style={{
 				gridTemplateColumns: getGridColumns(count),
 				gridTemplateRows: getGridRows(count),
@@ -57,7 +57,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 
 					{/* Toolbar */}
 					{onDelete && (
-						<div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-c-surface opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
+						<div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-c-page opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
 							<Button
 								type="button"
 								size="icon"

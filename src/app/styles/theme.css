@@ -9,48 +9,45 @@
 	--c-fg: light-dark(var(--black), var(--white));
 
 	/* Neutral Background & Surface */
-	--c-neutral-background: light-dark(oklch(97.5% 0.002 165.1), oklch(19.5% 0.004 164.6));
-	--c-neutral-surface: light-dark(oklch(99% 0.002 165.1), oklch(21.1% 0.002 164.7));
-	--c-neutral-overlay: light-dark(oklch(99.8% 0.002 165.1), oklch(23.9% 0.001 164.8));
-	--c-neutral-component: light-dark(oklch(98.5% 0.003 174.5), oklch(22.9% 0.001 164.8));
+	--c-neutral-elevation-core: light-dark(oklch(97% 0.002 165.1), oklch(17.5% 0.004 164.6));
+	--c-neutral-elevation-ground: light-dark(oklch(98.3% 0.002 165.1), oklch(19.1% 0.002 164.7));
+	--c-neutral-elevation-hill: light-dark(oklch(98.9% 0.003 174.5), oklch(20.1% 0.001 164.8));
+	--c-neutral-elevation-peak: light-dark(oklch(99.9% 0.002 165.1), oklch(21.3% 0.001 164.8));
 
 	/* Neutral Text & Symbols */
 	--c-neutral-display: light-dark(oklch(22% 0.01 167.6), oklch(94.7% 0.005 165.1));
 	--c-neutral-primary: light-dark(oklch(32% 0.01 167.6), oklch(87% 0.01 165.1));
 	--c-neutral-secondary: light-dark(oklch(48% 0.01 167.6), oklch(70% 0.005 165.1));
-	--c-neutral-symbol: light-dark(oklch(48% 0.032 167.6), oklch(68.7% 0.03 165.1));
+	--c-neutral-symbol: light-dark(oklch(48% 0.032 167.6), oklch(80% 0.028 165.1));
 	--c-neutral-hint: light-dark(oklch(60% 0.012 167.6), oklch(54.7% 0.012 165.1));
 	--c-neutral-ghost: light-dark(oklch(72% 0.012 167.6), oklch(42.7% 0.012 165.1));
-	--c-neutral-accent: light-dark(oklch(44% 0.04 167.6), oklch(87.7% 0.075 165.1));
+	--c-neutral-accent: light-dark(oklch(44% 0.04 167.6), oklch(84.7% 0.065 165.1));
 
 	/* Neutral Borders & Dividers */
-	--c-neutral-divider: light-dark(oklch(91% 0.015 157.2), oklch(28.2% 0.005 174.1));
-	--c-neutral-border: light-dark(oklch(88.6% 0.02 174.5), oklch(31% 0.005 174.2));
-	--c-neutral-edge: light-dark(oklch(85.1% 0.02 165), oklch(34.8% 0.006 164.7));
+	--c-neutral-divider: light-dark(oklch(91% 0.01 157.2), oklch(28.2% 0.005 174.1));
+	--c-neutral-border: light-dark(oklch(88.6% 0.01 174.5), oklch(31% 0.005 174.2));
+	--c-neutral-edge: light-dark(oklch(85.1% 0.01 165), oklch(34.8% 0.006 164.7));
 
 	/* Neutral Semantic Colors */
-	--c-neutral-main: light-dark(oklch(45.3% 0.03 171.6), oklch(45.3% 0.017 170.5));
-	--c-neutral-main-active: light-dark(oklch(60.6% 0.025 171.6), oklch(52.8% 0.015 173.8));
-	--c-neutral-main-contrast: var(--white);
+	--c-neutral-main: light-dark(oklch(52.3% 0.02 171.6), oklch(48.3% 0.01 170.5));
+	--c-neutral-main-active: light-dark(oklch(55.6% 0.025 171.6), oklch(52.8% 0.015 173.8));
+	--c-neutral-main-contrast: light-dark(oklch(99.5% 0.01 174.5), oklch(96.5% 0.015 173.8));
 
 	/* Neutral Interaction States */
-	--c-neutral-mist: light-dark(
-		oklch(from var(--c-neutral-main) l c h / 0.04),
-		oklch(from var(--c-neutral-main) l c h / 0.12)
-	);
+	--c-neutral-mist: light-dark(oklch(60% 0.01 171.6 / 4%), oklch(80% 0.01 170.5 / 4%));
 	--c-neutral-splash: light-dark(
-		oklch(from var(--c-neutral-main) l c h / 0.1),
-		oklch(from var(--c-neutral-main) l c h / 0.2)
+		oklch(from var(--c-neutral-main) l c h / 0.08),
+		oklch(from var(--c-neutral-main) l c h / 0.16)
 	);
 	--c-neutral-flood: light-dark(
 		oklch(from var(--c-neutral-main) l c h / 0.16),
-		oklch(from var(--c-neutral-main) l c h / 0.32)
+		oklch(from var(--c-neutral-main) l c h / 0.24)
 	);
 
 	/* Theme Background & Surface */
-	--c-theme-background: light-dark(oklch(98.2% 0.009 161.4), oklch(18.6% 0.014 169.8));
-	--c-theme-surface: light-dark(oklch(99.4% 0.003 174.5), oklch(21.5% 0.017 168.2));
-	--c-theme-component: light-dark(oklch(96.1% 0.022 160.2), oklch(27.4% 0.043 165.2));
+	--c-theme-elevation-core: light-dark(oklch(98.2% 0.009 161.4), oklch(18.6% 0.014 169.8));
+	--c-theme-elevation-ground: light-dark(oklch(99.4% 0.003 174.5), oklch(21.5% 0.017 168.2));
+	--c-theme-elevation-hill: light-dark(oklch(96.1% 0.022 160.2), oklch(27.4% 0.043 165.2));
 
 	/* Theme Text & Symbols */
 	--c-theme-display: oklch(
