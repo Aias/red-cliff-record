@@ -277,6 +277,7 @@ export function RecordForm({
 									}}
 									onBlur={() => debouncedSave()}
 									readOnly={isFormLoading}
+									className="text-c-display"
 								/>
 								{field.state.meta.errors && (
 									<p className="text-sm text-c-destructive">{field.state.meta.errors.join(', ')}</p>

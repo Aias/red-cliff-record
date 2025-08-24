@@ -13,16 +13,15 @@
 	--c-neutral-surface: light-dark(oklch(99% 0.002 165.1), oklch(21.1% 0.002 164.7));
 	--c-neutral-overlay: light-dark(oklch(99.8% 0.002 165.1), oklch(23.9% 0.001 164.8));
 	--c-neutral-component: light-dark(oklch(98.5% 0.003 174.5), oklch(22.9% 0.001 164.8));
-	--c-neutral-panel: light-dark(oklch(98% 0.002 165.1), oklch(22.1% 0.003 164.7));
 
 	/* Neutral Text & Symbols */
 	--c-neutral-display: light-dark(oklch(22% 0.01 167.6), oklch(94.7% 0.005 165.1));
-	--c-neutral-primary: light-dark(oklch(32% 0.01 167.6), oklch(85% 0.01 165.1));
-	--c-neutral-secondary: light-dark(oklch(48% 0.01 167.6), oklch(68.7% 0.005 165.1));
-	--c-neutral-symbol: light-dark(oklch(48% 0.032 167.6), oklch(68.7% 0.02 165.1));
-	--c-neutral-hint: light-dark(oklch(60% 0.012 167.6), oklch(50.7% 0.012 165.1));
+	--c-neutral-primary: light-dark(oklch(32% 0.01 167.6), oklch(87% 0.01 165.1));
+	--c-neutral-secondary: light-dark(oklch(48% 0.01 167.6), oklch(70% 0.005 165.1));
+	--c-neutral-symbol: light-dark(oklch(48% 0.032 167.6), oklch(68.7% 0.03 165.1));
+	--c-neutral-hint: light-dark(oklch(60% 0.012 167.6), oklch(54.7% 0.012 165.1));
 	--c-neutral-ghost: light-dark(oklch(72% 0.012 167.6), oklch(42.7% 0.012 165.1));
-	--c-neutral-accent: light-dark(oklch(44% 0.04 167.6), oklch(87.7% 0.035 165.1));
+	--c-neutral-accent: light-dark(oklch(44% 0.04 167.6), oklch(87.7% 0.075 165.1));
 
 	/* Neutral Borders & Dividers */
 	--c-neutral-divider: light-dark(oklch(91% 0.015 157.2), oklch(28.2% 0.005 174.1));
@@ -52,7 +51,6 @@
 	--c-theme-background: light-dark(oklch(98.2% 0.009 161.4), oklch(18.6% 0.014 169.8));
 	--c-theme-surface: light-dark(oklch(99.4% 0.003 174.5), oklch(21.5% 0.017 168.2));
 	--c-theme-component: light-dark(oklch(96.1% 0.022 160.2), oklch(27.4% 0.043 165.2));
-	--c-theme-panel: light-dark(oklch(98.2% 0.009 161.4), oklch(21.5% 0.017 168.2));
 
 	/* Theme Text & Symbols */
 	--c-theme-display: oklch(

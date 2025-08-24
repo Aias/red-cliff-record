@@ -28,7 +28,6 @@
 	--color-c-surface: var(--c-neutral-surface);
 	--color-c-component: var(--c-neutral-component);
 	--color-c-overlay: var(--c-neutral-overlay);
-	--color-c-panel: var(--c-neutral-panel);
 
 	--color-c-display: var(--c-neutral-display);
 	--color-c-primary: var(--c-neutral-primary);
@@ -62,7 +61,6 @@
 	--color-c-overlay: var(--c-theme-surface);
 	--color-c-component: var(--c-theme-component);
 	--color-c-surface: var(--c-theme-surface);
-	--color-c-panel: var(--c-theme-panel);
 
 	--color-c-display: var(--c-theme-display);
 	--color-c-primary: var(--c-theme-primary);
@@ -203,8 +201,7 @@
 }
 
 @utility surface {
-	@apply bg-c-panel;
-	/* backdrop-filter: var(--backdrop-filter-panel); */ /* TODO: Add support for backdrop-filter. */
+	@apply bg-c-surface;
 }
 
 @utility card {
