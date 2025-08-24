@@ -1,8 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
 
-@layer tokens, theme, base, components, utilities;
+@layer theme, base, components, utilities;
 @import 'tailwindcss';
-@import './tokens.css' layer(tokens);
 @import './theme.css' layer(theme);
 
 @plugin 'tailwindcss-animate';
@@ -21,6 +20,9 @@
 	--radius-md: 4px;
 	--radius-lg: 8px;
 	--radius-xl: 12px;
+
+	--color-c-fg: var(--c-fg);
+	--color-c-bg: var(--c-bg);
 
 	--color-c-background: var(--c-neutral-background);
 	--color-c-surface: var(--c-neutral-surface);
@@ -150,7 +152,7 @@
 	}
 
 	hr {
-		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-c-divider;
+		@apply bg-c-divider m-0 block h-[1px] w-full border-0 border-none border-transparent;
 	}
 
 	pre,
@@ -165,7 +167,7 @@
 
 	a:where(:any-link, button),
 	.link {
-		@apply font-medium text-c-accent hover:text-c-accent-active hover:underline;
+		@apply text-c-accent hover:text-c-accent-active font-medium hover:underline;
 		text-decoration-line: none;
 		text-decoration-style: solid;
 		text-decoration-thickness: min(2px, max(1px, 0.05em));
@@ -206,7 +208,7 @@
 }
 
 @utility card {
-	@apply relative block overflow-hidden rounded-md border border-c-divider surface p-4;
+	@apply border-c-divider surface relative block overflow-hidden rounded-md border p-4;
 }
 
 @utility icon {
@@ -220,22 +222,22 @@
 }
 
 @utility code {
-	@apply rounded-sm bg-c-splash px-1.25 font-mono text-[0.875em] themed;
+	@apply bg-c-splash px-1.25 themed rounded-sm font-mono text-[0.875em];
 }
 
 @utility checkbox {
-	@apply size-[1em] overflow-hidden rounded-xs border border-c-border text-[1.125em] focus-visible:ring-1 focus-visible:ring-c-focus focus-visible:outline-none;
+	@apply rounded-xs border-c-border focus-visible:ring-c-focus size-[1em] overflow-hidden border text-[1.125em] focus-visible:outline-none focus-visible:ring-1;
 	&:checked,
 	&[data-state~='checked'] {
 		@apply border-c-main bg-c-main text-c-main-contrast;
 	}
 	&:disabled {
-		@apply cursor-not-allowed border-c-divider bg-c-splash text-c-symbol opacity-90;
+		@apply border-c-divider bg-c-splash text-c-symbol cursor-not-allowed opacity-90;
 	}
 }
 
 @utility selectable {
-	@apply cursor-pointer border-c-divider;
+	@apply border-c-divider cursor-pointer;
 	&:hover {
 		@apply border-c-divider bg-c-mist;
 	}

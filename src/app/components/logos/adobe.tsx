@@ -1,0 +1,30 @@
+import { cn } from '@/app/lib/utils';
+
+export const AdobeLogo = ({ className }: { className?: string }) => {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={cn('icon', className)}>
+			<title>Adobe</title>
+			<mask
+				id="a"
+				width="100"
+				height="89"
+				x="0"
+				y="6"
+				maskUnits="userSpaceOnUse"
+				style={{ maskType: 'luminance' }}
+			>
+				<path
+					fill="#fff"
+					d="M100 6.593H0v87.912h100V6.593Z"
+					style={{ fill: '#fff', fillOpacity: 1 }}
+				/>
+			</mask>
+			<g fill="#EB1000" mask="url(#a)">
+				<path
+					d="M62.996 6.593H100v87.912L62.996 6.593ZM37.004 6.593H0v87.912L37.004 6.593ZM49.963 38.974l23.595 55.532h-15.43l-7.042-17.642H33.858l16.105-37.89Z"
+					style={{ fill: '#eb1000', fillOpacity: 1 }}
+				/>
+			</g>
+		</svg>
+	);
+};

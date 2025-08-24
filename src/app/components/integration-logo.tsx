@@ -1,50 +1,50 @@
-import { memo, useMemo } from 'react';
-import { Avatar, type AvatarProps } from './avatar';
-import adobeLogo from './logos/adobe.svg?url';
-import airtableLogo from './logos/airtable.svg?url';
-import arcLogo from './logos/arc.svg?url';
-import githubLogo from './logos/github.svg?url';
-import raindropLogo from './logos/raindrop.svg?url';
-import readwiseLogo from './logos/readwise.svg?url';
-import xLogo from './logos/x.svg?url';
+import { memo } from 'react';
+import { AdobeLogo } from './logos/adobe';
+import { AirtableLogo } from './logos/airtable';
+import { ArcLogo } from './logos/arc';
+import { GithubLogo } from './logos/github';
+import { RaindropLogo } from './logos/raindrop';
+import { ReadwiseLogo } from './logos/readwise';
+import { XLogo } from './logos/x';
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
 import { type IntegrationType } from '@/shared/types';
 
-interface IntegrationLogoProps extends Omit<AvatarProps, 'src' | 'fallback'> {
+interface IntegrationLogoProps {
 	integration: IntegrationType;
+	className?: string;
 }
 
-const getLogoUrl = (service: IntegrationType): string | undefined => {
+const LogoComponent = ({ service, className }: { service: IntegrationType; className?: string }) => {
 	switch (service) {
 		case 'lightroom':
-			return adobeLogo;
+			return <AdobeLogo className={className} />;
 		case 'airtable':
-			return airtableLogo;
+			return <AirtableLogo className={className} />;
 		case 'browser_history':
-			return arcLogo;
+			return <ArcLogo className={className} />;
 		case 'github':
-			return githubLogo;
+			return <GithubLogo className={className} />;
 		case 'raindrop':
-			return raindropLogo;
+			return <RaindropLogo className={className} />;
 		case 'readwise':
-			return readwiseLogo;
+			return <ReadwiseLogo className={className} />;
 		case 'twitter':
-			return xLogo;
+			return <XLogo className={className} />;
 		default:
-			return undefined;
+			return null;
 	}
 };
 
 export const IntegrationLogo = memo(function IntegrationLogo({
 	integration: service,
-	...props
+	className,
 }: IntegrationLogoProps) {
-	const logoUrl = useMemo(() => getLogoUrl(service), [service]);
-
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<Avatar src={logoUrl} themed={false} {...props} />
+				<div className={className}>
+					<LogoComponent service={service} />
+				</div>
 			</TooltipTrigger>
 			<TooltipContent>
 				<span className="capitalize">{service}</span>

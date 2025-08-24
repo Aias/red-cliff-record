@@ -1,33 +1,37 @@
 :root {
 	color-scheme: light dark;
 
+	--white: oklch(100% 0 0);
+	--black: oklch(0% 0 0);
+	--transparent: transparent;
+
 	--c-bg: light-dark(var(--white), var(--black));
 	--c-fg: light-dark(var(--black), var(--white));
 
 	/* Neutral Background & Surface */
-	--c-neutral-background: light-dark(var(--radix-sage-2), var(--radix-sage-1));
-	--c-neutral-surface: light-dark(var(--radix-sage-1), var(--radix-sage-2));
-	--c-neutral-overlay: light-dark(var(--radix-sage-1), var(--radix-sage-3));
-	--c-neutral-component: light-dark(var(--radix-sage-3), var(--radix-sage-3));
-	--c-neutral-panel: light-dark(var(--radix-sage-2), var(--radix-sage-2));
+	--c-neutral-background: light-dark(oklch(97.5% 0.002 165.1), oklch(19.5% 0.004 164.6));
+	--c-neutral-surface: light-dark(oklch(99% 0.002 165.1), oklch(21.1% 0.002 164.7));
+	--c-neutral-overlay: light-dark(oklch(99.8% 0.002 165.1), oklch(23.9% 0.001 164.8));
+	--c-neutral-component: light-dark(oklch(98.5% 0.003 174.5), oklch(22.9% 0.001 164.8));
+	--c-neutral-panel: light-dark(oklch(98% 0.002 165.1), oklch(22.1% 0.003 164.7));
 
 	/* Neutral Text & Symbols */
-	--c-neutral-display: color-mix(in oklch, var(--radix-sage-12) 50%, var(--c-fg) 50%);
-	--c-neutral-primary: var(--radix-sage-12);
-	--c-neutral-symbol: color-mix(in oklch, var(--radix-sage-11) 50%, var(--radix-jade-12) 50%);
-	--c-neutral-secondary: oklch(from var(--c-neutral-primary) l c h / 0.75);
-	--c-neutral-hint: oklch(from var(--c-neutral-primary) l c h / 0.6);
-	--c-neutral-ghost: oklch(from var(--c-neutral-primary) l c h / 0.4);
-	--c-neutral-accent: color-mix(in oklch, var(--radix-sage-11) 25%, var(--radix-jade-12) 75%);
+	--c-neutral-display: light-dark(oklch(22% 0.01 167.6), oklch(94.7% 0.005 165.1));
+	--c-neutral-primary: light-dark(oklch(32% 0.01 167.6), oklch(85% 0.01 165.1));
+	--c-neutral-secondary: light-dark(oklch(48% 0.01 167.6), oklch(68.7% 0.005 165.1));
+	--c-neutral-symbol: light-dark(oklch(48% 0.032 167.6), oklch(68.7% 0.02 165.1));
+	--c-neutral-hint: light-dark(oklch(60% 0.012 167.6), oklch(50.7% 0.012 165.1));
+	--c-neutral-ghost: light-dark(oklch(72% 0.012 167.6), oklch(42.7% 0.012 165.1));
+	--c-neutral-accent: light-dark(oklch(44% 0.04 167.6), oklch(87.7% 0.035 165.1));
 
 	/* Neutral Borders & Dividers */
-	--c-neutral-divider: light-dark(var(--radix-sage-5), var(--radix-sage-4));
-	--c-neutral-border: light-dark(var(--radix-sage-6), var(--radix-sage-5));
-	--c-neutral-edge: light-dark(var(--radix-sage-7), var(--radix-sage-6));
+	--c-neutral-divider: light-dark(oklch(91% 0.015 157.2), oklch(28.2% 0.005 174.1));
+	--c-neutral-border: light-dark(oklch(88.6% 0.02 174.5), oklch(31% 0.005 174.2));
+	--c-neutral-edge: light-dark(oklch(85.1% 0.02 165), oklch(34.8% 0.006 164.7));
 
 	/* Neutral Semantic Colors */
-	--c-neutral-main: var(--radix-sage-9);
-	--c-neutral-main-active: var(--radix-sage-10);
+	--c-neutral-main: light-dark(oklch(45.3% 0.03 171.6), oklch(45.3% 0.017 170.5));
+	--c-neutral-main-active: light-dark(oklch(60.6% 0.025 171.6), oklch(52.8% 0.015 173.8));
 	--c-neutral-main-contrast: var(--white);
 
 	/* Neutral Interaction States */
@@ -45,28 +49,34 @@
 	);
 
 	/* Theme Background & Surface */
-	--c-theme-background: light-dark(var(--radix-jade-2), var(--radix-jade-1));
-	--c-theme-surface: light-dark(var(--radix-jade-1), var(--radix-jade-2));
-	--c-theme-component: light-dark(var(--radix-jade-3), var(--radix-jade-3));
-	--c-theme-panel: light-dark(var(--radix-jade-2), var(--radix-jade-2));
+	--c-theme-background: light-dark(oklch(98.2% 0.009 161.4), oklch(18.6% 0.014 169.8));
+	--c-theme-surface: light-dark(oklch(99.4% 0.003 174.5), oklch(21.5% 0.017 168.2));
+	--c-theme-component: light-dark(oklch(96.1% 0.022 160.2), oklch(27.4% 0.043 165.2));
+	--c-theme-panel: light-dark(oklch(98.2% 0.009 161.4), oklch(21.5% 0.017 168.2));
 
 	/* Theme Text & Symbols */
-	--c-theme-display: oklch(from var(--radix-jade-12) calc(l + 2) calc(c / 2) h);
-	--c-theme-primary: var(--radix-jade-12);
-	--c-theme-symbol: color-mix(in oklch, var(--radix-jade-11) 50%, var(--radix-jade-12) 50%);
+	--c-theme-display: oklch(
+		from light-dark(oklch(32.5% 0.078 170.1), oklch(90.3% 0.078 166.9)) calc(l + 2) calc(c / 2) h
+	);
+	--c-theme-primary: light-dark(oklch(32.5% 0.078 170.1), oklch(90.3% 0.078 166.9));
+	--c-theme-symbol: color-mix(
+		in oklch,
+		light-dark(oklch(54.7% 0.156 170), oklch(78.5% 0.156 167.1)) 50%,
+		light-dark(oklch(32.5% 0.078 170.1), oklch(90.3% 0.078 166.9)) 50%
+	);
 	--c-theme-secondary: oklch(from var(--c-theme-primary) l c h / 0.75);
 	--c-theme-hint: oklch(from var(--c-theme-primary) l c h / 0.6);
 	--c-theme-ghost: oklch(from var(--c-theme-primary) l c h / 0.4);
-	--c-theme-accent: var(--radix-jade-11);
+	--c-theme-accent: light-dark(oklch(54.7% 0.156 170), oklch(78.5% 0.156 167.1));
 
 	/* Theme Borders & Dividers */
-	--c-theme-divider: light-dark(var(--radix-jade-5), var(--radix-jade-4));
-	--c-theme-border: light-dark(var(--radix-jade-6), var(--radix-jade-5));
-	--c-theme-edge: light-dark(var(--radix-jade-7), var(--radix-jade-6));
+	--c-theme-divider: light-dark(oklch(90.2% 0.047 165.1), oklch(31.6% 0.057 167.6));
+	--c-theme-border: light-dark(oklch(86% 0.06 166.2), oklch(36.1% 0.064 168.2));
+	--c-theme-edge: light-dark(oklch(80% 0.076 169.9), oklch(41.3% 0.069 169.6));
 
 	/* Theme Semantic Colors */
-	--c-theme-main: var(--radix-jade-9);
-	--c-theme-main-active: var(--radix-jade-10);
+	--c-theme-main: light-dark(oklch(64.2% 0.115 170.7), oklch(64.2% 0.115 170.7));
+	--c-theme-main-active: light-dark(oklch(61.3% 0.11 170.9), oklch(67.8% 0.126 169.6));
 	--c-theme-main-contrast: var(--white);
 
 	/* Theme Interaction States */

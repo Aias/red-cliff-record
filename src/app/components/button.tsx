@@ -14,7 +14,7 @@ const buttonVariants = cva(
 				outline:
 					'border bg-c-background shadow-xs hover:bg-c-splash hover:text-c-display dark:bg-c-border/30 dark:border-c-border dark:hover:bg-c-border/50',
 				secondary: 'bg-c-splash text-c-accent shadow-xs hover:bg-c-flood',
-				ghost: 'hover:bg-c-splash hover:text-c-display dark:hover:bg-c-splash',
+				ghost: 'hover:bg-c-splash hover:text-c-display dark:hover:bg-c-splash text-c-primary',
 				link: 'text-c-main underline-offset-4 hover:underline',
 			},
 			size: {

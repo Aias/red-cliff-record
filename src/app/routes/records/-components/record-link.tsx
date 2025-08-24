@@ -155,7 +155,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 					</div>
 
 					{/* source logos */}
-					<ul className="flex items-center gap-1.5 text-[0.75em] opacity-50">
+					<ul className="flex items-center gap-1.5 text-[0.875em] opacity-50">
 						{sources?.map((s) => (
 							<li key={s}>
 								<IntegrationLogo integration={s} />
