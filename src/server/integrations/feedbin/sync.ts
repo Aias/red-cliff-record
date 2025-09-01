@@ -22,7 +22,7 @@ const logger = createIntegrationLogger('feedbin', 'sync');
 /**
  * Batch size for processing embeddings
  */
-const EMBEDDING_BATCH_SIZE = 20;
+const EMBEDDING_BATCH_SIZE = 30;
 
 /**
  * Cache of synced feed IDs to avoid repeated fetches
@@ -284,6 +284,16 @@ async function processSingleEntry(
 
 		(async () => {
 			try {
+				// Determine a usable URL for the entry
+				const effectiveUrl = entry.url ?? entry.extracted_content_url ?? null;
+				if (!effectiveUrl) {
+					// Skip entries without any URL; database requires non-null URL
+					logger.warn(
+						`Skipping entry #${entry.id}: ${entry.title} (feed ${entry.feed_id}) because it has no URL`
+					);
+					clearTimeout(timeout);
+					return resolve(true);
+				}
 				// For updated entries, preserve existing read/starred status
 				// For new entries, use the status from Feedbin
 				const isUpdatedEntry = updatedEntryIds?.has(entry.id) ?? false;
@@ -352,7 +362,7 @@ async function processSingleEntry(
 						.values({
 							id: entry.id,
 							feedId: entry.feed_id,
-							url: entry.url,
+							url: effectiveUrl,
 							title: entry.title,
 							author: entry.author,
 							summary: entry.summary,
@@ -398,7 +408,7 @@ async function processSingleEntry(
 								.values({
 									id: entry.id,
 									feedId: entry.feed_id,
-									url: entry.url,
+									url: effectiveUrl,
 									title: entry.title,
 									author: entry.author,
 									summary: entry.summary,

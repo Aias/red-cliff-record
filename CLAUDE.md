@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **IMPORTANT**: This file is the single source of truth for development guidelines and architectural patterns. When making significant refactoring or architectural changes, update this file to reflect the new patterns and keep it current.
 
+> Contributor note: For project overview and scripts, see `README.md` and `INTEGRATIONS.md`.
+
 ## Project Overview
 
 Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Bun server.
@@ -12,10 +14,10 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 **Development:**
 
-- `bun run dev` - Start development server
-- `bun run build` - Build for production
-- `bun run lint` - Format, lint, and type check (REQUIRED before commits)
-- `bun run tsc` - Type check only (REQUIRED before commits)
+- `bun run lint` - Run at the end of a work session before finalizing changes
+- `bun run tsc` - Run only when TypeScript/types may be affected (TS code, schemas, build config)
+
+Never attempt to start the development server or build the application. The user will run these commands manually.
 
 **Database:**
 
@@ -31,57 +33,18 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 
 - `bun run sync:daily` - Run all integrations
 - Individual sync: `bun run sync:github`, `bun run sync:airtable`, `bun run sync:raindrop`, `bun run sync:readwise`, `bun run sync:feedbin`, `bun run sync:browsing`
-- **IMPORTANT**: Never run any sync scripts without checking with the user first
 
 **Data Operations:**
 
 - **IMPORTANT**: Never run any operations that modify data or could have destructive effects (including creating new data, schemas, or running database migrations) without first prompting the user for permission
 
-## Architecture
+## Architecture (Pointers)
 
-**Frontend (`/src/app/`):**
-
-- `routes/` - TanStack Router file-based routing
-- `components/` - Reusable components (aliased as `@/components`)
-- `lib/` - Client-side utility functions (aliased as `@/lib`)
-  - `hooks/` - React hooks split into focused modules:
-    - `record-queries.ts` - Read operations (useRecord, useRecordList, useRecordTree)
-    - `record-mutations.ts` - CRUD operations (useUpsertRecord, useDeleteRecords, useMergeRecords)
-    - `media-mutations.ts` - Media operations (useCreateMedia, useDeleteMedia)
-    - `link-mutations.ts` - Link operations (useUpsertLink, useDeleteLinks)
-
-**Backend (`/src/server/`):**
-
-- `api/` - tRPC API routes and routers
-- `db/` - Drizzle database schema and migrations (aliased as `@/db`)
-- `lib/` - Server-only utilities (aliased as `@/server/lib`)
-  - `media.ts` - Complete media handling (R2 uploads, metadata extraction, MIME detection)
-  - `image-metadata.ts` - Pure image format parsing utility
-  - `url-utils.ts` - Server-side URL validation and formatting
-  - `constants.ts` - Server-specific constants (SIMILARITY_THRESHOLD, similarity function)
-- `integrations/` - External API integrations and sync scripts
-
-**Shared (`/src/shared/`):**
-
-- `lib/` - Universal utilities (aliased as `@/shared/lib`) - work in both client and server environments
-  - `formatting.ts` - Text formatting and Zod transformers (`toTitleCase`, `emptyStringToNull`)
-  - `embedding.ts` - Text processing for embeddings (`getRecordTitle`, `createRecordEmbeddingText`)
-  - `merge-records.ts` - Record merging logic (`mergeRecords`, `mergeTextFields`)
-- `types/` - Universal types (aliased as `@/shared/types`) - shared between client and server
-  - `database.ts` - Re-exports of database types that frontend needs (avoids direct database imports)
-  - `api.ts` - API contract types and schemas (`ListRecordsInput`, `SearchRecordsInput`, `DbId`)
-  - `domain.ts` - Core business object types (`RecordGet`, `FullRecord`, `RecordLinks`)
-  - `media.ts` - Media-related types (`MediaMetadata`)
-  - `index.ts` - Convenient re-export of all shared types
-
-**Database:**
-
-- Core entities: `records` (content), `links` (relationships), `predicates` (relationship types)
-- Integration-specific tables for external data sources
-- Vector embeddings for semantic search
-- PostgreSQL with Drizzle ORM
-- Extensions: `pg_trgm` and `vector` (installed in `extensions` schema)
-- Search path must include `extensions` schema for vector operations
+- High-level overview and directory map: see `README.md`.
+- Frontend: `src/app/**` (routes, components, client libs). Import aliases in `eslint.config.js` and tsconfig.
+- Backend: `src/server/**` (tRPC routers, libs, db, integrations). DB schema under `src/server/db/**`.
+- Shared: `src/shared/**` (cross-environment libs and types).
+- Keep client/server boundaries: client must not import server code; server may import shared.
 
 ## Component Development Rules
 
@@ -152,10 +115,16 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Consider code splitting for larger components
 - Use efficient query patterns and proper indexing
 
-**Before Every Commit:**
+**Before Finalizing Changes:**
 
-- Run `bun run lint` AND `bun run tsc`
-- Update CLAUDE.md if refactoring changes architectural patterns or introduces new conventions
+- Run `bun run lint`.
+- Run `bun run tsc` only if your changes can impact types (TypeScript sources, Zod schemas, DB schema/types, build/tsconfig).
+- Update CLAUDE.md if refactoring changes architectural patterns or introduces new conventions.
+
+**Git & Repository State:**
+
+- Never run `git commit`, `git add`/`git stage`, `git push`, `git reset`, or similar commands without explicit user permission. The user will manually manage all git operations unless otherwise specified.
+- Prefer proposing diffs via patch files or documented changes; avoid modifying VCS state.
 
 ## Import Aliases
 
@@ -194,14 +163,9 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Always prefer direct imports from the correct location over convenience re-exports
 - During large refactors, complete the entire migration in one go rather than leaving transitional files
 
-**File Editing Guidelines:**
+**Formatting & Indentation:**
 
-- This project uses **tabs for indentation** (not spaces)
-- When doing exact string replacements with MultiEdit, always verify whitespace by reading the exact lines first
-- Use `sed -n 'start,end p' filename` to see exact content with proper formatting
-- For complex multi-line replacements, prefer smaller, targeted changes over large blocks
-- When uncertain about whitespace, use the Bash tool with `grep -A/-B` to see context
-- Test with TypeScript compilation (`bun run tsc`) after file modifications
+- Governed by Prettier (`.prettierrc`): tabs for indentation (width 2). Run `bun run lint` at the end of a session.
 
 **Media & File Handling:**
 
@@ -215,110 +179,16 @@ Red Cliff Record is a personal knowledge repository that aggregates data from mu
 - Import from specific modules: `@/lib/hooks/record-queries`, `@/lib/hooks/record-mutations`, etc.
 - Main `use-records.ts` re-exports all hooks for backward compatibility
 
-## Integration Development Guidelines
+## Integration Development Guidelines (Pointers)
 
-**Creating New Integrations:**
+- Canonical guidance and examples live in `INTEGRATIONS.md`.
+- Keep sync logic pure and wrapped by `runIntegration`; expose a small CLI entry in `src/server/cli/`.
+- Use Zod v4 schemas in `types.ts`, a focused API client in `client.ts`, and `sync.ts` for orchestration.
+- Respect rate limits; batch where needed; upsert with `.onConflictDoUpdate()` for idempotency.
+- Ask before any destructive or data-modifying operation.
 
-1. **File Structure** - Each integration should have:
-   - `types.ts` - Zod schemas (v4) for API responses and TypeScript types
-   - `client.ts` - API client with authenticated requests
-   - `sync.ts` - Main sync logic using `runIntegration` wrapper (pure function, no CLI code)
-   - `embedding.ts` - (if needed) Text generation for embeddings
-   - `map.ts` - (if needed) Mapping logic from integration data to records
-   - CLI entry point in `src/server/cli/sync-[integration].ts` for command-line execution
+## Database Management (Pointers)
 
-2. **Authentication:**
-   - Use environment variables for credentials (e.g., `FEEDBIN_USERNAME`, `FEEDBIN_PASSWORD`)
-   - Use `requireEnv` from `../common/env` to ensure variables exist
-
-3. **Sync Patterns:**
-   - Fetch only what's needed (use `since` parameters when available)
-   - Use upsert patterns with `.onConflictDoUpdate()` for idempotent syncs
-   - Track integration runs with proper status updates
-   - Batch operations when possible (respect API rate limits)
-
-4. **Embedding Generation:**
-   - Use `createEmbedding` from `@/app/lib/server/create-embedding`
-   - Respect OpenAI's token limits (8192 tokens ≈ 24000 characters)
-   - Include relevant metadata (title, author, content, URL)
-   - Strip HTML when appropriate for cleaner embeddings
-   - For feeds/RSS: Generate embeddings asynchronously after initial sync
-
-5. **Error Handling:**
-   - Log errors with context using integration logger
-   - Continue processing other items on individual failures
-   - Return count of successfully processed items
-
-6. **Differential Sync Patterns:**
-   - For starred/bookmarked items: Fetch ID lists, diff with database, sync only changes
-   - Example: Feedbin starred entries - compare API starred IDs with DB starred IDs
-   - Benefits: Constant sync time regardless of total item count
-
-7. **Multi-Step Integration Patterns:**
-   - For integrations with multiple data sources, use orchestration pattern
-   - Call `runIntegration` once at the top level for the entire sync
-   - Example: Browser history sync-all runs both Arc and Dia under one integration run, Github sync handles sync for both starred repositories and commit history
-
-8. **CLI Entry Points Pattern:**
-   - Integration sync functions should be pure - no CLI-specific code, no runtime detection
-   - Create separate CLI entry points in `src/server/cli/` directory
-   - CLI files handle process.exit(), console formatting, and other terminal concerns
-   - Example structure:
-
-     ```typescript
-     // src/server/integrations/[name]/sync.ts
-     export async function syncData() {
-       // Pure sync logic using runIntegration
-     }
-
-     // src/server/cli/sync-[name].ts
-     #!/usr/bin/env bun
-     import { syncData } from '../integrations/[name]/sync';
-     const logger = createIntegrationLogger('[name]', 'cli');
-
-     async function main() {
-       try {
-         logger.start('=== STARTING SYNC ===');
-         await syncData();
-         logger.complete('=== SYNC COMPLETED ===');
-         process.exit(0);
-       } catch (error) {
-         logger.error('Sync failed', error);
-         process.exit(1);
-       }
-     }
-     main();
-     ```
-
-   - Update package.json to point to CLI entry: `"sync:[name]": "bun src/server/cli/sync-[name].ts"`
-
-## Database Management and Migration Guidelines
-
-**Backup and Restore:**
-
-1. **Database URLs:**
-   - `DATABASE_URL_LOCAL` - Local PostgreSQL instance
-   - `DATABASE_URL_REMOTE` - Remote production database
-   - `DATABASE_URL` - Active database connection (usually points to local or remote)
-
-2. **Schema Divergence:**
-   - Local and remote databases may have different schemas due to pending migrations
-   - Use clean restore (`-c` flag) when schema conflicts occur during restore
-   - Clean restore drops the entire database and recreates it with proper extensions
-
-3. **Required PostgreSQL Extensions:**
-   - `pg_trgm` - For text similarity search using trigrams
-   - `vector` - For vector similarity search and embeddings
-   - Both installed in `extensions` schema
-   - Database search_path must include `extensions` for vector operators to work
-
-4. **Common Issues and Solutions:**
-   - **Foreign key violations during restore**: Use clean restore to drop and recreate database
-   - **Vector operator not found errors**: Run `ALTER DATABASE dbname SET search_path TO public, extensions;`
-   - **Migration history too complex**: Use backup/restore instead of running all migrations
-
-5. **Best Practices:**
-   - Always backup before major database operations
-   - Check schema compatibility before restoring between environments
-   - Use `db-manager.sh` script for consistent backup/restore operations
-   - Never run destructive database operations without user permission
+- Canonical operations live in `scripts/deploy/README.md` and `src/server/db/db-manager.sh`.
+- Use `bun run db:*` scripts for migrations and studio.
+- Never run destructive operations or migrations without explicit user permission.

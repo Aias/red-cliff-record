@@ -59,8 +59,9 @@ export const FeedbinEntrySchema = z.object({
 	id: z.number().int().positive(),
 	feed_id: z.number().int().positive(),
 	title: emptyStringToNull(z.string()),
-	url: z.url(),
-	extracted_content_url: z.url().optional(),
+	// Feedbin may return null for url/extracted_content_url on some entries
+	url: z.url().nullable(),
+	extracted_content_url: z.url().nullable().optional(),
 	author: emptyStringToNull(z.string()),
 	content: emptyStringToNull(z.string()),
 	summary: emptyStringToNull(z.string()),
