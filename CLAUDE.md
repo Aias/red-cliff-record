@@ -45,20 +45,23 @@ Never attempt to start the development server or build the application. The user
 - Backend: `src/server/**` (tRPC routers, libs, db, integrations). DB schema under `src/server/db/**`.
 - Shared: `src/shared/**` (cross-environment libs and types).
 - Keep client/server boundaries: client must not import server code; server may import shared.
+- Theme tokens: `src/app/styles/theme.css` holds the `c-*` color variables used across components.
 
 ## Component Development Rules
 
 **Organization:**
 
-- Reusable components: `src/app/components/` with kebab-case naming
-- Shadcn UI components: `src/app/components/ui/` (DO NOT modify without explicit instructions)
+- Reusable components: `src/app/components/` with kebab-case naming (includes all Shadcn-derived primitives)
+- Do not create a separate `ui` directory—every reusable component lives directly under `src/app/components`
 - Page-specific components: `-components/` directory or `-component.tsx` suffix
 
 **Structure Requirements:**
 
 - Semantic HTML elements for layout and structure
-- Tailwind CSS v4 syntax for styling
-- Shadcn UI for interactive elements and complex components
+- Tailwind CSS v4 syntax using `c-*` design tokens from `src/app/styles/theme.css`
+- Build interactive elements with Radix primitives and existing Shadcn-based components
+- Never use legacy Shadcn theme variables (`bg-background`, `text-foreground`, etc.)
+- Mark key DOM nodes with `data-slot` attributes for styling hooks
 - Lucide icons with `Icon` suffix (e.g., `HomeIcon` not `Home`)
 - Use `<Spinner />` component from `@/components/spinner` for loading states, either in place of or in addition to text (e.g., "Loading...", "loading", etc.)
 
