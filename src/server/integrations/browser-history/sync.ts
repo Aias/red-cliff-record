@@ -80,7 +80,9 @@ const createPrompt = (): readline.Interface => {
  * @param message - The message to display to the user
  * @returns Promise that resolves to true if the user confirms, false otherwise
  */
-const askForConfirmation = async (message: string): Promise<boolean> => {
+export type ConfirmFn = (message: string) => Promise<boolean>;
+
+export const askForConfirmation: ConfirmFn = async (message: string): Promise<boolean> => {
 	const rl = createPrompt();
 
 	return new Promise((resolve) => {
@@ -144,14 +146,15 @@ function sanitizeUrl(url: string): string | null {
  */
 async function syncBrowserHistory(
 	browserConfig: BrowserConfig,
-	integrationRunId: number
+	integrationRunId: number,
+	confirmFn: ConfirmFn = askForConfirmation
 ): Promise<number> {
 	try {
 		// Get current hostname
 		const currentHostname = os.hostname();
 
 		// Step 1: Check if the current hostname is known
-		const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
+		const shouldProceed = await checkHostname(currentHostname, browserConfig.name, confirmFn);
 		if (!shouldProceed) {
 			logger.info('Sync cancelled by user');
 			return 0;
@@ -218,7 +221,11 @@ async function syncBrowserHistory(
  * @param browser - The browser type
  * @returns Promise that resolves to true if the sync should proceed, false otherwise
  */
-async function checkHostname(currentHostname: string, _browser: Browser): Promise<boolean> {
+async function checkHostname(
+	currentHostname: string,
+	_browser: Browser,
+	confirmFn: ConfirmFn
+): Promise<boolean> {
 	// Get all unique hostnames from the database
 	const uniqueHostnames = await db
 		.select({
@@ -233,7 +240,7 @@ async function checkHostname(currentHostname: string, _browser: Browser): Promis
 	// If current hostname is not in the database, ask for confirmation
 	if (!knownHostnames.has(currentHostname)) {
 		logger.info('Known hostnames: ' + Array.from(knownHostnames).join(', '));
-		return askForConfirmation(
+		return confirmFn(
 			`Current hostname "${currentHostname}" has not been seen before. Proceed with sync?`
 		);
 	}
@@ -510,11 +517,14 @@ async function insertHistoryEntries(processedHistory: BrowsingHistoryInsert[]): 
  */
 export { syncBrowserHistory };
 
-export function createBrowserSyncFunction(browserConfig: BrowserConfig) {
+export function createBrowserSyncFunction(
+	browserConfig: BrowserConfig,
+	confirmFn: ConfirmFn = askForConfirmation
+) {
 	return async (): Promise<void> => {
 		try {
 			await runIntegration('browser_history', (integrationRunId) =>
-				syncBrowserHistory(browserConfig, integrationRunId)
+				syncBrowserHistory(browserConfig, integrationRunId, confirmFn)
 			);
 		} catch (error) {
 			logger.error(`Error syncing ${browserConfig.displayName} browser history`, error);

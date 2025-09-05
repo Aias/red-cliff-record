@@ -172,10 +172,15 @@ export async function loadBookmarksData(): Promise<{
  * @returns The number of successfully processed tweets
  * @throws Error if processing fails
  */
-async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
+async function syncTwitterBookmarks(
+	integrationRunId: number,
+	uploadedData?: TwitterBookmarksArray
+): Promise<number> {
 	try {
 		// Step 1: Load bookmarks data
-		const { data: bookmarkResponses, processedFiles } = await loadBookmarksData();
+		const { data: bookmarkResponses, processedFiles } = uploadedData
+			? { data: uploadedData, processedFiles: [] }
+			: await loadBookmarksData();
 		if (bookmarkResponses.length === 0) {
 			logger.info('No Twitter bookmarks data found');
 			return 0;
@@ -408,15 +413,28 @@ async function createRelatedRecords(): Promise<void> {
 /**
  * Orchestrates the Twitter data synchronization process
  */
-async function syncTwitterData(): Promise<void> {
+async function syncTwitterData(data?: TwitterBookmarksArray): Promise<void> {
 	try {
 		logger.start('Starting Twitter data synchronization');
-		await runIntegration('twitter', syncTwitterBookmarks);
+		await runIntegration('twitter', (id) => syncTwitterBookmarks(id, data));
 		logger.complete('Twitter data synchronization completed');
 	} catch (error) {
 		logger.error('Error syncing Twitter data', error);
 		throw error;
 	}
+}
+
+export function parseBookmarkDataStrings(strings: string[]): TwitterBookmarksArray {
+	const combined: TwitterBookmarksArray = [];
+	for (const content of strings) {
+		const rawData = JSON.parse(content);
+		const result = TwitterBookmarksArraySchema.safeParse(rawData);
+		if (!result.success) {
+			throw new Error('Invalid Twitter bookmarks data');
+		}
+		combined.push(...result.data);
+	}
+	return combined;
 }
 
 export { syncTwitterData };
