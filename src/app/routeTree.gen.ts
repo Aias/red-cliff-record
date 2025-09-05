@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as IntegrationsIndexRouteImport } from './routes/integrations/index'
 import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
 import { ServerRoute as ApiTrpcSplatServerRouteImport } from './routes/api/trpc/$'
+import { Route as BlogRouteImport } from './routes/blog'
 
 const rootServerRouteImport = createServerRootRoute()
 
@@ -34,6 +35,11 @@ const IntegrationsIndexRoute = IntegrationsIndexRouteImport.update({
   path: '/integrations/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecordsRecordIdRoute = RecordsRecordIdRouteImport.update({
   id: '/$recordId',
   path: '/$recordId',
@@ -50,12 +56,14 @@ export interface FileRoutesByFullPath {
   '/records': typeof RecordsRouteRouteWithChildren
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/integrations': typeof IntegrationsIndexRoute
+  '/blog': typeof BlogRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/integrations': typeof IntegrationsIndexRoute
+  '/blog': typeof BlogRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -63,19 +71,21 @@ export interface FileRoutesById {
   '/records': typeof RecordsRouteRouteWithChildren
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/integrations/': typeof IntegrationsIndexRoute
+  '/blog': typeof BlogRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/records' | '/records/$recordId' | '/integrations'
+  fullPaths: '/' | '/records' | '/records/$recordId' | '/integrations' | '/blog'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/records' | '/records/$recordId' | '/integrations'
-  id: '__root__' | '/' | '/records' | '/records/$recordId' | '/integrations/'
+  to: '/' | '/records' | '/records/$recordId' | '/integrations' | '/blog'
+  id: '__root__' | '/' | '/records' | '/records/$recordId' | '/integrations/' | '/blog'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RecordsRouteRoute: typeof RecordsRouteRouteWithChildren
   IntegrationsIndexRoute: typeof IntegrationsIndexRoute
+  BlogRoute: typeof BlogRoute
 }
 export interface FileServerRoutesByFullPath {
   '/api/trpc/$': typeof ApiTrpcSplatServerRoute
@@ -122,6 +132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IntegrationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/records/$recordId': {
       id: '/records/$recordId'
       path: '/$recordId'
@@ -159,6 +176,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RecordsRouteRoute: RecordsRouteRouteWithChildren,
   IntegrationsIndexRoute: IntegrationsIndexRoute,
+  BlogRoute: BlogRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

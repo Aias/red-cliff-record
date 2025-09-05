@@ -1,6 +1,7 @@
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { createTRPCRouter } from './init';
 import { adminRouter } from './routers/admin';
+import { feedEntriesRouter } from './routers/feed-entries';
 import { integrationsRouter } from './routers/integrations';
 import { linksRouter } from './routers/links';
 import { mediaRouter } from './routers/media';
@@ -14,6 +15,7 @@ export const appRouter = createTRPCRouter({
 	media: mediaRouter,
 	records: recordsRouter,
 	search: searchRouter,
+	feedEntries: feedEntriesRouter,
 });
 
 export type AppRouter = typeof appRouter;
