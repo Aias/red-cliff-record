@@ -11,6 +11,7 @@
 import { createServerRootRoute } from '@tanstack/react-start/server'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as FeedRouteImport } from './routes/feed'
 import { Route as RecordsRouteRouteImport } from './routes/records/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as IntegrationsIndexRouteImport } from './routes/integrations/index'
@@ -19,6 +20,11 @@ import { ServerRoute as ApiTrpcSplatServerRouteImport } from './routes/api/trpc/
 
 const rootServerRouteImport = createServerRootRoute()
 
+const FeedRoute = FeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecordsRouteRoute = RecordsRouteRouteImport.update({
   id: '/records',
   path: '/records',
@@ -48,12 +54,14 @@ const ApiTrpcSplatServerRoute = ApiTrpcSplatServerRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
+  '/feed': typeof FeedRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/integrations': typeof IntegrationsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
+  '/feed': typeof FeedRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/integrations': typeof IntegrationsIndexRoute
 }
@@ -61,20 +69,28 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
+  '/feed': typeof FeedRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/integrations/': typeof IntegrationsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/records' | '/records/$recordId' | '/integrations'
+  fullPaths: '/' | '/records' | '/feed' | '/records/$recordId' | '/integrations'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/records' | '/records/$recordId' | '/integrations'
-  id: '__root__' | '/' | '/records' | '/records/$recordId' | '/integrations/'
+  to: '/' | '/records' | '/feed' | '/records/$recordId' | '/integrations'
+  id:
+    | '__root__'
+    | '/'
+    | '/records'
+    | '/feed'
+    | '/records/$recordId'
+    | '/integrations/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RecordsRouteRoute: typeof RecordsRouteRouteWithChildren
+  FeedRoute: typeof FeedRoute
   IntegrationsIndexRoute: typeof IntegrationsIndexRoute
 }
 export interface FileServerRoutesByFullPath {
@@ -101,6 +117,13 @@ export interface RootServerRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/feed': {
+      id: '/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof FeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/records': {
       id: '/records'
       path: '/records'
@@ -158,6 +181,7 @@ const RecordsRouteRouteWithChildren = RecordsRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RecordsRouteRoute: RecordsRouteRouteWithChildren,
+  FeedRoute: FeedRoute,
   IntegrationsIndexRoute: IntegrationsIndexRoute,
 }
 export const routeTree = rootRouteImport
