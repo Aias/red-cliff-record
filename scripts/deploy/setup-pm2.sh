@@ -8,7 +8,7 @@ echo "Setting up PM2 for Red Cliff Record..."
 mkdir -p logs
 
 # Start both the app and auto-deploy monitor
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.cjs
 
 # Save PM2 configuration
 pm2 save

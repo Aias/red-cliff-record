@@ -21,6 +21,7 @@ module.exports = {
 			log_file: './logs/combined.log',
 			merge_logs: true,
 			time: true,
+			log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
 		},
 		{
 			// Auto-deployment monitor
@@ -34,6 +35,7 @@ module.exports = {
 			out_file: './logs/deploy-out.log',
 			log_file: './logs/deploy-combined.log',
 			time: true,
+			log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
 		},
 	],
 };
