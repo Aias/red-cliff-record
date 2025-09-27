@@ -12,7 +12,7 @@ export const getTheme = createServerFn({ method: 'GET' }).handler(() => {
 });
 
 export const setTheme = createServerFn({ method: 'POST' })
-	.validator((data: unknown) => {
+	.inputValidator((data: unknown) => {
 		const schema = z.object({
 			theme: z.enum(['light', 'dark']),
 		});

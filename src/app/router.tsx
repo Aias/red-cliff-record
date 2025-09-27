@@ -8,7 +8,7 @@ import { NotFound } from './routes/-app-components/not-found';
 import { routeTree } from './routeTree.gen';
 import { trpc, trpcClient } from './trpc';
 
-export function createRouter() {
+export function getRouter() {
 	const queryClient = new QueryClient({
 		defaultOptions: {
 			dehydrate: {
@@ -51,6 +51,6 @@ export function createRouter() {
 
 declare module '@tanstack/react-router' {
 	interface Register {
-		router: ReturnType<typeof createRouter>;
+		router: ReturnType<typeof getRouter>;
 	}
 }

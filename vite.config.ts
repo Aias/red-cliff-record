@@ -30,11 +30,7 @@ export default defineConfig(({ mode }) => {
 		plugins: [
 			tsConfigPaths(),
 			tanstackStart({
-				target: 'bun',
-				customViteReactPlugin: true,
-				tsr: {
-					srcDirectory: './src/app',
-				},
+				srcDirectory: './src/app',
 			}),
 			viteReact({
 				babel: {
