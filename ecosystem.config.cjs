@@ -4,7 +4,7 @@ module.exports = {
 			// Main application
 			name: 'red-cliff-record',
 			script: 'bun',
-			args: 'run .output/server/index.mjs',
+			args: 'run server.ts',
 			cwd: './',
 			env: {
 				NODE_ENV: 'production',
@@ -12,7 +12,7 @@ module.exports = {
 			},
 			instances: 1,
 			autorestart: true,
-			watch: ['.output'],
+			watch: ['dist'],
 			ignore_watch: ['node_modules', 'logs', '.git'],
 			watch_delay: 1000,
 			max_memory_restart: '1G',

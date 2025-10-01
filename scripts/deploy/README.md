@@ -24,7 +24,7 @@ Before running the deployment setup, you need to build the application:
 bun run build
 ```
 
-This creates the production build in the `.output/server/` directory.
+This creates the production build in the `dist/` directory.
 
 ### Installation
 
@@ -51,7 +51,7 @@ This creates the production build in the `.output/server/` directory.
 
 The `ecosystem.config.cjs` file in the root directory manages both:
 
-- **red-cliff-record**: The main application (runs on `bun .output/server/index.mjs`)
+- **red-cliff-record**: The main application (runs on `bun run server.ts`)
 - **red-cliff-deploy**: The auto-deployment monitor that checks for updates every 60 seconds
 
 ### Logging
@@ -105,7 +105,7 @@ The script will check for updates every 60 seconds and automatically pull, build
 
 ### Application won't start
 
-1. Check if the build exists: `ls -la .output/server/index.mjs`
+1. Check if the build exists: `ls -la dist/server/server.js`
 2. If missing, run: `bun run build`
 3. Check PM2 logs: `pm2 logs red-cliff-record`
 4. Verify environment variables are set correctly
