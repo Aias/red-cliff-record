@@ -72,3 +72,35 @@ export function mapUrl(url?: string | null): string | undefined {
 		return undefined;
 	}
 }
+
+/**
+ * Helper to validate URLs and convert invalid ones to null
+ */
+export const flexibleUrl = z.preprocess((val) => {
+	// If null or undefined, return null
+	if (val === null || val === undefined) return null;
+
+	// If not a string, return null
+	if (typeof val !== 'string') {
+		console.warn(`Invalid URL type: expected string, got ${typeof val}`);
+		return null;
+	}
+
+	// If empty string, return null
+	if (val.trim() === '') {
+		console.warn('Empty string provided as URL, converting to null');
+		return null;
+	}
+
+	// Try to parse as URL - if it fails, return null
+	try {
+		new URL(val);
+		return val;
+	} catch {
+		// Invalid URL format - return null
+		console.warn(
+			`Failed to parse invalid URL: "${val.length > 100 ? val.substring(0, 100) + '...' : val}"`
+		);
+		return null;
+	}
+}, z.url().nullable());

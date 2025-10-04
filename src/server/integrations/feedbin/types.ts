@@ -1,4 +1,5 @@
 import { z } from 'zod/v4';
+import { flexibleUrl } from '@/server/lib/url-utils';
 import { emptyStringToNull } from '@/shared/lib/formatting';
 
 /**
@@ -10,7 +11,7 @@ export const FeedbinSubscriptionSchema = z.object({
 	feed_id: z.number().int().positive(),
 	title: z.string(),
 	feed_url: z.url(),
-	site_url: z.url().nullable(),
+	site_url: flexibleUrl,
 });
 
 export const FeedbinSubscriptionsResponseSchema = z.array(FeedbinSubscriptionSchema);
@@ -22,7 +23,7 @@ export const FeedbinFeedSchema = z.object({
 	id: z.number().int().positive(),
 	title: z.string(),
 	feed_url: z.url(),
-	site_url: z.url().nullable(),
+	site_url: flexibleUrl,
 });
 
 /**
@@ -59,9 +60,9 @@ export const FeedbinEntrySchema = z.object({
 	id: z.number().int().positive(),
 	feed_id: z.number().int().positive(),
 	title: emptyStringToNull(z.string()),
-	// Feedbin may return null for url/extracted_content_url on some entries
-	url: z.url().nullable(),
-	extracted_content_url: z.url().nullable().optional(),
+	// Feedbin may return null or invalid URLs for url/extracted_content_url on some entries
+	url: flexibleUrl,
+	extracted_content_url: flexibleUrl.optional(),
 	author: emptyStringToNull(z.string()),
 	content: emptyStringToNull(z.string()),
 	summary: emptyStringToNull(z.string()),
