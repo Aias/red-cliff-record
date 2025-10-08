@@ -1,6 +1,5 @@
-import { copyFileSync } from 'fs';
-import { existsSync } from 'fs';
-import { homedir } from 'os';
+import { copyFileSync, existsSync, mkdtempSync, writeFileSync } from 'fs';
+import { homedir, tmpdir } from 'os';
 import { join } from 'path';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
@@ -22,6 +21,19 @@ export const createArcConnection = () => {
 
 	const client = createClient({
 		url: connectionUrl,
+		intMode: 'bigint',
+	});
+
+	return drizzle(client, { schema });
+};
+
+export const createArcConnectionFromBuffer = (buffer: Buffer) => {
+	const tempDir = mkdtempSync(join(tmpdir(), 'arc-history-'));
+	const tempPath = join(tempDir, 'History');
+	writeFileSync(tempPath, buffer);
+
+	const client = createClient({
+		url: `file:${tempPath}`,
 		intMode: 'bigint',
 	});
 
