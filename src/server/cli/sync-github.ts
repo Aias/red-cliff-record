@@ -7,8 +7,8 @@
  */
 
 import { createIntegrationLogger } from '../integrations/common/logging';
-import { syncGitHubData } from '../integrations/github/sync';
 import { parseDebugFlag } from '../integrations/common/logging';
+import { syncGitHubData } from '../integrations/github/sync';
 
 const logger = createIntegrationLogger('github', 'cli');
 

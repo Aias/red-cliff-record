@@ -7,8 +7,8 @@
  */
 
 import { createIntegrationLogger } from '../integrations/common/logging';
-import { syncRaindropData } from '../integrations/raindrop/sync';
 import { parseDebugFlag } from '../integrations/common/logging';
+import { syncRaindropData } from '../integrations/raindrop/sync';
 
 const logger = createIntegrationLogger('raindrop', 'cli');
 

@@ -7,8 +7,8 @@
  */
 
 import { createIntegrationLogger } from '../integrations/common/logging';
-import { syncFeedbin } from '../integrations/feedbin/sync';
 import { parseDebugFlag } from '../integrations/common/logging';
+import { syncFeedbin } from '../integrations/feedbin/sync';
 
 const logger = createIntegrationLogger('feedbin', 'cli');
 

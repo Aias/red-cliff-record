@@ -7,8 +7,8 @@
  */
 
 import { createIntegrationLogger } from '../integrations/common/logging';
-import { syncReadwiseDocuments } from '../integrations/readwise/sync';
 import { parseDebugFlag } from '../integrations/common/logging';
+import { syncReadwiseDocuments } from '../integrations/readwise/sync';
 
 const logger = createIntegrationLogger('readwise', 'cli');
 

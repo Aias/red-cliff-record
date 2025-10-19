@@ -7,8 +7,8 @@
  */
 
 import { createIntegrationLogger } from '../integrations/common/logging';
-import { syncTwitterData } from '../integrations/twitter/sync';
 import { parseDebugFlag } from '../integrations/common/logging';
+import { syncTwitterData } from '../integrations/twitter/sync';
 
 const logger = createIntegrationLogger('twitter', 'cli');
 

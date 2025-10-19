@@ -30,6 +30,14 @@ const EMBEDDING_BATCH_SIZE = 30;
  */
 const syncedFeedIds = new Set<number>();
 
+function buildIconMap(icons: FeedbinIcon[]): Map<string, string> {
+	const iconMap = new Map<string, string>();
+	for (const icon of icons) {
+		iconMap.set(icon.host, icon.url);
+	}
+	return iconMap;
+}
+
 /**
  * Get the most recent feed entry IDs with read/starred status
  */
@@ -115,7 +123,7 @@ async function bulkUpdateReadStatus(entryIds: number[], read: boolean): Promise<
 /**
  * Sync a single feed from Feedbin
  */
-async function syncSingleFeed(feedId: number): Promise<void> {
+async function syncSingleFeed(feedId: number, iconMap?: Map<string, string>): Promise<void> {
 	const FEED_TIMEOUT_MS = 15000; // 15 seconds per feed
 
 	try {
@@ -127,13 +135,10 @@ async function syncSingleFeed(feedId: number): Promise<void> {
 				let iconUrl: string | null = null;
 				if (feed.site_url) {
 					try {
-						const icons = await fetchIcons();
-						const iconMap = new Map<string, string>();
-						for (const icon of icons) {
-							iconMap.set(icon.host, icon.url);
+						if (iconMap) {
+							const url = new URL(feed.site_url);
+							iconUrl = iconMap.get(url.hostname) || null;
 						}
-						const url = new URL(feed.site_url);
-						iconUrl = iconMap.get(url.hostname) || null;
 					} catch {
 						// Ignore URL parsing errors
 					}
@@ -178,16 +183,10 @@ async function syncSingleFeed(feedId: number): Promise<void> {
  */
 async function syncFeeds(
 	subscriptions: FeedbinSubscription[],
-	icons: FeedbinIcon[],
+	iconMap: Map<string, string>,
 	_integrationRunId: number
 ): Promise<void> {
 	logger.start(`Syncing ${subscriptions.length} feeds`);
-
-	// Create icon lookup map
-	const iconMap = new Map<string, string>();
-	for (const icon of icons) {
-		iconMap.set(icon.host, icon.url);
-	}
 
 	const FEED_TIMEOUT_MS = 15000; // 15 seconds per feed
 	let successCount = 0;
@@ -275,7 +274,8 @@ async function processSingleEntry(
 	starredIds: Set<number>,
 	integrationRunId: number,
 	updatedEntryIds: Set<number> | undefined,
-	timeoutMs: number = 10000
+	timeoutMs: number = 10000,
+	iconMap?: Map<string, string>
 ): Promise<boolean> {
 	return new Promise((resolve) => {
 		const timeout = setTimeout(() => {
@@ -400,7 +400,7 @@ async function processSingleEntry(
 						// Feed doesn't exist, fetch and sync it
 						if (!syncedFeedIds.has(entry.feed_id)) {
 							logger.info(`Fetching missing feed ${entry.feed_id} for entry ${entry.id}`);
-							await syncSingleFeed(entry.feed_id);
+							await syncSingleFeed(entry.feed_id, iconMap);
 							syncedFeedIds.add(entry.feed_id);
 
 							// Retry the insert
@@ -464,7 +464,8 @@ async function syncFeedEntries(
 	unreadIds: Set<number>,
 	starredIds: Set<number>,
 	integrationRunId: number,
-	updatedEntryIds?: Set<number>
+	updatedEntryIds?: Set<number>,
+	iconMap?: Map<string, string>
 ): Promise<number> {
 	logger.start(`Syncing ${entries.length} entries`);
 
@@ -491,7 +492,8 @@ async function syncFeedEntries(
 					starredIds,
 					integrationRunId,
 					updatedEntryIds,
-					ENTRY_TIMEOUT_MS
+					ENTRY_TIMEOUT_MS,
+					iconMap
 				);
 				if (success) {
 					successCount++;
@@ -777,6 +779,7 @@ async function syncFeedbin(
 			fetchSubscriptions(lastSyncTime || undefined),
 			fetchIcons(),
 		]);
+		const iconMap = buildIconMap(icons);
 
 		// Collect debug data if requested
 		if (collectDebugData) {
@@ -786,7 +789,7 @@ async function syncFeedbin(
 
 		if (newSubscriptions.length > 0) {
 			logger.info(`Syncing ${newSubscriptions.length} new subscriptions`);
-			await syncFeeds(newSubscriptions, icons, integrationRunId);
+			await syncFeeds(newSubscriptions, iconMap, integrationRunId);
 		}
 
 		// Step 2: Get last entry sync time for updated entries
@@ -869,7 +872,8 @@ async function syncFeedbin(
 			unreadSet,
 			starredSet,
 			integrationRunId,
-			updatedEntrySet
+			updatedEntrySet,
+			iconMap
 		);
 
 		// Step 7: Update feeds for synced entries
@@ -882,11 +886,6 @@ async function syncFeedbin(
 			logger.info(`Updating ${feedsToUpdate.length} feeds from synced entries`);
 
 			// Create icon lookup map
-			const iconMap = new Map<string, string>();
-			for (const icon of icons) {
-				iconMap.set(icon.host, icon.url);
-			}
-
 			// Process feeds in batches
 			const FEED_BATCH_SIZE = 20;
 			let feedUpdateCount = 0;
