@@ -8,13 +8,15 @@
 
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { syncRaindropData } from '../integrations/raindrop/sync';
+import { parseDebugFlag } from '../integrations/common/logging';
 
 const logger = createIntegrationLogger('raindrop', 'cli');
 
 async function main(): Promise<void> {
 	try {
+		const debug = parseDebugFlag(logger);
 		logger.start('=== STARTING RAINDROP SYNC ===');
-		await syncRaindropData();
+		await syncRaindropData(debug);
 		logger.complete('=== RAINDROP SYNC COMPLETED ===');
 		logger.info('-'.repeat(50));
 		process.exit(0);

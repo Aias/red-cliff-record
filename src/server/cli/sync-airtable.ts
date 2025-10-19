@@ -8,13 +8,15 @@
 
 import { syncAirtableData } from '../integrations/airtable/sync';
 import { createIntegrationLogger } from '../integrations/common/logging';
+import { parseDebugFlag } from '../integrations/common/logging';
 
 const logger = createIntegrationLogger('airtable', 'cli');
 
 async function main(): Promise<void> {
 	try {
+		const debug = parseDebugFlag(logger);
 		logger.start('=== STARTING AIRTABLE SYNC ===');
-		await syncAirtableData();
+		await syncAirtableData(debug);
 		logger.complete('=== AIRTABLE SYNC COMPLETED ===');
 		logger.info('-'.repeat(50));
 		process.exit(0);

@@ -8,13 +8,15 @@
 
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { syncReadwiseDocuments } from '../integrations/readwise/sync';
+import { parseDebugFlag } from '../integrations/common/logging';
 
 const logger = createIntegrationLogger('readwise', 'cli');
 
 async function main(): Promise<void> {
 	try {
+		const debug = parseDebugFlag(logger);
 		logger.start('=== STARTING READWISE SYNC ===');
-		await syncReadwiseDocuments();
+		await syncReadwiseDocuments(debug);
 		logger.complete('=== READWISE SYNC COMPLETED ===');
 		logger.info('-'.repeat(50));
 		process.exit(0);

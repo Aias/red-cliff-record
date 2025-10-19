@@ -19,6 +19,7 @@ import {
 	type AirtableSpaceInsert,
 } from '@/server/db/schema/airtable';
 import { uploadMediaToR2 } from '@/server/lib/media';
+import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import { airtableBase, storeMedia } from './helpers';
@@ -43,9 +44,10 @@ const logger = createIntegrationLogger('airtable', 'sync');
  * 3. Processes and stores the creators in the database
  *
  * @param integrationRunId - The ID of the current integration run
+ * @returns The raw Airtable records for debug purposes
  * @throws Error if synchronization fails
  */
-async function syncCreators(integrationRunId: number): Promise<void> {
+async function syncCreators(integrationRunId: number, collectDebugData?: unknown[]): Promise<void> {
 	try {
 		logger.start('Syncing creators');
 
@@ -101,6 +103,8 @@ async function syncCreators(integrationRunId: number): Promise<void> {
 
 		logger.info(`Syncing ${creatorsToSync.length} creators`);
 
+		collectDebugData?.push(...updatedRecords);
+
 		// Use a transaction to ensure all creators are synced atomically
 		await db.transaction(async (tx) => {
 			for (const creator of creatorsToSync) {
@@ -137,7 +141,7 @@ async function syncCreators(integrationRunId: number): Promise<void> {
  * @param integrationRunId - The ID of the current integration run
  * @throws Error if synchronization fails
  */
-async function syncSpaces(integrationRunId: number): Promise<void> {
+async function syncSpaces(integrationRunId: number, collectDebugData?: unknown[]): Promise<void> {
 	try {
 		logger.start('Syncing spaces');
 
@@ -186,6 +190,8 @@ async function syncSpaces(integrationRunId: number): Promise<void> {
 
 		logger.info(`Syncing ${spacesToSync.length} spaces`);
 
+		collectDebugData?.push(...updatedRecords);
+
 		// Use a transaction to ensure all spaces are synced atomically
 		await db.transaction(async (tx) => {
 			for (const space of spacesToSync) {
@@ -222,10 +228,14 @@ async function syncSpaces(integrationRunId: number): Promise<void> {
  * 5. Updates parent-child relationships and connections
  *
  * @param integrationRunId - The ID of the current integration run
+ * @param collectDebugData - Optional array to collect raw Airtable records for debugging
  * @returns Object containing the IDs of updated extracts
  * @throws Error if synchronization fails
  */
-async function syncExtracts(integrationRunId: number): Promise<{
+async function syncExtracts(
+	integrationRunId: number,
+	collectDebugData?: unknown[]
+): Promise<{
 	updatedExtractIds: string[];
 }> {
 	try {
@@ -364,7 +374,11 @@ async function syncExtracts(integrationRunId: number): Promise<{
 		// Step 5: Second pass - Update parent-child relationships and connections
 		await updateExtractRelationships(parsedRecords);
 
-		return { updatedExtractIds: parsedRecords.map((record) => record.id) };
+		collectDebugData?.push(...updatedRecords);
+
+		return {
+			updatedExtractIds: parsedRecords.map((record) => record.id),
+		};
 	} catch (error) {
 		logger.error('Error syncing extracts', error);
 		throw new Error(
@@ -415,7 +429,7 @@ async function updateExtractRelationships(
  * @param integrationRunId - The ID of the current integration run
  * @throws Error if synchronization fails
  */
-async function syncFormats(integrationRunId: number): Promise<void> {
+async function syncFormats(integrationRunId: number, collectDebugData?: unknown[]): Promise<void> {
 	try {
 		logger.start('Syncing formats');
 
@@ -498,6 +512,7 @@ async function syncFormats(integrationRunId: number): Promise<void> {
 		});
 
 		logger.complete(`Linked extracts to formats`, unlinkedExtracts.length);
+		collectDebugData?.push(...unlinkedExtracts);
 	} catch (error) {
 		logger.error('Error syncing formats', error);
 		throw new Error(
@@ -517,24 +532,31 @@ async function syncFormats(integrationRunId: number): Promise<void> {
  * 5. Creates records from Airtable entities
  *
  * @param integrationRunId - The ID of the current integration run
+ * @param debug - If true, writes raw API data to a timestamped JSON file
  * @returns The number of extracts synced
  * @throws Error if synchronization fails
  */
-async function syncAirtableData(integrationRunId: number): Promise<number> {
+async function syncAirtableData(integrationRunId: number, debug = false): Promise<number> {
+	const debugContext = createDebugContext('airtable', debug, {
+		creators: [] as unknown[],
+		spaces: [] as unknown[],
+		extracts: [] as unknown[],
+		formats: [] as unknown[],
+	});
 	try {
 		logger.start('Starting Airtable data synchronization');
 
 		// Step 1: Sync creators
-		await syncCreators(integrationRunId);
+		await syncCreators(integrationRunId, debugContext.data?.creators);
 
 		// Step 2: Sync spaces
-		await syncSpaces(integrationRunId);
+		await syncSpaces(integrationRunId, debugContext.data?.spaces);
 
 		// Step 3: Sync extracts
-		const { updatedExtractIds } = await syncExtracts(integrationRunId);
+		const { updatedExtractIds } = await syncExtracts(integrationRunId, debugContext.data?.extracts);
 
 		// Step 4: Sync formats
-		await syncFormats(integrationRunId);
+		await syncFormats(integrationRunId, debugContext.data?.formats);
 
 		// Count the number of extracts synced
 		const count = await db.$count(
@@ -560,14 +582,18 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
 		throw new Error(
 			`Failed to sync Airtable data: ${error instanceof Error ? error.message : String(error)}`
 		);
+	} finally {
+		await debugContext.flush().catch((flushError) => {
+			logger.error('Failed to write debug output for Airtable', flushError);
+		});
 	}
 }
 
 /**
  * Wrapper function that uses runIntegration
  */
-async function syncAirtableDataWithIntegration(): Promise<void> {
-	await runIntegration('airtable', syncAirtableData);
+async function syncAirtableDataWithIntegration(debug = false): Promise<void> {
+	await runIntegration('airtable', (runId) => syncAirtableData(runId, debug));
 }
 
 export { syncAirtableDataWithIntegration as syncAirtableData };

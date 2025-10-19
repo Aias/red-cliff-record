@@ -11,6 +11,7 @@ import {
 	type TwitterTweetInsert,
 	type TwitterUserInsert,
 } from '@/server/db/schema/twitter';
+import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import { processMedia, processTweet, processUser } from './helpers';
@@ -169,16 +170,25 @@ export async function loadBookmarksData(): Promise<{
  * 5. Creates records from the Twitter data
  *
  * @param integrationRunId - The ID of the current integration run
+ * @param collectDebugData - Optional array to collect raw data for debugging
  * @returns The number of successfully processed tweets
  * @throws Error if processing fails
  */
-async function syncTwitterBookmarks(integrationRunId: number): Promise<number> {
+async function syncTwitterBookmarks(
+	integrationRunId: number,
+	collectDebugData?: unknown[]
+): Promise<number> {
 	try {
 		// Step 1: Load bookmarks data
 		const { data: bookmarkResponses, processedFiles } = await loadBookmarksData();
 		if (bookmarkResponses.length === 0) {
 			logger.info('No Twitter bookmarks data found');
 			return 0;
+		}
+
+		// Collect debug data if requested
+		if (collectDebugData) {
+			collectDebugData.push(...bookmarkResponses);
 		}
 
 		// Step 2: Extract tweets from bookmarks
@@ -407,15 +417,24 @@ async function createRelatedRecords(): Promise<void> {
 
 /**
  * Orchestrates the Twitter data synchronization process
+ *
+ * @param debug - If true, writes raw data to a timestamped JSON file
  */
-async function syncTwitterData(): Promise<void> {
+async function syncTwitterData(debug = false): Promise<void> {
+	const debugContext = createDebugContext('twitter', debug, [] as unknown[]);
 	try {
 		logger.start('Starting Twitter data synchronization');
-		await runIntegration('twitter', syncTwitterBookmarks);
+
+		await runIntegration('twitter', (runId) => syncTwitterBookmarks(runId, debugContext.data));
+
 		logger.complete('Twitter data synchronization completed');
 	} catch (error) {
 		logger.error('Error syncing Twitter data', error);
 		throw error;
+	} finally {
+		await debugContext.flush().catch((flushError) => {
+			logger.error('Failed to write debug output for Twitter', flushError);
+		});
 	}
 }
 

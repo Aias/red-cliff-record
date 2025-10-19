@@ -8,13 +8,15 @@
 
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { syncGitHubData } from '../integrations/github/sync';
+import { parseDebugFlag } from '../integrations/common/logging';
 
 const logger = createIntegrationLogger('github', 'cli');
 
 async function main(): Promise<void> {
 	try {
+		const debug = parseDebugFlag(logger);
 		logger.start('=== STARTING GITHUB SYNC ===');
-		await syncGitHubData();
+		await syncGitHubData(debug);
 		logger.complete('=== GITHUB SYNC COMPLETED ===');
 		logger.info('-'.repeat(50));
 		process.exit(0);

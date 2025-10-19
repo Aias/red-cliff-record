@@ -144,7 +144,8 @@ function sanitizeUrl(url: string): string | null {
  */
 async function syncBrowserHistory(
 	browserConfig: BrowserConfig,
-	integrationRunId: number
+	integrationRunId: number,
+	collectDebugData?: unknown[]
 ): Promise<number> {
 	try {
 		// Get current hostname
@@ -181,6 +182,11 @@ async function syncBrowserHistory(
 
 		const rawHistory = await fetchNewHistoryEntries(browserDb, effectiveCutoff);
 		logger.info(`Retrieved ${rawHistory.length} new history entries`);
+
+		// Collect debug data if requested
+		if (collectDebugData) {
+			collectDebugData.push(...rawHistory);
+		}
 
 		// Step 4: Process and sanitize the entries
 		const processedHistory = processHistoryEntries(

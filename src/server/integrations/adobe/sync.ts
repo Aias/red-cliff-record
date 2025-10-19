@@ -1,5 +1,6 @@
 import { db } from '@/server/db/connections';
 import { lightroomImages } from '@/server/db/schema/adobe';
+import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import { createMediaFromLightroomImages } from './map';
@@ -23,10 +24,14 @@ const ALBUM_URL =
  * 4. Creates media records from the Lightroom images
  *
  * @param integrationRunId - The ID of the current integration run
+ * @param collectDebugData - Optional array to collect raw API data for debugging
  * @returns The number of successfully processed images
  * @throws Error if the API request fails or processing encounters an error
  */
-async function syncLightroomImages(integrationRunId: number): Promise<number> {
+async function syncLightroomImages(
+	integrationRunId: number,
+	collectDebugData?: unknown[]
+): Promise<number> {
 	try {
 		logger.start('Fetching Lightroom album data');
 
@@ -45,6 +50,9 @@ async function syncLightroomImages(integrationRunId: number): Promise<number> {
 		);
 
 		logger.info(`Retrieved ${jsonData.resources.length} resources from Lightroom`);
+
+		// Collect debug data if requested
+		collectDebugData?.push(jsonData);
 
 		// Step 3: Process and store each image
 		const baseUrl = jsonData.base;
@@ -151,15 +159,24 @@ async function processLightroomImage(
 
 /**
  * Orchestrates the Adobe Lightroom data synchronization process
+ *
+ * @param debug - If true, writes raw API data to a timestamped JSON file
  */
-async function syncAdobeData(): Promise<void> {
+async function syncAdobeData(debug = false): Promise<void> {
+	const debugContext = createDebugContext('adobe', debug, [] as unknown[]);
 	try {
 		logger.start('Starting Adobe Lightroom data synchronization');
-		await runIntegration('lightroom', syncLightroomImages);
+
+		await runIntegration('lightroom', (runId) => syncLightroomImages(runId, debugContext.data));
+
 		logger.complete('Adobe Lightroom data synchronization completed');
 	} catch (error) {
 		logger.error('Error syncing Adobe Lightroom data', error);
 		throw error;
+	} finally {
+		await debugContext.flush().catch((flushError) => {
+			logger.error('Failed to write debug output for Adobe', flushError);
+		});
 	}
 }
 

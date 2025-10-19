@@ -53,10 +53,14 @@ async function getMostRecentStarredAt(): Promise<Date | null> {
  * 4. Ensures repository owners exist in the database
  *
  * @param integrationRunId - The ID of the current integration run
+ * @param collectDebugData - Optional array to collect raw API data for debugging
  * @returns The number of new starred repositories processed
  * @throws Error if the GitHub API request fails
  */
-export async function syncGitHubStars(integrationRunId: number): Promise<number> {
+export async function syncGitHubStars(
+	integrationRunId: number,
+	collectDebugData?: unknown[]
+): Promise<number> {
 	const octokit = new Octokit({
 		auth: process.env.GITHUB_TOKEN,
 	});
@@ -91,6 +95,11 @@ export async function syncGitHubStars(integrationRunId: number): Promise<number>
 
 			// Parse and validate the response
 			const parsedResponse = GithubStarredReposResponseSchema.parse(response);
+
+			// Collect debug data if requested
+			if (collectDebugData) {
+				collectDebugData.push(...parsedResponse.data);
+			}
 
 			// Check if we've reached the end of the results
 			if (parsedResponse.data.length === 0) {

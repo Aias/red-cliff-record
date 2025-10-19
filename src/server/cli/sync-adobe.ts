@@ -8,13 +8,15 @@
 
 import { syncLightroomImages } from '../integrations/adobe/sync';
 import { createIntegrationLogger } from '../integrations/common/logging';
+import { parseDebugFlag } from '../integrations/common/logging';
 
 const logger = createIntegrationLogger('adobe', 'cli');
 
 async function main(): Promise<void> {
 	try {
+		const debug = parseDebugFlag(logger);
 		logger.start('=== STARTING ADOBE SYNC ===');
-		await syncLightroomImages();
+		await syncLightroomImages(debug);
 		logger.complete('=== ADOBE SYNC COMPLETED ===');
 		logger.info('-'.repeat(50));
 		process.exit(0);

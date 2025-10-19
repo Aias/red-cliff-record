@@ -8,13 +8,15 @@
 
 import { syncAllBrowserData } from '../integrations/browser-history/sync-all';
 import { createIntegrationLogger } from '../integrations/common/logging';
+import { parseDebugFlag } from '../integrations/common/logging';
 
 const logger = createIntegrationLogger('browser-history', 'cli');
 
 async function main(): Promise<void> {
 	try {
+		const debug = parseDebugFlag(logger);
 		logger.start('=== STARTING BROWSER HISTORY SYNC ===');
-		await syncAllBrowserData();
+		await syncAllBrowserData(debug);
 		logger.complete('=== BROWSER HISTORY SYNC COMPLETED ===');
 		logger.info('-'.repeat(50));
 		process.exit(0);

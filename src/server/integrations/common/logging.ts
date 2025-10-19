@@ -63,3 +63,20 @@ export function createIntegrationLogger(integration: string, process: string) {
 		},
 	};
 }
+
+type IntegrationLogger = ReturnType<typeof createIntegrationLogger>;
+
+/**
+ * Parses the CLI arguments for the shared --debug flag and logs the status.
+ *
+ * @param logger - Integration logger scoped to the CLI command.
+ * @returns Whether debug mode is enabled.
+ */
+
+export function parseDebugFlag(logger: IntegrationLogger): boolean {
+	const debugEnabled = process.argv.includes('--debug');
+	if (debugEnabled) {
+		logger.info('Debug mode enabled - raw data will be saved to .temp/');
+	}
+	return debugEnabled;
+}

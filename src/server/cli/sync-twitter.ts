@@ -8,13 +8,15 @@
 
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { syncTwitterData } from '../integrations/twitter/sync';
+import { parseDebugFlag } from '../integrations/common/logging';
 
 const logger = createIntegrationLogger('twitter', 'cli');
 
 async function main(): Promise<void> {
 	try {
+		const debug = parseDebugFlag(logger);
 		logger.start('=== STARTING TWITTER SYNC ===');
-		await syncTwitterData();
+		await syncTwitterData(debug);
 		logger.complete('=== TWITTER SYNC COMPLETED ===');
 		logger.info('-'.repeat(50));
 		process.exit(0);

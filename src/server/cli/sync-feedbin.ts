@@ -8,13 +8,15 @@
 
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { syncFeedbin } from '../integrations/feedbin/sync';
+import { parseDebugFlag } from '../integrations/common/logging';
 
 const logger = createIntegrationLogger('feedbin', 'cli');
 
 async function main(): Promise<void> {
 	try {
+		const debug = parseDebugFlag(logger);
 		logger.start('=== STARTING FEEDBIN SYNC ===');
-		await syncFeedbin();
+		await syncFeedbin(debug);
 		logger.complete('=== FEEDBIN SYNC COMPLETED ===');
 		logger.info('-'.repeat(50));
 		process.exit(0);

@@ -1,5 +1,6 @@
 import { db } from '@/server/db/connections';
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@/server/db/schema/readwise';
+import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -57,18 +58,23 @@ async function getMostRecentUpdateTime(): Promise<Date | null> {
  *
  * @param pageCursor - Optional cursor for pagination
  * @param updatedAfter - Optional date to filter documents updated after this time
+ * @param collectRawData - Optional array to collect raw API responses before validation
  * @returns Promise resolving to the API response with documents
  * @throws Error if the API request fails
  */
 async function fetchReadwiseDocuments(
 	pageCursor?: string,
-	updatedAfter?: Date
+	updatedAfter?: Date,
+	collectRawData?: unknown[]
 ): Promise<ReadwiseArticlesResponse> {
 	const params = new URLSearchParams();
+	let updatedAfterParam: string | null = null;
+
 	if (pageCursor) params.append('pageCursor', pageCursor);
 	if (updatedAfter) {
 		const afterDate = new Date(updatedAfter.getTime() + 1);
-		params.append('updatedAfter', afterDate.toISOString());
+		updatedAfterParam = afterDate.toISOString();
+		params.append('updatedAfter', updatedAfterParam);
 	}
 	params.append('withHtmlContent', 'true');
 
@@ -84,7 +90,19 @@ async function fetchReadwiseDocuments(
 
 		if (response.ok) {
 			const data = await response.json();
-			return ReadwiseArticlesResponseSchema.parse(data);
+			// Collect raw data BEFORE validation
+			if (collectRawData) {
+				collectRawData.push({
+					request: {
+						pageCursor: pageCursor ?? null,
+						updatedAfter: updatedAfterParam,
+						query: params.toString(),
+					},
+					response: data,
+				});
+			}
+			const parsed = ReadwiseArticlesResponseSchema.parse(data);
+			return parsed;
 		}
 
 		if (response.status === 429) {
@@ -223,10 +241,12 @@ function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle
  * 4. Creates related entities (authors, tags, records)
  *
  * @param integrationRunId - The ID of the current integration run
+ * @param debug - If true, writes raw API data to a timestamped JSON file
  * @returns The number of successfully processed documents
  * @throws Error if API requests fail
  */
-async function syncReadwiseDocuments(integrationRunId: number): Promise<number> {
+async function syncReadwiseDocuments(integrationRunId: number, debug = false): Promise<number> {
+	const debugContext = createDebugContext('readwise', debug, [] as unknown[]);
 	try {
 		logger.start('Starting Readwise documents sync');
 
@@ -236,12 +256,14 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 		// Step 2: Fetch all documents
 		logger.info('Fetching documents from Readwise API');
 		const allDocuments: ReadwiseArticle[] = [];
+		const rawDebugData = debugContext.data;
 		let nextPageCursor: string | null = null;
 
 		do {
 			const response = await fetchReadwiseDocuments(
 				nextPageCursor ?? undefined,
-				lastUpdateTime ?? undefined
+				lastUpdateTime ?? undefined,
+				rawDebugData
 			);
 			allDocuments.push(...response.results);
 			nextPageCursor = response.nextPageCursor;
@@ -298,14 +320,18 @@ async function syncReadwiseDocuments(integrationRunId: number): Promise<number> 
 	} catch (error) {
 		logger.error('Error syncing Readwise documents', error);
 		throw error;
+	} finally {
+		await debugContext.flush().catch((flushError) => {
+			logger.error('Failed to write debug output for Readwise', flushError);
+		});
 	}
 }
 
 /**
  * Wrapper function that uses runIntegration
  */
-async function syncReadwiseData(): Promise<void> {
-	await runIntegration('readwise', syncReadwiseDocuments);
+async function syncReadwiseData(debug = false): Promise<void> {
+	await runIntegration('readwise', (runId) => syncReadwiseDocuments(runId, debug));
 }
 
 export { syncReadwiseData as syncReadwiseDocuments };

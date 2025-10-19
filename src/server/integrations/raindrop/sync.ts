@@ -7,6 +7,7 @@ import {
 	type RaindropBookmarkInsert,
 	type RaindropCollectionInsert,
 } from '@/server/db/schema/raindrop';
+import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -37,10 +38,14 @@ const logger = createIntegrationLogger('raindrop', 'sync');
  * 4. Inserts or updates collections in the database
  *
  * @param integrationRunId - The ID of the current integration run
+ * @param collectDebugData - Optional array to collect raw API data for debugging
  * @returns The number of successfully processed collections
  * @throws Error if API requests fail
  */
-async function syncCollections(integrationRunId: number): Promise<number> {
+async function syncCollections(
+	integrationRunId: number,
+	collectDebugData?: unknown[]
+): Promise<number> {
 	let successCount = 0;
 
 	try {
@@ -57,6 +62,11 @@ async function syncCollections(integrationRunId: number): Promise<number> {
 		// Step 3: Combine and process collections
 		const allCollections = [...rootCollections, ...childCollections];
 		logger.info(`Retrieved ${allCollections.length} total collections`);
+
+		// Collect debug data if requested
+		if (collectDebugData) {
+			collectDebugData.push(...allCollections);
+		}
 
 		// Step 4: Insert or update collections in database
 		logger.info('Inserting collections to database');
@@ -150,10 +160,14 @@ async function processCollections(
  * 4. Creates related entities (tags, records, media)
  *
  * @param integrationRunId - The ID of the current integration run
+ * @param collectDebugData - Optional array to collect raw API data for debugging
  * @returns The number of successfully processed raindrops
  * @throws Error if API requests fail
  */
-async function syncRaindrops(integrationRunId: number): Promise<number> {
+async function syncRaindrops(
+	integrationRunId: number,
+	collectDebugData?: unknown[]
+): Promise<number> {
 	logger.start('Syncing Raindrop bookmarks');
 
 	try {
@@ -164,6 +178,11 @@ async function syncRaindrops(integrationRunId: number): Promise<number> {
 		// Step 2: Fetch new raindrops
 		const newRaindrops = await fetchNewRaindrops(lastKnownDate);
 		logger.info(`Found ${newRaindrops.length} new raindrops to process`);
+
+		// Collect debug data if requested
+		if (collectDebugData) {
+			collectDebugData.push(...newRaindrops);
+		}
 
 		// Step 3: Process and store raindrops
 		const successCount = await processRaindrops(newRaindrops, integrationRunId);
@@ -359,21 +378,33 @@ async function createRelatedEntities(integrationRunId: number): Promise<void> {
  * 2. Syncs bookmarks (raindrops)
  *
  * Each step is wrapped in the runIntegration utility to track execution.
+ *
+ * @param debug - If true, writes raw API data to a timestamped JSON file
  */
-async function syncRaindropData(): Promise<void> {
+async function syncRaindropData(debug = false): Promise<void> {
+	const debugContext = createDebugContext('raindrop', debug, {
+		collections: [] as unknown[],
+		raindrops: [] as unknown[],
+	});
 	try {
 		logger.start('Starting Raindrop data synchronization');
 
 		// Step 1: Sync collections
-		await runIntegration('raindrop', syncCollections);
+		await runIntegration('raindrop', (runId) =>
+			syncCollections(runId, debugContext.data?.collections)
+		);
 
 		// Step 2: Sync bookmarks
-		await runIntegration('raindrop', syncRaindrops);
+		await runIntegration('raindrop', (runId) => syncRaindrops(runId, debugContext.data?.raindrops));
 
 		logger.complete('Raindrop data synchronization completed');
 	} catch (error) {
 		logger.error('Error syncing Raindrop data', error);
 		throw error;
+	} finally {
+		await debugContext.flush().catch((flushError) => {
+			logger.error('Failed to write debug output for Raindrop', flushError);
+		});
 	}
 }
 

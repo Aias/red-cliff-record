@@ -2,6 +2,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { feedEntries, feeds } from '@/server/db/schema/feeds';
 import { createEmbedding } from '../../../app/lib/server/create-embedding';
+import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {
@@ -752,7 +753,10 @@ async function getLastEntrySyncTime(): Promise<Date | null> {
 /**
  * Main sync function for Feedbin integration
  */
-async function syncFeedbin(integrationRunId: number): Promise<number> {
+async function syncFeedbin(
+	integrationRunId: number,
+	collectDebugData?: { subscriptions: unknown[]; entries: unknown[]; icons: unknown[] }
+): Promise<number> {
 	try {
 		// Clear the synced feed cache
 		syncedFeedIds.clear();
@@ -773,6 +777,12 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 			fetchSubscriptions(lastSyncTime || undefined),
 			fetchIcons(),
 		]);
+
+		// Collect debug data if requested
+		if (collectDebugData) {
+			collectDebugData.subscriptions.push(...newSubscriptions);
+			collectDebugData.icons.push(...icons);
+		}
 
 		if (newSubscriptions.length > 0) {
 			logger.info(`Syncing ${newSubscriptions.length} new subscriptions`);
@@ -828,6 +838,11 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 		// Step 4: Fetch full entry data
 		const entriesToFetch = [...newEntriesToFetch, ...updatedEntriesToFetch];
 		const entries = await fetchEntriesByIds(entriesToFetch);
+
+		// Collect debug data if requested
+		if (collectDebugData) {
+			collectDebugData.entries.push(...entries);
+		}
 
 		// Step 5: Update existing entry states
 		if (toUnstar.length > 0) {
@@ -936,15 +951,28 @@ async function syncFeedbin(integrationRunId: number): Promise<number> {
 
 /**
  * Orchestrates the Feedbin data synchronization process
+ *
+ * @param debug - If true, writes raw API data to a timestamped JSON file
  */
-async function syncFeedbinData(): Promise<void> {
+async function syncFeedbinData(debug = false): Promise<void> {
+	const debugContext = createDebugContext('feedbin', debug, {
+		subscriptions: [] as unknown[],
+		entries: [] as unknown[],
+		icons: [] as unknown[],
+	});
 	try {
 		logger.start('Starting Feedbin data synchronization');
-		await runIntegration('feedbin', syncFeedbin);
+
+		await runIntegration('feedbin', (runId) => syncFeedbin(runId, debugContext.data));
+
 		logger.complete('Feedbin data synchronization completed successfully');
 	} catch (error) {
 		logger.error('Error syncing Feedbin data', error);
 		throw error;
+	} finally {
+		await debugContext.flush().catch((flushError) => {
+			logger.error('Failed to write debug output for Feedbin', flushError);
+		});
 	}
 }
 

@@ -1,3 +1,4 @@
+import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import { createRecordsFromGithubRepositories, createRecordsFromGithubUsers } from './map';
@@ -19,18 +20,23 @@ const logger = createIntegrationLogger('github', 'sync');
  *
  * Each step is wrapped in the runIntegration utility to track execution.
  *
+ * @param debug - If true, writes raw API data to a timestamped JSON file
  * @returns Promise that resolves when all GitHub data is synced
  * @throws Rethrows any errors from the integration steps
  */
-async function syncGitHubData(): Promise<void> {
+async function syncGitHubData(debug = false): Promise<void> {
+	const debugContext = createDebugContext('github', debug, {
+		stars: [] as unknown[],
+		commits: [] as unknown[],
+	});
 	try {
 		logger.start('Starting GitHub data synchronization');
 
 		// Step 1: Sync starred repositories
-		await runIntegration('github', syncGitHubStars);
+		await runIntegration('github', (runId) => syncGitHubStars(runId, debugContext.data?.stars));
 
 		// Step 2: Sync commit history
-		await runIntegration('github', syncGitHubCommits);
+		await runIntegration('github', (runId) => syncGitHubCommits(runId, debugContext.data?.commits));
 
 		// Step 3: Update user information
 		await updatePartialUsers();
@@ -43,6 +49,10 @@ async function syncGitHubData(): Promise<void> {
 	} catch (error) {
 		logger.error('Error syncing GitHub data', error);
 		throw error;
+	} finally {
+		await debugContext.flush().catch((flushError) => {
+			logger.error('Failed to write debug output for GitHub', flushError);
+		});
 	}
 }
 

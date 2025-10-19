@@ -137,10 +137,14 @@ async function ensureRepositoryExists(
  * 4. Triggers commit summary and embedding generation
  *
  * @param integrationRunId - The ID of the current integration run
+ * @param collectDebugData - Optional array to collect raw API data for debugging
  * @returns The number of new commits processed
  * @throws Error if the GitHub API request fails
  */
-async function syncGitHubCommits(integrationRunId: number): Promise<number> {
+async function syncGitHubCommits(
+	integrationRunId: number,
+	collectDebugData?: unknown[]
+): Promise<number> {
 	const octokit = new Octokit({
 		auth: process.env.GITHUB_TOKEN,
 	});
@@ -182,6 +186,11 @@ async function syncGitHubCommits(integrationRunId: number): Promise<number> {
 
 			// Log rate limit information for monitoring
 			logRateLimitInfo(response);
+
+			// Collect debug data if requested
+			if (collectDebugData) {
+				collectDebugData.push(...response.data.items);
+			}
 
 			// Check if we've reached the end of the results
 			if (response.data.items.length === 0) {
