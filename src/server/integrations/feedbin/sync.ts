@@ -274,7 +274,7 @@ async function processSingleEntry(
 	starredIds: Set<number>,
 	integrationRunId: number,
 	updatedEntryIds: Set<number> | undefined,
-	timeoutMs: number = 10000,
+	timeoutMs: number = 5000,
 	iconMap?: Map<string, string>
 ): Promise<boolean> {
 	return new Promise((resolve) => {
@@ -469,9 +469,12 @@ async function syncFeedEntries(
 ): Promise<number> {
 	logger.start(`Syncing ${entries.length} entries`);
 
-	let successCount = 0;
+	const successfulEntryIds = new Set<number>();
+	const failedEntryMap = new Map<number, FeedbinEntry>();
 	const BATCH_TIMEOUT_MS = 30000; // 30 seconds per batch
-	const ENTRY_TIMEOUT_MS = 10000; // 10 seconds per entry
+	const ENTRY_TIMEOUT_MS = 5000; // 5 seconds per entry
+	const MAX_RETRY_DURATION_MS = 60000; // Retry failed entries for up to 60 seconds total
+	const RETRY_INITIAL_DELAY_MS = 1000; // 1 second initial backoff
 
 	// Process entries in batches
 	for (let i = 0; i < entries.length; i += EMBEDDING_BATCH_SIZE) {
@@ -495,19 +498,16 @@ async function syncFeedEntries(
 					ENTRY_TIMEOUT_MS,
 					iconMap
 				);
-				if (success) {
-					successCount++;
-					logger.info(
-						`Synced entry "${entry.title || 'Untitled'}" (${entry.id}) - ${globalIndex} of ${entries.length}`
-					);
-				} else {
-					logger.warn(`Failed to sync entry ${entry.id} (${globalIndex} of ${entries.length})`);
-				}
+				return { entry, success, globalIndex };
 			})
 		);
 
+		let raceResults:
+			| Array<{ entry: FeedbinEntry; success: boolean; globalIndex: number }>
+			| null = null;
+
 		try {
-			await Promise.race([
+			raceResults = (await Promise.race([
 				batchPromise,
 				new Promise((_, reject) =>
 					setTimeout(
@@ -515,12 +515,32 @@ async function syncFeedEntries(
 						BATCH_TIMEOUT_MS
 					)
 				),
-			]);
+			])) as Array<{ entry: FeedbinEntry; success: boolean; globalIndex: number }>;
 			const batchDuration = Date.now() - batchStartTime;
 			logger.info(`Batch completed in ${batchDuration}ms`);
 		} catch (error) {
 			logger.error(`Batch processing failed or timed out`, error);
 			// Continue with next batch even if this one fails
+			for (const entry of batch) {
+				failedEntryMap.set(entry.id, entry);
+			}
+		}
+
+		if (raceResults) {
+			for (const { entry, success, globalIndex } of raceResults) {
+				if (success) {
+					if (!successfulEntryIds.has(entry.id)) {
+						successfulEntryIds.add(entry.id);
+					}
+					failedEntryMap.delete(entry.id);
+					logger.info(
+						`Synced entry "${entry.title || 'Untitled'}" (${entry.id}) - ${globalIndex} of ${entries.length}`
+					);
+				} else {
+					failedEntryMap.set(entry.id, entry);
+					logger.warn(`Failed to sync entry ${entry.id} (${globalIndex} of ${entries.length})`);
+				}
+			}
 		}
 
 		// Add delay between batches to prevent overwhelming the system
@@ -528,6 +548,90 @@ async function syncFeedEntries(
 			logger.info('Waiting 2 seconds before next batch...');
 			await new Promise((resolve) => setTimeout(resolve, 2000));
 		}
+	}
+
+	const retryFailedEntries = async () => {
+		if (failedEntryMap.size === 0) {
+			return;
+		}
+
+		logger.info(`Retrying ${failedEntryMap.size} failed entries with exponential backoff`);
+
+		let attempt = 1;
+		let delayMs = RETRY_INITIAL_DELAY_MS;
+		const retryStart = Date.now();
+		let pendingEntries = Array.from(failedEntryMap.values());
+
+		while (pendingEntries.length > 0 && Date.now() - retryStart < MAX_RETRY_DURATION_MS) {
+			logger.info(`Retry attempt ${attempt} for ${pendingEntries.length} entries`);
+
+			const attemptResults = await Promise.all(
+				pendingEntries.map(async (entry) => {
+					const success = await processSingleEntry(
+						entry,
+						unreadIds,
+						starredIds,
+						integrationRunId,
+						updatedEntryIds,
+						ENTRY_TIMEOUT_MS,
+						iconMap
+					);
+					return { entry, success };
+				})
+			);
+
+			pendingEntries = [];
+
+			for (const { entry, success } of attemptResults) {
+				if (success) {
+					if (!successfulEntryIds.has(entry.id)) {
+						successfulEntryIds.add(entry.id);
+					}
+					failedEntryMap.delete(entry.id);
+					logger.info(
+						`Retry attempt ${attempt} succeeded for entry "${entry.title || 'Untitled'}" (${entry.id})`
+					);
+				} else {
+					failedEntryMap.set(entry.id, entry);
+					pendingEntries.push(entry);
+					logger.warn(`Retry attempt ${attempt} failed for entry ${entry.id}`);
+				}
+			}
+
+			if (pendingEntries.length === 0) {
+				break;
+			}
+
+			const elapsed = Date.now() - retryStart;
+			if (elapsed >= MAX_RETRY_DURATION_MS) {
+				break;
+			}
+
+			const waitMs = Math.min(delayMs, MAX_RETRY_DURATION_MS - elapsed);
+			logger.info(`Waiting ${waitMs}ms before retrying ${pendingEntries.length} entries`);
+			await new Promise((resolve) => setTimeout(resolve, waitMs));
+			delayMs = Math.min(delayMs * 2, MAX_RETRY_DURATION_MS);
+			attempt++;
+		}
+
+		if (failedEntryMap.size > 0) {
+			logger.error(
+				`Failed to sync ${failedEntryMap.size} entries after retries totaling ${Math.min(
+					Date.now() - retryStart,
+					MAX_RETRY_DURATION_MS
+				)}ms`
+			);
+		} else {
+			logger.info('All previously failed entries synced successfully');
+		}
+	};
+
+	await retryFailedEntries();
+
+	const successCount = successfulEntryIds.size;
+
+	if (failedEntryMap.size > 0) {
+		logger.warn(`Failed to sync ${failedEntryMap.size} entries after retry attempts`);
 	}
 
 	logger.complete(`Synced ${successCount} of ${entries.length} entries`);
