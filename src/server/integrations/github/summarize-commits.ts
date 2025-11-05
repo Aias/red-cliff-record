@@ -95,7 +95,7 @@ export const summarizeCommit = async (
 	commit: CommitSummaryInput
 ): Promise<CommitSummaryResponse> => {
 	const response = await openai.responses.create({
-		model: 'gpt-4.1',
+		model: 'gpt-5',
 		instructions: commitSummarizerInstructions,
 		text: {
 			format: {
