@@ -229,7 +229,7 @@ export const relations = defineRelations(
 				from: r.feedEntries.recordId,
 				to: r.records.id,
 			}),
-			author: r.one.records({
+			feedOwner: r.one.records({
 				from: r.feedEntries.feedId.through(r.feeds.id),
 				to: r.records.id.through(r.feeds.ownerId),
 			}),
@@ -352,7 +352,7 @@ export const relations = defineRelations(
 				from: r.raindropBookmarks.id,
 				to: r.raindropImages.bookmarkId,
 			}),
-			tags: r.many.raindropTags({
+			tagRecords: r.many.raindropTags({
 				from: r.raindropBookmarks.id.through(r.raindropBookmarkTags.bookmarkId),
 				to: r.raindropTags.id.through(r.raindropBookmarkTags.tagId),
 			}),
@@ -439,7 +439,7 @@ export const relations = defineRelations(
 				from: r.readwiseDocuments.parentId,
 				to: r.readwiseDocuments.id,
 			}),
-			author: r.one.readwiseAuthors({
+			authorRecord: r.one.readwiseAuthors({
 				from: r.readwiseDocuments.authorId,
 				to: r.readwiseAuthors.id,
 			}),

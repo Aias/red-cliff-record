@@ -502,9 +502,8 @@ async function syncFeedEntries(
 			})
 		);
 
-		let raceResults:
-			| Array<{ entry: FeedbinEntry; success: boolean; globalIndex: number }>
-			| null = null;
+		let raceResults: Array<{ entry: FeedbinEntry; success: boolean; globalIndex: number }> | null =
+			null;
 
 		try {
 			raceResults = (await Promise.race([

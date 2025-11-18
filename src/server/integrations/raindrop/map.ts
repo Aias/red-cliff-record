@@ -148,7 +148,7 @@ export async function createRecordsFromRaindropBookmarks() {
 		},
 		with: {
 			collection: true,
-			tags: true,
+			tagRecords: true,
 			coverImages: true,
 		},
 	});
@@ -180,7 +180,7 @@ export async function createRecordsFromRaindropBookmarks() {
 			.where(eq(raindropBookmarks.id, bookmark.id));
 
 		// Link tags to the record
-		for (const tag of bookmark.tags) {
+		for (const tag of bookmark.tagRecords) {
 			if (tag.recordId) {
 				logger.info(`Linking record ${newRecord.id} to tag ${tag.recordId}`);
 				await linkRecords(newRecord.id, tag.recordId, 'tagged_with', db);
