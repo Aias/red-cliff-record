@@ -39,34 +39,6 @@ export function useLinksMap(ids: DbId[]) {
 	return trpc.links.map.useQuery({ recordIds: ids });
 }
 
-export function useRecordWithOutgoingLinks(id: DbId) {
-	/* 1 ▸ main record */
-	const { data: record, ...recordRest } = trpc.records.get.useQuery({ id });
-
-	/* 2 ▸ link metadata – fire immediately */
-	const { data: linksData, ...linksRest } = trpc.links.listForRecord.useQuery({ id });
-
-	/* 3 ▸ linked records */
-	const linkIds = linksData?.outgoingLinks.map((l) => l.targetId) ?? [];
-
-	const utils = trpc.useUtils();
-	const linkedQueries = useQueries({
-		queries: linkIds.map((rid) => utils.records.get.queryOptions({ id: rid })),
-	});
-
-	const linkedById = Object.fromEntries(
-		linkedQueries.filter((q) => q.data).map((q) => [q.data!.id, q.data!])
-	);
-
-	return {
-		record,
-		linkedById,
-		outgoing: linksData?.outgoingLinks ?? [],
-		isLoading: recordRest.isLoading || linksRest.isLoading,
-		isError: recordRest.isError || linksRest.isError,
-	};
-}
-
 export function usePredicateMap() {
 	const { data } = trpc.links.listPredicates.useQuery(undefined);
 	return Object.fromEntries((data ?? []).map((p) => [p.id, p]));

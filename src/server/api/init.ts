@@ -18,6 +18,29 @@ function createRecordLoader() {
 			},
 			with: {
 				media: true,
+				outgoingLinks: {
+					with: {
+						predicate: {
+							columns: {
+								id: true,
+								type: true,
+							},
+						},
+						target: {
+							columns: {
+								id: true,
+								title: true,
+							},
+						},
+					},
+					where: {
+						predicate: {
+							type: {
+								in: ['creation', 'containment'],
+							},
+						},
+					},
+				},
 			},
 		});
 

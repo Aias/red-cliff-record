@@ -1,4 +1,4 @@
-import type { FullRecord } from '@/shared/types';
+import type { FullRecord, RecordSelect } from '@/shared/types';
 
 const truncateText = (text: string, maxLength: number = 200) => {
 	if (text.length <= maxLength) {
@@ -11,7 +11,10 @@ const trimBreaks = (text: string) => {
 	return text.replace(/\n/g, ' ').trim();
 };
 
-export const getRecordTitle = (record: Partial<FullRecord>, maxLength: number = 200) => {
+export const getRecordTitle = (
+	record: Pick<RecordSelect, 'title' | 'abbreviation' | 'sense' | 'content' | 'summary'>,
+	maxLength: number = 200
+) => {
 	const { title, abbreviation, sense, content, summary } = record;
 
 	if (title) {

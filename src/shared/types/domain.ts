@@ -6,13 +6,12 @@ import type { LinkSelect, MediaSelect, PredicateSelect, RecordSelect } from './d
  */
 
 // Record without embedding data (for client consumption)
-export type RecordGet = Omit<RecordSelect & { media?: MediaSelect[] }, 'textEmbedding'>;
-
-// Record with all its relationships loaded
-export interface RecordWithRelations extends RecordGet {
-	outgoingLinks: Array<LinkSelect & { target: RecordGet; predicate: PredicateSelect }>;
-	media: Array<MediaSelect>;
-}
+export type RecordGet = Omit<RecordSelect & { media?: MediaSelect[] }, 'textEmbedding'> & {
+	outgoingLinks?: Array<{
+		predicate: Pick<PredicateSelect, 'type'>;
+		target: { id: DbId; title: string | null };
+	}>;
+};
 
 // Complete record with both incoming and outgoing links
 export interface FullRecord extends RecordSelect {

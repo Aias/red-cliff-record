@@ -15,7 +15,7 @@ import {
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
-import { usePredicateMap, useRecordWithOutgoingLinks } from '@/lib/hooks/record-queries';
+import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
 import type { MediaType } from '@/shared/types';
 import type { DbId } from '@/shared/types';
@@ -35,8 +35,7 @@ interface RecordLinkProps {
 }
 
 export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordLinkProps) => {
-	const { record, isLoading, isError, outgoing, linkedById } = useRecordWithOutgoingLinks(id);
-	const predicates = usePredicateMap();
+	const { data: record, isLoading, isError } = useRecord(id);
 
 	if (isLoading) return <Spinner />;
 	if (isError || !record) {
@@ -53,15 +52,15 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 	let creatorTitle: string | undefined | null;
 	let parentTitle: string | undefined | null;
 
-	for (const edge of outgoing) {
-		const kind = predicates[edge.predicateId]?.type;
-		if (kind === 'creation' && !creatorTitle) {
-			creatorTitle = linkedById[edge.targetId]?.title;
+	if (record.outgoingLinks) {
+		for (const link of record.outgoingLinks) {
+			if (link.predicate.type === 'creation' && !creatorTitle) {
+				creatorTitle = link.target.title;
+			}
+			if (link.predicate.type === 'containment' && !parentTitle) {
+				parentTitle = link.target.title;
+			}
 		}
-		if (kind === 'containment' && !parentTitle) {
-			parentTitle = linkedById[edge.targetId]?.title;
-		}
-		if (creatorTitle && parentTitle) break;
 	}
 
 	/* ---------- derive text fields ---------- */
@@ -151,7 +150,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 						) : (
 							<strong className="mr-auto min-w-0 flex-1 truncate">{labelElement}</strong>
 						)}
-						{sense && <span className="shrink-1 truncate text-c-hint italic">{sense}</span>}
+						{sense && <span className="shrink truncate text-c-hint italic">{sense}</span>}
 					</div>
 
 					{/* source logos */}
@@ -169,7 +168,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 
 			{/* thumbnail */}
 			{mediaItem && (
-				<div className="relative aspect-[3/2] h-[2lh] shrink-0 self-center overflow-hidden rounded-md border border-c-divider bg-c-mist">
+				<div className="relative aspect-3/2 h-[2lh] shrink-0 self-center overflow-hidden rounded-md border border-c-divider bg-c-mist">
 					{mediaItem.type === 'image' ? (
 						<img
 							src={mediaItem.url}
