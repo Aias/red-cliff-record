@@ -123,6 +123,14 @@
 		font-variant-numeric: tabular-nums;
 	}
 
+	/* Disable color transitions during theme changes */
+	html.theme-transitioning *,
+	html.theme-transitioning *::before,
+	html.theme-transitioning *::after {
+		transition-duration: 0s !important;
+		transition-delay: 0s !important;
+	}
+
 	h1,
 	.h1 {
 		@apply text-2xl font-semibold;
@@ -151,7 +159,7 @@
 	}
 
 	hr {
-		@apply m-0 block h-[1px] w-full border-0 border-none border-transparent bg-c-divider;
+		@apply m-0 block h-px w-full border-0 border-none border-transparent bg-c-divider;
 	}
 
 	pre,

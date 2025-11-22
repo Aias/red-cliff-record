@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { type QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import type { ServerHelpers } from '@/app/trpc';
@@ -60,7 +60,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	errorComponent: (props) => {
 		const { theme: initialTheme } = Route.useLoaderData();
 		return (
-			<RootDocument appearance={initialTheme}>
+			<RootDocument appearance={initialTheme} isTransitioning={false}>
 				<DefaultCatchBoundary {...props} />
 			</RootDocument>
 		);
@@ -71,9 +71,25 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 function RootComponent() {
 	const { theme: initialTheme } = Route.useLoaderData();
 	const [appearance, setAppearance] = useState<'light' | 'dark'>(initialTheme);
+	const [isTransitioning, setIsTransitioning] = useState(false);
+	const prevAppearanceRef = useRef(appearance);
+
+	useLayoutEffect(() => {
+		// Detect theme changes and disable transitions during the change
+		if (prevAppearanceRef.current !== appearance) {
+			setIsTransitioning(true);
+			prevAppearanceRef.current = appearance;
+			// Re-enable transitions after the browser paints the new theme
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					setIsTransitioning(false);
+				});
+			});
+		}
+	}, [appearance]);
 
 	return (
-		<RootDocument appearance={appearance}>
+		<RootDocument appearance={appearance} isTransitioning={isTransitioning}>
 			<TooltipProvider delayDuration={300}>
 				<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
 					<Outlet />
@@ -86,7 +102,8 @@ function RootComponent() {
 function RootDocument({
 	children,
 	appearance,
-}: Readonly<{ children: ReactNode; appearance: Theme }>) {
+	isTransitioning,
+}: Readonly<{ children: ReactNode; appearance: Theme; isTransitioning: boolean }>) {
 	useEffect(() => {
 		if (import.meta.env.DEV) {
 			import('react-scan')
@@ -101,7 +118,7 @@ function RootDocument({
 		}
 	}, []);
 	return (
-		<html className={cn('h-viewport w-full', appearance)}>
+		<html className={cn('h-viewport w-full', appearance, isTransitioning && 'theme-transitioning')}>
 			<head>
 				<HeadContent />
 			</head>
