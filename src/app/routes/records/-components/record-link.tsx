@@ -12,6 +12,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/dropdown-menu';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/hover-card';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
@@ -141,12 +142,92 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 					{/* title row */}
 					<div className="flex grow items-center gap-1 overflow-hidden">
 						{linkOptions ? (
-							<Link
-								className="mr-auto min-w-0 flex-1 truncate focus-visible:underline"
-								{...linkOptions}
-							>
-								{labelElement}
-							</Link>
+							<HoverCard openDelay={300} closeDelay={100}>
+								<HoverCardTrigger asChild>
+									<Link
+										className="mr-auto min-w-0 flex-1 truncate focus-visible:underline"
+										{...linkOptions}
+									>
+										{labelElement}
+									</Link>
+								</HoverCardTrigger>
+								<HoverCardContent className="w-96 p-0" align="center" side="left" sideOffset={12}>
+									<div className="flex flex-col gap-3">
+										{/* Media */}
+										{mediaItem && (
+											<div className="relative aspect-video w-full overflow-hidden rounded-t-md bg-c-mist">
+												{mediaItem.type === 'image' ? (
+													<img
+														src={mediaItem.url}
+														alt={mediaItem.altText ?? mediaCaption ?? title ?? ''}
+														className="size-full object-cover"
+														loading="lazy"
+														decoding="async"
+													/>
+												) : (
+													<LazyVideo
+														src={mediaItem.url}
+														className="size-full object-cover"
+														autoPlay
+														playsInline
+														muted
+														loop
+													/>
+												)}
+											</div>
+										)}
+
+										<div className={cn('flex flex-col gap-2 px-4 pb-4', !mediaItem && 'pt-4')}>
+											{/* Title */}
+											<div className="flex flex-col gap-0.5">
+												<div className="flex items-baseline gap-1.5">
+													<h3 className="text-sm leading-tight font-semibold">
+														{title ??
+															creatorTitle ??
+															(parentTitle ? `↳ ${parentTitle}` : 'Untitled')}
+													</h3>
+													{abbreviation && (
+														<span className="shrink-0 text-xs text-c-hint">({abbreviation})</span>
+													)}
+												</div>
+												{sense && (
+													<p className="text-xs leading-tight text-c-hint italic">{sense}</p>
+												)}
+												{url &&
+													(() => {
+														try {
+															const urlObj = new URL(url);
+															return (
+																<p className="text-[0.625rem] leading-tight text-c-secondary">
+																	{urlObj.hostname.replace(/^www\./, '')}
+																</p>
+															);
+														} catch {
+															return null;
+														}
+													})()}
+											</div>
+
+											{/* Metadata */}
+											{(creatorTitle || parentTitle) && (
+												<div className="flex flex-col gap-1 text-xs text-c-secondary">
+													{creatorTitle && <div className="text-c-hint">By {creatorTitle}</div>}
+													{parentTitle && (
+														<div className="text-c-hint">
+															From <em>{parentTitle}</em>
+														</div>
+													)}
+												</div>
+											)}
+
+											{/* Summary or Content */}
+											<p className="line-clamp-6 text-xs leading-relaxed text-c-primary empty:hidden">
+												{summary ?? content}
+											</p>
+										</div>
+									</div>
+								</HoverCardContent>
+							</HoverCard>
 						) : (
 							<strong className="mr-auto min-w-0 flex-1 truncate">{labelElement}</strong>
 						)}

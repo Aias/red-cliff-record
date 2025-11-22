@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with code in this repository.
+This file provides guidance to AI coding assistants when working with code in this repository.
 
 **IMPORTANT**: This file is the single source of truth for development guidelines and architectural patterns. When making significant refactoring or architectural changes, update this file to reflect the new patterns and keep it current.
 
@@ -9,6 +9,16 @@ This file provides guidance to AI coding agents when working with code in this r
 ## Project Overview
 
 Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Bun server.
+
+## Working Principles
+
+Our primary goal, above all else, is to write higher quality code, more efficiently, and to continually improve the working relationship between the user and the agent. This means that if we run into a situation where the user's expectations or assumptions conflict with the agent's, we should pause and clarify the situation before proceeding with the task.
+
+At any point during a working session, the agent can pause and ask the user for clarification if needed.
+
+This document is a living document. We should be continually updating it to reflect a current shared understanding of working patterns and standards. The user or the agent may propose changes to this document at any time.
+
+**If the user asks a question, never respond by writing code.** A question should be answered by researching the answer and providing analysis with examples and references where appropriate. This applies to any sentence that ends with a question mark, or when the sentence is clearly framed as a question.
 
 ## Essential Commands
 
@@ -38,6 +48,10 @@ Never attempt to start the development server or build the application. The user
 
 - **IMPORTANT**: Never run any operations that modify data or could have destructive effects (including creating new data, schemas, or running database migrations) without first prompting the user for permission
 
+**Package Manager Commands:**
+
+- Always use the corresponding package manager command for executing packages: `bunx` for Bun, `pnpm dlx` for pnpm, `yarn dlx` for Yarn, `npx` only for npm. Never use `npx` unless the package manager is npm.
+
 ## Architecture (Pointers)
 
 - High-level overview and directory map: see `README.md`.
@@ -58,17 +72,30 @@ Never attempt to start the development server or build the application. The user
 **Structure Requirements:**
 
 - Semantic HTML elements for layout and structure
+- Always use appropriate semantic HTML elements where relevant (e.g., `<em>` for emphasis/italics, `<strong>` for bold/importance, `<cite>` for citations, `<time>` for dates, etc.) instead of generic elements like `<span>` with styling classes
+- Prefer semantic HTML over non-semantic `<div>`, `<span>`, etc. Prefer built-in HTML elements over aria attributes for accessibility
 - Tailwind CSS v4 syntax using `c-*` design tokens from `src/app/styles/theme.css`
 - Build interactive elements with Radix primitives and existing Shadcn-based components
+- Always import Radix primitives from the `radix-ui` package (e.g., `import { HoverCard as HoverCardPrimitive } from 'radix-ui'`), not from individual subpackages like `@radix-ui/react-hover-card`
 - Never use legacy Shadcn theme variables (`bg-background`, `text-foreground`, etc.)
 - Mark key DOM nodes with `data-slot` attributes for styling hooks
 - Lucide icons with `Icon` suffix (e.g., `HomeIcon` not `Home`)
 - Use `<Spinner />` component from `@/components/spinner` for loading states, either in place of or in addition to text (e.g., "Loading...", "loading", etc.)
 
+**CSS & Styling:**
+
+- Use flexbox and grid for layout that reflects the natural flow of the content
+- Prefer gap properties for spacing between elements, and padding on container elements
+- Avoid margin unless there's a specific reason to use it, as it makes components less composable/portable
+- Prefer logical properties `block`/`inline`, `start`/`end` over `left`, `right`, `top`, and `bottom`
+- When writing transforms, use `translate`, `rotate`, `scale`, and other transform sub-properties directly rather than putting them all in a `transform` property
+- Across all code, prefer semantic HTML first, then a CSS-only implementation for behavior HTML cannot express, then TypeScript for behavior CSS cannot express, and only add or rely on external dependencies when absolutely necessary or when they are already in the project
+
 **TypeScript Requirements:**
 
 - NEVER use `any` keyword or `unknown` types
 - NEVER use `as` for type casting - must be fully type safe
+- End-to-end TypeScript with _no type assertions_. This is a hard rule. Never use `any`, never use `as` for type casting, never disable type checking, and never use `@ts-ignore` or `@ts-expect-error`
 - Import and reuse existing types from schemas and database types
 - All components must be fully typed
 
@@ -77,6 +104,12 @@ Never attempt to start the development server or build the application. The user
 - Use TanStack Forms for form management
 - Implement Zod schemas for validation
 - Integrate with tRPC for API communication
+
+**React-Specific Rules:**
+
+- Avoid `useEffect`. You probably don't need it. Before writing code that uses `useEffect`, use a web request to read the following article: https://react.dev/learn/you-might-not-need-an-effect
+- We use React 19 and therefore don't need to use `forwardRef` – refs are automatically forwarded
+- Avoid `setTimeout` for timing operations in React components. Prefer `useLayoutEffect` for synchronous DOM updates that must happen before paint, and `requestAnimationFrame` (or double `requestAnimationFrame`) for coordinating with the browser's rendering cycle. These patterns are more idiomatic, robust, and aligned with React's rendering lifecycle than arbitrary timeouts
 
 ## Database and API Rules
 
@@ -107,7 +140,7 @@ Never attempt to start the development server or build the application. The user
 
 **Type Safety:**
 
-- End-to-end TypeScript with _no type assertions_. This is a hard rule. Never use `any`, never use `as` for type casting, never disable type checking, and never use `@ts-ignore` or `@ts-expect-error`.
+- End-to-end TypeScript with _no type assertions_. This is a hard rule. Never use `any`, never use `as` for type casting, never disable type checking, and never use `@ts-ignore` or `@ts-expect-error`
 - Use Zod v4 for runtime validation
 - Use database types from Drizzle schema
 
@@ -118,16 +151,29 @@ Never attempt to start the development server or build the application. The user
 - Consider code splitting for larger components
 - Use efficient query patterns and proper indexing
 
+**Code Quality:**
+
+- When naming variables, functions, components, etc., favor readability and clarity over brevity or cleverness
+- Add comments only when necessary to explain complex code or logic, don't add comments which simply state what the code is doing
+- Always aim for idiomatic usage of language features, libraries, tools, and frameworks
+
 **Before Finalizing Changes:**
 
-- Run `bun run lint`.
-- Run `bun run tsc` only if your changes can impact types (TypeScript sources, Zod schemas, DB schema/types, build/tsconfig).
-- Update this file if refactoring changes architectural patterns or introduces new conventions.
+- Run `bun run lint`
+- Run `bun run tsc` only if your changes can impact types (TypeScript sources, Zod schemas, DB schema/types, build/tsconfig)
+- Check for type errors regularly during development, not just prior to committing. Use the project's type checking and linting tools
+- In addition to type checking and linting, prior to committing, re-read this document to ensure all instructions are followed and to refresh your memory of the project's guidelines and conventions
+- Update this file if refactoring changes architectural patterns or introduces new conventions
 
 **Git & Repository State:**
 
-- Never run `git commit`, `git add`/`git stage`, `git push`, `git reset`, or similar commands without explicit user permission. The user will manually manage all git operations unless otherwise specified.
-- Prefer proposing diffs via patch files or documented changes; avoid modifying VCS state.
+- Never run `git commit`, `git add`/`git stage`, `git push`, `git reset`, or similar commands without explicit user permission. The user will manually manage all git operations unless otherwise specified
+- Prefer proposing diffs via patch files or documented changes; avoid modifying VCS state
+- Make smart use of git during development to review changes and understand the history of the codebase
+- For larger sets of changes or refactors done independently by the agent, create a new branch and make atomic commits to it as interim checkpoints with descriptive commit messages. The user can review the changes and provide feedback before merging back to the active branch
+- Never push new branches or new commits to the remote repository unless explicitly instructed to do so by the user. The agent can make commits to their own working branches but should not commit them to the user's current active branch
+- When resolving merge conflicts during a merge or rebase: Never finalize the merge or rebase until the user has reviewed the changes and provided feedback. Report the status after resolving conflicts and ask the user for final approval. Never make functional changes that don't come from either the source branch or target branch
+- You have access to the Github CLI, which can be used to review PRs and comments, create new PRs and issues, and other Github actions
 
 ## Import Aliases
 
@@ -137,6 +183,17 @@ Never attempt to start the development server or build the application. The user
 - `@/components` - frontend components
 - `@/lib` - client-side utility functions
 - `@/db` - database schema
+
+**Import Rules:**
+
+- When adding or updating imports for a file, ensure they're sorted in alphabetical order within the following categories: Language and platform (e.g. node), framework (e.g. react), external libraries, internal libraries, aliased project imports, relative imports, and local imports. Import order specified by the project's eslint config takes precedence over this rule
+- When importing types, add the `type` keyword to the import statement even if it's not required by linting rules
+- ✅ Shared code can be imported by both client and server
+- ✅ Server code can import from shared and other server modules
+- ✅ Client code can import from shared and other client modules
+- ❌ NEVER import server code from client code
+- ❌ NEVER import client code from server code
+- ❌ NEVER create backward compatibility files during refactoring - update all imports directly
 
 ## Code Organization Rules
 
@@ -149,15 +206,6 @@ Never attempt to start the development server or build the application. The user
    - Examples: React hooks, browser storage, client-side validation
 3. **Server utilities** (`src/server/lib/`): Server-only code (Node.js, databases, file systems)
    - Examples: R2 uploads, image processing, server-side validation
-
-**Import Rules:**
-
-- ✅ Shared code can be imported by both client and server
-- ✅ Server code can import from shared and other server modules
-- ✅ Client code can import from shared and other client modules
-- ❌ NEVER import server code from client code
-- ❌ NEVER import client code from server code
-- ❌ NEVER create backward compatibility files during refactoring - update all imports directly
 
 **Refactoring Rules:**
 
