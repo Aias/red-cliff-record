@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 **IMPORTANT**: This file is the single source of truth for development guidelines and architectural patterns. When making significant refactoring or architectural changes, update this file to reflect the new patterns and keep it current.
 
@@ -122,7 +122,7 @@ Never attempt to start the development server or build the application. The user
 
 - Run `bun run lint`.
 - Run `bun run tsc` only if your changes can impact types (TypeScript sources, Zod schemas, DB schema/types, build/tsconfig).
-- Update CLAUDE.md if refactoring changes architectural patterns or introduces new conventions.
+- Update this file if refactoring changes architectural patterns or introduces new conventions.
 
 **Git & Repository State:**
 
