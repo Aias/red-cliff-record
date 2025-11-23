@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import type { IntegrationType } from '@aias/hozo';
 import { AdobeLogo } from './logos/adobe';
 import { AirtableLogo } from './logos/airtable';
 import { ArcLogo } from './logos/arc';
@@ -7,7 +8,6 @@ import { RaindropLogo } from './logos/raindrop';
 import { ReadwiseLogo } from './logos/readwise';
 import { XLogo } from './logos/x';
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
-import { type IntegrationType } from '@/shared/types';
 
 interface IntegrationLogoProps {
 	integration: IntegrationType;

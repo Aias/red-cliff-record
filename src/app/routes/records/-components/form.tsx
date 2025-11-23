@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@aias/hozo';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
@@ -38,12 +39,7 @@ import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { useRecordUpload } from '@/lib/hooks/use-record-upload';
 import { cn } from '@/lib/utils';
-import {
-	RecordInsertSchema,
-	RecordTypeSchema,
-	type RecordGet,
-	type RecordType,
-} from '@/shared/types';
+import type { RecordGet } from '@/shared/types';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
 	recordId: number;

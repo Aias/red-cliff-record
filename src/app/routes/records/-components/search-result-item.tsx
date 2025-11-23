@@ -1,11 +1,11 @@
 import { memo } from 'react';
+import type { MediaType } from '@aias/hozo';
 import type { SearchResult } from '@/server/api/routers/search';
 import { recordTypeIcons } from './type-icons';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
 import { usePredicateMap } from '@/lib/hooks/record-queries';
 import { toTitleCase } from '@/shared/lib/formatting';
-import type { MediaType } from '@/shared/types';
 
 export const SearchResultItem = memo(function SearchResultItem({
 	result,

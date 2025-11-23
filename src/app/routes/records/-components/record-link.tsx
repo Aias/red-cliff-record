@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import type { MediaType } from '@aias/hozo';
 import { Link } from '@tanstack/react-router';
 import type { LinkOptions } from '@tanstack/react-router';
 import { RectangleEllipsisIcon } from 'lucide-react';
@@ -18,7 +19,6 @@ import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
-import type { MediaType } from '@/shared/types';
 import type { DbId } from '@/shared/types';
 
 interface RecordAction {

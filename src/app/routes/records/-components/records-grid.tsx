@@ -1,4 +1,10 @@
 import { memo, useCallback, useMemo, useState } from 'react';
+import {
+	IntegrationTypeSchema,
+	RecordTypeSchema,
+	type IntegrationType,
+	type RecordType,
+} from '@aias/hozo';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { CheckIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
@@ -15,12 +21,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
-import {
-	IntegrationTypeSchema,
-	RecordTypeSchema,
-	type IntegrationType,
-	type RecordType,
-} from '@/shared/types';
 import { defaultQueueOptions } from '@/shared/types';
 import type { DbId } from '@/shared/types';
 
