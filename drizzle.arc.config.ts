@@ -3,7 +3,7 @@ import { connectionUrl } from '@/server/db/connections/arc-sqlite';
 
 export default defineConfig({
 	out: './migrations/arc',
-	schema: './packages/data/src/schema/arc',
+	schema: './packages/hozo/src/schema/arc',
 	dialect: 'sqlite',
 	dbCredentials: {
 		url: connectionUrl,

@@ -1,7 +1,3 @@
-import { eq } from 'drizzle-orm';
-import OpenAI from 'openai';
-import { z } from 'zod';
-import { db } from '@/server/db/connections';
 import {
 	githubCommits,
 	GithubCommitType,
@@ -9,6 +5,10 @@ import {
 	type GithubCommitSelect,
 	type GithubRepositorySelect,
 } from '@aias/hozo';
+import { eq } from 'drizzle-orm';
+import OpenAI from 'openai';
+import { z } from 'zod';
+import { db } from '@/server/db/connections';
 
 export const CommitSummaryInputSchema = z.object({
 	message: z.string(),

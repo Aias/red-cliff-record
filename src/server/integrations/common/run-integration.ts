@@ -1,6 +1,6 @@
+import { integrationRuns, IntegrationStatus, RunType, type IntegrationType } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
-import { integrationRuns, IntegrationStatus, RunType, type IntegrationType } from '@aias/hozo';
 
 /**
  * Function signature for integration implementations
