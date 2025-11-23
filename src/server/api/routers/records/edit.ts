@@ -1,4 +1,4 @@
-import { RecordInsertSchema, records } from '@rcr/data';
+import { RecordInsertSchema, records } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';

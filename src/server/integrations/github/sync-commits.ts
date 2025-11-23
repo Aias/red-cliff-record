@@ -1,6 +1,11 @@
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';
+import { db } from '@/server/db/connections';
+import { logRateLimitInfo } from '../common/log-rate-limit-info';
+import { createIntegrationLogger } from '../common/logging';
+import { syncCommitSummaries } from './summarize-commits';
+import { ensureGithubUserExists } from './sync-users';
 import {
 	githubCommitChanges,
 	githubCommits,
@@ -8,12 +13,7 @@ import {
 	type GithubCommitChangeInsert,
 	type GithubCommitInsert,
 	type GithubRepositoryInsert,
-} from '@rcr/data/github';
-import { db } from '@/server/db/connections';
-import { logRateLimitInfo } from '../common/log-rate-limit-info';
-import { createIntegrationLogger } from '../common/logging';
-import { syncCommitSummaries } from './summarize-commits';
-import { ensureGithubUserExists } from './sync-users';
+} from '@aias/hozo';
 
 const logger = createIntegrationLogger('github', 'sync-commits');
 

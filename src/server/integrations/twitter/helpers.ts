@@ -1,5 +1,5 @@
-import type { TwitterMediaInsert, TwitterTweetInsert, TwitterUserInsert } from '@rcr/data/twitter';
 import type { Media, TweetData, User } from './types';
+import type { TwitterMediaInsert, TwitterTweetInsert, TwitterUserInsert } from '@aias/hozo';
 
 export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRunId'> => {
 	const { rest_id, legacy, core, location, avatar } = user;

@@ -179,7 +179,7 @@ Never attempt to start the development server or build the application. The user
 - `@/server/` - server code (includes `@/server/lib/` for server utilities)
 - `@/components` - frontend components
 - `@/lib` - client-side utility functions
-- `@/db` - database schema
+- `@db` - database schema
 
 **Import Rules:**
 

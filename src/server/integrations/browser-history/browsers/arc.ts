@@ -1,4 +1,4 @@
-import { Browser } from '@rcr/data/browser-history';
+import { Browser } from '@aias/hozo';
 import { createArcConnection } from '@/server/db/connections/arc-sqlite';
 import type { BrowserConfig } from '../types';
 

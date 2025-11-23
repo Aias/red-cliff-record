@@ -1,4 +1,4 @@
-import { records, type IntegrationType } from '@rcr/data';
+import { records, type IntegrationType } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/connections';
 

@@ -17,8 +17,8 @@ import {
 	records,
 	twitterTweets,
 	twitterUsers,
-} from '@rcr/data';
-import type { LinkInsert, LinkSelect, RecordSelect } from '@rcr/data';
+} from '@aias/hozo';
+import type { LinkInsert, LinkSelect, RecordSelect } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';

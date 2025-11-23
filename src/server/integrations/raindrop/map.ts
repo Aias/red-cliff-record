@@ -10,7 +10,7 @@ import {
 	type RaindropImageSelect,
 	type RaindropTagSelect,
 	type RecordInsert,
-} from '@rcr/data';
+} from '@aias/hozo';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';

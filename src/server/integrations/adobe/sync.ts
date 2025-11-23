@@ -1,10 +1,10 @@
-import { lightroomImages } from '@rcr/data/adobe';
 import { db } from '@/server/db/connections';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import { createMediaFromLightroomImages } from './map';
 import { LightroomJsonResponseSchema, type LightroomJsonResponse } from './types';
+import { lightroomImages } from '@aias/hozo';
 
 const logger = createIntegrationLogger('adobe', 'sync');
 

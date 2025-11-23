@@ -35,15 +35,12 @@
 		/* Path Aliases */
 		"baseUrl": ".",
 		"paths": {
-			"@rcr/data": ["./packages/data/src/index.ts"],
-			"@rcr/data/*": ["./packages/data/src/schema/*", "./packages/data/src/schema/*/index.ts"],
 			"@/components": ["./src/app/components"],
 			"@/components/*": ["./src/app/components/*"],
 			"@/lib": ["./src/app/lib"],
 			"@/lib/*": ["./src/app/lib/*"],
 			"@/shared/*": ["./src/shared/*"],
 			"@/shared/types/*": ["./src/shared/types/*"],
-			"@/db/*": ["./packages/data/src/*"],
 			"@/server/*": ["./src/server/*"],
 			"@/*": ["./src/*"]
 		}

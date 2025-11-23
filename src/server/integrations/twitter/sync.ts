@@ -2,14 +2,6 @@ import { mkdirSync, readdirSync, readFileSync } from 'fs';
 import { rename } from 'fs/promises';
 import { homedir } from 'os';
 import { resolve } from 'path';
-import {
-	twitterMedia as mediaTable,
-	twitterTweets as tweetsTable,
-	twitterUsers as usersTable,
-	type TwitterMediaInsert,
-	type TwitterTweetInsert,
-	type TwitterUserInsert,
-} from '@rcr/data/twitter';
 import { db } from '@/server/db/connections';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
@@ -22,6 +14,14 @@ import {
 } from './map';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
 import { TwitterBookmarksArraySchema } from './types';
+import {
+	twitterMedia as mediaTable,
+	twitterTweets as tweetsTable,
+	twitterUsers as usersTable,
+	type TwitterMediaInsert,
+	type TwitterTweetInsert,
+	type TwitterUserInsert,
+} from '@aias/hozo';
 
 const logger = createIntegrationLogger('twitter', 'sync');
 

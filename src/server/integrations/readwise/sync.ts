@@ -1,4 +1,3 @@
-import { readwiseDocuments, type ReadwiseDocumentInsert } from '@rcr/data/readwise';
 import { db } from '@/server/db/connections';
 import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';
@@ -16,6 +15,7 @@ import {
 	type ReadwiseArticle,
 	type ReadwiseArticlesResponse,
 } from './types';
+import { readwiseDocuments, type ReadwiseDocumentInsert } from '@aias/hozo';
 
 /**
  * Configuration constants

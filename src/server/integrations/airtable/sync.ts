@@ -1,3 +1,19 @@
+import { eq } from 'drizzle-orm';
+import { db } from '@/server/db/connections';
+import { uploadMediaToR2 } from '@/server/lib/media';
+import { createDebugContext } from '../common/debug-output';
+import { createIntegrationLogger } from '../common/logging';
+import { runIntegration } from '../common/run-integration';
+import { airtableBase, storeMedia } from './helpers';
+import {
+	createConnectionsBetweenRecords,
+	createMediaFromAirtableAttachments,
+	createRecordsFromAirtableCreators,
+	createRecordsFromAirtableExtracts,
+	createRecordsFromAirtableFormats,
+	createRecordsFromAirtableSpaces,
+} from './map';
+import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
 import {
 	airtableAttachments,
 	airtableCreators,
@@ -15,23 +31,7 @@ import {
 	type AirtableExtractSpaceInsert,
 	type AirtableFormatInsert,
 	type AirtableSpaceInsert,
-} from '@rcr/data/airtable';
-import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
-import { uploadMediaToR2 } from '@/server/lib/media';
-import { createDebugContext } from '../common/debug-output';
-import { createIntegrationLogger } from '../common/logging';
-import { runIntegration } from '../common/run-integration';
-import { airtableBase, storeMedia } from './helpers';
-import {
-	createConnectionsBetweenRecords,
-	createMediaFromAirtableAttachments,
-	createRecordsFromAirtableCreators,
-	createRecordsFromAirtableExtracts,
-	createRecordsFromAirtableFormats,
-	createRecordsFromAirtableSpaces,
-} from './map';
-import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
+} from '@aias/hozo';
 
 const logger = createIntegrationLogger('airtable', 'sync');
 

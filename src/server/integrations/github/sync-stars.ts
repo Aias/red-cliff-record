@@ -1,11 +1,11 @@
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
-import { githubRepositories, type GithubRepositoryInsert } from '@rcr/data/github';
 import { db } from '@/server/db/connections';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { createIntegrationLogger } from '../common/logging';
 import { ensureGithubUserExists } from './sync-users';
 import { GithubStarredReposResponseSchema } from './types';
+import { githubRepositories, type GithubRepositoryInsert } from '@aias/hozo';
 
 const logger = createIntegrationLogger('github', 'sync-stars');
 

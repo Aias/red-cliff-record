@@ -1,4 +1,3 @@
-import { feedEntries, feeds } from '@rcr/data/feeds';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { createEmbedding } from '../../../app/lib/server/create-embedding';
@@ -17,6 +16,7 @@ import {
 } from './client';
 import { createCleanFeedEntryEmbeddingText } from './embedding';
 import type { FeedbinEntry, FeedbinIcon, FeedbinSubscription } from './types';
+import { feedEntries, feeds } from '@aias/hozo';
 
 const logger = createIntegrationLogger('feedbin', 'sync');
 

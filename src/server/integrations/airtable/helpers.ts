@@ -2,7 +2,7 @@ import {
 	airtableAttachments,
 	type AirtableAttachmentSelect,
 	type AirtableExtractSelect,
-} from '@rcr/data/airtable';
+} from '@aias/hozo';
 import Airtable from 'airtable';
 import 'dotenv/config';
 import { eq } from 'drizzle-orm';

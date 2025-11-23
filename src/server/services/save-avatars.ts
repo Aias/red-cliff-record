@@ -1,4 +1,4 @@
-import { records, RunType } from '@rcr/data';
+import { records, RunType } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { uploadMediaToR2 } from '@/server/lib/media';

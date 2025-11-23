@@ -5,7 +5,7 @@ import {
 	type GithubRepositorySelect,
 	type GithubUserSelect,
 	type RecordInsert,
-} from '@rcr/data';
+} from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { mapUrl } from '@/server/lib/url-utils';

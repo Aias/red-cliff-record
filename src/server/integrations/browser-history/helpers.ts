@@ -1,5 +1,4 @@
-import { arcSchema } from '@rcr/data';
-import type * as browserHistorySchema from '@rcr/data/browser-history';
+import { arcSchema } from '@aias/hozo';
 import { asc, eq } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type { DailyVisitsQueryRow } from './types';
@@ -19,7 +18,7 @@ export const chromeEpochMicrosecondsToDatetime = (
 	);
 };
 
-export const createDailyVisitsQuery = (db: LibSQLDatabase<typeof browserHistorySchema>) => {
+export const createDailyVisitsQuery = (db: LibSQLDatabase<typeof arcSchema>) => {
 	return db
 		.select({
 			viewTime: arcSchema.visits.visitTime,

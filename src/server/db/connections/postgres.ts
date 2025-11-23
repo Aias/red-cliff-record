@@ -1,4 +1,4 @@
-import { relations, schema } from '@rcr/data';
+import { relations, schema } from '@aias/hozo';
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/bun-sql';
 

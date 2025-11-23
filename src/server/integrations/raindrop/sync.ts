@@ -1,11 +1,3 @@
-import {
-	raindropBookmarks,
-	raindropCollections,
-	raindropImages,
-	RaindropType,
-	type RaindropBookmarkInsert,
-	type RaindropCollectionInsert,
-} from '@rcr/data/raindrop';
 import { db } from '@/server/db/connections';
 import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';
@@ -19,6 +11,14 @@ import {
 } from './map';
 import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
+import {
+	raindropBookmarks,
+	raindropCollections,
+	raindropImages,
+	RaindropType,
+	type RaindropBookmarkInsert,
+	type RaindropCollectionInsert,
+} from '@aias/hozo';
 
 /**
  * Configuration constants

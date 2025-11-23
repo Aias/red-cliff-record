@@ -1,4 +1,4 @@
-import type { PredicateInsert, RecordInsert } from '@rcr/data/records';
+import type { PredicateInsert, RecordInsert } from '@aias/hozo';
 
 export const recordSeed = [
 	{

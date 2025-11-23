@@ -1,12 +1,7 @@
 import os from 'os';
 import readline from 'readline';
-import { arcSchema } from '@rcr/data';
-import type * as browserHistorySchema from '@rcr/data/browser-history';
-import {
-	browsingHistory,
-	type Browser,
-	type BrowsingHistoryInsert,
-} from '@rcr/data/browser-history';
+import { browsingHistory, type Browser, type BrowsingHistoryInsert } from '@aias/hozo';
+import { arcSchema } from '@aias/hozo';
 import { and, eq, gt, isNotNull, ne, notLike, sql } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { db } from '@/server/db/connections';
@@ -166,7 +161,7 @@ async function syncBrowserHistory(
 
 		// Step 3: Fetch new history entries
 		logger.info('Retrieving new history entries...');
-	const browserDb = browserConfig.createConnection();
+		const browserDb = browserConfig.createConnection();
 
 		// Calculate effective cutoff time (use the later of lastKnownTime or browser cutoff date)
 		let effectiveCutoff = lastKnownTime;
@@ -189,7 +184,7 @@ async function syncBrowserHistory(
 		}
 
 		// Step 4: Process and sanitize the entries
-	const processedHistory = processHistoryEntries(
+		const processedHistory = processHistoryEntries(
 			rawHistory,
 			currentHostname,
 			integrationRunId,
@@ -296,7 +291,7 @@ function logLastSyncPoint(lastKnownTime: bigint | null): void {
  * @returns Array of new history entries
  */
 async function fetchNewHistoryEntries(
-	browserDb: LibSQLDatabase<typeof browserHistorySchema>,
+	browserDb: LibSQLDatabase<typeof arcSchema>,
 	lastKnownTime: bigint | null
 ) {
 	const dailyVisitsQuery = createDailyVisitsQuery(browserDb);
