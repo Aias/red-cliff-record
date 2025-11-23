@@ -44,6 +44,7 @@ while true; do
                 
                 # Build the application
                 log "Building application..."
+                # Build hozo package first, then the main app
                 if bun run build; then
                     log "Build successful"
                     
