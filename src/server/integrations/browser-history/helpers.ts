@@ -1,4 +1,4 @@
-import { contentAnnotations, contextAnnotations, urls, visits } from '@rcr/data/arc';
+import { arcSchema } from '@rcr/data';
 import type * as browserHistorySchema from '@rcr/data/browser-history';
 import { asc, eq } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
@@ -22,19 +22,25 @@ export const chromeEpochMicrosecondsToDatetime = (
 export const createDailyVisitsQuery = (db: LibSQLDatabase<typeof browserHistorySchema>) => {
 	return db
 		.select({
-			viewTime: visits.visitTime,
-			viewDuration: visits.visitDuration,
-			durationSinceLastView: contextAnnotations.durationSinceLastVisit,
-			url: urls.url,
-			pageTitle: urls.title,
-			searchTerms: contentAnnotations.searchTerms,
-			relatedSearches: contentAnnotations.relatedSearches,
+			viewTime: arcSchema.visits.visitTime,
+			viewDuration: arcSchema.visits.visitDuration,
+			durationSinceLastView: arcSchema.contextAnnotations.durationSinceLastVisit,
+			url: arcSchema.urls.url,
+			pageTitle: arcSchema.urls.title,
+			searchTerms: arcSchema.contentAnnotations.searchTerms,
+			relatedSearches: arcSchema.contentAnnotations.relatedSearches,
 		})
-		.from(visits)
-		.orderBy(asc(visits.visitTime), asc(visits.url))
-		.fullJoin(urls, eq(visits.url, urls.id))
-		.leftJoin(contentAnnotations, eq(visits.id, contentAnnotations.visitId))
-		.leftJoin(contextAnnotations, eq(visits.id, contextAnnotations.visitId));
+		.from(arcSchema.visits)
+		.orderBy(asc(arcSchema.visits.visitTime), asc(arcSchema.visits.url))
+		.fullJoin(arcSchema.urls, eq(arcSchema.visits.url, arcSchema.urls.id))
+		.leftJoin(
+			arcSchema.contentAnnotations,
+			eq(arcSchema.visits.id, arcSchema.contentAnnotations.visitId)
+		)
+		.leftJoin(
+			arcSchema.contextAnnotations,
+			eq(arcSchema.visits.id, arcSchema.contextAnnotations.visitId)
+		);
 };
 
 export const collapseSequentialVisits = (dailyHistory: DailyVisitsQueryRow[]) => {

@@ -1,6 +1,6 @@
 import os from 'os';
 import readline from 'readline';
-import { urls, visits } from '@rcr/data/arc';
+import { arcSchema } from '@rcr/data';
 import type * as browserHistorySchema from '@rcr/data/browser-history';
 import {
 	browsingHistory,
@@ -166,7 +166,7 @@ async function syncBrowserHistory(
 
 		// Step 3: Fetch new history entries
 		logger.info('Retrieving new history entries...');
-		const browserDb = browserConfig.createConnection();
+	const browserDb = browserConfig.createConnection();
 
 		// Calculate effective cutoff time (use the later of lastKnownTime or browser cutoff date)
 		let effectiveCutoff = lastKnownTime;
@@ -189,7 +189,7 @@ async function syncBrowserHistory(
 		}
 
 		// Step 4: Process and sanitize the entries
-		const processedHistory = processHistoryEntries(
+	const processedHistory = processHistoryEntries(
 			rawHistory,
 			currentHostname,
 			integrationRunId,
@@ -302,14 +302,14 @@ async function fetchNewHistoryEntries(
 	const dailyVisitsQuery = createDailyVisitsQuery(browserDb);
 	return dailyVisitsQuery.where(
 		and(
-			notLike(urls.url, 'chrome-extension://%'),
-			notLike(urls.url, 'chrome://%'),
-			notLike(urls.url, 'about:%'),
-			isNotNull(urls.url),
-			isNotNull(urls.title),
-			ne(urls.title, ''),
-			ne(urls.url, ''),
-			lastKnownTime ? gt(visits.visitTime, Number(lastKnownTime)) : undefined
+			notLike(arcSchema.urls.url, 'chrome-extension://%'),
+			notLike(arcSchema.urls.url, 'chrome://%'),
+			notLike(arcSchema.urls.url, 'about:%'),
+			isNotNull(arcSchema.urls.url),
+			isNotNull(arcSchema.urls.title),
+			ne(arcSchema.urls.title, ''),
+			ne(arcSchema.urls.url, ''),
+			lastKnownTime ? gt(arcSchema.visits.visitTime, Number(lastKnownTime)) : undefined
 		)
 	);
 }
