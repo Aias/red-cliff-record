@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Trash2Icon } from 'lucide-react';
 import { Button } from './button';
 import { LazyVideo } from './lazy-video';
+import { MediaLightbox } from './media-lightbox';
 import type { MediaSelect } from '@/shared/types';
 
 interface MediaGridProps {
@@ -14,63 +15,106 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 	// Limit to 8 media items maximum
 	const displayMedia = media.slice(0, 8);
 	const count = displayMedia.length;
+	const images = useMemo(
+		() => displayMedia.filter((item) => item.type === 'image'),
+		[displayMedia]
+	);
+	const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+	const imageIndexById = useMemo(() => {
+		return images.reduce<Map<number, number>>((map, item, index) => {
+			map.set(item.id, index);
+			return map;
+		}, new Map());
+	}, [images]);
 
 	if (count === 0) return null;
 
 	return (
 		<div
-			className={`relative grid aspect-[3/2] w-full gap-px overflow-hidden rounded-md bg-c-app ${className}`}
+			className={`relative grid aspect-3/2 w-full gap-px overflow-hidden rounded-md bg-c-app ${className}`}
 			style={{
 				gridTemplateColumns: getGridColumns(count),
 				gridTemplateRows: getGridRows(count),
 			}}
 		>
-			{displayMedia.map((item, index) => (
-				<div
-					key={item.id}
-					className="group relative overflow-hidden"
-					style={{ gridArea: getGridArea(count, index) }}
-				>
-					{/* Gradient overlay that appears on hover */}
-					<div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-black/50 to-transparent opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100" />
+			{displayMedia.map((item, index) => {
+				const imageIndex = imageIndexById.get(item.id);
+				const isImage = typeof imageIndex === 'number';
 
-					{/* Render video or image based on media type */}
-					{item.type === 'video' ? (
-						<LazyVideo
-							src={item.url}
-							className="h-full w-full object-cover"
-							controls
-							muted
-							loop
-							autoPlay
-							playsInline
-						/>
-					) : (
-						<img
-							src={item.url}
-							alt={item.altText || `Media ${index + 1}`}
-							className="h-full w-full object-cover"
-							loading="lazy"
-							decoding="async"
-						/>
-					)}
+				const openLightbox = () => {
+					if (!isImage) return;
+					setLightboxIndex(imageIndex);
+				};
 
-					{/* Toolbar */}
-					{onDelete && (
-						<div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-c-page opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
-							<Button
-								type="button"
-								size="icon"
-								variant="ghost"
-								aria-label="Delete media"
-								onClick={() => onDelete(item)}
-							>
-								<Trash2Icon />
-							</Button>
-						</div>
-					)}
-				</div>
-			))}
+				return (
+					<div
+						key={item.id}
+						className="group relative cursor-pointer overflow-hidden focus-visible:outline-2 focus-visible:outline-c-focus"
+						style={{ gridArea: getGridArea(count, index) }}
+						role={isImage ? 'button' : undefined}
+						tabIndex={isImage ? 0 : -1}
+						aria-label={isImage ? 'View full size' : undefined}
+						aria-haspopup={isImage ? 'dialog' : undefined}
+						onClick={isImage ? openLightbox : undefined}
+						onKeyDown={(event) => {
+							if (!isImage) return;
+							if (event.key === 'Enter' || event.key === ' ') {
+								event.preventDefault();
+								openLightbox();
+							}
+						}}
+					>
+						{/* Gradient overlay that appears on hover */}
+						<div className="pointer-events-none absolute inset-0 z-10 bg-linear-to-b from-black/50 to-transparent opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100" />
+
+						{/* Render video or image based on media type */}
+						{item.type === 'video' ? (
+							<LazyVideo
+								src={item.url}
+								className="h-full w-full object-cover"
+								controls
+								muted
+								loop
+								autoPlay
+								playsInline
+							/>
+						) : (
+							<img
+								src={item.url}
+								alt={item.altText || `Media ${index + 1}`}
+								className="h-full w-full object-cover"
+								loading="lazy"
+								decoding="async"
+							/>
+						)}
+
+						{/* Toolbar */}
+						{onDelete && (
+							<div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-c-page opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
+								<Button
+									type="button"
+									size="icon"
+									variant="ghost"
+									aria-label="Delete media"
+									onClick={(event) => {
+										event.stopPropagation();
+										onDelete?.(item);
+									}}
+								>
+									<Trash2Icon />
+								</Button>
+							</div>
+						)}
+					</div>
+				);
+			})}
+			<MediaLightbox
+				images={images}
+				activeIndex={lightboxIndex}
+				onClose={() => setLightboxIndex(null)}
+				onIndexChange={(nextIndex) => setLightboxIndex(nextIndex)}
+			/>
 		</div>
 	);
 };

@@ -47,9 +47,6 @@ Never attempt to start the development server or build the application. The user
 **Data Operations:**
 
 - **IMPORTANT**: Never run any operations that modify data or could have destructive effects (including creating new data, schemas, or running database migrations) without first prompting the user for permission
-
-**Package Manager Commands:**
-
 - Always use the corresponding package manager command for executing packages: `bunx` for Bun, `pnpm dlx` for pnpm, `yarn dlx` for Yarn, `npx` only for npm. Never use `npx` unless the package manager is npm.
 
 ## Architecture (Pointers)
