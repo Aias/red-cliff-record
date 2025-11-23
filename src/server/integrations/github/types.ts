@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { emptyStringToNull } from '@/shared/lib/formatting';
 
 export const GithubEventSchema = z.object({

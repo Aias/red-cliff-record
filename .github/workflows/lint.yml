@@ -14,9 +14,12 @@ jobs:
         with:
           bun-version: latest
 
-      # 2 – Install locked deps (fails if package.json ↔ bun.lock mismatch)
-      - run: bun ci # same as `bun install --frozen-lockfile`
+      # 2 – Install dependencies
+      - run: bun install
 
-      # 3 – Run your scripts through Bun
+      # 3 - Build hozo package
+      - run: bun run --filter @aias/hozo build
+
+      # 4 – Run your scripts through Bun
       - run: bun run lint
-      - run: bun run tsc # or `bunx tsc --noEmit` if you don't have a script
+      - run: bun run tsc

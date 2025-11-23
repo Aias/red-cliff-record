@@ -1,5 +1,5 @@
-import { z } from 'zod/v4';
-import { IntegrationTypeSchema, RecordTypeSchema } from './database';
+import { IntegrationTypeSchema, RecordTypeSchema } from '@aias/hozo';
+import { z } from 'zod';
 
 export const DEFAULT_LIMIT = 50;
 

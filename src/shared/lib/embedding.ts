@@ -1,4 +1,5 @@
-import type { FullRecord, RecordSelect } from '@/shared/types';
+import type { RecordSelect } from '@aias/hozo';
+import type { FullRecord } from '@/shared/types';
 
 const truncateText = (text: string, maxLength: number = 200) => {
 	if (text.length <= maxLength) {

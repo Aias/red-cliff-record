@@ -1,0 +1,38 @@
+{
+	"name": "@aias/hozo",
+	"version": "0.1.0",
+	"description": "Shared schema, relations, and validation for Red Cliff Record",
+	"type": "module",
+	"license": "MIT",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"scripts": {
+		"build": "bunx --bun tsup src/index.ts --dts --format esm --sourcemap --clean",
+		"dev:watch": "bun run build --watch",
+		"lint": "bunx --bun eslint src --max-warnings=0",
+		"check": "bunx --bun tsc --noEmit"
+	},
+	"dependencies": {
+		"drizzle-zod": "0.8.3-4e7eaa6"
+	},
+	"peerDependencies": {
+		"drizzle-orm": "1.0.0-beta.1-4e7eaa6",
+		"zod": "^4.1.12"
+	},
+	"devDependencies": {
+		"drizzle-orm": "1.0.0-beta.1-4e7eaa6",
+		"tsup": "^8.5.1",
+		"zod": "^4.1.12"
+	}
+}

@@ -41,12 +41,11 @@
 			"@/lib/*": ["./src/app/lib/*"],
 			"@/shared/*": ["./src/shared/*"],
 			"@/shared/types/*": ["./src/shared/types/*"],
-			"@/db/*": ["./src/server/db/*"],
 			"@/server/*": ["./src/server/*"],
 			"@/*": ["./src/*"]
 		}
 	},
-	"include": ["src/**/*.ts", "src/**/*.tsx", "./*.ts"],
+	"include": ["src/**/*.ts", "src/**/*.tsx", "packages/**/*.ts", "./*.ts"],
 	"exclude": [
 		"**/node_modules/**/*",
 		".pnpm/**/*",

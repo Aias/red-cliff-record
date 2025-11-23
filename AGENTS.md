@@ -53,8 +53,9 @@ Never attempt to start the development server or build the application. The user
 
 - High-level overview and directory map: see `README.md`.
 - Frontend: `src/app/**` (routes, components, client libs). Import aliases in `eslint.config.js` and tsconfig.
-- Backend: `src/server/**` (tRPC routers, libs, db, integrations). DB schema under `src/server/db/**`.
+- Backend: `src/server/**` (tRPC routers, libs, db, integrations).
 - Shared: `src/shared/**` (cross-environment libs and types).
+- Packages: `packages/hozo` contains the database schema, relations, and validation logic (imported as `@aias/hozo`).
 - Keep client/server boundaries: client must not import server code; server may import shared.
 - Theme tokens: `src/app/styles/theme.css` holds the `c-*` color variables used across components.
 
@@ -179,7 +180,7 @@ Never attempt to start the development server or build the application. The user
 - `@/server/` - server code (includes `@/server/lib/` for server utilities)
 - `@/components` - frontend components
 - `@/lib` - client-side utility functions
-- `@/db` - database schema
+- `@aias/hozo` - database schema, relations, and validation (workspace package)
 
 **Import Rules:**
 

@@ -1,10 +1,14 @@
 {
-	"name": "red-cliff-record",
+	"name": "@aias/red-cliff-record",
 	"version": "0.5.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Aias/red-cliff-record"
 	},
+	"workspaces": [
+		"packages/*",
+		"."
+	],
 	"license": "MIT",
 	"author": {
 		"name": "Nick Trombley",
@@ -16,6 +20,7 @@
 		"node": ">=22"
 	},
 	"dependencies": {
+		"@aias/hozo": "workspace:*",
 		"@libsql/client": "^0.15.15",
 		"@octokit/request-error": "^7.1.0",
 		"@octokit/rest": "^22.0.1",
@@ -36,8 +41,8 @@
 		"cmdk": "^1.1.1",
 		"dataloader": "^2.2.3",
 		"dotenv": "^17.2.3",
-		"drizzle-orm": "^1.0.0-beta.1-fd8bfcc",
-		"drizzle-zod": "^0.8.3",
+		"drizzle-orm": "1.0.0-beta.1-4e7eaa6",
+		"drizzle-zod": "0.8.3-4e7eaa6",
 		"lucide-react": "^0.554.0",
 		"marked": "^17.0.1",
 		"marked-linkify-it": "^3.1.14",
@@ -45,7 +50,6 @@
 		"mime-types": "3.0.2",
 		"motion": "^12.23.24",
 		"openai": "^6.9.1",
-		"postgres": "^3.4.7",
 		"radix-ui": "^1.4.3",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
@@ -71,7 +75,7 @@
 		"@typescript-eslint/parser": "^8.47.0",
 		"@vitejs/plugin-react": "^5.1.1",
 		"babel-plugin-react-compiler": "^1.0.0",
-		"drizzle-kit": "^1.0.0-beta.1-fd8bfcc",
+		"drizzle-kit": "1.0.0-beta.1-4e7eaa6",
 		"eslint": "^9.39.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-import": "^2.32.0",
@@ -89,8 +93,10 @@
 		"lint": "prettier --write . && eslint . --fix && tsc --noEmit",
 		"tsc": "tsc --noEmit",
 		"tsc:watch": "tsc --noEmit --watch",
-		"dev": "bunx --bun vite",
-		"build": "bunx --bun vite build",
+		"dev": "bun run --filter @aias/hozo build && bunx --bun vite",
+		"dev:full": "bun run --filter '*' dev:watch",
+		"dev:watch": "bunx --bun vite",
+		"build": "bun run --filter @aias/hozo build && bunx --bun vite build",
 		"start": "bun run server.ts",
 		"db:migrate": "drizzle-kit migrate",
 		"db:generate": "drizzle-kit generate",

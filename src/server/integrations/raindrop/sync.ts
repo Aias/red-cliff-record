@@ -1,4 +1,3 @@
-import { db } from '@/server/db/connections';
 import {
 	raindropBookmarks,
 	raindropCollections,
@@ -6,7 +5,8 @@ import {
 	RaindropType,
 	type RaindropBookmarkInsert,
 	type RaindropCollectionInsert,
-} from '@/server/db/schema/raindrop';
+} from '@aias/hozo';
+import { db } from '@/server/db/connections';
 import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';
 import { createIntegrationLogger } from '../common/logging';

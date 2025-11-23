@@ -1,4 +1,4 @@
-import type { RecordSelect } from '@/db/schema';
+import type { RecordSelect } from '@aias/hozo';
 import type { RecordGet } from '@/shared/types';
 
 /**

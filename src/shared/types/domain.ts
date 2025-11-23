@@ -1,5 +1,5 @@
+import type { LinkSelect, MediaSelect, PredicateSelect, RecordSelect } from '@aias/hozo';
 import type { DbId } from './api';
-import type { LinkSelect, MediaSelect, PredicateSelect, RecordSelect } from './database';
 
 /**
  * Core domain types used across client and server

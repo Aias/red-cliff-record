@@ -1,9 +1,10 @@
 import os from 'os';
 import readline from 'readline';
+import { browsingHistory, type Browser, type BrowsingHistoryInsert } from '@aias/hozo';
+import { arcSchema } from '@aias/hozo';
 import { and, eq, gt, isNotNull, ne, notLike, sql } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { db } from '@/server/db/connections';
-import { urls, visits } from '@/server/db/schema/arc';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {
@@ -17,12 +18,6 @@ import {
 	DailyVisitsQueryResultSchema,
 	type BrowserConfig,
 } from './types';
-import type * as browserHistorySchema from '@/db/schema/browser-history';
-import {
-	browsingHistory,
-	type Browser,
-	type BrowsingHistoryInsert,
-} from '@/db/schema/browser-history';
 
 const logger = createIntegrationLogger('browser-history', 'sync');
 
@@ -296,20 +291,20 @@ function logLastSyncPoint(lastKnownTime: bigint | null): void {
  * @returns Array of new history entries
  */
 async function fetchNewHistoryEntries(
-	browserDb: LibSQLDatabase<typeof browserHistorySchema>,
+	browserDb: LibSQLDatabase<typeof arcSchema>,
 	lastKnownTime: bigint | null
 ) {
 	const dailyVisitsQuery = createDailyVisitsQuery(browserDb);
 	return dailyVisitsQuery.where(
 		and(
-			notLike(urls.url, 'chrome-extension://%'),
-			notLike(urls.url, 'chrome://%'),
-			notLike(urls.url, 'about:%'),
-			isNotNull(urls.url),
-			isNotNull(urls.title),
-			ne(urls.title, ''),
-			ne(urls.url, ''),
-			lastKnownTime ? gt(visits.visitTime, Number(lastKnownTime)) : undefined
+			notLike(arcSchema.urls.url, 'chrome-extension://%'),
+			notLike(arcSchema.urls.url, 'chrome://%'),
+			notLike(arcSchema.urls.url, 'about:%'),
+			isNotNull(arcSchema.urls.url),
+			isNotNull(arcSchema.urls.title),
+			ne(arcSchema.urls.title, ''),
+			ne(arcSchema.urls.url, ''),
+			lastKnownTime ? gt(arcSchema.visits.visitTime, Number(lastKnownTime)) : undefined
 		)
 	);
 }

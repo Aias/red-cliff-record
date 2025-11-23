@@ -1,8 +1,8 @@
+import { RecordInsertSchema, records } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { publicProcedure } from '../../init';
-import { RecordInsertSchema, records } from '@/db/schema';
 import { IdSchema, type DbId } from '@/shared/types';
 import type { RecordGet } from '@/shared/types';
 

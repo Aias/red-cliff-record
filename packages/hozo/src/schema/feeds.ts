@@ -9,7 +9,7 @@ import {
 	timestamp,
 } from 'drizzle-orm/pg-core';
 import { text } from 'drizzle-orm/pg-core';
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import {
 	contentTimestamps,
 	databaseTimestamps,

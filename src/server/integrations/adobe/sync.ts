@@ -1,5 +1,5 @@
+import { lightroomImages } from '@aias/hozo';
 import { db } from '@/server/db/connections';
-import { lightroomImages } from '@/server/db/schema/adobe';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import type { PredicateSelect } from '@aias/hozo';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
@@ -25,9 +26,7 @@ import { Spinner } from '@/components/spinner';
 import { useUpsertLink } from '@/lib/hooks/link-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { cn } from '@/lib/utils';
-import type { PredicateSelect } from '@/shared/types';
-import type { DbId } from '@/shared/types';
-import type { LinkPartial } from '@/shared/types';
+import type { DbId, LinkPartial } from '@/shared/types';
 
 /* --------------------------------------------------------------------------
  * Types for extra, runtime‑supplied actions shown after the predicate list.

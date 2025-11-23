@@ -1,5 +1,5 @@
+import { TEXT_EMBEDDING_DIMENSIONS } from '@aias/hozo';
 import OpenAI from 'openai';
-import { TEXT_EMBEDDING_DIMENSIONS } from '@/shared/types';
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,

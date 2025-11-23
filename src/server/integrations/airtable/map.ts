@@ -1,5 +1,3 @@
-import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
 import {
 	airtableAttachments,
 	airtableCreators,
@@ -16,7 +14,9 @@ import {
 	type LinkInsert,
 	type MediaInsert,
 	type RecordInsert,
-} from '@/server/db/schema';
+} from '@aias/hozo';
+import { eq } from 'drizzle-orm';
+import { db } from '@/server/db/connections';
 import { getMediaInsertData } from '@/server/lib/media';
 import { mapUrl } from '@/server/lib/url-utils';
 import { bulkInsertLinks, getPredicateId } from '../common/db-helpers';

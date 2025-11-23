@@ -1,13 +1,13 @@
-import { TRPCError } from '@trpc/server';
-import { eq, inArray } from 'drizzle-orm';
-import { z } from 'zod/v4';
 import {
 	LinkInsertSchema,
 	links,
 	type LinkInsert,
 	type LinkSelect,
 	type PredicateSelect,
-} from '@/server/db/schema';
+} from '@aias/hozo';
+import { TRPCError } from '@trpc/server';
+import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from '../init';
 import { IdSchema, type DbId } from '@/shared/types';
 import type { RecordLinks, RecordLinksMap } from '@/shared/types';

@@ -1,7 +1,7 @@
 import { initTRPC } from '@trpc/server';
 import DataLoader from 'dataloader';
 import superjson from 'superjson';
-import { ZodError } from 'zod/v4';
+import { ZodError } from 'zod';
 import { db } from '@/server/db/connections/postgres';
 import type { RecordGet } from '@/shared/types';
 
@@ -121,6 +121,46 @@ export const createTRPCRouter = t.router;
 export const mergeRouters = t.mergeRouters;
 
 /**
+ * Log aggregation for tRPC requests
+ *
+ * This buffers logs for a short period (e.g. one tick) and then prints them
+ * grouped by procedure path.
+ */
+const logBuffer = new Map<string, number[]>();
+let flushTimeout: Timer | null = null;
+
+const formatTimestamp = () => {
+	const now = new Date();
+	const hours = now.getHours();
+	const minutes = now.getMinutes().toString().padStart(2, '0');
+	const seconds = now.getSeconds().toString().padStart(2, '0');
+	const ampm = hours >= 12 ? 'PM' : 'AM';
+	const displayHours = hours % 12 || 12;
+	return `${displayHours}:${minutes}:${seconds} ${ampm}`;
+};
+
+const flushLogs = () => {
+	if (logBuffer.size === 0) return;
+
+	const timestamp = formatTimestamp();
+
+	for (const [path, durations] of logBuffer.entries()) {
+		const count = durations.length;
+		const avg = (durations.reduce((a, b) => a + b, 0) / count).toFixed(2);
+		const max = Math.max(...durations).toFixed(2);
+
+		if (count > 1) {
+			console.log(`${timestamp} [tRPC] ${path} x${count} (avg: ${avg}ms, max: ${max}ms)`);
+		} else {
+			console.log(`${timestamp} [tRPC] ${path}: ${durations[0]?.toFixed(2)} ms`);
+		}
+	}
+
+	logBuffer.clear();
+	flushTimeout = null;
+};
+
+/**
  * Middleware for timing procedure execution and adding an artificial delay in development.
  *
  * You can remove this if you don't like it, but it can help catch unwanted waterfalls by simulating
@@ -130,7 +170,18 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 	const start = performance.now();
 	const result = await next();
 	const end = performance.now();
-	console.log(`[tRPC] ${path}: ${(end - start).toFixed(2)} ms`);
+	const duration = end - start;
+
+	// Add to buffer
+	const current = logBuffer.get(path) || [];
+	current.push(duration);
+	logBuffer.set(path, current);
+
+	// Schedule flush if not already scheduled
+	if (!flushTimeout) {
+		// Flush after a short delay to catch batched requests
+		flushTimeout = setTimeout(flushLogs, 50);
+	}
 
 	return result;
 });

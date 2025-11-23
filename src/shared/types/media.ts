@@ -1,4 +1,4 @@
-import type { MediaType } from './database';
+import type { MediaType } from '@aias/hozo';
 
 /**
  * Media-related types used across client and server

@@ -4,7 +4,7 @@ module.exports = {
 			// Main application
 			name: 'red-cliff-record',
 			script: 'bun',
-			args: 'run server.ts',
+			args: 'run start', // Use 'start' script which runs server.ts, assuming build is handled separately or pre-start
 			cwd: './',
 			env: {
 				NODE_ENV: 'production',

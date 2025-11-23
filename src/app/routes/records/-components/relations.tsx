@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import type { LinkSelect, PredicateSelect } from '@aias/hozo';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
@@ -9,8 +10,7 @@ import { useDeleteLinks } from '@/lib/hooks/link-mutations';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
-import type { LinkSelect, PredicateSelect, RecordGet } from '@/shared/types';
-import type { DbId } from '@/shared/types';
+import type { DbId, RecordGet } from '@/shared/types';
 
 interface RelationsListProps {
 	id: DbId;

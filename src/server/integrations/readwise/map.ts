@@ -1,5 +1,3 @@
-import { eq, inArray } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
 import {
 	readwiseAuthors,
 	readwiseDocuments,
@@ -12,7 +10,9 @@ import {
 	type ReadwiseDocumentSelect,
 	type ReadwiseTagSelect,
 	type RecordInsert,
-} from '@/server/db/schema';
+} from '@aias/hozo';
+import { eq, inArray } from 'drizzle-orm';
+import { db } from '@/server/db/connections';
 import { mapUrl } from '@/server/lib/url-utils';
 import { bulkInsertLinks, getPredicateId, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';

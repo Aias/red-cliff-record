@@ -2,7 +2,6 @@ import { mkdirSync, readdirSync, readFileSync } from 'fs';
 import { rename } from 'fs/promises';
 import { homedir } from 'os';
 import { resolve } from 'path';
-import { db } from '@/server/db/connections';
 import {
 	twitterMedia as mediaTable,
 	twitterTweets as tweetsTable,
@@ -10,7 +9,8 @@ import {
 	type TwitterMediaInsert,
 	type TwitterTweetInsert,
 	type TwitterUserInsert,
-} from '@/server/db/schema/twitter';
+} from '@aias/hozo';
+import { db } from '@/server/db/connections';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';

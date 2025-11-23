@@ -1,4 +1,4 @@
-import type { PredicateInsert, RecordInsert } from './schema/records';
+import type { PredicateInsert, RecordInsert } from '@aias/hozo';
 
 export const recordSeed = [
 	{

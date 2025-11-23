@@ -1,7 +1,6 @@
+import { records, RunType } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
-import { records } from '@/server/db/schema';
-import { RunType } from '@/server/db/schema/operations';
 import { uploadMediaToR2 } from '@/server/lib/media';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';

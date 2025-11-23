@@ -1,5 +1,4 @@
 import { defineRelations } from 'drizzle-orm';
-import { feedEntries, feeds } from '../schema/feeds';
 import {
 	airtableAttachments,
 	airtableCreators,
@@ -10,6 +9,8 @@ import {
 	airtableFormats,
 	airtableSpaces,
 	browsingHistory,
+	feedEntries,
+	feeds,
 	githubCommitChanges,
 	githubCommits,
 	githubRepositories,
@@ -32,7 +33,7 @@ import {
 	twitterMedia,
 	twitterTweets,
 	twitterUsers,
-} from '@/db/schema';
+} from '../schema';
 
 export const relations = defineRelations(
 	{

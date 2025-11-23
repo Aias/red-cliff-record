@@ -1,7 +1,7 @@
+import { githubRepositories, type GithubRepositoryInsert } from '@aias/hozo';
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { db } from '@/server/db/connections';
-import { githubRepositories, type GithubRepositoryInsert } from '@/server/db/schema/github';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { createIntegrationLogger } from '../common/logging';
 import { ensureGithubUserExists } from './sync-users';

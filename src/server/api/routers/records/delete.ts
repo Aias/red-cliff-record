@@ -1,7 +1,3 @@
-import { TRPCError } from '@trpc/server';
-import { inArray } from 'drizzle-orm';
-import { z } from 'zod/v4';
-import { publicProcedure } from '../../init';
 import {
 	airtableAttachments,
 	airtableCreators,
@@ -23,7 +19,11 @@ import {
 	twitterTweets,
 	twitterUsers,
 	type RecordSelect,
-} from '@/db/schema';
+} from '@aias/hozo';
+import { TRPCError } from '@trpc/server';
+import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { publicProcedure } from '../../init';
 import { IdSchema } from '@/shared/types';
 
 export const deleteRecords = publicProcedure

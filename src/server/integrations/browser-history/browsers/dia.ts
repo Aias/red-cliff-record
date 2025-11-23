@@ -1,6 +1,6 @@
+import { Browser } from '@aias/hozo';
 import { createDiaConnection } from '@/server/db/connections/dia-sqlite';
 import type { BrowserConfig } from '../types';
-import { Browser } from '@/db/schema/browser-history';
 
 export const diaConfig: BrowserConfig = {
 	name: Browser.enum.dia,

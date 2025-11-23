@@ -2,10 +2,10 @@ import { copyFileSync } from 'fs';
 import { existsSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
+import { arcSchema } from '@aias/hozo';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { BrowserNotInstalledError } from '@/server/integrations/browser-history/types';
-import * as schema from '../schema/browser-history';
 
 const arcHistoryPath = 'Library/Application Support/Arc/User Data/Default/History';
 
@@ -25,5 +25,5 @@ export const createArcConnection = () => {
 		intMode: 'bigint',
 	});
 
-	return drizzle(client, { schema });
+	return drizzle(client, { schema: arcSchema });
 };

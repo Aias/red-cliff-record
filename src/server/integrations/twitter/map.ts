@@ -1,5 +1,3 @@
-import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
 import {
 	media,
 	records,
@@ -11,7 +9,9 @@ import {
 	type TwitterMediaSelect,
 	type TwitterTweetSelect,
 	type TwitterUserSelect,
-} from '@/server/db/schema';
+} from '@aias/hozo';
+import { eq } from 'drizzle-orm';
+import { db } from '@/server/db/connections';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
