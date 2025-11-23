@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 
 // More robust URL schema with custom error message
 const urlSchema = z.url({

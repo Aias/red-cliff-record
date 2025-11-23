@@ -1,7 +1,6 @@
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';
-import { db } from '@/server/db/connections';
 import {
 	githubCommitChanges,
 	githubCommits,
@@ -9,7 +8,8 @@ import {
 	type GithubCommitChangeInsert,
 	type GithubCommitInsert,
 	type GithubRepositoryInsert,
-} from '@/server/db/schema/github';
+} from '@rcr/data/github';
+import { db } from '@/server/db/connections';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { createIntegrationLogger } from '../common/logging';
 import { syncCommitSummaries } from './summarize-commits';

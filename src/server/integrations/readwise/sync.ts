@@ -1,5 +1,5 @@
+import { readwiseDocuments, type ReadwiseDocumentInsert } from '@rcr/data/readwise';
 import { db } from '@/server/db/connections';
-import { readwiseDocuments, type ReadwiseDocumentInsert } from '@/server/db/schema/readwise';
 import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';
 import { createIntegrationLogger } from '../common/logging';

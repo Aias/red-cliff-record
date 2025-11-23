@@ -1,7 +1,7 @@
 /**
  * Shared types used across client and server
  *
- * Frontend should import types from here instead of directly from @/db/schema
+ * Frontend should import types from here instead of directly from @rcr/data
  * This maintains proper client/server separation while sharing necessary types
  */
 

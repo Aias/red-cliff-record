@@ -1,7 +1,6 @@
+import { MediaType, type MediaInsert } from '@rcr/data';
 import { S3Client } from 'bun';
 import mime from 'mime-types';
-import type { MediaInsert } from '@/server/db/schema';
-import { MediaType } from '@/server/db/schema/media';
 import { getImageMetadata } from './image-metadata';
 import { validateAndFormatUrl } from './url-utils';
 import type { MediaMetadata } from '@/shared/types';

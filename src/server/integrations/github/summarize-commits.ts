@@ -1,13 +1,14 @@
+import {
+	githubCommits,
+	GithubCommitType,
+	type GithubCommitChangeSelect,
+	type GithubCommitSelect,
+	type GithubRepositorySelect,
+} from '@rcr/data/github';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
-import { z } from 'zod/v4'; // TODO: Update to v4 when OpenAI supports it
+import { z } from 'zod';
 import { db } from '@/server/db/connections';
-import type {
-	GithubCommitChangeSelect,
-	GithubCommitSelect,
-	GithubRepositorySelect,
-} from '@/server/db/schema/github';
-import { githubCommits, GithubCommitType } from '@/server/db/schema/github';
 
 export const CommitSummaryInputSchema = z.object({
 	message: z.string(),

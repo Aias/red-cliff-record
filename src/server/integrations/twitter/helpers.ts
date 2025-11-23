@@ -1,8 +1,4 @@
-import type {
-	TwitterMediaInsert,
-	TwitterTweetInsert,
-	TwitterUserInsert,
-} from '@/server/db/schema/twitter';
+import type { TwitterMediaInsert, TwitterTweetInsert, TwitterUserInsert } from '@rcr/data/twitter';
 import type { Media, TweetData, User } from './types';
 
 export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRunId'> => {

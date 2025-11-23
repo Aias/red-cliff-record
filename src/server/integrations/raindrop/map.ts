@@ -1,5 +1,3 @@
-import { eq, inArray } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
 import {
 	media,
 	raindropBookmarks,
@@ -12,7 +10,9 @@ import {
 	type RaindropImageSelect,
 	type RaindropTagSelect,
 	type RecordInsert,
-} from '@/server/db/schema';
+} from '@rcr/data';
+import { eq, inArray } from 'drizzle-orm';
+import { db } from '@/server/db/connections';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';

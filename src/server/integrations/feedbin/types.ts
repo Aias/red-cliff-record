@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { flexibleUrl } from '@/server/lib/url-utils';
 import { emptyStringToNull } from '@/shared/lib/formatting';
 

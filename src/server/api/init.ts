@@ -1,7 +1,7 @@
 import { initTRPC } from '@trpc/server';
 import DataLoader from 'dataloader';
 import superjson from 'superjson';
-import { ZodError } from 'zod/v4';
+import { ZodError } from 'zod';
 import { db } from '@/server/db/connections/postgres';
 import type { RecordGet } from '@/shared/types';
 

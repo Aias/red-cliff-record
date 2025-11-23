@@ -1,7 +1,7 @@
+import { records } from '@rcr/data';
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
-import { records } from '@/db/schema';
 import { createEmbedding } from '@/lib/server/create-embedding';
 import { createRecordEmbeddingText } from '@/shared/lib/embedding';
 import { IdParamSchema } from '@/shared/types';

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { forwardRef, useCallback, useRef, useState } from 'react';
 import { UploadIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { Spinner } from './spinner';
 import { Button } from '@/components/button';
 import { cn } from '@/lib/utils';

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getCookie, setCookie } from '@tanstack/react-start/server';
-import { z } from 'zod/v4';
+import { z } from 'zod';
 
 export const ThemeCookieSchema = z.enum(['light', 'dark']).default('dark');
 

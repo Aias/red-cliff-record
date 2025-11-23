@@ -1,9 +1,15 @@
 import os from 'os';
 import readline from 'readline';
+import { urls, visits } from '@rcr/data/arc';
+import type * as browserHistorySchema from '@rcr/data/browser-history';
+import {
+	browsingHistory,
+	type Browser,
+	type BrowsingHistoryInsert,
+} from '@rcr/data/browser-history';
 import { and, eq, gt, isNotNull, ne, notLike, sql } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { db } from '@/server/db/connections';
-import { urls, visits } from '@/server/db/schema/arc';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {
@@ -17,12 +23,6 @@ import {
 	DailyVisitsQueryResultSchema,
 	type BrowserConfig,
 } from './types';
-import type * as browserHistorySchema from '@/db/schema/browser-history';
-import {
-	browsingHistory,
-	type Browser,
-	type BrowsingHistoryInsert,
-} from '@/db/schema/browser-history';
 
 const logger = createIntegrationLogger('browser-history', 'sync');
 

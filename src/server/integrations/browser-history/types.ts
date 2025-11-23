@@ -1,7 +1,7 @@
+import type { Browser } from '@rcr/data/browser-history';
+import type * as browserHistorySchema from '@rcr/data/browser-history';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { z } from 'zod/v4';
-import type { Browser } from '@/db/schema/browser-history';
-import type * as browserHistorySchema from '@/db/schema/browser-history';
+import { z } from 'zod';
 import { emptyStringToNull } from '@/shared/lib/formatting';
 
 const sanitizeString = (str: string | null): string | null => {

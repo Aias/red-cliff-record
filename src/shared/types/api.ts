@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { IntegrationTypeSchema, RecordTypeSchema } from './database';
 
 export const DEFAULT_LIMIT = 50;

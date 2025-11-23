@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { recordTypeIcons } from './type-icons';
 import {
 	AlertDialog,

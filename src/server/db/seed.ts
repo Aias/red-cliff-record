@@ -1,4 +1,4 @@
-import type { PredicateInsert, RecordInsert } from './schema/records';
+import type { PredicateInsert, RecordInsert } from '@rcr/data/records';
 
 export const recordSeed = [
 	{

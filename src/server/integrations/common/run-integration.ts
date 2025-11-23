@@ -1,11 +1,11 @@
-import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
 import {
 	integrationRuns,
 	IntegrationStatus,
 	RunType,
 	type IntegrationType,
-} from '@/server/db/schema/operations';
+} from '@rcr/data/operations';
+import { eq } from 'drizzle-orm';
+import { db } from '@/server/db/connections';
 
 /**
  * Function signature for integration implementations

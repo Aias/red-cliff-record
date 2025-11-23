@@ -1,6 +1,6 @@
+import { records, type IntegrationType } from '@rcr/data';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/connections';
-import { records, type IntegrationType } from '../db/schema';
 
 /**
  * Configuration for batch processing

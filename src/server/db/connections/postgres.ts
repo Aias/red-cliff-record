@@ -1,7 +1,7 @@
+import { relations } from '@rcr/data';
+import * as schema from '@rcr/data';
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/bun-sql';
-import { relations } from '@/server/db/relations';
-import * as schema from '@/server/db/schema';
 
 const createDb = () => drizzle(process.env.DATABASE_URL!, { schema, relations });
 type Database = ReturnType<typeof createDb>;

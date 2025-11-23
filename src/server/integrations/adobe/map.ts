@@ -1,5 +1,3 @@
-import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections/postgres';
 import {
 	lightroomImages,
 	media,
@@ -7,7 +5,9 @@ import {
 	type LightroomImageSelect,
 	type MediaInsert,
 	type RecordInsert,
-} from '@/server/db/schema';
+} from '@rcr/data';
+import { eq } from 'drizzle-orm';
+import { db } from '@/server/db/connections/postgres';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
 import { getRecordId, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';

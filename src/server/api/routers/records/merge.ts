@@ -1,7 +1,3 @@
-import { TRPCError } from '@trpc/server';
-import { eq, inArray } from 'drizzle-orm';
-import { z } from 'zod/v4';
-import { publicProcedure } from '../../init';
 import {
 	airtableCreators,
 	airtableExtracts,
@@ -21,8 +17,12 @@ import {
 	records,
 	twitterTweets,
 	twitterUsers,
-} from '@/db/schema';
-import type { LinkInsert, LinkSelect, RecordSelect } from '@/db/schema';
+} from '@rcr/data';
+import type { LinkInsert, LinkSelect, RecordSelect } from '@rcr/data';
+import { TRPCError } from '@trpc/server';
+import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { publicProcedure } from '../../init';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId } from '@/shared/types';
 

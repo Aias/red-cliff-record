@@ -1,8 +1,8 @@
+import { contentAnnotations, contextAnnotations, urls, visits } from '@rcr/data/arc';
+import type * as browserHistorySchema from '@rcr/data/browser-history';
 import { asc, eq } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { contentAnnotations, contextAnnotations, urls, visits } from '@/server/db/schema/arc';
 import type { DailyVisitsQueryRow } from './types';
-import type * as browserHistorySchema from '@/db/schema/browser-history';
 
 // Import the browser-specific schema tables
 // These are identical for Arc and Dia, but we import dynamically

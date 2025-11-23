@@ -12,14 +12,14 @@ import {
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod/v4';
+import { z } from 'zod';
+import { emptyStringToNull } from '../utils/formatting';
 import {
 	contentTimestamps,
 	databaseTimestamps,
 	integrationTypeEnum,
 	textEmbeddingColumns,
 } from './operations';
-import { emptyStringToNull } from '@/shared/lib/formatting';
 
 export const recordTypeEnum = pgEnum('record_type', [
 	'entity', // an actor in the world, has will

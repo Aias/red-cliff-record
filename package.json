@@ -5,6 +5,9 @@
 		"type": "git",
 		"url": "https://github.com/Aias/red-cliff-record"
 	},
+	"workspaces": [
+		"packages/*"
+	],
 	"license": "MIT",
 	"author": {
 		"name": "Nick Trombley",
@@ -16,6 +19,7 @@
 		"node": ">=22"
 	},
 	"dependencies": {
+		"@rcr/data": "workspace:*",
 		"@libsql/client": "^0.15.15",
 		"@octokit/request-error": "^7.1.0",
 		"@octokit/rest": "^22.0.1",

@@ -1,6 +1,6 @@
 /**
  * Database types re-exported for frontend use
- * Frontend should import these instead of directly from @/db/schema
+ * Frontend should import these instead of directly from @rcr/data
  */
 
 // Re-export core types that frontend components need
@@ -13,7 +13,7 @@ export type {
 	RecordInsert,
 	RecordSelect,
 	RecordType,
-} from '@/server/db/schema';
+} from '@rcr/data';
 
 // Re-export schemas that frontend needs for validation
 export {
@@ -21,7 +21,7 @@ export {
 	MediaType as MediaTypeSchema,
 	RecordInsertSchema,
 	RecordTypeSchema,
-} from '@/server/db/schema';
+} from '@rcr/data';
 
 // Re-export constants that frontend needs
-export { TEXT_EMBEDDING_DIMENSIONS } from '@/server/db/schema/operations';
+export { TEXT_EMBEDDING_DIMENSIONS } from '@rcr/data';

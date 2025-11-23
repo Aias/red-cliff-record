@@ -1,5 +1,3 @@
-import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
 import {
 	githubRepositories,
 	githubUsers,
@@ -7,7 +5,9 @@ import {
 	type GithubRepositorySelect,
 	type GithubUserSelect,
 	type RecordInsert,
-} from '@/server/db/schema';
+} from '@rcr/data';
+import { eq } from 'drizzle-orm';
+import { db } from '@/server/db/connections';
 import { mapUrl } from '@/server/lib/url-utils';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';

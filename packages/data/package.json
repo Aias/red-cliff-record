@@ -1,0 +1,39 @@
+{
+	"name": "@rcr/data",
+	"version": "0.0.0",
+	"description": "Shared schema, relations, and validation for Red Cliff Record",
+	"type": "module",
+	"license": "MIT",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs"
+		},
+		"./*": {
+			"types": "./dist/*.d.ts",
+			"import": "./dist/*.mjs",
+			"require": "./dist/*.cjs"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist",
+		"src"
+	],
+	"sideEffects": false,
+	"scripts": {
+		"build": "bunx --bun tsup src/index.ts src/schema/**/*.ts src/schema/**/index.ts --dts --format esm,cjs --sourcemap --clean",
+		"lint": "bunx --bun eslint src --max-warnings=0",
+		"check": "bunx --bun tsc --noEmit"
+	},
+	"peerDependencies": {
+		"drizzle-orm": "^1.0.0-beta.1-fd8bfcc"
+	},
+	"devDependencies": {
+		"tsup": "^8.3.0"
+	}
+}

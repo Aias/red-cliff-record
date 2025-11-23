@@ -1,6 +1,6 @@
+import { feedEntries, feeds } from '@rcr/data/feeds';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
-import { feedEntries, feeds } from '@/server/db/schema/feeds';
 import { createEmbedding } from '../../../app/lib/server/create-embedding';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';

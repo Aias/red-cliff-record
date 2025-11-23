@@ -1,5 +1,3 @@
-import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
 import {
 	airtableAttachments,
 	airtableCreators,
@@ -17,7 +15,9 @@ import {
 	type AirtableExtractSpaceInsert,
 	type AirtableFormatInsert,
 	type AirtableSpaceInsert,
-} from '@/server/db/schema/airtable';
+} from '@rcr/data/airtable';
+import { eq } from 'drizzle-orm';
+import { db } from '@/server/db/connections';
 import { uploadMediaToR2 } from '@/server/lib/media';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';

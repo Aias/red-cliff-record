@@ -1,5 +1,5 @@
+import { links as linksTable, type LinkInsert } from '@rcr/data';
 import { type Db } from '@/server/db/connections';
-import { links as linksTable, type LinkInsert } from '@/server/db/schema';
 import type { PredicateSlug, RecordSlug } from '@/server/db/seed';
 import { createIntegrationLogger } from './logging';
 
