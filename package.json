@@ -103,7 +103,7 @@
 		"db:studio": "drizzle-kit studio",
 		"db:backup-local": "bash src/server/db/db-manager.sh backup local",
 		"db:backup-remote": "bash src/server/db/db-manager.sh backup remote",
-		"db:restore-local": "bash src/server/db/db-manager.sh restore local",
+		"db:restore-local": "bash src/server/db/db-manager.sh -c restore local",
 		"db:restore-remote": "bash src/server/db/db-manager.sh restore remote",
 		"sync:daily": "bun sync:browsing && bun sync:feedbin && bun sync:raindrop && bun sync:readwise && bun sync:github && bun sync:airtable && bun sync:embeddings",
 		"sync:adobe": "bun src/server/cli/sync-adobe.ts",

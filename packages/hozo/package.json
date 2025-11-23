@@ -1,6 +1,6 @@
 {
 	"name": "@aias/hozo",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Shared schema, relations, and validation for Red Cliff Record",
 	"type": "module",
 	"license": "MIT",

@@ -121,21 +121,23 @@ export const predicateSeed = [
 		canonical: false,
 	},
 
-	/* ───────────  Description  ─────────── */
+	/* ───────────  Form  ─────────── */
 	{
 		slug: 'has_format',
 		name: 'has format',
-		type: 'description',
+		type: 'form',
 		inverseSlug: 'format_of',
 		canonical: true,
 	},
 	{
 		slug: 'format_of',
 		name: 'format of',
-		type: 'description',
+		type: 'form',
 		inverseSlug: 'has_format',
 		canonical: false,
 	},
+
+	/* ───────────  Description  ─────────── */
 	{
 		slug: 'tagged_with',
 		name: 'tagged with',
