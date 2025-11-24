@@ -232,9 +232,31 @@ bun run db:studio
 # Run migrations
 bun run db:migrate
 
-# Backup database
+# Database Management
 bun run db:backup-local  # Local backup
 bun run db:backup-remote # Remote backup
+bun run db:restore-local # Restore local backup
+bun run db:restore-remote # Restore remote backup
+
+# Database Reset Workflow
+# If you need to squash migrations or reset the schema while preserving data:
+# 1. Backup data only
+./src/server/db/db-manager.sh -D backup local
+
+# 2. Reset database (drops DB, recreates with extensions, empty schema)
+./src/server/db/db-manager.sh reset local
+
+# 3. Clear old migration history (optional/manual step)
+# rm -rf migrations/main/*
+
+# 4. Generate new migration (if clearing history)
+# bun run db:generate
+
+# 5. Apply migrations
+bun run db:migrate
+
+# 6. Restore data only
+./src/server/db/db-manager.sh -D restore local
 ```
 
 ## Troubleshooting
