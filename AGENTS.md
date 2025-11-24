@@ -20,6 +20,14 @@ This document is a living document. We should be continually updating it to refl
 
 **If the user asks a question, never respond by writing code.** A question should be answered by researching the answer and providing analysis with examples and references where appropriate. This applies to any sentence that ends with a question mark, or when the sentence is clearly framed as a question.
 
+Use all tools at your disposal to diagnose and resolve issues. This includes but is not limited to:
+
+- Reading official documentation
+- Reading the source code, either on github or locally inside `node_modules`
+- Searching the web for information
+- Running local tests and commands that are non-destructive and do not modify data or the database
+- Adding temporary logging and debugging statements to the codebase
+
 ## Essential Commands
 
 **Development:**

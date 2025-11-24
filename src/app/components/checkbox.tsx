@@ -1,14 +1,10 @@
 import { type ComponentProps } from 'react';
-import React from 'react';
 import { CheckIcon } from 'lucide-react';
 import { Checkbox as CheckboxPrimitive } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
-const Checkbox = React.forwardRef<
-	React.ComponentRef<typeof CheckboxPrimitive.Root>,
-	React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
->(({ className, ...props }, ref) => (
-	<CheckboxPrimitive.Root ref={ref} className={cn('peer checkbox shrink-0', className)} {...props}>
+const Checkbox = ({ className, ...props }: ComponentProps<typeof CheckboxPrimitive.Root>) => (
+	<CheckboxPrimitive.Root className={cn('peer checkbox shrink-0', className)} {...props}>
 		<CheckboxPrimitive.Indicator
 			className={cn(
 				'relative flex size-full items-center justify-center overflow-hidden text-current'
@@ -17,7 +13,7 @@ const Checkbox = React.forwardRef<
 			<CheckIcon className="absolute inset-1/2 size-[1.15em] -translate-x-1/2 -translate-y-[calc(50%+0.025em)]" />
 		</CheckboxPrimitive.Indicator>
 	</CheckboxPrimitive.Root>
-));
+);
 Checkbox.displayName = CheckboxPrimitive.Root.displayName;
 
 export { Checkbox };

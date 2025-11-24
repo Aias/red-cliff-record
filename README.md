@@ -108,6 +108,7 @@ After running migrations, seed the database with initial predicate vocabulary an
 ```
 
 This loads:
+
 - **Predicates**: Canonical relationship types (e.g., `created_by`, `contains`, `references`, `related_to`)
 - **Records**: Core entities (e.g., user record, project record)
 

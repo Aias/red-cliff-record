@@ -263,7 +263,7 @@ export function RecordForm({
 				<h1 className="flex items-center gap-3">
 					<form.Field name="title">
 						{(field) => (
-							<div className="grow-1">
+							<div className="grow">
 								<GhostInput
 									value={field.state.value ?? ''}
 									placeholder="Untitled Record"
@@ -319,7 +319,7 @@ export function RecordForm({
 													value={type}
 													aria-label={type}
 													data-state={field.state.value === type ? 'on' : 'off'}
-													className="flex grow-1 items-center gap-1"
+													className="flex grow items-center gap-1"
 												>
 													<Icon />
 													<span className="hidden capitalize @[480px]:inline">{type}</span>
@@ -343,12 +343,12 @@ export function RecordForm({
 					{(field) => (
 						<div className="mx-5 mb-1.5 flex flex-col gap-3">
 							<div className="flex items-center justify-between text-xs text-c-secondary">
-								<Label htmlFor="rating" className="inline-flex w-[0px] justify-center">
+								<Label htmlFor="rating" className="inline-flex w-0 justify-center">
 									Rating
 								</Label>
-								<span className="inline-flex w-[0px] justify-center text-[0.875em]">⭐</span>
-								<span className="inline-flex w-[0px] justify-center text-[0.875em]">⭐⭐</span>
-								<span className="inline-flex w-[0px] justify-center text-[0.875em]">⭐⭐⭐</span>
+								<span className="inline-flex w-0 justify-center text-[0.875em]">⭐</span>
+								<span className="inline-flex w-0 justify-center text-[0.875em]">⭐⭐</span>
+								<span className="inline-flex w-0 justify-center text-[0.875em]">⭐⭐⭐</span>
 							</div>
 							<Slider
 								id="rating"
@@ -521,7 +521,7 @@ export function RecordForm({
 
 			<div className="mt-4 flex flex-col gap-3">
 				<div className="flex gap-4">
-					<h2 className="grow-1">Content</h2>
+					<h2 className="grow">Content</h2>
 					<form.Field name="isPrivate">
 						{(field) => (
 							<BooleanSwitch
