@@ -7,6 +7,7 @@ set -e
 DATABASE_NAME="redcliffrecord"
 BACKUP_DIR="$HOME/Documents/Red Cliff Record/Backups"
 CLEAN_RESTORE=false
+DATA_ONLY=false
 
 # Parse connection details from .env
 if [ -f .env ]; then
@@ -28,11 +29,13 @@ print_usage() {
     echo "Commands:"
     echo "  backup SOURCE    Create a backup from specified source (local or remote)"
     echo "  restore TARGET   Restore to specified target (local or remote)"
+    echo "  reset TARGET     Reset database (drop & recreate with extensions, local only)"
     echo
     echo "Options:"
     echo "  -d, --database NAME    Database name (default: redcliffrecord)"
     echo "  -b, --backup-dir DIR   Backup directory (default: ~/Documents/Red Cliff Record/Backups)"
     echo "  -c, --clean           Clean restore (drop & recreate database, local only)"
+    echo "  -D, --data-only       Backup/Restore data only (public schema only, excludes migration history)"
     echo "  -h, --help            Show this help message"
     echo
     echo "Examples:"
@@ -42,6 +45,9 @@ print_usage() {
     echo "  $0 restore remote         # Restore to remote database"
     echo "  $0 -d mydb backup local   # Backup local database with custom name"
     echo "  $0 -c restore local       # Clean restore to local (drop & recreate)"
+    echo "  $0 -D backup local        # Backup data only from local database"
+    echo "  $0 -D restore local       # Restore data only to local database"
+    echo "  $0 reset local            # Reset local database (fresh start)"
 }
 
 # Parse options
@@ -50,6 +56,7 @@ while [[ "$#" -gt 0 ]]; do
         -d|--database) DATABASE_NAME="$2"; shift ;;
         -b|--backup-dir) BACKUP_DIR="$2"; shift ;;
         -c|--clean) CLEAN_RESTORE=true ;;
+        -D|--data-only) DATA_ONLY=true ;;
         -h|--help) print_usage; exit 0 ;;
         *) break ;;
     esac
@@ -60,7 +67,7 @@ done
 COMMAND=$1
 LOCATION=$2
 
-if [[ ! "$COMMAND" =~ ^(backup|restore)$ ]] || [[ ! "$LOCATION" =~ ^(local|remote)$ ]]; then
+if [[ ! "$COMMAND" =~ ^(backup|restore|reset)$ ]] || [[ ! "$LOCATION" =~ ^(local|remote)$ ]]; then
     print_usage
     exit 1
 fi
@@ -72,30 +79,24 @@ mkdir -p "$BACKUP_DIR"
 do_backup() {
     local source=$1
     local date=$(date +%Y-%m-%d-%H-%M-%S)
-    local backup_file="$BACKUP_DIR/${DATABASE_NAME}-${date}.dump"
+    local backup_file
+    local dump_args="--format=custom --verbose --no-owner --no-privileges --no-comments"
+
+    if [ "$DATA_ONLY" = true ]; then
+        echo "Preparing data-only backup..."
+        backup_file="$BACKUP_DIR/${DATABASE_NAME}-data-${date}.dump"
+        dump_args="$dump_args --data-only --schema=public"
+    else
+        backup_file="$BACKUP_DIR/${DATABASE_NAME}-${date}.dump"
+        dump_args="$dump_args --schema=public --schema=drizzle"
+    fi
 
     echo "Creating backup from $source database..."
     
     if [ "$source" = "local" ]; then
-        pg_dump "$DATABASE_URL_LOCAL" \
-            --format=custom \
-            --verbose \
-            --no-owner \
-            --no-privileges \
-            --no-comments \
-            --schema 'public' \
-            --schema 'drizzle' \
-            > "$backup_file"
+        pg_dump "$DATABASE_URL_LOCAL" $dump_args > "$backup_file"
     else
-        pg_dump "$DATABASE_URL_REMOTE" \
-            --format=custom \
-            --verbose \
-            --no-owner \
-            --no-privileges \
-            --no-comments \
-            --schema 'public' \
-            --schema 'drizzle' \
-            > "$backup_file"
+        pg_dump "$DATABASE_URL_REMOTE" $dump_args > "$backup_file"
     fi
 
     echo "Backup created at: $backup_file"
@@ -139,12 +140,22 @@ do_clean_setup() {
 # Function to perform restore
 do_restore() {
     local target=$1
+    local dump_file
     
-    # Find the most recent backup file
-    local dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}"-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
+    # Find the most recent backup file based on type
+    if [ "$DATA_ONLY" = true ]; then
+        dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}"-data-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
+    else
+        dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}"-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
+    fi
 
     if [ ! -f "$dump_file" ]; then
-        echo "No backup files found in: $BACKUP_DIR"
+        echo "No suitable backup files found in: $BACKUP_DIR"
+        if [ "$DATA_ONLY" = true ]; then
+            echo "Looking for files matching pattern: ${DATABASE_NAME}-data-*.dump"
+        else
+            echo "Looking for files matching pattern: ${DATABASE_NAME}-*.dump"
+        fi
         exit 1
     fi
 
@@ -152,9 +163,11 @@ do_restore() {
 
     if [ "$target" = "local" ]; then
         # Check if clean restore was requested
-        if [ "$CLEAN_RESTORE" = true ]; then
+        if [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = false ]; then
             echo "Clean restore requested for local database"
             do_clean_setup
+        elif [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = true ]; then
+            echo "Warning: Clean restore (-c) ignored when using data-only (-D) mode to avoid dropping schema."
         else
             echo "Restoring data to local database..."
             # Terminate existing connections except our own
@@ -165,27 +178,53 @@ do_restore() {
                 AND pid <> pg_backend_pid();"
         fi
 
-        pg_restore --dbname="$DATABASE_URL_LOCAL" \
-            --clean \
-            --if-exists \
-            --no-owner \
-            --no-privileges \
-            -v "$dump_file"
+        local restore_args="--dbname=$DATABASE_URL_LOCAL --no-owner --no-privileges -v"
+        
+        if [ "$DATA_ONLY" = true ]; then
+            # For data-only restore, we use --data-only. 
+            # --clean causes issues with --data-only in pg_restore in some versions, 
+            # but generally we want to truncate. However, since we just did a clean reset
+            # and migration, the tables are empty anyway.
+            # --single-transaction helps performance by wrapping the entire restore in one transaction
+            restore_args="$restore_args --data-only --disable-triggers --single-transaction"
+        else
+            # Full restore
+            restore_args="$restore_args --clean --if-exists"
+        fi
+
+        pg_restore $restore_args "$dump_file"
     else
         if [ "$CLEAN_RESTORE" = true ]; then
             echo "Warning: Clean restore is only supported for local databases"
             echo "Proceeding with standard restore to remote database..."
         fi
+        
         echo "Restoring data to remote database..."
-        pg_restore "$DATABASE_URL_REMOTE" \
-            --clean \
-            --if-exists \
-            --no-owner \
-            --no-privileges \
-            -v "$dump_file"
+        local restore_args="-d $DATABASE_URL_REMOTE --no-owner --no-privileges -v"
+        
+        if [ "$DATA_ONLY" = true ]; then
+            restore_args="$restore_args --data-only --disable-triggers --single-transaction"
+        else
+            restore_args="$restore_args --clean --if-exists"
+        fi
+
+        pg_restore $restore_args "$dump_file"
     fi
 
     echo "Restore completed successfully"
+}
+
+# Function to perform reset (clean setup only)
+do_reset() {
+    local target=$1
+    if [ "$target" != "local" ]; then
+        echo "Error: Reset is only supported for local database"
+        exit 1
+    fi
+    
+    echo "Resetting database (dropping and recreating)..."
+    do_clean_setup
+    echo "Database reset successfully"
 }
 
 # Execute command
@@ -195,5 +234,8 @@ case $COMMAND in
         ;;
     restore)
         do_restore $LOCATION
+        ;;
+    reset)
+        do_reset $LOCATION
         ;;
 esac

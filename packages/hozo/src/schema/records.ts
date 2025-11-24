@@ -59,14 +59,14 @@ export const records = pgTable(
 		index().on(table.slug),
 		index('idx_records_content_search').using(
 			'gin',
-			table.title,
-			table.abbreviation,
-			table.sense,
-			table.url,
-			table.summary,
-			table.content,
-			table.notes,
-			table.mediaCaption
+			table.title.op('gin_trgm_ops'),
+			table.abbreviation.op('gin_trgm_ops'),
+			table.sense.op('gin_trgm_ops'),
+			table.url.op('gin_trgm_ops'),
+			table.summary.op('gin_trgm_ops'),
+			table.content.op('gin_trgm_ops'),
+			table.notes.op('gin_trgm_ops'),
+			table.mediaCaption.op('gin_trgm_ops')
 		),
 		index('idx_records_sources').using('gin', table.sources),
 		index().on(table.recordCreatedAt),

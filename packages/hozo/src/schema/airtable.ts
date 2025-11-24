@@ -1,4 +1,5 @@
 import {
+	foreignKey,
 	index,
 	integer,
 	pgTable,
@@ -229,21 +230,28 @@ export type AirtableExtractSpaceInsert = typeof airtableExtractSpaces.$inferInse
 export const airtableExtractConnections = pgTable(
 	'airtable_extract_connections',
 	{
-		fromExtractId: text('from_extract_id')
-			.references(() => airtableExtracts.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
-		toExtractId: text('to_extract_id')
-			.references(() => airtableExtracts.id, {
-				onDelete: 'cascade',
-				onUpdate: 'cascade',
-			})
-			.notNull(),
+		fromExtractId: text('from_extract_id').notNull(),
+		toExtractId: text('to_extract_id').notNull(),
 		...databaseTimestamps,
 	},
-	(table) => [primaryKey({ columns: [table.fromExtractId, table.toExtractId] })]
+	(table) => [
+		// Define these foreign keys manually since the auto-generated names are too long
+		foreignKey({
+			name: 'airtable_extract_connections_from_extract_fk',
+			columns: [table.fromExtractId],
+			foreignColumns: [airtableExtracts.id],
+		})
+			.onDelete('cascade')
+			.onUpdate('cascade'),
+		foreignKey({
+			name: 'airtable_extract_connections_to_extract_fk',
+			columns: [table.toExtractId],
+			foreignColumns: [airtableExtracts.id],
+		})
+			.onDelete('cascade')
+			.onUpdate('cascade'),
+		primaryKey({ columns: [table.fromExtractId, table.toExtractId] }),
+	]
 );
 
 export const AirtableExtractConnectionSelectSchema = createSelectSchema(airtableExtractConnections);
