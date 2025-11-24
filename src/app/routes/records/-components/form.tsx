@@ -159,7 +159,11 @@ export function RecordForm({
 			onSubmit: ({ value }) => {
 				const parsed = RecordInsertSchema.safeParse(value);
 				if (!parsed.success) {
-					return parsed.error;
+					const flat = z.flattenError(parsed.error);
+					return {
+						formError: flat.formErrors.join(', '),
+						fieldErrors: flat.fieldErrors,
+					};
 				}
 				return undefined;
 			},
