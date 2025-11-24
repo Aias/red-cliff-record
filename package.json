@@ -60,7 +60,7 @@
 		"tailwindcss-animate": "^1.0.7",
 		"vite": "^7.2.4",
 		"ws": "^8.18.3",
-		"zod": "^4.1.12"
+		"zod": "^4.1.13"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.1",
@@ -68,7 +68,7 @@
 		"@types/eslint": "9.6.1",
 		"@types/mime-types": "^3.0.1",
 		"@types/node": "^24.10.1",
-		"@types/react": "^19.2.6",
+		"@types/react": "^19.2.7",
 		"@types/react-dom": "^19.2.3",
 		"@types/ws": "^8.18.1",
 		"@typescript-eslint/eslint-plugin": "^8.47.0",

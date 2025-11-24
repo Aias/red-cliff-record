@@ -1,1 +1,0 @@
-ALTER TYPE "public"."predicate_type" ADD VALUE 'form';

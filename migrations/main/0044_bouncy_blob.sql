@@ -1,1 +1,0 @@
-ALTER TABLE "feed_entries" ALTER COLUMN "id" SET DATA TYPE bigint;

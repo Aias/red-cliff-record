@@ -1,1 +1,0 @@
-ALTER TABLE "indices" ADD COLUMN "flags" "flag"[];

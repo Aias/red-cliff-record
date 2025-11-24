@@ -38,6 +38,13 @@ Never attempt to start the development server or build the application. The user
 - `bun run db:restore-local` - Restore to local database
 - `bun run db:restore-remote` - Restore to remote database
 - `./src/server/db/db-manager.sh -c restore local` - Clean restore (drop & recreate database with extensions)
+- **Database Reset / Migration Squash**: To reset migration history while preserving data:
+  1. `./src/server/db/db-manager.sh -D backup local` (Backup data only)
+  2. `./src/server/db/db-manager.sh reset local` (Drop & recreate DB with extensions)
+  3. Delete old migrations: `rm -rf migrations/main/*`
+  4. `bun run db:generate` (Create fresh migration)
+  5. `bun run db:migrate` (Apply fresh schema)
+  6. `./src/server/db/db-manager.sh -D restore local` (Restore data into new schema)
 
 **Data Sync:**
 
