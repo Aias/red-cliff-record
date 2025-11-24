@@ -8,6 +8,7 @@
 
 import type { PredicateInsert, RecordInsert } from '@aias/hozo';
 import { predicates, records } from '@aias/hozo';
+import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { createIntegrationLogger } from '../integrations/common/logging';
 
@@ -218,23 +219,44 @@ export type RecordSlug = (typeof recordSeed)[number]['slug'];
 export type PredicateSlug = (typeof predicateSeed)[number]['slug'];
 
 async function seedDatabase(): Promise<void> {
-	// Seed predicates
-	logger.info(`Inserting ${predicateSeed.length} predicates...`);
+	// Seed predicates in two passes to handle foreign key constraints
+	// Pass 1: Insert all predicates without inverseSlug (set to null)
+	logger.info(
+		`Inserting ${predicateSeed.length} predicates (pass 1: without inverse references)...`
+	);
 	for (const predicate of predicateSeed) {
 		await db
 			.insert(predicates)
-			.values(predicate)
+			.values({
+				...predicate,
+				inverseSlug: null, // Defer inverseSlug to pass 2
+			})
 			.onConflictDoUpdate({
 				target: predicates.slug,
 				set: {
 					name: predicate.name,
 					type: predicate.type,
 					role: 'role' in predicate ? (predicate.role ?? null) : null,
-					inverseSlug: predicate.inverseSlug ?? null,
 					canonical: predicate.canonical,
 					recordUpdatedAt: new Date(),
 				},
 			});
+	}
+
+	// Pass 2: Update all predicates to set their inverseSlug references
+	logger.info(
+		`Updating ${predicateSeed.length} predicates (pass 2: setting inverse references)...`
+	);
+	for (const predicate of predicateSeed) {
+		if (predicate.inverseSlug) {
+			await db
+				.update(predicates)
+				.set({
+					inverseSlug: predicate.inverseSlug,
+					recordUpdatedAt: new Date(),
+				})
+				.where(eq(predicates.slug, predicate.slug));
+		}
 	}
 
 	logger.info(`Inserted/updated ${predicateSeed.length} predicates`);
