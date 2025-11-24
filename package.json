@@ -79,6 +79,7 @@
 		"drizzle-kit": "1.0.0-beta.1-4e7eaa6",
 		"eslint": "^9.39.1",
 		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-file-progress": "^3.0.2",
 		"eslint-plugin-import": "^2.32.0",
 		"eslint-plugin-react-compiler": "19.1.0-rc.2",
 		"globals": "^16.5.0",

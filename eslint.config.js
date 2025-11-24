@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import fileProgress from 'eslint-plugin-file-progress';
 import importPlugin from 'eslint-plugin-import';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import globals from 'globals';
@@ -22,8 +23,10 @@ export default tseslint.config(
 		plugins: {
 			'react-compiler': reactCompiler,
 			import: importPlugin,
+			'file-progress': fileProgress,
 		},
 		rules: {
+			'file-progress/activate': 'warn',
 			'react-compiler/react-compiler': 'error',
 			'@typescript-eslint/no-unused-vars': [
 				'warn',
@@ -77,6 +80,13 @@ export default tseslint.config(
 					warnOnUnassignedImports: true,
 				},
 			],
+		},
+		settings: {
+			progress: {
+				hide: false,
+				hideFileName: false,
+				successMessage: 'Linting complete.',
+			},
 		},
 	},
 	{
