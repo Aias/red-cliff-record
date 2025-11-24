@@ -13,5 +13,5 @@ import { z } from 'zod';
  * const nameSchema = emptyStringToNull(z.string())
  * // '' -> null, 'value' -> 'value'
  */
-export const emptyStringToNull = <T extends z.ZodTypeAny>(schema: T) =>
+export const emptyStringToNull = <T extends z.ZodType>(schema: T) =>
 	z.preprocess((val) => (val === '' ? null : val), schema.nullable());

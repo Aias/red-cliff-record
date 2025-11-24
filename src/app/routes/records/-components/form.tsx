@@ -47,6 +47,19 @@ interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
 	onDelete: () => void;
 }
 
+function getErrorMessage(error: unknown): string {
+	if (typeof error === 'string') return error;
+	if (
+		error &&
+		typeof error === 'object' &&
+		'message' in error &&
+		typeof error.message === 'string'
+	) {
+		return error.message;
+	}
+	return String(error);
+}
+
 const MetadataSection = ({ record }: { record: RecordGet }) => {
 	return (
 		<div className="flex flex-col gap-3">
@@ -146,7 +159,11 @@ export function RecordForm({
 			onSubmit: ({ value }) => {
 				const parsed = RecordInsertSchema.safeParse(value);
 				if (!parsed.success) {
-					return parsed.error.flatten().fieldErrors;
+					const flat = z.flattenError(parsed.error);
+					return {
+						formError: flat.formErrors.join(', '),
+						fieldErrors: flat.fieldErrors,
+					};
 				}
 				return undefined;
 			},
@@ -276,7 +293,9 @@ export function RecordForm({
 									className="text-c-display"
 								/>
 								{field.state.meta.errors && (
-									<p className="text-sm text-c-destructive">{field.state.meta.errors.join(', ')}</p>
+									<p className="text-sm text-c-destructive">
+										{field.state.meta.errors.map(getErrorMessage).join(', ')}
+									</p>
 								)}
 							</div>
 						)}
@@ -379,11 +398,7 @@ export function RecordForm({
 									<form.Field
 										name="url"
 										validators={{
-											onChange: z
-												.string()
-												.url('Must be a valid URL')
-												.or(z.string().length(0))
-												.nullable(),
+											onChange: z.url().or(z.string().length(0)).nullable(),
 										}}
 									>
 										{(field) => (
@@ -407,7 +422,7 @@ export function RecordForm({
 												</div>
 												{field.state.meta.errors && (
 													<p className="text-sm text-c-destructive">
-														{field.state.meta.errors.join(', ')}
+														{field.state.meta.errors.map(getErrorMessage).join(', ')}
 													</p>
 												)}
 											</>
@@ -426,11 +441,7 @@ export function RecordForm({
 									<form.Field
 										name="avatarUrl"
 										validators={{
-											onChange: z
-												.string()
-												.url('Must be a valid URL')
-												.or(z.string().length(0))
-												.nullable(),
+											onChange: z.url().or(z.string().length(0)).nullable(),
 										}}
 									>
 										{(field) => (
@@ -454,7 +465,7 @@ export function RecordForm({
 												</div>
 												{field.state.meta.errors && (
 													<p className="text-sm text-c-destructive">
-														{field.state.meta.errors.join(', ')}
+														{field.state.meta.errors.map(getErrorMessage).join(', ')}
 													</p>
 												)}
 											</>

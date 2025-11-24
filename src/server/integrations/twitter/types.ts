@@ -248,7 +248,7 @@ export const TweetSchema = z
 	.object({
 		__typename: z.literal('Tweet'),
 	})
-	.merge(TweetDataSchema);
+	.extend(TweetDataSchema.shape);
 
 export const TweetWithVisibilityResultsSchema = z.object({
 	__typename: z.literal('TweetWithVisibilityResults'),

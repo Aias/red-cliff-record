@@ -17,7 +17,7 @@ const mediaFileSchema = z
 type MediaUploadProps = {
 	onUpload: (file: File) => void | Promise<void>;
 	className?: string;
-	validationSchema?: z.ZodSchema<File>;
+	validationSchema?: z.ZodType<File>;
 } & React.ComponentPropsWithRef<'div'>;
 
 export const MediaUpload = ({

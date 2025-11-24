@@ -43,7 +43,7 @@ export const ReadwiseArticleSchema = z
 		first_opened_at: z.coerce.date().nullable(),
 		last_opened_at: z.coerce.date().nullable(),
 	})
-	.passthrough();
+	.loose();
 
 export const ReadwiseArticlesResponseSchema = z.object({
 	results: z.array(ReadwiseArticleSchema),
