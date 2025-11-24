@@ -19,7 +19,10 @@ Before you begin, ensure you have the following installed:
 
 - **Node.js v22+** (check with `node --version`)
 - **Bun** runtime & package manager (`curl -fsSL https://bun.sh/install | bash`)
-- **PostgreSQL** (v14+ recommended)
+- **PostgreSQL** (v14+ recommended) with the following extensions:
+  - `vector` - for vector embeddings (install via `CREATE EXTENSION vector;`)
+  - `pg_trgm` - for trigram text search (install via `CREATE EXTENSION pg_trgm;`)
+  - Note: Extensions are automatically created by migrations if your user has permission
 - **Git** for version control
 - **Cloudflare Account** - for R2 storage
 
@@ -83,18 +86,37 @@ DATABASE_URL="postgresql://username:password@localhost:5432/redcliffrecord"
 
 #### Run Migrations
 
-**⚠️ Migration Warning**: The current migration history is extensive and may not run cleanly from scratch. If you encounter issues:
-
-1. The seed data (predicates and core records) has been manually added to migrations `0034_slow_the_spike.sql` and `0036_petite_odin.sql`
-2. You may need to create a fresh database schema instead of running all migrations sequentially
-3. Consider using the database studio to manually inspect and fix any migration issues:
-
-```bash
-bun run db:studio
-```
+The migration system uses Drizzle ORM and includes all necessary PostgreSQL extensions (`vector`, `pg_trgm`) in the initial migration. Run migrations with:
 
 ```bash
 bun run db:migrate
+```
+
+**Note**: The initial migration (`0000_rapid_triathlon.sql`) creates the `extensions` schema and installs required extensions. Ensure your PostgreSQL user has permission to create extensions, or install them manually before running migrations:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+```
+
+#### Seed Initial Data
+
+After running migrations, seed the database with initial predicate vocabulary and core records:
+
+```bash
+./src/server/db/db-manager.sh seed local
+```
+
+This loads:
+- **Predicates**: Canonical relationship types (e.g., `created_by`, `contains`, `references`, `related_to`)
+- **Records**: Core entities (e.g., user record, project record)
+
+The seed script is idempotent and safe to run multiple times—it uses upsert logic to avoid duplicates.
+
+To inspect your database:
+
+```bash
+bun run db:studio
 ```
 
 ### 4. Configure External Services
@@ -255,7 +277,10 @@ bun run db:restore-remote # Restore remote backup
 # 5. Apply migrations
 bun run db:migrate
 
-# 6. Restore data only
+# 6. Seed initial data (predicates and core records)
+./src/server/db/db-manager.sh seed local
+
+# 7. Restore data only
 ./src/server/db/db-manager.sh -D restore local
 ```
 
