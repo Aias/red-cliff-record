@@ -1,6 +1,20 @@
-import type { PredicateInsert, RecordInsert } from '@aias/hozo';
+#!/usr/bin/env bun
+/**
+ * Seed script for initial database data
+ *
+ * Loads canonical predicate vocabulary and core records into the database.
+ * Safe to run multiple times - uses upsert logic to avoid duplicates.
+ */
 
-export const recordSeed = [
+import type { PredicateInsert, RecordInsert } from '@aias/hozo';
+import { predicates, records } from '@aias/hozo';
+import { eq } from 'drizzle-orm';
+import { db } from '@/server/db/connections';
+import { createIntegrationLogger } from '../integrations/common/logging';
+
+const logger = createIntegrationLogger('db', 'seed');
+
+const recordSeed = [
 	{
 		slug: 'nick-trombley',
 		title: 'Nick Trombley',
@@ -13,8 +27,6 @@ export const recordSeed = [
 	},
 ] as const satisfies ReadonlyArray<RecordInsert>;
 
-export type RecordSlug = (typeof recordSeed)[number]['slug'];
-
 /**
  * Canonical predicate vocabulary
  * ──────────────────────────────
@@ -24,7 +36,7 @@ export type RecordSlug = (typeof recordSeed)[number]['slug'];
  * • Active-present verb style: has_creator, contained_by, format_of …
  */
 
-export const predicateSeed = [
+const predicateSeed = [
 	/* ────────────  Creation  ──────────── */
 	{
 		slug: 'created_by', // work → person
@@ -202,4 +214,86 @@ export const predicateSeed = [
 	},
 ] as const satisfies ReadonlyArray<PredicateInsert>;
 
+// Export types for use in other modules
+export type RecordSlug = (typeof recordSeed)[number]['slug'];
 export type PredicateSlug = (typeof predicateSeed)[number]['slug'];
+
+async function seedDatabase(): Promise<void> {
+	// Seed predicates in two passes to handle foreign key constraints
+	// Pass 1: Insert all predicates without inverseSlug (set to null)
+	logger.info(
+		`Inserting ${predicateSeed.length} predicates (pass 1: without inverse references)...`
+	);
+	for (const predicate of predicateSeed) {
+		await db
+			.insert(predicates)
+			.values({
+				...predicate,
+				inverseSlug: null, // Defer inverseSlug to pass 2
+			})
+			.onConflictDoUpdate({
+				target: predicates.slug,
+				set: {
+					name: predicate.name,
+					type: predicate.type,
+					role: 'role' in predicate ? (predicate.role ?? null) : null,
+					canonical: predicate.canonical,
+					recordUpdatedAt: new Date(),
+				},
+			});
+	}
+
+	// Pass 2: Update all predicates to set their inverseSlug references
+	logger.info(
+		`Updating ${predicateSeed.length} predicates (pass 2: setting inverse references)...`
+	);
+	for (const predicate of predicateSeed) {
+		if (predicate.inverseSlug) {
+			await db
+				.update(predicates)
+				.set({
+					inverseSlug: predicate.inverseSlug,
+					recordUpdatedAt: new Date(),
+				})
+				.where(eq(predicates.slug, predicate.slug));
+		}
+	}
+
+	logger.info(`Inserted/updated ${predicateSeed.length} predicates`);
+
+	// Seed records
+	logger.info(`Inserting ${recordSeed.length} records...`);
+	for (const record of recordSeed) {
+		await db
+			.insert(records)
+			.values(record)
+			.onConflictDoUpdate({
+				target: records.slug,
+				set: {
+					title: record.title ?? null,
+					type: record.type,
+					recordUpdatedAt: new Date(),
+				},
+			});
+	}
+
+	logger.info(`Inserted/updated ${recordSeed.length} records`);
+}
+
+async function main(): Promise<void> {
+	try {
+		logger.start('=== STARTING DATABASE SEED ===');
+		await seedDatabase();
+		logger.complete('=== DATABASE SEED COMPLETED ===');
+		logger.info('-'.repeat(50));
+		process.exit(0);
+	} catch (error) {
+		logger.error('Error seeding database', error);
+		logger.error('=== DATABASE SEED FAILED ===');
+		logger.info('-'.repeat(50));
+		process.exit(1);
+	}
+}
+
+// Run the seed
+main();

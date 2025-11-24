@@ -30,6 +30,7 @@ print_usage() {
     echo "  backup SOURCE    Create a backup from specified source (local or remote)"
     echo "  restore TARGET   Restore to specified target (local or remote)"
     echo "  reset TARGET     Reset database (drop & recreate with extensions, local only)"
+    echo "  seed TARGET      Seed database with initial data (predicates and core records)"
     echo
     echo "Options:"
     echo "  -d, --database NAME    Database name (default: redcliffrecord)"
@@ -48,6 +49,7 @@ print_usage() {
     echo "  $0 -D backup local        # Backup data only from local database"
     echo "  $0 -D restore local       # Restore data only to local database"
     echo "  $0 reset local            # Reset local database (fresh start)"
+    echo "  $0 seed local             # Seed local database with initial data"
 }
 
 # Parse options
@@ -67,7 +69,7 @@ done
 COMMAND=$1
 LOCATION=$2
 
-if [[ ! "$COMMAND" =~ ^(backup|restore|reset)$ ]] || [[ ! "$LOCATION" =~ ^(local|remote)$ ]]; then
+if [[ ! "$COMMAND" =~ ^(backup|restore|reset|seed)$ ]] || [[ ! "$LOCATION" =~ ^(local|remote)$ ]]; then
     print_usage
     exit 1
 fi
@@ -227,6 +229,25 @@ do_reset() {
     echo "Database reset successfully"
 }
 
+# Function to perform seed
+do_seed() {
+    local target=$1
+    if [ "$target" != "local" ]; then
+        echo "Error: Seed is only supported for local database"
+        exit 1
+    fi
+    
+    echo "Seeding database with initial data..."
+    bun src/server/db/seed.ts
+    
+    if [ $? -eq 0 ]; then
+        echo "Database seeded successfully"
+    else
+        echo "Error: Seed failed"
+        exit 1
+    fi
+}
+
 # Execute command
 case $COMMAND in
     backup)
@@ -237,5 +258,8 @@ case $COMMAND in
         ;;
     reset)
         do_reset $LOCATION
+        ;;
+    seed)
+        do_seed $LOCATION
         ;;
 esac

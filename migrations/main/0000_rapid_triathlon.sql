@@ -1,3 +1,16 @@
+-------------------------------
+-- 1. SCHEMA and EXTENSIONS
+-------------------------------
+CREATE SCHEMA IF NOT EXISTS "extensions";
+
+CREATE EXTENSION IF NOT EXISTS "vector" SCHEMA "extensions";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm" SCHEMA "extensions";
+
+ALTER DATABASE "redcliffrecord" SET search_path = public, extensions;
+
+-------------------------------
+-- 2. TYPES
+-------------------------------
 CREATE TYPE "public"."browser" AS ENUM('arc', 'dia', 'chrome', 'firefox', 'safari', 'edge');--> statement-breakpoint
 CREATE TYPE "public"."feed_source" AS ENUM('feedbin', 'feedly', 'reeder');--> statement-breakpoint
 CREATE TYPE "public"."github_commit_change_status" AS ENUM('added', 'modified', 'removed', 'renamed', 'copied', 'changed', 'unchanged');--> statement-breakpoint

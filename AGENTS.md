@@ -20,6 +20,14 @@ This document is a living document. We should be continually updating it to refl
 
 **If the user asks a question, never respond by writing code.** A question should be answered by researching the answer and providing analysis with examples and references where appropriate. This applies to any sentence that ends with a question mark, or when the sentence is clearly framed as a question.
 
+Use all tools at your disposal to diagnose and resolve issues. This includes but is not limited to:
+
+- Reading official documentation
+- Reading the source code, either on github or locally inside `node_modules`
+- Searching the web for information
+- Running local tests and commands that are non-destructive and do not modify data or the database
+- Adding temporary logging and debugging statements to the codebase
+
 ## Essential Commands
 
 **Development:**
@@ -38,13 +46,15 @@ Never attempt to start the development server or build the application. The user
 - `bun run db:restore-local` - Restore to local database
 - `bun run db:restore-remote` - Restore to remote database
 - `./src/server/db/db-manager.sh -c restore local` - Clean restore (drop & recreate database with extensions)
+- `./src/server/db/db-manager.sh seed local` - Seed database with initial data (predicates and core records)
 - **Database Reset / Migration Squash**: To reset migration history while preserving data:
   1. `./src/server/db/db-manager.sh -D backup local` (Backup data only)
   2. `./src/server/db/db-manager.sh reset local` (Drop & recreate DB with extensions)
   3. Delete old migrations: `rm -rf migrations/main/*`
   4. `bun run db:generate` (Create fresh migration)
   5. `bun run db:migrate` (Apply fresh schema)
-  6. `./src/server/db/db-manager.sh -D restore local` (Restore data into new schema)
+  6. `./src/server/db/db-manager.sh seed local` (Seed initial data)
+  7. `./src/server/db/db-manager.sh -D restore local` (Restore data into new schema)
 
 **Data Sync:**
 

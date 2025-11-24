@@ -1,6 +1,6 @@
 import * as React from 'react';
+import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Slot } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 //
@@ -27,26 +27,20 @@ const dataListRootVariants = cva('break-words font-normal not-italic text-left t
 });
 
 interface DataListRootProps
-	extends React.HTMLAttributes<HTMLDListElement>,
+	extends React.ComponentPropsWithRef<'dl'>,
 		VariantProps<typeof dataListRootVariants> {
 	asChild?: boolean;
 }
 
-const DataListRoot = React.forwardRef<HTMLDListElement, DataListRootProps>(
-	({ className, orientation, asChild = false, ...props }, ref) => {
-		const Comp = asChild ? Slot.Root : 'dl';
+const DataListRoot = ({ className, orientation, asChild = false, ...props }: DataListRootProps) => {
+	const Comp = asChild ? Slot : 'dl';
 
-		return (
-			<DataListOrientationContext.Provider value={orientation || 'horizontal'}>
-				<Comp
-					ref={ref}
-					className={cn(dataListRootVariants({ orientation }), className)}
-					{...props}
-				/>
-			</DataListOrientationContext.Provider>
-		);
-	}
-);
+	return (
+		<DataListOrientationContext.Provider value={orientation || 'horizontal'}>
+			<Comp className={cn(dataListRootVariants({ orientation }), className)} {...props} />
+		</DataListOrientationContext.Provider>
+	);
+};
 DataListRoot.displayName = 'DataList.Root';
 
 //
@@ -67,51 +61,43 @@ const dataListItemVariants = cva('', {
 	},
 });
 
-interface DataListItemProps extends React.HTMLAttributes<HTMLDivElement> {
+interface DataListItemProps extends React.ComponentPropsWithRef<'div'> {
 	className?: string;
 }
 
-const DataListItem = React.forwardRef<HTMLDivElement, DataListItemProps>(
-	({ className, ...props }, ref) => {
-		const orientation = React.useContext(DataListOrientationContext);
+const DataListItem = ({ className, ...props }: DataListItemProps) => {
+	const orientation = React.useContext(DataListOrientationContext);
 
-		return (
-			<div ref={ref} className={cn(dataListItemVariants({ orientation }), className)} {...props} />
-		);
-	}
-);
+	return <div className={cn(dataListItemVariants({ orientation }), className)} {...props} />;
+};
 DataListItem.displayName = 'DataList.Item';
 
 //
 // 4) LABEL STYLES & COMPONENT
 //
 
-interface DataListLabelProps extends React.HTMLAttributes<HTMLElement> {
+interface DataListLabelProps extends React.ComponentPropsWithRef<'dt'> {
 	asChild?: boolean;
 }
 
-const DataListLabel = React.forwardRef<HTMLElement, DataListLabelProps>(
-	({ asChild = false, ...props }, ref) => {
-		const Comp = asChild ? Slot.Root : 'dt';
-		return <Comp ref={ref} {...props} />;
-	}
-);
+const DataListLabel = ({ asChild = false, ...props }: DataListLabelProps) => {
+	const Comp = asChild ? Slot : 'dt';
+	return <Comp {...props} />;
+};
 DataListLabel.displayName = 'DataList.Label';
 
 //
 // 5) VALUE STYLES & COMPONENT
 //
 
-interface DataListValueProps extends React.HTMLAttributes<HTMLElement> {
+interface DataListValueProps extends React.ComponentPropsWithRef<'dd'> {
 	asChild?: boolean;
 }
 
-const DataListValue = React.forwardRef<HTMLElement, DataListValueProps>(
-	({ asChild = false, ...props }, ref) => {
-		const Comp = asChild ? Slot.Root : 'dd';
-		return <Comp ref={ref} {...props} />;
-	}
-);
+const DataListValue = ({ asChild = false, ...props }: DataListValueProps) => {
+	const Comp = asChild ? Slot : 'dd';
+	return <Comp {...props} />;
+};
 DataListValue.displayName = 'DataList.Value';
 
 //
