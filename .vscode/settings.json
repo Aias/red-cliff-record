@@ -34,5 +34,7 @@
 		"args": ["-l", "-i"]
 	},
 	"terminal.integrated.shellArgs.osx": ["-l", "-i"],
-	"debug.javascript.terminalOptions": {}
+	"debug.javascript.terminalOptions": {},
+	"npm.packageManager": "bun",
+	"npm.scriptRunner": "bun"
 }

@@ -35,7 +35,7 @@ export const seo = (props: SeoProps) => {
 	const result = seoSchema.safeParse(props);
 
 	if (!result.success) {
-		console.error('SEO props validation failed:', result.error.format());
+		console.error('SEO props validation failed:', z.treeifyError(result.error));
 		// Fall back to using the props as-is
 		return createTags(props);
 	}

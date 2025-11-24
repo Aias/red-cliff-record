@@ -1,7 +1,7 @@
 import { initTRPC } from '@trpc/server';
 import DataLoader from 'dataloader';
 import superjson from 'superjson';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 import { db } from '@/server/db/connections/postgres';
 import type { RecordGet } from '@/shared/types';
 
@@ -91,7 +91,7 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
 			...shape,
 			data: {
 				...shape.data,
-				zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+				zodError: error.cause instanceof ZodError ? z.treeifyError(error.cause) : null,
 			},
 		};
 	},
