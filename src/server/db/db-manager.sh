@@ -111,18 +111,26 @@ do_clean_setup() {
     # Parse postgres URL to get connection details
     local postgres_url=$(echo "$DATABASE_URL_LOCAL" | sed 's/\/redcliffrecord/\/postgres/')
     
-    # Terminate all connections to the database
-    psql "$postgres_url" -c "
-        SELECT pg_terminate_backend(pg_stat_activity.pid)
-        FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '$DATABASE_NAME'
-        AND pid <> pg_backend_pid();"
+    # Check if database exists
+    local db_exists=$(psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'")
     
-    # Drop the database
-    echo "Dropping database $DATABASE_NAME..."
-    psql "$postgres_url" -c "DROP DATABASE IF EXISTS $DATABASE_NAME;"
+    if [ "$db_exists" = "1" ]; then
+        # Terminate all connections to the database if it exists
+        echo "Terminating connections to existing database..."
+        psql "$postgres_url" -c "
+            SELECT pg_terminate_backend(pg_stat_activity.pid)
+            FROM pg_stat_activity
+            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
+            AND pid <> pg_backend_pid();"
+        
+        # Drop the database
+        echo "Dropping database $DATABASE_NAME..."
+        psql "$postgres_url" -c "DROP DATABASE $DATABASE_NAME;"
+    else
+        echo "Database $DATABASE_NAME does not exist, will create it..."
+    fi
     
-    # Recreate the database
+    # Create the database
     echo "Creating database $DATABASE_NAME..."
     psql "$postgres_url" -c "CREATE DATABASE $DATABASE_NAME;"
     

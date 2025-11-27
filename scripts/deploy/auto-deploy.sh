@@ -11,14 +11,46 @@ LOG_FILE="$REPO_DIR/logs/auto-deploy.log"
 # Ensure log directory exists
 mkdir -p "$(dirname "$LOG_FILE")"
 
+# Initialize fnm to ensure correct Node version
+export PATH="/Users/nicktrombley/.local/share/fnm:$PATH"
+eval "$(fnm env --use-on-cd)"
+
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Check if PM2 is available
+check_pm2() {
+    if ! command -v pm2 &> /dev/null; then
+        log "ERROR: PM2 not found! Node version may have changed."
+        log "Current Node version: $(node -v)"
+        log "Current Node path: $(which node)"
+        log "Please run: npm install -g pm2 && pm2 resurrect"
+        return 1
+    fi
+    return 0
 }
 
 log "Starting auto-deployment monitor for $REPO_DIR"
 
 # Initial setup
 cd "$REPO_DIR" || exit 1
+
+# Use the Node version from .nvmrc
+if [ -f "$REPO_DIR/.nvmrc" ]; then
+    log "Using Node version from .nvmrc: $(cat .nvmrc)"
+    fnm use
+fi
+
+log "Node version: $(node -v)"
+log "PM2 location: $(which pm2 2>&1 || echo 'NOT FOUND')"
+
+# Verify PM2 is available at startup
+if ! check_pm2; then
+    log "FATAL: PM2 check failed at startup. Exiting."
+    exit 1
+fi
+
 LAST_COMMIT=$(git rev-parse HEAD)
 
 while true; do
@@ -50,11 +82,15 @@ while true; do
                     
                     # Restart the server using PM2
                     log "Restarting PM2 process..."
-                    if pm2 restart red-cliff-record; then
-                        log "PM2 restart successful"
+                    if check_pm2; then
+                        if pm2 restart red-cliff-record; then
+                            log "PM2 restart successful"
+                        else
+                            log "WARNING: PM2 restart failed, trying reload..."
+                            pm2 reload red-cliff-record
+                        fi
                     else
-                        log "WARNING: PM2 restart failed, trying reload..."
-                        pm2 reload red-cliff-record
+                        log "ERROR: Cannot restart - PM2 not available"
                     fi
                     
                     log "Deployment complete!"
