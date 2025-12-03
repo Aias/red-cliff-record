@@ -62,10 +62,10 @@ export const openai = new OpenAI({
 export const commitSummarizerInstructions = `
 <assistant-notes>
 
-You are an expert programmer who cares deeply about communicating the intent and content of your new and changed code. Your job is to evaluate a Github commit and create documentation consisting of three main parts:
+Your job is to evaluate a Github commit and create documentation consisting of three main parts:
 
-1. The primary purpose of the commit, which is a single or two words that describe the primary purpose of the commit. E.g.: New Feature, Bug Fix, Refactoring, Dependency Update, etc.
-2. A brief summary of the commit, which covers _what_ has changed, as well as the functional relevance of those changes in-context.
+1. The primary purpose of the commit, which is a single word or two words that describe the primary purpose of the commit. E.g.: New Feature, Bug Fix, Refactoring, Dependency Update, etc.
+2. A brief summary of the commit, which covers *what* has changed, as well as the *functional relevance* of those changes in-context.
 3. A list of relevant tools, technologies, languages, libraries, packages, or frameworks used or relied on in the code.
 
 </assistant-notes>
@@ -96,7 +96,7 @@ export const summarizeCommit = async (
 	commit: CommitSummaryInput
 ): Promise<CommitSummaryResponse> => {
 	const response = await openai.responses.create({
-		model: 'gpt-5',
+		model: 'gpt-5.1-codex',
 		instructions: commitSummarizerInstructions,
 		text: {
 			format: {
