@@ -94,6 +94,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 										to: '/records/$recordId',
 										params: { recordId: targetId.toString() },
 										search: true,
+										state: { focusForm: true },
 									});
 									mergeRecordsMutation.mutate({
 										sourceId,
@@ -138,6 +139,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 														to: '/records/$recordId',
 														params: { recordId: targetId.toString() },
 														search: true,
+														state: { focusForm: true },
 													});
 													mergeRecordsMutation.mutate({
 														sourceId,
@@ -217,6 +219,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 														to: '/records/$recordId',
 														params: { recordId: link.sourceId.toString() },
 														search: true,
+														state: { focusForm: true },
 													});
 													mergeRecordsMutation.mutate({
 														sourceId: link.targetId,
@@ -302,17 +305,18 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 													<MergeIcon /> Merge
 												</>
 											),
-											onSelect: () => {
-												navigate({
-													to: '/records/$recordId',
-													params: { recordId: targetId.toString() },
-													search: true,
-												});
-												mergeRecordsMutation.mutate({
-													sourceId,
-													targetId,
-												});
-											},
+										onSelect: () => {
+											navigate({
+												to: '/records/$recordId',
+												params: { recordId: targetId.toString() },
+												search: true,
+												state: { focusForm: true },
+											});
+											mergeRecordsMutation.mutate({
+												sourceId,
+												targetId,
+											});
+										},
 										},
 									];
 								}}

@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { getQueryKey } from '@trpc/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import { mergeRecords } from '@/shared/lib/merge-records';
@@ -25,8 +26,11 @@ export function useMarkAsCurated() {
 	const utils = trpc.useUtils();
 
 	return trpc.records.markAsCurated.useMutation({
-		onMutate: async ({ ids }) => {
-			await Promise.all(ids.map((id) => utils.records.get.cancel({ id })));
+		onMutate: ({ ids }) => {
+			// Fire cancellations but don't await - keeps onMutate synchronous
+			// to avoid race conditions with navigation
+			ids.forEach((id) => utils.records.get.cancel({ id }));
+
 			const previous = new Map<DbId, RecordGet | undefined>();
 			ids.forEach((id) => {
 				const data = utils.records.get.getData({ id });
@@ -128,7 +132,8 @@ export function useDeleteRecords() {
 			});
 
 			// Optimistically remove deleted records from all record lists
-			const listEntries = qc.getQueriesData<IdParamList>({ queryKey: ['records', 'list'] });
+			const listQueryKey = getQueryKey(trpc.records.list, undefined, 'query');
+			const listEntries = qc.getQueriesData<IdParamList>({ queryKey: listQueryKey });
 			const previousLists = listEntries.map(([key, data]) => [key, data] as const);
 			const idSet = new Set(ids);
 			listEntries.forEach(([key, data]) => {
@@ -184,12 +189,10 @@ export function useMergeRecords() {
 	const utils = trpc.useUtils();
 	const embedMutation = useEmbedRecord();
 	return trpc.records.merge.useMutation({
-		onMutate: async ({ sourceId, targetId }) => {
-			// Cancel any outgoing refetches for these records
-			await Promise.all([
-				utils.records.get.cancel({ id: sourceId }),
-				utils.records.get.cancel({ id: targetId }),
-			]);
+		onMutate: ({ sourceId, targetId }) => {
+			// Fire cancellations but don't await - keeps onMutate synchronous
+			utils.records.get.cancel({ id: sourceId });
+			utils.records.get.cancel({ id: targetId });
 
 			// Snapshot the previous values
 			const previousSource = utils.records.get.getData({ id: sourceId });
@@ -214,7 +217,19 @@ export function useMergeRecords() {
 				qc.setQueryData(sourceKey, () => undefined);
 			}
 
-			return { previousSource, previousTarget };
+			// Optimistically remove source record from all record lists
+			const listQueryKey = getQueryKey(trpc.records.list, undefined, 'query');
+			const listEntries = qc.getQueriesData<IdParamList>({ queryKey: listQueryKey });
+			const previousLists = listEntries.map(([key, data]) => [key, data] as const);
+			listEntries.forEach(([key, data]) => {
+				if (!data) return;
+				qc.setQueryData(key, {
+					...data,
+					ids: data.ids.filter(({ id }) => id !== sourceId),
+				});
+			});
+
+			return { previousSource, previousTarget, previousLists };
 		},
 		onSuccess: ({ updatedRecord, deletedRecordId, touchedIds }) => {
 			utils.records.get.invalidate({ id: updatedRecord.id });
@@ -260,6 +275,10 @@ export function useMergeRecords() {
 			if (ctx?.previousTarget) {
 				utils.records.get.setData({ id: vars.targetId }, ctx.previousTarget);
 			}
+			// Restore record lists
+			ctx?.previousLists.forEach(([key, data]) => {
+				qc.setQueryData(key, data);
+			});
 			toast.error(err instanceof Error ? err.message : 'Failed to merge records');
 		},
 	});

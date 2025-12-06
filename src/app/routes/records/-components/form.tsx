@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@aias/hozo';
 import { useForm } from '@tanstack/react-form';
-import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import { Link, useNavigate, useParams, useRouterState } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
 import { z } from 'zod';
 import { recordTypeIcons } from './type-icons';
@@ -113,12 +113,30 @@ export function RecordForm({
 	const navigate = useNavigate();
 	const params = useParams({ from: '/records/$recordId' });
 	const urlRecordId = useMemo(() => Number(params.recordId), [params.recordId]);
+	const routerState = useRouterState({ select: (s) => s.location.state });
 	const { data: record, isLoading, isError } = useRecord(recordId);
 
+	const titleInputRef = useRef<HTMLInputElement>(null);
 	const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
 	const mediaUploadRef = useRef<HTMLDivElement>(null);
 	const formRef = useRef<HTMLFormElement>(null);
 	const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+	// Auto-focus title input when navigating with focusForm state
+	const isActiveForm = urlRecordId === recordId;
+	const shouldFocus =
+		isActiveForm && (routerState as { focusForm?: boolean } | undefined)?.focusForm;
+
+	useEffect(() => {
+		if (shouldFocus && !isLoading && titleInputRef.current) {
+			// Use double rAF to ensure DOM is ready after loading state clears
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					titleInputRef.current?.focus();
+				});
+			});
+		}
+	}, [shouldFocus, isLoading]);
 
 	const formData = record ?? defaultData;
 	const isFormLoading = isLoading || !record;
@@ -219,12 +237,14 @@ export function RecordForm({
 	const curateAndNextHandler = useCallback(
 		async (e: React.KeyboardEvent<HTMLFormElement>) => {
 			e.preventDefault();
+			// Set curated flag before saving to avoid race condition with markAsCurated
+			form.setFieldValue('isCurated', true);
 			// Save immediately before navigation and wait for completion
 			await immediateSave();
 			// Navigate after save completes
 			onFinalize();
 		},
-		[immediateSave, onFinalize]
+		[form, immediateSave, onFinalize]
 	);
 
 	if (isError) return <div>Error loading record</div>;
@@ -282,6 +302,7 @@ export function RecordForm({
 						{(field) => (
 							<div className="grow">
 								<GhostInput
+									ref={titleInputRef}
 									value={field.state.value ?? ''}
 									placeholder="Untitled Record"
 									onChange={(e) => {
