@@ -25,5 +25,5 @@ export const createArcConnection = () => {
 		intMode: 'bigint',
 	});
 
-	return drizzle(client, { schema: arcSchema });
+	return drizzle({ client, schema: arcSchema });
 };
