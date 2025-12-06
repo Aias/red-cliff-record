@@ -305,18 +305,18 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 													<MergeIcon /> Merge
 												</>
 											),
-										onSelect: () => {
-											navigate({
-												to: '/records/$recordId',
-												params: { recordId: targetId.toString() },
-												search: true,
-												state: { focusForm: true },
-											});
-											mergeRecordsMutation.mutate({
-												sourceId,
-												targetId,
-											});
-										},
+											onSelect: () => {
+												navigate({
+													to: '/records/$recordId',
+													params: { recordId: targetId.toString() },
+													search: true,
+													state: { focusForm: true },
+												});
+												mergeRecordsMutation.mutate({
+													sourceId,
+													targetId,
+												});
+											},
 										},
 									];
 								}}

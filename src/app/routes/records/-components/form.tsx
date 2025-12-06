@@ -124,8 +124,7 @@ export function RecordForm({
 
 	// Auto-focus title input when navigating with focusForm state
 	const isActiveForm = urlRecordId === recordId;
-	const shouldFocus =
-		isActiveForm && (routerState as { focusForm?: boolean } | undefined)?.focusForm;
+	const shouldFocus = isActiveForm && routerState?.focusForm;
 
 	useEffect(() => {
 		if (shouldFocus && !isLoading && titleInputRef.current) {

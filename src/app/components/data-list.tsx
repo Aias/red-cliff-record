@@ -27,8 +27,7 @@ const dataListRootVariants = cva('break-words font-normal not-italic text-left t
 });
 
 interface DataListRootProps
-	extends React.ComponentPropsWithRef<'dl'>,
-		VariantProps<typeof dataListRootVariants> {
+	extends React.ComponentPropsWithRef<'dl'>, VariantProps<typeof dataListRootVariants> {
 	asChild?: boolean;
 }
 

@@ -12,8 +12,7 @@ import { Textarea } from './textarea';
 import { cn } from '@/lib/utils';
 
 interface DynamicTextareaProps
-	extends Omit<ComponentProps<'textarea'>, 'rows'>,
-		React.ComponentPropsWithRef<'textarea'> {
+	extends Omit<ComponentProps<'textarea'>, 'rows'>, React.ComponentPropsWithRef<'textarea'> {
 	minRows?: number;
 }
 
