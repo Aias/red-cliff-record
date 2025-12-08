@@ -65,7 +65,7 @@ export async function syncCodexHistory(
 ): Promise<void> {
 	const { sessionLimit = DEFAULT_SESSION_LIMIT, sessionsPath = CODEX_SESSIONS_PATH } = options;
 
-	const debugContext = createDebugContext('agents-codex', debug, {
+	const initialDebugData: CodexDebugData = {
 		sessions: [],
 		errors: [],
 		stats: {
@@ -79,7 +79,9 @@ export async function syncCodexHistory(
 			sessionsPath,
 			sessionLimit,
 		},
-	} as CodexDebugData);
+	};
+
+	const debugContext = createDebugContext<CodexDebugData>('agents-codex', debug, initialDebugData);
 
 	try {
 		logger.start('Starting Codex CLI history sync');

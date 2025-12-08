@@ -9,6 +9,7 @@ import type {
 	ParseError,
 	SessionEntry,
 	SessionFileInfo,
+	ToolUseContentBlock,
 } from './types';
 import { SessionEntrySchema } from './types';
 
@@ -236,9 +237,9 @@ export async function parseSessionFile(
 		}
 
 		// Only collect message entries (skip system, queue-operation, file-history-snapshot)
-		if (entry.type !== 'user' && entry.type !== 'assistant') continue;
+		if (!isMessageEntry(entry)) continue;
 
-		const messageEntry = entry as MessageEntry;
+		const messageEntry: MessageEntry = entry;
 
 		// Extract metadata
 		if (!slug && messageEntry.slug) slug = messageEntry.slug;
@@ -300,12 +301,12 @@ export function extractThinkingBlocks(entry: MessageEntry): string[] {
  */
 export function extractToolUseBlocks(
 	entry: MessageEntry
-): Array<{ name: string; id: string; input: unknown }> {
+): Array<{ name: string; id: string; input: ToolUseContentBlock['input'] }> {
 	const content = entry.message.content;
 	if (typeof content === 'string') return [];
 
 	return content
-		.filter((block): block is ContentBlock & { type: 'tool_use' } => block.type === 'tool_use')
+		.filter((block): block is ToolUseContentBlock => block.type === 'tool_use')
 		.map((block) => ({
 			name: block.name,
 			id: block.id,

@@ -110,6 +110,7 @@
 		"db:restore-remote": "bash src/server/db/db-manager.sh restore remote",
 		"sync:daily": "bun sync:browsing && bun sync:feedbin && bun sync:raindrop && bun sync:readwise && bun sync:github && bun sync:airtable && bun sync:embeddings",
 		"sync:adobe": "bun src/server/cli/sync-adobe.ts",
+		"sync:agents": "bun src/server/cli/sync-agents.ts",
 		"sync:airtable": "bun src/server/cli/sync-airtable.ts",
 		"sync:browsing": "bun src/server/cli/sync-browsing.ts",
 		"sync:github": "bun src/server/cli/sync-github.ts",

@@ -60,7 +60,7 @@ export async function syncClaudeHistory(
 ): Promise<void> {
 	const { sessionLimit = DEFAULT_SESSION_LIMIT, projectsPath = CLAUDE_PROJECTS_PATH } = options;
 
-	const debugContext = createDebugContext('agents-claude', debug, {
+	const initialDebugData: ClaudeDebugData = {
 		sessions: [],
 		errors: [],
 		stats: {
@@ -73,7 +73,13 @@ export async function syncClaudeHistory(
 			projectsPath,
 			sessionLimit,
 		},
-	} as ClaudeDebugData);
+	};
+
+	const debugContext = createDebugContext<ClaudeDebugData>(
+		'agents-claude',
+		debug,
+		initialDebugData
+	);
 
 	try {
 		logger.start('Starting Claude Code history sync');
