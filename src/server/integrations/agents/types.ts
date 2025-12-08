@@ -312,6 +312,15 @@ export type SessionEntry = z.infer<typeof SessionEntrySchema>;
 // Parsed Session (aggregate type for processed session files)
 // ----------------------------------------------------------------------------
 
+export interface FileEditInfo {
+	/** Relative file path that was edited */
+	filePath: string;
+	/** Number of times this file was edited in the session */
+	editCount: number;
+	/** When the last backup was created */
+	lastEditTime: string;
+}
+
 export interface ParsedSession {
 	sessionId: string;
 	slug: string | undefined;
@@ -320,6 +329,10 @@ export interface ParsedSession {
 	gitBranch: string | undefined;
 	version: string | undefined;
 	entries: MessageEntry[];
+	/** Conversation summaries/topics */
+	summaries: string[];
+	/** Files edited during this session */
+	fileEdits: FileEditInfo[];
 	tokenUsage: {
 		input: number;
 		output: number;

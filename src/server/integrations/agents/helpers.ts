@@ -4,6 +4,7 @@ import os from 'os';
 import path from 'path';
 import type {
 	ContentBlock,
+	FileEditInfo,
 	MessageEntry,
 	ParsedSession,
 	ParseError,
@@ -75,6 +76,10 @@ export async function discoverSessionFiles(projectPath: string): Promise<Session
 
 			const filePath = path.join(projectPath, entry.name);
 			const stats = await stat(filePath);
+
+			// Skip empty files
+			if (stats.size === 0) continue;
+
 			const projectPathEncoded = path.basename(projectPath);
 
 			sessionFiles.push({
@@ -136,6 +141,9 @@ export function getRecentSessionFilesSync(
 
 				const filePath = path.join(projectPath, fileEntry.name);
 				const stats = statSync(filePath);
+
+				// Skip empty files
+				if (stats.size === 0) continue;
 
 				allFiles.push({
 					filePath,
@@ -211,6 +219,8 @@ export async function parseSessionFile(
 	const lines = content.split('\n');
 
 	const entries: MessageEntry[] = [];
+	const summaries: string[] = [];
+	const fileEditsMap = new Map<string, FileEditInfo>();
 	const errors: ParseError[] = [];
 	let sessionId: string | undefined;
 	let slug: string | undefined;
@@ -236,7 +246,37 @@ export async function parseSessionFile(
 			sessionId = entry.sessionId;
 		}
 
-		// Only collect message entries (skip system, queue-operation, file-history-snapshot)
+		// Collect summaries
+		if (entry.type === 'summary') {
+			summaries.push(entry.summary);
+			continue;
+		}
+
+		// Collect file edit info from snapshots
+		if (entry.type === 'file-history-snapshot') {
+			const backups = entry.snapshot.trackedFileBackups;
+			for (const [filePath, backup] of Object.entries(backups)) {
+				// Type guard for backup object structure
+				if (
+					typeof backup === 'object' &&
+					backup !== null &&
+					'version' in backup &&
+					'backupTime' in backup
+				) {
+					const existing = fileEditsMap.get(filePath);
+					const editCount = backup.version as number;
+					const lastEditTime = backup.backupTime as string;
+
+					// Keep the entry with the highest edit count (most recent state)
+					if (!existing || editCount > existing.editCount) {
+						fileEditsMap.set(filePath, { filePath, editCount, lastEditTime });
+					}
+				}
+			}
+			continue;
+		}
+
+		// Only collect message entries (skip system, queue-operation)
 		if (!isMessageEntry(entry)) continue;
 
 		const messageEntry: MessageEntry = entry;
@@ -252,8 +292,12 @@ export async function parseSessionFile(
 			totalOutputTokens += messageEntry.message.usage.output_tokens;
 		}
 
-		entries.push(messageEntry);
+		// Strip redundant fields and add to entries
+		entries.push(stripMessageEntry(messageEntry));
 	}
+
+	// Convert file edits map to sorted array (most edits first)
+	const fileEdits = Array.from(fileEditsMap.values()).sort((a, b) => b.editCount - a.editCount);
 
 	return {
 		session: {
@@ -264,6 +308,8 @@ export async function parseSessionFile(
 			gitBranch,
 			version,
 			entries,
+			summaries,
+			fileEdits,
 			tokenUsage: {
 				input: totalInputTokens,
 				output: totalOutputTokens,
@@ -282,6 +328,38 @@ export async function parseSessionFile(
  */
 export function isMessageEntry(entry: SessionEntry): entry is MessageEntry {
 	return entry.type === 'user' || entry.type === 'assistant';
+}
+
+/**
+ * Strips redundant/unnecessary fields from a message entry for cleaner output.
+ * - Removes `slug` (redundant with session-level slug)
+ * - Removes `signature` from thinking content blocks (cryptographic noise)
+ */
+export function stripMessageEntry(entry: MessageEntry): MessageEntry {
+	// Remove slug (captured at session level)
+	const { slug: _slug, ...entryWithoutSlug } = entry;
+
+	// Strip signature from thinking blocks in content
+	const content = entryWithoutSlug.message.content;
+	if (Array.isArray(content)) {
+		const strippedContent = content.map((block) => {
+			if (block.type === 'thinking' && 'signature' in block) {
+				const { signature: _sig, ...rest } = block;
+				return rest;
+			}
+			return block;
+		});
+
+		return {
+			...entryWithoutSlug,
+			message: {
+				...entryWithoutSlug.message,
+				content: strippedContent,
+			},
+		} as MessageEntry;
+	}
+
+	return entryWithoutSlug as MessageEntry;
 }
 
 /**

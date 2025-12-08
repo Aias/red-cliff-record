@@ -15,6 +15,8 @@ import { createIntegrationLogger, parseDebugFlag } from '../integrations/common/
 
 const logger = createIntegrationLogger('agents', 'cli');
 
+const DEFAULT_SESSION_LIMIT = 5;
+
 async function main(): Promise<void> {
 	try {
 		const debug = parseDebugFlag(logger);
@@ -27,10 +29,14 @@ async function main(): Promise<void> {
 		logger.start('=== STARTING AGENT HISTORY SYNC ===');
 
 		// Sync Claude Code history
-		await syncClaudeHistory(debug);
+		await syncClaudeHistory(debug, {
+			sessionLimit: DEFAULT_SESSION_LIMIT,
+		});
 
 		// Sync Codex CLI history
-		await syncCodexHistory(debug);
+		await syncCodexHistory(debug, {
+			sessionLimit: DEFAULT_SESSION_LIMIT,
+		});
 
 		logger.complete('=== AGENT HISTORY SYNC COMPLETED ===');
 		logger.info('-'.repeat(50));

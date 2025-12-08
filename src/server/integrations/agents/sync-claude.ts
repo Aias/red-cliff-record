@@ -9,7 +9,7 @@ const logger = createIntegrationLogger('agents', 'sync-claude');
 // Configuration
 // ----------------------------------------------------------------------------
 
-const DEFAULT_SESSION_LIMIT = 3;
+const DEFAULT_SESSION_LIMIT = 5;
 
 // ----------------------------------------------------------------------------
 // Debug Data Types
