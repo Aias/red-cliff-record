@@ -2,7 +2,7 @@
 /**
  * CLI entry point for Agent History sync
  *
- * Syncs conversation history from agent providers (Claude Code, Codex, etc.)
+ * Syncs conversation history from agent providers (Claude Code, Codex, Cursor)
  * to the debug output directory for inspection and iteration.
  *
  * Usage:
@@ -11,6 +11,7 @@
 
 import { syncClaudeHistory } from '../integrations/agents/sync-claude';
 import { syncCodexHistory } from '../integrations/agents/sync-codex';
+import { syncCursorHistory } from '../integrations/agents/sync-cursor';
 import { createIntegrationLogger, parseDebugFlag } from '../integrations/common/logging';
 
 const logger = createIntegrationLogger('agents', 'cli');
@@ -35,6 +36,11 @@ async function main(): Promise<void> {
 
 		// Sync Codex CLI history
 		await syncCodexHistory(debug, {
+			sessionLimit: DEFAULT_SESSION_LIMIT,
+		});
+
+		// Sync Cursor IDE history
+		await syncCursorHistory(debug, {
 			sessionLimit: DEFAULT_SESSION_LIMIT,
 		});
 
