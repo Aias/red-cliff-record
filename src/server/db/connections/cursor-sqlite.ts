@@ -1,4 +1,3 @@
-import { copyFileSync, existsSync } from 'fs';
 import { cursorSchema } from '@aias/hozo';
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
@@ -17,11 +16,13 @@ export class CursorNotInstalledError extends Error {
 	}
 }
 
-export const createCursorConnection = () => {
-	if (!existsSync(cursorDbPath)) {
+export const createCursorConnection = async () => {
+	const sourceFile = Bun.file(cursorDbPath);
+	if (!(await sourceFile.exists())) {
 		throw new CursorNotInstalledError();
 	}
-	copyFileSync(cursorDbPath, cursorDbCopyPath);
+	// Copy file using Bun's file API
+	await Bun.write(cursorDbCopyPath, sourceFile);
 
 	const client = new Database(cursorDbCopyPath, { readonly: true });
 	const db = drizzle({ client, schema: cursorSchema });

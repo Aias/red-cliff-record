@@ -82,7 +82,7 @@ export async function syncCursorHistory(
 
 		// Extract sessions
 		logger.info(`Extracting sessions from ${cursorDbPath}`);
-		const { sessions, errors } = getRecentCursorSessions(sessionLimit);
+		const { sessions, errors } = await getRecentCursorSessions(sessionLimit);
 
 		if (sessions.length === 0) {
 			logger.warn('No sessions found');

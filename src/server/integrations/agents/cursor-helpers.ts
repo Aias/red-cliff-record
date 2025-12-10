@@ -1,4 +1,4 @@
-import { readdirSync } from 'fs';
+import { readdir } from 'node:fs/promises';
 import { cursorSchema } from '@aias/hozo';
 import { Database } from 'bun:sqlite';
 import { like } from 'drizzle-orm';
@@ -24,7 +24,7 @@ const CURSOR_WORKSPACE_STORAGE_PATH = `${Bun.env.HOME}/Library/Application Suppo
 /**
  * Extracts all bubble messages from the global storage database using Drizzle
  */
-function extractBubbles(db: ReturnType<typeof createCursorConnection>['db']): {
+function extractBubbles(db: Awaited<ReturnType<typeof createCursorConnection>>['db']): {
 	bubbles: Map<string, Array<{ key: string; value: string | null; index: number }>>;
 	errors: CursorParseError[];
 } {
@@ -113,11 +113,11 @@ function parseBubbleRow(row: { key: string; value: string | null }): {
 /**
  * Extracts composer metadata from workspace databases
  */
-function extractComposerMetadata(): Map<string, CursorComposerMetadata> {
+async function extractComposerMetadata(): Promise<Map<string, CursorComposerMetadata>> {
 	const metadata = new Map<string, CursorComposerMetadata>();
 
 	try {
-		const workspaceDirs = readdirSync(CURSOR_WORKSPACE_STORAGE_PATH, { withFileTypes: true });
+		const workspaceDirs = await readdir(CURSOR_WORKSPACE_STORAGE_PATH, { withFileTypes: true });
 
 		for (const dir of workspaceDirs) {
 			if (!dir.isDirectory()) continue;
@@ -227,18 +227,18 @@ function buildSessions(
 /**
  * Extracts recent Cursor sessions using Drizzle connection
  */
-export function getRecentCursorSessions(limit: number = 10): {
+export async function getRecentCursorSessions(limit: number = 10): Promise<{
 	sessions: ParsedCursorSession[];
 	errors: CursorParseError[];
-} {
-	const { db, client } = createCursorConnection();
+}> {
+	const { db, client } = await createCursorConnection();
 
 	try {
 		// Extract bubbles using Drizzle (synchronous with bun-sqlite)
 		const { bubbles, errors: bubbleErrors } = extractBubbles(db);
 
 		// Extract metadata from workspaces
-		const metadata = extractComposerMetadata();
+		const metadata = await extractComposerMetadata();
 
 		// Build sessions
 		const { sessions, errors: parseErrors } = buildSessions(bubbles, metadata);

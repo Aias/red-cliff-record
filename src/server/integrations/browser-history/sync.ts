@@ -1,4 +1,3 @@
-import os from 'os';
 import readline from 'readline';
 import { browsingHistory, type Browser, type BrowsingHistoryInsert } from '@aias/hozo';
 import { arcSchema } from '@aias/hozo';
@@ -143,7 +142,7 @@ async function syncBrowserHistory(
 	collectDebugData?: unknown[]
 ): Promise<number> {
 	// Get current hostname
-	const currentHostname = os.hostname();
+	const currentHostname = Bun.env.HOSTNAME ?? 'unknown';
 
 	// Step 1: Check if the current hostname is known
 	const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
@@ -160,7 +159,7 @@ async function syncBrowserHistory(
 
 	// Step 3: Fetch new history entries
 	logger.info('Retrieving new history entries...');
-	const { db: browserDb, client } = browserConfig.createConnection();
+	const { db: browserDb, client } = await browserConfig.createConnection();
 
 	try {
 		// Calculate effective cutoff time (use the later of lastKnownTime or browser cutoff date)

@@ -1,6 +1,4 @@
-import { readdir, stat } from 'fs/promises';
-import os from 'os';
-import path from 'path';
+import { readdir } from 'node:fs/promises';
 import type {
 	AgentMessageEventPayload,
 	AgentReasoningEventPayload,
@@ -40,7 +38,7 @@ function isTokenCountPayload(payload: EventMsgPayload): payload is TokenCountEve
 // Constants
 // ----------------------------------------------------------------------------
 
-export const CODEX_SESSIONS_PATH = path.join(os.homedir(), '.codex', 'sessions');
+export const CODEX_SESSIONS_PATH = `${Bun.env.HOME}/.codex/sessions`;
 
 // ----------------------------------------------------------------------------
 // File Discovery
@@ -53,9 +51,15 @@ export const CODEX_SESSIONS_PATH = path.join(os.homedir(), '.codex', 'sessions')
 async function discoverYearDirs(basePath: string): Promise<string[]> {
 	try {
 		const entries = await readdir(basePath, { withFileTypes: true });
-		return entries
-			.filter((entry) => entry.isDirectory() && /^\d{4}$/.test(entry.name))
-			.map((entry) => path.join(basePath, entry.name));
+		const yearDirs: string[] = [];
+
+		for (const entry of entries) {
+			if (entry.isDirectory() && /^\d{4}$/.test(entry.name)) {
+				yearDirs.push(`${basePath}/${entry.name}`);
+			}
+		}
+
+		return yearDirs;
 	} catch {
 		return [];
 	}
@@ -79,21 +83,22 @@ export async function discoverCodexSessionFiles(
 			for (const monthEntry of monthEntries) {
 				if (!monthEntry.isDirectory()) continue;
 
-				const monthDir = path.join(yearDir, monthEntry.name);
+				const monthDir = `${yearDir}/${monthEntry.name}`;
 				const dayEntries = await readdir(monthDir, { withFileTypes: true });
 
 				for (const dayEntry of dayEntries) {
 					if (!dayEntry.isDirectory()) continue;
 
-					const dayDir = path.join(monthDir, dayEntry.name);
+					const dayDir = `${monthDir}/${dayEntry.name}`;
 					const fileEntries = await readdir(dayDir, { withFileTypes: true });
 
 					for (const fileEntry of fileEntries) {
 						if (!fileEntry.isFile() || !fileEntry.name.endsWith('.jsonl')) continue;
 						if (!fileEntry.name.startsWith('rollout-')) continue;
 
-						const filePath = path.join(dayDir, fileEntry.name);
-						const stats = await stat(filePath);
+						const filePath = `${dayDir}/${fileEntry.name}`;
+						const file = Bun.file(filePath);
+						const stats = await file.stat();
 
 						sessionFiles.push({
 							filePath,

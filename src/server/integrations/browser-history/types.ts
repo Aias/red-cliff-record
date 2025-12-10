@@ -30,7 +30,7 @@ export interface BrowserConnection {
 export interface BrowserConfig {
 	name: Browser;
 	displayName: string;
-	createConnection: () => BrowserConnection;
+	createConnection: () => Promise<BrowserConnection>;
 	// Optional cutoff date to avoid fetching history before this date
 	// Useful for browsers that import history from other browsers
 	cutoffDate?: Date;

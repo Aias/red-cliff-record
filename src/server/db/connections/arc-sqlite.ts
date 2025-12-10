@@ -1,7 +1,3 @@
-import { copyFileSync } from 'fs';
-import { existsSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
 import { arcSchema } from '@aias/hozo';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
@@ -10,15 +6,17 @@ import { BrowserNotInstalledError } from '@/server/integrations/browser-history/
 const arcHistoryPath = 'Library/Application Support/Arc/User Data/Default/History';
 
 // Path to Arc's History database (Mac OS Only)
-export const arcDbPath = join(homedir(), arcHistoryPath);
-export const arcDbCopyPath = join(homedir(), `${arcHistoryPath}-copy`);
+export const arcDbPath = `${Bun.env.HOME}/${arcHistoryPath}`;
+export const arcDbCopyPath = `${Bun.env.HOME}/${arcHistoryPath}-copy`;
 export const connectionUrl = `file:${arcDbCopyPath}`;
 
-export const createArcConnection = () => {
-	if (!existsSync(arcDbPath)) {
+export const createArcConnection = async () => {
+	const sourceFile = Bun.file(arcDbPath);
+	if (!(await sourceFile.exists())) {
 		throw new BrowserNotInstalledError('Arc', arcDbPath);
 	}
-	copyFileSync(arcDbPath, arcDbCopyPath);
+	// Copy file using Bun's file API
+	await Bun.write(arcDbCopyPath, sourceFile);
 
 	const client = createClient({
 		url: connectionUrl,

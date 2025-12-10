@@ -1,7 +1,4 @@
-import { readdirSync, statSync } from 'fs';
-import { readdir, stat } from 'fs/promises';
-import os from 'os';
-import path from 'path';
+import { readdir } from 'node:fs/promises';
 import type {
 	ContentBlock,
 	FileEditInfo,
@@ -18,7 +15,7 @@ import { SessionEntrySchema } from './types';
 // Constants
 // ----------------------------------------------------------------------------
 
-export const CLAUDE_PROJECTS_PATH = path.join(os.homedir(), '.claude', 'projects');
+export const CLAUDE_PROJECTS_PATH = `${Bun.env.HOME}/.claude/projects`;
 
 // ----------------------------------------------------------------------------
 // Path Utilities
@@ -53,9 +50,15 @@ export async function discoverProjectDirectories(
 ): Promise<string[]> {
 	try {
 		const entries = await readdir(basePath, { withFileTypes: true });
-		return entries
-			.filter((entry) => entry.isDirectory() && entry.name.startsWith('-'))
-			.map((entry) => path.join(basePath, entry.name));
+		const projectDirs: string[] = [];
+
+		for (const entry of entries) {
+			if (entry.isDirectory() && entry.name.startsWith('-')) {
+				projectDirs.push(`${basePath}/${entry.name}`);
+			}
+		}
+
+		return projectDirs;
 	} catch {
 		return [];
 	}
@@ -74,13 +77,14 @@ export async function discoverSessionFiles(projectPath: string): Promise<Session
 			// Skip agent files for now (they're subagent conversations)
 			if (entry.name.startsWith('agent-')) continue;
 
-			const filePath = path.join(projectPath, entry.name);
-			const stats = await stat(filePath);
+			const filePath = `${projectPath}/${entry.name}`;
+			const file = Bun.file(filePath);
+			const stats = await file.stat();
 
 			// Skip empty files
 			if (stats.size === 0) continue;
 
-			const projectPathEncoded = path.basename(projectPath);
+			const projectPathEncoded = projectPath.split('/').pop() ?? '';
 
 			sessionFiles.push({
 				filePath,
@@ -120,27 +124,28 @@ export async function getRecentSessionFiles(
 /**
  * Synchronous version of getRecentSessionFiles for simpler usage
  */
-export function getRecentSessionFilesSync(
+export async function getRecentSessionFilesSync(
 	limit: number = 3,
 	basePath: string = CLAUDE_PROJECTS_PATH
-): SessionFileInfo[] {
+): Promise<SessionFileInfo[]> {
 	const allFiles: SessionFileInfo[] = [];
 
 	try {
-		const projectEntries = readdirSync(basePath, { withFileTypes: true });
+		const projectEntries = await readdir(basePath, { withFileTypes: true });
 
 		for (const projectEntry of projectEntries) {
 			if (!projectEntry.isDirectory() || !projectEntry.name.startsWith('-')) continue;
 
-			const projectPath = path.join(basePath, projectEntry.name);
-			const fileEntries = readdirSync(projectPath, { withFileTypes: true });
+			const projectPath = `${basePath}/${projectEntry.name}`;
+			const fileEntries = await readdir(projectPath, { withFileTypes: true });
 
 			for (const fileEntry of fileEntries) {
 				if (!fileEntry.isFile() || !fileEntry.name.endsWith('.jsonl')) continue;
 				if (fileEntry.name.startsWith('agent-')) continue;
 
-				const filePath = path.join(projectPath, fileEntry.name);
-				const stats = statSync(filePath);
+				const filePath = `${projectPath}/${fileEntry.name}`;
+				const file = Bun.file(filePath);
+				const stats = await file.stat();
 
 				// Skip empty files
 				if (stats.size === 0) continue;

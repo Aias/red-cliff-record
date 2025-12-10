@@ -1,7 +1,4 @@
-import { mkdirSync, readdirSync, readFileSync } from 'fs';
-import { rename } from 'fs/promises';
-import { homedir } from 'os';
-import { resolve } from 'path';
+import { mkdir, readdir } from 'node:fs/promises';
 import {
 	twitterMedia as mediaTable,
 	twitterTweets as tweetsTable,
@@ -28,7 +25,7 @@ const logger = createIntegrationLogger('twitter', 'sync');
 /**
  * Configuration constants
  */
-const TWITTER_DATA_DIR = resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');
+const TWITTER_DATA_DIR = `${Bun.env.HOME}/Documents/Red Cliff Record/Twitter Data`;
 const BOOKMARK_FILE_PREFIX = 'bookmarks-';
 const BOOKMARK_FILE_SUFFIX = '.json';
 const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
@@ -41,7 +38,7 @@ const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
  */
 async function archiveProcessedFiles(files: string[], archiveDir: string): Promise<void> {
 	try {
-		mkdirSync(archiveDir, { recursive: true });
+		await mkdir(archiveDir, { recursive: true });
 
 		await Promise.all(
 			files.map(async (filePath) => {
@@ -51,8 +48,11 @@ async function archiveProcessedFiles(files: string[], archiveDir: string): Promi
 					return;
 				}
 
-				const archivePath = resolve(archiveDir, fileName);
-				await rename(filePath, archivePath);
+				const archivePath = `${archiveDir}/${fileName}`;
+				const sourceFile = Bun.file(filePath);
+				await Bun.write(archivePath, sourceFile);
+				// Delete original file after copying
+				await Bun.file(filePath).unlink();
 				logger.info(`Archived file: ${fileName}`);
 			})
 		);
@@ -68,11 +68,11 @@ async function archiveProcessedFiles(files: string[], archiveDir: string): Promi
  * @param maxRetries - Maximum number of retries (default: 3)
  * @returns The result of the operation
  */
-async function retryOnEINTR<T>(operation: () => T, maxRetries: number = 3): Promise<T> {
+async function retryOnEINTR<T>(operation: () => Promise<T>, maxRetries: number = 3): Promise<T> {
 	let lastError: unknown;
 	for (let i = 0; i < maxRetries; i++) {
 		try {
-			return operation();
+			return await operation();
 		} catch (error) {
 			lastError = error;
 			if (error instanceof Error && 'code' in error && error.code === 'EINTR') {
@@ -102,9 +102,9 @@ export async function loadBookmarksData(): Promise<{
 	processedFiles: string[];
 }> {
 	try {
-		// Read the directory entries with file types, with retry on EINTR
-		const entries = await retryOnEINTR(() =>
-			readdirSync(TWITTER_DATA_DIR, { withFileTypes: true })
+		// Read the directory entries with retry on EINTR
+		const entries = await retryOnEINTR(
+			async () => await readdir(TWITTER_DATA_DIR, { withFileTypes: true })
 		);
 
 		// Filter for bookmark files and sort them
@@ -128,10 +128,11 @@ export async function loadBookmarksData(): Promise<{
 		const processedFiles: string[] = [];
 
 		for (const fileName of bookmarkFiles) {
-			const filePath = resolve(TWITTER_DATA_DIR, fileName);
+			const filePath = `${TWITTER_DATA_DIR}/${fileName}`;
 			logger.info(`Processing Twitter bookmarks file: ${filePath}`);
 
-			const fileContent = await retryOnEINTR(() => readFileSync(filePath, 'utf-8'));
+			const file = Bun.file(filePath);
+			const fileContent = await retryOnEINTR(async () => await file.text());
 			const rawData = JSON.parse(fileContent);
 
 			// Validate the data using Zod schema
@@ -211,7 +212,7 @@ async function syncTwitterBookmarks(
 		await createRelatedRecords();
 
 		// Step 6: Archive processed files
-		const archiveDir = resolve(TWITTER_DATA_DIR, 'Archive');
+		const archiveDir = `${TWITTER_DATA_DIR}/Archive`;
 		await archiveProcessedFiles(processedFiles, archiveDir);
 
 		return updatedCount;
