@@ -24,6 +24,7 @@ export const createCursorConnection = () => {
 	copyFileSync(cursorDbPath, cursorDbCopyPath);
 
 	const client = new Database(cursorDbCopyPath, { readonly: true });
+	const db = drizzle({ client, schema: cursorSchema });
 
-	return drizzle({ client, schema: cursorSchema });
+	return { db, client };
 };

@@ -1,5 +1,6 @@
 import { readdirSync } from 'fs';
 import { cursorSchema } from '@aias/hozo';
+import { Database } from 'bun:sqlite';
 import { like } from 'drizzle-orm';
 import { createCursorConnection } from '@/server/db/connections/cursor-sqlite';
 import type {
@@ -20,15 +21,10 @@ const CURSOR_WORKSPACE_STORAGE_PATH = `${Bun.env.HOME}/Library/Application Suppo
 // Bubble Extraction
 // ----------------------------------------------------------------------------
 
-interface RawBubbleRow {
-	key: string | null;
-	value: string | null;
-}
-
 /**
  * Extracts all bubble messages from the global storage database using Drizzle
  */
-function extractBubbles(db: ReturnType<typeof createCursorConnection>): {
+function extractBubbles(db: ReturnType<typeof createCursorConnection>['db']): {
 	bubbles: Map<string, Array<{ key: string; value: string | null; index: number }>>;
 	errors: CursorParseError[];
 } {
@@ -133,7 +129,6 @@ function extractComposerMetadata(): Map<string, CursorComposerMetadata> {
 
 			try {
 				// Use Bun's SQLite directly for workspace DBs (simpler than creating separate Drizzle connections)
-				const { Database } = require('bun:sqlite');
 				const workspaceDb = new Database(dbPath, { readonly: true });
 
 				const stmt = workspaceDb.query(
@@ -236,9 +231,9 @@ export function getRecentCursorSessions(limit: number = 10): {
 	sessions: ParsedCursorSession[];
 	errors: CursorParseError[];
 } {
-	try {
-		const db = createCursorConnection();
+	const { db, client } = createCursorConnection();
 
+	try {
 		// Extract bubbles using Drizzle (synchronous with bun-sqlite)
 		const { bubbles, errors: bubbleErrors } = extractBubbles(db);
 
@@ -262,5 +257,7 @@ export function getRecentCursorSessions(limit: number = 10): {
 				},
 			],
 		};
+	} finally {
+		client.close();
 	}
 }

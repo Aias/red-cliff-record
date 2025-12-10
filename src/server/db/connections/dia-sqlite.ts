@@ -24,6 +24,7 @@ export const createDiaConnection = () => {
 		url: connectionUrl,
 		intMode: 'bigint',
 	});
+	const db = drizzle({ client, schema: diaSchema });
 
-	return drizzle({ client, schema: diaSchema });
+	return { db, client };
 };

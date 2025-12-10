@@ -142,27 +142,27 @@ async function syncBrowserHistory(
 	integrationRunId: number,
 	collectDebugData?: unknown[]
 ): Promise<number> {
+	// Get current hostname
+	const currentHostname = os.hostname();
+
+	// Step 1: Check if the current hostname is known
+	const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
+	if (!shouldProceed) {
+		logger.info('Sync cancelled by user');
+		return 0;
+	}
+
+	logger.start(`Starting ${browserConfig.displayName} browser history incremental update`);
+
+	// Step 2: Get the most recent history entry
+	const lastKnownTime = await getLastSyncPoint(currentHostname, browserConfig.name);
+	logLastSyncPoint(lastKnownTime);
+
+	// Step 3: Fetch new history entries
+	logger.info('Retrieving new history entries...');
+	const { db: browserDb, client } = browserConfig.createConnection();
+
 	try {
-		// Get current hostname
-		const currentHostname = os.hostname();
-
-		// Step 1: Check if the current hostname is known
-		const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
-		if (!shouldProceed) {
-			logger.info('Sync cancelled by user');
-			return 0;
-		}
-
-		logger.start(`Starting ${browserConfig.displayName} browser history incremental update`);
-
-		// Step 2: Get the most recent history entry
-		const lastKnownTime = await getLastSyncPoint(currentHostname, browserConfig.name);
-		logLastSyncPoint(lastKnownTime);
-
-		// Step 3: Fetch new history entries
-		logger.info('Retrieving new history entries...');
-		const browserDb = browserConfig.createConnection();
-
 		// Calculate effective cutoff time (use the later of lastKnownTime or browser cutoff date)
 		let effectiveCutoff = lastKnownTime;
 		if (browserConfig.cutoffDate) {
@@ -209,6 +209,8 @@ async function syncBrowserHistory(
 				error instanceof Error ? error.message : String(error)
 			}`
 		);
+	} finally {
+		client.close();
 	}
 }
 
