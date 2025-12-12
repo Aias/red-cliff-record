@@ -51,7 +51,7 @@ export async function discoverProjectDirectories(
 		const projectDirs: string[] = [];
 
 		const glob = new Bun.Glob('-*');
-		for await (const entryName of glob.scan({ cwd: basePath })) {
+		for await (const entryName of glob.scan({ cwd: basePath, onlyFiles: false })) {
 			const fullPath = `${basePath}/${entryName}`;
 			const stats = await Bun.file(fullPath).stat();
 			if (stats.isDirectory()) projectDirs.push(fullPath);
@@ -130,7 +130,7 @@ export async function getRecentSessionFilesSync(
 
 	try {
 		const projectGlob = new Bun.Glob('-*');
-		for await (const projectName of projectGlob.scan({ cwd: basePath })) {
+		for await (const projectName of projectGlob.scan({ cwd: basePath, onlyFiles: false })) {
 			const projectPath = `${basePath}/${projectName}`;
 			const projectStats = await Bun.file(projectPath).stat();
 			if (!projectStats.isDirectory()) continue;

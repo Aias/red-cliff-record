@@ -202,7 +202,9 @@ export type TodoItem = z.infer<typeof TodoItemSchema>;
 // ----------------------------------------------------------------------------
 
 const ThinkingMetadataSchema = z.object({
-	level: z.enum(['high', 'medium', 'low']).optional(),
+	// Observed values in Claude Code session logs include "none" (in addition to
+	// the more traditional "low" | "medium" | "high").
+	level: z.enum(['high', 'medium', 'low', 'none']).optional(),
 	disabled: z.boolean().optional(),
 	triggers: z.array(z.string()).optional(),
 });

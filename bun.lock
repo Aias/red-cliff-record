@@ -27,8 +27,8 @@
         "cmdk": "^1.1.1",
         "dataloader": "^2.2.3",
         "dotenv": "^17.2.3",
-        "drizzle-orm": "1.0.0-beta.2-e93475f",
-        "drizzle-zod": "1.0.0-beta.2-e93475f",
+        "drizzle-orm": "1.0.0-beta.2-58a4521",
+        "drizzle-zod": "1.0.0-beta.2-58a4521",
         "lucide-react": "^0.561.0",
         "marked": "^17.0.1",
         "marked-linkify-it": "^3.1.14",
@@ -61,7 +61,7 @@
         "@typescript-eslint/parser": "^8.49.0",
         "@vitejs/plugin-react": "^5.1.2",
         "babel-plugin-react-compiler": "^1.0.0",
-        "drizzle-kit": "1.0.0-beta.2-e93475f",
+        "drizzle-kit": "1.0.0-beta.2-58a4521",
         "eslint": "^9.39.1",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-file-progress": "^3.0.2",
@@ -81,15 +81,15 @@
       "name": "@aias/hozo",
       "version": "0.2.0",
       "dependencies": {
-        "drizzle-zod": "1.0.0-beta.2-e93475f",
+        "drizzle-zod": "1.0.0-beta.2-58a4521",
       },
       "devDependencies": {
-        "drizzle-orm": "1.0.0-beta.2-e93475f",
+        "drizzle-orm": "1.0.0-beta.2-58a4521",
         "tsup": "^8.5.1",
         "zod": "^4.1.12",
       },
       "peerDependencies": {
-        "drizzle-orm": "1.0.0-beta.2-e93475f",
+        "drizzle-orm": "1.0.0-beta.2-58a4521",
         "zod": "^4.1.12",
       },
     },
@@ -867,11 +867,11 @@
 
     "dotenv": ["dotenv@17.2.3", "", {}, "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="],
 
-    "drizzle-kit": ["drizzle-kit@1.0.0-beta.2-e93475f", "", { "dependencies": { "@drizzle-team/brocli": "^0.11.0", "@js-temporal/polyfill": "^0.5.1", "esbuild": "^0.25.10", "esbuild-register": "^3.6.0" }, "bin": { "drizzle-kit": "bin.cjs" } }, "sha512-uAAw0skgPU+tZaVtR45WcpSMzkrNP8so3daSyfKd+oWrMDcP0z4Jg+sGvGFJ0AFFiZRsvDt9AcmfpLbc4QTgeA=="],
+    "drizzle-kit": ["drizzle-kit@1.0.0-beta.2-58a4521", "", { "dependencies": { "@drizzle-team/brocli": "^0.11.0", "@js-temporal/polyfill": "^0.5.1", "esbuild": "^0.25.10", "esbuild-register": "^3.6.0" }, "bin": { "drizzle-kit": "bin.cjs" } }, "sha512-5mENi77XK3Q6G6Pry1v04m7PCwhJjm9lMc3+5SuyvejBfcuSOpZkNdcDr+G7gPon6uhExSkfbIz3Rf+teN/qHw=="],
 
-    "drizzle-orm": ["drizzle-orm@1.0.0-beta.2-e93475f", "", { "peerDependencies": { "@aws-sdk/client-rds-data": ">=3", "@cloudflare/workers-types": ">=4", "@electric-sql/pglite": ">=0.2.0", "@libsql/client": ">=0.10.0", "@libsql/client-wasm": ">=0.10.0", "@neondatabase/serverless": ">=0.10.0", "@op-engineering/op-sqlite": ">=2", "@opentelemetry/api": "^1.4.1", "@planetscale/database": ">=1.13", "@prisma/client": "*", "@sqlitecloud/drivers": ">=1.0.653", "@tidbcloud/serverless": "*", "@tursodatabase/database": ">=0.2.1", "@tursodatabase/database-common": ">=0.2.1", "@tursodatabase/database-wasm": ">=0.2.1", "@types/better-sqlite3": "*", "@types/mssql": "^9.1.4", "@types/pg": "*", "@types/sql.js": "*", "@upstash/redis": ">=1.34.7", "@vercel/postgres": ">=0.8.0", "@xata.io/client": "*", "better-sqlite3": ">=9.3.0", "bun-types": "*", "expo-sqlite": ">=14.0.0", "gel": ">=2", "mssql": "^11.0.1", "mysql2": ">=2", "pg": ">=8", "postgres": ">=3", "sql.js": ">=1", "sqlite3": ">=5" }, "optionalPeers": ["@aws-sdk/client-rds-data", "@cloudflare/workers-types", "@electric-sql/pglite", "@libsql/client", "@libsql/client-wasm", "@neondatabase/serverless", "@op-engineering/op-sqlite", "@opentelemetry/api", "@planetscale/database", "@prisma/client", "@sqlitecloud/drivers", "@tidbcloud/serverless", "@tursodatabase/database", "@tursodatabase/database-common", "@tursodatabase/database-wasm", "@types/better-sqlite3", "@types/pg", "@types/sql.js", "@upstash/redis", "@vercel/postgres", "@xata.io/client", "better-sqlite3", "bun-types", "expo-sqlite", "gel", "mysql2", "pg", "postgres", "sql.js", "sqlite3"] }, "sha512-dV7eJHkLYGwlAJhwk08Gk/bxcb+K8fQRG2V5ARY8l9aDrWqcWMcXnO4VQXEdSDmrQzzBim/+B/nWqoMY5BJ2pg=="],
+    "drizzle-orm": ["drizzle-orm@1.0.0-beta.2-58a4521", "", { "peerDependencies": { "@aws-sdk/client-rds-data": ">=3", "@cloudflare/workers-types": ">=4", "@electric-sql/pglite": ">=0.2.0", "@libsql/client": ">=0.10.0", "@libsql/client-wasm": ">=0.10.0", "@neondatabase/serverless": ">=0.10.0", "@op-engineering/op-sqlite": ">=2", "@opentelemetry/api": "^1.4.1", "@planetscale/database": ">=1.13", "@prisma/client": "*", "@sqlitecloud/drivers": ">=1.0.653", "@tidbcloud/serverless": "*", "@tursodatabase/database": ">=0.2.1", "@tursodatabase/database-common": ">=0.2.1", "@tursodatabase/database-wasm": ">=0.2.1", "@types/better-sqlite3": "*", "@types/mssql": "^9.1.4", "@types/pg": "*", "@types/sql.js": "*", "@upstash/redis": ">=1.34.7", "@vercel/postgres": ">=0.8.0", "@xata.io/client": "*", "better-sqlite3": ">=9.3.0", "bun-types": "*", "expo-sqlite": ">=14.0.0", "gel": ">=2", "mssql": "^11.0.1", "mysql2": ">=2", "pg": ">=8", "postgres": ">=3", "sql.js": ">=1", "sqlite3": ">=5" }, "optionalPeers": ["@aws-sdk/client-rds-data", "@cloudflare/workers-types", "@electric-sql/pglite", "@libsql/client", "@libsql/client-wasm", "@neondatabase/serverless", "@op-engineering/op-sqlite", "@opentelemetry/api", "@planetscale/database", "@prisma/client", "@sqlitecloud/drivers", "@tidbcloud/serverless", "@tursodatabase/database", "@tursodatabase/database-common", "@tursodatabase/database-wasm", "@types/better-sqlite3", "@types/pg", "@types/sql.js", "@upstash/redis", "@vercel/postgres", "@xata.io/client", "better-sqlite3", "bun-types", "expo-sqlite", "gel", "mysql2", "pg", "postgres", "sql.js", "sqlite3"] }, "sha512-wCm0HoHFklD0hZlffu1TkQkNUvIikV+SCI4FqFcRSjYHZUNnM/X3jvD+TaPCjfB/5f8fo9Hot21f7P0FLPu3Tw=="],
 
-    "drizzle-zod": ["drizzle-zod@1.0.0-beta.2-e93475f", "", { "peerDependencies": { "drizzle-orm": ">=1.0.0-beta.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-XWOTDNZtcKZ7yxGCikTt4nJIyioOJqDWUc/v+2DIA0ZgVPOl/NBfR5o96dZjr2oa2gBDeBSBA9YhWPp8l68zQg=="],
+    "drizzle-zod": ["drizzle-zod@1.0.0-beta.2-58a4521", "", { "peerDependencies": { "drizzle-orm": ">=1.0.0-beta.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-YAegl+6XBZKimYeFkjGY+41rOoML6YXdkMN1pbYeufowCb8g6b9WMLKAECGPUhTXG/LcWyanBIgkKPypwkKA0g=="],
 
     "dunder-proto": ["dunder-proto@1.0.1", "", { "dependencies": { "call-bind-apply-helpers": "^1.0.1", "es-errors": "^1.3.0", "gopd": "^1.2.0" } }, "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A=="],
 
