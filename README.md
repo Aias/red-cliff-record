@@ -17,8 +17,8 @@ For detailed development guidelines, see [CLAUDE.md](./CLAUDE.md) and cursor rul
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js v22+** (check with `node --version`)
 - **Bun** runtime & package manager (`curl -fsSL https://bun.sh/install | bash`)
+- **Node.js v24+** (check with `node --version`)
 - **PostgreSQL** (v14+ recommended) with the following extensions:
   - `vector` - for vector embeddings (install via `CREATE EXTENSION vector;`)
   - `pg_trgm` - for trigram text search (install via `CREATE EXTENSION pg_trgm;`)
@@ -296,7 +296,7 @@ bun run db:migrate
 ### Build Errors
 
 - Clear cache: `rm -rf node_modules bun.lock dist && bun install`
-- Check Node version: Should be v22+ as specified in `.nvmrc`
+- Check Node version: Should be v24+ as specified in `.nvmrc`
 - Run type checking: `bun run tsc`
 
 ### Integration Sync Failures

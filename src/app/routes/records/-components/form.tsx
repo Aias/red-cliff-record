@@ -120,7 +120,7 @@ export function RecordForm({
 	const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
 	const mediaUploadRef = useRef<HTMLDivElement>(null);
 	const formRef = useRef<HTMLFormElement>(null);
-	const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Auto-focus title input when navigating with focusForm state
 	const isActiveForm = urlRecordId === recordId;
