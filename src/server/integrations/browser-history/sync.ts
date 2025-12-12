@@ -20,6 +20,34 @@ import {
 const logger = createIntegrationLogger('browser-history', 'sync');
 
 /**
+ * Gets the machine hostname by invoking the system `hostname` command.
+ *
+ * We prefer this over environment variables because `Bun.env.HOSTNAME` is often unset
+ * in local shells, which can cause spurious "unknown hostname" prompts.
+ */
+async function getHostnameFromCli(): Promise<string> {
+	// If explicitly provided, prefer env override.
+	const envHostname = Bun.env.HOSTNAME?.trim();
+	if (envHostname && envHostname.length > 0) return envHostname;
+
+	const proc = Bun.spawn(['hostname'], {
+		stdout: 'pipe',
+		stderr: 'pipe',
+	});
+
+	const stdout = await new Response(proc.stdout).text();
+	const exitCode = await proc.exited;
+
+	if (exitCode === 0) {
+		const hostname = stdout.trim();
+		if (hostname.length > 0) return hostname;
+	}
+
+	// Fallback: stable placeholder
+	return 'unknown';
+}
+
+/**
  * Configuration constants
  */
 const MAX_URL_LENGTH = 1000; // Maximum acceptable URL length
@@ -123,7 +151,7 @@ async function syncBrowserHistory(
 	collectDebugData?: unknown[]
 ): Promise<number> {
 	// Get current hostname
-	const currentHostname = Bun.env.HOSTNAME ?? 'unknown';
+	const currentHostname = await getHostnameFromCli();
 
 	// Step 1: Check if the current hostname is known
 	const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
