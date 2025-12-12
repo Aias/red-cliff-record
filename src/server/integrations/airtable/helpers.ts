@@ -11,10 +11,10 @@ import { uploadMediaToR2 } from '@/server/lib/media';
 import { AirtableAttachmentSchema } from './types';
 
 Airtable.configure({
-	apiKey: process.env.AIRTABLE_ACCESS_TOKEN,
+	apiKey: Bun.env.AIRTABLE_ACCESS_TOKEN,
 });
 
-export const airtableBase = Airtable.base(process.env.AIRTABLE_BASE_ID!);
+export const airtableBase = Airtable.base(Bun.env.AIRTABLE_BASE_ID!);
 
 type AttachmentWithExtract = AirtableAttachmentSelect & {
 	extract: AirtableExtractSelect;
@@ -97,7 +97,7 @@ export async function storeMedia() {
 		},
 		where: {
 			url: {
-				notIlike: `%${process.env.ASSETS_DOMAIN}%`,
+				notIlike: `%${Bun.env.ASSETS_DOMAIN}%`,
 			},
 		},
 	});
@@ -126,7 +126,7 @@ export async function storeMedia() {
 
 		// Add a small delay between batches to prevent rate limiting
 		if (i + BATCH_SIZE < attachments.length) {
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+			await Bun.sleep(1000);
 		}
 	}
 

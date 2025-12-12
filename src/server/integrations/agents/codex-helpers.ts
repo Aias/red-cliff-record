@@ -1,4 +1,3 @@
-import { readdir } from 'node:fs/promises';
 import type {
 	AgentMessageEventPayload,
 	AgentReasoningEventPayload,
@@ -45,27 +44,6 @@ export const CODEX_SESSIONS_PATH = `${Bun.env.HOME}/.codex/sessions`;
 // ----------------------------------------------------------------------------
 
 /**
- * Discovers all year directories in the Codex sessions folder
- * Structure: ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl
- */
-async function discoverYearDirs(basePath: string): Promise<string[]> {
-	try {
-		const entries = await readdir(basePath, { withFileTypes: true });
-		const yearDirs: string[] = [];
-
-		for (const entry of entries) {
-			if (entry.isDirectory() && /^\d{4}$/.test(entry.name)) {
-				yearDirs.push(`${basePath}/${entry.name}`);
-			}
-		}
-
-		return yearDirs;
-	} catch {
-		return [];
-	}
-}
-
-/**
  * Recursively discovers all session JSONL files in the sessions directory
  * Traverses YYYY/MM/DD directory structure
  */
@@ -75,38 +53,19 @@ export async function discoverCodexSessionFiles(
 	const sessionFiles: CodexSessionFileInfo[] = [];
 
 	try {
-		const yearDirs = await discoverYearDirs(basePath);
+		const glob = new Bun.Glob('**/rollout-*.jsonl');
+		for await (const relativePath of glob.scan({ cwd: basePath })) {
+			const filePath = `${basePath}/${relativePath}`;
+			const file = Bun.file(filePath);
+			const stats = await file.stat();
 
-		for (const yearDir of yearDirs) {
-			const monthEntries = await readdir(yearDir, { withFileTypes: true });
+			// Skip empty files
+			if (stats.size === 0) continue;
 
-			for (const monthEntry of monthEntries) {
-				if (!monthEntry.isDirectory()) continue;
-
-				const monthDir = `${yearDir}/${monthEntry.name}`;
-				const dayEntries = await readdir(monthDir, { withFileTypes: true });
-
-				for (const dayEntry of dayEntries) {
-					if (!dayEntry.isDirectory()) continue;
-
-					const dayDir = `${monthDir}/${dayEntry.name}`;
-					const fileEntries = await readdir(dayDir, { withFileTypes: true });
-
-					for (const fileEntry of fileEntries) {
-						if (!fileEntry.isFile() || !fileEntry.name.endsWith('.jsonl')) continue;
-						if (!fileEntry.name.startsWith('rollout-')) continue;
-
-						const filePath = `${dayDir}/${fileEntry.name}`;
-						const file = Bun.file(filePath);
-						const stats = await file.stat();
-
-						sessionFiles.push({
-							filePath,
-							mtime: stats.mtime,
-						});
-					}
-				}
-			}
+			sessionFiles.push({
+				filePath,
+				mtime: stats.mtime,
+			});
 		}
 	} catch {
 		return [];

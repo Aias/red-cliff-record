@@ -1,4 +1,4 @@
-import { mkdir, readdir } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import {
 	twitterMedia as mediaTable,
 	twitterTweets as tweetsTable,
@@ -77,7 +77,7 @@ async function retryOnEINTR<T>(operation: () => Promise<T>, maxRetries: number =
 			lastError = error;
 			if (error instanceof Error && 'code' in error && error.code === 'EINTR') {
 				// Wait a bit before retrying
-				await new Promise((resolve) => setTimeout(resolve, 100 * (i + 1)));
+				await Bun.sleep(100 * (i + 1));
 				continue;
 			}
 			throw error;
@@ -102,21 +102,18 @@ export async function loadBookmarksData(): Promise<{
 	processedFiles: string[];
 }> {
 	try {
-		// Read the directory entries with retry on EINTR
-		const entries = await retryOnEINTR(
-			async () => await readdir(TWITTER_DATA_DIR, { withFileTypes: true })
-		);
+		// Discover bookmark files using Bun.Glob
+		const bookmarkFiles: string[] = [];
+		const glob = new Bun.Glob(`${BOOKMARK_FILE_PREFIX}*${BOOKMARK_FILE_SUFFIX}`);
 
-		// Filter for bookmark files and sort them
-		const bookmarkFiles = entries
-			.filter(
-				(entry) =>
-					entry.isFile() &&
-					entry.name.startsWith(BOOKMARK_FILE_PREFIX) &&
-					entry.name.endsWith(BOOKMARK_FILE_SUFFIX)
-			)
-			.map((entry) => entry.name)
-			.sort(); // Ascending order since the filenames are in ISO format
+		await retryOnEINTR(async () => {
+			for await (const fileName of glob.scan({ cwd: TWITTER_DATA_DIR })) {
+				bookmarkFiles.push(fileName);
+			}
+		});
+
+		// Ascending order since the filenames are in ISO format
+		bookmarkFiles.sort();
 
 		if (bookmarkFiles.length === 0) {
 			logger.info('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');

@@ -1,4 +1,3 @@
-import { readdir } from 'node:fs/promises';
 import { cursorSchema } from '@aias/hozo';
 import { Database } from 'bun:sqlite';
 import { like } from 'drizzle-orm';
@@ -117,41 +116,56 @@ async function extractComposerMetadata(): Promise<Map<string, CursorComposerMeta
 	const metadata = new Map<string, CursorComposerMetadata>();
 
 	try {
-		const workspaceDirs = await readdir(CURSOR_WORKSPACE_STORAGE_PATH, { withFileTypes: true });
+		const glob = new Bun.Glob('*');
+		for await (const dirName of glob.scan({ cwd: CURSOR_WORKSPACE_STORAGE_PATH })) {
+			const workspacePath = `${CURSOR_WORKSPACE_STORAGE_PATH}/${dirName}`;
+			const workspaceStats = await Bun.file(workspacePath).stat();
+			if (!workspaceStats.isDirectory()) continue;
 
-		for (const dir of workspaceDirs) {
-			if (!dir.isDirectory()) continue;
-
-			const dbPath = `${CURSOR_WORKSPACE_STORAGE_PATH}/${dir.name}/state.vscdb`;
+			const dbPath = `${workspacePath}/state.vscdb`;
 			const dbFile = Bun.file(dbPath);
 
-			if (!dbFile.size) continue;
+			if (!(await dbFile.exists()) || dbFile.size === 0) continue;
 
 			try {
 				// Use Bun's SQLite directly for workspace DBs (simpler than creating separate Drizzle connections)
 				const workspaceDb = new Database(dbPath, { readonly: true });
 
-				const stmt = workspaceDb.query(
-					"SELECT value FROM ItemTable WHERE key = 'composer.composerData'"
-				);
-				const row = stmt.get() as { value: Buffer | string } | null;
+				try {
+					const stmt = workspaceDb.query(
+						"SELECT value FROM ItemTable WHERE key = 'composer.composerData'"
+					);
+					const row = stmt.get();
 
-				if (row?.value) {
-					const valueStr = typeof row.value === 'string' ? row.value : row.value.toString('utf-8');
-					const parsed = JSON.parse(valueStr);
-					const validated = CursorComposerDataSchema.safeParse(parsed);
+					if (row && typeof row === 'object') {
+						const rawValue = Reflect.get(row, 'value');
+						let valueStr: string | null = null;
 
-					if (validated.success) {
-						for (const composer of validated.data.allComposers) {
-							const existing = metadata.get(composer.composerId);
-							if (!existing || (composer.lastUpdatedAt ?? 0) > (existing.lastUpdatedAt ?? 0)) {
-								metadata.set(composer.composerId, composer);
+						if (typeof rawValue === 'string') {
+							valueStr = rawValue;
+						} else if (rawValue instanceof Uint8Array) {
+							valueStr = new TextDecoder().decode(rawValue);
+						} else if (rawValue instanceof ArrayBuffer) {
+							valueStr = new TextDecoder().decode(new Uint8Array(rawValue));
+						}
+
+						if (valueStr) {
+							const parsed = JSON.parse(valueStr);
+							const validated = CursorComposerDataSchema.safeParse(parsed);
+
+							if (validated.success) {
+								for (const composer of validated.data.allComposers) {
+									const existing = metadata.get(composer.composerId);
+									if (!existing || (composer.lastUpdatedAt ?? 0) > (existing.lastUpdatedAt ?? 0)) {
+										metadata.set(composer.composerId, composer);
+									}
+								}
 							}
 						}
 					}
+				} finally {
+					workspaceDb.close();
 				}
-
-				workspaceDb.close();
 			} catch {
 				// Skip workspaces that can't be read
 			}

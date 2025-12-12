@@ -146,7 +146,7 @@ async function syncGitHubCommits(
 	collectDebugData?: unknown[]
 ): Promise<number> {
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN,
+		auth: Bun.env.GITHUB_TOKEN,
 	});
 
 	logger.start('Fetching GitHub commits');
@@ -286,7 +286,7 @@ async function syncGitHubCommits(
 					totalCommits++;
 
 					// Add a small delay between requests to avoid rate limiting
-					await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
+					await Bun.sleep(REQUEST_DELAY_MS);
 				} catch (error) {
 					logger.error(`Error processing commit ${item.sha}`, {
 						error: error instanceof Error ? error.message : String(error),

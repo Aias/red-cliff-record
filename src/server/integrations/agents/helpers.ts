@@ -1,4 +1,3 @@
-import { readdir } from 'node:fs/promises';
 import type {
 	ContentBlock,
 	FileEditInfo,
@@ -49,13 +48,13 @@ export async function discoverProjectDirectories(
 	basePath: string = CLAUDE_PROJECTS_PATH
 ): Promise<string[]> {
 	try {
-		const entries = await readdir(basePath, { withFileTypes: true });
 		const projectDirs: string[] = [];
 
-		for (const entry of entries) {
-			if (entry.isDirectory() && entry.name.startsWith('-')) {
-				projectDirs.push(`${basePath}/${entry.name}`);
-			}
+		const glob = new Bun.Glob('-*');
+		for await (const entryName of glob.scan({ cwd: basePath })) {
+			const fullPath = `${basePath}/${entryName}`;
+			const stats = await Bun.file(fullPath).stat();
+			if (stats.isDirectory()) projectDirs.push(fullPath);
 		}
 
 		return projectDirs;
@@ -69,15 +68,14 @@ export async function discoverProjectDirectories(
  */
 export async function discoverSessionFiles(projectPath: string): Promise<SessionFileInfo[]> {
 	try {
-		const entries = await readdir(projectPath, { withFileTypes: true });
 		const sessionFiles: SessionFileInfo[] = [];
 
-		for (const entry of entries) {
-			if (!entry.isFile() || !entry.name.endsWith('.jsonl')) continue;
+		const glob = new Bun.Glob('*.jsonl');
+		for await (const fileName of glob.scan({ cwd: projectPath })) {
 			// Skip agent files for now (they're subagent conversations)
-			if (entry.name.startsWith('agent-')) continue;
+			if (fileName.startsWith('agent-')) continue;
 
-			const filePath = `${projectPath}/${entry.name}`;
+			const filePath = `${projectPath}/${fileName}`;
 			const file = Bun.file(filePath);
 			const stats = await file.stat();
 
@@ -131,19 +129,17 @@ export async function getRecentSessionFilesSync(
 	const allFiles: SessionFileInfo[] = [];
 
 	try {
-		const projectEntries = await readdir(basePath, { withFileTypes: true });
+		const projectGlob = new Bun.Glob('-*');
+		for await (const projectName of projectGlob.scan({ cwd: basePath })) {
+			const projectPath = `${basePath}/${projectName}`;
+			const projectStats = await Bun.file(projectPath).stat();
+			if (!projectStats.isDirectory()) continue;
 
-		for (const projectEntry of projectEntries) {
-			if (!projectEntry.isDirectory() || !projectEntry.name.startsWith('-')) continue;
+			const fileGlob = new Bun.Glob('*.jsonl');
+			for await (const fileName of fileGlob.scan({ cwd: projectPath })) {
+				if (fileName.startsWith('agent-')) continue;
 
-			const projectPath = `${basePath}/${projectEntry.name}`;
-			const fileEntries = await readdir(projectPath, { withFileTypes: true });
-
-			for (const fileEntry of fileEntries) {
-				if (!fileEntry.isFile() || !fileEntry.name.endsWith('.jsonl')) continue;
-				if (fileEntry.name.startsWith('agent-')) continue;
-
-				const filePath = `${projectPath}/${fileEntry.name}`;
+				const filePath = `${projectPath}/${fileName}`;
 				const file = Bun.file(filePath);
 				const stats = await file.stat();
 
@@ -152,8 +148,8 @@ export async function getRecentSessionFilesSync(
 
 				allFiles.push({
 					filePath,
-					projectPath: decodeProjectPath(projectEntry.name),
-					projectPathEncoded: projectEntry.name,
+					projectPath: decodeProjectPath(projectName),
+					projectPathEncoded: projectName,
 					mtime: stats.mtime,
 				});
 			}
@@ -261,21 +257,21 @@ export async function parseSessionFile(
 		if (entry.type === 'file-history-snapshot') {
 			const backups = entry.snapshot.trackedFileBackups;
 			for (const [filePath, backup] of Object.entries(backups)) {
-				// Type guard for backup object structure
-				if (
-					typeof backup === 'object' &&
-					backup !== null &&
-					'version' in backup &&
-					'backupTime' in backup
-				) {
-					const existing = fileEditsMap.get(filePath);
-					const editCount = backup.version as number;
-					const lastEditTime = backup.backupTime as string;
+				if (typeof backup !== 'object' || backup === null) continue;
 
-					// Keep the entry with the highest edit count (most recent state)
-					if (!existing || editCount > existing.editCount) {
-						fileEditsMap.set(filePath, { filePath, editCount, lastEditTime });
-					}
+				const versionValue = Reflect.get(backup, 'version');
+				const backupTimeValue = Reflect.get(backup, 'backupTime');
+
+				if (typeof versionValue !== 'number') continue;
+				if (typeof backupTimeValue !== 'string') continue;
+
+				const existing = fileEditsMap.get(filePath);
+				const editCount = versionValue;
+				const lastEditTime = backupTimeValue;
+
+				// Keep the entry with the highest edit count (most recent state)
+				if (!existing || editCount > existing.editCount) {
+					fileEditsMap.set(filePath, { filePath, editCount, lastEditTime });
 				}
 			}
 			continue;
@@ -341,30 +337,30 @@ export function isMessageEntry(entry: SessionEntry): entry is MessageEntry {
  * - Removes `signature` from thinking content blocks (cryptographic noise)
  */
 export function stripMessageEntry(entry: MessageEntry): MessageEntry {
-	// Remove slug (captured at session level)
-	const { slug: _slug, ...entryWithoutSlug } = entry;
-
-	// Strip signature from thinking blocks in content
-	const content = entryWithoutSlug.message.content;
-	if (Array.isArray(content)) {
-		const strippedContent = content.map((block) => {
-			if (block.type === 'thinking' && 'signature' in block) {
-				const { signature: _sig, ...rest } = block;
-				return rest;
-			}
-			return block;
-		});
-
+	// Capture slug at session level; setting to undefined means JSON.stringify will omit it.
+	if (typeof entry.message.content === 'string') {
 		return {
-			...entryWithoutSlug,
-			message: {
-				...entryWithoutSlug.message,
-				content: strippedContent,
-			},
-		} as MessageEntry;
+			...entry,
+			slug: undefined,
+		};
 	}
 
-	return entryWithoutSlug as MessageEntry;
+	const strippedContent = entry.message.content.map((block) => {
+		if (block.type === 'thinking') {
+			// signature is optional; setting to undefined omits it in JSON output.
+			return { ...block, signature: undefined };
+		}
+		return block;
+	});
+
+	return {
+		...entry,
+		slug: undefined,
+		message: {
+			...entry.message,
+			content: strippedContent,
+		},
+	};
 }
 
 /**

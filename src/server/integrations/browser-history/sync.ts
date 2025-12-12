@@ -1,4 +1,3 @@
-import readline from 'readline';
 import { browsingHistory, type Browser, type BrowsingHistoryInsert } from '@aias/hozo';
 import { arcSchema } from '@aias/hozo';
 import { and, eq, gt, isNotNull, ne, notLike, sql } from 'drizzle-orm';
@@ -57,32 +56,14 @@ const REMOVABLE_QUERY_PARAMS = [
 ];
 
 /**
- * Creates a readline interface for user input
- *
- * @returns A readline interface
- */
-const createPrompt = (): readline.Interface => {
-	return readline.createInterface({
-		input: process.stdin,
-		output: process.stdout,
-	});
-};
-
-/**
  * Asks the user for confirmation
  *
  * @param message - The message to display to the user
  * @returns Promise that resolves to true if the user confirms, false otherwise
  */
 const askForConfirmation = async (message: string): Promise<boolean> => {
-	const rl = createPrompt();
-
-	return new Promise((resolve) => {
-		rl.question(`${message} (y/N) `, (answer) => {
-			rl.close();
-			resolve(answer.toLowerCase() === 'y');
-		});
-	});
+	const answer = prompt(`${message} (y/N) `);
+	return answer?.trim().toLowerCase() === 'y';
 };
 
 /**

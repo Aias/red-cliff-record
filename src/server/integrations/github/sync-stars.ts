@@ -62,7 +62,7 @@ export async function syncGitHubStars(
 	collectDebugData?: unknown[]
 ): Promise<number> {
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN,
+		auth: Bun.env.GITHUB_TOKEN,
 	});
 
 	logger.start('Fetching GitHub starred repos');
@@ -176,7 +176,7 @@ export async function syncGitHubStars(
 			logger.info(`Processed new stars from page ${page}`);
 
 			// Add a small delay between requests to avoid rate limiting
-			await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
+			await Bun.sleep(REQUEST_DELAY_MS);
 			page++;
 		} catch (error) {
 			if (error instanceof RequestError) {

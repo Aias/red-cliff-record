@@ -56,7 +56,7 @@ export const CommitSummaryResponseSchema = z.object({
 export type CommitSummaryResponse = z.infer<typeof CommitSummaryResponseSchema>;
 
 export const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
+	apiKey: Bun.env.OPENAI_API_KEY,
 });
 
 export const commitSummarizerInstructions = `
