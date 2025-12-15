@@ -15,6 +15,7 @@ import { db } from '@/server/db/connections';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
+import { createUrlResolver, loadKnownTweetIds, normalizeTweetContent } from './tweet-text';
 import { decodeHtmlEntities } from '@/shared/lib/formatting';
 
 const logger = createIntegrationLogger('twitter', 'map');
@@ -109,18 +110,11 @@ type TweetData = TwitterTweetSelect & {
  * @param tweet - The Twitter tweet to map
  * @returns A record insert object
  */
-export const mapTwitterTweetToRecord = (tweet: TweetData): RecordInsert => {
-	// Decode HTML entities and remove t.co URLs from the beginning or end of the tweet text
-	const decodedText = tweet.text ? decodeHtmlEntities(tweet.text) : '';
-	const cleanedContent = decodedText
-		.trim()
-		.replace(/^https?:\/\/t\.co\/[^\s]+|https?:\/\/t\.co\/[^\s]+$/g, '')
-		.trim();
-
+export const mapTwitterTweetToRecord = (tweet: TweetData, content: string): RecordInsert => {
 	return {
 		id: tweet.recordId ?? undefined,
 		type: 'artifact',
-		content: cleanedContent,
+		content,
 		url: `https://x.com/${tweet.user.username}/status/${tweet.id}`,
 		isPrivate: false,
 		isCurated: false,
@@ -157,12 +151,17 @@ export async function createRecordsFromTweets() {
 
 	logger.info(`Found ${tweets.length} unmapped Twitter tweets`);
 
+	const knownTweetIds = await loadKnownTweetIds();
+	const resolveUrl = createUrlResolver();
+
 	const updatedTweetIds: string[] = [];
 	// Map to store the new record IDs keyed by the corresponding Twitter tweet ID.
 	const recordMap = new Map<string, number>();
 
 	for (const tweet of tweets) {
-		const record = mapTwitterTweetToRecord(tweet);
+		const decodedText = tweet.text ? decodeHtmlEntities(tweet.text).trim() : '';
+		const content = await normalizeTweetContent(decodedText, knownTweetIds, resolveUrl);
+		const record = mapTwitterTweetToRecord(tweet, content);
 
 		// Insert the record with parentId set to null (to be updated later if this is a quote).
 		const [newRecord] = await db
