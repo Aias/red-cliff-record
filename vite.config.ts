@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
 			'process.env': JSON.stringify(processEnv),
 		},
 		plugins: [
-			tsConfigPaths(),
+			tsConfigPaths({ projectDiscovery: 'lazy' }),
 			tanstackStart({
 				srcDirectory: './src/app',
 			}),
