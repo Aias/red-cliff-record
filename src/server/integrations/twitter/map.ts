@@ -177,10 +177,6 @@ export async function createRecordsFromTweets() {
 			throw new Error('Failed to create record');
 		}
 
-		logger.info(
-			`Created record ${newRecord.id} for tweet ${tweet.text?.slice(0, 20)} (${tweet.id})`
-		);
-
 		await db
 			.update(twitterTweets)
 			.set({ recordId: newRecord.id })
@@ -191,7 +187,14 @@ export async function createRecordsFromTweets() {
 
 		// Link the tweet creator via recordCreators.
 		if (tweet.user.recordId) {
-			await linkRecords(newRecord.id, tweet.user.recordId, 'created_by', db);
+			await linkRecords(newRecord.id, tweet.user.recordId, 'created_by', db, { log: false });
+			logger.info(
+				`Created record ${newRecord.id} for tweet ${tweet.text?.slice(0, 20)} (${tweet.id}); created_by -> ${tweet.user.recordId}`
+			);
+		} else {
+			logger.info(
+				`Created record ${newRecord.id} for tweet ${tweet.text?.slice(0, 20)} (${tweet.id})`
+			);
 		}
 
 		// Link the tweet media via recordMedia.
@@ -249,12 +252,11 @@ export async function linkQuotedTweets(tweetIds: string[]) {
 			continue;
 		}
 
-		// Update the tweet's record with the parent's record id.
+		// Link the tweet record to the quoted tweet record.
+		await linkRecords(tweet.recordId, quotedTweet.recordId, 'quotes', db, { log: false });
 		logger.info(
-			`Setting parentId of tweet record ${tweet.recordId} to quoted tweet record ${quotedTweet.recordId}`
+			`Linked quote: tweet record ${tweet.recordId} quotes -> ${quotedTweet.recordId} (${tweet.id} -> ${quotedTweet.id})`
 		);
-
-		await linkRecords(tweet.recordId, quotedTweet.recordId, 'quotes', db);
 	}
 
 	logger.complete(`Linked ${tweetsWithQuotes.length} quoted tweets`);
