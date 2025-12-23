@@ -74,7 +74,7 @@ export async function ensureGithubUserExists(
  */
 export async function updatePartialUsers(): Promise<number> {
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN,
+		auth: Bun.env.GITHUB_TOKEN,
 	});
 
 	logger.start('Fetching full user information for partial users');
@@ -131,7 +131,7 @@ export async function updatePartialUsers(): Promise<number> {
 			logger.info(`Updated user ${user.login}`);
 
 			// Add a small delay between requests to avoid rate limiting
-			await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
+			await Bun.sleep(REQUEST_DELAY_MS);
 		} catch (error) {
 			if (error instanceof RequestError) {
 				logger.error(`Error fetching user ${user.login}`, {

@@ -66,7 +66,7 @@
  */
 
 // Configuration
-const SERVER_PORT = Number(process.env.PORT ?? 3000);
+const SERVER_PORT = Number(Bun.env.PORT ?? 3000);
 const CLIENT_DIRECTORY = './dist/client';
 const SERVER_ENTRY_POINT = './dist/server/server.js';
 
@@ -91,34 +91,34 @@ const log = {
 
 // Preloading configuration from environment variables
 const MAX_PRELOAD_BYTES = Number(
-	process.env.ASSET_PRELOAD_MAX_SIZE ?? 5 * 1024 * 1024 // 5MB default
+	Bun.env.ASSET_PRELOAD_MAX_SIZE ?? 5 * 1024 * 1024 // 5MB default
 );
 
 // Parse comma-separated include patterns (no defaults)
-const INCLUDE_PATTERNS = (process.env.ASSET_PRELOAD_INCLUDE_PATTERNS ?? '')
+const INCLUDE_PATTERNS = (Bun.env.ASSET_PRELOAD_INCLUDE_PATTERNS ?? '')
 	.split(',')
 	.map((s) => s.trim())
 	.filter(Boolean)
 	.map((pattern: string) => convertGlobToRegExp(pattern));
 
 // Parse comma-separated exclude patterns (no defaults)
-const EXCLUDE_PATTERNS = (process.env.ASSET_PRELOAD_EXCLUDE_PATTERNS ?? '')
+const EXCLUDE_PATTERNS = (Bun.env.ASSET_PRELOAD_EXCLUDE_PATTERNS ?? '')
 	.split(',')
 	.map((s) => s.trim())
 	.filter(Boolean)
 	.map((pattern: string) => convertGlobToRegExp(pattern));
 
 // Verbose logging flag
-const VERBOSE = process.env.ASSET_PRELOAD_VERBOSE_LOGGING === 'true';
+const VERBOSE = Bun.env.ASSET_PRELOAD_VERBOSE_LOGGING === 'true';
 
 // Optional ETag feature
-const ENABLE_ETAG = (process.env.ASSET_PRELOAD_ENABLE_ETAG ?? 'true') === 'true';
+const ENABLE_ETAG = (Bun.env.ASSET_PRELOAD_ENABLE_ETAG ?? 'true') === 'true';
 
 // Optional Gzip feature
-const ENABLE_GZIP = (process.env.ASSET_PRELOAD_ENABLE_GZIP ?? 'true') === 'true';
-const GZIP_MIN_BYTES = Number(process.env.ASSET_PRELOAD_GZIP_MIN_SIZE ?? 1024); // 1KB
+const ENABLE_GZIP = (Bun.env.ASSET_PRELOAD_ENABLE_GZIP ?? 'true') === 'true';
+const GZIP_MIN_BYTES = Number(Bun.env.ASSET_PRELOAD_GZIP_MIN_SIZE ?? 1024); // 1KB
 const GZIP_TYPES = (
-	process.env.ASSET_PRELOAD_GZIP_MIME_TYPES ??
+	Bun.env.ASSET_PRELOAD_GZIP_MIME_TYPES ??
 	'text/,application/javascript,application/json,application/xml,image/svg+xml'
 )
 	.split(',')
@@ -257,7 +257,7 @@ function createResponseHandler(asset: InMemoryAsset): (req: Request) => Response
  * Create composite glob pattern from include patterns
  */
 function createCompositeGlobPattern(): Bun.Glob {
-	const raw = (process.env.ASSET_PRELOAD_INCLUDE_PATTERNS ?? '')
+	const raw = (Bun.env.ASSET_PRELOAD_INCLUDE_PATTERNS ?? '')
 		.split(',')
 		.map((s) => s.trim())
 		.filter(Boolean);
@@ -279,10 +279,10 @@ async function initializeStaticRoutes(clientDirectory: string): Promise<PreloadR
 	if (VERBOSE) {
 		console.log(`Max preload size: ${(MAX_PRELOAD_BYTES / 1024 / 1024).toFixed(2)} MB`);
 		if (INCLUDE_PATTERNS.length > 0) {
-			console.log(`Include patterns: ${process.env.ASSET_PRELOAD_INCLUDE_PATTERNS ?? ''}`);
+			console.log(`Include patterns: ${Bun.env.ASSET_PRELOAD_INCLUDE_PATTERNS ?? ''}`);
 		}
 		if (EXCLUDE_PATTERNS.length > 0) {
-			console.log(`Exclude patterns: ${process.env.ASSET_PRELOAD_EXCLUDE_PATTERNS ?? ''}`);
+			console.log(`Exclude patterns: ${Bun.env.ASSET_PRELOAD_EXCLUDE_PATTERNS ?? ''}`);
 		}
 	}
 

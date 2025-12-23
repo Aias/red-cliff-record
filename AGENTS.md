@@ -33,7 +33,7 @@ Use all tools at your disposal to diagnose and resolve issues. This includes but
 **Development:**
 
 - `bun run lint` - Run at the end of a work session before finalizing changes
-- `bun run tsc` - Run only when TypeScript/types may be affected (TS code, schemas, build config)
+- `bun run tsc` - Run only when TypeScript/types may be affected (TS code, schemas, build config). You don't need to add `--noEmit` to this – it's already built in to the command.
 
 Never attempt to start the development server or build the application. The user will run these commands manually.
 
@@ -122,7 +122,7 @@ Never attempt to start the development server or build the application. The user
 
 **React-Specific Rules:**
 
-- Avoid `useEffect`. You probably don't need it. Before writing code that uses `useEffect`, use a web request to read the following article: https://react.dev/learn/you-might-not-need-an-effect
+- Avoid `useEffect`; read (via `curl`) [You Might Not Need an Effect](https://raw.githubusercontent.com/reactjs/react.dev/main/src/content/learn/you-might-not-need-an-effect.md) before adding one. Attempt to remove existing `useEffect`s where possible.
 - We use React 19 and therefore don't need to use `forwardRef` – refs are automatically forwarded
 - Avoid `setTimeout` for timing operations in React components. Prefer `useLayoutEffect` for synchronous DOM updates that must happen before paint, and `requestAnimationFrame` (or double `requestAnimationFrame`) for coordinating with the browser's rendering cycle. These patterns are more idiomatic, robust, and aligned with React's rendering lifecycle than arbitrary timeouts
 

@@ -1,5 +1,3 @@
-import os from 'os';
-import readline from 'readline';
 import { browsingHistory, type Browser, type BrowsingHistoryInsert } from '@aias/hozo';
 import { arcSchema } from '@aias/hozo';
 import { and, eq, gt, isNotNull, ne, notLike, sql } from 'drizzle-orm';
@@ -20,6 +18,34 @@ import {
 } from './types';
 
 const logger = createIntegrationLogger('browser-history', 'sync');
+
+/**
+ * Gets the machine hostname by invoking the system `hostname` command.
+ *
+ * We prefer this over environment variables because `Bun.env.HOSTNAME` is often unset
+ * in local shells, which can cause spurious "unknown hostname" prompts.
+ */
+async function getHostnameFromCli(): Promise<string> {
+	// If explicitly provided, prefer env override.
+	const envHostname = Bun.env.HOSTNAME?.trim();
+	if (envHostname && envHostname.length > 0) return envHostname;
+
+	const proc = Bun.spawn(['hostname'], {
+		stdout: 'pipe',
+		stderr: 'pipe',
+	});
+
+	const stdout = await new Response(proc.stdout).text();
+	const exitCode = await proc.exited;
+
+	if (exitCode === 0) {
+		const hostname = stdout.trim();
+		if (hostname.length > 0) return hostname;
+	}
+
+	// Fallback: stable placeholder
+	return 'unknown';
+}
 
 /**
  * Configuration constants
@@ -58,32 +84,14 @@ const REMOVABLE_QUERY_PARAMS = [
 ];
 
 /**
- * Creates a readline interface for user input
- *
- * @returns A readline interface
- */
-const createPrompt = (): readline.Interface => {
-	return readline.createInterface({
-		input: process.stdin,
-		output: process.stdout,
-	});
-};
-
-/**
  * Asks the user for confirmation
  *
  * @param message - The message to display to the user
  * @returns Promise that resolves to true if the user confirms, false otherwise
  */
 const askForConfirmation = async (message: string): Promise<boolean> => {
-	const rl = createPrompt();
-
-	return new Promise((resolve) => {
-		rl.question(`${message} (y/N) `, (answer) => {
-			rl.close();
-			resolve(answer.toLowerCase() === 'y');
-		});
-	});
+	const answer = prompt(`${message} (y/N) `);
+	return answer?.trim().toLowerCase() === 'y';
 };
 
 /**
@@ -142,27 +150,27 @@ async function syncBrowserHistory(
 	integrationRunId: number,
 	collectDebugData?: unknown[]
 ): Promise<number> {
+	// Get current hostname
+	const currentHostname = await getHostnameFromCli();
+
+	// Step 1: Check if the current hostname is known
+	const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
+	if (!shouldProceed) {
+		logger.info('Sync cancelled by user');
+		return 0;
+	}
+
+	logger.start(`Starting ${browserConfig.displayName} browser history incremental update`);
+
+	// Step 2: Get the most recent history entry
+	const lastKnownTime = await getLastSyncPoint(currentHostname, browserConfig.name);
+	logLastSyncPoint(lastKnownTime);
+
+	// Step 3: Fetch new history entries
+	logger.info('Retrieving new history entries...');
+	const { db: browserDb, client } = await browserConfig.createConnection();
+
 	try {
-		// Get current hostname
-		const currentHostname = os.hostname();
-
-		// Step 1: Check if the current hostname is known
-		const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
-		if (!shouldProceed) {
-			logger.info('Sync cancelled by user');
-			return 0;
-		}
-
-		logger.start(`Starting ${browserConfig.displayName} browser history incremental update`);
-
-		// Step 2: Get the most recent history entry
-		const lastKnownTime = await getLastSyncPoint(currentHostname, browserConfig.name);
-		logLastSyncPoint(lastKnownTime);
-
-		// Step 3: Fetch new history entries
-		logger.info('Retrieving new history entries...');
-		const browserDb = browserConfig.createConnection();
-
 		// Calculate effective cutoff time (use the later of lastKnownTime or browser cutoff date)
 		let effectiveCutoff = lastKnownTime;
 		if (browserConfig.cutoffDate) {
@@ -209,6 +217,8 @@ async function syncBrowserHistory(
 				error instanceof Error ? error.message : String(error)
 			}`
 		);
+	} finally {
+		client.close();
 	}
 }
 

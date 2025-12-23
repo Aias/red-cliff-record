@@ -2,7 +2,7 @@ import { relations, schema } from '@aias/hozo';
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/bun-sql';
 
-const createDb = () => drizzle(process.env.DATABASE_URL!, { schema, relations });
+const createDb = () => drizzle(Bun.env.DATABASE_URL!, { schema, relations });
 type Database = ReturnType<typeof createDb>;
 
 const globalForDb = globalThis as unknown as {
@@ -11,6 +11,6 @@ const globalForDb = globalThis as unknown as {
 
 export const db = globalForDb.db ?? createDb();
 
-if (process.env.NODE_ENV !== 'production') globalForDb.db = db;
+if (Bun.env.NODE_ENV !== 'production') globalForDb.db = db;
 
 export type Db = typeof db;

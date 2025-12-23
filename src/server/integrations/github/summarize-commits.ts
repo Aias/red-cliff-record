@@ -56,7 +56,7 @@ export const CommitSummaryResponseSchema = z.object({
 export type CommitSummaryResponse = z.infer<typeof CommitSummaryResponseSchema>;
 
 export const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
+	apiKey: Bun.env.OPENAI_API_KEY,
 });
 
 export const commitSummarizerInstructions = `
@@ -96,7 +96,7 @@ export const summarizeCommit = async (
 	commit: CommitSummaryInput
 ): Promise<CommitSummaryResponse> => {
 	const response = await openai.responses.create({
-		model: 'gpt-5.1-codex',
+		model: 'gpt-5.2',
 		instructions: commitSummarizerInstructions,
 		text: {
 			format: {

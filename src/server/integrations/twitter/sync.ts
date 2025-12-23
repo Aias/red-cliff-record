@@ -1,7 +1,4 @@
-import { mkdirSync, readdirSync, readFileSync } from 'fs';
-import { rename } from 'fs/promises';
-import { homedir } from 'os';
-import { resolve } from 'path';
+import { mkdir } from 'node:fs/promises';
 import {
 	twitterMedia as mediaTable,
 	twitterTweets as tweetsTable,
@@ -28,7 +25,7 @@ const logger = createIntegrationLogger('twitter', 'sync');
 /**
  * Configuration constants
  */
-const TWITTER_DATA_DIR = resolve(homedir(), 'Documents/Red Cliff Record/Twitter Data');
+const TWITTER_DATA_DIR = `${Bun.env.HOME}/Documents/Red Cliff Record/Twitter Data`;
 const BOOKMARK_FILE_PREFIX = 'bookmarks-';
 const BOOKMARK_FILE_SUFFIX = '.json';
 const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
@@ -41,7 +38,7 @@ const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
  */
 async function archiveProcessedFiles(files: string[], archiveDir: string): Promise<void> {
 	try {
-		mkdirSync(archiveDir, { recursive: true });
+		await mkdir(archiveDir, { recursive: true });
 
 		await Promise.all(
 			files.map(async (filePath) => {
@@ -51,8 +48,11 @@ async function archiveProcessedFiles(files: string[], archiveDir: string): Promi
 					return;
 				}
 
-				const archivePath = resolve(archiveDir, fileName);
-				await rename(filePath, archivePath);
+				const archivePath = `${archiveDir}/${fileName}`;
+				const sourceFile = Bun.file(filePath);
+				await Bun.write(archivePath, sourceFile);
+				// Delete original file after copying
+				await Bun.file(filePath).unlink();
 				logger.info(`Archived file: ${fileName}`);
 			})
 		);
@@ -68,16 +68,16 @@ async function archiveProcessedFiles(files: string[], archiveDir: string): Promi
  * @param maxRetries - Maximum number of retries (default: 3)
  * @returns The result of the operation
  */
-async function retryOnEINTR<T>(operation: () => T, maxRetries: number = 3): Promise<T> {
+async function retryOnEINTR<T>(operation: () => Promise<T>, maxRetries: number = 3): Promise<T> {
 	let lastError: unknown;
 	for (let i = 0; i < maxRetries; i++) {
 		try {
-			return operation();
+			return await operation();
 		} catch (error) {
 			lastError = error;
 			if (error instanceof Error && 'code' in error && error.code === 'EINTR') {
 				// Wait a bit before retrying
-				await new Promise((resolve) => setTimeout(resolve, 100 * (i + 1)));
+				await Bun.sleep(100 * (i + 1));
 				continue;
 			}
 			throw error;
@@ -102,21 +102,18 @@ export async function loadBookmarksData(): Promise<{
 	processedFiles: string[];
 }> {
 	try {
-		// Read the directory entries with file types, with retry on EINTR
-		const entries = await retryOnEINTR(() =>
-			readdirSync(TWITTER_DATA_DIR, { withFileTypes: true })
-		);
+		// Discover bookmark files using Bun.Glob
+		const bookmarkFiles: string[] = [];
+		const glob = new Bun.Glob(`${BOOKMARK_FILE_PREFIX}*${BOOKMARK_FILE_SUFFIX}`);
 
-		// Filter for bookmark files and sort them
-		const bookmarkFiles = entries
-			.filter(
-				(entry) =>
-					entry.isFile() &&
-					entry.name.startsWith(BOOKMARK_FILE_PREFIX) &&
-					entry.name.endsWith(BOOKMARK_FILE_SUFFIX)
-			)
-			.map((entry) => entry.name)
-			.sort(); // Ascending order since the filenames are in ISO format
+		await retryOnEINTR(async () => {
+			for await (const fileName of glob.scan({ cwd: TWITTER_DATA_DIR })) {
+				bookmarkFiles.push(fileName);
+			}
+		});
+
+		// Ascending order since the filenames are in ISO format
+		bookmarkFiles.sort();
 
 		if (bookmarkFiles.length === 0) {
 			logger.info('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');
@@ -128,10 +125,11 @@ export async function loadBookmarksData(): Promise<{
 		const processedFiles: string[] = [];
 
 		for (const fileName of bookmarkFiles) {
-			const filePath = resolve(TWITTER_DATA_DIR, fileName);
+			const filePath = `${TWITTER_DATA_DIR}/${fileName}`;
 			logger.info(`Processing Twitter bookmarks file: ${filePath}`);
 
-			const fileContent = await retryOnEINTR(() => readFileSync(filePath, 'utf-8'));
+			const file = Bun.file(filePath);
+			const fileContent = await retryOnEINTR(async () => await file.text());
 			const rawData = JSON.parse(fileContent);
 
 			// Validate the data using Zod schema
@@ -211,7 +209,7 @@ async function syncTwitterBookmarks(
 		await createRelatedRecords();
 
 		// Step 6: Archive processed files
-		const archiveDir = resolve(TWITTER_DATA_DIR, 'Archive');
+		const archiveDir = `${TWITTER_DATA_DIR}/Archive`;
 		await archiveProcessedFiles(processedFiles, archiveDir);
 
 		return updatedCount;
@@ -285,38 +283,48 @@ function extractTweetsFromBookmarks(bookmarkResponses: TwitterBookmarksArray): T
  * @returns Object containing processed tweets, users, and media
  */
 function processTweetData(tweets: TweetData[], integrationRunId: number) {
-	const processedUsers: TwitterUserInsert[] = [];
-	const processedMedia: TwitterMediaInsert[] = [];
-	const processedTweets: TwitterTweetInsert[] = [];
-	const processedQuoteTweets: TwitterTweetInsert[] = [];
+	// De-dupe aggressively to avoid redundant DB work and noisy logs.
+	const processedUsersById = new Map<string, TwitterUserInsert>();
+	const processedMediaById = new Map<string, TwitterMediaInsert>();
+	const processedTweetsById = new Map<string, TwitterTweetInsert>();
+	const processedQuoteTweetsById = new Map<string, TwitterTweetInsert>();
 
 	tweets.forEach((t) => {
 		// Process the tweet
 		const tweet = processTweet(t);
+		const tweetWithRun: TwitterTweetInsert = { ...tweet, integrationRunId };
 
 		// Separate regular tweets from quote tweets
-		if (tweet.quotedTweetId) {
-			processedQuoteTweets.push({ ...tweet, integrationRunId });
+		if (tweetWithRun.quotedTweetId) {
+			if (!processedQuoteTweetsById.has(tweetWithRun.id)) {
+				processedQuoteTweetsById.set(tweetWithRun.id, tweetWithRun);
+			}
 		} else {
-			processedTweets.push({ ...tweet, integrationRunId });
+			if (!processedTweetsById.has(tweetWithRun.id)) {
+				processedTweetsById.set(tweetWithRun.id, tweetWithRun);
+			}
 		}
 
 		// Process the user
 		const user = processUser(t.core.user_results.result);
-		processedUsers.push({ ...user, integrationRunId });
+		if (!processedUsersById.has(user.id)) {
+			processedUsersById.set(user.id, { ...user, integrationRunId });
+		}
 
 		// Process any media attached to the tweet
 		t.legacy.entities?.media?.forEach((m) => {
 			const mediaData = processMedia(m, t);
-			processedMedia.push({ ...mediaData });
+			if (!processedMediaById.has(mediaData.id)) {
+				processedMediaById.set(mediaData.id, { ...mediaData });
+			}
 		});
 	});
 
 	return {
-		processedTweets,
-		processedQuoteTweets,
-		processedUsers,
-		processedMedia,
+		processedTweets: [...processedTweetsById.values()],
+		processedQuoteTweets: [...processedQuoteTweetsById.values()],
+		processedUsers: [...processedUsersById.values()],
+		processedMedia: [...processedMediaById.values()],
 	};
 }
 
@@ -337,9 +345,93 @@ async function storeTweetData(
 ): Promise<number> {
 	return db.transaction(
 		async (tx) => {
+			const CHUNK_SIZE = 1000;
+
+			const getExistingTwitterUserIds = async (ids: string[]): Promise<Set<string>> => {
+				const existing = new Set<string>();
+				for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+					const chunk = ids.slice(i, i + CHUNK_SIZE);
+					if (chunk.length === 0) continue;
+
+					const rows = await tx.query.twitterUsers.findMany({
+						where: {
+							id: {
+								in: chunk,
+							},
+						},
+						columns: {
+							id: true,
+						},
+					});
+
+					for (const row of rows) existing.add(row.id);
+				}
+				return existing;
+			};
+
+			const getExistingTweetIds = async (ids: string[]): Promise<Set<string>> => {
+				const existing = new Set<string>();
+				for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+					const chunk = ids.slice(i, i + CHUNK_SIZE);
+					if (chunk.length === 0) continue;
+
+					const rows = await tx.query.twitterTweets.findMany({
+						where: {
+							id: {
+								in: chunk,
+							},
+						},
+						columns: {
+							id: true,
+						},
+					});
+
+					for (const row of rows) existing.add(row.id);
+				}
+				return existing;
+			};
+
+			const getExistingMediaIds = async (ids: string[]): Promise<Set<string>> => {
+				const existing = new Set<string>();
+				for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+					const chunk = ids.slice(i, i + CHUNK_SIZE);
+					if (chunk.length === 0) continue;
+
+					const rows = await tx.query.twitterMedia.findMany({
+						where: {
+							id: {
+								in: chunk,
+							},
+						},
+						columns: {
+							id: true,
+						},
+					});
+
+					for (const row of rows) existing.add(row.id);
+				}
+				return existing;
+			};
+
+			const formatProgress = (index: number, total: number): string => {
+				return `[${index}/${total}]`;
+			};
+
 			// 1. Insert Users
-			logger.info(`Inserting ${processedUsers.length} users...`);
+			const existingUserIds = await getExistingTwitterUserIds(processedUsers.map((u) => u.id));
+			const newUsers = processedUsers.length - existingUserIds.size;
+			logger.info(
+				`Users: total=${processedUsers.length} new=${newUsers} existing=${existingUserIds.size}`
+			);
+
+			let userIndex = 0;
 			for (const user of processedUsers) {
+				userIndex++;
+				const action = existingUserIds.has(user.id) ? 'update' : 'insert';
+				logger.info(
+					`User ${formatProgress(userIndex, processedUsers.length)} ${action} @${user.username} (${user.id})`
+				);
+
 				await tx
 					.insert(usersTable)
 					.values(user)
@@ -353,8 +445,20 @@ async function storeTweetData(
 			}
 
 			// 2. Insert Regular Tweets
-			logger.info(`Inserting ${processedTweets.length} regular tweets...`);
+			const existingTweetIds = await getExistingTweetIds(processedTweets.map((t) => t.id));
+			const newTweets = processedTweets.length - existingTweetIds.size;
+			logger.info(
+				`Tweets: total=${processedTweets.length} new=${newTweets} existing=${existingTweetIds.size}`
+			);
+
+			let tweetIndex = 0;
 			for (const tweet of processedTweets) {
+				tweetIndex++;
+				const action = existingTweetIds.has(tweet.id) ? 'update' : 'insert';
+				logger.info(
+					`Tweet ${formatProgress(tweetIndex, processedTweets.length)} ${action} (${tweet.id})`
+				);
+
 				await tx
 					.insert(tweetsTable)
 					.values(tweet)
@@ -365,8 +469,22 @@ async function storeTweetData(
 			}
 
 			// 3. Insert Quoted Tweets
-			logger.info(`Inserting ${processedQuoteTweets.length} tweets with quotes...`);
+			const existingQuoteTweetIds = await getExistingTweetIds(
+				processedQuoteTweets.map((t) => t.id)
+			);
+			const newQuoteTweets = processedQuoteTweets.length - existingQuoteTweetIds.size;
+			logger.info(
+				`Quote tweets: total=${processedQuoteTweets.length} new=${newQuoteTweets} existing=${existingQuoteTweetIds.size}`
+			);
+
+			let quoteTweetIndex = 0;
 			for (const tweet of processedQuoteTweets) {
+				quoteTweetIndex++;
+				const action = existingQuoteTweetIds.has(tweet.id) ? 'update' : 'insert';
+				logger.info(
+					`Quote tweet ${formatProgress(quoteTweetIndex, processedQuoteTweets.length)} ${action} (${tweet.id} -> ${tweet.quotedTweetId})`
+				);
+
 				await tx
 					.insert(tweetsTable)
 					.values(tweet)
@@ -377,12 +495,29 @@ async function storeTweetData(
 			}
 
 			// 4. Insert Media
-			logger.info(`Inserting ${processedMedia.length} media items...`);
+			const existingMediaIds = await getExistingMediaIds(processedMedia.map((m) => m.id));
+			const newMediaItems = processedMedia.length - existingMediaIds.size;
+			logger.info(
+				`Media: total=${processedMedia.length} new=${newMediaItems} existing=${existingMediaIds.size}`
+			);
+
+			let mediaInsertIndex = 0;
 			for (const mediaItem of processedMedia) {
+				if (existingMediaIds.has(mediaItem.id)) {
+					continue;
+				}
+
+				mediaInsertIndex++;
+				logger.info(
+					`Media ${formatProgress(mediaInsertIndex, newMediaItems)} insert (${mediaItem.id}) ${mediaItem.type} ${mediaItem.tweetUrl}`
+				);
 				await tx.insert(mediaTable).values(mediaItem).onConflictDoNothing();
 			}
 
 			const totalTweets = processedTweets.length + processedQuoteTweets.length;
+			logger.info(
+				`Already in DB: users=${existingUserIds.size} tweets=${existingTweetIds.size} quoteTweets=${existingQuoteTweetIds.size} media=${existingMediaIds.size}`
+			);
 			logger.complete(`Processed tweets`, totalTweets);
 			return totalTweets;
 		},

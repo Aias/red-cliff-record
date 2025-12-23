@@ -1,4 +1,5 @@
 import type { arcSchema, Browser } from '@aias/hozo';
+import type { Client } from '@libsql/client';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { z } from 'zod';
 import { emptyStringToNull } from '@/shared/lib/formatting';
@@ -21,10 +22,15 @@ export type DailyVisitsQueryRow = z.infer<typeof DailyVisitsQueryRowSchema>;
 
 export const DailyVisitsQueryResultSchema = z.array(DailyVisitsQueryRowSchema);
 
+export interface BrowserConnection {
+	db: LibSQLDatabase<typeof arcSchema>;
+	client: Client;
+}
+
 export interface BrowserConfig {
 	name: Browser;
 	displayName: string;
-	createConnection: () => LibSQLDatabase<typeof arcSchema>;
+	createConnection: () => Promise<BrowserConnection>;
 	// Optional cutoff date to avoid fetching history before this date
 	// Useful for browsers that import history from other browsers
 	cutoffDate?: Date;
