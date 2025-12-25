@@ -160,7 +160,11 @@ export async function createRecordsFromTweets() {
 
 	for (const tweet of tweets) {
 		const decodedText = tweet.text ? decodeHtmlEntities(tweet.text).trim() : '';
-		const content = await normalizeTweetContent(decodedText, knownTweetIds, resolveUrl);
+		// Include quoted tweet ID so its URL gets removed (relationship is tracked separately)
+		const additionalKnownIds = tweet.quotedTweet?.id ? [tweet.quotedTweet.id] : [];
+		const content = await normalizeTweetContent(decodedText, knownTweetIds, resolveUrl, {
+			additionalKnownIds,
+		});
 		const record = mapTwitterTweetToRecord(tweet, content);
 
 		// Insert the record with parentId set to null (to be updated later if this is a quote).

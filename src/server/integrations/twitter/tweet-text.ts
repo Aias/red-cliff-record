@@ -11,7 +11,27 @@ const URL_PATTERN = /(https?:\/\/[^\s]+)/gi;
 
 const resolvedUrlCache = new Map<string, string>();
 
+/**
+ * Collapse all whitespace (including newlines) to single spaces.
+ * Used for comparison purposes only.
+ */
 export const collapseWhitespace = (value: string): string => value.replace(/\s+/g, ' ').trim();
+
+/**
+ * Normalize whitespace while preserving newlines.
+ * - Collapses multiple spaces/tabs to single space
+ * - Trims each line
+ * - Collapses multiple consecutive newlines to double newline
+ * - Trims the whole string
+ */
+export const normalizeWhitespace = (value: string): string => {
+	return value
+		.split('\n')
+		.map((line) => line.replace(/[ \t]+/g, ' ').trim())
+		.join('\n')
+		.replace(/\n{3,}/g, '\n\n') // collapse 3+ newlines to 2
+		.trim();
+};
 
 export const createUrlResolver = (): UrlResolver => {
 	return async (url: string): Promise<string> => {
@@ -56,7 +76,10 @@ const parseTweetId = (url: URL): string | null => {
 };
 
 const isTweetHost = (host: string): boolean =>
-	host.endsWith('twitter.com') || host.endsWith('x.com');
+	host === 'twitter.com' ||
+	host === 'x.com' ||
+	host.endsWith('.twitter.com') ||
+	host.endsWith('.x.com');
 
 export const isKnownTweetLink = (link: string, knownTweetIds: KnownTweetIds): boolean => {
 	try {
@@ -76,22 +99,34 @@ export const isKnownTweetLink = (link: string, knownTweetIds: KnownTweetIds): bo
 const removeUrlFromText = (text: string, url: string): string => {
 	const escapedUrl = url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	const cleaned = text.replace(new RegExp(escapedUrl, 'g'), ' ');
-	return collapseWhitespace(cleaned);
+	return normalizeWhitespace(cleaned);
 };
+
+export interface NormalizeOptions {
+	/** Additional tweet IDs to treat as "known" (e.g., quoted tweet ID) */
+	additionalKnownIds?: string[];
+}
 
 export const normalizeTweetContent = async (
 	rawText: string,
 	knownTweetIds: KnownTweetIds,
-	resolveUrl: UrlResolver
+	resolveUrl: UrlResolver,
+	options: NormalizeOptions = {}
 ): Promise<string> => {
 	if (!rawText) {
 		return '';
 	}
 
+	// Merge additional IDs (like quoted tweet) into the known set
+	const effectiveKnownIds =
+		options.additionalKnownIds && options.additionalKnownIds.length > 0
+			? new Set([...knownTweetIds, ...options.additionalKnownIds])
+			: knownTweetIds;
+
 	let normalized = rawText;
 	const matches = Array.from(rawText.matchAll(URL_PATTERN)).map((match) => match[0]);
 	if (matches.length === 0) {
-		return collapseWhitespace(normalized);
+		return normalizeWhitespace(normalized);
 	}
 
 	const resolutions = await Promise.all(
@@ -102,17 +137,17 @@ export const normalizeTweetContent = async (
 	);
 
 	for (const { original, resolved } of resolutions) {
-		if (isKnownTweetLink(resolved, knownTweetIds)) {
+		if (isKnownTweetLink(resolved, effectiveKnownIds)) {
 			normalized = removeUrlFromText(normalized, original);
 			continue;
 		}
 
 		if (resolved !== original) {
-			normalized = normalized.replace(original, resolved);
+			normalized = normalized.replaceAll(original, resolved);
 		}
 	}
 
-	return collapseWhitespace(normalized);
+	return normalizeWhitespace(normalized);
 };
 
 export const stripUrls = (text: string): string =>
