@@ -113,7 +113,7 @@ export const RecordsGrid = () => {
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const value = e.target.value;
 			setTitleInput(value);
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -130,7 +130,7 @@ export const RecordsGrid = () => {
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const value = e.target.value;
 			setUrlInput(value);
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -147,7 +147,7 @@ export const RecordsGrid = () => {
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const value = e.target.value;
 			setTextInput(value);
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -162,7 +162,7 @@ export const RecordsGrid = () => {
 
 	const handleTypeChange = useCallback(
 		(value: string) => {
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -177,7 +177,7 @@ export const RecordsGrid = () => {
 
 	const handleSourceChange = useCallback(
 		(value: string) => {
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -192,7 +192,7 @@ export const RecordsGrid = () => {
 
 	const handleCuratedChange = useCallback(
 		(value: string) => {
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -207,7 +207,7 @@ export const RecordsGrid = () => {
 
 	const handleIndexNodeChange = useCallback(
 		(value: string) => {
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -222,7 +222,7 @@ export const RecordsGrid = () => {
 
 	const handleFormatChange = useCallback(
 		(value: string) => {
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -237,7 +237,7 @@ export const RecordsGrid = () => {
 
 	const handlePrivateChange = useCallback(
 		(value: string) => {
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -252,7 +252,7 @@ export const RecordsGrid = () => {
 
 	const handleHasParentChange = useCallback(
 		(value: string) => {
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -267,7 +267,7 @@ export const RecordsGrid = () => {
 
 	const handleHasMediaChange = useCallback(
 		(value: string) => {
-			navigate({
+			void navigate({
 				search: (prev) => ({
 					...prev,
 					filters: {
@@ -286,7 +286,7 @@ export const RecordsGrid = () => {
 			if (value === '' || /^\d+$/.test(value)) {
 				setLimitInput(value);
 				if (value) {
-					navigate({
+					void navigate({
 						search: (prev) => ({
 							...prev,
 							limit: parseInt(value, 10),

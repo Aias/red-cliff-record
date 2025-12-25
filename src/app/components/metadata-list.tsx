@@ -31,7 +31,7 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
 
 	const copyToClipboard = (value: unknown) => {
 		const stringValue = value instanceof Object ? JSON.stringify(value, null, 2) : String(value);
-		navigator.clipboard.writeText(stringValue);
+		void navigator.clipboard.writeText(stringValue);
 	};
 
 	const handleCopy = (key: string, value: unknown) => {

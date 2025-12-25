@@ -174,14 +174,14 @@ function RouteComponent() {
 			// Navigate to first available record
 			const firstAvailableId = recordsList.ids[0]?.id;
 			if (firstAvailableId && firstAvailableId !== recordId) {
-				navigate({
+				void navigate({
 					to: '/records/$recordId',
 					params: { recordId: firstAvailableId.toString() },
 					search: true,
 				});
 			} else {
 				// No records available, go to records list
-				navigate({
+				void navigate({
 					to: '/records',
 					search: true,
 				});
@@ -254,13 +254,13 @@ function RouteComponent() {
 
 		// Navigate immediately - tree structure is unaffected by curation
 		if (nextId) {
-			navigate({
+			void navigate({
 				to: '/records/$recordId',
 				params: { recordId: nextId.toString() },
 				search: true,
 			});
 		} else {
-			navigate({
+			void navigate({
 				to: '/records',
 				search: true,
 			});
@@ -275,13 +275,13 @@ function RouteComponent() {
 			const nextId = getNextRecord(listIds, recordId, skip);
 
 			if (nextId) {
-				navigate({
+				void navigate({
 					to: '/records/$recordId',
 					params: { recordId: nextId.toString() },
 					search: true,
 				});
 			} else {
-				navigate({
+				void navigate({
 					to: '/records',
 					search: true,
 				});

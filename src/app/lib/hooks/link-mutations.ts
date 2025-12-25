@@ -108,13 +108,13 @@ export function useUpsertLink() {
 		onSuccess: (row) => {
 			const { sourceId, targetId } = row;
 
-			utils.links.listForRecord.invalidate({ id: sourceId });
-			utils.links.listForRecord.invalidate({ id: targetId });
+			void utils.links.listForRecord.invalidate({ id: sourceId });
+			void utils.links.listForRecord.invalidate({ id: targetId });
 
-			utils.records.tree.invalidate({ id: sourceId });
-			utils.records.tree.invalidate({ id: targetId });
+			void utils.records.tree.invalidate({ id: sourceId });
+			void utils.records.tree.invalidate({ id: targetId });
 
-			utils.links.map.invalidate(undefined, {
+			void utils.links.map.invalidate(undefined, {
 				predicate: (q) => {
 					const input = q.queryKey[1]?.input;
 
@@ -171,13 +171,13 @@ export function useDeleteLinks() {
 
 			/* 1 ▸ invalidate per-record link lists */
 			touched.forEach((id) => {
-				utils.links.listForRecord.invalidate({ id });
-				utils.records.tree.invalidate({ id });
-				utils.search.byRecordId.invalidate({ id });
+				void utils.links.listForRecord.invalidate({ id });
+				void utils.records.tree.invalidate({ id });
+				void utils.search.byRecordId.invalidate({ id });
 			});
 
 			/* 2 ▸ drop any cached map that overlaps the touched set */
-			utils.links.map.invalidate(undefined, {
+			void utils.links.map.invalidate(undefined, {
 				predicate: (q) => {
 					const input = q.queryKey[1]?.input;
 					if (!input?.recordIds) return false;

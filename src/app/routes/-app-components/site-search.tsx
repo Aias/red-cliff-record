@@ -66,7 +66,7 @@ export const SiteSearch = () => {
 	const handleSelectResult = (recordId: number) => {
 		setCommandOpen(false);
 		setInputValue('');
-		navigate({
+		void navigate({
 			to: '/records/$recordId',
 			params: { recordId: recordId.toString() },
 			search: (prev) => ({ ...defaultQueueOptions, ...prev }),
@@ -180,12 +180,14 @@ export const SiteSearch = () => {
 							<CommandItem
 								disabled={inputValue.length === 0 || textResultsLoading || similarityResultsLoading}
 								key="create-record"
-								onSelect={async () => {
-									const newRecord = await createRecordMutation.mutateAsync({
-										type: 'artifact',
-										title: inputValue,
-									});
-									handleSelectResult(newRecord.id);
+								onSelect={() => {
+									void (async () => {
+										const newRecord = await createRecordMutation.mutateAsync({
+											type: 'artifact',
+											title: inputValue,
+										});
+										handleSelectResult(newRecord.id);
+									})();
 								}}
 								className="px-3 py-2"
 							>

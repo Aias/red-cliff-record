@@ -17,7 +17,7 @@ export function useEmbedRecord() {
 					recordUpdatedAt: data.recordUpdatedAt,
 				};
 			});
-			utils.search.byRecordId.invalidate({ id: data.id });
+			void utils.search.byRecordId.invalidate({ id: data.id });
 		},
 	});
 }
@@ -29,7 +29,7 @@ export function useMarkAsCurated() {
 		onMutate: ({ ids }) => {
 			// Fire cancellations but don't await - keeps onMutate synchronous
 			// to avoid race conditions with navigation
-			ids.forEach((id) => utils.records.get.cancel({ id }));
+			ids.forEach((id) => void utils.records.get.cancel({ id }));
 
 			const previous = new Map<DbId, RecordGet | undefined>();
 			ids.forEach((id) => {
@@ -42,7 +42,7 @@ export function useMarkAsCurated() {
 			return { previous };
 		},
 		onSuccess: (ids) => {
-			utils.records.list.invalidate();
+			void utils.records.list.invalidate();
 			ids.forEach((id) => {
 				utils.records.get.setData({ id }, (prev) => {
 					if (!prev) return undefined;
@@ -79,7 +79,7 @@ export function useUpsertRecord() {
 			utils.records.get.setData({ id: row.id }, row);
 
 			/* refresh ID tables & search index */
-			utils.records.list.invalidate();
+			void utils.records.list.invalidate();
 			embedMutation.mutate({ id: row.id });
 		},
 		onError: (err, input, ctx) => {
@@ -168,9 +168,9 @@ export function useDeleteRecords() {
 			});
 
 			/* Invalidate targeted caches that might reference deleted records */
-			utils.records.tree.invalidate(); // Tree queries may contain deleted records as children
-			utils.links.listForRecord.invalidate(); // Link queries may reference deleted records
-			utils.links.map.invalidate(); // Link maps may reference deleted records
+			void utils.records.tree.invalidate(); // Tree queries may contain deleted records as children
+			void utils.links.listForRecord.invalidate(); // Link queries may reference deleted records
+			void utils.links.map.invalidate(); // Link maps may reference deleted records
 		},
 		onError: (err, _ids, ctx) => {
 			ctx?.previousRecords.forEach((data, id) => {
@@ -191,8 +191,8 @@ export function useMergeRecords() {
 	return trpc.records.merge.useMutation({
 		onMutate: ({ sourceId, targetId }) => {
 			// Fire cancellations but don't await - keeps onMutate synchronous
-			utils.records.get.cancel({ id: sourceId });
-			utils.records.get.cancel({ id: targetId });
+			void utils.records.get.cancel({ id: sourceId });
+			void utils.records.get.cancel({ id: targetId });
 
 			// Snapshot the previous values
 			const previousSource = utils.records.get.getData({ id: sourceId });
@@ -232,26 +232,26 @@ export function useMergeRecords() {
 			return { previousSource, previousTarget, previousLists };
 		},
 		onSuccess: ({ updatedRecord, deletedRecordId, touchedIds }) => {
-			utils.records.get.invalidate({ id: updatedRecord.id });
-			utils.search.byRecordId.invalidate({ id: updatedRecord.id });
-			utils.records.tree.invalidate();
+			void utils.records.get.invalidate({ id: updatedRecord.id });
+			void utils.search.byRecordId.invalidate({ id: updatedRecord.id });
+			void utils.records.tree.invalidate();
 
 			/* freeze the deleted ID so nothing refetches it */
 			const deletedKey = utils.records.get.queryOptions({ id: deletedRecordId }).queryKey;
 
 			// stop any in-flight request
-			qc.cancelQueries({ queryKey: deletedKey, exact: true });
+			void qc.cancelQueries({ queryKey: deletedKey, exact: true });
 
 			// mark as permanently gone
 			qc.setQueryData(deletedKey, () => undefined);
 			qc.setQueryDefaults(deletedKey, { staleTime: Infinity, retry: false });
 
 			/* per-record link lists */
-			touchedIds.forEach((id) => utils.links.listForRecord.invalidate({ id }));
+			touchedIds.forEach((id) => void utils.links.listForRecord.invalidate({ id }));
 
 			/* maps that overlap */
 			const touched = new Set(touchedIds);
-			utils.links.map.invalidate(undefined, {
+			void utils.links.map.invalidate(undefined, {
 				predicate: (q) => {
 					const recIds = Array.isArray(q.queryKey[1]?.input?.recordIds)
 						? q.queryKey[1].input.recordIds
@@ -261,8 +261,8 @@ export function useMergeRecords() {
 			});
 
 			/* record-ID tables */
-			utils.records.list.invalidate();
-			utils.records.tree.invalidate();
+			void utils.records.list.invalidate();
+			void utils.records.tree.invalidate();
 
 			/* re-embed the target record */
 			embedMutation.mutate({ id: updatedRecord.id });

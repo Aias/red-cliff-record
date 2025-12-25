@@ -80,12 +80,14 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 				<CommandItem
 					disabled={query.length === 0 || isFetching}
 					key="create-record"
-					onSelect={async () => {
-						const newRecord = await createRecordMutation.mutateAsync({
-							type: 'artifact',
-							title: query,
-						});
-						onSelect(newRecord.id);
+					onSelect={() => {
+						void (async () => {
+							const newRecord = await createRecordMutation.mutateAsync({
+								type: 'artifact',
+								title: query,
+							});
+							onSelect(newRecord.id);
+						})();
 					}}
 					className="px-3 py-2"
 				>
@@ -322,7 +324,7 @@ export function RelationshipSelector({
 						<PredicateCombobox
 							predicates={displayPredicates}
 							includeNonCanonical={incoming}
-							onPredicateSelect={handlePredicateSelect}
+							onPredicateSelect={(id) => void handlePredicateSelect(id)}
 							actions={actions}
 						/>
 					</>

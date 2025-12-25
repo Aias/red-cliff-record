@@ -201,7 +201,7 @@ export function RecordForm({
 			clearTimeout(saveTimeoutRef.current);
 		}
 		saveTimeoutRef.current = setTimeout(() => {
-			form.handleSubmit();
+			void form.handleSubmit();
 		}, 1000); // Save after 1 second of inactivity
 	}, [form]);
 
@@ -218,7 +218,7 @@ export function RecordForm({
 		const handleBeforeUnload = () => {
 			if (saveTimeoutRef.current) {
 				// Note: beforeunload can't wait for async operations, so we trigger it but can't guarantee completion
-				immediateSave();
+				void immediateSave();
 			}
 		};
 
@@ -255,12 +255,12 @@ export function RecordForm({
 			onSubmit={(e) => {
 				e.preventDefault();
 				e.stopPropagation();
-				form.handleSubmit();
+				void form.handleSubmit();
 			}}
 			onBlur={(e) => {
 				// If focus is leaving the form entirely, save immediately
 				if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-					immediateSave();
+					void immediateSave();
 				}
 			}}
 			onClickCapture={(e) => {
@@ -271,7 +271,7 @@ export function RecordForm({
 
 				if (!isNaN(urlRecordId) && urlRecordId !== recordId) {
 					e.stopPropagation();
-					navigate({
+					void navigate({
 						to: '/records/$recordId',
 						params: { recordId: recordId.toString() },
 						search: true,
@@ -284,7 +284,7 @@ export function RecordForm({
 				}
 
 				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'Enter' || e.key === 'Return')) {
-					curateAndNextHandler(e);
+					void curateAndNextHandler(e);
 				}
 			}}
 			className={cn('relative flex flex-col', className)}
@@ -600,7 +600,7 @@ export function RecordForm({
 								onKeyDown={(e) => {
 									if (e.key === 'Enter' && !e.shiftKey) {
 										e.preventDefault();
-										immediateSave();
+										void immediateSave();
 									}
 								}}
 								disabled={isFormLoading}
@@ -625,7 +625,7 @@ export function RecordForm({
 								onKeyDown={(e) => {
 									if (e.key === 'Enter' && !e.shiftKey) {
 										e.preventDefault();
-										immediateSave();
+										void immediateSave();
 									}
 								}}
 								disabled={isFormLoading}
@@ -660,7 +660,7 @@ export function RecordForm({
 												onKeyDown={(e) => {
 													if (e.key === 'Enter' && !e.shiftKey) {
 														e.preventDefault();
-														immediateSave();
+														void immediateSave();
 													}
 												}}
 												disabled={isFormLoading}
@@ -693,7 +693,7 @@ export function RecordForm({
 								onKeyDown={(e) => {
 									if (e.key === 'Enter' && !e.shiftKey) {
 										e.preventDefault();
-										immediateSave();
+										void immediateSave();
 									}
 								}}
 								disabled={isFormLoading}
