@@ -9,7 +9,13 @@
 		],
 		"@typescript-eslint/consistent-type-imports": "warn",
 		"@typescript-eslint/ban-ts-comment": "off",
-		"import/order": "warn"
+		"import/order": "warn",
+
+		"typescript/await-thenable": "warn",
+		"typescript/no-floating-promises": "warn",
+		"typescript/no-misused-promises": "warn",
+		"typescript/no-for-in-array": "warn",
+		"typescript/require-await": "warn"
 	},
 	"ignorePatterns": [
 		"**/build/**",

@@ -75,6 +75,7 @@
 		"babel-plugin-react-compiler": "^1.0.0",
 		"drizzle-kit": "1.0.0-beta.4-4605abe",
 		"oxlint": "^1.35.0",
+		"oxlint-tsgolint": "^0.10.0",
 		"pg": "^8.16.3",
 		"prettier": "^3.7.4",
 		"prettier-plugin-tailwindcss": "^0.7.2",
@@ -84,7 +85,7 @@
 	},
 	"scripts": {
 		"format": "prettier --write .",
-		"lint": "oxlint --fix . && tsgo --noEmit",
+		"lint": "oxlint --fix --type-aware . && tsgo --noEmit",
 		"tsc": "tsgo --noEmit",
 		"tsc:watch": "tsgo --noEmit --watch",
 		"dev": "bun run --filter @aias/hozo build && bunx --bun vite",
