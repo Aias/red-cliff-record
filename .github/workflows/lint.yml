@@ -20,6 +20,6 @@ jobs:
       # 3 - Build hozo package
       - run: bun run --filter @aias/hozo build
 
-      # 4 – Run your scripts through Bun
+      # 4 – Check formatting and lint
+      - run: bunx prettier --check .
       - run: bun run lint
-      - run: bun run tsc

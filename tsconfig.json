@@ -33,7 +33,6 @@
 		"disableSourceOfProjectReferenceRedirect": true,
 
 		/* Path Aliases */
-		"baseUrl": ".",
 		"paths": {
 			"@/components": ["./src/app/components"],
 			"@/components/*": ["./src/app/components/*"],

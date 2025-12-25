@@ -6,6 +6,7 @@ import { emptyStringToNull } from '@/shared/lib/formatting';
 
 const sanitizeString = (str: string | null): string | null => {
 	if (!str) return null;
+	// eslint-disable-next-line no-control-regex -- intentionally removing null characters from browser history
 	return str.replace(/\0/g, '').trim();
 };
 

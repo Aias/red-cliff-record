@@ -1,0 +1,23 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": ["typescript", "import"],
+	"rules": {
+		"no-unused-vars": "off",
+		"@typescript-eslint/no-unused-vars": [
+			"warn",
+			{ "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+		],
+		"@typescript-eslint/consistent-type-imports": "warn",
+		"@typescript-eslint/ban-ts-comment": "off",
+		"import/order": "warn"
+	},
+	"ignorePatterns": [
+		"**/build/**",
+		"**/dist/**",
+		".output/**",
+		".vinxi/**",
+		".nitro/**",
+		".tanstack/**",
+		".temp/**"
+	]
+}
