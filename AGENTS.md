@@ -32,8 +32,10 @@ Use all tools at your disposal to diagnose and resolve issues. This includes but
 
 **Development:**
 
-- `bun run lint` - Run at the end of a work session before finalizing changes
-- `bun run tsc` - Run only when TypeScript/types may be affected (TS code, schemas, build config). You don't need to add `--noEmit` to this – it's already built in to the command.
+- `bun run lint` - Runs oxlint + tsgo (type-checking). Fast enough to run frequently during development.
+- `bun run format` - Runs Prettier. Run at the end of a set of changes before committing.
+
+The lint command handles both linting and type-checking in one step via tsgo (the TypeScript Go port). Since it's very fast (~1s), run it liberally during development rather than waiting until the end.
 
 Never attempt to start the development server or build the application. The user will run these commands manually.
 
@@ -69,7 +71,7 @@ Never attempt to start the development server or build the application. The user
 ## Architecture (Pointers)
 
 - High-level overview and directory map: see `README.md`.
-- Frontend: `src/app/**` (routes, components, client libs). Import aliases in `eslint.config.js` and tsconfig.
+- Frontend: `src/app/**` (routes, components, client libs). Import aliases defined in `tsconfig.json`.
 - Backend: `src/server/**` (tRPC routers, libs, db, integrations).
 - Shared: `src/shared/**` (cross-environment libs and types).
 - Packages: `packages/hozo` contains the database schema, relations, and validation logic (imported as `@aias/hozo`).
@@ -174,10 +176,9 @@ Never attempt to start the development server or build the application. The user
 
 **Before Finalizing Changes:**
 
-- Run `bun run lint`
-- Run `bun run tsc` only if your changes can impact types (TypeScript sources, Zod schemas, DB schema/types, build/tsconfig)
-- Check for type errors regularly during development, not just prior to committing. Use the project's type checking and linting tools
-- In addition to type checking and linting, prior to committing, re-read this document to ensure all instructions are followed and to refresh your memory of the project's guidelines and conventions
+- Run `bun run lint` frequently during development (it's fast—includes both oxlint and tsgo type-checking)
+- Run `bun run format` at the end of a set of changes before committing
+- In addition to linting and formatting, prior to committing, re-read this document to ensure all instructions are followed and to refresh your memory of the project's guidelines and conventions
 - Update this file if refactoring changes architectural patterns or introduces new conventions
 
 **Git & Repository State:**
@@ -201,7 +202,7 @@ Never attempt to start the development server or build the application. The user
 
 **Import Rules:**
 
-- When adding or updating imports for a file, ensure they're sorted in alphabetical order within the following categories: Language and platform (e.g. node), framework (e.g. react), external libraries, internal libraries, aliased project imports, relative imports, and local imports. Import order specified by the project's eslint config takes precedence over this rule
+- When adding or updating imports for a file, ensure they're sorted in alphabetical order within the following categories: Language and platform (e.g. node), framework (e.g. react), external libraries, internal libraries, aliased project imports, relative imports, and local imports. Import order specified by the project's oxlint config takes precedence over this rule
 - When importing types, add the `type` keyword to the import statement even if it's not required by linting rules
 - ✅ Shared code can be imported by both client and server
 - ✅ Server code can import from shared and other server modules
@@ -231,7 +232,7 @@ Never attempt to start the development server or build the application. The user
 
 **Formatting & Indentation:**
 
-- Governed by Prettier (`.prettierrc`): tabs for indentation (width 2). Run `bun run lint` at the end of a session.
+- Governed by Prettier (`.prettierrc`): tabs for indentation (width 2). Run `bun run format` at the end of a session before committing.
 
 **Media & File Handling:**
 

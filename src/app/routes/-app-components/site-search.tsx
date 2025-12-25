@@ -181,13 +181,10 @@ export const SiteSearch = () => {
 								disabled={inputValue.length === 0 || textResultsLoading || similarityResultsLoading}
 								key="create-record"
 								onSelect={() => {
-									void (async () => {
-										const newRecord = await createRecordMutation.mutateAsync({
-											type: 'artifact',
-											title: inputValue,
-										});
-										handleSelectResult(newRecord.id);
-									})();
+									createRecordMutation.mutate(
+										{ type: 'artifact', title: inputValue },
+										{ onSuccess: (newRecord) => handleSelectResult(newRecord.id) }
+									);
 								}}
 								className="px-3 py-2"
 							>

@@ -77,22 +77,19 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 					{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
 				</CommandGroup>
 				<CommandSeparator alwaysRender />
-				<CommandItem
-					disabled={query.length === 0 || isFetching}
-					key="create-record"
-					onSelect={() => {
-						void (async () => {
-							const newRecord = await createRecordMutation.mutateAsync({
-								type: 'artifact',
-								title: query,
-							});
-							onSelect(newRecord.id);
-						})();
-					}}
-					className="px-3 py-2"
-				>
-					<PlusCircleIcon /> Create New Record
-				</CommandItem>
+			<CommandItem
+				disabled={query.length === 0 || isFetching}
+				key="create-record"
+				onSelect={() => {
+					createRecordMutation.mutate(
+						{ type: 'artifact', title: query },
+						{ onSuccess: (newRecord) => onSelect(newRecord.id) }
+					);
+				}}
+				className="px-3 py-2"
+			>
+				<PlusCircleIcon /> Create New Record
+			</CommandItem>
 			</CommandList>
 		</Command>
 	);
@@ -264,20 +261,26 @@ export function RelationshipSelector({
 
 	const handleRecordSelect = (id: DbId) => setTargetId(id);
 
-	const handlePredicateSelect = async (predId: number) => {
+	const handlePredicateSelect = (predId: number) => {
 		if (!targetId) return;
 		setPredicateId(predId);
 		const swap = altRef.current;
 		altRef.current = false;
 		setAltPressed(false);
-		const updatedLink = await upsertLinkMutation.mutateAsync({
-			id: link?.id,
-			sourceId: swap ? targetId : sourceId,
-			targetId: swap ? sourceId : targetId,
-			predicateId: predId,
-		});
-		onComplete?.(updatedLink.sourceId, updatedLink.targetId, updatedLink.predicateId);
-		setOpen(false);
+		upsertLinkMutation.mutate(
+			{
+				id: link?.id,
+				sourceId: swap ? targetId : sourceId,
+				targetId: swap ? sourceId : targetId,
+				predicateId: predId,
+			},
+			{
+				onSuccess: (updatedLink) => {
+					onComplete?.(updatedLink.sourceId, updatedLink.targetId, updatedLink.predicateId);
+					setOpen(false);
+				},
+			}
+		);
 	};
 
 	const currentPredicateName = useMemo(
@@ -324,7 +327,7 @@ export function RelationshipSelector({
 						<PredicateCombobox
 							predicates={displayPredicates}
 							includeNonCanonical={incoming}
-							onPredicateSelect={(id) => void handlePredicateSelect(id)}
+							onPredicateSelect={handlePredicateSelect}
 							actions={actions}
 						/>
 					</>
