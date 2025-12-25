@@ -1,5 +1,3 @@
-import { twitterTweets } from '@aias/hozo';
-import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { createIntegrationLogger } from '../common/logging';
 
@@ -132,7 +130,7 @@ export const loadKnownTweetIds = async (): Promise<KnownTweetIds> => {
 export const fetchTweetTextById = async (tweetId: string): Promise<string | null> => {
 	const tweet = await db.query.twitterTweets.findFirst({
 		columns: { text: true },
-		where: eq(twitterTweets.id, tweetId),
+		where: { id: tweetId },
 	});
 
 	return tweet?.text ?? null;
