@@ -183,7 +183,6 @@ Never attempt to start the development server or build the application. The user
 **Git & Repository State:**
 
 - Never run `git commit`, `git add`/`git stage`, `git push`, `git reset`, or similar commands without explicit user permission. The user will manually manage all git operations unless otherwise specified
-- Never use `git commit --amend` unless the user specifically requests it. Prefer creating new commits over rewriting history
 - Prefer proposing diffs via patch files or documented changes; avoid modifying VCS state
 - Make smart use of git during development to review changes and understand the history of the codebase
 - For larger sets of changes or refactors done independently by the agent, create a new branch and make atomic commits to it as interim checkpoints with descriptive commit messages. The user can review the changes and provide feedback before merging back to the active branch
