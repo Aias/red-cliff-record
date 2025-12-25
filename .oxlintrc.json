@@ -15,7 +15,12 @@
 		"typescript/no-floating-promises": "warn",
 		"typescript/no-misused-promises": "warn",
 		"typescript/no-for-in-array": "warn",
-		"typescript/require-await": "warn"
+		"typescript/require-await": "warn",
+
+		"typescript/no-base-to-string": "off",
+		"typescript/unbound-method": "off",
+		"typescript/restrict-template-expressions": "off",
+		"typescript/no-misused-spread": "off"
 	},
 	"ignorePatterns": [
 		"**/build/**",

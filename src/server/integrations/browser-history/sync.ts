@@ -89,7 +89,7 @@ const REMOVABLE_QUERY_PARAMS = [
  * @param message - The message to display to the user
  * @returns Promise that resolves to true if the user confirms, false otherwise
  */
-const askForConfirmation = async (message: string): Promise<boolean> => {
+const askForConfirmation = (message: string): boolean => {
 	const answer = prompt(`${message} (y/N) `);
 	return answer?.trim().toLowerCase() === 'y';
 };

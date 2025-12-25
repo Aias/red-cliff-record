@@ -19,10 +19,10 @@ const NavLink = ({ className, ...props }: LinkComponentProps) => {
 };
 
 export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutProps) => {
-	const toggleTheme = async () => {
+	const toggleTheme = () => {
 		const newTheme = currentTheme === 'light' ? 'dark' : 'light';
 		onThemeChange(newTheme);
-		setTheme({ data: { theme: newTheme } });
+		void setTheme({ data: { theme: newTheme } });
 	};
 
 	return (

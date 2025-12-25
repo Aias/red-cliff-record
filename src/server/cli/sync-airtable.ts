@@ -29,4 +29,4 @@ async function main(): Promise<void> {
 }
 
 // Run the sync
-main();
+void main();
