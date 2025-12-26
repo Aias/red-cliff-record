@@ -90,7 +90,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 									</>
 								),
 								onSelect: () => {
-									navigate({
+									void navigate({
 										to: '/records/$recordId',
 										params: { recordId: targetId.toString() },
 										search: true,
@@ -135,7 +135,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 													</>
 												),
 												onSelect: () => {
-													navigate({
+													void navigate({
 														to: '/records/$recordId',
 														params: { recordId: targetId.toString() },
 														search: true,
@@ -215,7 +215,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 													</>
 												),
 												onSelect: () => {
-													navigate({
+													void navigate({
 														to: '/records/$recordId',
 														params: { recordId: link.sourceId.toString() },
 														search: true,
@@ -306,7 +306,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 												</>
 											),
 											onSelect: () => {
-												navigate({
+												void navigate({
 													to: '/records/$recordId',
 													params: { recordId: targetId.toString() },
 													search: true,

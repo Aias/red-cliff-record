@@ -283,7 +283,7 @@ async function processSingleEntry(
 			resolve(false);
 		}, timeoutMs);
 
-		(async () => {
+		void (async () => {
 			try {
 				// Determine a usable URL for the entry
 				const effectiveUrl = entry.url ?? entry.extracted_content_url ?? null;
@@ -735,7 +735,7 @@ async function generateFeedEntryEmbeddings(): Promise<void> {
 						resolve({ success: false });
 					}, ENTRY_TIMEOUT_MS);
 
-					(async () => {
+					void (async () => {
 						try {
 							// Create embedding text
 							const embeddingText = createCleanFeedEntryEmbeddingText({

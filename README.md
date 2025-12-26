@@ -11,7 +11,7 @@ A personal knowledge repository that aggregates data from multiple external sour
 - **Deployment/Hosting**: Bun server + local PostgreSQL on a Tailscale network
 - **Search**: PostgreSQL full-text search + OpenAI embeddings
 
-For detailed development guidelines, see [CLAUDE.md](./CLAUDE.md) and cursor rules in [.cursor/rules/](./.cursor/rules/). Plenty of AI was used in the development of this project.
+For detailed development guidelines, see [AGENTS.md](./AGENTS.md). Plenty of AI was used in the development of this project.
 
 ## Prerequisites
 
@@ -243,11 +243,11 @@ bun run dev
 # Build for production
 bun run build
 
-# Type check
-bun run tsc
-
-# Lint, format, and type check (run before commits)
+# Lint and type check (oxlint + tsgo, fast—run frequently)
 bun run lint
+
+# Format code (Prettier, run before commits)
+bun run format
 
 # Open database studio
 bun run db:studio
@@ -297,7 +297,7 @@ bun run db:migrate
 
 - Clear cache: `rm -rf node_modules bun.lock dist && bun install`
 - Check Node version: Should be v24+ as specified in `.nvmrc`
-- Run type checking: `bun run tsc`
+- Run lint and type check: `bun run lint`
 
 ### Integration Sync Failures
 

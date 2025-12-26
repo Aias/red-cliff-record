@@ -296,4 +296,4 @@ async function main(): Promise<void> {
 }
 
 // Run the seed
-main();
+void main();

@@ -142,5 +142,5 @@ const main = async (): Promise<void> => {
 };
 
 if (import.meta.url === import.meta.resolve('./embed-records.ts')) {
-	main();
+	void main();
 }

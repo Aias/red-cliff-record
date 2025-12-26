@@ -7,7 +7,7 @@ export interface ImageMetadata {
 	size: number;
 }
 
-export async function getImageMetadata(buffer: ArrayBuffer): Promise<ImageMetadata> {
+export function getImageMetadata(buffer: ArrayBuffer): ImageMetadata {
 	const view = new DataView(buffer);
 	const size = buffer.byteLength;
 

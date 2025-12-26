@@ -46,7 +46,7 @@ function RouteComponent() {
 
 	const handleValueChange = useCallback(
 		(value: string) => {
-			navigate({
+			void navigate({
 				to: '/records/$recordId',
 				params: { recordId: value },
 				search,

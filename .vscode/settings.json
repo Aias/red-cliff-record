@@ -2,7 +2,8 @@
 	"eslint.useFlatConfig": true,
 	"eslint.workingDirectories": ["."],
 	"editor.codeActionsOnSave": {
-		"source.fixAll.eslint": "explicit"
+		"source.fixAll.oxc": "explicit",
+		"source.fixAll.ts": "explicit"
 	},
 	"files.associations": {
 		"*.css": "tailwindcss",
@@ -36,5 +37,6 @@
 	"terminal.integrated.shellArgs.osx": ["-l", "-i"],
 	"debug.javascript.terminalOptions": {},
 	"npm.packageManager": "bun",
-	"npm.scriptRunner": "bun"
+	"npm.scriptRunner": "bun",
+	"typescript.experimental.useTsgo": true
 }

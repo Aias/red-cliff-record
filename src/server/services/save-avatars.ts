@@ -177,5 +177,5 @@ const main = async (): Promise<void> => {
 
 // Execute main function if this file is run directly
 if (import.meta.url === import.meta.resolve('./save-avatars.ts')) {
-	main();
+	void main();
 }

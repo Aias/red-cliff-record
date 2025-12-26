@@ -116,7 +116,7 @@ export const MediaUpload = ({
 			e.stopPropagation();
 			setIsDragging(false);
 			const file = e.dataTransfer.files?.[0] ?? null;
-			handleFile(file);
+			void handleFile(file);
 		},
 		[handleFile, isLoading]
 	);
@@ -137,7 +137,7 @@ export const MediaUpload = ({
 						const file = item.getAsFile();
 						if (file) {
 							e.preventDefault();
-							handleFile(file);
+							void handleFile(file);
 							return; // Handle the first valid file found
 						}
 					}
@@ -155,7 +155,7 @@ export const MediaUpload = ({
 	const handleFileChange = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const file = e.target.files?.[0] ?? null;
-			handleFile(file);
+			void handleFile(file);
 		},
 		[handleFile]
 	);
