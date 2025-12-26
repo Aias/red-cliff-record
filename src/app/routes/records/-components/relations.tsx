@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { LinkSelect, PredicateSelect } from '@aias/hozo';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
+import {
+	ArrowLeft as ArrowLeftIcon,
+	ArrowRight as ArrowRightIcon,
+	GitMerge as MergeIcon,
+	Plus as PlusIcon,
+	Trash as TrashIcon,
+} from '@phosphor-icons/react';
 import { trpc } from '@/app/trpc';
 import { RecordLink } from './record-link';
-import { RelationshipSelector } from './record-lookup';
+import { RelationshipSelector, type RelationshipSelectorRef } from './record-lookup';
 import { Spinner } from '@/components/spinner';
 import { useDeleteLinks } from '@/lib/hooks/link-mutations';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
@@ -32,13 +38,13 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 	const mergeRecordsMutation = useMergeRecords();
 	const deleteLinkMutation = useDeleteLinks();
 	const navigate = useNavigate();
-	const addRelationshipButtonRef = useRef<HTMLButtonElement | null>(null);
+	const addRelationshipRef = useRef<RelationshipSelectorRef | null>(null);
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.metaKey && event.altKey && (event.key === '+' || event.code === 'Equal')) {
 				event.preventDefault();
-				addRelationshipButtonRef.current?.click();
+				addRelationshipRef.current?.open();
 			}
 		};
 
@@ -65,7 +71,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 		<section>
 			<header className="flex items-center justify-between overflow-hidden">
 				<h3 className="mb-2">
-					Relations <span className="text-sm text-c-secondary">({totalLinks})</span>
+					Relations <span className="text-sm text-muted-foreground">({totalLinks})</span>
 				</h3>
 				<RelationshipSelector
 					sourceId={id}
@@ -74,8 +80,8 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 							<PlusIcon /> Add
 						</span>
 					}
+					selectorRef={addRelationshipRef}
 					buttonProps={{
-						ref: addRelationshipButtonRef,
 						size: 'sm',
 						variant: 'outline',
 						className: 'h-[1.5lh]',
@@ -108,8 +114,8 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 			</header>
 			{outgoingLinks.length > 0 && (
 				<>
-					<h4 className="mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-c-secondary uppercase">
-						<ArrowRightIcon className="size-4 text-c-hint" /> Outgoing
+					<h4 className="mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-muted-foreground uppercase">
+						<ArrowRightIcon className="size-4 text-muted-foreground" /> Outgoing
 					</h4>
 					<ul className="flex flex-col gap-2 text-xs">
 						{outgoingLinks.map((link) => (
@@ -178,7 +184,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 				<>
 					<h4
 						className={cn(
-							'mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-c-hint uppercase',
+							'mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-muted-foreground uppercase',
 							outgoingLinks.length > 0 && 'mt-3'
 						)}
 					>
@@ -293,7 +299,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 								buttonProps={{
 									size: 'sm',
 									variant: 'outline',
-									className: 'h-[1.5lh] font-mono text-xs text-c-secondary',
+									className: 'h-[1.5lh] font-mono text-xs text-muted-foreground',
 								}}
 								popoverProps={{ side: 'left' }}
 								buildActions={({ sourceId, targetId }) => {

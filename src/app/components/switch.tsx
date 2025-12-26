@@ -1,22 +1,29 @@
-import * as React from 'react';
-import { Switch as SwitchPrimitive } from 'radix-ui';
-import { cn } from '@/app/lib/utils';
+'use client';
 
-function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimitive.Root>) {
+import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
+
+import { cn } from '@/lib/utils';
+
+function Switch({
+	className,
+	size = 'default',
+	...props
+}: SwitchPrimitive.Root.Props & {
+	size?: 'sm' | 'default';
+}) {
 	return (
 		<SwitchPrimitive.Root
 			data-slot="switch"
+			data-size={size}
 			className={cn(
-				'peer inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-c-border shadow-xs transition-all outline-none hover:bg-c-splash focus-visible:border-c-focus focus-visible:ring-[3px] focus-visible:ring-c-focus/50 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-c-main data-[state=unchecked]:bg-c-flood',
+				'peer group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-[2px] focus-visible:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-[2px] aria-invalid:ring-destructive/20 data-[size=default]:h-[16.6px] data-[size=default]:w-[28px] data-[size=sm]:h-[14px] data-[size=sm]:w-[24px] dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 data-checked:bg-primary data-unchecked:bg-input dark:data-unchecked:bg-input/80 data-disabled:cursor-not-allowed data-disabled:opacity-50',
 				className
 			)}
 			{...props}
 		>
 			<SwitchPrimitive.Thumb
 				data-slot="switch-thumb"
-				className={cn(
-					'pointer-events-none block size-4 rounded-full border border-c-divider bg-c-main-contrast shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0'
-				)}
+				className="pointer-events-none block rounded-full bg-background ring-0 transition-transform group-data-[size=default]/switch:size-3.5 group-data-[size=sm]/switch:size-3 group-data-[size=default]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=sm]/switch:data-checked:translate-x-[calc(100%-2px)] dark:data-checked:bg-primary-foreground group-data-[size=default]/switch:data-unchecked:translate-x-0 group-data-[size=sm]/switch:data-unchecked:translate-x-0 dark:data-unchecked:bg-foreground"
 			/>
 		</SwitchPrimitive.Root>
 	);

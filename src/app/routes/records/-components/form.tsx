@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@aias/hozo';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate, useParams, useRouterState } from '@tanstack/react-router';
-import { SaveIcon, Trash2Icon } from 'lucide-react';
+import { FloppyDisk as SaveIcon, Trash as Trash2Icon } from '@phosphor-icons/react';
 import { z } from 'zod';
 import { recordTypeIcons } from './type-icons';
 import {
@@ -16,7 +16,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from '@/components/alert-dialog';
-import { Avatar } from '@/components/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/avatar';
 import { BooleanSwitch } from '@/components/boolean-switch';
 import { Button } from '@/components/button';
 import { DynamicTextarea } from '@/components/dynamic-textarea';
@@ -291,7 +291,7 @@ export function RecordForm({
 			{...props}
 		>
 			{isFormLoading && (
-				<div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-c-app/50 backdrop-blur-sm">
+				<div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/50 backdrop-blur-sm">
 					<Spinner />
 				</div>
 			)}
@@ -310,10 +310,10 @@ export function RecordForm({
 									}}
 									onBlur={() => debouncedSave()}
 									readOnly={isFormLoading}
-									className="text-c-display"
+									className="text-foreground"
 								/>
 								{field.state.meta.errors && (
-									<p className="text-sm text-c-destructive">
+									<p className="text-sm text-destructive">
 										{field.state.meta.errors.map(getErrorMessage).join(', ')}
 									</p>
 								)}
@@ -337,14 +337,15 @@ export function RecordForm({
 					<form.Field name="type">
 						{(field) => (
 							<ToggleGroup
-								type="single"
-								value={field.state.value}
-								onValueChange={(value) => {
+								value={[field.state.value]}
+								onValueChange={(values) => {
+									const value = values[0] as RecordType | undefined;
 									if (value) {
-										field.handleChange(value as RecordType);
+										field.handleChange(value);
 										debouncedSave();
 									}
 								}}
+								multiple={false}
 								variant="outline"
 								className="w-full"
 								disabled={isFormLoading}
@@ -353,16 +354,18 @@ export function RecordForm({
 									const { icon: Icon, description } = recordTypeIcons[type];
 									return (
 										<Tooltip key={type}>
-											<TooltipTrigger asChild>
-												<ToggleGroupItem
-													value={type}
-													aria-label={type}
-													data-state={field.state.value === type ? 'on' : 'off'}
-													className="flex grow items-center gap-1"
-												>
-													<Icon />
-													<span className="hidden capitalize @[480px]:inline">{type}</span>
-												</ToggleGroupItem>
+											<TooltipTrigger
+												render={
+													<ToggleGroupItem
+														value={type}
+														aria-label={type}
+														data-state={field.state.value === type ? 'on' : 'off'}
+														className="flex grow items-center gap-1"
+													/>
+												}
+											>
+												<Icon />
+												<span className="hidden capitalize @[480px]:inline">{type}</span>
 											</TooltipTrigger>
 											<TooltipContent side="bottom">
 												<p>
@@ -381,7 +384,7 @@ export function RecordForm({
 				<form.Field name="rating">
 					{(field) => (
 						<div className="mx-5 mb-1.5 flex flex-col gap-3">
-							<div className="flex items-center justify-between text-xs text-c-secondary">
+							<div className="flex items-center justify-between text-xs text-muted-foreground">
 								<Label htmlFor="rating" className="inline-flex w-0 justify-center">
 									Rating
 								</Label>
@@ -396,7 +399,8 @@ export function RecordForm({
 								step={1}
 								value={[field.state.value ?? 0]}
 								onValueChange={(values) => {
-									field.handleChange(values[0] ?? 0);
+									const newValue = Array.isArray(values) ? values[0] : values;
+									field.handleChange(newValue ?? 0);
 									debouncedSave();
 								}}
 								disabled={isFormLoading}
@@ -405,7 +409,7 @@ export function RecordForm({
 					)}
 				</form.Field>
 
-				<div className="rounded-md border border-c-divider">
+				<div className="rounded-md border border-border">
 					<Table>
 						<TableBody>
 							<TableRow>
@@ -426,7 +430,7 @@ export function RecordForm({
 												<div className="flex items-center gap-1">
 													<GhostInput
 														id="url"
-														className="w-full text-c-display"
+														className="w-full text-foreground"
 														value={field.state.value ?? ''}
 														placeholder="https://example.com"
 														onChange={(e) => {
@@ -441,7 +445,7 @@ export function RecordForm({
 													)}
 												</div>
 												{field.state.meta.errors && (
-													<p className="text-sm text-c-destructive">
+													<p className="text-sm text-destructive">
 														{field.state.meta.errors.map(getErrorMessage).join(', ')}
 													</p>
 												)}
@@ -469,7 +473,7 @@ export function RecordForm({
 												<div className="flex items-center gap-1">
 													<GhostInput
 														id="avatarUrl"
-														className="w-full text-c-display"
+														className="w-full text-foreground"
 														value={field.state.value ?? ''}
 														placeholder="https://example.com/image.jpg"
 														onChange={(e) => {
@@ -484,7 +488,7 @@ export function RecordForm({
 													)}
 												</div>
 												{field.state.meta.errors && (
-													<p className="text-sm text-c-destructive">
+													<p className="text-sm text-destructive">
 														{field.state.meta.errors.map(getErrorMessage).join(', ')}
 													</p>
 												)}
@@ -505,7 +509,7 @@ export function RecordForm({
 										{(field) => (
 											<GhostInput
 												id="abbreviation"
-												className="w-full text-c-display"
+												className="w-full text-foreground"
 												value={field.state.value ?? ''}
 												placeholder="Short form"
 												onChange={(e) => {
@@ -531,7 +535,7 @@ export function RecordForm({
 										{(field) => (
 											<GhostInput
 												id="sense"
-												className="w-full text-c-display"
+												className="w-full text-foreground"
 												value={field.state.value ?? ''}
 												placeholder="Meaning or definition"
 												onChange={(e) => {
@@ -704,14 +708,13 @@ export function RecordForm({
 			</div>
 			<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
 				{([canSubmit, isSubmitting]) => (
-					<div className="order-first -mt-1 mb-3 flex items-center border-b border-c-divider pb-1">
+					<div className="order-first -mt-1 mb-3 flex items-center border-b border-border pb-1">
 						<Popover>
-							<PopoverTrigger asChild>
-								<Avatar
-									src={formData.avatarUrl ?? undefined}
-									fallback={(formData.title?.charAt(0) ?? formData.type.charAt(0)).toUpperCase()}
-									className="mr-2 cursor-pointer"
-								/>
+							<PopoverTrigger render={<Avatar className="mr-2 cursor-pointer" />}>
+								<AvatarImage src={formData.avatarUrl ?? undefined} />
+								<AvatarFallback>
+									{(formData.title?.charAt(0) ?? formData.type.charAt(0)).toUpperCase()}
+								</AvatarFallback>
 							</PopoverTrigger>
 							<PopoverContent className="min-w-84">
 								<MetadataSection record={formData} />
@@ -721,7 +724,7 @@ export function RecordForm({
 							to="/records/$recordId"
 							params={{ recordId: recordId.toString() }}
 							search={true}
-							className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
+							className="mr-auto truncate font-mono text-sm text-muted-foreground capitalize"
 						>
 							{`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleString()}`}
 						</Link>
@@ -729,10 +732,8 @@ export function RecordForm({
 							{isSubmitting ? <Spinner /> : <SaveIcon />}
 						</Button>
 						<AlertDialog>
-							<AlertDialogTrigger asChild>
-								<Button size="icon" variant="ghost" type="button">
-									<Trash2Icon />
-								</Button>
+							<AlertDialogTrigger render={<Button size="icon" variant="ghost" type="button" />}>
+								<Trash2Icon />
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>
@@ -743,9 +744,9 @@ export function RecordForm({
 								</AlertDialogHeader>
 								<AlertDialogFooter>
 									<AlertDialogCancel>Cancel</AlertDialogCancel>
-									<Button variant="destructive" asChild>
-										<AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
-									</Button>
+									<AlertDialogAction variant="destructive" onClick={onDelete}>
+										Continue
+									</AlertDialogAction>
 								</AlertDialogFooter>
 							</AlertDialogContent>
 						</AlertDialog>

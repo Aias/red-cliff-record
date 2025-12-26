@@ -46,12 +46,12 @@ export const SearchResultItem = memo(function SearchResultItem({
 
 	const labelElement = (
 		<>
-			<strong className="text-c-accent">
+			<strong className="text-primary">
 				{title ??
 					creatorTitle ??
 					(parentTitle ? `↳ ${parentTitle}` : `Untitled ${toTitleCase(type)}`)}
 			</strong>
-			{abbreviation && <span className="ml-1 text-c-hint">({abbreviation})</span>}
+			{abbreviation && <span className="ml-1 text-muted-foreground">({abbreviation})</span>}
 		</>
 	);
 
@@ -66,14 +66,14 @@ export const SearchResultItem = memo(function SearchResultItem({
 
 	return (
 		<div className="flex w-full grow items-center gap-2">
-			<TypeIcon className="size-[1lh] text-c-hint" />
+			<TypeIcon className="size-[1lh] text-muted-foreground" />
 			<div className="line-clamp-1 flex grow items-center gap-1 truncate overflow-ellipsis whitespace-nowrap">
 				<div className="min-w-0 shrink-0">{labelElement}</div>
-				{sense && <span className="shrink-0 truncate text-c-hint italic">{sense}</span>}
-				<div className="ml-2 line-clamp-1 shrink truncate text-c-secondary">{preview}</div>
+				{sense && <span className="shrink-0 truncate text-muted-foreground italic">{sense}</span>}
+				<div className="ml-2 line-clamp-1 shrink truncate text-muted-foreground">{preview}</div>
 			</div>
 			{mediaItem && (
-				<div className="relative aspect-[3/2] h-[1lh] shrink-0 self-center overflow-hidden rounded-md border border-c-divider bg-c-mist">
+				<div className="relative aspect-[3/2] h-[1lh] shrink-0 self-center overflow-hidden rounded-md border border-border bg-muted">
 					{mediaItem.type === 'image' ? (
 						<img
 							src={mediaItem.url}

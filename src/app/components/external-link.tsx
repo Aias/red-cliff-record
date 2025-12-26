@@ -1,4 +1,4 @@
-import { ExternalLinkIcon } from 'lucide-react';
+import { ArrowSquareOut as ExternalLinkIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export const ExternalLink = ({

@@ -47,10 +47,8 @@ export const IntegrationLogo = memo(function IntegrationLogo({
 }: IntegrationLogoProps) {
 	return (
 		<Tooltip>
-			<TooltipTrigger asChild>
-				<div className={className}>
-					<LogoComponent service={service} />
-				</div>
+			<TooltipTrigger render={<div className={className} />}>
+				<LogoComponent service={service} />
 			</TooltipTrigger>
 			<TooltipContent>
 				<span className="capitalize">{service}</span>

@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { PlusCircleIcon, SearchIcon } from 'lucide-react';
+import { PlusCircle as PlusCircleIcon, MagnifyingGlass as SearchIcon } from '@phosphor-icons/react';
 import { trpc } from '@/app/trpc';
 import { SearchResultItem } from '../records/-components/search-result-item';
 import { Button } from '@/components/button';
@@ -97,21 +97,23 @@ export const SiteSearch = () => {
 	return (
 		<>
 			<Popover open={commandOpen} onOpenChange={setCommandOpen}>
-				<PopoverTrigger asChild>
-					<Button
-						variant="outline"
-						className={cn(
-							'relative inline-flex justify-start gap-4 rounded-md text-sm font-normal text-c-primary shadow-none'
-						)}
-						role="combobox"
-						aria-expanded={commandOpen}
-					>
-						<SearchIcon className="text-c-hint" />
-						<span>Search records...</span>
-						<kbd className="pointer-events-none inline-flex items-center gap-1 rounded border border-c-border bg-c-mist px-1.5 font-mono font-medium text-c-secondary select-none">
-							<span className="text-xs text-c-hint">⌘</span>K
-						</kbd>
-					</Button>
+				<PopoverTrigger
+					render={
+						<Button
+							variant="outline"
+							className={cn(
+								'relative inline-flex justify-start gap-4 rounded-md text-sm font-normal text-foreground shadow-none'
+							)}
+							role="combobox"
+							aria-expanded={commandOpen}
+						/>
+					}
+				>
+					<SearchIcon className="text-muted-foreground" />
+					<span>Search records...</span>
+					<kbd className="pointer-events-none inline-flex items-center gap-1 rounded border border-input bg-muted px-1.5 font-mono font-medium text-muted-foreground select-none">
+						<span className="text-xs text-muted-foreground">⌘</span>K
+					</kbd>
 				</PopoverTrigger>
 				<PopoverContent className="w-150 overflow-auto p-0" align="end">
 					<Command shouldFilter={false} loop defaultValue="">

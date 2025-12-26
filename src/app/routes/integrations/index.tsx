@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { AlertCircleIcon, CheckCircleIcon, PlayIcon, XCircleIcon } from 'lucide-react';
+import {
+	WarningCircle as AlertCircleIcon,
+	CheckCircle as CheckCircleIcon,
+	Play as PlayIcon,
+	XCircle as XCircleIcon,
+} from '@phosphor-icons/react';
 import { trpc } from '@/app/trpc';
 import { Alert, AlertDescription } from '@/components/alert';
 import { Button } from '@/components/button';
@@ -206,7 +211,7 @@ function RouteComponent() {
 
 							{messages.length > 0 && (
 								<div className="mt-4 space-y-2">
-									<h3 className="text-sm font-medium text-c-secondary">Sync Log:</h3>
+									<h3 className="text-sm font-medium text-muted-foreground">Sync Log:</h3>
 									<div className="max-h-96 space-y-1 overflow-y-auto">
 										{messages.map((msg, index) => (
 											<Alert key={index} variant={getAlertVariant(msg.type)}>

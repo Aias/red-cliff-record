@@ -6,7 +6,7 @@ import {
 	type RecordType,
 } from '@aias/hozo';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { CheckIcon } from 'lucide-react';
+import { Check as CheckIcon } from '@phosphor-icons/react';
 import { trpc } from '@/app/trpc';
 import { RecordTypeIcon } from './type-icons';
 import { ExternalLink } from '@/components/external-link';
@@ -37,15 +37,17 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 				<RecordTypeIcon type={record.type} />
 			</TableCell>
 			<TableCell className="max-w-60 truncate whitespace-nowrap">
-				<Tooltip delayDuration={500}>
-					<TooltipTrigger asChild>
-						<Link
-							to="/records/$recordId"
-							params={{ recordId: record.id.toString() }}
-							className="block w-full truncate"
-						>
-							{title}
-						</Link>
+				<Tooltip delay={500}>
+					<TooltipTrigger
+						render={
+							<Link
+								to="/records/$recordId"
+								params={{ recordId: record.id.toString() }}
+								className="block w-full truncate"
+							/>
+						}
+					>
+						{title}
 					</TooltipTrigger>
 					<TooltipContent>{title}</TooltipContent>
 				</Tooltip>
@@ -91,13 +93,13 @@ export const RecordsGrid = () => {
 		limit,
 	} = search;
 
-	// Memoize filter values
+	// Memoize filter values (Base UI ToggleGroup uses arrays)
 	const filterValues = useMemo(
 		() => ({
-			curatedValue: isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No',
-			privateValue: isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No',
-			hasParentValue: hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No',
-			hasMediaValue: hasMedia === undefined ? 'All' : hasMedia ? 'Yes' : 'No',
+			curatedValue: [isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No'],
+			privateValue: [isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No'],
+			hasParentValue: [hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No'],
+			hasMediaValue: [hasMedia === undefined ? 'All' : hasMedia ? 'Yes' : 'No'],
 		}),
 		[isCurated, isPrivate, hasParent, hasMedia]
 	);
@@ -161,7 +163,8 @@ export const RecordsGrid = () => {
 	);
 
 	const handleTypeChange = useCallback(
-		(value: string) => {
+		(value: string | null) => {
+			if (value === null) return;
 			void navigate({
 				search: (prev) => ({
 					...prev,
@@ -176,7 +179,8 @@ export const RecordsGrid = () => {
 	);
 
 	const handleSourceChange = useCallback(
-		(value: string) => {
+		(value: string | null) => {
+			if (value === null) return;
 			void navigate({
 				search: (prev) => ({
 					...prev,
@@ -191,7 +195,9 @@ export const RecordsGrid = () => {
 	);
 
 	const handleCuratedChange = useCallback(
-		(value: string) => {
+		(groupValue: string[]) => {
+			const value = groupValue[0];
+			if (!value) return;
 			void navigate({
 				search: (prev) => ({
 					...prev,
@@ -206,7 +212,9 @@ export const RecordsGrid = () => {
 	);
 
 	const handleIndexNodeChange = useCallback(
-		(value: string) => {
+		(groupValue: string[]) => {
+			const value = groupValue[0];
+			if (!value) return;
 			void navigate({
 				search: (prev) => ({
 					...prev,
@@ -221,7 +229,9 @@ export const RecordsGrid = () => {
 	);
 
 	const handleFormatChange = useCallback(
-		(value: string) => {
+		(groupValue: string[]) => {
+			const value = groupValue[0];
+			if (!value) return;
 			void navigate({
 				search: (prev) => ({
 					...prev,
@@ -236,7 +246,9 @@ export const RecordsGrid = () => {
 	);
 
 	const handlePrivateChange = useCallback(
-		(value: string) => {
+		(groupValue: string[]) => {
+			const value = groupValue[0];
+			if (!value) return;
 			void navigate({
 				search: (prev) => ({
 					...prev,
@@ -251,7 +263,9 @@ export const RecordsGrid = () => {
 	);
 
 	const handleHasParentChange = useCallback(
-		(value: string) => {
+		(groupValue: string[]) => {
+			const value = groupValue[0];
+			if (!value) return;
 			void navigate({
 				search: (prev) => ({
 					...prev,
@@ -266,7 +280,9 @@ export const RecordsGrid = () => {
 	);
 
 	const handleHasMediaChange = useCallback(
-		(value: string) => {
+		(groupValue: string[]) => {
+			const value = groupValue[0];
+			if (!value) return;
 			void navigate({
 				search: (prev) => ({
 					...prev,
@@ -326,7 +342,7 @@ export const RecordsGrid = () => {
 					<Label htmlFor="type">Type</Label>
 					<Select value={type ?? 'All'} onValueChange={handleTypeChange}>
 						<SelectTrigger id="type" className="w-full">
-							<SelectValue placeholder="Filter by type" />
+							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="All">All Types</SelectItem>
@@ -342,7 +358,7 @@ export const RecordsGrid = () => {
 					<Label htmlFor="source">Source</Label>
 					<Select value={source ?? 'All'} onValueChange={handleSourceChange}>
 						<SelectTrigger id="source" className="w-full">
-							<SelectValue placeholder="Filter by source" />
+							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="All">All Sources</SelectItem>
@@ -395,7 +411,6 @@ export const RecordsGrid = () => {
 					<Label htmlFor="curated">Is Curated?</Label>
 					<ToggleGroup
 						id="curated"
-						type="single"
 						value={filterValues.curatedValue}
 						onValueChange={handleCuratedChange}
 						variant="outline"
@@ -416,7 +431,6 @@ export const RecordsGrid = () => {
 					<Label htmlFor="hasParent">Has Parent?</Label>
 					<ToggleGroup
 						id="hasParent"
-						type="single"
 						value={filterValues.hasParentValue}
 						onValueChange={handleHasParentChange}
 						variant="outline"
@@ -437,7 +451,6 @@ export const RecordsGrid = () => {
 					<Label htmlFor="hasMedia">Has Media?</Label>
 					<ToggleGroup
 						id="hasMedia"
-						type="single"
 						value={filterValues.hasMediaValue}
 						onValueChange={handleHasMediaChange}
 						variant="outline"
@@ -458,7 +471,6 @@ export const RecordsGrid = () => {
 					<Label htmlFor="private">Is Private?</Label>
 					<ToggleGroup
 						id="private"
-						type="single"
 						value={filterValues.privateValue}
 						onValueChange={handlePrivateChange}
 						variant="outline"
@@ -513,10 +525,10 @@ export const RecordsGrid = () => {
 	return queue ? (
 		<div className="flex h-full grow gap-4 overflow-hidden">
 			{FilterSidebar}
-			<div className="flex grow overflow-hidden rounded border border-c-divider bg-c-page text-xs">
+			<div className="flex grow overflow-hidden rounded border border-border bg-background text-xs">
 				<Table className={cn({ 'h-full': queue.ids.length === 0 })}>
-					<TableHeader className="sticky top-0 z-10 bg-c-page before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-c-divider">
-						<TableRow className="sticky top-0 z-10 bg-c-mist">
+					<TableHeader className="before:bg-c-divider sticky top-0 z-10 bg-background before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px]">
+						<TableRow className="sticky top-0 z-10 bg-muted">
 							<TableHead className="text-center">Type</TableHead>
 							<TableHead>Record</TableHead>
 							<TableHead>URL</TableHead>

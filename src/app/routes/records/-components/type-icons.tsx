@@ -1,6 +1,10 @@
 import { memo } from 'react';
 import type { RecordType } from '@aias/hozo';
-import { FileTextIcon, LightbulbIcon, UserIcon } from 'lucide-react';
+import {
+	FileText as FileTextIcon,
+	Lightbulb as LightbulbIcon,
+	User as UserIcon,
+} from '@phosphor-icons/react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 
 // Map record types to their corresponding icons and descriptions
@@ -19,9 +23,7 @@ export const RecordTypeIcon = memo(({ type, ...props }: RecordTypeIconProps) => 
 	const { icon: Icon, description } = recordTypeIcons[type];
 	return (
 		<Tooltip>
-			<TooltipTrigger asChild>
-				<Icon {...props} />
-			</TooltipTrigger>
+			<TooltipTrigger render={<Icon {...props} />} />
 			<TooltipContent>{description}</TooltipContent>
 		</Tooltip>
 	);

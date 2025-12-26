@@ -1,12 +1,17 @@
+import type React from 'react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { PredicateSelect } from '@aias/hozo';
-import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
+import {
+	ArrowLeft as ArrowLeftIcon,
+	ArrowRight as ArrowRightIcon,
+	PlusCircle as PlusCircleIcon,
+} from '@phosphor-icons/react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
 import { Badge } from '@/components/badge';
-import { Button, type ButtonProps } from '@/components/button';
+import { Button } from '@/components/button';
 import {
 	Command,
 	CommandGroup,
@@ -16,12 +21,7 @@ import {
 	CommandLoading,
 	CommandSeparator,
 } from '@/components/command';
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-	type PopoverContentProps,
-} from '@/components/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
 import { useUpsertLink } from '@/lib/hooks/link-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
@@ -77,19 +77,19 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 					{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
 				</CommandGroup>
 				<CommandSeparator alwaysRender />
-			<CommandItem
-				disabled={query.length === 0 || isFetching}
-				key="create-record"
-				onSelect={() => {
-					createRecordMutation.mutate(
-						{ type: 'artifact', title: query },
-						{ onSuccess: (newRecord) => onSelect(newRecord.id) }
-					);
-				}}
-				className="px-3 py-2"
-			>
-				<PlusCircleIcon /> Create New Record
-			</CommandItem>
+				<CommandItem
+					disabled={query.length === 0 || isFetching}
+					key="create-record"
+					onSelect={() => {
+						createRecordMutation.mutate(
+							{ type: 'artifact', title: query },
+							{ onSuccess: (newRecord) => onSelect(newRecord.id) }
+						);
+					}}
+					className="px-3 py-2"
+				>
+					<PlusCircleIcon /> Create New Record
+				</CommandItem>
 			</CommandList>
 		</Command>
 	);
@@ -127,7 +127,7 @@ function PredicateCombobox({
 								onSelect={() => onPredicateSelect(p.id)}
 							>
 								<span className="font-medium">{p.name}</span>
-								<span className="text-c-hint">{p.type}</span>
+								<span className="text-muted-foreground">{p.type}</span>
 							</CommandItem>
 						))}
 				</CommandGroup>
@@ -163,8 +163,10 @@ interface RelationshipSelectorProps {
 	link?: LinkPartial | null;
 	/** Called after any predicate or action completes. */
 	onComplete?: (sourceId: number, targetId: number, predicateId: number) => void;
-	buttonProps?: ButtonProps;
-	popoverProps?: PopoverContentProps;
+	/** Imperative handle for programmatic control (e.g., keyboard shortcuts) */
+	selectorRef?: React.RefObject<RelationshipSelectorRef | null>;
+	buttonProps?: React.ComponentProps<typeof Button>;
+	popoverProps?: React.ComponentProps<typeof PopoverContent>;
 	/** Optional extra‑action builder; receives runtime context. */
 	buildActions?: (ctx: {
 		sourceId: number;
@@ -179,6 +181,10 @@ interface RelationshipSelectorProps {
 	incoming?: boolean;
 }
 
+export interface RelationshipSelectorRef {
+	open: () => void;
+}
+
 export function RelationshipSelector({
 	sourceId,
 	initialTargetId,
@@ -187,6 +193,7 @@ export function RelationshipSelector({
 	incoming = false,
 	onComplete,
 	buildActions,
+	selectorRef,
 	buttonProps: { className: buttonClassName, ...buttonProps } = {},
 	popoverProps: { className: popoverClassName, ...popoverProps } = {},
 }: RelationshipSelectorProps) {
@@ -196,6 +203,13 @@ export function RelationshipSelector({
 	const [open, setOpen] = useState(false);
 	const altRef = useRef(false);
 	const [altPressed, setAltPressed] = useState(false);
+
+	// Expose imperative handle for programmatic control
+	useEffect(() => {
+		if (selectorRef) {
+			selectorRef.current = { open: () => setOpen(true) };
+		}
+	}, [selectorRef]);
 
 	const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
 	const predicatesBySlug = useMemo(
@@ -290,15 +304,17 @@ export function RelationshipSelector({
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<Button
-					size="sm"
-					variant="outline"
-					{...buttonProps}
-					className={cn('font-medium capitalize shadow-none', buttonClassName)}
-				>
-					{label ?? (link && currentPredicateName ? currentPredicateName : 'Add relationship')}
-				</Button>
+			<PopoverTrigger
+				render={
+					<Button
+						size="sm"
+						variant="outline"
+						{...buttonProps}
+						className={cn('font-medium capitalize shadow-none', buttonClassName)}
+					/>
+				}
+			>
+				{label ?? (link && currentPredicateName ? currentPredicateName : 'Add relationship')}
 			</PopoverTrigger>
 
 			<PopoverContent
@@ -309,15 +325,13 @@ export function RelationshipSelector({
 				)}
 				side="left"
 				align="start"
-				avoidCollisions
-				collisionPadding={8}
 				{...popoverProps}
 			>
 				{!targetId && <RecordSearch onSelect={handleRecordSelect} />}
 
 				{targetId && (
 					<>
-						<Badge className="m-1 flex items-center justify-center gap-2 overflow-hidden border border-c-divider whitespace-nowrap">
+						<Badge className="m-1 flex items-center justify-center gap-2 overflow-hidden border border-border whitespace-nowrap">
 							{altPressed ? <ArrowLeftIcon /> : <ArrowRightIcon />}
 							<span className="flex-1 truncate text-center">
 								{targetRecord ? targetRecord.title || targetRecord.id : <Spinner />}
