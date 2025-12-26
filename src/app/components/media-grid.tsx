@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { MediaSelect } from '@aias/hozo';
-import { Trash2Icon } from 'lucide-react';
+import { TrashIcon } from '@phosphor-icons/react';
 import { Button } from './button';
 import { LazyVideo } from './lazy-video';
 import { MediaLightbox } from './media-lightbox';
@@ -32,7 +32,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 
 	return (
 		<div
-			className={`relative grid aspect-3/2 w-full gap-px overflow-hidden rounded-md bg-c-app ${className}`}
+			className={`relative grid aspect-3/2 w-full gap-px overflow-hidden rounded-md bg-background ${className}`}
 			style={{
 				gridTemplateColumns: getGridColumns(count),
 				gridTemplateRows: getGridRows(count),
@@ -50,7 +50,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 				return (
 					<div
 						key={item.id}
-						className="group relative cursor-pointer overflow-hidden focus-visible:outline-2 focus-visible:outline-c-focus"
+						className="group relative cursor-pointer overflow-hidden focus-visible:outline-2 focus-visible:outline-ring"
 						style={{ gridArea: getGridArea(count, index) }}
 						role={isImage ? 'button' : undefined}
 						tabIndex={isImage ? 0 : -1}
@@ -91,7 +91,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 
 						{/* Toolbar */}
 						{onDelete && (
-							<div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-c-page opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
+							<div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-background opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
 								<Button
 									type="button"
 									size="icon"
@@ -102,7 +102,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 										onDelete?.(item);
 									}}
 								>
-									<Trash2Icon />
+									<TrashIcon />
 								</Button>
 							</div>
 						)}

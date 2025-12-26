@@ -2,8 +2,7 @@ import { memo } from 'react';
 import type { MediaType } from '@aias/hozo';
 import { Link } from '@tanstack/react-router';
 import type { LinkOptions } from '@tanstack/react-router';
-import { RectangleEllipsisIcon } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { DotsThreeOutlineIcon, type Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { recordTypeIcons } from './type-icons';
 import {
 	DropdownMenu,
@@ -23,7 +22,7 @@ import type { DbId } from '@/shared/types';
 
 interface RecordAction {
 	label: string;
-	icon?: LucideIcon;
+	icon?: PhosphorIcon;
 	onClick: () => void;
 	disabled?: boolean;
 }
@@ -42,8 +41,8 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 	if (isError || !record) {
 		// Record might be deleted or not found, show placeholder instead of breaking
 		return (
-			<div className="flex items-center gap-2 text-c-hint italic opacity-75">
-				<RectangleEllipsisIcon className="size-4" />
+			<div className="flex items-center gap-2 text-muted-foreground italic opacity-75">
+				<DotsThreeOutlineIcon className="size-4" />
 				<span>Record not found (ID: {id})</span>
 			</div>
 		);
@@ -87,7 +86,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 	const labelElement = (
 		<>
 			{title ?? creatorTitle ?? (parentTitle ? `↳ ${parentTitle}` : 'Untitled')}
-			{abbreviation && <span className="ml-1 text-c-hint">({abbreviation})</span>}
+			{abbreviation && <span className="ml-1 text-muted-foreground">({abbreviation})</span>}
 		</>
 	);
 
@@ -112,12 +111,15 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 					<div className="relative size-[1lh] shrink-0">
 						{actions && (
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-									<RectangleEllipsisIcon
-										className="peer absolute inset-0 z-10 size-full cursor-pointer themed opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-c-accent focus-visible:opacity-100 data-[state=open]:opacity-100"
-										role="button"
-									/>
-								</DropdownMenuTrigger>
+								<DropdownMenuTrigger
+									onClick={(e) => e.stopPropagation()}
+									render={
+										<DotsThreeOutlineIcon
+											className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-primary focus-visible:opacity-100 data-open:opacity-100"
+											role="button"
+										/>
+									}
+								/>
 								<DropdownMenuContent>
 									<DropdownMenuLabel>Actions</DropdownMenuLabel>
 									<DropdownMenuSeparator />
@@ -132,9 +134,9 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 						)}
 						<TypeIcon
 							className={cn(
-								'absolute inset-0 size-full text-c-hint',
+								'absolute inset-0 size-full text-muted-foreground',
 								'group-data-[selectable=true]:group-hover:opacity-0',
-								'peer-data-[state=open]:opacity-0'
+								'peer-data-open:opacity-0'
 							)}
 						/>
 					</div>
@@ -142,20 +144,20 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 					{/* title row */}
 					<div className="flex grow items-center gap-1 overflow-hidden">
 						{linkOptions ? (
-							<HoverCard openDelay={300} closeDelay={100}>
-								<HoverCardTrigger asChild>
-									<Link
-										className="mr-auto min-w-0 flex-1 truncate focus-visible:underline"
-										{...linkOptions}
-									>
-										{labelElement}
-									</Link>
+							<HoverCard>
+								<HoverCardTrigger
+									delay={300}
+									closeDelay={100}
+									render={<Link {...linkOptions} />}
+									className="mr-auto min-w-0 flex-1 truncate focus-visible:underline"
+								>
+									{labelElement}
 								</HoverCardTrigger>
 								<HoverCardContent className="w-96 p-0" align="center" side="left" sideOffset={12}>
 									<div className="flex flex-col gap-3">
 										{/* Media */}
 										{mediaItem && (
-											<div className="relative aspect-video w-full overflow-hidden rounded-t-md bg-c-mist">
+											<div className="relative aspect-video w-full overflow-hidden rounded-t-md bg-muted">
 												{mediaItem.type === 'image' ? (
 													<img
 														src={mediaItem.url}
@@ -187,18 +189,22 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 															(parentTitle ? `↳ ${parentTitle}` : 'Untitled')}
 													</h3>
 													{abbreviation && (
-														<span className="shrink-0 text-xs text-c-hint">({abbreviation})</span>
+														<span className="shrink-0 text-xs text-muted-foreground">
+															({abbreviation})
+														</span>
 													)}
 												</div>
 												{sense && (
-													<p className="text-xs leading-tight text-c-hint italic">{sense}</p>
+													<p className="text-xs leading-tight text-muted-foreground italic">
+														{sense}
+													</p>
 												)}
 												{url &&
 													(() => {
 														try {
 															const urlObj = new URL(url);
 															return (
-																<p className="text-[0.625rem] leading-tight text-c-secondary">
+																<p className="text-[0.625rem] leading-tight text-muted-foreground">
 																	{urlObj.hostname.replace(/^www\./, '')}
 																</p>
 															);
@@ -210,10 +216,12 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 
 											{/* Metadata */}
 											{(creatorTitle || parentTitle) && (
-												<div className="flex flex-col gap-1 text-xs text-c-secondary">
-													{creatorTitle && <div className="text-c-hint">By {creatorTitle}</div>}
+												<div className="flex flex-col gap-1 text-xs text-muted-foreground">
+													{creatorTitle && (
+														<div className="text-muted-foreground">By {creatorTitle}</div>
+													)}
 													{parentTitle && (
-														<div className="text-c-hint">
+														<div className="text-muted-foreground">
 															From <em>{parentTitle}</em>
 														</div>
 													)}
@@ -221,7 +229,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 											)}
 
 											{/* Summary or Content */}
-											<p className="line-clamp-6 text-xs leading-relaxed text-c-primary empty:hidden">
+											<p className="line-clamp-6 text-xs leading-relaxed text-foreground empty:hidden">
 												{summary ?? content}
 											</p>
 										</div>
@@ -231,7 +239,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 						) : (
 							<strong className="mr-auto min-w-0 flex-1 truncate">{labelElement}</strong>
 						)}
-						{sense && <span className="shrink truncate text-c-hint italic">{sense}</span>}
+						{sense && <span className="shrink truncate text-muted-foreground italic">{sense}</span>}
 					</div>
 
 					{/* source logos */}
@@ -244,12 +252,12 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 					</ul>
 				</div>
 
-				<p className="line-clamp-1 text-[0.925em] break-all text-c-secondary">{preview}</p>
+				<p className="line-clamp-1 text-[0.925em] break-all text-muted-foreground">{preview}</p>
 			</div>
 
 			{/* thumbnail */}
 			{mediaItem && (
-				<div className="relative aspect-3/2 h-[2lh] shrink-0 self-center overflow-hidden rounded-md border border-c-divider bg-c-mist">
+				<div className="relative aspect-3/2 h-[2lh] shrink-0 self-center overflow-hidden rounded-md border border-border bg-muted">
 					{mediaItem.type === 'image' ? (
 						<img
 							src={mediaItem.url}

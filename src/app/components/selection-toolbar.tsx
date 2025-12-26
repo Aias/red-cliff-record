@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { ChevronDownIcon, XIcon } from 'lucide-react';
+import { CaretDownIcon, XIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/button';
 import {
 	DropdownMenu,
@@ -32,7 +32,7 @@ export function SelectionActions({
 
 	return (
 		<div role="toolbar" className={cn('flex items-center gap-2', className)} {...props}>
-			<span className="grow text-sm text-c-secondary">{selectedCount} selected</span>
+			<span className="grow text-sm text-muted-foreground">{selectedCount} selected</span>
 			{selectedCount === 0 ? (
 				<Button onClick={() => onSelectAll()}>Select All</Button>
 			) : (
@@ -43,11 +43,9 @@ export function SelectionActions({
 						</Button>
 					) : (
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button>
-									Actions
-									<ChevronDownIcon />
-								</Button>
+							<DropdownMenuTrigger render={<Button />}>
+								Actions
+								<CaretDownIcon />
 							</DropdownMenuTrigger>
 							<DropdownMenuContent>
 								{actions.map((action) => (

@@ -1,4 +1,4 @@
-import { cn } from '@/app/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface CodeBlockProps extends React.HTMLAttributes<HTMLPreElement> {
 	children: string;
@@ -9,7 +9,7 @@ export function CodeBlock({ children, className, language, ...props }: CodeBlock
 	return (
 		<pre
 			className={cn(
-				'rounded-sm border border-c-divider bg-c-page p-3 text-sm whitespace-pre-wrap text-c-secondary',
+				'rounded-sm border border-border bg-background p-3 text-sm whitespace-pre-wrap text-muted-foreground',
 				className
 			)}
 			{...props}

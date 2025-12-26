@@ -10,7 +10,7 @@ export const Placeholder = ({
 	return (
 		<div
 			className={cn(
-				'flex shrink-0 flex-col items-center justify-center gap-2 rounded-sm border border-c-divider bg-c-mist p-4',
+				'flex shrink-0 flex-col items-center justify-center gap-2 rounded-sm border border-border bg-muted p-4',
 				className
 			)}
 		>

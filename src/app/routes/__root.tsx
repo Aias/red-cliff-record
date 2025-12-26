@@ -7,7 +7,6 @@ import { AppLayout } from './-app-components/app-layout';
 import { DefaultCatchBoundary } from './-app-components/catch-boundary';
 import { NotFound } from './-app-components/not-found';
 import { Toaster } from '@/components/sonner';
-import { TooltipProvider } from '@/components/tooltip';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getTheme, type Theme } from '@/lib/server/theme';
 import { cn } from '@/lib/utils';
@@ -90,11 +89,9 @@ function RootComponent() {
 
 	return (
 		<RootDocument appearance={appearance} isTransitioning={isTransitioning}>
-			<TooltipProvider delayDuration={300}>
-				<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
-					<Outlet />
-				</AppLayout>
-			</TooltipProvider>
+			<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
+				<Outlet />
+			</AppLayout>
 		</RootDocument>
 	);
 }
@@ -122,7 +119,7 @@ function RootDocument({
 			<head>
 				<HeadContent />
 			</head>
-			<body className="size-full bg-c-app text-c-primary">
+			<body className="size-full bg-background text-foreground">
 				{children}
 				<Toaster />
 				<Scripts />

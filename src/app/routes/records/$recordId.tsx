@@ -304,8 +304,10 @@ function RouteComponent() {
 		return (
 			<div className="flex flex-1 items-center justify-center">
 				<div className="text-center">
-					<div className="mb-2 text-c-destructive">Record not found</div>
-					<div className="text-sm text-c-hint">This record may have been deleted or moved.</div>
+					<div className="mb-2 text-destructive">Record not found</div>
+					<div className="text-sm text-muted-foreground">
+						This record may have been deleted or moved.
+					</div>
 				</div>
 			</div>
 		);
@@ -313,12 +315,12 @@ function RouteComponent() {
 
 	return (
 		<div className="flex flex-1 overflow-x-auto">
-			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider p-3">
+			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-border p-3">
 				{nodes.map((node) => (
 					<li id={`record-${node.id}`} key={node.id} className="shrink-0">
 						<RecordForm
 							recordId={node.id}
-							className="card py-3 transition-colors not-data-active:opacity-80 data-active:border-c-edge"
+							className="card py-3 transition-colors not-data-active:opacity-80 data-active:border-ring"
 							data-active={node.id === recordId ? true : undefined}
 							onFinalize={handleFinalize}
 							onDelete={() => handleDelete(node.id)}
@@ -326,7 +328,7 @@ function RouteComponent() {
 					</li>
 				))}
 			</ul>
-			<div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto bg-c-container p-4">
+			<div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto bg-card p-4">
 				<RelationsList id={recordId} />
 				<SimilarRecords id={recordId} />
 			</div>
