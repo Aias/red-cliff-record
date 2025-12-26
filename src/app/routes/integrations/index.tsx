@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import {
-	WarningCircle as AlertCircleIcon,
-	CheckCircle as CheckCircleIcon,
-	Play as PlayIcon,
-	XCircle as XCircleIcon,
+	WarningCircleIcon,
+	CheckCircleIcon,
+	PlayIcon,
+	XCircleIcon,
 } from '@phosphor-icons/react';
 import { trpc } from '@/app/trpc';
 import { Alert, AlertDescription } from '@/components/alert';
@@ -158,9 +158,9 @@ function RouteComponent() {
 			case 'error':
 				return <XCircleIcon className="size-4" />;
 			case 'warn':
-				return <AlertCircleIcon className="size-4" />;
+				return <WarningCircleIcon className="size-4" />;
 			default:
-				return <AlertCircleIcon className="size-4" />;
+				return <WarningCircleIcon className="size-4" />;
 		}
 	};
 

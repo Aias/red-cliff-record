@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@aias/hozo';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate, useParams, useRouterState } from '@tanstack/react-router';
-import { FloppyDisk as SaveIcon, Trash as Trash2Icon } from '@phosphor-icons/react';
+import { FloppyDiskIcon, TrashIcon } from '@phosphor-icons/react';
 import { z } from 'zod';
 import { recordTypeIcons } from './type-icons';
 import {
@@ -729,11 +729,11 @@ export function RecordForm({
 							{`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleString()}`}
 						</Link>
 						<Button size="icon" variant="ghost" type="submit" disabled={!canSubmit || isSubmitting}>
-							{isSubmitting ? <Spinner /> : <SaveIcon />}
+							{isSubmitting ? <Spinner /> : <FloppyDiskIcon />}
 						</Button>
 						<AlertDialog>
 							<AlertDialogTrigger render={<Button size="icon" variant="ghost" type="button" />}>
-								<Trash2Icon />
+								<TrashIcon />
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>

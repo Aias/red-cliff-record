@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { UploadSimple as UploadIcon } from '@phosphor-icons/react';
+import { UploadSimpleIcon } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Spinner } from './spinner';
@@ -190,7 +190,7 @@ export const MediaUpload = ({
 				accept="image/*,video/*" // Accept both image and video files
 			/>
 			<Button type="button" variant="ghost" size="sm" onClick={handleClick} disabled={isLoading}>
-				<UploadIcon className="mr-2 h-4 w-4" />
+				<UploadSimpleIcon className="mr-2 h-4 w-4" />
 				Upload Media
 			</Button>
 			<p className="flex items-center gap-1 text-sm text-muted-foreground">

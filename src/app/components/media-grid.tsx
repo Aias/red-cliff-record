@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { MediaSelect } from '@aias/hozo';
-import { Trash as Trash2Icon } from '@phosphor-icons/react';
+import { TrashIcon } from '@phosphor-icons/react';
 import { Button } from './button';
 import { LazyVideo } from './lazy-video';
 import { MediaLightbox } from './media-lightbox';
@@ -102,7 +102,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 										onDelete?.(item);
 									}}
 								>
-									<Trash2Icon />
+									<TrashIcon />
 								</Button>
 							</div>
 						)}

@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { PlusCircle as PlusCircleIcon, MagnifyingGlass as SearchIcon } from '@phosphor-icons/react';
+import { PlusCircleIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import { trpc } from '@/app/trpc';
 import { SearchResultItem } from '../records/-components/search-result-item';
 import { Button } from '@/components/button';
@@ -109,7 +109,7 @@ export const SiteSearch = () => {
 						/>
 					}
 				>
-					<SearchIcon className="text-muted-foreground" />
+					<MagnifyingGlassIcon className="text-muted-foreground" />
 					<span>Search records...</span>
 					<kbd className="pointer-events-none inline-flex items-center gap-1 rounded border border-input bg-muted px-1.5 font-mono font-medium text-muted-foreground select-none">
 						<span className="text-xs text-muted-foreground">⌘</span>K

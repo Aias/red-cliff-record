@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { LinkSelect, PredicateSelect } from '@aias/hozo';
 import { useNavigate } from '@tanstack/react-router';
 import {
-	ArrowLeft as ArrowLeftIcon,
-	ArrowRight as ArrowRightIcon,
-	GitMerge as MergeIcon,
-	Plus as PlusIcon,
-	Trash as TrashIcon,
+	ArrowLeftIcon,
+	ArrowRightIcon,
+	GitMergeIcon,
+	PlusIcon,
+	TrashIcon,
 } from '@phosphor-icons/react';
 import { trpc } from '@/app/trpc';
 import { RecordLink } from './record-link';
@@ -92,7 +92,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 								key: 'merge-records',
 								label: (
 									<>
-										<MergeIcon /> Merge
+										<GitMergeIcon /> Merge
 									</>
 								),
 								onSelect: () => {
@@ -137,7 +137,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 												key: 'merge-records',
 												label: (
 													<>
-														<MergeIcon /> Merge
+														<GitMergeIcon /> Merge
 													</>
 												),
 												onSelect: () => {
@@ -217,7 +217,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 												key: 'merge-records',
 												label: (
 													<>
-														<MergeIcon /> Merge
+														<GitMergeIcon /> Merge
 													</>
 												),
 												onSelect: () => {
@@ -308,7 +308,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 											key: 'merge-records',
 											label: (
 												<>
-													<MergeIcon /> Merge
+													<GitMergeIcon /> Merge
 												</>
 											),
 											onSelect: () => {

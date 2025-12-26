@@ -2,9 +2,9 @@ import type React from 'react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { PredicateSelect } from '@aias/hozo';
 import {
-	ArrowLeft as ArrowLeftIcon,
-	ArrowRight as ArrowRightIcon,
-	PlusCircle as PlusCircleIcon,
+	ArrowLeftIcon,
+	ArrowRightIcon,
+	PlusCircleIcon,
 } from '@phosphor-icons/react';
 import { useDebounce } from '@/app/lib/hooks/use-debounce';
 import { trpc } from '@/app/trpc';

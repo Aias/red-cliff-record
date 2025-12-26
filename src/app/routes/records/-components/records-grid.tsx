@@ -6,7 +6,7 @@ import {
 	type RecordType,
 } from '@aias/hozo';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { Check as CheckIcon } from '@phosphor-icons/react';
+import { CheckIcon } from '@phosphor-icons/react';
 import { trpc } from '@/app/trpc';
 import { RecordTypeIcon } from './type-icons';
 import { ExternalLink } from '@/components/external-link';

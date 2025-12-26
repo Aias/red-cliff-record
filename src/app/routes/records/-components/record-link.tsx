@@ -3,7 +3,7 @@ import type { MediaType } from '@aias/hozo';
 import { Link } from '@tanstack/react-router';
 import type { LinkOptions } from '@tanstack/react-router';
 import {
-	DotsThreeOutline as RectangleEllipsisIcon,
+	DotsThreeOutlineIcon,
 	type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import { recordTypeIcons } from './type-icons';
@@ -45,7 +45,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 		// Record might be deleted or not found, show placeholder instead of breaking
 		return (
 			<div className="flex items-center gap-2 text-muted-foreground italic opacity-75">
-				<RectangleEllipsisIcon className="size-4" />
+				<DotsThreeOutlineIcon className="size-4" />
 				<span>Record not found (ID: {id})</span>
 			</div>
 		);
@@ -117,7 +117,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 								<DropdownMenuTrigger
 									onClick={(e) => e.stopPropagation()}
 									render={
-										<RectangleEllipsisIcon
+										<DotsThreeOutlineIcon
 											className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-primary focus-visible:opacity-100 data-open:opacity-100"
 											role="button"
 										/>

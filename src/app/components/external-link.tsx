@@ -1,4 +1,4 @@
-import { ArrowSquareOut as ExternalLinkIcon } from '@phosphor-icons/react';
+import { ArrowSquareOutIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export const ExternalLink = ({
@@ -16,7 +16,7 @@ export const ExternalLink = ({
 			{...props}
 		>
 			{children}
-			<ExternalLinkIcon className="opacity-50 group-hover:opacity-100" />
+			<ArrowSquareOutIcon className="opacity-50 group-hover:opacity-100" />
 		</a>
 	);
 };

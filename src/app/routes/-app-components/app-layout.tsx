@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { Link, type LinkComponentProps } from '@tanstack/react-router';
-import { Archive as ArchiveIcon, Moon as MoonIcon, Sun as SunIcon } from '@phosphor-icons/react';
+import { ArchiveIcon, MoonIcon, SunIcon } from '@phosphor-icons/react';
 import { SiteSearch } from './site-search';
 import { Button } from '@/components/button';
 import { Separator } from '@/components/separator';

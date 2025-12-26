@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy as CopyIcon } from '@phosphor-icons/react';
+import { CopyIcon } from '@phosphor-icons/react';
 import { z } from 'zod';
 import { Button } from './button';
 import {

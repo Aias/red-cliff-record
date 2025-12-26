@@ -1,10 +1,6 @@
 import { memo } from 'react';
 import type { RecordType } from '@aias/hozo';
-import {
-	FileText as FileTextIcon,
-	Lightbulb as LightbulbIcon,
-	User as UserIcon,
-} from '@phosphor-icons/react';
+import { FileTextIcon, LightbulbIcon, UserIcon } from '@phosphor-icons/react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 
 // Map record types to their corresponding icons and descriptions

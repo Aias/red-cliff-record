@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { CaretDown as ChevronDownIcon, X as XIcon } from '@phosphor-icons/react';
+import { CaretDownIcon, XIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/button';
 import {
 	DropdownMenu,
@@ -43,10 +43,10 @@ export function SelectionActions({
 						</Button>
 					) : (
 						<DropdownMenu>
-							<DropdownMenuTrigger render={<Button />}>
-								Actions
-								<ChevronDownIcon />
-							</DropdownMenuTrigger>
+						<DropdownMenuTrigger render={<Button />}>
+							Actions
+							<CaretDownIcon />
+						</DropdownMenuTrigger>
 							<DropdownMenuContent>
 								{actions.map((action) => (
 									<DropdownMenuItem
