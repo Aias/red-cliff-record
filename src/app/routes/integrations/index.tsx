@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import {
-	WarningCircleIcon,
-	CheckCircleIcon,
-	PlayIcon,
-	XCircleIcon,
-} from '@phosphor-icons/react';
+import { WarningCircleIcon, CheckCircleIcon, PlayIcon, XCircleIcon } from '@phosphor-icons/react';
 import { trpc } from '@/app/trpc';
 import { Alert, AlertDescription } from '@/components/alert';
 import { Button } from '@/components/button';

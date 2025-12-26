@@ -2,10 +2,7 @@ import { memo } from 'react';
 import type { MediaType } from '@aias/hozo';
 import { Link } from '@tanstack/react-router';
 import type { LinkOptions } from '@tanstack/react-router';
-import {
-	DotsThreeOutlineIcon,
-	type Icon as PhosphorIcon,
-} from '@phosphor-icons/react';
+import { DotsThreeOutlineIcon, type Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { recordTypeIcons } from './type-icons';
 import {
 	DropdownMenu,

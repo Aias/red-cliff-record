@@ -43,10 +43,10 @@ export function SelectionActions({
 						</Button>
 					) : (
 						<DropdownMenu>
-						<DropdownMenuTrigger render={<Button />}>
-							Actions
-							<CaretDownIcon />
-						</DropdownMenuTrigger>
+							<DropdownMenuTrigger render={<Button />}>
+								Actions
+								<CaretDownIcon />
+							</DropdownMenuTrigger>
 							<DropdownMenuContent>
 								{actions.map((action) => (
 									<DropdownMenuItem

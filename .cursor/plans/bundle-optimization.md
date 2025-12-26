@@ -4,13 +4,13 @@
 
 ### Bundle Breakdown
 
-| Chunk | Size | Gzip | Contents |
-|-------|------|------|----------|
-| `main-*.js` | **983 KB** | 278 KB | Core: React, TanStack, Radix, Lucide, Motion, tRPC, Zod |
-| `_recordId-*.js` | 120 KB | 36 KB | Record detail page components |
-| `toggle-group-*.js` | 45 KB | 13 KB | Radix toggle group primitives |
-| `route-*.js` | 40 KB | 12 KB | Route components |
-| Others | ~15 KB | ~5 KB | Small route chunks |
+| Chunk               | Size       | Gzip   | Contents                                                |
+| ------------------- | ---------- | ------ | ------------------------------------------------------- |
+| `main-*.js`         | **983 KB** | 278 KB | Core: React, TanStack, Radix, Lucide, Motion, tRPC, Zod |
+| `_recordId-*.js`    | 120 KB     | 36 KB  | Record detail page components                           |
+| `toggle-group-*.js` | 45 KB      | 13 KB  | Radix toggle group primitives                           |
+| `route-*.js`        | 40 KB      | 12 KB  | Route components                                        |
+| Others              | ~15 KB     | ~5 KB  | Small route chunks                                      |
 
 **Total Client JS: ~1.2 MB (347 KB gzipped)**
 
@@ -111,20 +111,21 @@ Create `.lazy.tsx` versions:
 
 ```ts
 // src/app/routes/records/$recordId.lazy.tsx
-import { createLazyFileRoute } from '@tanstack/react-router'
+import { createLazyFileRoute } from '@tanstack/react-router';
 
 export const Route = createLazyFileRoute('/records/$recordId')({
-  component: RecordDetail,
-})
+	component: RecordDetail,
+});
 
 function RecordDetail() {
-  // ... component code
+	// ... component code
 }
 ```
 
 ### Phase 4: Icon Optimization (Lower Priority)
 
 Options:
+
 1. Use `@iconify/react` for on-demand icon loading
 2. Create a barrel file exporting only used icons
 3. Consider inline SVGs for most-used icons
