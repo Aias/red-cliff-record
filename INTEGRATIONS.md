@@ -2,6 +2,23 @@
 
 This guide provides detailed setup instructions for each integration in Red Cliff Record.
 
+## Sync via CLI (optional)
+
+Install the CLI once from the repo, then run syncs via `rcr`:
+
+```bash
+bun link
+```
+
+You can run integrations with the CLI instead of the per-integration scripts:
+
+```bash
+rcr sync github
+rcr sync daily
+```
+
+Flags are strict (unknown options error). Use `--debug` for verbose sync output and `--format=table` for human-readable output.
+
 ## GitHub Integration
 
 Syncs your GitHub repositories, stars, and commits.

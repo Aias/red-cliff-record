@@ -16,6 +16,9 @@
 		"url": "https://nicktrombley.design"
 	},
 	"type": "module",
+	"bin": {
+		"rcr": "./src/server/cli/rcr/index.ts"
+	},
 	"engines": {
 		"node": ">=24"
 	},
@@ -84,6 +87,7 @@
 		"vite-tsconfig-paths": "^6.0.3"
 	},
 	"scripts": {
+		"rcr": "bun src/server/cli/rcr/index.ts",
 		"format": "prettier --write .",
 		"lint": "oxlint --fix --type-aware . && tsgo --noEmit",
 		"lint:watch": "tsgo --noEmit --watch",

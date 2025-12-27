@@ -53,6 +53,12 @@ cd red-cliff-record
 bun install
 ```
 
+### 2.5 Install CLI (Optional)
+
+```bash
+bun link
+```
+
 ### 3. Database Setup
 
 **Note about database providers**: The app connects to a local PostgreSQL database. If you use a different provider, update `src/server/db/connections/postgres.ts` accordingly.
@@ -218,6 +224,51 @@ bun run sync:arc       # macOS only
 bun run sync:dia       # macOS only
 bun run sync:browsing  # Both Arc and Dia
 ```
+
+### CLI (rcr)
+
+`rcr` is a local CLI wrapper around the same tRPC procedures used by the app. It is JSON-first by default and supports a table output for quick inspection.
+
+Install the CLI globally once from the repo:
+
+```bash
+bun link
+```
+
+```bash
+# General help
+rcr --help
+
+# Records
+rcr records get 123
+rcr records get 123 --links              # Include all incoming/outgoing links
+rcr records get 123 456 789              # Multiple IDs in parallel
+rcr records list --type=entity --limit=10
+rcr records list --source=github --limit=10
+rcr records create '{"title":"Example","type":"concept"}'
+
+# Search
+rcr search "machine learning"
+rcr search semantic "machine learning" --limit=5
+rcr search similar 456 --limit=5
+
+# Links
+rcr links list 123
+rcr links list 123 456                   # Multiple records
+rcr links create '{"sourceId":1,"targetId":2,"predicateId":3}'
+
+# Sync
+rcr sync github
+rcr sync daily
+```
+
+Notes:
+
+- Outputs compact JSON by default; pipe to `jq` for formatting.
+- Unknown flags are rejected (strict parsing).
+- Most ID-based commands accept multiple IDs for parallel execution.
+- Use `--format=table` for human-readable output.
+- Use `--` to stop option parsing when needed.
 
 ## Production Build & Deployment
 
