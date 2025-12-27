@@ -139,6 +139,8 @@ const formatTimestamp = () => {
 	return `${displayHours}:${minutes}:${seconds} ${ampm}`;
 };
 
+const SLOW_THRESHOLD_MS = 200;
+
 const flushLogs = () => {
 	if (logBuffer.size === 0) return;
 	// Suppress logging in CLI context (set by CLI caller)
@@ -148,13 +150,17 @@ const flushLogs = () => {
 
 	for (const [path, durations] of logBuffer.entries()) {
 		const count = durations.length;
-		const avg = (durations.reduce((a, b) => a + b, 0) / count).toFixed(2);
-		const max = Math.max(...durations).toFixed(2);
+		const avg = durations.reduce((a, b) => a + b, 0) / count;
+		const max = Math.max(...durations);
+		const isSlow = max >= SLOW_THRESHOLD_MS;
+		const log = isSlow ? console.warn : console.log;
 
 		if (count > 1) {
-			console.error(`${timestamp} [tRPC] ${path} x${count} (avg: ${avg}ms, max: ${max}ms)`);
+			log(
+				`${timestamp} [tRPC] ${path} x${count} (avg: ${avg.toFixed(2)}ms, max: ${max.toFixed(2)}ms)`
+			);
 		} else {
-			console.error(`${timestamp} [tRPC] ${path}: ${durations[0]?.toFixed(2)} ms`);
+			log(`${timestamp} [tRPC] ${path}: ${durations[0]?.toFixed(2)} ms`);
 		}
 	}
 
