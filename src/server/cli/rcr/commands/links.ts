@@ -7,7 +7,7 @@
 
 import { LinkInsertSchema } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
-import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
+import { BaseOptionsSchema, parseIds, parseJsonInput, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
 import { success } from '../lib/output';
@@ -16,22 +16,34 @@ import type { CommandHandler } from '../lib/types';
 const caller = createCLICaller();
 
 /**
- * List all links for a record
- * Usage: rcr links list <record-id>
+ * List all links for record(s)
+ * Usage: rcr links list <record-id...>
  */
 export const list: CommandHandler = async (args, options) => {
 	parseOptions(BaseOptionsSchema.strict(), options);
-	const id = parseId(args);
+	const ids = parseIds(args);
 
-	try {
-		const result = await caller.links.listForRecord({ id });
-		return success(result);
-	} catch (e) {
-		if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-			throw createError('NOT_FOUND', `Record ${id} not found`);
-		}
-		throw e;
+	if (ids.length === 0) {
+		throw createError('VALIDATION_ERROR', 'At least one record ID is required');
 	}
+
+	// Single ID: use listForRecord for detailed output
+	const [firstId] = ids;
+	if (ids.length === 1 && firstId !== undefined) {
+		try {
+			const result = await caller.links.listForRecord({ id: firstId });
+			return success(result);
+		} catch (e) {
+			if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
+				throw createError('NOT_FOUND', `Record ${firstId} not found`);
+			}
+			throw e;
+		}
+	}
+
+	// Multiple IDs: use the efficient map procedure
+	const result = await caller.links.map({ recordIds: ids });
+	return success(result, { count: Object.keys(result).length });
 };
 
 /**

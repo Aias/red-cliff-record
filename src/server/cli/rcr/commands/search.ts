@@ -11,7 +11,7 @@ import {
 	BaseOptionsSchema,
 	CommaSeparatedIdsSchema,
 	LimitSchema,
-	parseId,
+	parseIds,
 	parseOptions,
 } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
@@ -89,24 +89,49 @@ export const semantic: CommandHandler = async (args, options) => {
 };
 
 /**
- * Find records similar to a given record ID
- * Usage: rcr search similar <id> [--limit=...]
+ * Find records similar to given record ID(s)
+ * Usage: rcr search similar <id...> [--limit=...]
  */
 export const similar: CommandHandler = async (args, options) => {
 	const parsedOptions = parseOptions(SearchSimilarOptionsSchema, options);
-	const id = parseId(args);
+	const ids = parseIds(args);
 	const limit = parsedOptions.limit ?? 20;
 
-	try {
-		const results = await caller.search.byRecordId({ id, limit });
-		return success(results, { count: results.length, limit });
-	} catch (e) {
-		if (e instanceof TRPCError) {
-			if (e.code === 'NOT_FOUND') {
+	if (ids.length === 0) {
+		throw createError('VALIDATION_ERROR', 'At least one ID is required');
+	}
+
+	const results = await Promise.all(
+		ids.map(async (id) => {
+			try {
+				const similar = await caller.search.byRecordId({ id, limit });
+				return { id, similar };
+			} catch (e) {
+				if (e instanceof TRPCError) {
+					if (e.code === 'NOT_FOUND') {
+						return { id, error: 'NOT_FOUND' };
+					}
+					return { id, error: e.message };
+				}
+				throw e;
+			}
+		})
+	);
+
+	// Single ID: return just the similar records array
+	if (ids.length === 1) {
+		const id = ids[0];
+		const result = results[0];
+		if (!result || 'error' in result) {
+			const errorMsg = result?.error;
+			if (errorMsg === 'NOT_FOUND') {
 				throw createError('NOT_FOUND', `Record ${id} not found`);
 			}
-			throw createError('EMBEDDING_ERROR', e.message);
+			throw createError('EMBEDDING_ERROR', errorMsg ?? 'Unknown error');
 		}
-		throw e;
+		return success(result.similar, { count: result.similar.length, limit });
 	}
+
+	// Multiple IDs: return array of { id, similar } objects
+	return success(results, { count: results.length, limit });
 };

@@ -67,22 +67,41 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
 	);
 
 /**
- * Get a single record by ID
- * Usage: rcr records get <id>
+ * Get record(s) by ID
+ * Usage: rcr records get <id...>
  */
 export const get: CommandHandler = async (args, options) => {
 	parseOptions(BaseOptionsSchema.strict(), options);
-	const id = parseId(args);
+	const ids = parseIds(args);
 
-	try {
-		const record = await caller.records.get({ id });
-		return success(record);
-	} catch (e) {
-		if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-			throw createError('NOT_FOUND', `Record ${id} not found`);
-		}
-		throw e;
+	if (ids.length === 0) {
+		throw createError('VALIDATION_ERROR', 'At least one ID is required');
 	}
+
+	const results = await Promise.all(
+		ids.map(async (id) => {
+			try {
+				return await caller.records.get({ id });
+			} catch (e) {
+				if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
+					return { id, error: 'NOT_FOUND' };
+				}
+				throw e;
+			}
+		})
+	);
+
+	// Single ID: return the record directly (or throw if not found)
+	if (ids.length === 1) {
+		const result = results[0];
+		if (result && 'error' in result) {
+			throw createError('NOT_FOUND', `Record ${ids[0]} not found`);
+		}
+		return success(result);
+	}
+
+	// Multiple IDs: return array with count
+	return success(results, { count: results.length });
 };
 
 /**
@@ -186,42 +205,79 @@ export const merge: CommandHandler = async (args, options) => {
 };
 
 /**
- * Generate embedding for a record
- * Usage: rcr records embed <id>
+ * Generate embedding for record(s)
+ * Usage: rcr records embed <id...>
  */
 export const embed: CommandHandler = async (args, options) => {
 	parseOptions(BaseOptionsSchema.strict(), options);
-	const id = parseId(args);
+	const ids = parseIds(args);
 
-	try {
-		const result = await caller.records.embed({ id });
-		return success(result);
-	} catch (e) {
-		if (e instanceof TRPCError) {
-			if (e.code === 'NOT_FOUND') {
-				throw createError('NOT_FOUND', `Record ${id} not found`);
-			}
-			throw createError('EMBEDDING_ERROR', e.message);
-		}
-		throw e;
+	if (ids.length === 0) {
+		throw createError('VALIDATION_ERROR', 'At least one ID is required');
 	}
+
+	const results = await Promise.all(
+		ids.map(async (id) => {
+			try {
+				return await caller.records.embed({ id });
+			} catch (e) {
+				if (e instanceof TRPCError) {
+					if (e.code === 'NOT_FOUND') {
+						return { id, error: 'NOT_FOUND' };
+					}
+					return { id, error: e.message };
+				}
+				throw e;
+			}
+		})
+	);
+
+	if (ids.length === 1) {
+		const result = results[0];
+		if (result && 'error' in result) {
+			if (result.error === 'NOT_FOUND') {
+				throw createError('NOT_FOUND', `Record ${ids[0]} not found`);
+			}
+			throw createError('EMBEDDING_ERROR', result.error);
+		}
+		return success(result);
+	}
+
+	return success(results, { count: results.length });
 };
 
 /**
- * Get hierarchical family tree for a record
- * Usage: rcr records tree <id>
+ * Get hierarchical family tree for record(s)
+ * Usage: rcr records tree <id...>
  */
 export const tree: CommandHandler = async (args, options) => {
 	parseOptions(BaseOptionsSchema.strict(), options);
-	const id = parseId(args);
+	const ids = parseIds(args);
 
-	try {
-		const result = await caller.records.tree({ id });
-		return success(result);
-	} catch (e) {
-		if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-			throw createError('NOT_FOUND', `Record ${id} not found`);
-		}
-		throw e;
+	if (ids.length === 0) {
+		throw createError('VALIDATION_ERROR', 'At least one ID is required');
 	}
+
+	const results = await Promise.all(
+		ids.map(async (id) => {
+			try {
+				return await caller.records.tree({ id });
+			} catch (e) {
+				if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
+					return { id, error: 'NOT_FOUND' };
+				}
+				throw e;
+			}
+		})
+	);
+
+	if (ids.length === 1) {
+		const result = results[0];
+		if (result && 'error' in result) {
+			throw createError('NOT_FOUND', `Record ${ids[0]} not found`);
+		}
+		return success(result);
+	}
+
+	return success(results, { count: results.length });
 };

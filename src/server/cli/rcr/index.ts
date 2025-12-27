@@ -55,21 +55,21 @@ Usage:
   rcr <command> <subcommand> [args...] [options]
 
 Commands:
-  records get <id>              Fetch a record by ID
+  records get <id...>           Fetch record(s) by ID
   records list [filters]        List records with optional filters
   records create <json>         Create a new record
   records update <id> <json>    Update an existing record
   records delete <id...>        Delete record(s)
   records merge <src> <target>  Merge source record into target
-  records embed <id>            Generate embedding for a record
-  records tree <id>             Get hierarchical family tree
+  records embed <id...>         Generate embedding(s) for record(s)
+  records tree <id...>          Get hierarchical family tree(s)
 
   search <query>                Semantic search (default)
   search semantic <query>       Semantic vector search
   search text <query>           Full-text trigram search
-  search similar <id>           Find records similar to given ID
+  search similar <id...>        Find records similar to given ID(s)
 
-  links list <record-id>        List links for a record
+  links list <record-id...>     List links for record(s)
   links create <json>           Create/upsert a link
   links delete <id...>          Delete link(s)
   links predicates              List available predicate types
@@ -89,10 +89,12 @@ Options:
 
 Examples:
   rcr records get 123
+  rcr records get 123 456 789          # Multiple records in parallel
   rcr records list --type=entity --limit=10
   rcr search "machine learning"
   rcr search similar 456 --limit=5
   rcr links list 123
+  rcr links list 123 456               # Links for multiple records
   rcr sync github
 `.trim();
 
