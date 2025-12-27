@@ -12,6 +12,8 @@ import { syncCodexHistory } from '@/server/integrations/agents/sync-codex';
 import { syncCursorHistory } from '@/server/integrations/agents/sync-cursor';
 import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
 import { syncTwitterData } from '@/server/integrations/twitter/sync';
+import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
+import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
@@ -30,6 +32,8 @@ const IntegrationNameSchema = z.enum([
 	'browsing',
 	'twitter',
 	'agents',
+	'avatars',
+	'embeddings',
 	'daily',
 ]);
 type IntegrationName = z.infer<typeof IntegrationNameSchema>;
@@ -92,6 +96,8 @@ export { run as feedbin };
 export { run as browsing };
 export { run as twitter };
 export { run as agents };
+export { run as avatars };
+export { run as embeddings };
 export { run as daily };
 
 async function runSingleSync(integration: IntegrationName, debug: boolean) {
@@ -170,6 +176,22 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 			await syncClaudeHistory(debug, { sessionLimit });
 			await syncCodexHistory(debug, { sessionLimit });
 			await syncCursorHistory(debug, { sessionLimit });
+			return {
+				integration,
+				success: true,
+				duration: Math.round(performance.now() - startTime),
+			};
+		}
+		case 'avatars': {
+			await runSaveAvatarsIntegration();
+			return {
+				integration,
+				success: true,
+				duration: Math.round(performance.now() - startTime),
+			};
+		}
+		case 'embeddings': {
+			await runEmbedRecordsIntegration();
 			return {
 				integration,
 				success: true,

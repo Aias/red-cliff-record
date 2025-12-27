@@ -59,16 +59,12 @@ Never attempt to start the development server or build the application. The user
   6. `./src/server/db/db-manager.sh seed local` (Seed initial data)
   7. `./src/server/db/db-manager.sh -D restore local` (Restore data into new schema)
 
-**Data Sync:**
-
-- `bun run sync:daily` - Run all integrations
-- Individual sync: `bun run sync:github`, `bun run sync:airtable`, `bun run sync:raindrop`, `bun run sync:readwise`, `bun run sync:feedbin`, `bun run sync:browsing`
-
 **CLI (`rcr`):**
 
 - Install globally with `bun link` (from repo root)
 - JSON-first output; same tRPC procedures as the app
 - Commands: `rcr records`, `rcr search`, `rcr links`, `rcr sync`
+- Sync commands: `rcr sync daily`, `rcr sync github`, `rcr sync airtable`, `rcr sync raindrop`, `rcr sync readwise`, `rcr sync feedbin`, `rcr sync browsing`, `rcr sync twitter`, `rcr sync agents`, `rcr sync adobe`, `rcr sync avatars`, `rcr sync embeddings`
 - Run `rcr --help` for full usage
 
 **Data Operations:**

@@ -43,7 +43,7 @@ Syncs your GitHub repositories, stars, and commits.
 ### Sync Command
 
 ```bash
-bun run sync:github
+rcr sync github
 ```
 
 ## Airtable Integration
@@ -76,7 +76,7 @@ Syncs records from Airtable bases with a specific structure.
 ### Sync Command
 
 ```bash
-bun run sync:airtable
+rcr sync airtable
 ```
 
 ## Raindrop.io Integration
@@ -102,7 +102,7 @@ Syncs your bookmarks and collections.
 ### Sync Command
 
 ```bash
-bun run sync:raindrop
+rcr sync raindrop
 ```
 
 ## Readwise Integration
@@ -126,7 +126,7 @@ Syncs your reading highlights and notes.
 ### Sync Command
 
 ```bash
-bun run sync:readwise
+rcr sync readwise
 ```
 
 ## Feedbin Integration
@@ -154,7 +154,7 @@ Syncs your RSS feed subscriptions and entries from Feedbin.
 ### Sync Command
 
 ```bash
-bun run sync:feedbin
+rcr sync feedbin
 ```
 
 ### Features
@@ -189,12 +189,6 @@ Syncs browsing history from Chromium-based browsers locally. Currently configure
 - Visit timestamps
 - Favicons
 
-### Sync Command
-
-```bash
-bun run sync:arc
-```
-
 ### Troubleshooting
 
 - If sync fails, check System Preferences > Security & Privacy
@@ -223,13 +217,7 @@ bun run sync:arc
 ### Sync Command
 
 ```bash
-bun run sync:dia
-```
-
-### All Browser Sync
-
-```bash
-bun run sync:browsing
+rcr sync browsing
 ```
 
 This runs both Arc and Dia syncs sequentially under a single integration run.
@@ -277,7 +265,7 @@ Syncs photos from a publicly shared Adobe Lightroom album.
 ### Sync Command
 
 ```bash
-bun run sync:adobe
+rcr sync adobe
 ```
 
 ## Twitter/X Integration
@@ -310,7 +298,7 @@ Captures Twitter bookmarks (manual process).
 
 ```bash
 # After manual capture
-bun run sync:twitter
+rcr sync twitter
 ```
 
 ## Running All Integrations
@@ -318,10 +306,10 @@ bun run sync:twitter
 To sync all configured integrations at once:
 
 ```bash
-bun run sync:daily
+rcr sync daily
 ```
 
-This runs all integrations that have valid API keys configured, including browser history and feed syncs. Manually updated integrations (Twitter and Adobe) are not run by this command.
+This runs: browsing, feedbin, raindrop, readwise, github, airtable. Manually updated integrations (Twitter and Adobe) are not run by this command.
 
 ## Rate Limits and Best Practices
 
@@ -338,7 +326,7 @@ For production use, consider setting up a cron job:
 
 ```bash
 # Sync daily at 2 AM
-0 2 * * * cd /path/to/red-cliff-record && bun run sync:daily
+0 2 * * * cd /path/to/red-cliff-record && rcr sync daily
 ```
 
 ## Debugging Integration Issues
@@ -346,7 +334,7 @@ For production use, consider setting up a cron job:
 Enable debug logging:
 
 ```bash
-DEBUG=* bun run sync:github
+rcr sync github --debug
 ```
 
 Check integration-specific tables in the database:

@@ -152,7 +152,7 @@ async function updateRecordSources(record: Awaited<ReturnType<typeof fetchRecord
 }
 
 // Execute the function if this file is run directly
-if (import.meta.url === import.meta.resolve('./sources.ts')) {
+if (import.meta.main) {
 	updateRecordsSources()
 		.then(() => {
 			console.log('Records sources update completed successfully');

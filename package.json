@@ -102,19 +102,7 @@
 		"db:backup-local": "bash src/server/db/db-manager.sh backup local",
 		"db:backup-remote": "bash src/server/db/db-manager.sh backup remote",
 		"db:restore-local": "bash src/server/db/db-manager.sh -c restore local",
-		"db:restore-remote": "bash src/server/db/db-manager.sh restore remote",
-		"sync:daily": "bun sync:browsing && bun sync:feedbin && bun sync:raindrop && bun sync:readwise && bun sync:github && bun sync:airtable && bun sync:embeddings",
-		"sync:adobe": "bun src/server/cli/sync-adobe.ts",
-		"sync:agents": "bun src/server/cli/sync-agents.ts",
-		"sync:airtable": "bun src/server/cli/sync-airtable.ts",
-		"sync:browsing": "bun src/server/cli/sync-browsing.ts",
-		"sync:github": "bun src/server/cli/sync-github.ts",
-		"sync:raindrop": "bun src/server/cli/sync-raindrop.ts",
-		"sync:readwise": "bun src/server/cli/sync-readwise.ts",
-		"sync:twitter": "bun src/server/cli/sync-twitter.ts",
-		"sync:feedbin": "bun src/server/cli/sync-feedbin.ts",
-		"sync:avatars": "bun src/server/services/save-avatars.ts",
-		"sync:embeddings": "bun src/server/services/embed-records.ts"
+		"db:restore-remote": "bash src/server/db/db-manager.sh restore remote"
 	},
 	"trustedDependencies": [
 		"@parcel/watcher",

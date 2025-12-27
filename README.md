@@ -211,20 +211,6 @@ For media storage, you'll need a Cloudflare R2 bucket:
 bun run dev
 ```
 
-### Sync Individual Services
-
-```bash
-bun run sync:github
-bun run sync:airtable
-bun run sync:raindrop
-bun run sync:readwise
-bun run sync:feedbin
-bun run sync:adobe
-bun run sync:arc       # macOS only
-bun run sync:dia       # macOS only
-bun run sync:browsing  # Both Arc and Dia
-```
-
 ### CLI (rcr)
 
 `rcr` is a local CLI wrapper around the same tRPC procedures used by the app. It is JSON-first by default and supports a table output for quick inspection.
@@ -257,9 +243,19 @@ rcr links list 123
 rcr links list 123 456                   # Multiple records
 rcr links create '{"sourceId":1,"targetId":2,"predicateId":3}'
 
-# Sync
+# Sync integrations
 rcr sync github
-rcr sync daily
+rcr sync airtable
+rcr sync raindrop
+rcr sync readwise
+rcr sync feedbin
+rcr sync adobe
+rcr sync browsing                       # Arc + Dia browser history (macOS)
+rcr sync twitter
+rcr sync agents                         # Claude, Codex, Cursor histories
+rcr sync avatars                        # Transfer avatars to R2
+rcr sync embeddings                     # Generate embeddings for records
+rcr sync daily                          # Run all daily syncs
 ```
 
 Notes:
@@ -354,7 +350,7 @@ bun run db:migrate
 
 - Verify API keys are correct and have proper permissions
 - Check rate limits for external services
-- Run individual syncs with verbose logging: `DEBUG=* bun run sync:github`
+- Run individual syncs with debug flag: `rcr sync github --debug`
 
 ### Browser History Integration (macOS)
 
