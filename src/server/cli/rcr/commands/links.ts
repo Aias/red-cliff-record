@@ -5,8 +5,9 @@
  * reusing all query logic from the API routers.
  */
 
+import { LinkInsertSchema } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
-import { parseId, parseIds, parseJsonInput } from '../lib/args';
+import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
 import { success } from '../lib/output';
@@ -18,7 +19,8 @@ const caller = createCLICaller();
  * List all links for a record
  * Usage: rcr links list <record-id>
  */
-export const list: CommandHandler = async (args, _options) => {
+export const list: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
 	const id = parseId(args);
 
 	try {
@@ -37,11 +39,12 @@ export const list: CommandHandler = async (args, _options) => {
  * Usage: rcr links create '<json>' or echo '<json>' | rcr links create
  * JSON format: { sourceId: number, targetId: number, predicateId: number, notes?: string }
  */
-export const create: CommandHandler = async (args, _options) => {
-	const input = await parseJsonInput(args);
+export const create: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
+	const input = await parseJsonInput(LinkInsertSchema, args);
 
 	try {
-		const link = await caller.links.upsert(input as Parameters<typeof caller.links.upsert>[0]);
+		const link = await caller.links.upsert(input);
 		return success(link);
 	} catch (e) {
 		if (e instanceof TRPCError) {
@@ -60,7 +63,8 @@ export const create: CommandHandler = async (args, _options) => {
  * Delete link(s)
  * Usage: rcr links delete <id...>
  */
-export const del: CommandHandler = async (args, _options) => {
+export const del: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
 	const ids = parseIds(args);
 
 	if (ids.length === 0) {
@@ -76,7 +80,8 @@ export { del as delete };
  * List all available predicate types
  * Usage: rcr links predicates
  */
-export const predicates: CommandHandler = async (_args, _options) => {
+export const predicates: CommandHandler = async (_args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
 	const result = await caller.links.listPredicates();
 	return success(result, { count: result.length });
 };

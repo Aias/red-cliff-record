@@ -8,17 +8,22 @@ export interface ParsedArgs {
 	command: string;
 	subcommand: string;
 	args: string[];
-	options: CLIOptions;
+	options: RawCLIOptions;
 }
 
-export interface CLIOptions {
-	format: OutputFormat;
-	help: boolean;
-	debug: boolean;
-	[key: string]: string | boolean | number | undefined;
-}
+export type RawCLIOptions = Record<string, string | boolean | number | undefined>;
 
-export interface SuccessResult<T> {
+export type ResultValue =
+	| undefined
+	| string
+	| number
+	| boolean
+	| null
+	| Date
+	| ResultValue[]
+	| { [key: string]: ResultValue };
+
+export interface SuccessResult<T extends ResultValue> {
 	success: true;
 	data: T;
 	meta?: ResultMeta;
@@ -40,7 +45,7 @@ export interface ErrorResult {
 export interface CLIError {
 	code: ErrorCode;
 	message: string;
-	details?: unknown;
+	details?: string;
 }
 
 export type ErrorCode =
@@ -52,11 +57,11 @@ export type ErrorCode =
 	| 'UNKNOWN_COMMAND'
 	| 'INTERNAL_ERROR';
 
-export type Result<T> = SuccessResult<T> | ErrorResult;
+export type Result<T extends ResultValue = ResultValue> = SuccessResult<T> | ErrorResult;
 
-export type CommandHandler<T = unknown> = (
+export type CommandHandler<T extends ResultValue = ResultValue> = (
 	args: string[],
-	options: CLIOptions
+	options: RawCLIOptions
 ) => Promise<SuccessResult<T>>;
 
 export type CommandMap = Record<string, Record<string, CommandHandler>>;

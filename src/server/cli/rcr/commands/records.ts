@@ -5,9 +5,17 @@
  * reusing all query logic from the API routers.
  */
 
-import type { RecordType } from '@aias/hozo';
+import { IntegrationTypeSchema, RecordInsertSchema, RecordTypeSchema } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
-import { parseId, parseIds, parseJsonInput } from '../lib/args';
+import { z } from 'zod';
+import {
+	type ListRecordsInput,
+	DEFAULT_LIMIT,
+	LimitSchema,
+	OffsetSchema,
+	RecordFiltersSchema,
+} from '@/shared/types';
+import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
 import { success } from '../lib/output';
@@ -16,10 +24,54 @@ import type { CommandHandler } from '../lib/types';
 const caller = createCLICaller();
 
 /**
+ * CLI options schema that transforms to ListRecordsInput.
+ * Derives validation rules from shared RecordFiltersSchema.
+ */
+const RecordsListOptionsSchema = BaseOptionsSchema.extend({
+	limit: LimitSchema.optional(),
+	offset: OffsetSchema.optional(),
+	type: RecordTypeSchema.optional(),
+	title: RecordFiltersSchema.shape.title.unwrap().optional(),
+	text: RecordFiltersSchema.shape.text.unwrap().optional(),
+	url: RecordFiltersSchema.shape.url.unwrap().optional(),
+	source: IntegrationTypeSchema.optional(),
+	curated: z.boolean().optional(),
+	private: z.boolean().optional(),
+	'rating-min': RecordFiltersSchema.shape.minRating.optional(),
+	'rating-max': RecordFiltersSchema.shape.maxRating.optional(),
+	embedding: z.boolean().optional(),
+	media: z.boolean().optional(),
+	parent: z.boolean().optional(),
+})
+	.strict()
+	.transform(
+		(opts): ListRecordsInput => ({
+			filters: {
+				types: opts.type ? [opts.type] : undefined,
+				title: opts.title,
+				text: opts.text,
+				url: opts.url,
+				isCurated: opts.curated,
+				isPrivate: opts.private,
+				minRating: opts['rating-min'],
+				maxRating: opts['rating-max'],
+				hasEmbedding: opts.embedding,
+				hasMedia: opts.media,
+				hasParent: opts.parent,
+				sources: opts.source ? [opts.source] : undefined,
+			},
+			limit: opts.limit ?? DEFAULT_LIMIT,
+			offset: opts.offset ?? 0,
+			orderBy: [{ field: 'recordCreatedAt', direction: 'desc' }],
+		})
+	);
+
+/**
  * Get a single record by ID
  * Usage: rcr records get <id>
  */
-export const get: CommandHandler = async (args, _options) => {
+export const get: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
 	const id = parseId(args);
 
 	try {
@@ -38,47 +90,25 @@ export const get: CommandHandler = async (args, _options) => {
  * Usage: rcr records list [--type=...] [--title=...] [--limit=...] [--offset=...]
  */
 export const list: CommandHandler = async (_args, options) => {
-	const limit = typeof options.limit === 'number' ? options.limit : 50;
-	const offset = typeof options.offset === 'number' ? options.offset : 0;
-
-	const filters: Record<string, unknown> = {};
-
-	if (options.type) filters.type = options.type as RecordType;
-	if (typeof options.title === 'string') filters.title = options.title;
-	if (typeof options.text === 'string') filters.text = options.text;
-	if (typeof options.url === 'string') filters.url = options.url;
-	if (typeof options.source === 'string') filters.source = options.source;
-	if (options.curated === true) filters.isCurated = true;
-	if (options.private === true) filters.isPrivate = true;
-	if (typeof options['rating-min'] === 'number') filters.minRating = options['rating-min'];
-	if (typeof options['rating-max'] === 'number') filters.maxRating = options['rating-max'];
-	if (options.embedding === true) filters.hasEmbedding = true;
-	if (options.embedding === false) filters.hasEmbedding = false;
-	if (options.media === true) filters.hasMedia = true;
-	if (options.parent === true) filters.hasParent = true;
-	if (options.parent === false) filters.hasParent = false;
-
-	const result = await caller.records.list({
-		filters,
-		limit,
-		offset,
-		orderBy: [{ field: 'recordCreatedAt', direction: 'desc' }],
+	const input = parseOptions(RecordsListOptionsSchema, options);
+	const result = await caller.records.list(input);
+	return success(result.ids, {
+		count: result.ids.length,
+		limit: input.limit,
+		offset: input.offset,
 	});
-
-	return success(result.ids, { count: result.ids.length, limit, offset });
 };
 
 /**
  * Create a new record
  * Usage: rcr records create '<json>' or echo '<json>' | rcr records create
  */
-export const create: CommandHandler = async (args, _options) => {
-	const input = await parseJsonInput(args);
+export const create: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
+	const input = await parseJsonInput(RecordInsertSchema, args);
 
 	try {
-		const record = await caller.records.upsert(
-			input as Parameters<typeof caller.records.upsert>[0]
-		);
+		const record = await caller.records.upsert(input);
 		return success(record);
 	} catch (e) {
 		if (e instanceof TRPCError) {
@@ -92,15 +122,13 @@ export const create: CommandHandler = async (args, _options) => {
  * Update an existing record
  * Usage: rcr records update <id> '<json>'
  */
-export const update: CommandHandler = async (args, _options) => {
+export const update: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
 	const id = parseId(args);
-	const input = await parseJsonInput(args.slice(1));
+	const input = await parseJsonInput(RecordInsertSchema, args.slice(1));
 
 	try {
-		const record = await caller.records.upsert({
-			...(input as Record<string, unknown>),
-			id,
-		});
+		const record = await caller.records.upsert({ ...input, id });
 		return success(record);
 	} catch (e) {
 		if (e instanceof TRPCError) {
@@ -117,7 +145,8 @@ export const update: CommandHandler = async (args, _options) => {
  * Delete record(s)
  * Usage: rcr records delete <id...>
  */
-export const del: CommandHandler = async (args, _options) => {
+export const del: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
 	const ids = parseIds(args);
 
 	if (ids.length === 0) {
@@ -133,7 +162,8 @@ export { del as delete };
  * Merge source record into target
  * Usage: rcr records merge <source-id> <target-id>
  */
-export const merge: CommandHandler = async (args, _options) => {
+export const merge: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
 	const sourceId = parseId(args, 0);
 	const targetId = parseId(args, 1);
 
@@ -159,7 +189,8 @@ export const merge: CommandHandler = async (args, _options) => {
  * Generate embedding for a record
  * Usage: rcr records embed <id>
  */
-export const embed: CommandHandler = async (args, _options) => {
+export const embed: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
 	const id = parseId(args);
 
 	try {
@@ -180,7 +211,8 @@ export const embed: CommandHandler = async (args, _options) => {
  * Get hierarchical family tree for a record
  * Usage: rcr records tree <id>
  */
-export const tree: CommandHandler = async (args, _options) => {
+export const tree: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
 	const id = parseId(args);
 
 	try {

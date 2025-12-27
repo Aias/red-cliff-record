@@ -3,11 +3,39 @@
  * No external dependencies - parses process.argv directly
  */
 
-import type { CLIOptions, OutputFormat, ParsedArgs } from './types';
+import type { ZodType } from 'zod';
+import { z } from 'zod';
+import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
+import { createError } from './errors';
+import type { ParsedArgs, RawCLIOptions, ResultValue } from './types';
 
-function isOutputFormat(value: string): value is OutputFormat {
-	return value === 'json' || value === 'table';
-}
+// ─────────────────────────────────────────────────────────────
+// Reusable CLI Schemas
+// ─────────────────────────────────────────────────────────────
+
+export const BaseOptionsSchema = z.object({
+	format: z.enum(['json', 'table']).default('json'),
+	help: z.boolean().default(false),
+	debug: z.boolean().default(false),
+});
+
+export type BaseOptions = z.infer<typeof BaseOptionsSchema>;
+
+/** Comma-separated list of IDs (e.g., "1,2,3" or just a single number) */
+export const CommaSeparatedIdsSchema = z.preprocess((value) => {
+	if (typeof value === 'number') return [value];
+	if (typeof value === 'string') {
+		return value
+			.split(',')
+			.map((item) => item.trim())
+			.filter((item) => item.length > 0)
+			.map((item) => Number(item));
+	}
+	return value;
+}, z.array(IdSchema));
+
+/** Re-export commonly used schemas from shared types */
+export { IdSchema, LimitSchema, OffsetSchema };
 
 function parseOptionValue(value: string): string | number | boolean {
 	// Boolean-like strings
@@ -23,41 +51,31 @@ function parseOptionValue(value: string): string | number | boolean {
 }
 
 export function parseArgs(argv: string[]): ParsedArgs {
-	const options: CLIOptions = {
-		format: 'json',
-		help: false,
-		debug: false,
-	};
+	const options: RawCLIOptions = {};
 	const positional: string[] = [];
 
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i]!;
 
+		if (arg === '--') {
+			positional.push(...argv.slice(i + 1));
+			break;
+		}
 		if (arg === '--help' || arg === '-h') {
 			options.help = true;
-		} else if (arg === '--debug') {
-			options.debug = true;
 		} else if (arg.startsWith('--')) {
 			// Handle --key=value or --key value
 			const eqIndex = arg.indexOf('=');
 			if (eqIndex !== -1) {
 				const key = arg.slice(2, eqIndex);
 				const value = arg.slice(eqIndex + 1);
-				if (key === 'format' && isOutputFormat(value)) {
-					options.format = value;
-				} else {
-					options[key] = parseOptionValue(value);
-				}
+				options[key] = parseOptionValue(value);
 			} else {
 				const key = arg.slice(2);
 				const nextArg = argv[i + 1];
 				// Check if next arg looks like a value (not another flag)
 				if (nextArg && !nextArg.startsWith('-')) {
-					if (key === 'format' && isOutputFormat(nextArg)) {
-						options.format = nextArg;
-					} else {
-						options[key] = parseOptionValue(nextArg);
-					}
+					options[key] = parseOptionValue(nextArg);
 					i++; // Skip the value
 				} else {
 					// Flag without value = true
@@ -67,7 +85,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
 		} else if (arg.startsWith('-') && arg.length === 2) {
 			// Short flags like -v, -q
 			const key = arg.slice(1);
-			options[key] = true;
+			if (key === 'h') {
+				options.help = true;
+			} else {
+				options[key] = true;
+			}
 		} else {
 			positional.push(arg);
 		}
@@ -81,48 +103,72 @@ export function parseArgs(argv: string[]): ParsedArgs {
 	};
 }
 
+export function parseBaseOptions(options: RawCLIOptions): BaseOptions {
+	const result = BaseOptionsSchema.passthrough().safeParse(options);
+	if (!result.success) {
+		throw createError('VALIDATION_ERROR', result.error.message);
+	}
+	return result.data;
+}
+
+export function parseOptions<T>(schema: ZodType<T>, options: RawCLIOptions): T {
+	const result = schema.safeParse(options);
+	if (!result.success) {
+		throw createError('VALIDATION_ERROR', result.error.message);
+	}
+	return result.data;
+}
+
 /**
  * Parse a JSON string from args or stdin
  */
-export async function parseJsonInput(args: string[]): Promise<unknown> {
-	// If args provided, join and parse
-	if (args.length > 0) {
-		const jsonStr = args.join(' ');
-		return JSON.parse(jsonStr);
+export async function parseJsonInput<T extends ResultValue>(
+	schema: ZodType<T>,
+	args: string[]
+): Promise<T> {
+	const jsonStr = args.length > 0 ? args.join(' ') : await Bun.stdin.text();
+
+	if (!jsonStr.trim()) {
+		throw createError('VALIDATION_ERROR', 'No JSON input provided');
 	}
 
-	// Otherwise read from stdin using Bun's API
-	const input = await Bun.stdin.text();
-	if (!input.trim()) {
-		throw new Error('No JSON input provided');
+	let parsed: ResultValue;
+	try {
+		parsed = JSON.parse(jsonStr);
+	} catch {
+		throw createError('VALIDATION_ERROR', 'Invalid JSON input');
 	}
-	return JSON.parse(input.trim());
+
+	const result = schema.safeParse(parsed);
+	if (!result.success) {
+		throw createError('VALIDATION_ERROR', result.error.message);
+	}
+
+	return result.data;
 }
 
 /**
- * Parse a list of IDs from args
+ * Parse a list of IDs from args using Zod coercion
  */
 export function parseIds(args: string[]): number[] {
-	return args.map((arg) => {
-		const id = parseInt(arg, 10);
-		if (isNaN(id) || id <= 0) {
-			throw new Error(`Invalid ID: ${arg}`);
-		}
-		return id;
-	});
+	const result = z.array(z.coerce.number().pipe(IdSchema)).safeParse(args);
+	if (!result.success) {
+		throw createError('VALIDATION_ERROR', `Invalid ID(s): ${args.join(', ')}`);
+	}
+	return result.data;
 }
 
 /**
- * Parse a single required ID from args
+ * Parse a single required ID from args using Zod coercion
  */
 export function parseId(args: string[], position = 0): number {
 	const arg = args[position];
-	if (!arg) {
-		throw new Error('ID is required');
+	if (arg === undefined) {
+		throw createError('VALIDATION_ERROR', 'ID is required');
 	}
-	const id = parseInt(arg, 10);
-	if (isNaN(id) || id <= 0) {
-		throw new Error(`Invalid ID: ${arg}`);
+	const result = z.coerce.number().pipe(IdSchema).safeParse(arg);
+	if (!result.success) {
+		throw createError('VALIDATION_ERROR', `Invalid ID: ${arg}`);
 	}
-	return id;
+	return result.data;
 }

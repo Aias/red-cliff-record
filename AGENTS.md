@@ -64,6 +64,13 @@ Never attempt to start the development server or build the application. The user
 - `bun run sync:daily` - Run all integrations
 - Individual sync: `bun run sync:github`, `bun run sync:airtable`, `bun run sync:raindrop`, `bun run sync:readwise`, `bun run sync:feedbin`, `bun run sync:browsing`
 
+**CLI (`rcr`):**
+
+- Install globally with `bun link` (from repo root)
+- JSON-first output; same tRPC procedures as the app
+- Commands: `rcr records`, `rcr search`, `rcr links`, `rcr sync`
+- Run `rcr --help` for full usage
+
 **Data Operations:**
 
 - **IMPORTANT**: Never run any operations that modify data or could have destructive effects (including creating new data, schemas, or running database migrations) without first prompting the user for permission
@@ -253,7 +260,7 @@ Never attempt to start the development server or build the application. The user
 ## Integration Development Guidelines (Pointers)
 
 - Canonical guidance and examples live in `INTEGRATIONS.md`.
-- Keep sync logic pure and wrapped by `runIntegration`; expose a small CLI entry in `src/server/cli/`.
+- Keep sync logic pure and wrapped by `runIntegration`; the `rcr sync <name>` CLI exposes these to the command line.
 - Use Zod v4 schemas in `types.ts`, a focused API client in `client.ts`, and `sync.ts` for orchestration.
 - Respect rate limits; batch where needed; upsert with `.onConflictDoUpdate()` for idempotency.
 - Ask before any destructive or data-modifying operation.

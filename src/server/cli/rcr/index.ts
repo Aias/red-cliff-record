@@ -21,9 +21,10 @@
  */
 
 import 'dotenv/config';
-import { parseArgs } from './lib/args';
+import { parseArgs, parseBaseOptions, type BaseOptions } from './lib/args';
+import { createError } from './lib/errors';
 import { formatError, formatOutput } from './lib/output';
-import type { CommandHandler, SuccessResult } from './lib/types';
+import type { CommandHandler, ResultValue, SuccessResult } from './lib/types';
 
 // Import command modules
 import * as records from './commands/records';
@@ -37,6 +38,15 @@ const commands: Record<string, Record<string, CommandHandler>> = {
 	links,
 	sync,
 };
+
+function withDuration<T extends ResultValue>(
+	result: SuccessResult<T>,
+	startTime: number
+): SuccessResult<T> {
+	const duration = Math.round(performance.now() - startTime);
+	const meta = result.meta ? { ...result.meta, duration } : { duration };
+	return { ...result, meta };
+}
 
 const HELP_TEXT = `
 rcr - Red Cliff Record CLI
@@ -55,6 +65,7 @@ Commands:
   records tree <id>             Get hierarchical family tree
 
   search <query>                Semantic search (default)
+  search semantic <query>       Semantic vector search
   search text <query>           Full-text trigram search
   search similar <id>           Find records similar to given ID
 
@@ -71,6 +82,7 @@ Options:
   --limit=N             Limit number of results
   --offset=N            Offset for pagination
   --type=entity|concept|artifact  Filter by record type
+  --source=<integration>         Filter by source integration
   --curated             Filter to curated records only
   --debug               Enable debug output
   --help, -h            Show this help
@@ -86,16 +98,30 @@ Examples:
 
 async function main(): Promise<void> {
 	const startTime = performance.now();
-	const { command, subcommand, args, options } = parseArgs(process.argv.slice(2));
+	const { command, subcommand, args, options: rawOptions } = parseArgs(process.argv.slice(2));
+	let baseOptions: BaseOptions;
+	try {
+		baseOptions = parseBaseOptions(rawOptions);
+	} catch (error) {
+		const normalizedError = error instanceof Error ? error : String(error);
+		console.log(formatError(normalizedError, 'json'));
+		process.exit(1);
+	}
 
 	// Handle help
-	if (options.help || (!command && !subcommand)) {
+	if (baseOptions.help || (!command && !subcommand)) {
 		console.log(HELP_TEXT);
 		process.exit(0);
 	}
 
 	// Special case: "search <query>" without subcommand means semantic search
-	if (command === 'search' && subcommand && !['text', 'similar'].includes(subcommand)) {
+	if (
+		command === 'search' &&
+		subcommand &&
+		subcommand !== 'text' &&
+		subcommand !== 'similar' &&
+		!(subcommand === 'semantic' && args.length > 0)
+	) {
 		// Treat subcommand as the query for semantic search
 		const query = [subcommand, ...args].join(' ');
 		try {
@@ -103,15 +129,12 @@ async function main(): Promise<void> {
 			if (!handler) {
 				throw new Error('Semantic search handler not found');
 			}
-			const result = await handler([query], options);
-			// Add duration to meta
-			if (result.meta) {
-				result.meta.duration = Math.round(performance.now() - startTime);
-			}
-			console.log(formatOutput(result, options.format));
+			const result = withDuration(await handler([query], rawOptions), startTime);
+			console.log(formatOutput(result, baseOptions.format));
 			process.exit(0);
 		} catch (error) {
-			console.log(formatError(error, options.format));
+			const normalizedError = error instanceof Error ? error : String(error);
+			console.log(formatError(normalizedError, baseOptions.format));
 			process.exit(1);
 		}
 	}
@@ -120,14 +143,12 @@ async function main(): Promise<void> {
 	if (command === 'sync' && subcommand) {
 		try {
 			const handler = sync.run;
-			const result = await handler([subcommand, ...args], options);
-			if (result.meta) {
-				result.meta.duration = Math.round(performance.now() - startTime);
-			}
-			console.log(formatOutput(result, options.format));
+			const result = withDuration(await handler([subcommand, ...args], rawOptions), startTime);
+			console.log(formatOutput(result, baseOptions.format));
 			process.exit(0);
 		} catch (error) {
-			console.log(formatError(error, options.format));
+			const normalizedError = error instanceof Error ? error : String(error);
+			console.log(formatError(normalizedError, baseOptions.format));
 			process.exit(1);
 		}
 	}
@@ -137,11 +158,8 @@ async function main(): Promise<void> {
 	if (!commandGroup) {
 		console.log(
 			formatError(
-				{
-					code: 'UNKNOWN_COMMAND',
-					message: `Unknown command: ${command}. Run 'rcr --help' for usage.`,
-				},
-				options.format
+				createError('UNKNOWN_COMMAND', `Unknown command: ${command}. Run 'rcr --help' for usage.`),
+				baseOptions.format
 			)
 		);
 		process.exit(1);
@@ -152,30 +170,23 @@ async function main(): Promise<void> {
 		const available = Object.keys(commandGroup).join(', ');
 		console.log(
 			formatError(
-				{
-					code: 'UNKNOWN_COMMAND',
-					message: `Unknown subcommand: ${command} ${subcommand}. Available: ${available}`,
-				},
-				options.format
+				createError(
+					'UNKNOWN_COMMAND',
+					`Unknown subcommand: ${command} ${subcommand}. Available: ${available}`
+				),
+				baseOptions.format
 			)
 		);
 		process.exit(1);
 	}
 
 	try {
-		const result = await handler(args, options);
-		// Add duration to meta
-		if (result.meta) {
-			result.meta.duration = Math.round(performance.now() - startTime);
-		} else {
-			(result as SuccessResult<unknown>).meta = {
-				duration: Math.round(performance.now() - startTime),
-			};
-		}
-		console.log(formatOutput(result, options.format));
+		const result = withDuration(await handler(args, rawOptions), startTime);
+		console.log(formatOutput(result, baseOptions.format));
 		process.exit(0);
 	} catch (error) {
-		console.log(formatError(error, options.format));
+		const normalizedError = error instanceof Error ? error : String(error);
+		console.log(formatError(normalizedError, baseOptions.format));
 		process.exit(1);
 	}
 }

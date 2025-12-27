@@ -3,17 +3,28 @@
  * JSON by default, table format for human debugging
  */
 
-import type { OutputFormat, ResultMeta, SuccessResult } from './types';
+import type { OutputFormat, ResultMeta, ResultValue, SuccessResult } from './types';
 import { formatErrorResult } from './errors';
 
-export function formatOutput<T>(result: SuccessResult<T>, format: OutputFormat): string {
+type RecordValue = { [key: string]: ResultValue };
+
+function isRecordValue(value: ResultValue): value is RecordValue {
+	return (
+		typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)
+	);
+}
+
+export function formatOutput<T extends ResultValue>(
+	result: SuccessResult<T>,
+	format: OutputFormat
+): string {
 	if (format === 'table') {
 		return formatTable(result.data, result.meta);
 	}
 	return JSON.stringify(result, null, 2);
 }
 
-export function formatError(error: unknown, format: OutputFormat): string {
+export function formatError(error: Error | string, format: OutputFormat): string {
 	const result = formatErrorResult(error);
 	if (format === 'table') {
 		return `ERROR [${result.error.code}]: ${result.error.message}`;
@@ -21,17 +32,22 @@ export function formatError(error: unknown, format: OutputFormat): string {
 	return JSON.stringify(result, null, 2);
 }
 
-function formatTable(data: unknown, meta?: ResultMeta): string {
+function formatTable(data: ResultValue, meta?: ResultMeta): string {
 	const lines: string[] = [];
 
 	if (Array.isArray(data)) {
 		if (data.length === 0) {
 			lines.push('(no results)');
 		} else {
-			lines.push(formatArrayAsTable(data));
+			const recordValues = data.filter((item): item is RecordValue => isRecordValue(item));
+			if (recordValues.length === data.length) {
+				lines.push(formatArrayAsTable(recordValues));
+			} else {
+				lines.push(data.map((item) => formatCellValue(item, 80)).join('\n'));
+			}
 		}
-	} else if (typeof data === 'object' && data !== null) {
-		lines.push(formatObjectAsTable(data as Record<string, unknown>));
+	} else if (isRecordValue(data)) {
+		lines.push(formatObjectAsTable(data));
 	} else {
 		lines.push(String(data));
 	}
@@ -52,16 +68,14 @@ function formatTable(data: unknown, meta?: ResultMeta): string {
 	return lines.join('\n');
 }
 
-function formatArrayAsTable(data: unknown[]): string {
+function formatArrayAsTable(data: RecordValue[]): string {
 	if (data.length === 0) return '(empty)';
 
 	// Get all keys from all objects
 	const keys = new Set<string>();
 	for (const item of data) {
-		if (typeof item === 'object' && item !== null) {
-			for (const key of Object.keys(item)) {
-				keys.add(key);
-			}
+		for (const key of Object.keys(item)) {
+			keys.add(key);
 		}
 	}
 
@@ -77,7 +91,7 @@ function formatArrayAsTable(data: unknown[]): string {
 	for (const key of orderedKeys) {
 		widths[key] = key.length;
 		for (const item of data) {
-			const value = formatCellValue((item as Record<string, unknown>)[key]);
+			const value = formatCellValue(key in item ? item[key] : null);
 			widths[key] = Math.max(widths[key]!, value.length);
 		}
 		widths[key] = Math.min(widths[key]!, 40); // Max width
@@ -95,7 +109,7 @@ function formatArrayAsTable(data: unknown[]): string {
 	for (const item of data) {
 		const row = orderedKeys
 			.map((k) => {
-				const value = formatCellValue((item as Record<string, unknown>)[k]);
+				const value = formatCellValue(k in item ? item[k] : null);
 				return value.slice(0, widths[k]).padEnd(widths[k]!);
 			})
 			.join('  ');
@@ -105,7 +119,7 @@ function formatArrayAsTable(data: unknown[]): string {
 	return lines.join('\n');
 }
 
-function formatObjectAsTable(data: Record<string, unknown>): string {
+function formatObjectAsTable(data: RecordValue): string {
 	const lines: string[] = [];
 	const maxKeyLen = Math.max(...Object.keys(data).map((k) => k.length));
 
@@ -117,11 +131,11 @@ function formatObjectAsTable(data: Record<string, unknown>): string {
 	return lines.join('\n');
 }
 
-function formatCellValue(value: unknown, maxLen = 40): string {
+function formatCellValue(value: ResultValue, maxLen = 40): string {
 	if (value === null || value === undefined) return '';
 	if (typeof value === 'boolean') return value ? 'yes' : 'no';
 	if (typeof value === 'number') return String(value);
-	if (value instanceof Date) return value.toISOString().split('T')[0]!;
+	if (value instanceof Date) return value.toISOString().split('T')[0] ?? '';
 	if (Array.isArray(value)) return `[${value.length}]`;
 	if (typeof value === 'object') return '{...}';
 
@@ -135,6 +149,6 @@ function formatCellValue(value: unknown, maxLen = 40): string {
 /**
  * Wrap a successful result
  */
-export function success<T>(data: T, meta?: ResultMeta): SuccessResult<T> {
+export function success<T extends ResultValue>(data: T, meta?: ResultMeta): SuccessResult<T> {
 	return { success: true, data, meta };
 }

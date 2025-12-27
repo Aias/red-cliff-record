@@ -6,33 +6,21 @@
  */
 
 import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+import { syncClaudeHistory } from '@/server/integrations/agents/sync-claude';
+import { syncCodexHistory } from '@/server/integrations/agents/sync-codex';
+import { syncCursorHistory } from '@/server/integrations/agents/sync-cursor';
+import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
+import { syncTwitterData } from '@/server/integrations/twitter/sync';
+import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
-// Direct imports for integrations not in tRPC router
-import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
-import { syncTwitterData } from '@/server/integrations/twitter/sync';
-import { syncClaudeHistory } from '@/server/integrations/agents/sync-claude';
-import { syncCodexHistory } from '@/server/integrations/agents/sync-codex';
-import { syncCursorHistory } from '@/server/integrations/agents/sync-cursor';
-
 const caller = createCLICaller();
 
-type IntegrationName =
-	| 'github'
-	| 'readwise'
-	| 'raindrop'
-	| 'airtable'
-	| 'adobe'
-	| 'feedbin'
-	| 'browsing'
-	| 'twitter'
-	| 'agents'
-	| 'daily';
-
-const VALID_INTEGRATIONS: IntegrationName[] = [
+const IntegrationNameSchema = z.enum([
 	'github',
 	'readwise',
 	'raindrop',
@@ -43,7 +31,9 @@ const VALID_INTEGRATIONS: IntegrationName[] = [
 	'twitter',
 	'agents',
 	'daily',
-];
+]);
+type IntegrationName = z.infer<typeof IntegrationNameSchema>;
+const INTEGRATION_LIST = IntegrationNameSchema.options;
 
 /**
  * Run an integration sync
@@ -54,23 +44,25 @@ const VALID_INTEGRATIONS: IntegrationName[] = [
  *   browsing, twitter, agents, daily (all daily syncs)
  */
 export const run: CommandHandler = async (args, options) => {
-	const integration = args[0]?.toLowerCase() as IntegrationName | undefined;
+	const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
+	const rawIntegration = args[0]?.toLowerCase();
 
-	if (!integration) {
+	if (!rawIntegration) {
 		throw createError(
 			'VALIDATION_ERROR',
-			`Integration name required. Available: ${VALID_INTEGRATIONS.join(', ')}`
+			`Integration name required. Available: ${INTEGRATION_LIST.join(', ')}`
 		);
 	}
 
-	if (!VALID_INTEGRATIONS.includes(integration)) {
+	const integrationResult = IntegrationNameSchema.safeParse(rawIntegration);
+	if (!integrationResult.success) {
 		throw createError(
 			'VALIDATION_ERROR',
-			`Unknown integration: ${integration}. Available: ${VALID_INTEGRATIONS.join(', ')}`
+			`Unknown integration: ${rawIntegration}. Available: ${INTEGRATION_LIST.join(', ')}`
 		);
 	}
-
-	const debug = options.debug === true;
+	const integration = integrationResult.data;
+	const debug = parsedOptions.debug;
 
 	// Handle 'daily' as a special case that runs multiple syncs
 	if (integration === 'daily') {
@@ -79,7 +71,9 @@ export const run: CommandHandler = async (args, options) => {
 
 	try {
 		const result = await runSingleSync(integration, debug);
-		return success(result);
+		// Integration results have complex types that don't fit ResultValue exactly,
+		// but they serialize to JSON correctly which is what the CLI needs
+		return success(result as Parameters<typeof success>[0]);
 	} catch (e) {
 		if (e instanceof TRPCError) {
 			throw createError('INTERNAL_ERROR', e.message);
