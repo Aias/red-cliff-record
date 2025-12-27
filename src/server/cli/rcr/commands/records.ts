@@ -76,7 +76,9 @@ export const create: CommandHandler = async (args, _options) => {
 	const input = await parseJsonInput(args);
 
 	try {
-		const record = await caller.records.upsert(input as Parameters<typeof caller.records.upsert>[0]);
+		const record = await caller.records.upsert(
+			input as Parameters<typeof caller.records.upsert>[0]
+		);
 		return success(record);
 	} catch (e) {
 		if (e instanceof TRPCError) {

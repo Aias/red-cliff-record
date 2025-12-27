@@ -26,7 +26,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			},
 			{
 				name: 'viewport',
-				content: 'width=device-width, initial-scale=1, user-scalable=no',
+				content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
 			},
 			...seo({
 				title: `${SITE_NAME}`,
