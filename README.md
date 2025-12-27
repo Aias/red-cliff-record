@@ -241,6 +241,8 @@ rcr --help
 
 # Records
 rcr records get 123
+rcr records get 123 --links              # Include all incoming/outgoing links
+rcr records get 123 456 789              # Multiple IDs in parallel
 rcr records list --type=entity --limit=10
 rcr records list --source=github --limit=10
 rcr records create '{"title":"Example","type":"concept"}'
@@ -252,6 +254,7 @@ rcr search similar 456 --limit=5
 
 # Links
 rcr links list 123
+rcr links list 123 456                   # Multiple records
 rcr links create '{"sourceId":1,"targetId":2,"predicateId":3}'
 
 # Sync
@@ -261,8 +264,9 @@ rcr sync daily
 
 Notes:
 
+- Outputs compact JSON by default; pipe to `jq` for formatting.
 - Unknown flags are rejected (strict parsing).
-- Record list supports `--type` and `--source` filters.
+- Most ID-based commands accept multiple IDs for parallel execution.
 - Use `--format=table` for human-readable output.
 - Use `--` to stop option parsing when needed.
 
