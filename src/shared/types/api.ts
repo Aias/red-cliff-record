@@ -32,7 +32,7 @@ export const OrderCriteriaSchema = z.object({
 });
 
 export const RecordFiltersSchema = z.object({
-	type: RecordTypeSchema.optional(),
+	types: z.array(RecordTypeSchema).optional(),
 	title: z.string().nullable().optional(),
 	text: z.string().nullable().optional(),
 	url: z.string().nullable().optional(),
@@ -44,7 +44,7 @@ export const RecordFiltersSchema = z.object({
 	hasReminder: z.boolean().optional(),
 	hasEmbedding: z.boolean().optional(),
 	hasMedia: z.boolean().optional(),
-	source: IntegrationTypeSchema.optional(),
+	sources: z.array(IntegrationTypeSchema).optional(),
 });
 
 export const LimitSchema = z.number().int().positive();

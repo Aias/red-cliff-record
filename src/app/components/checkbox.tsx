@@ -5,12 +5,8 @@ import { cn } from '@/lib/utils';
 
 const Checkbox = ({ className, ...props }: ComponentProps<typeof CheckboxPrimitive.Root>) => (
 	<CheckboxPrimitive.Root className={cn('peer checkbox shrink-0', className)} {...props}>
-		<CheckboxPrimitive.Indicator
-			className={cn(
-				'relative flex size-full items-center justify-center overflow-hidden text-current'
-			)}
-		>
-			<CheckIcon className="absolute inset-1/2 size-[1.15em] -translate-x-1/2 -translate-y-[calc(50%+0.025em)]" />
+		<CheckboxPrimitive.Indicator className="relative flex size-full items-center justify-center overflow-hidden">
+			<CheckIcon className="absolute inset-1/2 size-[1.15em] -translate-x-1/2 -translate-y-[calc(50%+0.025em)] text-c-main-contrast" />
 		</CheckboxPrimitive.Indicator>
 	</CheckboxPrimitive.Root>
 );

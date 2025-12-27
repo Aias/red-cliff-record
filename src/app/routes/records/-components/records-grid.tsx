@@ -6,15 +6,22 @@ import {
 	type RecordType,
 } from '@aias/hozo';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { CheckIcon } from 'lucide-react';
+import { CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
-import { RecordTypeIcon } from './type-icons';
+import { recordTypeIcons, RecordTypeIcon } from './type-icons';
+import { Button } from '@/components/button';
+import { Checkbox } from '@/components/checkbox';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/dropdown-menu';
 import { ExternalLink } from '@/components/external-link';
 import { Input } from '@/components/input';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { Label } from '@/components/label';
 import { Placeholder } from '@/components/placeholder';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/select';
 import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
@@ -87,7 +94,7 @@ export const RecordsGrid = () => {
 	const { data: queue } = trpc.records.list.useQuery(search);
 
 	const {
-		filters: { type, title, url, isCurated, isPrivate, source, hasParent, text, hasMedia },
+		filters: { types, title, url, isCurated, isPrivate, sources, hasParent, text, hasMedia },
 		limit,
 	} = search;
 
@@ -160,31 +167,43 @@ export const RecordsGrid = () => {
 		[navigate]
 	);
 
-	const handleTypeChange = useCallback(
-		(value: string) => {
+	const handleTypeToggle = useCallback(
+		(recordType: RecordType) => {
 			void navigate({
-				search: (prev) => ({
-					...prev,
-					filters: {
-						...prev.filters,
-						type: value === 'All' ? undefined : (value as RecordType),
-					},
-				}),
+				search: (prev) => {
+					const currentTypes = prev.filters.types ?? [];
+					const newTypes = currentTypes.includes(recordType)
+						? currentTypes.filter((t) => t !== recordType)
+						: [...currentTypes, recordType];
+					return {
+						...prev,
+						filters: {
+							...prev.filters,
+							types: newTypes.length > 0 ? newTypes : undefined,
+						},
+					};
+				},
 			});
 		},
 		[navigate]
 	);
 
-	const handleSourceChange = useCallback(
-		(value: string) => {
+	const handleSourceToggle = useCallback(
+		(source: IntegrationType) => {
 			void navigate({
-				search: (prev) => ({
-					...prev,
-					filters: {
-						...prev.filters,
-						source: value === 'All' ? undefined : (value as IntegrationType),
-					},
-				}),
+				search: (prev) => {
+					const currentSources = prev.filters.sources ?? [];
+					const newSources = currentSources.includes(source)
+						? currentSources.filter((s) => s !== source)
+						: [...currentSources, source];
+					return {
+						...prev,
+						filters: {
+							...prev.filters,
+							sources: newSources.length > 0 ? newSources : undefined,
+						},
+					};
+				},
 			});
 		},
 		[navigate]
@@ -323,42 +342,83 @@ export const RecordsGrid = () => {
 				</div>
 				<hr />
 				<div className="flex flex-col gap-1.5">
-					<Label htmlFor="type">Type</Label>
-					<Select value={type ?? 'All'} onValueChange={handleTypeChange}>
-						<SelectTrigger id="type" className="w-full">
-							<SelectValue placeholder="Filter by type" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="All">All Types</SelectItem>
-							{RecordTypeSchema.options.map((recordType) => (
-								<SelectItem key={recordType} value={recordType}>
-									{recordType.charAt(0).toUpperCase() + recordType.slice(1)}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<Label htmlFor="types">Types</Label>
+					<DropdownMenu>
+						<Button variant="outline" className="w-full justify-between" asChild>
+							<DropdownMenuTrigger id="types">
+								<span className={types?.length ? '' : 'text-c-secondary'}>
+									{types?.length
+										? types.length === RecordTypeSchema.options.length
+											? 'All Types'
+											: `${types.length} selected`
+										: 'All Types'}
+								</span>
+								<ChevronDownIcon className="size-4 opacity-50" />
+							</DropdownMenuTrigger>
+						</Button>
+						<DropdownMenuContent align="start" className="w-48">
+							{RecordTypeSchema.options.map((recordType) => {
+								const isSelected = types?.includes(recordType) ?? false;
+								const { icon: Icon } = recordTypeIcons[recordType];
+								return (
+									<DropdownMenuItem
+										key={recordType}
+										onSelect={(e) => {
+											e.preventDefault();
+											handleTypeToggle(recordType);
+										}}
+									>
+										<Icon />
+										<span className="flex-1 capitalize">{recordType}</span>
+										<Checkbox checked={isSelected} />
+									</DropdownMenuItem>
+								);
+							})}
+						</DropdownMenuContent>
+					</DropdownMenu>
 				</div>
 				<div className="flex flex-col gap-1.5">
-					<Label htmlFor="source">Source</Label>
-					<Select value={source ?? 'All'} onValueChange={handleSourceChange}>
-						<SelectTrigger id="source" className="w-full">
-							<SelectValue placeholder="Filter by source" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="All">All Sources</SelectItem>
+					<Label htmlFor="sources">Sources</Label>
+					<DropdownMenu>
+						<Button variant="outline" className="w-full justify-between" asChild>
+							<DropdownMenuTrigger id="sources">
+								<span className={sources?.length ? '' : 'text-c-secondary'}>
+									{sources?.length
+										? sources.length ===
+											['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].length
+											? 'All Sources'
+											: `${sources.length} selected`
+										: 'All Sources'}
+								</span>
+								<ChevronDownIcon className="size-4 opacity-50" />
+							</DropdownMenuTrigger>
+						</Button>
+						<DropdownMenuContent align="start" className="w-48">
 							{IntegrationTypeSchema.options
-								.filter((source) =>
-									['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].includes(
-										source
-									)
+								.filter((s) =>
+									['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].includes(s)
 								)
-								.map((source) => (
-									<SelectItem key={source} value={source}>
-										{source.charAt(0).toUpperCase() + source.slice(1)}
-									</SelectItem>
-								))}
-						</SelectContent>
-					</Select>
+								.map((source) => {
+									const isSelected = sources?.includes(source) ?? false;
+									return (
+										<DropdownMenuItem
+											key={source}
+											onSelect={(e) => {
+												e.preventDefault();
+												handleSourceToggle(source);
+											}}
+										>
+											<IntegrationLogo
+												integration={source}
+												className="grid size-4 place-items-center"
+											/>
+											<span className="flex-1 capitalize">{source}</span>
+											<Checkbox checked={isSelected} />
+										</DropdownMenuItem>
+									);
+								})}
+						</DropdownMenuContent>
+					</DropdownMenu>
 				</div>
 				<div className="flex flex-col gap-1.5">
 					<Label htmlFor="title">Title</Label>
@@ -489,10 +549,10 @@ export const RecordsGrid = () => {
 			</div>
 		),
 		[
-			type,
-			handleTypeChange,
-			source,
-			handleSourceChange,
+			types,
+			handleTypeToggle,
+			sources,
+			handleSourceToggle,
 			titleInput,
 			handleTitleChange,
 			urlInput,

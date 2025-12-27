@@ -6,7 +6,7 @@ export const list = publicProcedure
 	.query(async ({ ctx: { db }, input }): Promise<IdParamList> => {
 		const {
 			filters: {
-				type,
+				types,
 				title,
 				text,
 				url: domain,
@@ -18,7 +18,7 @@ export const list = publicProcedure
 				hasReminder,
 				hasEmbedding,
 				hasMedia,
-				source,
+				sources,
 			},
 			limit,
 			offset,
@@ -30,7 +30,7 @@ export const list = publicProcedure
 				id: true,
 			},
 			where: {
-				type,
+				type: types?.length ? { in: types } : undefined,
 				title:
 					title === null
 						? {
@@ -94,9 +94,9 @@ export const list = publicProcedure
 					: {
 							isNull: true,
 						},
-				sources: source
+				sources: sources?.length
 					? {
-							arrayOverlaps: [source],
+							arrayOverlaps: sources,
 						}
 					: undefined,
 				rating:

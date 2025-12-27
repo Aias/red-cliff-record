@@ -77,19 +77,19 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 					{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
 				</CommandGroup>
 				<CommandSeparator alwaysRender />
-			<CommandItem
-				disabled={query.length === 0 || isFetching}
-				key="create-record"
-				onSelect={() => {
-					createRecordMutation.mutate(
-						{ type: 'artifact', title: query },
-						{ onSuccess: (newRecord) => onSelect(newRecord.id) }
-					);
-				}}
-				className="px-3 py-2"
-			>
-				<PlusCircleIcon /> Create New Record
-			</CommandItem>
+				<CommandItem
+					disabled={query.length === 0 || isFetching}
+					key="create-record"
+					onSelect={() => {
+						createRecordMutation.mutate(
+							{ type: 'artifact', title: query },
+							{ onSuccess: (newRecord) => onSelect(newRecord.id) }
+						);
+					}}
+					className="px-3 py-2"
+				>
+					<PlusCircleIcon /> Create New Record
+				</CommandItem>
 			</CommandList>
 		</Command>
 	);
