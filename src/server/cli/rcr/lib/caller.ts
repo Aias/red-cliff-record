@@ -8,6 +8,9 @@
 import { appRouter } from '@/server/api/root';
 import { createCallerFactory, createTRPCContext } from '@/server/api/init';
 
+// Suppress tRPC timing logs in CLI context
+process.env.RCR_CLI = '1';
+
 // Create the caller factory from the app router
 const createCaller = createCallerFactory(appRouter);
 

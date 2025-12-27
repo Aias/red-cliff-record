@@ -141,6 +141,8 @@ const formatTimestamp = () => {
 
 const flushLogs = () => {
 	if (logBuffer.size === 0) return;
+	// Suppress logging in CLI context (set by CLI caller)
+	if (process.env.RCR_CLI === '1') return;
 
 	const timestamp = formatTimestamp();
 
@@ -150,9 +152,9 @@ const flushLogs = () => {
 		const max = Math.max(...durations).toFixed(2);
 
 		if (count > 1) {
-			console.log(`${timestamp} [tRPC] ${path} x${count} (avg: ${avg}ms, max: ${max}ms)`);
+			console.error(`${timestamp} [tRPC] ${path} x${count} (avg: ${avg}ms, max: ${max}ms)`);
 		} else {
-			console.log(`${timestamp} [tRPC] ${path}: ${durations[0]?.toFixed(2)} ms`);
+			console.error(`${timestamp} [tRPC] ${path}: ${durations[0]?.toFixed(2)} ms`);
 		}
 	}
 

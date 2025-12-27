@@ -66,30 +66,52 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
 		})
 	);
 
+const RecordsGetOptionsSchema = BaseOptionsSchema.extend({
+	links: z.boolean().optional(),
+}).strict();
+
 /**
  * Get record(s) by ID
- * Usage: rcr records get <id...>
+ * Usage: rcr records get <id...> [--links]
  */
 export const get: CommandHandler = async (args, options) => {
-	parseOptions(BaseOptionsSchema.strict(), options);
+	const parsedOptions = parseOptions(RecordsGetOptionsSchema, options);
 	const ids = parseIds(args);
+	const includeLinks = parsedOptions.links ?? false;
 
 	if (ids.length === 0) {
 		throw createError('VALIDATION_ERROR', 'At least one ID is required');
 	}
 
-	const results = await Promise.all(
-		ids.map(async (id) => {
-			try {
-				return await caller.records.get({ id });
-			} catch (e) {
-				if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-					return { id, error: 'NOT_FOUND' };
+	// Fetch records and optionally links in parallel
+	const [recordResults, linksMap] = await Promise.all([
+		Promise.all(
+			ids.map(async (id) => {
+				try {
+					return await caller.records.get({ id });
+				} catch (e) {
+					if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
+						return { id, error: 'NOT_FOUND' as const };
+					}
+					throw e;
 				}
-				throw e;
-			}
-		})
-	);
+			})
+		),
+		includeLinks && ids.length > 0 ? caller.links.map({ recordIds: ids }) : Promise.resolve(null),
+	]);
+
+	// Merge links into records if requested
+	const results = recordResults.map((record) => {
+		if ('error' in record) return record;
+		if (!linksMap) return record;
+
+		const links = linksMap[record.id];
+		return {
+			...record,
+			incomingLinks: links?.incomingLinks ?? [],
+			allOutgoingLinks: links?.outgoingLinks ?? [],
+		};
+	});
 
 	// Single ID: return the record directly (or throw if not found)
 	if (ids.length === 1) {

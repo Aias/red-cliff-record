@@ -55,7 +55,7 @@ Usage:
   rcr <command> <subcommand> [args...] [options]
 
 Commands:
-  records get <id...>           Fetch record(s) by ID
+  records get <id...> [--links] Fetch record(s) by ID
   records list [filters]        List records with optional filters
   records create <json>         Create a new record
   records update <id> <json>    Update an existing record

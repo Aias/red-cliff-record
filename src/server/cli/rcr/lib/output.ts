@@ -21,7 +21,7 @@ export function formatOutput<T extends ResultValue>(
 	if (format === 'table') {
 		return formatTable(result.data, result.meta);
 	}
-	return JSON.stringify(result, null, 2);
+	return JSON.stringify(result);
 }
 
 export function formatError(error: Error | string, format: OutputFormat): string {
@@ -29,7 +29,7 @@ export function formatError(error: Error | string, format: OutputFormat): string
 	if (format === 'table') {
 		return `ERROR [${result.error.code}]: ${result.error.message}`;
 	}
-	return JSON.stringify(result, null, 2);
+	return JSON.stringify(result);
 }
 
 function formatTable(data: ResultValue, meta?: ResultMeta): string {
