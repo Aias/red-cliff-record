@@ -32,10 +32,11 @@ Use all tools at your disposal to diagnose and resolve issues. This includes but
 
 **Development:**
 
-- `bun run lint` - Runs oxlint + tsgo (type-checking). Fast enough to run frequently during development.
-- `bun run format` - Runs Prettier. Run at the end of a set of changes before committing.
+- `bun lint` - Runs oxlint + tsgo (type-checking). Fast enough to run frequently during development.
+- `bun lint:watch` - Runs tsgo in watch mode for continuous type-checking during development.
+- `bun format` - Runs Prettier. Run at the end of a set of changes before committing.
 
-The lint command handles both linting and type-checking in one step via tsgo (the TypeScript Go port). Since it's very fast (~1s), run it liberally during development rather than waiting until the end.
+The lint command handles both linting and type-checking in one step via tsgo (the TypeScript Go port). Since it's very fast (~1s), run it liberally during development rather than waiting until the end. There are no separate `tsc` commands—always use `lint` or `lint:watch`.
 
 Never attempt to start the development server or build the application. The user will run these commands manually.
 
@@ -94,6 +95,7 @@ Never attempt to start the development server or build the application. The user
 - Tailwind CSS v4 syntax using `c-*` design tokens from `src/app/styles/theme.css`
 - Build interactive elements with Radix primitives and existing Shadcn-based components
 - Always import Radix primitives from the `radix-ui` package (e.g., `import { HoverCard as HoverCardPrimitive } from 'radix-ui'`), not from individual subpackages like `@radix-ui/react-hover-card`
+- **Component composition with `asChild`**: When an element needs styling from an existing component (e.g., a dropdown trigger that should look like a Button), use the `asChild` prop to compose rather than duplicating inline styles. Example: `<Button variant="outline" asChild><DropdownMenuTrigger>...</DropdownMenuTrigger></Button>`
 - Never use legacy Shadcn theme variables (`bg-background`, `text-foreground`, etc.)
 - Mark key DOM nodes with `data-slot` attributes for styling hooks
 - Lucide icons with `Icon` suffix (e.g., `HomeIcon` not `Home`)
@@ -107,6 +109,8 @@ Never attempt to start the development server or build the application. The user
 - Prefer logical properties `block`/`inline`, `start`/`end` over `left`, `right`, `top`, and `bottom`
 - When writing transforms, use `translate`, `rotate`, `scale`, and other transform sub-properties directly rather than putting them all in a `transform` property
 - Across all code, prefer semantic HTML first, then a CSS-only implementation for behavior HTML cannot express, then TypeScript for behavior CSS cannot express, and only add or rely on external dependencies when absolutely necessary or when they are already in the project
+- Theme colors follow a semantic naming pattern: `c-main` for primary actions, `c-main-contrast` for text on `c-main` backgrounds. Similar patterns exist for `c-destructive`/`c-destructive-contrast`. Never invent color token names—check `src/app/styles/app.css` for available tokens
+- **Detecting invalid Tailwind classes**: Prettier's Tailwind plugin sorts invalid/unknown classes to the front of the class list. If classes appear out of order after running `bun format`, they're likely misspelled or don't exist in the theme
 
 **TypeScript Requirements:**
 
