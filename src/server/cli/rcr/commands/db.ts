@@ -58,7 +58,7 @@ async function runDbManager(args: string[]): Promise<void> {
  */
 export const backup: CommandHandler = async (args, options) => {
 	const parsedOptions = parseOptions(BackupOptionsSchema, options);
-    const locationArg = args[0];
+	const locationArg = args[0];
 
 	if (!locationArg) {
 		throw createError('VALIDATION_ERROR', 'Location required: local or remote');
@@ -84,7 +84,7 @@ export const backup: CommandHandler = async (args, options) => {
 		shellArgs.push('--dry-run');
 	}
 
-    shellArgs.push('backup', location);
+	shellArgs.push('backup', location);
 
 	await runDbManager(shellArgs);
 
@@ -102,7 +102,7 @@ export const backup: CommandHandler = async (args, options) => {
  */
 export const restore: CommandHandler = async (args, options) => {
 	const parsedOptions = parseOptions(RestoreOptionsSchema, options);
-    const locationArg = args[0];
+	const locationArg = args[0];
 
 	if (!locationArg) {
 		throw createError('VALIDATION_ERROR', 'Location required: local or remote');
@@ -124,15 +124,15 @@ export const restore: CommandHandler = async (args, options) => {
 		shellArgs.push('--clean');
 	}
 
-    if (parsedOptions['data-only']) {
-        shellArgs.push('--data-only');
-    }
+	if (parsedOptions['data-only']) {
+		shellArgs.push('--data-only');
+	}
 
 	if (dryRun) {
 		shellArgs.push('--dry-run');
 	}
 
-    shellArgs.push('restore', location);
+	shellArgs.push('restore', location);
 
 	await runDbManager(shellArgs);
 
