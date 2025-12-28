@@ -24,14 +24,14 @@
 		"check": "bunx --bun tsc --noEmit"
 	},
 	"dependencies": {
-		"drizzle-zod": "1.0.0-beta.4-4605abe"
+		"drizzle-zod": "1.0.0-beta.6-4414a19"
 	},
 	"peerDependencies": {
-		"drizzle-orm": "1.0.0-beta.4-4605abe",
+		"drizzle-orm": "1.0.0-beta.6-4414a19",
 		"zod": "^4.1.12"
 	},
 	"devDependencies": {
-		"drizzle-orm": "1.0.0-beta.4-4605abe",
+		"drizzle-orm": "1.0.0-beta.6-4414a19",
 		"tsup": "^8.5.1",
 		"zod": "^4.1.12"
 	}

@@ -32,6 +32,9 @@ print_usage() {
     echo "  reset TARGET     Reset database (drop & recreate with extensions, local only)"
     echo "  seed TARGET      Seed database with initial data (predicates and core records)"
     echo
+    echo "Notes:"
+    echo "  - Restores terminate existing connections to the target database."
+    echo
     echo "Options:"
     echo "  -d, --database NAME    Database name (default: redcliffrecord)"
     echo "  -b, --backup-dir DIR   Backup directory (default: ~/Documents/Red Cliff Record/Backups)"
@@ -190,7 +193,7 @@ do_restore() {
             WHERE pg_stat_activity.datname = '$DATABASE_NAME'
             AND pid <> pg_backend_pid();"
 
-        local restore_args="--dbname=$DATABASE_URL_LOCAL --no-owner --no-privileges -v"
+        local restore_args="--dbname=$restore_db_url --no-owner --no-privileges -v"
         
         if [ "$DATA_ONLY" = true ]; then
             # For data-only restore, we use --data-only. 
@@ -219,7 +222,7 @@ do_restore() {
             FROM pg_stat_activity
             WHERE pg_stat_activity.datname = '$DATABASE_NAME'
             AND pid <> pg_backend_pid();"
-        local restore_args="-d $DATABASE_URL_REMOTE --no-owner --no-privileges -v"
+        local restore_args="-d $restore_db_url --no-owner --no-privileges -v"
         
         if [ "$DATA_ONLY" = true ]; then
             restore_args="$restore_args --data-only --disable-triggers --single-transaction"

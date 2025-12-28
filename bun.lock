@@ -27,8 +27,8 @@
         "cmdk": "^1.1.1",
         "dataloader": "^2.2.3",
         "dotenv": "^17.2.3",
-        "drizzle-orm": "1.0.0-beta.4-4605abe",
-        "drizzle-zod": "1.0.0-beta.4-4605abe",
+        "drizzle-orm": "1.0.0-beta.6-4414a19",
+        "drizzle-zod": "1.0.0-beta.6-4414a19",
         "lucide-react": "^0.562.0",
         "marked": "^17.0.1",
         "marked-linkify-it": "^3.1.14",
@@ -58,7 +58,7 @@
         "@typescript/native-preview": "^7.0.0-dev.20251228.1",
         "@vitejs/plugin-react": "^5.1.2",
         "babel-plugin-react-compiler": "^1.0.0",
-        "drizzle-kit": "1.0.0-beta.4-4605abe",
+        "drizzle-kit": "1.0.0-beta.6-4414a19",
         "oxlint": "^1.35.0",
         "oxlint-tsgolint": "^0.10.0",
         "pg": "^8.16.3",
@@ -73,15 +73,15 @@
       "name": "@aias/hozo",
       "version": "0.2.0",
       "dependencies": {
-        "drizzle-zod": "1.0.0-beta.4-4605abe",
+        "drizzle-zod": "1.0.0-beta.6-4414a19",
       },
       "devDependencies": {
-        "drizzle-orm": "1.0.0-beta.4-4605abe",
+        "drizzle-orm": "1.0.0-beta.6-4414a19",
         "tsup": "^8.5.1",
         "zod": "^4.1.12",
       },
       "peerDependencies": {
-        "drizzle-orm": "1.0.0-beta.4-4605abe",
+        "drizzle-orm": "1.0.0-beta.6-4414a19",
         "zod": "^4.1.12",
       },
     },
@@ -769,11 +769,11 @@
 
     "dotenv": ["dotenv@17.2.3", "", {}, "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="],
 
-    "drizzle-kit": ["drizzle-kit@1.0.0-beta.4-4605abe", "", { "dependencies": { "@drizzle-team/brocli": "^0.11.0", "@js-temporal/polyfill": "^0.5.1", "esbuild": "^0.25.10", "esbuild-register": "^3.6.0" }, "bin": { "drizzle-kit": "bin.cjs" } }, "sha512-VeCeDq0V7T1omP4EfjYghmMh+tGa1iZR6aFJdDQvY5aePhPpsPGzxgkYVmLxGNA5K2Gu2ttDCytavRxElWL1ng=="],
+    "drizzle-kit": ["drizzle-kit@1.0.0-beta.6-4414a19", "", { "dependencies": { "@drizzle-team/brocli": "^0.11.0", "@js-temporal/polyfill": "^0.5.1", "esbuild": "^0.25.10", "esbuild-register": "^3.6.0" }, "bin": { "drizzle-kit": "bin.cjs" } }, "sha512-tecGaCXKWVLIkE9f+rucGPovx8ALRFS0lvgUKWoXXLFTLpkmgc/iuN0cpJAalFiJK7bdQemMMRjF9hsCEcmphA=="],
 
-    "drizzle-orm": ["drizzle-orm@1.0.0-beta.4-4605abe", "", { "peerDependencies": { "@aws-sdk/client-rds-data": ">=3", "@cloudflare/workers-types": ">=4", "@electric-sql/pglite": ">=0.2.0", "@libsql/client": ">=0.10.0", "@libsql/client-wasm": ">=0.10.0", "@neondatabase/serverless": ">=0.10.0", "@op-engineering/op-sqlite": ">=2", "@opentelemetry/api": "^1.4.1", "@planetscale/database": ">=1.13", "@prisma/client": "*", "@sqlitecloud/drivers": ">=1.0.653", "@tidbcloud/serverless": "*", "@tursodatabase/database": ">=0.2.1", "@tursodatabase/database-common": ">=0.2.1", "@tursodatabase/database-wasm": ">=0.2.1", "@types/better-sqlite3": "*", "@types/mssql": "^9.1.4", "@types/pg": "*", "@types/sql.js": "*", "@upstash/redis": ">=1.34.7", "@vercel/postgres": ">=0.8.0", "@xata.io/client": "*", "better-sqlite3": ">=9.3.0", "bun-types": "*", "expo-sqlite": ">=14.0.0", "gel": ">=2", "mssql": "^11.0.1", "mysql2": ">=2", "pg": ">=8", "postgres": ">=3", "sql.js": ">=1", "sqlite3": ">=5" }, "optionalPeers": ["@aws-sdk/client-rds-data", "@cloudflare/workers-types", "@electric-sql/pglite", "@libsql/client", "@libsql/client-wasm", "@neondatabase/serverless", "@op-engineering/op-sqlite", "@opentelemetry/api", "@planetscale/database", "@prisma/client", "@sqlitecloud/drivers", "@tidbcloud/serverless", "@tursodatabase/database", "@tursodatabase/database-common", "@tursodatabase/database-wasm", "@types/better-sqlite3", "@types/pg", "@types/sql.js", "@upstash/redis", "@vercel/postgres", "@xata.io/client", "better-sqlite3", "bun-types", "expo-sqlite", "gel", "mysql2", "pg", "postgres", "sql.js", "sqlite3"] }, "sha512-f93Ssudgsg+acRJtWylkPir/ZMPBo8GuIFC1K3fmsrRxSd/QOToHos0RdnZ3No5Y/1wq9nwh7eubhg9cCaG4eg=="],
+    "drizzle-orm": ["drizzle-orm@1.0.0-beta.6-4414a19", "", { "peerDependencies": { "@aws-sdk/client-rds-data": ">=3", "@cloudflare/workers-types": ">=4", "@electric-sql/pglite": ">=0.2.0", "@libsql/client": ">=0.10.0", "@libsql/client-wasm": ">=0.10.0", "@neondatabase/serverless": ">=0.10.0", "@op-engineering/op-sqlite": ">=2", "@opentelemetry/api": "^1.4.1", "@planetscale/database": ">=1.13", "@prisma/client": "*", "@sqlitecloud/drivers": ">=1.0.653", "@tidbcloud/serverless": "*", "@tursodatabase/database": ">=0.2.1", "@tursodatabase/database-common": ">=0.2.1", "@tursodatabase/database-wasm": ">=0.2.1", "@types/better-sqlite3": "*", "@types/mssql": "^9.1.4", "@types/pg": "*", "@types/sql.js": "*", "@upstash/redis": ">=1.34.7", "@vercel/postgres": ">=0.8.0", "@xata.io/client": "*", "better-sqlite3": ">=9.3.0", "bun-types": "*", "expo-sqlite": ">=14.0.0", "gel": ">=2", "mssql": "^11.0.1", "mysql2": ">=2", "pg": ">=8", "postgres": ">=3", "sql.js": ">=1", "sqlite3": ">=5" }, "optionalPeers": ["@aws-sdk/client-rds-data", "@cloudflare/workers-types", "@electric-sql/pglite", "@libsql/client", "@libsql/client-wasm", "@neondatabase/serverless", "@op-engineering/op-sqlite", "@opentelemetry/api", "@planetscale/database", "@prisma/client", "@sqlitecloud/drivers", "@tidbcloud/serverless", "@tursodatabase/database", "@tursodatabase/database-common", "@tursodatabase/database-wasm", "@types/better-sqlite3", "@types/pg", "@types/sql.js", "@upstash/redis", "@vercel/postgres", "@xata.io/client", "better-sqlite3", "bun-types", "expo-sqlite", "gel", "mysql2", "pg", "postgres", "sql.js", "sqlite3"] }, "sha512-UGpd61ZVeo1Myz0qzdRIpJoRMTzju6y2S25OTI5/nf6mdyAounZbqsoQtAkfms6wv9LLwOCnTtGhlskkgSfjcw=="],
 
-    "drizzle-zod": ["drizzle-zod@1.0.0-beta.4-4605abe", "", { "peerDependencies": { "drizzle-orm": ">=1.0.0-beta.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-bGf5mUIbjA2oofk3IOe1pcmxgsJeiy+w0BN+drSZtbnebMj7hFxvQjGMUZxOseU6J2NMNBrbf/DO1RfAkub/eA=="],
+    "drizzle-zod": ["drizzle-zod@1.0.0-beta.6-4414a19", "", { "peerDependencies": { "drizzle-orm": ">=1.0.0-beta.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-tYO5yreuNibWWlJ5hNiBJZMaEhA0QekIfSONay71pFxypO108xIEApkHo/5oJ3YXjy+Ipji5CsjTiPH98u+6mA=="],
 
     "ecdsa-sig-formatter": ["ecdsa-sig-formatter@1.0.11", "", { "dependencies": { "safe-buffer": "^5.0.1" } }, "sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ=="],
 
