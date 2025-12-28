@@ -79,8 +79,8 @@ Commands:
   sync <integration>            Run a sync (github, readwise, etc.)
   sync daily                    Run all daily syncs
 
-  db backup <local|remote>      Backup database [--data-only]
-  db restore <local|remote>     Restore database [--clean] [--data-only]
+  db backup <local|remote>      Backup database [--data-only] [--dry-run|-n]
+  db restore <local|remote>     Restore database [--clean] [--data-only] [--dry-run|-n]
   db reset                      Reset local database (drop & recreate)
   db seed                       Seed local database with predicates
   db status [local|remote]      Show connection info and record counts
@@ -106,6 +106,7 @@ Examples:
   rcr sync github
   rcr db status                        # Show database record counts
   rcr db backup local --data-only      # Data-only backup
+  rcr db restore remote -n             # Print restore commands without executing
 `.trim();
 
 async function main(): Promise<void> {

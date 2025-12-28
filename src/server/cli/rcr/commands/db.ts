@@ -23,11 +23,15 @@ const LocationSchema = z.enum(['local', 'remote']);
 
 const BackupOptionsSchema = BaseOptionsSchema.extend({
 	'data-only': z.boolean().optional(),
+	'dry-run': z.boolean().optional(),
+	n: z.boolean().optional(),
 }).strict();
 
 const RestoreOptionsSchema = BaseOptionsSchema.extend({
 	clean: z.boolean().optional(),
 	'data-only': z.boolean().optional(),
+	'dry-run': z.boolean().optional(),
+	n: z.boolean().optional(),
 }).strict();
 
 /**
@@ -50,11 +54,11 @@ async function runDbManager(args: string[]): Promise<void> {
 
 /**
  * Backup database
- * Usage: rcr db backup <local|remote> [--data-only]
+ * Usage: rcr db backup <local|remote> [--data-only] [--dry-run]
  */
 export const backup: CommandHandler = async (args, options) => {
 	const parsedOptions = parseOptions(BackupOptionsSchema, options);
-	const locationArg = args[0];
+    const locationArg = args[0];
 
 	if (!locationArg) {
 		throw createError('VALIDATION_ERROR', 'Location required: local or remote');
@@ -70,12 +74,17 @@ export const backup: CommandHandler = async (args, options) => {
 
 	const location = locationResult.data;
 	const shellArgs: string[] = [];
+	const dryRun = parsedOptions['dry-run'] ?? parsedOptions.n ?? false;
 
 	if (parsedOptions['data-only']) {
 		shellArgs.push('--data-only');
 	}
 
-	shellArgs.push('backup', location);
+	if (dryRun) {
+		shellArgs.push('--dry-run');
+	}
+
+    shellArgs.push('backup', location);
 
 	await runDbManager(shellArgs);
 
@@ -83,16 +92,17 @@ export const backup: CommandHandler = async (args, options) => {
 		action: 'backup',
 		location,
 		dataOnly: parsedOptions['data-only'] ?? false,
+		dryRun,
 	});
 };
 
 /**
  * Restore database
- * Usage: rcr db restore <local|remote> [--clean] [--data-only]
+ * Usage: rcr db restore <local|remote> [--clean] [--data-only] [--dry-run]
  */
 export const restore: CommandHandler = async (args, options) => {
 	const parsedOptions = parseOptions(RestoreOptionsSchema, options);
-	const locationArg = args[0];
+    const locationArg = args[0];
 
 	if (!locationArg) {
 		throw createError('VALIDATION_ERROR', 'Location required: local or remote');
@@ -108,16 +118,21 @@ export const restore: CommandHandler = async (args, options) => {
 
 	const location = locationResult.data;
 	const shellArgs: string[] = [];
+	const dryRun = parsedOptions['dry-run'] ?? parsedOptions.n ?? false;
 
 	if (parsedOptions.clean) {
 		shellArgs.push('--clean');
 	}
 
-	if (parsedOptions['data-only']) {
-		shellArgs.push('--data-only');
+    if (parsedOptions['data-only']) {
+        shellArgs.push('--data-only');
+    }
+
+	if (dryRun) {
+		shellArgs.push('--dry-run');
 	}
 
-	shellArgs.push('restore', location);
+    shellArgs.push('restore', location);
 
 	await runDbManager(shellArgs);
 
@@ -126,6 +141,7 @@ export const restore: CommandHandler = async (args, options) => {
 		location,
 		clean: parsedOptions.clean ?? false,
 		dataOnly: parsedOptions['data-only'] ?? false,
+		dryRun,
 	});
 };
 

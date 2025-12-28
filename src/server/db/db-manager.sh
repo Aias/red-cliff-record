@@ -8,6 +8,7 @@ DATABASE_NAME="redcliffrecord"
 BACKUP_DIR="$HOME/Documents/Red Cliff Record/Backups"
 CLEAN_RESTORE=false
 DATA_ONLY=false
+DRY_RUN=false
 
 # Parse connection details from .env
 if [ -f .env ]; then
@@ -40,6 +41,7 @@ print_usage() {
     echo "  -b, --backup-dir DIR   Backup directory (default: ~/Documents/Red Cliff Record/Backups)"
     echo "  -c, --clean           Clean restore (drop & recreate database)"
     echo "  -D, --data-only       Backup/Restore data only (public schema only, excludes migration history)"
+    echo "  -n, --dry-run         Print commands without executing them"
     echo "  -h, --help            Show this help message"
     echo
     echo "Examples:"
@@ -47,6 +49,7 @@ print_usage() {
     echo "  $0 backup remote          # Backup from remote database"
     echo "  $0 restore local          # Restore to local database"
     echo "  $0 restore remote         # Restore to remote database"
+    echo "  $0 --dry-run restore remote # Print restore commands without executing"
     echo "  $0 -d mydb backup local   # Backup local database with custom name"
     echo "  $0 -c restore local       # Clean restore to local (drop & recreate)"
     echo "  $0 -D backup local        # Backup data only from local database"
@@ -62,6 +65,7 @@ while [[ "$#" -gt 0 ]]; do
         -b|--backup-dir) BACKUP_DIR="$2"; shift ;;
         -c|--clean) CLEAN_RESTORE=true ;;
         -D|--data-only) DATA_ONLY=true ;;
+        -n|--dry-run) DRY_RUN=true ;;
         -h|--help) print_usage; exit 0 ;;
         *) break ;;
     esac
@@ -77,8 +81,38 @@ if [[ ! "$COMMAND" =~ ^(backup|restore|reset|seed)$ ]] || [[ ! "$LOCATION" =~ ^(
     exit 1
 fi
 
-# Create backup directory if it doesn't exist
-mkdir -p "$BACKUP_DIR"
+print_cmd() {
+    printf '[dry-run] '
+    printf '%q ' "$@"
+    printf '\n'
+}
+
+run_cmd() {
+    if [ "$DRY_RUN" = true ]; then
+        print_cmd "$@"
+        return 0
+    fi
+
+    "$@"
+}
+
+run_cmd_with_redirect() {
+    local output_file=$1
+    shift
+
+    if [ "$DRY_RUN" = true ]; then
+        printf '[dry-run] '
+        printf '%q ' "$@"
+        printf '> %q\n' "$output_file"
+        return 0
+    fi
+
+    "$@" > "$output_file"
+}
+
+ensure_backup_dir() {
+    run_cmd mkdir -p "$BACKUP_DIR"
+}
 
 set_target() {
     local target=$1
@@ -97,21 +131,23 @@ do_backup() {
     local source=$1
     local date=$(date +%Y-%m-%d-%H-%M-%S)
     local backup_file
-    local dump_args="--format=custom --verbose --no-owner --no-privileges --no-comments"
+    local dump_args=(--format=custom --verbose --no-owner --no-privileges --no-comments)
 
     set_target "$source"
 
     if [ "$DATA_ONLY" = true ]; then
         echo "Preparing data-only backup..."
         backup_file="$BACKUP_DIR/${DATABASE_NAME}-data-${date}.dump"
-        dump_args="$dump_args --data-only --schema=public"
+        dump_args+=(--data-only --schema=public)
     else
         backup_file="$BACKUP_DIR/${DATABASE_NAME}-${date}.dump"
-        dump_args="$dump_args --schema=public --schema=drizzle"
+        dump_args+=(--schema=public --schema=drizzle)
     fi
 
+    ensure_backup_dir
+
     echo "Creating backup from $TARGET_LABEL database..."
-    pg_dump "$TARGET_DB_URL" $dump_args > "$backup_file"
+    run_cmd_with_redirect "$backup_file" pg_dump "$TARGET_DB_URL" "${dump_args[@]}"
 
     echo "Backup created at: $backup_file"
 }
@@ -132,12 +168,19 @@ do_clean_setup() {
     local postgres_url=$(echo "$db_url" | sed "s|/${DATABASE_NAME}|/postgres|")
     
     # Check if database exists
-    local db_exists=$(psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'")
+    local db_exists
+
+    if [ "$DRY_RUN" = true ]; then
+        print_cmd psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'"
+        db_exists=1
+    else
+        db_exists=$(psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'")
+    fi
     
     if [ "$db_exists" = "1" ]; then
         # Terminate all connections to the database if it exists
         echo "Terminating connections to existing database..."
-        psql "$postgres_url" -c "
+        run_cmd psql "$postgres_url" -c "
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
             WHERE pg_stat_activity.datname = '$DATABASE_NAME'
@@ -145,24 +188,24 @@ do_clean_setup() {
         
         # Drop the database
         echo "Dropping database $DATABASE_NAME..."
-        psql "$postgres_url" -c "DROP DATABASE $DATABASE_NAME;"
+        run_cmd psql "$postgres_url" -c "DROP DATABASE $DATABASE_NAME;"
     else
         echo "Database $DATABASE_NAME does not exist, will create it..."
     fi
     
     # Create the database
     echo "Creating database $DATABASE_NAME..."
-    psql "$postgres_url" -c "CREATE DATABASE $DATABASE_NAME;"
+    run_cmd psql "$postgres_url" -c "CREATE DATABASE $DATABASE_NAME;"
     
     # Create extensions
     echo "Creating required extensions..."
-    psql "$db_url" -c "CREATE SCHEMA IF NOT EXISTS extensions;"
-    psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;"
-    psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;"
+    run_cmd psql "$db_url" -c "CREATE SCHEMA IF NOT EXISTS extensions;"
+    run_cmd psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;"
+    run_cmd psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;"
     
     # Set up search path to include extensions schema for vector operations
     echo "Setting up search path for vector operations..."
-    psql "$db_url" -c "ALTER DATABASE $DATABASE_NAME SET search_path TO public, extensions;"
+    run_cmd psql "$db_url" -c "ALTER DATABASE $DATABASE_NAME SET search_path TO public, extensions;"
     
     echo "Clean setup completed"
 }
@@ -182,14 +225,23 @@ do_restore() {
         dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}"-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
     fi
 
-    if [ ! -f "$dump_file" ]; then
-        echo "No suitable backup files found in: $BACKUP_DIR"
-        if [ "$DATA_ONLY" = true ]; then
-            echo "Looking for files matching pattern: ${DATABASE_NAME}-data-*.dump"
+    if [ -z "$dump_file" ] || [ ! -f "$dump_file" ]; then
+        if [ "$DRY_RUN" = true ]; then
+            if [ "$DATA_ONLY" = true ]; then
+                dump_file="$BACKUP_DIR/${DATABASE_NAME}-data-DRYRUN.dump"
+            else
+                dump_file="$BACKUP_DIR/${DATABASE_NAME}-DRYRUN.dump"
+            fi
+            echo "Dry run: no matching backup file found, using placeholder: $dump_file"
         else
-            echo "Looking for files matching pattern: ${DATABASE_NAME}-*.dump"
+            echo "No suitable backup files found in: $BACKUP_DIR"
+            if [ "$DATA_ONLY" = true ]; then
+                echo "Looking for files matching pattern: ${DATABASE_NAME}-data-*.dump"
+            else
+                echo "Looking for files matching pattern: ${DATABASE_NAME}-*.dump"
+            fi
+            exit 1
         fi
-        exit 1
     fi
 
     echo "Using backup file: $dump_file"
@@ -203,13 +255,13 @@ do_restore() {
 
     echo "Restoring data to $TARGET_LABEL database..."
     echo "Terminating connections to $TARGET_LABEL database..."
-    psql "$TARGET_DB_URL" -c "
+    run_cmd psql "$TARGET_DB_URL" -c "
         SELECT pg_terminate_backend(pg_stat_activity.pid)
         FROM pg_stat_activity
         WHERE pg_stat_activity.datname = '$DATABASE_NAME'
         AND pid <> pg_backend_pid();"
 
-    restore_args="--dbname=$TARGET_DB_URL --no-owner --no-privileges -v"
+    restore_args=(--dbname="$TARGET_DB_URL" --no-owner --no-privileges -v)
 
     if [ "$DATA_ONLY" = true ]; then
         # For data-only restore, we use --data-only.
@@ -217,13 +269,13 @@ do_restore() {
         # but generally we want to truncate. However, since we just did a clean reset
         # and migration, the tables are empty anyway.
         # --single-transaction helps performance by wrapping the entire restore in one transaction
-        restore_args="$restore_args --data-only --disable-triggers --single-transaction"
+        restore_args+=(--data-only --disable-triggers --single-transaction)
     else
         # Full restore
-        restore_args="$restore_args --clean --if-exists"
+        restore_args+=(--clean --if-exists)
     fi
 
-    pg_restore $restore_args "$dump_file"
+    run_cmd pg_restore "${restore_args[@]}" "$dump_file"
 
     echo "Restore completed successfully"
 }
@@ -250,7 +302,12 @@ do_seed() {
     fi
     
     echo "Seeding database with initial data..."
-    bun src/server/db/seed.ts
+    run_cmd bun src/server/db/seed.ts
+
+    if [ "$DRY_RUN" = true ]; then
+        echo "Dry run: seed skipped"
+        return
+    fi
     
     if [ $? -eq 0 ]; then
         echo "Database seeded successfully"
