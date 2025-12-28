@@ -254,12 +254,16 @@ do_restore() {
     fi
 
     echo "Restoring data to $TARGET_LABEL database..."
-    echo "Terminating connections to $TARGET_LABEL database..."
-    run_cmd psql "$TARGET_DB_URL" -c "
-        SELECT pg_terminate_backend(pg_stat_activity.pid)
-        FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '$DATABASE_NAME'
-        AND pid <> pg_backend_pid();"
+    if [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = false ]; then
+        echo "Skipping additional connection termination after clean restore."
+    else
+        echo "Terminating connections to $TARGET_LABEL database..."
+        run_cmd psql "$TARGET_DB_URL" -c "
+            SELECT pg_terminate_backend(pg_stat_activity.pid)
+            FROM pg_stat_activity
+            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
+            AND pid <> pg_backend_pid();"
+    fi
 
     restore_args=(--dbname="$TARGET_DB_URL" --no-owner --no-privileges -v)
 
@@ -303,13 +307,14 @@ do_seed() {
     
     echo "Seeding database with initial data..."
     run_cmd bun src/server/db/seed.ts
+    local seed_exit_code=$?
 
     if [ "$DRY_RUN" = true ]; then
         echo "Dry run: seed skipped"
         return
     fi
     
-    if [ $? -eq 0 ]; then
+    if [ "$seed_exit_code" -eq 0 ]; then
         echo "Database seeded successfully"
     else
         echo "Error: Seed failed"
