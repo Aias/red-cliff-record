@@ -27,7 +27,12 @@ export function flushDbConnection(): boolean {
 	}
 
 	globalForDb.lastDbFlush = now;
+	const oldDb = globalForDb.db;
 	globalForDb.db = createDb();
+
+	// Close the old connection pool to avoid orphaned connections
+	oldDb?.$client?.close?.();
+
 	console.warn('[DB] Connection pool flushed due to stale type cache');
 	return true;
 }
