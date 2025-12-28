@@ -4,6 +4,9 @@
  *
  * Loads canonical predicate vocabulary and core records into the database.
  * Safe to run multiple times - uses upsert logic to avoid duplicates.
+ *
+ * Can be run directly: bun src/server/db/seed.ts
+ * Or called from CLI: rcr db seed
  */
 
 import type { PredicateInsert, RecordInsert } from '@aias/hozo';
@@ -11,6 +14,11 @@ import { predicates, records } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { createIntegrationLogger } from '../integrations/common/logging';
+
+export interface SeedResult {
+	predicatesSeeded: number;
+	recordsSeeded: number;
+}
 
 const logger = createIntegrationLogger('db', 'seed');
 
@@ -218,7 +226,12 @@ const predicateSeed = [
 export type RecordSlug = (typeof recordSeed)[number]['slug'];
 export type PredicateSlug = (typeof predicateSeed)[number]['slug'];
 
-async function seedDatabase(): Promise<void> {
+/**
+ * Seeds the database with initial predicates and core records.
+ * Safe to run multiple times - uses upsert logic.
+ * Returns counts of seeded items.
+ */
+export async function seedDatabase(): Promise<SeedResult> {
 	// Seed predicates in two passes to handle foreign key constraints
 	// Pass 1: Insert all predicates without inverseSlug (set to null)
 	logger.info(
@@ -278,13 +291,19 @@ async function seedDatabase(): Promise<void> {
 	}
 
 	logger.info(`Inserted/updated ${recordSeed.length} records`);
+
+	return {
+		predicatesSeeded: predicateSeed.length,
+		recordsSeeded: recordSeed.length,
+	};
 }
 
 async function main(): Promise<void> {
 	try {
 		logger.start('=== STARTING DATABASE SEED ===');
-		await seedDatabase();
+		const result = await seedDatabase();
 		logger.complete('=== DATABASE SEED COMPLETED ===');
+		logger.info(`Seeded ${result.predicatesSeeded} predicates, ${result.recordsSeeded} records`);
 		logger.info('-'.repeat(50));
 		process.exit(0);
 	} catch (error) {
@@ -295,5 +314,7 @@ async function main(): Promise<void> {
 	}
 }
 
-// Run the seed
-void main();
+// Only run when executed directly (not when imported)
+if (import.meta.main) {
+	void main();
+}

@@ -27,15 +27,17 @@ import { formatError, formatOutput } from './lib/output';
 import type { CommandHandler, ResultValue, SuccessResult } from './lib/types';
 
 // Import command modules
+import * as db from './commands/db';
+import * as links from './commands/links';
 import * as records from './commands/records';
 import * as search from './commands/search';
-import * as links from './commands/links';
 import * as sync from './commands/sync';
 
 const commands: Record<string, Record<string, CommandHandler>> = {
+	db,
+	links,
 	records,
 	search,
-	links,
 	sync,
 };
 
@@ -77,6 +79,12 @@ Commands:
   sync <integration>            Run a sync (github, readwise, etc.)
   sync daily                    Run all daily syncs
 
+  db backup <local|remote>      Backup database [--data-only]
+  db restore <local|remote>     Restore database [--clean] [--data-only]
+  db reset                      Reset local database (drop & recreate)
+  db seed                       Seed local database with predicates
+  db status [local|remote]      Show connection info and record counts
+
 Options:
   --format=json|table   Output format (default: json)
   --limit=N             Limit number of results
@@ -96,6 +104,8 @@ Examples:
   rcr links list 123
   rcr links list 123 456               # Links for multiple records
   rcr sync github
+  rcr db status                        # Show database record counts
+  rcr db backup local --data-only      # Data-only backup
 `.trim();
 
 async function main(): Promise<void> {

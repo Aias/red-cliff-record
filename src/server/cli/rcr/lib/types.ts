@@ -55,6 +55,7 @@ export type ErrorCode =
 	| 'DATABASE_ERROR'
 	| 'EMBEDDING_ERROR'
 	| 'UNKNOWN_COMMAND'
+	| 'PERMISSION_DENIED'
 	| 'INTERNAL_ERROR';
 
 export type Result<T extends ResultValue = ResultValue> = SuccessResult<T> | ErrorResult;
