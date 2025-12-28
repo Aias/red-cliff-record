@@ -201,14 +201,11 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * so subsequent requests succeed.
  */
 const dbRecoveryMiddleware = t.middleware(async ({ next }) => {
-	try {
-		return await next();
-	} catch (error) {
-		if (isStaleTypeCacheError(error)) {
-			flushDbConnection();
-		}
-		throw error;
+	const result = await next();
+	if (!result.ok && isStaleTypeCacheError(result.error)) {
+		flushDbConnection();
 	}
+	return result;
 });
 
 /**
