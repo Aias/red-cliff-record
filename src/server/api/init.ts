@@ -2,7 +2,7 @@ import { initTRPC } from '@trpc/server';
 import DataLoader from 'dataloader';
 import superjson from 'superjson';
 import { z, ZodError } from 'zod';
-import { db, flushDbConnection, isStaleTypeCacheError } from '@/server/db/connections/postgres';
+import { db } from '@/server/db/connections/postgres';
 import type { RecordGet } from '@/shared/types';
 
 function createRecordLoader() {
@@ -195,24 +195,10 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 });
 
 /**
- * Middleware for auto-recovering from stale database type caches.
- * After a database restore, PostgreSQL type OIDs change but the connection pool
- * caches the old OIDs. This middleware detects that error and flushes the pool
- * so subsequent requests succeed.
- */
-const dbRecoveryMiddleware = t.middleware(async ({ next }) => {
-	const result = await next();
-	if (!result.ok && isStaleTypeCacheError(result.error)) {
-		flushDbConnection();
-	}
-	return result;
-});
-
-/**
  * Public (unauthenticated) procedure
  *
  * This is the base piece you use to build new queries and mutations on your tRPC API. It does not
  * guarantee that a user querying is authorized, but you can still access user session data if they
  * are logged in.
  */
-export const publicProcedure = t.procedure.use(dbRecoveryMiddleware).use(timingMiddleware);
+export const publicProcedure = t.procedure.use(timingMiddleware);

@@ -151,6 +151,7 @@ do_clean_setup() {
 do_restore() {
     local target=$1
     local dump_file
+    local restore_db_url
     
     # Find the most recent backup file based on type
     if [ "$DATA_ONLY" = true ]; then
@@ -172,21 +173,22 @@ do_restore() {
     echo "Using backup file: $dump_file"
 
     if [ "$target" = "local" ]; then
+        restore_db_url="$DATABASE_URL_LOCAL"
         # Check if clean restore was requested
         if [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = false ]; then
             echo "Clean restore requested for local database"
             do_clean_setup
         elif [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = true ]; then
             echo "Warning: Clean restore (-c) ignored when using data-only (-D) mode to avoid dropping schema."
-        else
-            echo "Restoring data to local database..."
-            # Terminate existing connections except our own
-            psql "$DATABASE_URL_LOCAL" -c "
-                SELECT pg_terminate_backend(pg_stat_activity.pid)
-                FROM pg_stat_activity
-                WHERE pg_stat_activity.datname = '$DATABASE_NAME'
-                AND pid <> pg_backend_pid();"
         fi
+
+        echo "Restoring data to local database..."
+        echo "Terminating connections to local database..."
+        psql "$restore_db_url" -c "
+            SELECT pg_terminate_backend(pg_stat_activity.pid)
+            FROM pg_stat_activity
+            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
+            AND pid <> pg_backend_pid();"
 
         local restore_args="--dbname=$DATABASE_URL_LOCAL --no-owner --no-privileges -v"
         
@@ -204,12 +206,19 @@ do_restore() {
 
         pg_restore $restore_args "$dump_file"
     else
+        restore_db_url="$DATABASE_URL_REMOTE"
         if [ "$CLEAN_RESTORE" = true ]; then
             echo "Warning: Clean restore is only supported for local databases"
             echo "Proceeding with standard restore to remote database..."
         fi
         
         echo "Restoring data to remote database..."
+        echo "Terminating connections to remote database..."
+        psql "$restore_db_url" -c "
+            SELECT pg_terminate_backend(pg_stat_activity.pid)
+            FROM pg_stat_activity
+            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
+            AND pid <> pg_backend_pid();"
         local restore_args="-d $DATABASE_URL_REMOTE --no-owner --no-privileges -v"
         
         if [ "$DATA_ONLY" = true ]; then
