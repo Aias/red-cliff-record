@@ -38,7 +38,7 @@ print_usage() {
     echo "Options:"
     echo "  -d, --database NAME    Database name (default: redcliffrecord)"
     echo "  -b, --backup-dir DIR   Backup directory (default: ~/Documents/Red Cliff Record/Backups)"
-    echo "  -c, --clean           Clean restore (drop & recreate database, local only)"
+    echo "  -c, --clean           Clean restore (drop & recreate database)"
     echo "  -D, --data-only       Backup/Restore data only (public schema only, excludes migration history)"
     echo "  -h, --help            Show this help message"
     echo
@@ -80,12 +80,26 @@ fi
 # Create backup directory if it doesn't exist
 mkdir -p "$BACKUP_DIR"
 
+set_target() {
+    local target=$1
+
+    if [ "$target" = "local" ]; then
+        TARGET_LABEL="local"
+        TARGET_DB_URL="$DATABASE_URL_LOCAL"
+    else
+        TARGET_LABEL="remote"
+        TARGET_DB_URL="$DATABASE_URL_REMOTE"
+    fi
+}
+
 # Function to perform backup
 do_backup() {
     local source=$1
     local date=$(date +%Y-%m-%d-%H-%M-%S)
     local backup_file
     local dump_args="--format=custom --verbose --no-owner --no-privileges --no-comments"
+
+    set_target "$source"
 
     if [ "$DATA_ONLY" = true ]; then
         echo "Preparing data-only backup..."
@@ -96,23 +110,26 @@ do_backup() {
         dump_args="$dump_args --schema=public --schema=drizzle"
     fi
 
-    echo "Creating backup from $source database..."
-    
-    if [ "$source" = "local" ]; then
-        pg_dump "$DATABASE_URL_LOCAL" $dump_args > "$backup_file"
-    else
-        pg_dump "$DATABASE_URL_REMOTE" $dump_args > "$backup_file"
-    fi
+    echo "Creating backup from $TARGET_LABEL database..."
+    pg_dump "$TARGET_DB_URL" $dump_args > "$backup_file"
 
     echo "Backup created at: $backup_file"
 }
 
 # Function to perform clean database setup for local restore
 do_clean_setup() {
-    echo "Performing clean database setup..."
+    local db_url=$1
+    local target_label=$2
+    local label_suffix=""
+
+    if [ -n "$target_label" ]; then
+        label_suffix=" ($target_label)"
+    fi
+
+    echo "Performing clean database setup${label_suffix}..."
     
     # Parse postgres URL to get connection details
-    local postgres_url=$(echo "$DATABASE_URL_LOCAL" | sed 's/\/redcliffrecord/\/postgres/')
+    local postgres_url=$(echo "$db_url" | sed "s|/${DATABASE_NAME}|/postgres|")
     
     # Check if database exists
     local db_exists=$(psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'")
@@ -139,13 +156,13 @@ do_clean_setup() {
     
     # Create extensions
     echo "Creating required extensions..."
-    psql "$DATABASE_URL_LOCAL" -c "CREATE SCHEMA IF NOT EXISTS extensions;"
-    psql "$DATABASE_URL_LOCAL" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;"
-    psql "$DATABASE_URL_LOCAL" -c "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;"
+    psql "$db_url" -c "CREATE SCHEMA IF NOT EXISTS extensions;"
+    psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;"
+    psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;"
     
     # Set up search path to include extensions schema for vector operations
     echo "Setting up search path for vector operations..."
-    psql "$DATABASE_URL_LOCAL" -c "ALTER DATABASE $DATABASE_NAME SET search_path TO public, extensions;"
+    psql "$db_url" -c "ALTER DATABASE $DATABASE_NAME SET search_path TO public, extensions;"
     
     echo "Clean setup completed"
 }
@@ -154,7 +171,9 @@ do_clean_setup() {
 do_restore() {
     local target=$1
     local dump_file
-    local restore_db_url
+    local restore_args
+
+    set_target "$target"
     
     # Find the most recent backup file based on type
     if [ "$DATA_ONLY" = true ]; then
@@ -175,63 +194,36 @@ do_restore() {
 
     echo "Using backup file: $dump_file"
 
-    if [ "$target" = "local" ]; then
-        restore_db_url="$DATABASE_URL_LOCAL"
-        # Check if clean restore was requested
-        if [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = false ]; then
-            echo "Clean restore requested for local database"
-            do_clean_setup
-        elif [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = true ]; then
-            echo "Warning: Clean restore (-c) ignored when using data-only (-D) mode to avoid dropping schema."
-        fi
-
-        echo "Restoring data to local database..."
-        echo "Terminating connections to local database..."
-        psql "$restore_db_url" -c "
-            SELECT pg_terminate_backend(pg_stat_activity.pid)
-            FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
-            AND pid <> pg_backend_pid();"
-
-        local restore_args="--dbname=$restore_db_url --no-owner --no-privileges -v"
-        
-        if [ "$DATA_ONLY" = true ]; then
-            # For data-only restore, we use --data-only. 
-            # --clean causes issues with --data-only in pg_restore in some versions, 
-            # but generally we want to truncate. However, since we just did a clean reset
-            # and migration, the tables are empty anyway.
-            # --single-transaction helps performance by wrapping the entire restore in one transaction
-            restore_args="$restore_args --data-only --disable-triggers --single-transaction"
-        else
-            # Full restore
-            restore_args="$restore_args --clean --if-exists"
-        fi
-
-        pg_restore $restore_args "$dump_file"
-    else
-        restore_db_url="$DATABASE_URL_REMOTE"
-        if [ "$CLEAN_RESTORE" = true ]; then
-            echo "Warning: Clean restore is only supported for local databases"
-            echo "Proceeding with standard restore to remote database..."
-        fi
-        
-        echo "Restoring data to remote database..."
-        echo "Terminating connections to remote database..."
-        psql "$restore_db_url" -c "
-            SELECT pg_terminate_backend(pg_stat_activity.pid)
-            FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
-            AND pid <> pg_backend_pid();"
-        local restore_args="-d $restore_db_url --no-owner --no-privileges -v"
-        
-        if [ "$DATA_ONLY" = true ]; then
-            restore_args="$restore_args --data-only --disable-triggers --single-transaction"
-        else
-            restore_args="$restore_args --clean --if-exists"
-        fi
-
-        pg_restore $restore_args "$dump_file"
+    if [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = false ]; then
+        echo "Clean restore requested for $TARGET_LABEL database"
+        do_clean_setup "$TARGET_DB_URL" "$TARGET_LABEL"
+    elif [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = true ]; then
+        echo "Warning: Clean restore (-c) ignored when using data-only (-D) mode to avoid dropping schema."
     fi
+
+    echo "Restoring data to $TARGET_LABEL database..."
+    echo "Terminating connections to $TARGET_LABEL database..."
+    psql "$TARGET_DB_URL" -c "
+        SELECT pg_terminate_backend(pg_stat_activity.pid)
+        FROM pg_stat_activity
+        WHERE pg_stat_activity.datname = '$DATABASE_NAME'
+        AND pid <> pg_backend_pid();"
+
+    restore_args="--dbname=$TARGET_DB_URL --no-owner --no-privileges -v"
+
+    if [ "$DATA_ONLY" = true ]; then
+        # For data-only restore, we use --data-only.
+        # --clean causes issues with --data-only in pg_restore in some versions,
+        # but generally we want to truncate. However, since we just did a clean reset
+        # and migration, the tables are empty anyway.
+        # --single-transaction helps performance by wrapping the entire restore in one transaction
+        restore_args="$restore_args --data-only --disable-triggers --single-transaction"
+    else
+        # Full restore
+        restore_args="$restore_args --clean --if-exists"
+    fi
+
+    pg_restore $restore_args "$dump_file"
 
     echo "Restore completed successfully"
 }
@@ -245,7 +237,7 @@ do_reset() {
     fi
     
     echo "Resetting database (dropping and recreating)..."
-    do_clean_setup
+    do_clean_setup "$DATABASE_URL_LOCAL" "local"
     echo "Database reset successfully"
 }
 
