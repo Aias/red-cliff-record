@@ -39,5 +39,7 @@
 	"npm.packageManager": "bun",
 	"npm.scriptRunner": "bun",
 	"typescript.experimental.useTsgo": true,
-	"oxc.typeAware": true
+	"oxc.typeAware": true,
+	"oxc.unusedDisableDirectives": "warn",
+	"github.gitProtocol": "ssh"
 }
