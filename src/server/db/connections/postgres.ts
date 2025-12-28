@@ -31,7 +31,7 @@ export function flushDbConnection(): boolean {
 	globalForDb.db = createDb();
 
 	// Close the old connection pool to avoid orphaned connections
-	oldDb?.$client?.close?.();
+	void oldDb?.$client?.close?.();
 
 	console.warn('[DB] Connection pool flushed due to stale type cache');
 	return true;
@@ -41,9 +41,25 @@ export function flushDbConnection(): boolean {
  * Check if an error is a stale type cache error (occurs after database restores).
  */
 export function isStaleTypeCacheError(error: unknown): boolean {
-	if (error instanceof Error) {
-		return error.message.includes('cache lookup failed for type');
+	const needle = 'cache lookup failed for type';
+
+	// Walk a short cause-chain (tRPC often wraps the original error under `cause`).
+	let current: unknown = error;
+	for (let depth = 0; depth < 5; depth++) {
+		if (current instanceof Error) {
+			if (current.message.includes(needle)) return true;
+			if (!current.cause) return false;
+			current = current.cause;
+			continue;
+		}
+
+		if (typeof current === 'string') {
+			return current.includes(needle);
+		}
+
+		return false;
 	}
+
 	return false;
 }
 
@@ -63,7 +79,7 @@ export function getDb(): Database {
  * Database connection that auto-refreshes after flushDbConnection().
  * Uses a Proxy to delegate all property access to the current connection.
  */
-export const db: Database = new Proxy({} as Database, {
+export const db: Database = new Proxy(getDb(), {
 	get(_, prop) {
 		return Reflect.get(getDb(), prop);
 	},
