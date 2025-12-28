@@ -308,6 +308,9 @@ bun run db:backup-remote # Remote backup
 bun run db:restore-local # Restore local backup
 bun run db:restore-remote # Restore remote backup
 
+# Note: Restores terminate existing connections to the target database before running pg_restore.
+# Tip: Use --dry-run (or -n) with db-manager.sh to print commands without executing.
+
 # Database Reset Workflow
 # If you need to squash migrations or reset the schema while preserving data:
 # 1. Backup data only
