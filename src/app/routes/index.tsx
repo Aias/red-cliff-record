@@ -59,13 +59,14 @@ function Home() {
 									decoding="async"
 								/>
 							)}
-							{/* White text with semi-transparent black shadow */}
-							<div
-								className="absolute right-0 bottom-0 left-0 z-20 truncate p-2 text-xs text-white"
-								style={{ textShadow: '0 0 4px rgba(0, 0, 0)' }} // Use rgba for black shadow
-							>
-								{record.title || 'Untitled Record'}
-							</div>
+							{record.title && (
+								<div
+									className="absolute right-0 bottom-0 left-0 z-20 truncate p-2 text-xs text-white"
+									style={{ textShadow: '0 0 4px rgba(0, 0, 0)' }} // Use rgba for black shadow
+								>
+									{record.title}
+								</div>
+							)}
 						</Link>
 					);
 				})}

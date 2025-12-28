@@ -38,5 +38,6 @@
 	"debug.javascript.terminalOptions": {},
 	"npm.packageManager": "bun",
 	"npm.scriptRunner": "bun",
-	"typescript.experimental.useTsgo": true
+	"typescript.experimental.useTsgo": true,
+	"oxc.typeAware": true
 }
