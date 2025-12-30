@@ -211,6 +211,7 @@ async function runDailySync(debug: boolean) {
 		'readwise',
 		'github',
 		'airtable',
+		'embeddings',
 	];
 
 	const results: Array<{ integration: string; success: boolean; error?: string }> = [];
