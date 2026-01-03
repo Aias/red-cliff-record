@@ -1,4 +1,3 @@
-import { mkdir } from 'node:fs/promises';
 import {
 	twitterMedia as mediaTable,
 	twitterTweets as tweetsTable,
@@ -8,6 +7,7 @@ import {
 	type TwitterUserInsert,
 } from '@aias/hozo';
 import { db } from '@/server/db/connections';
+import { createTwitterClient } from './client';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -18,150 +18,26 @@ import {
 	createRecordsFromTwitterUsers,
 } from './map';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
-import { TwitterBookmarksArraySchema } from './types';
 
 const logger = createIntegrationLogger('twitter', 'sync');
 
-/**
- * Configuration constants
- */
-const TWITTER_DATA_DIR = `${process.env.HOME}/Documents/Red Cliff Record/Twitter Data`;
-const BOOKMARK_FILE_PREFIX = 'bookmarks-';
-const BOOKMARK_FILE_SUFFIX = '.json';
 const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
 
 /**
- * Archives processed files by moving them to the Archive subdirectory
+ * Fetches bookmarks from Twitter API
  *
- * @param files - Array of file paths to archive
- * @param archiveDir - The archive directory path
+ * @returns Array of bookmark responses from the API
  */
-async function archiveProcessedFiles(files: string[], archiveDir: string): Promise<void> {
-	try {
-		await mkdir(archiveDir, { recursive: true });
-
-		await Promise.all(
-			files.map(async (filePath) => {
-				const fileName = filePath.split('/').pop();
-				if (!fileName) {
-					logger.error('Invalid file path', filePath);
-					return;
-				}
-
-				const archivePath = `${archiveDir}/${fileName}`;
-				const sourceFile = Bun.file(filePath);
-				await Bun.write(archivePath, sourceFile);
-				// Delete original file after copying
-				await Bun.file(filePath).unlink();
-				logger.info(`Archived file: ${fileName}`);
-			})
-		);
-	} catch (error) {
-		logger.error('Error archiving files', error);
-		throw error;
-	}
-}
-
-/**
- * Retries a filesystem operation if it fails with EINTR
- * @param operation - The operation to retry
- * @param maxRetries - Maximum number of retries (default: 3)
- * @returns The result of the operation
- */
-async function retryOnEINTR<T>(operation: () => Promise<T>, maxRetries: number = 3): Promise<T> {
-	let lastError: unknown;
-	for (let i = 0; i < maxRetries; i++) {
-		try {
-			return await operation();
-		} catch (error) {
-			lastError = error;
-			if (error instanceof Error && 'code' in error && error.code === 'EINTR') {
-				// Wait a bit before retrying
-				await Bun.sleep(100 * (i + 1));
-				continue;
-			}
-			throw error;
-		}
-	}
-	throw lastError;
-}
-
-/**
- * Loads Twitter bookmarks data from local JSON files
- *
- * This function:
- * 1. Locates bookmark JSON files in the Twitter data directory
- * 2. Reads and parses each file
- * 3. Combines the data into a single array
- *
- * @returns Object containing the bookmark data and array of processed file paths
- * @throws Error if JSON parsing fails
- */
-export async function loadBookmarksData(): Promise<{
-	data: TwitterBookmarksArray;
-	processedFiles: string[];
-}> {
-	try {
-		// Discover bookmark files using Bun.Glob
-		const bookmarkFiles: string[] = [];
-		const glob = new Bun.Glob(`${BOOKMARK_FILE_PREFIX}*${BOOKMARK_FILE_SUFFIX}`);
-
-		await retryOnEINTR(async () => {
-			for await (const fileName of glob.scan({ cwd: TWITTER_DATA_DIR })) {
-				bookmarkFiles.push(fileName);
-			}
-		});
-
-		// Ascending order since the filenames are in ISO format
-		bookmarkFiles.sort();
-
-		if (bookmarkFiles.length === 0) {
-			logger.info('No Twitter bookmarks files found. Skipping Twitter bookmark sync.');
-			return { data: [], processedFiles: [] };
-		}
-
-		// Process each file and combine the data
-		const combinedData: TwitterBookmarksArray = [];
-		const processedFiles: string[] = [];
-
-		for (const fileName of bookmarkFiles) {
-			const filePath = `${TWITTER_DATA_DIR}/${fileName}`;
-			logger.info(`Processing Twitter bookmarks file: ${filePath}`);
-
-			const file = Bun.file(filePath);
-			const fileContent = await retryOnEINTR(async () => await file.text());
-			const rawData = JSON.parse(fileContent);
-
-			// Validate the data using Zod schema
-			const validationResult = TwitterBookmarksArraySchema.safeParse(rawData);
-			if (!validationResult.success) {
-				logger.error(`Validation failed for file ${fileName}`, validationResult.error.issues);
-				throw new Error(`Invalid Twitter bookmarks data format in ${fileName}`);
-			}
-
-			combinedData.push(...validationResult.data);
-			processedFiles.push(filePath);
-		}
-
-		return { data: combinedData, processedFiles };
-	} catch (error) {
-		// Handle directory not found error
-		if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-			logger.info(`Twitter data directory not found at: ${TWITTER_DATA_DIR}`);
-			return { data: [], processedFiles: [] };
-		}
-
-		// Rethrow other errors (e.g., JSON parsing issues)
-		logger.error('Error loading Twitter bookmarks data', error);
-		throw error;
-	}
+async function fetchBookmarksFromApi(): Promise<TwitterBookmarksArray> {
+	const client = createTwitterClient({ timeoutMs: 30000 });
+	return client.fetchAllBookmarks();
 }
 
 /**
  * Synchronizes Twitter bookmarks with the database
  *
  * This function:
- * 1. Loads bookmarks data from local files
+ * 1. Fetches bookmarks from the Twitter API
  * 2. Extracts and processes tweets, including quoted tweets
  * 3. Processes users and media associated with tweets
  * 4. Stores all data in the database
@@ -177,10 +53,10 @@ async function syncTwitterBookmarks(
 	collectDebugData?: unknown[]
 ): Promise<number> {
 	try {
-		// Step 1: Load bookmarks data
-		const { data: bookmarkResponses, processedFiles } = await loadBookmarksData();
+		// Step 1: Fetch bookmarks from API
+		const bookmarkResponses = await fetchBookmarksFromApi();
 		if (bookmarkResponses.length === 0) {
-			logger.info('No Twitter bookmarks data found');
+			logger.info('No Twitter bookmarks found');
 			return 0;
 		}
 
@@ -207,10 +83,6 @@ async function syncTwitterBookmarks(
 
 		// Step 5: Create records from Twitter data
 		await createRelatedRecords();
-
-		// Step 6: Archive processed files
-		const archiveDir = `${TWITTER_DATA_DIR}/Archive`;
-		await archiveProcessedFiles(processedFiles, archiveDir);
 
 		return updatedCount;
 	} catch (error) {

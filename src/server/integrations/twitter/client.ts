@@ -97,10 +97,7 @@ export class TwitterClient {
 	/**
 	 * Fetches a single page of bookmarks.
 	 */
-	private async fetchBookmarksPage(
-		cursor?: string,
-		count = 20
-	): Promise<BookmarksPageResponse> {
+	private async fetchBookmarksPage(cursor?: string, count = 20): Promise<BookmarksPageResponse> {
 		const variables = {
 			count,
 			includePromotedContent: false,
