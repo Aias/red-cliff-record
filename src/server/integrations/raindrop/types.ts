@@ -89,7 +89,7 @@ export const RaindropSchema = z.object({
 	lastUpdate: z.coerce.date(),
 	domain: z.string(),
 	file: RaindropFileSchema.optional(),
-	creatorRef: z.union([RaindropCreatorSchema, z.number().int().positive()]), // API started returning creatorRef as an integer ID on 2025-02-25
+	creatorRef: z.xor([RaindropCreatorSchema, z.number().int().positive()]), // API started returning creatorRef as an integer ID on 2025-02-25
 	sort: z.number().int().positive().nullable(),
 	broken: z.coerce.boolean(),
 	cache: RaindropCacheSchema.optional(),

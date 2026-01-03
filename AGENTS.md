@@ -6,6 +6,8 @@ This file provides guidance to AI coding assistants when working with code in th
 
 > Contributor note: For project overview and scripts, see `README.md` and `INTEGRATIONS.md`.
 
+> Agent file conventions: `AGENTS.md` is the source of truth for agent instructions. Other agent instruction files (e.g., `CLAUDE.md`) should be symlinked to this file rather than maintained separately. Create symlinks with `ln -s AGENTS.md CLAUDE.md` and add the symlink targets to `.gitignore`.
+
 ## Project Overview
 
 Red Cliff Record is a personal knowledge repository that aggregates data from multiple external sources (GitHub, Airtable, Raindrop, Readwise, Twitter, Adobe, Feedbin, Chromium-based Browser History) into a searchable, relational database. It's built with React 19, TanStack Router, tRPC, Drizzle ORM, and PostgreSQL, deployed on Bun server.

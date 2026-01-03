@@ -27,7 +27,7 @@ const LightroomAssetDevelopSchema = z.object({
 	device: z.string().optional(),
 	processingModel: z.string().optional(),
 	crsVersion: z.string().optional(),
-	xmpCameraRaw: z.union([z.object({ sha256: z.string() }), z.string()]).optional(),
+	xmpCameraRaw: z.xor([z.object({ sha256: z.string() }), z.string()]).optional(),
 	userUpdated: z.string().optional(),
 });
 

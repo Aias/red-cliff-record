@@ -64,7 +64,7 @@
 		"tailwindcss-animate": "^1.0.7",
 		"vite": "^7.3.0",
 		"ws": "^8.18.3",
-		"zod": "^4.2.1"
+		"zod": "^4.3.4"
 	},
 	"devDependencies": {
 		"@octokit/types": "^16.0.0",

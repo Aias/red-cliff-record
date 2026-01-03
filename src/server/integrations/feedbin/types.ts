@@ -46,11 +46,11 @@ const UrlComponentsSchema = z.object({
  * and enclosure_type can be "false" string or other invalid values
  */
 export const FeedbinEnclosureSchema = z.object({
-	enclosure_url: z.union([z.string(), UrlComponentsSchema]).optional().nullable(),
-	enclosure_type: z.union([z.string(), z.boolean()]).optional().nullable(),
-	enclosure_length: z.union([z.coerce.number(), z.string()]).optional().nullable(),
+	enclosure_url: z.xor([z.string(), UrlComponentsSchema]).optional().nullable(),
+	enclosure_type: z.xor([z.string(), z.boolean()]).optional().nullable(),
+	enclosure_length: z.union([z.coerce.number(), z.string()]).optional().nullable(), // union kept: z.coerce.number() accepts strings
 	itunes_duration: z.string().optional().nullable(),
-	itunes_image: z.union([z.string(), UrlComponentsSchema]).optional().nullable(),
+	itunes_image: z.xor([z.string(), UrlComponentsSchema]).optional().nullable(),
 });
 
 /**

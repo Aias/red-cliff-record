@@ -23,3 +23,6 @@ public/fonts
 # Logs
 logs
 *.log
+
+# Agent file symlinks (source of truth is AGENTS.md)
+CLAUDE.md

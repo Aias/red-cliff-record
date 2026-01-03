@@ -81,7 +81,7 @@ export const TaskToolInputSchema = z.object({
 	subagent_type: z.string().optional(),
 });
 
-const GenericToolInputSchema = z.record(z.string(), z.unknown());
+const GenericToolInputSchema = z.looseRecord(z.string(), z.unknown());
 
 // ----------------------------------------------------------------------------
 // Tool Use Results
@@ -114,7 +114,7 @@ const ToolUseResultMetadataSchema = z.union([
 	EditToolResultSchema,
 	BashToolResultSchema,
 	ReadToolResultSchema,
-	z.record(z.string(), z.unknown()),
+	z.looseRecord(z.string(), z.unknown()),
 	z.string(), // Error messages can be plain strings
 ]);
 
@@ -292,7 +292,7 @@ const FileHistorySnapshotEntrySchema = z.object({
 	snapshot: z.object({
 		messageId: z.string(),
 		timestamp: z.string(),
-		trackedFileBackups: z.record(z.string(), z.unknown()),
+		trackedFileBackups: z.looseRecord(z.string(), z.unknown()),
 	}),
 });
 export type FileHistorySnapshotEntry = z.infer<typeof FileHistorySnapshotEntrySchema>;
