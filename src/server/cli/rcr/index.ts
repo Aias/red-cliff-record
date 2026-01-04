@@ -96,7 +96,8 @@ let commands: Record<string, Record<string, CommandHandler>> | null = null;
 async function loadCommands() {
 	if (commands) return commands;
 
-	const [db, links, records, search, sync] = await Promise.all([
+	const [browsing, db, links, records, search, sync] = await Promise.all([
+		import('./commands/browsing'),
 		import('./commands/db'),
 		import('./commands/links'),
 		import('./commands/records'),
@@ -104,7 +105,7 @@ async function loadCommands() {
 		import('./commands/sync'),
 	]);
 
-	commands = { db, links, records, search, sync };
+	commands = { browsing, db, links, records, search, sync };
 	return commands;
 }
 
@@ -143,6 +144,11 @@ Commands:
   links delete <id...>          Delete link(s)
   links predicates              List available predicate types
 
+  browsing daily <date>         Get daily browsing summary (YYYY-MM-DD)
+  browsing omit                  List URL patterns excluded from summaries
+  browsing omit-add <pattern>    Add pattern to omit list (SQL LIKE syntax)
+  browsing omit-delete <pat...>  Delete pattern(s) from omit list
+
   sync <integration>            Run a sync (github, readwise, etc.)
   sync daily                    Run all daily syncs
 
@@ -170,6 +176,9 @@ Examples:
   rcr search similar 456 --limit=5
   rcr links list 123
   rcr links list 123 456               # Links for multiple records
+  rcr browsing daily 2026-01-03        # Daily browsing summary
+  rcr browsing omit                    # List omit patterns
+  rcr browsing omit-add "%ads.%"       # Add pattern to omit list
   rcr sync github
   rcr db status                        # Show database record counts
   rcr db backup local --data-only      # Data-only backup
