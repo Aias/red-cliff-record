@@ -371,6 +371,31 @@ async function createRelatedEntities(integrationRunId: number): Promise<void> {
 }
 
 /**
+ * Fetches all raindrop data from API (collections and bookmarks) without persisting
+ *
+ * @param debugData - Object to collect raw API data
+ */
+async function fetchRaindropDataOnly(debugData: {
+	collections: unknown[];
+	raindrops: unknown[];
+}): Promise<void> {
+	// Fetch collections
+	logger.info('Fetching root collections');
+	const rootCollections = await fetchRaindropCollections(`${API_BASE_URL}/collections`);
+	logger.info('Fetching child collections');
+	const childCollections = await fetchRaindropCollections(`${API_BASE_URL}/collections/childrens`);
+	const allCollections = [...rootCollections, ...childCollections];
+	debugData.collections.push(...allCollections);
+	logger.info(`Fetched ${allCollections.length} collections`);
+
+	// Fetch raindrops
+	logger.info('Fetching raindrops');
+	const raindrops = await fetchNewRaindrops();
+	debugData.raindrops.push(...raindrops);
+	logger.info(`Fetched ${raindrops.length} raindrops`);
+}
+
+/**
  * Orchestrates the Raindrop data synchronization process
  *
  * This function coordinates the execution of multiple Raindrop integration steps:
@@ -379,7 +404,7 @@ async function createRelatedEntities(integrationRunId: number): Promise<void> {
  *
  * Each step is wrapped in the runIntegration utility to track execution.
  *
- * @param debug - If true, writes raw API data to a timestamped JSON file
+ * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncRaindropData(debug = false): Promise<void> {
 	const debugContext = createDebugContext('raindrop', debug, {
@@ -387,17 +412,29 @@ async function syncRaindropData(debug = false): Promise<void> {
 		raindrops: [] as unknown[],
 	});
 	try {
-		logger.start('Starting Raindrop data synchronization');
+		if (debug) {
+			// Debug mode: fetch data and output to .temp/ only, skip database writes
+			logger.start('Starting Raindrop data fetch (debug mode - no database writes)');
+			if (debugContext.data) {
+				await fetchRaindropDataOnly(debugContext.data);
+			}
+			logger.complete('Raindrop data fetch completed (debug mode)');
+		} else {
+			// Normal mode: full sync with database writes
+			logger.start('Starting Raindrop data synchronization');
 
-		// Step 1: Sync collections
-		await runIntegration('raindrop', (runId) =>
-			syncCollections(runId, debugContext.data?.collections)
-		);
+			// Step 1: Sync collections
+			await runIntegration('raindrop', (runId) =>
+				syncCollections(runId, debugContext.data?.collections)
+			);
 
-		// Step 2: Sync bookmarks
-		await runIntegration('raindrop', (runId) => syncRaindrops(runId, debugContext.data?.raindrops));
+			// Step 2: Sync bookmarks
+			await runIntegration('raindrop', (runId) =>
+				syncRaindrops(runId, debugContext.data?.raindrops)
+			);
 
-		logger.complete('Raindrop data synchronization completed');
+			logger.complete('Raindrop data synchronization completed');
+		}
 	} catch (error) {
 		logger.error('Error syncing Raindrop data', error);
 		throw error;

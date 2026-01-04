@@ -17,7 +17,22 @@ rcr sync github
 rcr sync daily
 ```
 
-Flags are strict (unknown options error). Use `--debug` for verbose sync output and `--format=table` for human-readable output.
+Flags are strict (unknown options error). Use `--format=table` for human-readable output.
+
+### Debug Mode
+
+Use `--debug` to test API connectivity without writing to the database:
+
+```bash
+rcr sync github --debug
+```
+
+Debug mode:
+
+- Fetches data from the API as normal
+- Skips all database writes
+- Outputs raw API responses to `.temp/<integration>-<timestamp>.json`
+- Useful for testing credentials, viewing raw data, and debugging API issues
 
 ## GitHub Integration
 
@@ -331,11 +346,17 @@ For production use, consider setting up a cron job:
 
 ## Debugging Integration Issues
 
-Enable debug logging:
+### Debug Mode
+
+Use `--debug` to fetch data without writing to the database:
 
 ```bash
 rcr sync github --debug
 ```
+
+This outputs raw API responses to `.temp/github-<timestamp>.json` for inspection.
+
+### Database Inspection
 
 Check integration-specific tables in the database:
 

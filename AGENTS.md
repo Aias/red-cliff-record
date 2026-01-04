@@ -69,6 +69,7 @@ Never attempt to start the development server or build the application. The user
 - JSON-first output; same tRPC procedures as the app
 - Commands: `rcr records`, `rcr search`, `rcr links`, `rcr sync`
 - Sync commands: `rcr sync daily`, `rcr sync github`, `rcr sync airtable`, `rcr sync raindrop`, `rcr sync readwise`, `rcr sync feedbin`, `rcr sync browsing`, `rcr sync twitter`, `rcr sync agents`, `rcr sync adobe`, `rcr sync avatars`, `rcr sync embeddings`
+- Use `--debug` to fetch data without writing to the database (outputs to `.temp/`)
 - Run `rcr --help` for full usage
 
 **Data Operations:**

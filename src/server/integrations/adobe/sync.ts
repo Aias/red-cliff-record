@@ -160,16 +160,30 @@ async function processLightroomImage(
 /**
  * Orchestrates the Adobe Lightroom data synchronization process
  *
- * @param debug - If true, writes raw API data to a timestamped JSON file
+ * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncAdobeData(debug = false): Promise<void> {
 	const debugContext = createDebugContext('adobe', debug, [] as unknown[]);
 	try {
-		logger.start('Starting Adobe Lightroom data synchronization');
-
-		await runIntegration('lightroom', (runId) => syncLightroomImages(runId, debugContext.data));
-
-		logger.complete('Adobe Lightroom data synchronization completed');
+		if (debug) {
+			// Debug mode: fetch data and output to .temp/ only, skip database writes
+			logger.start('Starting Adobe Lightroom data fetch (debug mode - no database writes)');
+			const response = await fetch(ALBUM_URL);
+			if (!response.ok) {
+				throw new Error(`Lightroom API request failed with status ${response.status}`);
+			}
+			const textData = await response.text();
+			const jsonData = LightroomJsonResponseSchema.parse(
+				JSON.parse(textData.replace(/^while\s*\(1\)\s*{\s*}\s*/, ''))
+			);
+			debugContext.data?.push(jsonData);
+			logger.complete(`Fetched ${jsonData.resources.length} images (debug mode)`);
+		} else {
+			// Normal mode: full sync with database writes
+			logger.start('Starting Adobe Lightroom data synchronization');
+			await runIntegration('lightroom', (runId) => syncLightroomImages(runId, debugContext.data));
+			logger.complete('Adobe Lightroom data synchronization completed');
+		}
 	} catch (error) {
 		logger.error('Error syncing Adobe Lightroom data', error);
 		throw error;

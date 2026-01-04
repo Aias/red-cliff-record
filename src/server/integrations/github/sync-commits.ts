@@ -138,12 +138,14 @@ async function ensureRepositoryExists(
  *
  * @param integrationRunId - The ID of the current integration run
  * @param collectDebugData - Optional array to collect raw API data for debugging
+ * @param skipPersist - If true, only fetches data without writing to database (debug mode)
  * @returns The number of new commits processed
  * @throws Error if the GitHub API request fails
  */
 async function syncGitHubCommits(
 	integrationRunId: number,
-	collectDebugData?: unknown[]
+	collectDebugData?: unknown[],
+	skipPersist = false
 ): Promise<number> {
 	const octokit = new Octokit({
 		auth: process.env.GITHUB_TOKEN,
@@ -151,13 +153,13 @@ async function syncGitHubCommits(
 
 	logger.start('Fetching GitHub commits');
 
-	// Get the most recent commit date to use as a cutoff
-	const mostRecentCommitDate = await getMostRecentCommitDate();
+	// Get the most recent commit date to use as a cutoff (skip DB query in debug mode)
+	const mostRecentCommitDate = skipPersist ? null : await getMostRecentCommitDate();
 	if (mostRecentCommitDate) {
 		logger.info(
 			`Most recent commit activity in database: ${mostRecentCommitDate.toLocaleString()}`
 		);
-	} else {
+	} else if (!skipPersist) {
 		logger.info('No existing commits in database');
 	}
 
@@ -201,20 +203,23 @@ async function syncGitHubCommits(
 			let processedAnyNewCommits = false;
 			for (const item of response.data.items) {
 				try {
-					// First check if commit exists by SHA
-					const existingCommit = await db.query.githubCommits.findFirst({
-						columns: {
-							id: true,
-							sha: true,
-						},
-						where: {
-							sha: item.sha,
-						},
-					});
+					// In debug mode, skip DB existence check
+					if (!skipPersist) {
+						// First check if commit exists by SHA
+						const existingCommit = await db.query.githubCommits.findFirst({
+							columns: {
+								id: true,
+								sha: true,
+							},
+							where: {
+								sha: item.sha,
+							},
+						});
 
-					if (existingCommit) {
-						logger.info(`Skipping existing commit ${item.sha}`);
-						continue;
+						if (existingCommit) {
+							logger.info(`Skipping existing commit ${item.sha}`);
+							continue;
+						}
 					}
 
 					processedAnyNewCommits = true;
@@ -246,6 +251,14 @@ async function syncGitHubCommits(
 					});
 
 					logRateLimitInfo(detailedCommit);
+
+					// In debug mode, just count the commits without persisting
+					if (skipPersist) {
+						logger.info(`Would insert commit ${item.sha} for ${item.repository.full_name}`);
+						totalCommits++;
+						await Bun.sleep(REQUEST_DELAY_MS);
+						continue;
+					}
 
 					// Ensure repository exists in database
 					await ensureRepositoryExists(repoResponse.data, integrationRunId);
@@ -326,8 +339,8 @@ async function syncGitHubCommits(
 
 	logger.complete('Synced commits', totalCommits);
 
-	// Generate summaries and embeddings for the new commits
-	if (totalCommits > 0) {
+	// Generate summaries and embeddings for the new commits (skip in debug mode)
+	if (totalCommits > 0 && !skipPersist) {
 		logger.info('Generating commit summaries...');
 		await syncCommitSummaries();
 	}

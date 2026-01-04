@@ -425,16 +425,23 @@ async function createRelatedRecords(): Promise<void> {
 /**
  * Orchestrates the Twitter data synchronization process
  *
- * @param debug - If true, writes raw data to a timestamped JSON file
+ * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncTwitterData(debug = false): Promise<void> {
 	const debugContext = createDebugContext('twitter', debug, [] as unknown[]);
 	try {
-		logger.start('Starting Twitter data synchronization');
-
-		await runIntegration('twitter', (runId) => syncTwitterBookmarks(runId, debugContext.data));
-
-		logger.complete('Twitter data synchronization completed');
+		if (debug) {
+			// Debug mode: fetch data and output to .temp/ only, skip database writes
+			logger.start('Starting Twitter data fetch (debug mode - no database writes)');
+			const bookmarkResponses = await fetchBookmarksFromApi();
+			debugContext.data?.push(...bookmarkResponses);
+			logger.complete(`Fetched ${bookmarkResponses.length} pages of bookmarks (debug mode)`);
+		} else {
+			// Normal mode: full sync with database writes
+			logger.start('Starting Twitter data synchronization');
+			await runIntegration('twitter', (runId) => syncTwitterBookmarks(runId, debugContext.data));
+			logger.complete('Twitter data synchronization completed');
+		}
 	} catch (error) {
 		logger.error('Error syncing Twitter data', error);
 		throw error;

@@ -522,6 +522,35 @@ async function syncFormats(integrationRunId: number, collectDebugData?: unknown[
 }
 
 /**
+ * Fetches all Airtable data from API without persisting
+ *
+ * @param debugData - Object to collect raw API data
+ */
+async function fetchAirtableDataOnly(debugData: {
+	creators: unknown[];
+	spaces: unknown[];
+	extracts: unknown[];
+}): Promise<void> {
+	// Fetch creators
+	logger.info('Fetching creators from Airtable');
+	const creatorRecords = await airtableBase('Creators').select({}).all();
+	debugData.creators.push(...creatorRecords);
+	logger.info(`Fetched ${creatorRecords.length} creators`);
+
+	// Fetch spaces
+	logger.info('Fetching spaces from Airtable');
+	const spaceRecords = await airtableBase('Spaces').select({}).all();
+	debugData.spaces.push(...spaceRecords);
+	logger.info(`Fetched ${spaceRecords.length} spaces`);
+
+	// Fetch extracts
+	logger.info('Fetching extracts from Airtable');
+	const extractRecords = await airtableBase('Extracts').select({}).all();
+	debugData.extracts.push(...extractRecords);
+	logger.info(`Fetched ${extractRecords.length} extracts`);
+}
+
+/**
  * Orchestrates the Airtable data synchronization process
  *
  * This function coordinates the execution of multiple Airtable integration steps:
@@ -532,31 +561,22 @@ async function syncFormats(integrationRunId: number, collectDebugData?: unknown[
  * 5. Creates records from Airtable entities
  *
  * @param integrationRunId - The ID of the current integration run
- * @param debug - If true, writes raw API data to a timestamped JSON file
  * @returns The number of extracts synced
  * @throws Error if synchronization fails
  */
-async function syncAirtableData(integrationRunId: number, debug = false): Promise<number> {
-	const debugContext = createDebugContext('airtable', debug, {
-		creators: [] as unknown[],
-		spaces: [] as unknown[],
-		extracts: [] as unknown[],
-		formats: [] as unknown[],
-	});
+async function syncAirtableData(integrationRunId: number): Promise<number> {
 	try {
-		logger.start('Starting Airtable data synchronization');
-
 		// Step 1: Sync creators
-		await syncCreators(integrationRunId, debugContext.data?.creators);
+		await syncCreators(integrationRunId);
 
 		// Step 2: Sync spaces
-		await syncSpaces(integrationRunId, debugContext.data?.spaces);
+		await syncSpaces(integrationRunId);
 
 		// Step 3: Sync extracts
-		const { updatedExtractIds } = await syncExtracts(integrationRunId, debugContext.data?.extracts);
+		const { updatedExtractIds } = await syncExtracts(integrationRunId);
 
 		// Step 4: Sync formats
-		await syncFormats(integrationRunId, debugContext.data?.formats);
+		await syncFormats(integrationRunId);
 
 		// Count the number of extracts synced
 		const count = await db.$count(
@@ -582,18 +602,42 @@ async function syncAirtableData(integrationRunId: number, debug = false): Promis
 		throw new Error(
 			`Failed to sync Airtable data: ${error instanceof Error ? error.message : String(error)}`
 		);
-	} finally {
-		await debugContext.flush().catch((flushError) => {
-			logger.error('Failed to write debug output for Airtable', flushError);
-		});
 	}
 }
 
 /**
  * Wrapper function that uses runIntegration
+ *
+ * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncAirtableDataWithIntegration(debug = false): Promise<void> {
-	await runIntegration('airtable', (runId) => syncAirtableData(runId, debug));
+	const debugContext = createDebugContext('airtable', debug, {
+		creators: [] as unknown[],
+		spaces: [] as unknown[],
+		extracts: [] as unknown[],
+	});
+	try {
+		if (debug) {
+			// Debug mode: fetch data and output to .temp/ only, skip database writes
+			logger.start('Starting Airtable data fetch (debug mode - no database writes)');
+			if (debugContext.data) {
+				await fetchAirtableDataOnly(debugContext.data);
+			}
+			logger.complete('Airtable data fetch completed (debug mode)');
+		} else {
+			// Normal mode: full sync with database writes
+			logger.start('Starting Airtable data synchronization');
+			await runIntegration('airtable', (runId) => syncAirtableData(runId));
+			logger.complete('Airtable data synchronization completed');
+		}
+	} catch (error) {
+		logger.error('Error syncing Airtable data', error);
+		throw error;
+	} finally {
+		await debugContext.flush().catch((flushError) => {
+			logger.error('Failed to write debug output for Airtable', flushError);
+		});
+	}
 }
 
 export { syncAirtableDataWithIntegration as syncAirtableData };

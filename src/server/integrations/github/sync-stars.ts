@@ -54,12 +54,14 @@ async function getMostRecentStarredAt(): Promise<Date | null> {
  *
  * @param integrationRunId - The ID of the current integration run
  * @param collectDebugData - Optional array to collect raw API data for debugging
+ * @param skipPersist - If true, only fetches data without writing to database (debug mode)
  * @returns The number of new starred repositories processed
  * @throws Error if the GitHub API request fails
  */
 export async function syncGitHubStars(
 	integrationRunId: number,
-	collectDebugData?: unknown[]
+	collectDebugData?: unknown[],
+	skipPersist = false
 ): Promise<number> {
 	const octokit = new Octokit({
 		auth: process.env.GITHUB_TOKEN,
@@ -67,11 +69,11 @@ export async function syncGitHubStars(
 
 	logger.start('Fetching GitHub starred repos');
 
-	// Get the most recent star date to use as a cutoff
-	const mostRecentStarredAt = await getMostRecentStarredAt();
+	// Get the most recent star date to use as a cutoff (skip DB query in debug mode)
+	const mostRecentStarredAt = skipPersist ? null : await getMostRecentStarredAt();
 	if (mostRecentStarredAt) {
 		logger.info(`Most recent star in database: ${mostRecentStarredAt.toLocaleString()}`);
-	} else {
+	} else if (!skipPersist) {
 		logger.info('No existing stars in database');
 	}
 
@@ -125,6 +127,12 @@ export async function syncGitHubStars(
 			for (const { repo, starred_at } of parsedResponse.data) {
 				// Skip if this star is older than our most recent
 				if (mostRecentStarredAt && new Date(starred_at) <= mostRecentStarredAt) {
+					continue;
+				}
+
+				// In debug mode, just count the stars without persisting
+				if (skipPersist) {
+					totalStars++;
 					continue;
 				}
 

@@ -104,9 +104,9 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 	const startTime = performance.now();
 
 	switch (integration) {
-		// tRPC-based syncs
+		// tRPC-based syncs - pass debug flag
 		case 'github': {
-			const result = await caller.integrations.runGithub();
+			const result = await caller.integrations.runGithub({ debug });
 			return {
 				integration,
 				...result,
@@ -114,7 +114,7 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 			};
 		}
 		case 'readwise': {
-			const result = await caller.integrations.runReadwise();
+			const result = await caller.integrations.runReadwise({ debug });
 			return {
 				integration,
 				...result,
@@ -122,7 +122,7 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 			};
 		}
 		case 'raindrop': {
-			const result = await caller.integrations.runRaindrop();
+			const result = await caller.integrations.runRaindrop({ debug });
 			return {
 				integration,
 				...result,
@@ -130,7 +130,7 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 			};
 		}
 		case 'airtable': {
-			const result = await caller.integrations.runAirtable();
+			const result = await caller.integrations.runAirtable({ debug });
 			return {
 				integration,
 				...result,
@@ -138,7 +138,7 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 			};
 		}
 		case 'adobe': {
-			const result = await caller.integrations.runAdobe();
+			const result = await caller.integrations.runAdobe({ debug });
 			return {
 				integration,
 				...result,
@@ -146,7 +146,7 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 			};
 		}
 		case 'feedbin': {
-			const result = await caller.integrations.runFeedbin();
+			const result = await caller.integrations.runFeedbin({ debug });
 			return {
 				integration,
 				...result,

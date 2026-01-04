@@ -966,9 +966,40 @@ async function syncFeedbin(
 }
 
 /**
+ * Fetches all Feedbin data from API without persisting
+ *
+ * @param debugData - Object to collect raw API data
+ */
+async function fetchFeedbinDataOnly(debugData: {
+	subscriptions: unknown[];
+	entries: unknown[];
+	icons: unknown[];
+}): Promise<void> {
+	// Fetch subscriptions and icons
+	const [subscriptions, icons] = await Promise.all([fetchSubscriptions(), fetchIcons()]);
+	debugData.subscriptions.push(...subscriptions);
+	debugData.icons.push(...icons);
+	logger.info(`Fetched ${subscriptions.length} subscriptions and ${icons.length} icons`);
+
+	// Fetch entry IDs
+	const [unreadIds, starredIds, recentlyReadIds] = await Promise.all([
+		fetchUnreadEntryIds(),
+		fetchStarredEntryIds(),
+		fetchRecentlyReadEntryIds(),
+	]);
+
+	// Combine IDs and fetch entries
+	const idsToFetch = [...new Set([...unreadIds, ...recentlyReadIds, ...starredIds])];
+	logger.info(`Fetching ${idsToFetch.length} entries`);
+	const entries = await fetchEntriesByIds(idsToFetch);
+	debugData.entries.push(...entries);
+	logger.info(`Fetched ${entries.length} entries`);
+}
+
+/**
  * Orchestrates the Feedbin data synchronization process
  *
- * @param debug - If true, writes raw API data to a timestamped JSON file
+ * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncFeedbinData(debug = false): Promise<void> {
 	const debugContext = createDebugContext('feedbin', debug, {
@@ -977,11 +1008,19 @@ async function syncFeedbinData(debug = false): Promise<void> {
 		icons: [] as unknown[],
 	});
 	try {
-		logger.start('Starting Feedbin data synchronization');
-
-		await runIntegration('feedbin', (runId) => syncFeedbin(runId, debugContext.data));
-
-		logger.complete('Feedbin data synchronization completed successfully');
+		if (debug) {
+			// Debug mode: fetch data and output to .temp/ only, skip database writes
+			logger.start('Starting Feedbin data fetch (debug mode - no database writes)');
+			if (debugContext.data) {
+				await fetchFeedbinDataOnly(debugContext.data);
+			}
+			logger.complete('Feedbin data fetch completed (debug mode)');
+		} else {
+			// Normal mode: full sync with database writes
+			logger.start('Starting Feedbin data synchronization');
+			await runIntegration('feedbin', (runId) => syncFeedbin(runId, debugContext.data));
+			logger.complete('Feedbin data synchronization completed successfully');
+		}
 	} catch (error) {
 		logger.error('Error syncing Feedbin data', error);
 		throw error;

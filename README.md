@@ -264,6 +264,7 @@ Notes:
 - Unknown flags are rejected (strict parsing).
 - Most ID-based commands accept multiple IDs for parallel execution.
 - Use `--format=table` for human-readable output.
+- Use `--debug` to fetch data without writing to the database (outputs to `.temp/`).
 - Use `--` to stop option parsing when needed.
 
 ## Production Build & Deployment
@@ -353,7 +354,10 @@ bun run db:migrate
 
 - Verify API keys are correct and have proper permissions
 - Check rate limits for external services
-- Run individual syncs with debug flag: `rcr sync github --debug`
+- Run with `--debug` to test API connectivity without writing to the database:
+  ```bash
+  rcr sync github --debug  # Outputs raw API data to .temp/
+  ```
 
 ### Browser History Integration (macOS)
 

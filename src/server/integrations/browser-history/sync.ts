@@ -148,23 +148,34 @@ function sanitizeUrl(url: string): string | null {
 async function syncBrowserHistory(
 	browserConfig: BrowserConfig,
 	integrationRunId: number,
-	collectDebugData?: unknown[]
+	collectDebugData?: unknown[],
+	skipPersist = false
 ): Promise<number> {
 	// Get current hostname
 	const currentHostname = await getHostnameFromCli();
 
-	// Step 1: Check if the current hostname is known
-	const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
-	if (!shouldProceed) {
-		logger.info('Sync cancelled by user');
-		return 0;
+	// Step 1: Check if the current hostname is known (skip in debug mode)
+	if (!skipPersist) {
+		const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
+		if (!shouldProceed) {
+			logger.info('Sync cancelled by user');
+			return 0;
+		}
 	}
 
-	logger.start(`Starting ${browserConfig.displayName} browser history incremental update`);
+	logger.start(
+		skipPersist
+			? `Fetching ${browserConfig.displayName} browser history (debug mode)`
+			: `Starting ${browserConfig.displayName} browser history incremental update`
+	);
 
-	// Step 2: Get the most recent history entry
-	const lastKnownTime = await getLastSyncPoint(currentHostname, browserConfig.name);
-	logLastSyncPoint(lastKnownTime);
+	// Step 2: Get the most recent history entry (skip in debug mode - fetch all)
+	const lastKnownTime = skipPersist
+		? null
+		: await getLastSyncPoint(currentHostname, browserConfig.name);
+	if (!skipPersist) {
+		logLastSyncPoint(lastKnownTime);
+	}
 
 	// Step 3: Fetch new history entries
 	logger.info('Retrieving new history entries...');
@@ -199,7 +210,12 @@ async function syncBrowserHistory(
 			browserConfig.name
 		);
 
-		// Step 5: Insert the entries into the database
+		// Step 5: Insert the entries into the database (skip in debug mode)
+		if (skipPersist) {
+			logger.info(`Would insert ${processedHistory.length} history entries (debug mode)`);
+			return processedHistory.length;
+		}
+
 		if (processedHistory.length > 0) {
 			await insertHistoryEntries(processedHistory);
 		} else {

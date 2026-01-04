@@ -38,7 +38,7 @@ function RouteComponent() {
 
 	const handleRunRaindrop = () => {
 		setMessages([]);
-		raindropMutation.mutate();
+		raindropMutation.mutate({});
 	};
 
 	const airtableMutation = trpc.integrations.runAirtable.useMutation({
@@ -59,7 +59,7 @@ function RouteComponent() {
 
 	const handleRunAirtable = () => {
 		setMessages([]);
-		airtableMutation.mutate();
+		airtableMutation.mutate({});
 	};
 
 	const adobeMutation = trpc.integrations.runAdobe.useMutation({
@@ -80,7 +80,7 @@ function RouteComponent() {
 
 	const handleRunAdobe = () => {
 		setMessages([]);
-		adobeMutation.mutate();
+		adobeMutation.mutate({});
 	};
 
 	const readwiseMutation = trpc.integrations.runReadwise.useMutation({
@@ -101,7 +101,7 @@ function RouteComponent() {
 
 	const handleRunReadwise = () => {
 		setMessages([]);
-		readwiseMutation.mutate();
+		readwiseMutation.mutate({});
 	};
 
 	const feedbinMutation = trpc.integrations.runFeedbin.useMutation({
@@ -122,7 +122,7 @@ function RouteComponent() {
 
 	const handleRunFeedbin = () => {
 		setMessages([]);
-		feedbinMutation.mutate();
+		feedbinMutation.mutate({});
 	};
 
 	const githubMutation = trpc.integrations.runGithub.useMutation({
@@ -143,7 +143,7 @@ function RouteComponent() {
 
 	const handleRunGithub = () => {
 		setMessages([]);
-		githubMutation.mutate();
+		githubMutation.mutate({});
 	};
 
 	const getMessageIcon = (type: LogMessage['type']) => {
