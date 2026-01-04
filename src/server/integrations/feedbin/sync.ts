@@ -274,8 +274,7 @@ async function processSingleEntry(
 	starredIds: Set<number>,
 	integrationRunId: number,
 	updatedEntryIds: Set<number> | undefined,
-	timeoutMs: number = 5000,
-	iconMap?: Map<string, string>
+	timeoutMs: number = 5000
 ): Promise<boolean> {
 	return new Promise((resolve) => {
 		const timeout = setTimeout(() => {
@@ -357,13 +356,26 @@ async function processSingleEntry(
 				}
 
 				// Upsert entry (without embedding - will be done in post-process)
-				try {
-					await db
-						.insert(feedEntries)
-						.values({
-							id: entry.id,
-							feedId: entry.feed_id,
-							url: effectiveUrl,
+				await db
+					.insert(feedEntries)
+					.values({
+						id: entry.id,
+						feedId: entry.feed_id,
+						url: effectiveUrl,
+						title: entry.title,
+						author: entry.author,
+						summary: entry.summary,
+						content: entry.content,
+						imageUrls,
+						enclosure,
+						read: isRead,
+						starred: isStarred,
+						publishedAt: entry.published,
+						integrationRunId,
+					})
+					.onConflictDoUpdate({
+						target: feedEntries.id,
+						set: {
 							title: entry.title,
 							author: entry.author,
 							summary: entry.summary,
@@ -373,77 +385,10 @@ async function processSingleEntry(
 							read: isRead,
 							starred: isStarred,
 							publishedAt: entry.published,
-							integrationRunId,
-						})
-						.onConflictDoUpdate({
-							target: feedEntries.id,
-							set: {
-								title: entry.title,
-								author: entry.author,
-								summary: entry.summary,
-								content: entry.content,
-								imageUrls,
-								enclosure,
-								read: isRead,
-								starred: isStarred,
-								publishedAt: entry.published,
-								recordUpdatedAt: new Date(),
-								textEmbedding: null, // Updated entries should re-generate embeddings
-							},
-						});
-				} catch (error: unknown) {
-					// Check if it's a foreign key constraint error
-					if (
-						error instanceof Error &&
-						error.message.includes('feed_entries_feed_id_feeds_id_fk')
-					) {
-						// Feed doesn't exist, fetch and sync it
-						if (!syncedFeedIds.has(entry.feed_id)) {
-							logger.info(`Fetching missing feed ${entry.feed_id} for entry ${entry.id}`);
-							await syncSingleFeed(entry.feed_id, iconMap);
-							syncedFeedIds.add(entry.feed_id);
-
-							// Retry the insert
-							await db
-								.insert(feedEntries)
-								.values({
-									id: entry.id,
-									feedId: entry.feed_id,
-									url: effectiveUrl,
-									title: entry.title,
-									author: entry.author,
-									summary: entry.summary,
-									content: entry.content,
-									imageUrls,
-									enclosure,
-									read: isRead,
-									starred: isStarred,
-									publishedAt: entry.published,
-									integrationRunId,
-								})
-								.onConflictDoUpdate({
-									target: feedEntries.id,
-									set: {
-										title: entry.title,
-										author: entry.author,
-										summary: entry.summary,
-										content: entry.content,
-										imageUrls,
-										enclosure,
-										read: isRead,
-										starred: isStarred,
-										publishedAt: entry.published,
-										recordUpdatedAt: new Date(),
-										textEmbedding: null,
-									},
-								});
-						} else {
-							throw error;
-						}
-					} else {
-						throw error;
-					}
-				}
+							recordUpdatedAt: new Date(),
+							textEmbedding: null, // Updated entries should re-generate embeddings
+						},
+					});
 
 				clearTimeout(timeout);
 				resolve(true);
@@ -464,8 +409,7 @@ async function syncFeedEntries(
 	unreadIds: Set<number>,
 	starredIds: Set<number>,
 	integrationRunId: number,
-	updatedEntryIds?: Set<number>,
-	iconMap?: Map<string, string>
+	updatedEntryIds?: Set<number>
 ): Promise<number> {
 	logger.start(`Syncing ${entries.length} entries`);
 
@@ -495,8 +439,7 @@ async function syncFeedEntries(
 					starredIds,
 					integrationRunId,
 					updatedEntryIds,
-					ENTRY_TIMEOUT_MS,
-					iconMap
+					ENTRY_TIMEOUT_MS
 				);
 				return { entry, success, globalIndex };
 			})
@@ -572,8 +515,7 @@ async function syncFeedEntries(
 						starredIds,
 						integrationRunId,
 						updatedEntryIds,
-						ENTRY_TIMEOUT_MS,
-						iconMap
+						ENTRY_TIMEOUT_MS
 					);
 					return { entry, success };
 				})
@@ -968,77 +910,49 @@ async function syncFeedbin(
 			await bulkUpdateReadStatus(toMarkUnread, false);
 		}
 
-		// Step 6: Sync entries WITHOUT embeddings
+		// Step 6: Ensure all required feeds exist before syncing entries
+		const uniqueFeedIds = Array.from(new Set(entries.map((entry) => entry.feed_id)));
+		const missingFeedIds = uniqueFeedIds.filter(
+			(feedId) => !existingFeedIds.has(feedId) && !syncedFeedIds.has(feedId)
+		);
+
+		if (missingFeedIds.length > 0) {
+			logger.info(`Fetching ${missingFeedIds.length} missing feeds before syncing entries`);
+
+			const FEED_BATCH_SIZE = 20;
+			let feedFetchCount = 0;
+
+			for (let i = 0; i < missingFeedIds.length; i += FEED_BATCH_SIZE) {
+				const batch = missingFeedIds.slice(i, i + FEED_BATCH_SIZE);
+				logger.info(
+					`Processing feed batch ${Math.floor(i / FEED_BATCH_SIZE) + 1} of ${Math.ceil(missingFeedIds.length / FEED_BATCH_SIZE)}`
+				);
+
+				await Promise.all(
+					batch.map(async (feedId) => {
+						try {
+							feedFetchCount++;
+							await syncSingleFeed(feedId, iconMap);
+							syncedFeedIds.add(feedId);
+							existingFeedIds.add(feedId);
+							logger.info(`Fetched feed ${feedId} (${feedFetchCount} of ${missingFeedIds.length})`);
+						} catch (error) {
+							logger.warn(`Failed to fetch feed ${feedId}`, error);
+						}
+					})
+				);
+			}
+		}
+
+		// Step 7: Sync entries WITHOUT embeddings
 		const updatedEntrySet = new Set(updatedEntriesToFetch);
 		const entriesCreated = await syncFeedEntries(
 			entries,
 			unreadSet,
 			starredSet,
 			integrationRunId,
-			updatedEntrySet,
-			iconMap
+			updatedEntrySet
 		);
-
-		// Step 7: Update feeds for synced entries
-		const uniqueFeedIds = Array.from(new Set(entries.map((entry) => entry.feed_id)));
-		const feedsToUpdate = uniqueFeedIds.filter(
-			(feedId) => !existingFeedIds.has(feedId) && !syncedFeedIds.has(feedId)
-		);
-
-		if (feedsToUpdate.length > 0) {
-			logger.info(`Updating ${feedsToUpdate.length} feeds from synced entries`);
-
-			// Create icon lookup map
-			// Process feeds in batches
-			const FEED_BATCH_SIZE = 20;
-			let feedUpdateCount = 0;
-			const now = new Date();
-
-			for (let i = 0; i < feedsToUpdate.length; i += FEED_BATCH_SIZE) {
-				const batch = feedsToUpdate.slice(i, i + FEED_BATCH_SIZE);
-				logger.info(
-					`Processing feed batch ${Math.floor(i / FEED_BATCH_SIZE) + 1} of ${Math.ceil(feedsToUpdate.length / FEED_BATCH_SIZE)}`
-				);
-
-				await Promise.all(
-					batch.map(async (feedId) => {
-						try {
-							feedUpdateCount++;
-							const feed = await fetchFeed(feedId);
-
-							// Extract icon URL
-							let iconUrl: string | null = null;
-							if (feed.site_url) {
-								try {
-									const url = new URL(feed.site_url);
-									iconUrl = iconMap.get(url.hostname) || null;
-								} catch {
-									// Ignore URL parsing errors
-								}
-							}
-
-							// Update feed with latest data
-							await db
-								.update(feeds)
-								.set({
-									name: feed.title,
-									feedUrl: feed.feed_url,
-									siteUrl: feed.site_url,
-									iconUrl,
-									recordUpdatedAt: now,
-								})
-								.where(eq(feeds.id, feedId));
-
-							logger.info(
-								`Updated feed "${feed.title}" (${feedUpdateCount} of ${feedsToUpdate.length})`
-							);
-						} catch (error) {
-							logger.warn(`Failed to update feed ${feedId}`, error);
-						}
-					})
-				);
-			}
-		}
 
 		// Step 8: Generate embeddings for entries
 		await generateFeedEntryEmbeddings();
