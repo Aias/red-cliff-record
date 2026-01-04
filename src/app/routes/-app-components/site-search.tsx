@@ -1,7 +1,7 @@
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PlusCircleIcon, SearchIcon } from 'lucide-react';
-import { trpc } from '@/app/trpc';
+import { useRecordSearch } from '@/app/lib/hooks/use-record-search';
 import { SearchResultItem } from '../records/-components/search-result-item';
 import { Button } from '@/components/button';
 import {
@@ -16,7 +16,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
-import { useDebounce } from '@/lib/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import { defaultQueueOptions } from '@/shared/types';
 
@@ -24,40 +23,23 @@ export const SiteSearch = () => {
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState('');
 	const [commandOpen, setCommandOpen] = useState(false);
-	const deferredValue = useDeferredValue(inputValue);
-	const debouncedValue = useDebounce(deferredValue, 300);
 
 	const createRecordMutation = useUpsertRecord();
 
-	const { data: textResults, isLoading: textResultsLoading } = trpc.search.byTextQuery.useQuery(
-		{
-			query: debouncedValue,
-			limit: 10,
-		},
-		{
-			enabled: debouncedValue.length > 1,
-			trpc: {
-				context: {
-					skipBatch: true,
-				},
-			},
-		}
-	);
-	const { data: similarityResults, isLoading: similarityResultsLoading } =
-		trpc.search.byVector.useQuery(
-			{
-				query: debouncedValue,
-				limit: 5,
-			},
-			{
-				enabled: debouncedValue.length > 1,
-				trpc: {
-					context: {
-						skipBatch: true,
-					},
-				},
-			}
-		);
+	const {
+		textResults,
+		vectorResults,
+		textFetching,
+		vectorFetching,
+		isLoading,
+		hasResults,
+		shouldSearch,
+	} = useRecordSearch(inputValue, {
+		debounceMs: 300,
+		minQueryLength: 2,
+		textLimit: 10,
+		vectorLimit: 5,
+	});
 
 	const handleInputChange = (search: string) => {
 		setInputValue(search);
@@ -123,25 +105,22 @@ export const SiteSearch = () => {
 						<CommandList className="max-h-[75vh]">
 							<CommandItem value="-" className="hidden" />
 							<CommandEmpty>
-								{debouncedValue.length <= 1
+								{!shouldSearch
 									? 'Type to search...'
-									: !textResultsLoading &&
-										  !similarityResultsLoading &&
-										  (!textResults || textResults.length === 0) &&
-										  (!similarityResults || similarityResults.length === 0)
+									: !isLoading && !hasResults
 										? 'No results found.'
 										: ''}
 							</CommandEmpty>
 
 							{/* Text Search Section */}
-							{debouncedValue.length > 1 && (
+							{shouldSearch && (
 								<CommandGroup heading="Text Search Results">
-									{textResultsLoading ? (
+									{textFetching ? (
 										<CommandItem disabled className="flex items-center justify-center">
 											<Spinner className="size-4" />
 										</CommandItem>
 									) : (
-										textResults?.map((record) => (
+										textResults.map((record) => (
 											<CommandItem
 												key={`text-${record.id}`}
 												value={`${record.title || 'Untitled'}--${record.id}--text`}
@@ -155,17 +134,17 @@ export const SiteSearch = () => {
 							)}
 
 							{/* Similarity Search Section */}
-							{debouncedValue.length > 1 && (
+							{shouldSearch && (
 								<CommandGroup heading="Similar Records">
-									{similarityResultsLoading ? (
+									{vectorFetching ? (
 										<CommandItem disabled className="flex items-center justify-center">
 											<Spinner className="size-4" />
 										</CommandItem>
 									) : (
-										similarityResults?.map((record) => (
+										vectorResults.map((record) => (
 											<CommandItem
-												key={`sim-${record.id}`}
-												value={`${record.title || 'Untitled'}--${record.id}--similarity`}
+												key={`vector-${record.id}`}
+												value={`${record.title || 'Untitled'}--${record.id}--vector`}
 												onSelect={() => handleSelectResult(record.id)}
 											>
 												<SearchResultItem result={record} />
@@ -175,10 +154,10 @@ export const SiteSearch = () => {
 								</CommandGroup>
 							)}
 
-							{debouncedValue.length > 1 && <CommandSeparator alwaysRender />}
+							{shouldSearch && <CommandSeparator alwaysRender />}
 
 							<CommandItem
-								disabled={inputValue.length === 0 || textResultsLoading || similarityResultsLoading}
+								disabled={inputValue.length === 0 || isLoading}
 								key="create-record"
 								onSelect={() => {
 									createRecordMutation.mutate(

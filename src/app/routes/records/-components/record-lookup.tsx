@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { PredicateSelect } from '@aias/hozo';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
-import { useDebounce } from '@/app/lib/hooks/use-debounce';
+import { useRecordSearch } from '@/app/lib/hooks/use-record-search';
 import { trpc } from '@/app/trpc';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
@@ -13,7 +13,6 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-	CommandLoading,
 	CommandSeparator,
 } from '@/components/command';
 import {
@@ -49,22 +48,17 @@ interface RecordSearchProps {
 
 function RecordSearch({ onSelect }: RecordSearchProps) {
 	const [query, setQuery] = useState('');
-	const debounced = useDebounce(query, 200);
-
 	const createRecordMutation = useUpsertRecord();
 
-	const { data: textResults = [], isFetching: textFetching } = trpc.search.byTextQuery.useQuery(
-		{ query: debounced, limit: 5 },
-		{ enabled: debounced.length > 0 }
-	);
-
-	const { data: vectorResults = [], isFetching: vectorFetching } = trpc.search.byVector.useQuery(
-		{ query: debounced, limit: 3 },
-		{ enabled: debounced.length > 0 }
-	);
-
-	const hasResults = textResults.length > 0 || vectorResults.length > 0;
-	const isLoading = textFetching || vectorFetching;
+	const {
+		textResults,
+		vectorResults,
+		textFetching,
+		vectorFetching,
+		isLoading,
+		hasResults,
+		shouldSearch,
+	} = useRecordSearch(query, { debounceMs: 200, minQueryLength: 1, textLimit: 5, vectorLimit: 3 });
 
 	return (
 		<Command shouldFilter={false} loop className="w-full" defaultValue="">
@@ -73,40 +67,48 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 				<CommandItem value="-" className="hidden" />
 
 				{/* Text Search Results */}
-				<CommandGroup heading="Text Search Results">
-					{textFetching ? (
-						<CommandLoading>Loading...</CommandLoading>
-					) : (
-						textResults.map((result) => (
-							<CommandItem
-								key={`text-${result.id}`}
-								value={`${result.title ?? 'Untitled'}--${result.id}--text`}
-								onSelect={() => onSelect(result.id)}
-							>
-								<SearchResultItem result={result} />
+				{shouldSearch && (
+					<CommandGroup heading="Text Search Results">
+						{textFetching ? (
+							<CommandItem disabled className="flex items-center justify-center">
+								<Spinner className="size-4" />
 							</CommandItem>
-						))
-					)}
-				</CommandGroup>
+						) : (
+							textResults.map((result) => (
+								<CommandItem
+									key={`text-${result.id}`}
+									value={`${result.title ?? 'Untitled'}--${result.id}--text`}
+									onSelect={() => onSelect(result.id)}
+								>
+									<SearchResultItem result={result} />
+								</CommandItem>
+							))
+						)}
+					</CommandGroup>
+				)}
 
 				{/* Similar Records (Vector Search) */}
-				<CommandGroup heading="Similar Records">
-					{vectorFetching ? (
-						<CommandLoading>Loading...</CommandLoading>
-					) : (
-						vectorResults.map((result) => (
-							<CommandItem
-								key={`vector-${result.id}`}
-								value={`${result.title ?? 'Untitled'}--${result.id}--vector`}
-								onSelect={() => onSelect(result.id)}
-							>
-								<SearchResultItem result={result} />
+				{shouldSearch && (
+					<CommandGroup heading="Similar Records">
+						{vectorFetching ? (
+							<CommandItem disabled className="flex items-center justify-center">
+								<Spinner className="size-4" />
 							</CommandItem>
-						))
-					)}
-				</CommandGroup>
+						) : (
+							vectorResults.map((result) => (
+								<CommandItem
+									key={`vector-${result.id}`}
+									value={`${result.title ?? 'Untitled'}--${result.id}--vector`}
+									onSelect={() => onSelect(result.id)}
+								>
+									<SearchResultItem result={result} />
+								</CommandItem>
+							))
+						)}
+					</CommandGroup>
+				)}
 
-				{!isLoading && !hasResults && debounced.length > 0 && (
+				{!isLoading && !hasResults && shouldSearch && (
 					<CommandItem disabled>No results</CommandItem>
 				)}
 
