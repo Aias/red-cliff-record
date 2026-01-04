@@ -5,7 +5,7 @@
  * reusing all query logic from the API routers.
  */
 
-import { z } from 'zod';
+import { DateSchema } from '@/shared/types';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
@@ -13,8 +13,6 @@ import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
 const caller = createCLICaller();
-
-const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const DailyOptionsSchema = BaseOptionsSchema.extend({}).strict();
 

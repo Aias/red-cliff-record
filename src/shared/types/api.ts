@@ -5,6 +5,7 @@ export const DEFAULT_LIMIT = 50;
 
 // Core ID types used throughout the API
 export const IdSchema = z.number().int().positive();
+export const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const IdParamSchema = z.object({ id: IdSchema });
 export type DbId = z.infer<typeof IdSchema>;
 export type IdParam = z.infer<typeof IdParamSchema>;

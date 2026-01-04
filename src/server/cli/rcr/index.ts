@@ -96,16 +96,17 @@ let commands: Record<string, Record<string, CommandHandler>> | null = null;
 async function loadCommands() {
 	if (commands) return commands;
 
-	const [browsing, db, links, records, search, sync] = await Promise.all([
+	const [browsing, db, github, links, records, search, sync] = await Promise.all([
 		import('./commands/browsing'),
 		import('./commands/db'),
+		import('./commands/github'),
 		import('./commands/links'),
 		import('./commands/records'),
 		import('./commands/search'),
 		import('./commands/sync'),
 	]);
 
-	commands = { browsing, db, links, records, search, sync };
+	commands = { browsing, db, github, links, records, search, sync };
 	return commands;
 }
 
@@ -149,6 +150,9 @@ Commands:
   browsing omit-add <pattern>    Add pattern to omit list (SQL LIKE syntax)
   browsing omit-delete <pat...>  Delete pattern(s) from omit list
 
+  github daily <date>           Get daily commit summary (YYYY-MM-DD)
+  github get <id>               Get commit details with file changes
+
   sync <integration>            Run a sync (github, readwise, etc.)
   sync daily                    Run all daily syncs
 
@@ -179,6 +183,7 @@ Examples:
   rcr browsing daily 2026-01-03        # Daily browsing summary
   rcr browsing omit                    # List omit patterns
   rcr browsing omit-add "%ads.%"       # Add pattern to omit list
+  rcr github daily 2026-01-03          # Daily commit summary
   rcr sync github
   rcr db status                        # Show database record counts
   rcr db backup local --data-only      # Data-only backup

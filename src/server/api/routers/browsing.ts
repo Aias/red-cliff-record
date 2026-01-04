@@ -5,9 +5,8 @@ import {
 } from '@aias/hozo';
 import { and, gte, inArray, lte } from 'drizzle-orm';
 import { z } from 'zod';
+import { DateSchema } from '@/shared/types';
 import { createTRPCRouter, publicProcedure } from '../init';
-
-const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const OverviewSchema = z.object({
 	date: z.string(),

@@ -53,6 +53,7 @@ Never attempt to start the development server or build the application. The user
 - `./src/server/db/db-manager.sh -c restore <local|remote>` - Clean restore (drop & recreate database with extensions)
 - `./src/server/db/db-manager.sh --dry-run restore <local|remote>` - Print restore commands without executing
 - `./src/server/db/db-manager.sh seed local` - Seed database with initial data (predicates and core records)
+- **Direct queries**: `source .env && psql "$DATABASE_URL" -c "SELECT ..."` (never echo/log the connection string)
 - **Database Reset / Migration Squash**: To reset migration history while preserving data:
   1. `./src/server/db/db-manager.sh -D backup local` (Backup data only)
   2. `./src/server/db/db-manager.sh reset local` (Drop & recreate DB with extensions)
