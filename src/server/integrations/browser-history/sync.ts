@@ -434,6 +434,8 @@ async function checkForMillisecondDuplicates(
 		}
 
 		// Query existing entries at millisecond precision
+		// Convert BigInts to strings to avoid JSON serialization issues in Drizzle's cache layer
+		const timestampStrings = millisecondTimestamps.map((t) => t.toString());
 		const existingEntries = await db
 			.select({
 				url: browsingHistory.url,
@@ -444,7 +446,7 @@ async function checkForMillisecondDuplicates(
 				and(
 					eq(browsingHistory.hostname, hostname),
 					// Check for any microsecond value within the same millisecond
-					sql`(${browsingHistory.viewEpochMicroseconds} / 1000000) * 1000000 IN (${sql.join(millisecondTimestamps, sql`, `)})`
+					sql`(${browsingHistory.viewEpochMicroseconds} / 1000000) * 1000000 IN (${sql.join(timestampStrings, sql`, `)})`
 				)
 			);
 
