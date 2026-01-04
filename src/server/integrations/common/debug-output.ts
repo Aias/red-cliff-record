@@ -12,7 +12,7 @@ type DebugContext<T> = {
  * Ensures the .temp directory exists at the project root
  */
 async function ensureTempDirectory(): Promise<string> {
-	const cwd = Bun.env.PWD;
+	const cwd = process.env.PWD;
 	const tempDir = `${cwd ?? '.'}/.temp`;
 	try {
 		// Create directory if it doesn't exist (Bun.write will create parent dirs automatically)

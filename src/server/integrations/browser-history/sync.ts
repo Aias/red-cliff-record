@@ -22,12 +22,12 @@ const logger = createIntegrationLogger('browser-history', 'sync');
 /**
  * Gets the machine hostname by invoking the system `hostname` command.
  *
- * We prefer this over environment variables because `Bun.env.HOSTNAME` is often unset
+ * We prefer this over environment variables because `process.env.HOSTNAME` is often unset
  * in local shells, which can cause spurious "unknown hostname" prompts.
  */
 async function getHostnameFromCli(): Promise<string> {
 	// If explicitly provided, prefer env override.
-	const envHostname = Bun.env.HOSTNAME?.trim();
+	const envHostname = process.env.HOSTNAME?.trim();
 	if (envHostname && envHostname.length > 0) return envHostname;
 
 	const proc = Bun.spawn(['hostname'], {

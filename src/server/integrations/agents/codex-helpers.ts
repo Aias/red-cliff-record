@@ -37,7 +37,7 @@ function isTokenCountPayload(payload: EventMsgPayload): payload is TokenCountEve
 // Constants
 // ----------------------------------------------------------------------------
 
-export const CODEX_SESSIONS_PATH = `${Bun.env.HOME}/.codex/sessions`;
+export const CODEX_SESSIONS_PATH = `${process.env.HOME}/.codex/sessions`;
 
 // ----------------------------------------------------------------------------
 // File Discovery

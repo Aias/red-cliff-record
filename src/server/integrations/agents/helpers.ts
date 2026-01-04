@@ -14,7 +14,7 @@ import { SessionEntrySchema } from './types';
 // Constants
 // ----------------------------------------------------------------------------
 
-export const CLAUDE_PROJECTS_PATH = `${Bun.env.HOME}/.claude/projects`;
+export const CLAUDE_PROJECTS_PATH = `${process.env.HOME}/.claude/projects`;
 
 // ----------------------------------------------------------------------------
 // Path Utilities

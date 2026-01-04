@@ -62,7 +62,7 @@ export async function syncGitHubStars(
 	collectDebugData?: unknown[]
 ): Promise<number> {
 	const octokit = new Octokit({
-		auth: Bun.env.GITHUB_TOKEN,
+		auth: process.env.GITHUB_TOKEN,
 	});
 
 	logger.start('Fetching GitHub starred repos');

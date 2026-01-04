@@ -6,8 +6,8 @@ import { BrowserNotInstalledError } from '@/server/integrations/browser-history/
 const arcHistoryPath = 'Library/Application Support/Arc/User Data/Default/History';
 
 // Path to Arc's History database (Mac OS Only)
-export const arcDbPath = `${Bun.env.HOME}/${arcHistoryPath}`;
-export const arcDbCopyPath = `${Bun.env.HOME}/${arcHistoryPath}-copy`;
+export const arcDbPath = `${process.env.HOME}/${arcHistoryPath}`;
+export const arcDbCopyPath = `${process.env.HOME}/${arcHistoryPath}-copy`;
 export const connectionUrl = `file:${arcDbCopyPath}`;
 
 export const createArcConnection = async () => {

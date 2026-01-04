@@ -20,26 +20,93 @@
  *   --debug              Enable debug output
  */
 
-import 'dotenv/config';
+import { existsSync, readFileSync, realpathSync } from 'fs';
+import { dirname, join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { parseArgs, parseBaseOptions, type BaseOptions } from './lib/args';
 import { createError } from './lib/errors';
 import { formatError, formatOutput } from './lib/output';
 import type { CommandHandler, ResultValue, SuccessResult } from './lib/types';
 
-// Import command modules
-import * as db from './commands/db';
-import * as links from './commands/links';
-import * as records from './commands/records';
-import * as search from './commands/search';
-import * as sync from './commands/sync';
+// Load environment variables from project root or ~/.secrets when CWD has no .env
+// Bun automatically loads .env from CWD, so we only need fallback logic
+function loadEnvFile(path: string) {
+	try {
+		const content = readFileSync(path, 'utf-8');
+		for (const line of content.split('\n')) {
+			const trimmed = line.trim();
+			if (!trimmed || trimmed.startsWith('#')) continue;
 
-const commands: Record<string, Record<string, CommandHandler>> = {
-	db,
-	links,
-	records,
-	search,
-	sync,
-};
+			const match = trimmed.match(/^([^=]+)=(.*)$/);
+			if (match && match[1] && match[2] !== undefined) {
+				const cleanKey = match[1].trim();
+				let cleanValue = match[2].trim();
+
+				// Remove surrounding quotes if present
+				if (
+					(cleanValue.startsWith('"') && cleanValue.endsWith('"')) ||
+					(cleanValue.startsWith("'") && cleanValue.endsWith("'"))
+				) {
+					cleanValue = cleanValue.slice(1, -1);
+				}
+
+				// Only set if not already defined (Bun may have loaded from CWD)
+				if (!process.env[cleanKey]) {
+					process.env[cleanKey] = cleanValue;
+				}
+			}
+		}
+	} catch {
+		// Silently fail if file can't be read
+	}
+}
+
+// Only load manually if CWD has no .env (Bun handles CWD automatically)
+const cwdEnv = resolve(process.cwd(), '.env');
+if (!existsSync(cwdEnv)) {
+	// Try to find project root by resolving symlink
+	try {
+		const scriptPath = fileURLToPath(import.meta.url);
+		const realScriptPath = realpathSync(scriptPath);
+		// Navigate from src/server/cli/rcr/index.ts to project root
+		const projectRoot = resolve(dirname(realScriptPath), '../../../..');
+		const projectEnv = join(projectRoot, '.env');
+
+		if (existsSync(projectEnv)) {
+			loadEnvFile(projectEnv);
+		} else {
+			// Fallback to ~/.secrets
+			const homeSecrets = join(process.env.HOME || '~', '.secrets');
+			if (existsSync(homeSecrets)) {
+				loadEnvFile(homeSecrets);
+			}
+		}
+	} catch {
+		// If symlink resolution fails, try ~/.secrets
+		const homeSecrets = join(process.env.HOME || '~', '.secrets');
+		if (existsSync(homeSecrets)) {
+			loadEnvFile(homeSecrets);
+		}
+	}
+}
+
+// Commands will be loaded dynamically after env vars are configured
+let commands: Record<string, Record<string, CommandHandler>> | null = null;
+
+async function loadCommands() {
+	if (commands) return commands;
+
+	const [db, links, records, search, sync] = await Promise.all([
+		import('./commands/db'),
+		import('./commands/links'),
+		import('./commands/records'),
+		import('./commands/search'),
+		import('./commands/sync'),
+	]);
+
+	commands = { db, links, records, search, sync };
+	return commands;
+}
 
 function withDuration<T extends ResultValue>(
 	result: SuccessResult<T>,
@@ -127,6 +194,9 @@ async function main(): Promise<void> {
 		process.exit(0);
 	}
 
+	// Load command modules
+	const cmds = await loadCommands();
+
 	// Special case: "search <query>" without subcommand means semantic search
 	if (
 		command === 'search' &&
@@ -138,7 +208,7 @@ async function main(): Promise<void> {
 		// Treat subcommand as the query for semantic search
 		const query = [subcommand, ...args].join(' ');
 		try {
-			const handler = commands.search?.semantic;
+			const handler = cmds.search?.semantic;
 			if (!handler) {
 				throw new Error('Semantic search handler not found');
 			}
@@ -155,7 +225,10 @@ async function main(): Promise<void> {
 	// Special case: "sync <integration>" - pass integration name as first arg
 	if (command === 'sync' && subcommand) {
 		try {
-			const handler = sync.run;
+			const handler = cmds.sync?.run;
+			if (!handler) {
+				throw new Error('Sync handler not found');
+			}
 			const result = withDuration(await handler([subcommand, ...args], rawOptions), startTime);
 			console.log(formatOutput(result, baseOptions.format));
 			process.exit(0);
@@ -167,7 +240,7 @@ async function main(): Promise<void> {
 	}
 
 	// Find the command handler
-	const commandGroup = commands[command];
+	const commandGroup = cmds[command];
 	if (!commandGroup) {
 		console.log(
 			formatError(

@@ -14,7 +14,7 @@ import { CursorBubbleSchema, CursorComposerDataSchema } from './cursor-types';
 // Constants
 // ----------------------------------------------------------------------------
 
-const CURSOR_WORKSPACE_STORAGE_PATH = `${Bun.env.HOME}/Library/Application Support/Cursor/User/workspaceStorage`;
+const CURSOR_WORKSPACE_STORAGE_PATH = `${process.env.HOME}/Library/Application Support/Cursor/User/workspaceStorage`;
 
 // ----------------------------------------------------------------------------
 // Bubble Extraction

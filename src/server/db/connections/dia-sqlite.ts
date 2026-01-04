@@ -6,8 +6,8 @@ import { BrowserNotInstalledError } from '@/server/integrations/browser-history/
 const diaHistoryPath = 'Library/Application Support/Dia/User Data/Default/History';
 
 // Path to Dia's History database (Mac OS Only)
-export const diaDbPath = `${Bun.env.HOME}/${diaHistoryPath}`;
-export const diaDbCopyPath = `${Bun.env.HOME}/${diaHistoryPath}-copy`;
+export const diaDbPath = `${process.env.HOME}/${diaHistoryPath}`;
+export const diaDbCopyPath = `${process.env.HOME}/${diaHistoryPath}-copy`;
 export const connectionUrl = `file:${diaDbCopyPath}`;
 
 export const createDiaConnection = async () => {

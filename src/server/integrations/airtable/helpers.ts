@@ -4,17 +4,16 @@ import {
 	type AirtableExtractSelect,
 } from '@aias/hozo';
 import Airtable from 'airtable';
-import 'dotenv/config';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { uploadMediaToR2 } from '@/server/lib/media';
 import { AirtableAttachmentSchema } from './types';
 
 Airtable.configure({
-	apiKey: Bun.env.AIRTABLE_ACCESS_TOKEN,
+	apiKey: process.env.AIRTABLE_ACCESS_TOKEN,
 });
 
-export const airtableBase = Airtable.base(Bun.env.AIRTABLE_BASE_ID!);
+export const airtableBase = Airtable.base(process.env.AIRTABLE_BASE_ID!);
 
 type AttachmentWithExtract = AirtableAttachmentSelect & {
 	extract: AirtableExtractSelect;
@@ -97,7 +96,7 @@ export async function storeMedia() {
 		},
 		where: {
 			url: {
-				notIlike: `%${Bun.env.ASSETS_DOMAIN}%`,
+				notIlike: `%${process.env.ASSETS_DOMAIN}%`,
 			},
 		},
 	});

@@ -74,7 +74,7 @@ export async function ensureGithubUserExists(
  */
 export async function updatePartialUsers(): Promise<number> {
 	const octokit = new Octokit({
-		auth: Bun.env.GITHUB_TOKEN,
+		auth: process.env.GITHUB_TOKEN,
 	});
 
 	logger.start('Fetching full user information for partial users');

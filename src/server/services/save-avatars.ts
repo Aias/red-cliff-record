@@ -28,7 +28,7 @@ const MAX_RETRIES = 2;
  */
 export async function saveAvatarsToR2(): Promise<number> {
 	logger.start('Saving record avatars to R2 storage');
-	const assetsDomain = Bun.env.ASSETS_DOMAIN!;
+	const assetsDomain = process.env.ASSETS_DOMAIN!;
 
 	// Find records with non-null avatarUrl and isCurated set to true
 	const recordsWithAvatars = await db.query.records.findMany({

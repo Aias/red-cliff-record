@@ -25,7 +25,7 @@ const logger = createIntegrationLogger('twitter', 'sync');
 /**
  * Configuration constants
  */
-const TWITTER_DATA_DIR = `${Bun.env.HOME}/Documents/Red Cliff Record/Twitter Data`;
+const TWITTER_DATA_DIR = `${process.env.HOME}/Documents/Red Cliff Record/Twitter Data`;
 const BOOKMARK_FILE_PREFIX = 'bookmarks-';
 const BOOKMARK_FILE_SUFFIX = '.json';
 const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
