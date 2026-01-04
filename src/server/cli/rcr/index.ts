@@ -168,6 +168,9 @@ Options:
   --offset=N            Offset for pagination
   --type=entity|concept|artifact  Filter by record type
   --source=<integration>         Filter by source integration
+  --created=<range>     Filter by creation date (YYYY-MM-DD)
+                        Formats: "2026-01-03" (exact), "2026-01-01..2026-01-03" (range),
+                                 "..2026-01-03" (before), "2026-01-03.." (after)
   --curated             Filter to curated records only
   --debug               Enable debug output
   --help, -h            Show this help
@@ -176,6 +179,7 @@ Examples:
   rcr records get 123
   rcr records get 123 456 789          # Multiple records in parallel
   rcr records list --type=entity --limit=10
+  rcr records list --created=2026-01-03  # Records created on a specific date
   rcr search "machine learning"
   rcr search similar 456 --limit=5
   rcr links list 123

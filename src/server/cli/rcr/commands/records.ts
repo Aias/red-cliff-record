@@ -9,7 +9,9 @@ import { IntegrationTypeSchema, RecordInsertSchema, RecordTypeSchema } from '@ai
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
+	type DateRange,
 	type ListRecordsInput,
+	DateSchema,
 	DEFAULT_LIMIT,
 	LimitSchema,
 	OffsetSchema,
@@ -20,6 +22,52 @@ import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
+
+/**
+ * Parse CLI date range syntax into DateRange object.
+ * Supports:
+ *   "2026-01-03"           → { from: "2026-01-03", to: "2026-01-03" } (exact)
+ *   "2026-01-01..2026-01-03" → { from: "2026-01-01", to: "2026-01-03" } (range)
+ *   "..2026-01-03"         → { to: "2026-01-03" } (before/until)
+ *   "2026-01-03.."         → { from: "2026-01-03" } (after/since)
+ */
+const DateRangeStringSchema = z.string().transform((val, ctx): DateRange => {
+	if (val.includes('..')) {
+		const [fromPart, toPart] = val.split('..');
+		const from = fromPart?.trim() || undefined;
+		const to = toPart?.trim() || undefined;
+
+		// Validate individual date parts
+		if (from) {
+			const result = DateSchema.safeParse(from);
+			if (!result.success) {
+				ctx.addIssue({ code: 'custom', message: `Invalid 'from' date: ${from}` });
+				return z.NEVER;
+			}
+		}
+		if (to) {
+			const result = DateSchema.safeParse(to);
+			if (!result.success) {
+				ctx.addIssue({ code: 'custom', message: `Invalid 'to' date: ${to}` });
+				return z.NEVER;
+			}
+		}
+		if (!from && !to) {
+			ctx.addIssue({ code: 'custom', message: 'Date range must have at least one bound' });
+			return z.NEVER;
+		}
+
+		return { from, to };
+	}
+
+	// Single date = exact date (from and to are the same)
+	const result = DateSchema.safeParse(val);
+	if (!result.success) {
+		ctx.addIssue({ code: 'custom', message: `Invalid date: ${val}` });
+		return z.NEVER;
+	}
+	return { from: val, to: val };
+});
 
 const caller = createCLICaller();
 
@@ -42,6 +90,7 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
 	embedding: z.boolean().optional(),
 	media: z.boolean().optional(),
 	parent: z.boolean().optional(),
+	created: DateRangeStringSchema.optional(),
 })
 	.strict()
 	.transform(
@@ -59,6 +108,7 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
 				hasMedia: opts.media,
 				hasParent: opts.parent,
 				sources: opts.source ? [opts.source] : undefined,
+				created: opts.created,
 			},
 			limit: opts.limit ?? DEFAULT_LIMIT,
 			offset: opts.offset ?? 0,

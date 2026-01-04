@@ -32,6 +32,20 @@ export const OrderCriteriaSchema = z.object({
 	direction: OrderDirectionSchema.optional().default('desc'),
 });
 
+/**
+ * Date range filter with optional bounds.
+ * - { from: "2026-01-03" } → on or after
+ * - { to: "2026-01-03" } → on or before
+ * - { from: "2026-01-01", to: "2026-01-03" } → range (inclusive)
+ * - { from: "2026-01-03", to: "2026-01-03" } → exact date
+ */
+export const DateRangeSchema = z.object({
+	from: DateSchema.optional(),
+	to: DateSchema.optional(),
+});
+
+export type DateRange = z.infer<typeof DateRangeSchema>;
+
 export const RecordFiltersSchema = z.object({
 	types: z.array(RecordTypeSchema).optional(),
 	title: z.string().nullable().optional(),
@@ -46,6 +60,7 @@ export const RecordFiltersSchema = z.object({
 	hasEmbedding: z.boolean().optional(),
 	hasMedia: z.boolean().optional(),
 	sources: z.array(IntegrationTypeSchema).optional(),
+	created: DateRangeSchema.optional(),
 });
 
 export const LimitSchema = z.number().int().positive();

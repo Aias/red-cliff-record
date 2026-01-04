@@ -19,6 +19,7 @@ export const list = publicProcedure
 				hasEmbedding,
 				hasMedia,
 				sources,
+				created,
 			},
 			limit,
 			offset,
@@ -116,6 +117,17 @@ export const list = publicProcedure
 									isNull: true,
 								}
 							: undefined,
+				recordCreatedAt:
+					created?.from || created?.to
+						? {
+								// from: start of day (inclusive)
+								gte: created.from ? new Date(`${created.from}T00:00:00Z`) : undefined,
+								// to: start of next day (exclusive) to include entire day
+								lt: created.to
+									? new Date(new Date(`${created.to}T00:00:00Z`).getTime() + 24 * 60 * 60 * 1000)
+									: undefined,
+							}
+						: undefined,
 			},
 			limit,
 			offset,
