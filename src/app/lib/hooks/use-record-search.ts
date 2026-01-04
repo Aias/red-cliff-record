@@ -27,12 +27,26 @@ export function useRecordSearch(query: string, options: UseRecordSearchOptions =
 
 	const { data: textResults = [], isFetching: textFetching } = trpc.search.byTextQuery.useQuery(
 		{ query: debouncedQuery, limit: textLimit },
-		{ enabled: shouldSearch }
+		{
+			enabled: shouldSearch,
+			trpc: {
+				context: {
+					skipBatch: true,
+				},
+			},
+		}
 	);
 
 	const { data: vectorResults = [], isFetching: vectorFetching } = trpc.search.byVector.useQuery(
 		{ query: debouncedQuery, limit: vectorLimit },
-		{ enabled: shouldSearch }
+		{
+			enabled: shouldSearch,
+			trpc: {
+				context: {
+					skipBatch: true,
+				},
+			},
+		}
 	);
 
 	// Deduplicate: remove vector results that already appear in text results
