@@ -1,5 +1,9 @@
-import { browsingHistory, browsingHistoryOmitList } from '@aias/hozo';
-import { and, gte, lte } from 'drizzle-orm';
+import {
+	browsingHistory,
+	browsingHistoryOmitList,
+	BrowsingHistoryOmitListInsertSchema,
+} from '@aias/hozo';
+import { and, gte, inArray, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from '../init';
 
@@ -84,9 +88,10 @@ function matchesOmitPattern(url: string, patterns: string[]): boolean {
 	return patterns.some((pattern) => {
 		// Convert SQL LIKE pattern to regex
 		const regexPattern = pattern
+			// Escape regex metacharacters first, then expand LIKE wildcards.
+			.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 			.replace(/%/g, '.*')
-			.replace(/_/g, '.')
-			.replace(/[[\]{}()+?.\\^$|]/g, '\\$&');
+			.replace(/_/g, '.');
 		try {
 			return new RegExp(regexPattern).test(url);
 		} catch {
@@ -104,18 +109,13 @@ interface BrowsingEntry {
 	searchTerms: string | null;
 }
 
-function processBrowsingData(
-	entries: BrowsingEntry[],
-	date: string
-): DailySummary {
+function processBrowsingData(entries: BrowsingEntry[], date: string): DailySummary {
 	if (entries.length === 0) {
 		return createEmptySummary(date);
 	}
 
 	// Sort by view time
-	const sorted = [...entries].sort(
-		(a, b) => a.viewTime.getTime() - b.viewTime.getTime()
-	);
+	const sorted = [...entries].sort((a, b) => a.viewTime.getTime() - b.viewTime.getTime());
 
 	// Add domain to each entry
 	const withDomains = sorted.map((entry) => ({
@@ -312,10 +312,7 @@ export const browsingRouter = createTRPCRouter({
 				})
 				.from(browsingHistory)
 				.where(
-					and(
-						gte(browsingHistory.viewTime, startOfDay),
-						lte(browsingHistory.viewTime, endOfDay)
-					)
+					and(gte(browsingHistory.viewTime, startOfDay), lte(browsingHistory.viewTime, endOfDay))
 				)
 				.orderBy(browsingHistory.viewTime);
 
@@ -328,5 +325,51 @@ export const browsingRouter = createTRPCRouter({
 			});
 
 			return processBrowsingData(filtered, date);
+		}),
+
+	/**
+	 * List all URL patterns in the browsing history omit list
+	 */
+	listOmitPatterns: publicProcedure.query(async ({ ctx: { db } }): Promise<string[]> => {
+		const rows = await db.query.browsingHistoryOmitList.findMany({
+			columns: { pattern: true },
+			orderBy: { pattern: 'asc' },
+		});
+		return rows.map((row) => row.pattern);
+	}),
+
+	/**
+	 * Add or update a pattern in the browsing history omit list
+	 *
+	 * Patterns use SQL LIKE syntax (% for wildcard, _ for single character)
+	 */
+	upsertOmitPattern: publicProcedure
+		.input(BrowsingHistoryOmitListInsertSchema)
+		.mutation(async ({ ctx: { db }, input }) => {
+			const now = new Date();
+			const [row] = await db
+				.insert(browsingHistoryOmitList)
+				.values({ pattern: input.pattern, recordCreatedAt: now, recordUpdatedAt: now })
+				.onConflictDoUpdate({
+					target: browsingHistoryOmitList.pattern,
+					set: { recordUpdatedAt: now },
+				})
+				.returning();
+			return row;
+		}),
+
+	/**
+	 * Delete patterns from the browsing history omit list
+	 */
+	deleteOmitPatterns: publicProcedure
+		.input(z.array(z.string().min(1)))
+		.mutation(async ({ ctx: { db }, input }) => {
+			if (input.length === 0) {
+				return [];
+			}
+			return db
+				.delete(browsingHistoryOmitList)
+				.where(inArray(browsingHistoryOmitList.pattern, input))
+				.returning();
 		}),
 });

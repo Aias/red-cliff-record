@@ -40,3 +40,52 @@ export const daily: CommandHandler = async (args, options) => {
 
 	return success(result);
 };
+
+/**
+ * List all omit patterns
+ * Usage: rcr browsing omit
+ */
+export const omit: CommandHandler = async (_args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
+
+	const result = await caller.browsing.listOmitPatterns();
+
+	return success(result, { count: result.length });
+};
+
+/**
+ * Add a pattern to the omit list
+ * Usage: rcr browsing omit-add <pattern>
+ * Example: rcr browsing omit-add "%example.com%"
+ */
+const omitAdd: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
+
+	const pattern = args[0];
+	if (!pattern) {
+		throw createError('VALIDATION_ERROR', 'Pattern is required (SQL LIKE syntax: % for wildcard)');
+	}
+
+	const result = await caller.browsing.upsertOmitPattern({ pattern });
+
+	return success(result);
+};
+
+/**
+ * Delete patterns from the omit list
+ * Usage: rcr browsing omit-delete <pattern...>
+ * Example: rcr browsing omit-delete "%example.com%" "%test.com%"
+ */
+const omitDelete: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
+
+	if (args.length === 0) {
+		throw createError('VALIDATION_ERROR', 'At least one pattern is required');
+	}
+
+	const result = await caller.browsing.deleteOmitPatterns(args);
+
+	return success(result, { count: result.length });
+};
+
+export { omitAdd as 'omit-add', omitDelete as 'omit-delete' };
