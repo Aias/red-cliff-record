@@ -232,6 +232,30 @@ function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle
 }
 
 /**
+ * Fetches all Readwise documents from API without persisting
+ *
+ * @param debugData - Array to collect raw API data
+ */
+async function fetchReadwiseDataOnly(debugData: unknown[]): Promise<void> {
+	logger.info('Fetching documents from Readwise API');
+	let nextPageCursor: string | null = null;
+	let totalDocuments = 0;
+
+	do {
+		const response = await fetchReadwiseDocuments(
+			nextPageCursor ?? undefined,
+			undefined,
+			debugData
+		);
+		totalDocuments += response.results.length;
+		nextPageCursor = response.nextPageCursor;
+		logger.info(`Retrieved ${response.results.length} documents (total: ${totalDocuments})`);
+	} while (nextPageCursor);
+
+	logger.info(`Fetched ${totalDocuments} documents total`);
+}
+
+/**
  * Synchronizes Readwise documents with the database
  *
  * This function:
@@ -241,12 +265,10 @@ function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle
  * 4. Creates related entities (authors, tags, records)
  *
  * @param integrationRunId - The ID of the current integration run
- * @param debug - If true, writes raw API data to a timestamped JSON file
  * @returns The number of successfully processed documents
  * @throws Error if API requests fail
  */
-async function syncReadwiseDocuments(integrationRunId: number, debug = false): Promise<number> {
-	const debugContext = createDebugContext('readwise', debug, [] as unknown[]);
+async function syncReadwiseDocumentsInternal(integrationRunId: number): Promise<number> {
 	try {
 		logger.start('Starting Readwise documents sync');
 
@@ -256,14 +278,12 @@ async function syncReadwiseDocuments(integrationRunId: number, debug = false): P
 		// Step 2: Fetch all documents
 		logger.info('Fetching documents from Readwise API');
 		const allDocuments: ReadwiseArticle[] = [];
-		const rawDebugData = debugContext.data;
 		let nextPageCursor: string | null = null;
 
 		do {
 			const response = await fetchReadwiseDocuments(
 				nextPageCursor ?? undefined,
-				lastUpdateTime ?? undefined,
-				rawDebugData
+				lastUpdateTime ?? undefined
 			);
 			allDocuments.push(...response.results);
 			nextPageCursor = response.nextPageCursor;
@@ -320,18 +340,38 @@ async function syncReadwiseDocuments(integrationRunId: number, debug = false): P
 	} catch (error) {
 		logger.error('Error syncing Readwise documents', error);
 		throw error;
-	} finally {
-		await debugContext.flush().catch((flushError) => {
-			logger.error('Failed to write debug output for Readwise', flushError);
-		});
 	}
 }
 
 /**
  * Wrapper function that uses runIntegration
+ *
+ * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncReadwiseData(debug = false): Promise<void> {
-	await runIntegration('readwise', (runId) => syncReadwiseDocuments(runId, debug));
+	const debugContext = createDebugContext('readwise', debug, [] as unknown[]);
+	try {
+		if (debug) {
+			// Debug mode: fetch data and output to .temp/ only, skip database writes
+			logger.start('Starting Readwise data fetch (debug mode - no database writes)');
+			if (debugContext.data) {
+				await fetchReadwiseDataOnly(debugContext.data);
+			}
+			logger.complete('Readwise data fetch completed (debug mode)');
+		} else {
+			// Normal mode: full sync with database writes
+			logger.start('Starting Readwise data synchronization');
+			await runIntegration('readwise', (runId) => syncReadwiseDocumentsInternal(runId));
+			logger.complete('Readwise data synchronization completed');
+		}
+	} catch (error) {
+		logger.error('Error syncing Readwise data', error);
+		throw error;
+	} finally {
+		await debugContext.flush().catch((flushError) => {
+			logger.error('Failed to write debug output for Readwise', flushError);
+		});
+	}
 }
 
 export { syncReadwiseData as syncReadwiseDocuments };

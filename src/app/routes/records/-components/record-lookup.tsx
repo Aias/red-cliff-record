@@ -53,32 +53,66 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 
 	const createRecordMutation = useUpsertRecord();
 
-	const { data = [], isFetching } = trpc.search.byTextQuery.useQuery(
+	const { data: textResults = [], isFetching: textFetching } = trpc.search.byTextQuery.useQuery(
 		{ query: debounced, limit: 5 },
 		{ enabled: debounced.length > 0 }
 	);
+
+	const { data: vectorResults = [], isFetching: vectorFetching } = trpc.search.byVector.useQuery(
+		{ query: debounced, limit: 3 },
+		{ enabled: debounced.length > 0 }
+	);
+
+	const hasResults = textResults.length > 0 || vectorResults.length > 0;
+	const isLoading = textFetching || vectorFetching;
 
 	return (
 		<Command shouldFilter={false} loop className="w-full" defaultValue="">
 			<CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
 			<CommandList>
 				<CommandItem value="-" className="hidden" />
-				<CommandGroup heading="Search results">
-					{isFetching && <CommandLoading>Loading results...</CommandLoading>}
-					{data.map((result) => (
-						<CommandItem
-							key={result.id}
-							value={`${result.title ?? 'Untitled'}--${result.id}`}
-							onSelect={() => onSelect(result.id)}
-						>
-							<SearchResultItem result={result} />
-						</CommandItem>
-					))}
-					{!isFetching && data.length === 0 && <CommandItem disabled>No results</CommandItem>}
+
+				{/* Text Search Results */}
+				<CommandGroup heading="Text Search Results">
+					{textFetching ? (
+						<CommandLoading>Loading...</CommandLoading>
+					) : (
+						textResults.map((result) => (
+							<CommandItem
+								key={`text-${result.id}`}
+								value={`${result.title ?? 'Untitled'}--${result.id}--text`}
+								onSelect={() => onSelect(result.id)}
+							>
+								<SearchResultItem result={result} />
+							</CommandItem>
+						))
+					)}
 				</CommandGroup>
+
+				{/* Similar Records (Vector Search) */}
+				<CommandGroup heading="Similar Records">
+					{vectorFetching ? (
+						<CommandLoading>Loading...</CommandLoading>
+					) : (
+						vectorResults.map((result) => (
+							<CommandItem
+								key={`vector-${result.id}`}
+								value={`${result.title ?? 'Untitled'}--${result.id}--vector`}
+								onSelect={() => onSelect(result.id)}
+							>
+								<SearchResultItem result={result} />
+							</CommandItem>
+						))
+					)}
+				</CommandGroup>
+
+				{!isLoading && !hasResults && debounced.length > 0 && (
+					<CommandItem disabled>No results</CommandItem>
+				)}
+
 				<CommandSeparator alwaysRender />
 				<CommandItem
-					disabled={query.length === 0 || isFetching}
+					disabled={query.length === 0 || isLoading}
 					key="create-record"
 					onSelect={() => {
 						createRecordMutation.mutate(

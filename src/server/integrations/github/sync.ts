@@ -20,7 +20,7 @@ const logger = createIntegrationLogger('github', 'sync');
  *
  * Each step is wrapped in the runIntegration utility to track execution.
  *
- * @param debug - If true, writes raw API data to a timestamped JSON file
+ * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  * @returns Promise that resolves when all GitHub data is synced
  * @throws Rethrows any errors from the integration steps
  */
@@ -30,22 +30,33 @@ async function syncGitHubData(debug = false): Promise<void> {
 		commits: [] as unknown[],
 	});
 	try {
-		logger.start('Starting GitHub data synchronization');
+		if (debug) {
+			// Debug mode: fetch data and output to .temp/ only, skip database writes
+			logger.start('Starting GitHub data fetch (debug mode - no database writes)');
+			await syncGitHubStars(-1, debugContext.data?.stars, true);
+			await syncGitHubCommits(-1, debugContext.data?.commits, true);
+			logger.complete('GitHub data fetch completed (debug mode)');
+		} else {
+			// Normal mode: full sync with database writes
+			logger.start('Starting GitHub data synchronization');
 
-		// Step 1: Sync starred repositories
-		await runIntegration('github', (runId) => syncGitHubStars(runId, debugContext.data?.stars));
+			// Step 1: Sync starred repositories
+			await runIntegration('github', (runId) => syncGitHubStars(runId, debugContext.data?.stars));
 
-		// Step 2: Sync commit history
-		await runIntegration('github', (runId) => syncGitHubCommits(runId, debugContext.data?.commits));
+			// Step 2: Sync commit history
+			await runIntegration('github', (runId) =>
+				syncGitHubCommits(runId, debugContext.data?.commits)
+			);
 
-		// Step 3: Update user information
-		await updatePartialUsers();
+			// Step 3: Update user information
+			await updatePartialUsers();
 
-		// Step 4-5: Create records from GitHub entities
-		await createRecordsFromGithubUsers();
-		await createRecordsFromGithubRepositories();
+			// Step 4-5: Create records from GitHub entities
+			await createRecordsFromGithubUsers();
+			await createRecordsFromGithubRepositories();
 
-		logger.complete('GitHub data synchronization completed');
+			logger.complete('GitHub data synchronization completed');
+		}
 	} catch (error) {
 		logger.error('Error syncing GitHub data', error);
 		throw error;

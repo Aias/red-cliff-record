@@ -17,7 +17,22 @@ rcr sync github
 rcr sync daily
 ```
 
-Flags are strict (unknown options error). Use `--debug` for verbose sync output and `--format=table` for human-readable output.
+Flags are strict (unknown options error). Use `--format=table` for human-readable output.
+
+### Debug Mode
+
+Use `--debug` to test API connectivity without writing to the database:
+
+```bash
+rcr sync github --debug
+```
+
+Debug mode:
+
+- Fetches data from the API as normal
+- Skips all database writes
+- Outputs raw API responses to `.temp/<integration>-<timestamp>.json`
+- Useful for testing credentials, viewing raw data, and debugging API issues
 
 ## GitHub Integration
 
@@ -270,34 +285,28 @@ rcr sync adobe
 
 ## Twitter/X Integration
 
-Captures Twitter bookmarks (manual process).
+Syncs Twitter bookmarks using the native GraphQL API with cookie-based authentication.
 
 ### Setup
 
-1. No API key required (uses browser console)
-2. Manual capture process due to API limitations
+1. Log into Twitter/X in your browser
+2. Open DevTools → Application → Cookies → x.com
+3. Copy the `auth_token` cookie value to `.env` as `TWITTER_AUTH_TOKEN`
+4. Copy the `ct0` cookie value to `.env` as `TWITTER_CT0`
 
-### Capture Process
+Note: These tokens expire periodically and will need to be refreshed when sync fails with auth errors.
 
-1. Open Twitter/X in your browser
-2. Open browser developer console (F12)
-3. Copy and run the script from `src/server/integrations/twitter/bookmarks.js`
-4. Navigate to your bookmarks
-5. Scroll to the bottom of the page (or until you see bookmarks from the last time you ran the script)
-6. Save the output JSON to `/Red Cliff Record/twitter-bookmarks.json` (or wherever you'd like, but make sure to update the path in the sync command)
-7. Import using the sync command
+### What Gets Synced
 
-### What Gets Captured
-
-- Bookmarked tweets
-- Tweet content
-- Author information
-- Media URLs
+- All bookmarked tweets
+- Tweet content and metadata
+- Author information (username, display name, avatar)
+- Media attachments (images, videos)
+- Quoted tweets
 
 ### Sync Command
 
 ```bash
-# After manual capture
 rcr sync twitter
 ```
 
@@ -309,7 +318,7 @@ To sync all configured integrations at once:
 rcr sync daily
 ```
 
-This runs: browsing, feedbin, raindrop, readwise, github, airtable. Manually updated integrations (Twitter and Adobe) are not run by this command.
+This runs: browsing, feedbin, raindrop, readwise, github, airtable, twitter, embeddings. Adobe is excluded because it's rarely updated.
 
 ## Rate Limits and Best Practices
 
@@ -331,11 +340,17 @@ For production use, consider setting up a cron job:
 
 ## Debugging Integration Issues
 
-Enable debug logging:
+### Debug Mode
+
+Use `--debug` to fetch data without writing to the database:
 
 ```bash
 rcr sync github --debug
 ```
+
+This outputs raw API responses to `.temp/github-<timestamp>.json` for inspection.
+
+### Database Inspection
 
 Check integration-specific tables in the database:
 
