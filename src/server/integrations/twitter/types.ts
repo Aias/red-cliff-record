@@ -15,16 +15,17 @@ export const UserUrlSchema = z.object({
 // User Schemas
 // ===============================
 
-export const UserCoreSchema = z.object({
+export const UserLegacySchema = z.object({
+	// Core user identity fields (required)
 	created_at: z.string(),
 	name: z.string(),
 	screen_name: z.string(),
-});
-
-export const UserLegacySchema = z.object({
+	// Profile fields
 	description: z.string().optional(),
 	profile_banner_url: z.string().optional(),
+	profile_image_url_https: z.string().optional(),
 	url: z.string().optional(),
+	location: z.string().optional(),
 	entities: z
 		.object({
 			url: z
@@ -64,40 +65,14 @@ export const UserSchema = z.object({
 	__typename: z.string(),
 	id: z.string(),
 	rest_id: z.string(),
-	core: UserCoreSchema,
 	legacy: UserLegacySchema,
-	location: z
-		.object({
-			location: z.string(),
-		})
-		.optional(),
-	avatar: z
-		.object({
-			image_url: z.string(),
-		})
-		.optional(),
 	// Additional fields that may be present
-	affiliates_highlighted_label: z.any().optional(),
-	dm_permissions: z
-		.object({
-			can_dm: z.boolean(),
-		})
-		.optional(),
+	affiliates_highlighted_label: z.unknown().optional(),
+	business_account: z.unknown().optional(),
 	has_graduated_access: z.boolean().optional(),
 	is_blue_verified: z.boolean().optional(),
-	media_permissions: z
-		.object({
-			can_media_tag: z.boolean(),
-		})
-		.optional(),
-	parody_commentary_fan_label: z.string().optional(),
 	profile_image_shape: z.string().optional(),
-	professional: z.any().optional(),
-	privacy: z.any().optional(),
-	relationship_perspectives: z.any().optional(),
 	super_follow_eligible: z.boolean().optional(),
-	tipjar_settings: z.any().optional(),
-	verification: z.any().optional(),
 });
 
 // ===============================
@@ -264,6 +239,8 @@ export const TweetWithVisibilityResultsSchema = z.object({
 
 export const TimelineCursorSchema = z.object({
 	__typename: z.literal('TimelineTimelineCursor'),
+	cursorType: z.string().optional(),
+	value: z.string().optional(),
 });
 
 export const TweetTombstoneSchema = z.object({
@@ -321,7 +298,6 @@ export const TwitterBookmarksArraySchema = z.array(TwitterBookmarkResponseSchema
 // ===============================
 
 export type UserUrl = z.infer<typeof UserUrlSchema>;
-export type UserCore = z.infer<typeof UserCoreSchema>;
 export type UserLegacy = z.infer<typeof UserLegacySchema>;
 export type User = z.infer<typeof UserSchema>;
 
@@ -344,3 +320,115 @@ export type TwitterBookmark = z.infer<typeof TwitterBookmarkSchema>;
 export type Instruction = z.infer<typeof InstructionSchema>;
 export type TwitterBookmarkResponse = z.infer<typeof TwitterBookmarkResponseSchema>;
 export type TwitterBookmarksArray = z.infer<typeof TwitterBookmarksArraySchema>;
+
+// ===============================
+// Raw API Response Schema
+// ===============================
+
+/**
+ * Schema for the raw GraphQL API response from Twitter's Bookmarks endpoint.
+ * This matches the actual API response before any transformation.
+ */
+const RawBookmarkEntryContentSchema = z.object({
+	__typename: z.string(),
+	cursorType: z.string().optional(),
+	value: z.string().optional(),
+	entryType: z.string().optional(),
+	itemContent: z
+		.object({
+			itemType: z.string().optional(),
+			__typename: z.string().optional(),
+			tweet_results: z
+				.object({
+					result: z.unknown(),
+				})
+				.optional(),
+		})
+		.optional(),
+});
+
+const RawBookmarkEntrySchema = z.object({
+	entryId: z.string().optional(),
+	sortIndex: z.string().optional(),
+	content: RawBookmarkEntryContentSchema,
+});
+
+const RawBookmarkInstructionSchema = z.object({
+	type: z.string().optional(),
+	entries: z.array(RawBookmarkEntrySchema).optional(),
+});
+
+export const RawBookmarksApiResponseSchema = z.object({
+	data: z
+		.object({
+			bookmark_timeline_v2: z
+				.object({
+					timeline: z
+						.object({
+							instructions: z.array(RawBookmarkInstructionSchema).optional(),
+						})
+						.optional(),
+				})
+				.optional(),
+		})
+		.optional(),
+	errors: z
+		.array(
+			z.object({
+				message: z.string(),
+			})
+		)
+		.optional(),
+});
+
+export type RawBookmarksApiResponse = z.infer<typeof RawBookmarksApiResponseSchema>;
+export type RawBookmarkEntry = z.infer<typeof RawBookmarkEntrySchema>;
+
+// ===============================
+// Type Guards
+// ===============================
+
+/** Type guard to check if a TimelineItem is a Tweet */
+export function isTweet(item: TimelineItem): item is Tweet {
+	return item.__typename === 'Tweet';
+}
+
+/** Type guard to check if a TimelineItem is a TweetWithVisibilityResults */
+export function isTweetWithVisibilityResults(
+	item: TimelineItem
+): item is TweetWithVisibilityResults {
+	return item.__typename === 'TweetWithVisibilityResults';
+}
+
+/** Type guard to check if a TimelineItem is a TimelineCursor */
+export function isTimelineCursor(item: TimelineItem): item is TimelineCursor {
+	return item.__typename === 'TimelineTimelineCursor';
+}
+
+/** Type guard to check if a TimelineItem is a TweetTombstone */
+export function isTweetTombstone(item: TimelineItem): item is TweetTombstone {
+	return item.__typename === 'TweetTombstone';
+}
+
+/**
+ * Extracts the tweet ID from a TimelineItem if it's a tweet type.
+ * Returns undefined for cursors and tombstones.
+ */
+export function extractTweetId(item: TimelineItem): string | undefined {
+	if (isTweet(item)) {
+		return item.rest_id;
+	}
+	if (isTweetWithVisibilityResults(item)) {
+		return item.tweet.rest_id;
+	}
+	return undefined;
+}
+
+/**
+ * Safely parses an unknown value as a TimelineItem.
+ * Returns undefined if parsing fails.
+ */
+export function parseTimelineItem(value: unknown): TimelineItem | undefined {
+	const result = TimelineItemSchema.safeParse(value);
+	return result.success ? result.data : undefined;
+}

@@ -8,7 +8,14 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { type TwitterCredentials, getCredentials } from './auth';
 import { buildBookmarksFeatures } from './features';
-import type { TimelineItem, TwitterBookmarkResponse, TwitterBookmarksArray } from './types';
+import {
+	type RawBookmarksApiResponse,
+	RawBookmarksApiResponseSchema,
+	TimelineItemSchema,
+	type TwitterBookmarkResponse,
+	type TwitterBookmarksArray,
+	extractTweetId,
+} from './types';
 import { createIntegrationLogger } from '../common/logging';
 
 const logger = createIntegrationLogger('twitter', 'client');
@@ -145,35 +152,19 @@ export class TwitterClient {
 					};
 				}
 
-				const data = (await response.json()) as {
-					data?: {
-						bookmark_timeline_v2?: {
-							timeline?: {
-								instructions?: Array<{
-									type?: string;
-									entries?: Array<{
-										entryId?: string;
-										sortIndex?: string;
-										content?: {
-											__typename?: string;
-											cursorType?: string;
-											value?: string;
-											entryType?: string;
-											itemContent?: {
-												itemType?: string;
-												__typename?: string;
-												tweet_results?: {
-													result?: unknown;
-												};
-											};
-										};
-									}>;
-								}>;
-							};
-						};
+				const rawJson: unknown = await response.json();
+				const parseResult = RawBookmarksApiResponseSchema.safeParse(rawJson);
+
+				if (!parseResult.success) {
+					logger.warn(`Failed to parse API response: ${parseResult.error.message}`);
+					return {
+						success: false,
+						error: `Invalid API response format: ${parseResult.error.message}`,
+						is404: false,
 					};
-					errors?: Array<{ message: string }>;
-				};
+				}
+
+				const data: RawBookmarksApiResponse = parseResult.data;
 
 				if (data.errors && data.errors.length > 0) {
 					const errorMsg = data.errors.map((e) => e.message).join(', ');
@@ -206,23 +197,49 @@ export class TwitterClient {
 								timeline: {
 									instructions: instructions.map((inst) => ({
 										type: inst.type ?? 'TimelineAddEntries',
-										entries: (inst.entries ?? []).map((entry) => ({
-											entryId: entry.entryId,
-											sortIndex: entry.sortIndex,
-											content: {
-												__typename: entry.content?.__typename ?? 'TimelineTimelineItem',
-												entryType: entry.content?.entryType,
-												itemContent: entry.content?.itemContent
+										entries: (inst.entries ?? []).map((entry) => {
+											const itemContent = entry.content?.itemContent;
+											const rawResult = itemContent?.tweet_results?.result;
+
+											// Parse the raw result through TimelineItemSchema for type safety
+											const parsedResult = rawResult
+												? TimelineItemSchema.safeParse(rawResult)
+												: undefined;
+
+											// Log parse failures for visibility into schema drift
+											if (rawResult && parsedResult && !parsedResult.success) {
+												const typename =
+													typeof rawResult === 'object' &&
+													rawResult !== null &&
+													'__typename' in rawResult
+														? String(rawResult.__typename)
+														: 'unknown';
+												logger.warn(
+													`Failed to parse tweet result (${typename}): ${parsedResult.error.message}`
+												);
+											}
+
+											// Only include itemContent if we successfully parsed tweet_results
+											// This matches the type expectation that tweet_results is required when itemContent exists
+											const validItemContent =
+												itemContent && parsedResult?.success
 													? {
-															tweet_results: entry.content.itemContent.tweet_results as {
-																result: TimelineItem;
-															},
-															itemType: entry.content.itemContent.itemType,
-															__typename: entry.content.itemContent.__typename,
+															tweet_results: { result: parsedResult.data },
+															itemType: itemContent.itemType,
+															__typename: itemContent.__typename,
 														}
-													: undefined,
-											},
-										})),
+													: undefined;
+
+											return {
+												entryId: entry.entryId,
+												sortIndex: entry.sortIndex,
+												content: {
+													__typename: entry.content?.__typename ?? 'TimelineTimelineItem',
+													entryType: entry.content?.entryType,
+													itemContent: validItemContent,
+												},
+											};
+										}),
 									})),
 								},
 							},
@@ -251,12 +268,10 @@ export class TwitterClient {
 		for (const instruction of response.data.bookmark_timeline_v2.timeline.instructions) {
 			for (const entry of instruction.entries ?? []) {
 				const result = entry.content?.itemContent?.tweet_results?.result;
-				if (result && 'rest_id' in result) {
-					ids.push(result.rest_id as string);
-				} else if (result && 'tweet' in result && result.tweet) {
-					const tweet = result.tweet as { rest_id?: string };
-					if (tweet.rest_id) {
-						ids.push(tweet.rest_id);
+				if (result) {
+					const id = extractTweetId(result);
+					if (id) {
+						ids.push(id);
 					}
 				}
 			}

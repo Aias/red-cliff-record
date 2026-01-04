@@ -2,11 +2,18 @@ import type { TwitterMediaInsert, TwitterTweetInsert, TwitterUserInsert } from '
 import type { Media, TweetData, User } from './types';
 
 export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRunId'> => {
-	const { rest_id, legacy, core, location, avatar } = user;
-	const { description, entities, profile_banner_url, url } = legacy;
-
-	// User creation date is now in core, not legacy
-	const { created_at, name, screen_name } = core;
+	const { rest_id, legacy } = user;
+	const {
+		created_at,
+		name,
+		screen_name,
+		description,
+		entities,
+		profile_banner_url,
+		profile_image_url_https,
+		location,
+		url,
+	} = legacy;
 
 	// First try entities.url.urls then fallback to entities.description.urls
 	let userExternalLinkEntry = entities?.url?.urls?.[0];
@@ -26,8 +33,8 @@ export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRun
 		description,
 		displayName: name,
 		username: screen_name,
-		location: location?.location || null, // Extract location string from location object
-		profileImageUrl: avatar?.image_url || null, // Profile image is now in avatar object
+		location: location ?? null,
+		profileImageUrl: profile_image_url_https ?? null,
 		profileBannerUrl: profile_banner_url,
 		url: url,
 		externalUrl: userExternalLinkEntry?.expanded_url,
