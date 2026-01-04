@@ -211,6 +211,7 @@ async function runDailySync(debug: boolean) {
 		'readwise',
 		'github',
 		'airtable',
+		'twitter',
 		'embeddings',
 	];
 

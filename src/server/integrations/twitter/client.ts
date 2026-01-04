@@ -244,17 +244,40 @@ export class TwitterClient {
 	}
 
 	/**
+	 * Extracts tweet IDs from a bookmark response page.
+	 */
+	private extractTweetIdsFromPage(response: TwitterBookmarkResponse['response']): string[] {
+		const ids: string[] = [];
+		for (const instruction of response.data.bookmark_timeline_v2.timeline.instructions) {
+			for (const entry of instruction.entries ?? []) {
+				const result = entry.content?.itemContent?.tweet_results?.result;
+				if (result && 'rest_id' in result) {
+					ids.push(result.rest_id as string);
+				} else if (result && 'tweet' in result && result.tweet) {
+					const tweet = result.tweet as { rest_id?: string };
+					if (tweet.rest_id) {
+						ids.push(tweet.rest_id);
+					}
+				}
+			}
+		}
+		return ids;
+	}
+
+	/**
 	 * Fetches all bookmarks with pagination.
 	 *
 	 * @param options.maxPages - Maximum number of pages to fetch (default: unlimited)
 	 * @param options.pageSize - Number of items per page (default: 20)
+	 * @param options.knownTweetIds - Set of tweet IDs already in database; stops when encountered
 	 * @returns Array of bookmark responses in the format expected by sync.ts
 	 */
 	async fetchAllBookmarks(options?: {
 		maxPages?: number;
 		pageSize?: number;
+		knownTweetIds?: Set<string>;
 	}): Promise<TwitterBookmarksArray> {
-		const { maxPages, pageSize = 20 } = options ?? {};
+		const { maxPages, pageSize = 20, knownTweetIds } = options ?? {};
 		const responses: TwitterBookmarksArray = [];
 		let cursor: string | undefined;
 		let pagesFetched = 0;
@@ -282,6 +305,16 @@ export class TwitterClient {
 				timestamp: new Date().toISOString(),
 				response: result.response,
 			});
+
+			// Check if we've hit known tweets (incremental sync)
+			if (knownTweetIds && knownTweetIds.size > 0) {
+				const pageIds = this.extractTweetIdsFromPage(result.response);
+				const foundKnown = pageIds.some((id) => knownTweetIds.has(id));
+				if (foundKnown) {
+					logger.info(`Found known tweet on page ${pagesFetched}, stopping pagination`);
+					break;
+				}
+			}
 
 			// Check stopping conditions
 			if (!result.nextCursor) {

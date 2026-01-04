@@ -24,13 +24,28 @@ const logger = createIntegrationLogger('twitter', 'sync');
 const FILTERED_TWEET_TYPES = ['TimelineTimelineCursor', 'TweetTombstone'];
 
 /**
- * Fetches bookmarks from Twitter API
+ * Gets recent tweet IDs from the database for incremental sync.
+ * Only fetches the most recent N tweets (by database insertion order) to cap memory usage.
+ * Since bookmarks are returned newest-first, we only need recent IDs to detect overlap.
+ */
+async function getRecentTweetIds(limit = 200): Promise<Set<string>> {
+	const recentTweets = await db.query.twitterTweets.findMany({
+		columns: { id: true },
+		orderBy: { recordCreatedAt: 'desc' },
+		limit,
+	});
+	return new Set(recentTweets.map((t) => t.id));
+}
+
+/**
+ * Fetches bookmarks from Twitter API with incremental sync support.
  *
+ * @param knownTweetIds - Set of tweet IDs already in database; stops pagination when encountered
  * @returns Array of bookmark responses from the API
  */
-async function fetchBookmarksFromApi(): Promise<TwitterBookmarksArray> {
+async function fetchBookmarksFromApi(knownTweetIds?: Set<string>): Promise<TwitterBookmarksArray> {
 	const client = createTwitterClient({ timeoutMs: 30000 });
-	return client.fetchAllBookmarks();
+	return client.fetchAllBookmarks({ knownTweetIds });
 }
 
 /**
@@ -53,10 +68,14 @@ async function syncTwitterBookmarks(
 	collectDebugData?: unknown[]
 ): Promise<number> {
 	try {
-		// Step 1: Fetch bookmarks from API
-		const bookmarkResponses = await fetchBookmarksFromApi();
+		// Step 1: Get recent tweet IDs for incremental sync (capped at 200 for efficiency)
+		const recentTweetIds = await getRecentTweetIds();
+		logger.info(`Loaded ${recentTweetIds.size} recent tweet IDs for incremental sync`);
+
+		// Step 2: Fetch bookmarks from API (stops when it hits known tweets)
+		const bookmarkResponses = await fetchBookmarksFromApi(recentTweetIds);
 		if (bookmarkResponses.length === 0) {
-			logger.info('No Twitter bookmarks found');
+			logger.info('No new Twitter bookmarks found');
 			return 0;
 		}
 
@@ -433,7 +452,10 @@ async function syncTwitterData(debug = false): Promise<void> {
 		if (debug) {
 			// Debug mode: fetch data and output to .temp/ only, skip database writes
 			logger.start('Starting Twitter data fetch (debug mode - no database writes)');
-			const bookmarkResponses = await fetchBookmarksFromApi();
+			// Still use incremental sync in debug mode to avoid fetching all pages
+			const recentTweetIds = await getRecentTweetIds();
+			logger.info(`Loaded ${recentTweetIds.size} recent tweet IDs for incremental sync`);
+			const bookmarkResponses = await fetchBookmarksFromApi(recentTweetIds);
 			debugContext.data?.push(...bookmarkResponses);
 			logger.complete(`Fetched ${bookmarkResponses.length} pages of bookmarks (debug mode)`);
 		} else {

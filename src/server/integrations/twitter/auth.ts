@@ -17,8 +17,8 @@ export interface TwitterCredentials {
  * @throws Error if required environment variables are missing
  */
 export function getCredentials(): TwitterCredentials {
-	const authToken = Bun.env.TWITTER_AUTH_TOKEN;
-	const ct0 = Bun.env.TWITTER_CT0;
+	const authToken = process.env.TWITTER_AUTH_TOKEN;
+	const ct0 = process.env.TWITTER_CT0;
 
 	if (!authToken) {
 		throw new Error(

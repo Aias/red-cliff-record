@@ -360,7 +360,9 @@ async function syncReadwiseData(debug = false): Promise<void> {
 			logger.complete('Readwise data fetch completed (debug mode)');
 		} else {
 			// Normal mode: full sync with database writes
+			logger.start('Starting Readwise data synchronization');
 			await runIntegration('readwise', (runId) => syncReadwiseDocumentsInternal(runId));
+			logger.complete('Readwise data synchronization completed');
 		}
 	} catch (error) {
 		logger.error('Error syncing Readwise data', error);
