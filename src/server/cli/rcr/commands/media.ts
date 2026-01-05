@@ -1,0 +1,132 @@
+/**
+ * Media commands for the CLI
+ *
+ * These are thin wrappers around tRPC procedures,
+ * reusing all query logic from the API routers.
+ */
+
+import { MediaType } from '@aias/hozo';
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+import { LimitSchema, OffsetSchema } from '@/shared/types';
+import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
+import { createCLICaller } from '../lib/caller';
+import { createError } from '../lib/errors';
+import { success } from '../lib/output';
+import type { CommandHandler } from '../lib/types';
+
+const caller = createCLICaller();
+
+// Media-specific order fields (must match router)
+const MediaOrderByFieldSchema = z.enum(['recordCreatedAt', 'recordUpdatedAt', 'id']);
+
+/**
+ * CLI options schema for listing media
+ */
+const MediaListOptionsSchema = BaseOptionsSchema.extend({
+	limit: LimitSchema.optional(),
+	offset: OffsetSchema.optional(),
+	type: MediaType.optional(),
+	'alt-text': z.boolean().optional(),
+	record: z.coerce.number().positive().int().optional(),
+	order: MediaOrderByFieldSchema.optional(),
+	direction: z.enum(['asc', 'desc']).optional(),
+}).strict();
+
+const MediaGetOptionsSchema = BaseOptionsSchema.extend({
+	'with-record': z.boolean().optional(),
+}).strict();
+
+/**
+ * Get media item(s) by ID
+ * Usage: rcr media get <id...> [--with-record]
+ */
+export const get: CommandHandler = async (args, options) => {
+	const parsedOptions = parseOptions(MediaGetOptionsSchema, options);
+	const ids = parseIds(args);
+	const includeRecord = parsedOptions['with-record'] ?? false;
+
+	if (ids.length === 0) {
+		throw createError('VALIDATION_ERROR', 'At least one ID is required');
+	}
+
+	const results = await Promise.all(
+		ids.map(async (id) => {
+			try {
+				return await caller.media.get({ id, includeRecord });
+			} catch (e) {
+				if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
+					return { id, error: 'NOT_FOUND' as const };
+				}
+				throw e;
+			}
+		})
+	);
+
+	if (ids.length === 1) {
+		const result = results[0];
+		if (result && 'error' in result) {
+			throw createError('NOT_FOUND', `Media ${ids[0]} not found`);
+		}
+		return success(result);
+	}
+
+	return success(results, { count: results.length });
+};
+
+/**
+ * List media with filters
+ * Usage: rcr media list [--type=image] [--alt-text=false] [--record=123] [--order=recordCreatedAt] [--direction=desc] [--limit=50] [--offset=0]
+ */
+export const list: CommandHandler = async (_args, options) => {
+	const parsedOptions = parseOptions(MediaListOptionsSchema, options);
+
+	const input = {
+		type: parsedOptions.type,
+		hasAltText: parsedOptions['alt-text'],
+		recordId: parsedOptions.record,
+		limit: parsedOptions.limit ?? 50,
+		offset: parsedOptions.offset ?? 0,
+		orderBy: parsedOptions.order
+			? [{ field: parsedOptions.order, direction: parsedOptions.direction ?? 'desc' }]
+			: undefined,
+	};
+
+	const results = await caller.media.list(input);
+	return success(results, {
+		count: results.length,
+		limit: input.limit,
+		offset: input.offset,
+	});
+};
+
+/**
+ * Schema for media update input
+ */
+const MediaUpdateSchema = z.object({
+	altText: z.string().nullable().optional(),
+});
+
+/**
+ * Update media metadata
+ * Usage: rcr media update <id> '<json>'
+ * Example: rcr media update 123 '{"altText": "A photo of a sunset"}'
+ */
+export const update: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
+	const id = parseId(args);
+	const input = await parseJsonInput(MediaUpdateSchema, args.slice(1));
+
+	try {
+		const result = await caller.media.update({ id, ...input });
+		return success(result);
+	} catch (e) {
+		if (e instanceof TRPCError) {
+			if (e.code === 'NOT_FOUND') {
+				throw createError('NOT_FOUND', `Media ${id} not found`);
+			}
+			throw createError('VALIDATION_ERROR', e.message);
+		}
+		throw e;
+	}
+};

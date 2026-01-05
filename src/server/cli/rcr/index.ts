@@ -96,17 +96,18 @@ let commands: Record<string, Record<string, CommandHandler>> | null = null;
 async function loadCommands() {
 	if (commands) return commands;
 
-	const [browsing, db, github, links, records, search, sync] = await Promise.all([
+	const [browsing, db, github, links, media, records, search, sync] = await Promise.all([
 		import('./commands/browsing'),
 		import('./commands/db'),
 		import('./commands/github'),
 		import('./commands/links'),
+		import('./commands/media'),
 		import('./commands/records'),
 		import('./commands/search'),
 		import('./commands/sync'),
 	]);
 
-	commands = { browsing, db, github, links, records, search, sync };
+	commands = { browsing, db, github, links, media, records, search, sync };
 	return commands;
 }
 
@@ -134,6 +135,10 @@ Commands:
   records merge <src> <target>  Merge source record into target
   records embed <id...>         Generate embedding(s) for record(s)
   records tree <id...>          Get hierarchical family tree(s)
+
+  media get <id...> [--with-record]  Fetch media item(s) by ID
+  media list [filters]              List media with optional filters
+  media update <id> <json>          Update media metadata (alt text, etc.)
 
   search <query>                Semantic search (default)
   search semantic <query>       Semantic vector search
@@ -176,6 +181,9 @@ Examples:
   rcr records get 123
   rcr records get 123 456 789          # Multiple records in parallel
   rcr records list --type=entity --limit=10
+  rcr media list --type=image --alt-text=false --limit=10
+  rcr media get 7724                   # Get media item with URL
+  rcr media update 7724 '{"altText": "A sunset over mountains"}'
   rcr search "machine learning"
   rcr search similar 456 --limit=5
   rcr links list 123

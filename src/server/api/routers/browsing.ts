@@ -1,9 +1,5 @@
-import {
-	browsingHistory,
-	browsingHistoryOmitList,
-	BrowsingHistoryOmitListInsertSchema,
-} from '@aias/hozo';
-import { and, gte, inArray, lte } from 'drizzle-orm';
+import { browsingHistoryOmitList, BrowsingHistoryOmitListInsertSchema } from '@aias/hozo';
+import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { DateSchema } from '@/shared/types';
 import { createTRPCRouter, publicProcedure } from '../init';
@@ -294,26 +290,26 @@ export const browsingRouter = createTRPCRouter({
 			const endOfDay = new Date(`${date}T23:59:59.999`);
 
 			// Fetch omit patterns
-			const omitPatterns = await db
-				.select({ pattern: browsingHistoryOmitList.pattern })
-				.from(browsingHistoryOmitList);
+			const omitPatterns = await db.query.browsingHistoryOmitList.findMany({
+				columns: { pattern: true },
+			});
 			const patterns = omitPatterns.map((p) => p.pattern);
 
 			// Fetch browsing history for the day
-			const entries = await db
-				.select({
-					id: browsingHistory.id,
-					viewTime: browsingHistory.viewTime,
-					url: browsingHistory.url,
-					pageTitle: browsingHistory.pageTitle,
-					viewDuration: browsingHistory.viewDuration,
-					searchTerms: browsingHistory.searchTerms,
-				})
-				.from(browsingHistory)
-				.where(
-					and(gte(browsingHistory.viewTime, startOfDay), lte(browsingHistory.viewTime, endOfDay))
-				)
-				.orderBy(browsingHistory.viewTime);
+			const entries = await db.query.browsingHistory.findMany({
+				columns: {
+					id: true,
+					viewTime: true,
+					url: true,
+					pageTitle: true,
+					viewDuration: true,
+					searchTerms: true,
+				},
+				where: {
+					viewTime: { gte: startOfDay, lte: endOfDay },
+				},
+				orderBy: (t, { asc }) => asc(t.viewTime),
+			});
 
 			// Filter entries based on omit patterns and localhost
 			const filtered = entries.filter((entry) => {

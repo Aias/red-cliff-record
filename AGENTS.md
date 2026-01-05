@@ -68,7 +68,8 @@ Never attempt to start the development server or build the application. The user
 - Install globally with `bun link` (from repo root) or run directly with `bun ./src/server/cli/rcr/index.ts <command>`
 - Never use `bun run cli` - there is no such npm script
 - JSON-first output; same tRPC procedures as the app
-- Commands: `rcr records`, `rcr search`, `rcr links`, `rcr sync`
+- Commands: `rcr records`, `rcr media`, `rcr search`, `rcr links`, `rcr sync`
+- Media commands: `rcr media list`, `rcr media get`, `rcr media update`
 - Sync commands: `rcr sync daily`, `rcr sync github`, `rcr sync airtable`, `rcr sync raindrop`, `rcr sync readwise`, `rcr sync feedbin`, `rcr sync browsing`, `rcr sync twitter`, `rcr sync agents`, `rcr sync adobe`, `rcr sync avatars`, `rcr sync embeddings`
 - Use `--debug` to fetch data without writing to the database (outputs to `.temp/`)
 - Run `rcr --help` for full usage
@@ -146,7 +147,7 @@ Never attempt to start the development server or build the application. The user
 **Database Operations:**
 
 - Use Drizzle ORM exclusively
-- Prefer relational queries: `db.query.<table>` over `db.select().from(<table>)`
+- **Always use Drizzle v2 query syntax** (`db.query.<table>.findMany/findFirst`) for reads instead of `db.select().from(<table>)`. The query API provides cleaner object-style `where` clauses, built-in relation loading via `with`, and `columns` selection
 - Avoid raw SQL - use Drizzle's query builder APIs instead of `sql` template literals
 - Use proper mutation methods: `db.insert()`, `db.update()`, `db.delete()`
 - Always handle conflicts gracefully on insertions with `.onConflictDoUpdate()`
@@ -272,3 +273,35 @@ Never attempt to start the development server or build the application. The user
 - Canonical operations live in `scripts/deploy/README.md` and `src/server/db/db-manager.sh`.
 - Use `bun run db:*` scripts for migrations and studio.
 - Never run destructive operations or migrations without explicit user permission.
+
+## Agent Workflows
+
+### Media Alt Text Updates
+
+The `rcr media` commands support CLI-based alt text updates for images. Workflow for looped agents:
+
+1. **List images needing alt text** (ordered by most recent):
+
+   ```bash
+   rcr media list --type=image --alt-text=false --limit=100 --order=recordCreatedAt
+   ```
+
+2. **Get media item with parent record context**:
+
+   ```bash
+   rcr media get <id> --with-record
+   ```
+
+   Returns media item plus `record: { id, title, type, mediaCaption, url }` for context.
+
+3. **Update alt text**:
+
+   ```bash
+   rcr media update <id> '{"altText": "Description of the image"}'
+   ```
+
+**Parallel processing**: To avoid overlap when running multiple agents, pre-assign media IDs to each agent. Parent agent fetches a batch (e.g., 100 IDs), splits into chunks, and each subagent processes only its assigned IDs.
+
+**Schema**: The `media` table includes `altText` (nullable text), `url`, `type`, `width`, `height`, and `recordId` (FK to parent record).
+
+**Stats**: ~4,090 images total, accessible via `rcr media list --type=image`.

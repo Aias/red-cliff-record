@@ -2,15 +2,16 @@ import {
 	airtableAttachments,
 	lightroomImages,
 	media,
+	MediaType,
 	raindropImages,
 	twitterMedia,
 } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
-import { inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getMediaInsertData, uploadClientFileToR2 } from '@/server/lib/media';
+import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
 import { createTRPCRouter, publicProcedure } from '../init';
-import { IdSchema } from '@/shared/types';
 
 // Schema for file upload input
 const MediaCreateInputSchema = z.object({
@@ -20,7 +21,118 @@ const MediaCreateInputSchema = z.object({
 	fileType: z.string(), // e.g., 'image/png'
 });
 
+// Media-specific order fields
+const MediaOrderByFieldSchema = z.enum(['recordCreatedAt', 'recordUpdatedAt', 'id']);
+const MediaOrderCriteriaSchema = z.object({
+	field: MediaOrderByFieldSchema,
+	direction: z.enum(['asc', 'desc']).optional().default('desc'),
+});
+
+// Schema for listing media with filters
+const MediaListInputSchema = z.object({
+	type: MediaType.optional(),
+	hasAltText: z.boolean().optional(),
+	recordId: IdSchema.optional(),
+	limit: LimitSchema.optional().default(50),
+	offset: OffsetSchema.optional().default(0),
+	orderBy: z
+		.array(MediaOrderCriteriaSchema)
+		.optional()
+		.default([{ field: 'recordCreatedAt', direction: 'desc' }]),
+});
+
+// Schema for updating media
+const MediaUpdateInputSchema = z.object({
+	id: IdSchema,
+	altText: z.string().nullable().optional(),
+});
+
 export const mediaRouter = createTRPCRouter({
+	/**
+	 * List media items with optional filters
+	 */
+	list: publicProcedure.input(MediaListInputSchema).query(async ({ ctx: { db }, input }) => {
+		const { type, hasAltText, recordId, limit, offset, orderBy } = input;
+
+		const results = await db.query.media.findMany({
+			where: {
+				type,
+				recordId,
+				altText:
+					hasAltText === true
+						? { isNotNull: true }
+						: hasAltText === false
+							? { isNull: true }
+							: undefined,
+			},
+			limit,
+			offset,
+			orderBy: (media, { asc, desc }) =>
+				orderBy.map(({ field, direction }) =>
+					direction === 'asc' ? asc(media[field]) : desc(media[field])
+				),
+		});
+
+		return results;
+	}),
+
+	/**
+	 * Get a single media item by ID, optionally including parent record context
+	 */
+	get: publicProcedure
+		.input(z.object({ id: IdSchema, includeRecord: z.boolean().optional().default(false) }))
+		.query(async ({ ctx: { db }, input }) => {
+			const mediaItem = await db.query.media.findFirst({
+				where: {
+					id: input.id,
+				},
+				with: input.includeRecord
+					? {
+							record: {
+								columns: {
+									id: true,
+									title: true,
+									type: true,
+									mediaCaption: true,
+									url: true,
+								},
+							},
+						}
+					: undefined,
+			});
+
+			if (!mediaItem) {
+				throw new TRPCError({ code: 'NOT_FOUND', message: `Media ${input.id} not found` });
+			}
+
+			return mediaItem;
+		}),
+
+	/**
+	 * Update media metadata (primarily for alt text)
+	 */
+	update: publicProcedure.input(MediaUpdateInputSchema).mutation(async ({ ctx: { db }, input }) => {
+		const { id, altText } = input;
+
+		// Check if media exists
+		const existing = await db.query.media.findFirst({
+			where: { id },
+			columns: { id: true },
+		});
+
+		if (!existing) {
+			throw new TRPCError({ code: 'NOT_FOUND', message: `Media ${id} not found` });
+		}
+
+		const [updated] = await db
+			.update(media)
+			.set({ altText, recordUpdatedAt: new Date() })
+			.where(eq(media.id, id))
+			.returning();
+
+		return updated;
+	}),
+
 	create: publicProcedure.input(MediaCreateInputSchema).mutation(async ({ ctx: { db }, input }) => {
 		try {
 			// 1. Decode base64 file data
@@ -70,9 +182,7 @@ export const mediaRouter = createTRPCRouter({
 	delete: publicProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
 		const mediaToDelete = await db.query.media.findMany({
 			where: {
-				id: {
-					in: input,
-				},
+				id: { in: input },
 			},
 		});
 
