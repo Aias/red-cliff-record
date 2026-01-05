@@ -1,0 +1,1 @@
+ALTER TABLE "feed_entries" DROP COLUMN "text_embedding";

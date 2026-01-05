@@ -1,7 +1,6 @@
 import { feedEntries, feeds } from '@aias/hozo';
-import { eq, inArray } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
-import { createEmbedding } from '../../../app/lib/server/create-embedding';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -15,15 +14,14 @@ import {
 	fetchUnreadEntryIds,
 	fetchUpdatedEntryIds,
 } from './client';
-import { createCleanFeedEntryEmbeddingText } from './embedding';
 import type { FeedbinEntry, FeedbinIcon, FeedbinSubscription } from './types';
 
 const logger = createIntegrationLogger('feedbin', 'sync');
 
 /**
- * Batch size for processing embeddings
+ * Batch size for processing entries
  */
-const EMBEDDING_BATCH_SIZE = 30;
+const ENTRY_BATCH_SIZE = 30;
 
 /**
  * Cache of synced feed IDs to avoid repeated fetches
@@ -386,7 +384,6 @@ async function processSingleEntry(
 							starred: isStarred,
 							publishedAt: entry.published,
 							recordUpdatedAt: new Date(),
-							textEmbedding: null, // Updated entries should re-generate embeddings
 						},
 					});
 
@@ -421,12 +418,12 @@ async function syncFeedEntries(
 	const RETRY_INITIAL_DELAY_MS = 1000; // 1 second initial backoff
 
 	// Process entries in batches
-	for (let i = 0; i < entries.length; i += EMBEDDING_BATCH_SIZE) {
-		const batch = entries.slice(i, i + EMBEDDING_BATCH_SIZE);
+	for (let i = 0; i < entries.length; i += ENTRY_BATCH_SIZE) {
+		const batch = entries.slice(i, i + ENTRY_BATCH_SIZE);
 		const batchStartTime = Date.now();
 
 		logger.info(
-			`Processing batch ${Math.floor(i / EMBEDDING_BATCH_SIZE) + 1} of ${Math.ceil(entries.length / EMBEDDING_BATCH_SIZE)} (${batch.length} entries)`
+			`Processing batch ${Math.floor(i / ENTRY_BATCH_SIZE) + 1} of ${Math.ceil(entries.length / ENTRY_BATCH_SIZE)} (${batch.length} entries)`
 		);
 
 		// Set up batch timeout
@@ -486,7 +483,7 @@ async function syncFeedEntries(
 		}
 
 		// Add delay between batches to prevent overwhelming the system
-		if (i + EMBEDDING_BATCH_SIZE < entries.length) {
+		if (i + ENTRY_BATCH_SIZE < entries.length) {
 			logger.info('Waiting 2 seconds before next batch...');
 			await new Promise((resolve) => setTimeout(resolve, 2000));
 		}
@@ -619,141 +616,6 @@ async function bulkUpdateStarredStatus(entryIds: number[], starred: boolean): Pr
 			await new Promise((resolve) => setTimeout(resolve, 500));
 		}
 	}
-}
-
-/**
- * Generate embeddings for feed entries that don't have them
- */
-async function generateFeedEntryEmbeddings(): Promise<void> {
-	logger.start('Generating embeddings for feed entries');
-
-	// Get entries without embeddings
-	const entriesWithoutEmbeddings = await db.query.feedEntries.findMany({
-		columns: {
-			id: true,
-			title: true,
-			author: true,
-			summary: true,
-			content: true,
-			url: true,
-			publishedAt: true,
-		},
-		where: {
-			textEmbedding: {
-				isNull: true,
-			},
-		},
-	});
-
-	if (entriesWithoutEmbeddings.length === 0) {
-		logger.info('All feed entries already have embeddings');
-		return;
-	}
-
-	logger.info(`Found ${entriesWithoutEmbeddings.length} entries without embeddings`);
-
-	let embeddingCount = 0;
-	let errorCount = 0;
-	const BATCH_TIMEOUT_MS = 60000; // 60 seconds per batch (longer for embeddings)
-	const ENTRY_TIMEOUT_MS = 15000; // 15 seconds per entry
-
-	// Process in batches
-	for (let i = 0; i < entriesWithoutEmbeddings.length; i += EMBEDDING_BATCH_SIZE) {
-		const batch = entriesWithoutEmbeddings.slice(i, i + EMBEDDING_BATCH_SIZE);
-		const batchStartTime = Date.now();
-
-		logger.info(
-			`Processing batch ${Math.floor(i / EMBEDDING_BATCH_SIZE) + 1} of ${Math.ceil(entriesWithoutEmbeddings.length / EMBEDDING_BATCH_SIZE)} (${batch.length} entries)`
-		);
-
-		// Set up batch timeout
-		const batchPromise = Promise.all(
-			batch.map(async (entry) => {
-				return new Promise<{ success: boolean }>((resolve) => {
-					const timeout = setTimeout(() => {
-						logger.error(
-							`Timeout generating embedding for entry ${entry.id} after ${ENTRY_TIMEOUT_MS}ms`
-						);
-						resolve({ success: false });
-					}, ENTRY_TIMEOUT_MS);
-
-					void (async () => {
-						try {
-							// Create embedding text
-							const embeddingText = createCleanFeedEntryEmbeddingText({
-								title: entry.title,
-								author: entry.author,
-								summary: entry.summary,
-								content: entry.content,
-								url: entry.url,
-								published: entry.publishedAt || new Date(),
-							} as FeedbinEntry);
-
-							// Generate embedding with retry logic
-							const embedding = await createEmbedding(embeddingText);
-
-							// Update entry with embedding
-							await db
-								.update(feedEntries)
-								.set({ textEmbedding: embedding })
-								.where(eq(feedEntries.id, entry.id));
-
-							clearTimeout(timeout);
-							resolve({ success: true });
-						} catch (error) {
-							clearTimeout(timeout);
-							logger.warn(`Failed to generate embedding for entry ${entry.id}`, error);
-
-							// If we hit a rate limit despite retries, wait longer before continuing
-							if (error instanceof Error && error.message.includes('rate limit')) {
-								logger.info(
-									'Hit rate limit despite retries, waiting 10 seconds before continuing...'
-								);
-								await new Promise((resolve) => setTimeout(resolve, 10000));
-							}
-							resolve({ success: false });
-						}
-					})();
-				});
-			})
-		);
-
-		try {
-			const results = await Promise.race([
-				batchPromise,
-				new Promise<{ success: boolean }[]>((_, reject) =>
-					setTimeout(
-						() => reject(new Error(`Batch timeout after ${BATCH_TIMEOUT_MS}ms`)),
-						BATCH_TIMEOUT_MS
-					)
-				),
-			]);
-
-			// Count successes and failures
-			for (const result of results) {
-				if (result.success) {
-					embeddingCount++;
-				} else {
-					errorCount++;
-				}
-			}
-
-			const batchDuration = Date.now() - batchStartTime;
-			logger.info(`Batch completed in ${batchDuration}ms`);
-		} catch (error) {
-			logger.error(`Batch processing failed or timed out`, error);
-			// Continue with next batch even if this one fails
-			errorCount += batch.length;
-		}
-
-		// Add a delay between batches
-		if (i + EMBEDDING_BATCH_SIZE < entriesWithoutEmbeddings.length) {
-			logger.info('Waiting 2 seconds before next batch...');
-			await new Promise((resolve) => setTimeout(resolve, 2000));
-		}
-	}
-
-	logger.complete(`Generated ${embeddingCount} embeddings (${errorCount} errors)`);
 }
 
 /**
@@ -944,7 +806,7 @@ async function syncFeedbin(
 			}
 		}
 
-		// Step 7: Sync entries WITHOUT embeddings
+		// Step 7: Sync entries
 		const updatedEntrySet = new Set(updatedEntriesToFetch);
 		const entriesCreated = await syncFeedEntries(
 			entries,
@@ -953,9 +815,6 @@ async function syncFeedbin(
 			integrationRunId,
 			updatedEntrySet
 		);
-
-		// Step 8: Generate embeddings for entries
-		await generateFeedEntryEmbeddings();
 
 		logger.complete('Feedbin sync completed successfully');
 		return entriesCreated;

@@ -206,7 +206,6 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 async function runDailySync(debug: boolean) {
 	const dailyIntegrations: IntegrationName[] = [
 		'browsing',
-		'feedbin',
 		'raindrop',
 		'readwise',
 		'github',

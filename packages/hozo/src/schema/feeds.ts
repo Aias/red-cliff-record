@@ -14,7 +14,6 @@ import {
 	contentTimestamps,
 	databaseTimestamps,
 	integrationRuns,
-	textEmbeddingColumns,
 } from './operations';
 import { records } from './records';
 
@@ -68,7 +67,6 @@ export const feedEntries = pgTable(
 		}),
 		integrationRunId: integer('integration_run_id').references(() => integrationRuns.id),
 		...databaseTimestamps,
-		...textEmbeddingColumns,
 	},
 	(table) => [
 		index().on(table.feedId),
