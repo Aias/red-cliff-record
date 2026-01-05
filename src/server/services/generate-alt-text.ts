@@ -7,6 +7,12 @@ import { createIntegrationLogger } from '@/server/integrations/common/logging';
 
 const logger = createIntegrationLogger('services', 'generate-alt-text');
 
+const ALT_TEXT_CONCURRENCY = 10;
+const ALT_TEXT_ITEM_TIMEOUT_MS = 90_000;
+const ALT_TEXT_PROGRESS_INTERVAL = 10;
+/** How long to wait before retrying failed alt text generation */
+const ALT_TEXT_RETRY_COOLDOWN_DAYS = 7;
+
 let openai: OpenAI | null = null;
 
 type OpenAIClientResult =
@@ -89,17 +95,47 @@ type VisionApiResult =
 			error: string;
 	  };
 
+type GenerateAltTextInternalOptions = GenerateAltTextOptions & {
+	signal?: AbortSignal;
+};
+
+async function withTimeout<T>(
+	timeoutMs: number,
+	run: (signal: AbortSignal) => Promise<T>
+): Promise<T> {
+	const controller = new AbortController();
+
+	let timeoutId: ReturnType<typeof setTimeout> | null = null;
+	const timeoutPromise = new Promise<T>((_, reject) => {
+		timeoutId = setTimeout(() => {
+			controller.abort();
+			reject(new Error(`Timed out after ${timeoutMs}ms`));
+		}, timeoutMs);
+	});
+
+	try {
+		return await Promise.race([run(controller.signal), timeoutPromise]);
+	} finally {
+		if (timeoutId) {
+			clearTimeout(timeoutId);
+		}
+	}
+}
+
 /**
  * Check if image URL is accessible
  */
-async function checkImageAccessible(url: string): Promise<boolean> {
+async function checkImageAccessible(url: string, signal?: AbortSignal): Promise<boolean> {
 	async function tryRequest(
 		requestInit: RequestInit & { method: 'HEAD' | 'GET' }
 	): Promise<boolean> {
 		try {
-			const response = await fetch(url, requestInit);
+			const response = await fetch(url, { ...requestInit, signal });
 			return response.ok;
 		} catch {
+			if (signal?.aborted) {
+				throw new Error(`Timed out after ${ALT_TEXT_ITEM_TIMEOUT_MS}ms`);
+			}
 			return false;
 		}
 	}
@@ -119,26 +155,33 @@ async function checkImageAccessible(url: string): Promise<boolean> {
  * Call OpenAI vision API to generate alt text for an image.
  * Uses URL-based input since our images are on a public CDN.
  */
-async function callVisionApi(imageUrl: string, prompt: string): Promise<VisionApiResult> {
+async function callVisionApi(
+	imageUrl: string,
+	prompt: string,
+	signal?: AbortSignal
+): Promise<VisionApiResult> {
 	const openAiClientResult = getOpenAIClient();
 	if (!openAiClientResult.ok) {
 		return { ok: false, error: openAiClientResult.error };
 	}
 
 	try {
-		const response = await openAiClientResult.client.responses.create({
-			model: 'gpt-5.2',
-			input: [
-				{
-					type: 'message',
-					role: 'user',
-					content: [
-						{ type: 'input_text', text: prompt },
-						{ type: 'input_image', image_url: imageUrl, detail: 'auto' },
-					],
-				},
-			],
-		});
+		const response = await openAiClientResult.client.responses.create(
+			{
+				model: 'gpt-5.2',
+				input: [
+					{
+						type: 'message',
+						role: 'user',
+						content: [
+							{ type: 'input_text', text: prompt },
+							{ type: 'input_image', image_url: imageUrl, detail: 'auto' },
+						],
+					},
+				],
+			},
+			{ signal, timeout: ALT_TEXT_ITEM_TIMEOUT_MS }
+		);
 
 		const altText = response.output_text?.trim();
 		if (!altText) {
@@ -147,9 +190,8 @@ async function callVisionApi(imageUrl: string, prompt: string): Promise<VisionAp
 
 		return { ok: true, altText };
 	} catch (error) {
-		logger.error('OpenAI vision API error:', error);
 		const message = error instanceof Error ? error.message : String(error);
-		return { ok: false, error: `OpenAI vision API error: ${message}` };
+		return { ok: false, error: message };
 	}
 }
 
@@ -158,9 +200,9 @@ async function callVisionApi(imageUrl: string, prompt: string): Promise<VisionAp
  */
 async function generateAltTextForMedia(
 	mediaId: number,
-	options: GenerateAltTextOptions = {}
+	options: GenerateAltTextInternalOptions = {}
 ): Promise<GenerateAltTextResult> {
-	const { force = false, dryRun = false } = options;
+	const { force = false, dryRun = false, signal } = options;
 
 	// Fetch media with optional parent record context
 	const mediaItem = await db.query.media.findFirst({
@@ -201,13 +243,19 @@ async function generateAltTextForMedia(
 	// Check format is supported
 	if (!SUPPORTED_FORMATS.includes(mediaItem.format.toLowerCase())) {
 		logger.warn(`Unsupported image format: ${mediaItem.format} for media ${mediaId}`);
+		if (!dryRun) {
+			await db.update(media).set({ altTextGeneratedAt: new Date() }).where(eq(media.id, mediaId));
+		}
 		return { ...baseResult, success: false, error: `Unsupported format: ${mediaItem.format}` };
 	}
 
 	// Check image is accessible
-	const isAccessible = await checkImageAccessible(mediaItem.url);
+	const isAccessible = await checkImageAccessible(mediaItem.url, signal);
 	if (!isAccessible) {
 		logger.warn(`Image not accessible: ${mediaItem.url}`);
+		if (!dryRun) {
+			await db.update(media).set({ altTextGeneratedAt: new Date() }).where(eq(media.id, mediaId));
+		}
 		return { ...baseResult, success: false, error: 'Image URL not accessible' };
 	}
 
@@ -217,17 +265,24 @@ async function generateAltTextForMedia(
 		.replace('{url}', record?.url || '(none)');
 
 	// Call vision API with image URL directly
-	const visionResult = await callVisionApi(mediaItem.url, prompt);
+	const visionResult = await callVisionApi(mediaItem.url, prompt, signal);
 	if (!visionResult.ok) {
+		logger.error(
+			`Vision API failed for media ${mediaId} (record ${record?.id ?? 'none'}, url: ${mediaItem.url}): ${visionResult.error}`
+		);
+		if (!dryRun) {
+			await db.update(media).set({ altTextGeneratedAt: new Date() }).where(eq(media.id, mediaId));
+		}
 		return { ...baseResult, success: false, error: visionResult.error };
 	}
 	const { altText } = visionResult;
+	const now = new Date();
 
 	if (!dryRun) {
-		// Update media record
+		// Update media record with alt text and generation timestamp
 		await db
 			.update(media)
-			.set({ altText, recordUpdatedAt: new Date() })
+			.set({ altText, altTextGeneratedAt: now, recordUpdatedAt: now })
 			.where(eq(media.id, mediaId));
 
 		// Invalidate parent record's embedding since alt text affects it
@@ -271,29 +326,70 @@ export async function generateAltText(
 
 	logger.info(`Generating alt text for ${mediaIds.length} media items`);
 
-	// Process in parallel with concurrency limit
-	const BATCH_SIZE = 5;
-	const results: GenerateAltTextResult[] = [];
+	const results: GenerateAltTextResult[] = new Array(mediaIds.length);
 
-	for (let i = 0; i < mediaIds.length; i += BATCH_SIZE) {
-		const batch = mediaIds.slice(i, i + BATCH_SIZE);
-		const batchResults = await Promise.all(batch.map((id) => generateAltTextForMedia(id, options)));
-		results.push(...batchResults);
+	let generated = 0;
+	let skipped = 0;
+	let failed = 0;
+	let completed = 0;
+	let nextIndex = 0;
 
-		const successful = batchResults.filter((r) => r.success && !r.skipped).length;
-		const skipped = batchResults.filter((r) => r.skipped).length;
-		const failed = batchResults.filter((r) => !r.success).length;
+	const workerCount = Math.min(ALT_TEXT_CONCURRENCY, mediaIds.length);
 
-		logger.info(
-			`Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(mediaIds.length / BATCH_SIZE)}: ${successful} generated, ${skipped} skipped, ${failed} failed`
-		);
-	}
+	const worker = async () => {
+		while (true) {
+			const index = nextIndex++;
+			if (index >= mediaIds.length) return;
+
+			const mediaId = mediaIds[index];
+			if (mediaId === undefined) return;
+
+			const result: GenerateAltTextResult = await withTimeout<GenerateAltTextResult>(
+				ALT_TEXT_ITEM_TIMEOUT_MS,
+				async (signal) => {
+					const internalOptions: GenerateAltTextInternalOptions = { ...options, signal };
+					try {
+						return await generateAltTextForMedia(mediaId, internalOptions);
+					} catch (error) {
+						const message = error instanceof Error ? error.message : String(error);
+						const failure: GenerateAltTextResult = { mediaId, success: false, error: message };
+						return failure;
+					}
+				}
+			).catch((error) => {
+				const message = error instanceof Error ? error.message : String(error);
+				const failure: GenerateAltTextResult = { mediaId, success: false, error: message };
+				return failure;
+			});
+
+			results[index] = result;
+
+			completed++;
+			if (result.success) {
+				if (result.skipped) {
+					skipped++;
+				} else {
+					generated++;
+				}
+			} else {
+				failed++;
+			}
+
+			if (completed % ALT_TEXT_PROGRESS_INTERVAL === 0 || completed === mediaIds.length) {
+				logger.info(
+					`Progress ${completed}/${mediaIds.length}: ${generated} generated, ${skipped} skipped, ${failed} failed`
+				);
+			}
+		}
+	};
+
+	await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
 	const summary = {
 		total: results.length,
-		generated: results.filter((r) => r.success && !r.skipped).length,
-		skipped: results.filter((r) => r.skipped).length,
-		failed: results.filter((r) => !r.success).length,
+		generated,
+		skipped,
+		failed,
 	};
 
 	logger.info(
@@ -330,11 +426,18 @@ async function generateMissingAltText(
 
 	logger.start(`Generating alt text for up to ${limit} images without descriptions`);
 
-	// Find images without alt text, newest first
+	// Calculate cooldown threshold
+	const cooldownDate = new Date();
+	cooldownDate.setDate(cooldownDate.getDate() - ALT_TEXT_RETRY_COOLDOWN_DAYS);
+
+	// Find images without alt text that either:
+	// - Have never been attempted (altTextGeneratedAt is null), OR
+	// - Were attempted before the cooldown period (eligible for retry)
 	const imagesWithoutAltText = await db.query.media.findMany({
 		where: {
 			type: 'image',
 			altText: { isNull: true },
+			OR: [{ altTextGeneratedAt: { isNull: true } }, { altTextGeneratedAt: { lt: cooldownDate } }],
 		},
 		columns: { id: true },
 		orderBy: (media, { desc }) => [desc(media.recordCreatedAt)],
