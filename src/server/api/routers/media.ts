@@ -166,6 +166,17 @@ export const mediaRouter = createTRPCRouter({
 				});
 			}
 
+			// 5. Generate alt text for images
+			if (newMedia.type === 'image') {
+				const [altTextResult] = await generateAltText([newMedia.id]);
+				if (altTextResult && !altTextResult.success) {
+					throw new TRPCError({
+						code: 'INTERNAL_SERVER_ERROR',
+						message: `Failed to generate alt text: ${altTextResult.error}`,
+					});
+				}
+			}
+
 			return newMedia;
 		} catch (error) {
 			// Log the specific error before wrapping it

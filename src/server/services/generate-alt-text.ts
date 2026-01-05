@@ -6,9 +6,31 @@ import { createIntegrationLogger } from '@/server/integrations/common/logging';
 
 const logger = createIntegrationLogger('services', 'generate-alt-text');
 
-const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
-});
+let openai: OpenAI | null = null;
+
+type OpenAIClientResult =
+	| {
+			ok: true;
+			client: OpenAI;
+	  }
+	| {
+			ok: false;
+			error: string;
+	  };
+
+function getOpenAIClient(): OpenAIClientResult {
+	const apiKey = process.env.OPENAI_API_KEY;
+	if (!apiKey) {
+		return { ok: false, error: 'OPENAI_API_KEY is not set' };
+	}
+
+	if (openai) {
+		return { ok: true, client: openai };
+	}
+
+	openai = new OpenAI({ apiKey });
+	return { ok: true, client: openai };
+}
 
 /**
  * Alt text generation prompt based on the established guidelines.
@@ -54,25 +76,54 @@ export interface GenerateAltTextResult {
 	error?: string;
 }
 
+type VisionApiResult =
+	| {
+			ok: true;
+			altText: string;
+	  }
+	| {
+			ok: false;
+			error: string;
+	  };
+
 /**
  * Check if image URL is accessible
  */
 async function checkImageAccessible(url: string): Promise<boolean> {
-	try {
-		const response = await fetch(url, { method: 'HEAD' });
-		return response.ok;
-	} catch {
-		return false;
+	async function tryRequest(
+		requestInit: RequestInit & { method: 'HEAD' | 'GET' }
+	): Promise<boolean> {
+		try {
+			const response = await fetch(url, requestInit);
+			return response.ok;
+		} catch {
+			return false;
+		}
 	}
+
+	const headOk = await tryRequest({ method: 'HEAD' });
+	if (headOk) return true;
+
+	// Some CDNs/servers don't support HEAD (or treat it differently than GET).
+	// Use a minimal GET with a Range header as a fallback to avoid downloading the full image.
+	return await tryRequest({
+		method: 'GET',
+		headers: { Range: 'bytes=0-0' },
+	});
 }
 
 /**
  * Call OpenAI vision API to generate alt text for an image.
  * Uses URL-based input since our images are on a public CDN.
  */
-async function callVisionApi(imageUrl: string, prompt: string): Promise<string | null> {
+async function callVisionApi(imageUrl: string, prompt: string): Promise<VisionApiResult> {
+	const openAiClientResult = getOpenAIClient();
+	if (!openAiClientResult.ok) {
+		return { ok: false, error: openAiClientResult.error };
+	}
+
 	try {
-		const response = await openai.responses.create({
+		const response = await openAiClientResult.client.responses.create({
 			model: 'gpt-5.2',
 			input: [
 				{
@@ -86,10 +137,16 @@ async function callVisionApi(imageUrl: string, prompt: string): Promise<string |
 			],
 		});
 
-		return response.output_text?.trim() || null;
+		const altText = response.output_text?.trim();
+		if (!altText) {
+			return { ok: false, error: 'Vision API returned no result' };
+		}
+
+		return { ok: true, altText };
 	} catch (error) {
 		logger.error('OpenAI vision API error:', error);
-		return null;
+		const message = error instanceof Error ? error.message : String(error);
+		return { ok: false, error: `OpenAI vision API error: ${message}` };
 	}
 }
 
@@ -133,10 +190,9 @@ async function generateAltTextForMedia(
 		return { ...baseResult, success: true, skipped: true };
 	}
 
-	// Only process images
+	// Only process images (skip other media types)
 	if (mediaItem.type !== 'image') {
-		// For videos, we'd need thumbnail extraction - skip for now
-		return { ...baseResult, success: false, error: `Unsupported media type: ${mediaItem.type}` };
+		return { ...baseResult, success: true, skipped: true };
 	}
 
 	// Check format is supported
@@ -158,27 +214,29 @@ async function generateAltTextForMedia(
 		.replace('{url}', record?.url || '(none)');
 
 	// Call vision API with image URL directly
-	const altText = await callVisionApi(mediaItem.url, prompt);
-	if (!altText) {
-		return { ...baseResult, success: false, error: 'Vision API returned no result' };
+	const visionResult = await callVisionApi(mediaItem.url, prompt);
+	if (!visionResult.ok) {
+		return { ...baseResult, success: false, error: visionResult.error };
 	}
+	const { altText } = visionResult;
 
 	// Update media record
-	await db
-		.update(media)
-		.set({ altText, recordUpdatedAt: new Date() })
-		.where(eq(media.id, mediaId));
+	await db.update(media).set({ altText, recordUpdatedAt: new Date() }).where(eq(media.id, mediaId));
 
 	// Invalidate parent record's embedding since alt text affects it
 	if (record?.id) {
-		await db
-			.update(records)
-			.set({ textEmbedding: null })
-			.where(eq(records.id, record.id));
+		await db.update(records).set({ textEmbedding: null }).where(eq(records.id, record.id));
 		logger.info(`Invalidated embedding for record ${record.id}`);
 	}
 
-	logger.info(`Generated alt text for media ${mediaId}: "${altText.slice(0, 50)}..."`);
+	const recordTitle = record?.title ?? '(none)';
+	const recordTitlePreview =
+		recordTitle.length > 120 ? `${recordTitle.slice(0, 120)}…` : recordTitle;
+	const altTextPreview = altText.length > 100 ? `${altText.slice(0, 100)}…` : altText;
+
+	logger.info(
+		`Generated alt text for media ${mediaId} (record ${record?.id ?? 'none'} "${recordTitlePreview}"): "${altTextPreview}"`
+	);
 
 	return { ...baseResult, success: true, altText };
 }
@@ -211,9 +269,7 @@ export async function generateAltText(
 
 	for (let i = 0; i < mediaIds.length; i += BATCH_SIZE) {
 		const batch = mediaIds.slice(i, i + BATCH_SIZE);
-		const batchResults = await Promise.all(
-			batch.map((id) => generateAltTextForMedia(id, options))
-		);
+		const batchResults = await Promise.all(batch.map((id) => generateAltTextForMedia(id, options)));
 		results.push(...batchResults);
 
 		const successful = batchResults.filter((r) => r.success && !r.skipped).length;
@@ -237,4 +293,54 @@ export async function generateAltText(
 	);
 
 	return results;
+}
+
+export interface AltTextSyncOptions {
+	/** Maximum number of images to process per run (default: 100) */
+	limit?: number;
+}
+
+/**
+ * Find images without alt text and generate for them.
+ * Orders by recordCreatedAt desc to process newest items first.
+ * Used by the sync integration.
+ */
+async function generateMissingAltText(options: AltTextSyncOptions = {}): Promise<number> {
+	const { limit = 100 } = options;
+
+	logger.start(`Generating alt text for up to ${limit} images without descriptions`);
+
+	// Find images without alt text, newest first
+	const imagesWithoutAltText = await db.query.media.findMany({
+		where: {
+			type: 'image',
+			altText: { isNull: true },
+		},
+		columns: { id: true },
+		orderBy: (media, { desc }) => [desc(media.recordCreatedAt)],
+		limit,
+	});
+
+	if (imagesWithoutAltText.length === 0) {
+		logger.skip('No images without alt text');
+		return 0;
+	}
+
+	logger.info(`Found ${imagesWithoutAltText.length} images to process`);
+
+	const mediaIds = imagesWithoutAltText.map((m) => m.id);
+	const results = await generateAltText(mediaIds);
+
+	const generated = results.filter((r) => r.success && !r.skipped).length;
+	logger.complete(`Generated alt text for ${generated} images`);
+
+	return generated;
+}
+
+/**
+ * Run alt text generation as a sync integration.
+ * Should be called before embeddings generation.
+ */
+export async function runAltTextIntegration(options: AltTextSyncOptions = {}) {
+	await generateMissingAltText(options);
 }

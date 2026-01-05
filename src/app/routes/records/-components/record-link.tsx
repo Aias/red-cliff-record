@@ -167,6 +167,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 												) : (
 													<LazyVideo
 														src={mediaItem.url}
+														aria-label={mediaItem.altText ?? mediaCaption ?? title ?? ''}
 														className="size-full object-cover"
 														autoPlay
 														playsInline
@@ -261,6 +262,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 					) : (
 						<LazyVideo
 							src={mediaItem.url}
+							aria-label={mediaItem.altText ?? mediaCaption ?? ''}
 							className="absolute inset-0 size-full object-cover"
 							autoPlay
 							playsInline
