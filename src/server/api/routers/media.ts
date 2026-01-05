@@ -10,6 +10,7 @@ import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getMediaInsertData, uploadClientFileToR2 } from '@/server/lib/media';
+import { generateAltText } from '@/server/services/generate-alt-text';
 import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
 import { createTRPCRouter, publicProcedure } from '../init';
 
@@ -246,4 +247,18 @@ export const mediaRouter = createTRPCRouter({
 			throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete media' });
 		}
 	}),
+
+	/**
+	 * Generate alt text for media items using OpenAI vision
+	 */
+	generateAltText: publicProcedure
+		.input(
+			z.object({
+				ids: z.array(IdSchema),
+				force: z.boolean().optional().default(false),
+			})
+		)
+		.mutation(async ({ input }) => {
+			return generateAltText(input.ids, { force: input.force });
+		}),
 });
