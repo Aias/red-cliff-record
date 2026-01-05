@@ -166,15 +166,12 @@ export const mediaRouter = createTRPCRouter({
 				});
 			}
 
-			// 5. Generate alt text for images
+			// 5. Fire-and-forget alt text generation for images
+			// Don't await - this is best-effort and should never slow down or fail uploads
 			if (newMedia.type === 'image') {
-				const [altTextResult] = await generateAltText([newMedia.id]);
-				if (altTextResult && !altTextResult.success) {
-					throw new TRPCError({
-						code: 'INTERNAL_SERVER_ERROR',
-						message: `Failed to generate alt text: ${altTextResult.error}`,
-					});
-				}
+				generateAltText([newMedia.id]).catch((error) => {
+					console.warn(`Failed to generate alt text for media ${newMedia.id}:`, error);
+				});
 			}
 
 			return newMedia;

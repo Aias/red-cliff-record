@@ -41,23 +41,22 @@ const IntegrationNameSchema = z.enum([
 type IntegrationName = z.infer<typeof IntegrationNameSchema>;
 const INTEGRATION_LIST = IntegrationNameSchema.options;
 
-const SyncOptionsSchema = BaseOptionsSchema.extend({
+const AltTextSyncOptionsSchema = BaseOptionsSchema.extend({
 	limit: z.coerce.number().positive().int().optional(),
 }).strict();
 
 /**
  * Run an integration sync
- * Usage: rcr sync <integration> [--debug] [--limit=N]
+ * Usage: rcr sync <integration> [--debug]
  *
  * Available integrations:
  *   github, readwise, raindrop, airtable, adobe, feedbin,
  *   browsing, twitter, agents, daily (all daily syncs)
  *
  * Options:
- *   --limit=N   For alt-text: max images to process (default: 100)
+ *   --limit=N   For alt-text/daily: max images to process (default: 100)
  */
 export const run: CommandHandler = async (args, options) => {
-	const parsedOptions = parseOptions(SyncOptionsSchema, options);
 	const rawIntegration = args[0]?.toLowerCase();
 
 	if (!rawIntegration) {
@@ -75,7 +74,26 @@ export const run: CommandHandler = async (args, options) => {
 		);
 	}
 	const integration = integrationResult.data;
-	const { debug, limit } = parsedOptions;
+
+	if (integration !== 'alt-text' && integration !== 'daily' && options.limit !== undefined) {
+		throw createError(
+			'VALIDATION_ERROR',
+			'--limit is only supported for `rcr sync alt-text` (or `rcr sync daily`).'
+		);
+	}
+
+	let debug: boolean;
+	let limit: number | undefined;
+
+	if (integration === 'alt-text' || integration === 'daily') {
+		const parsedOptions = parseOptions(AltTextSyncOptionsSchema, options);
+		debug = parsedOptions.debug;
+		limit = parsedOptions.limit;
+	} else {
+		const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
+		debug = parsedOptions.debug;
+		limit = undefined;
+	}
 
 	// Handle 'daily' as a special case that runs multiple syncs
 	if (integration === 'daily') {
@@ -207,10 +225,11 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
 			};
 		}
 		case 'alt-text': {
-			await runAltTextIntegration({ limit });
+			const result = await runAltTextIntegration({ debug, limit });
 			return {
 				integration,
 				success: true,
+				...result,
 				duration: Math.round(performance.now() - startTime),
 			};
 		}

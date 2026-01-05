@@ -2,6 +2,7 @@ import { media, records } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { db } from '@/server/db/connections';
+import { writeDebugOutput } from '@/server/integrations/common/debug-output';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
 
 const logger = createIntegrationLogger('services', 'generate-alt-text');
@@ -64,6 +65,8 @@ const SUPPORTED_FORMATS = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
 export interface GenerateAltTextOptions {
 	/** Regenerate even if altText already exists */
 	force?: boolean;
+	/** Do not write to the database (generate + return only) */
+	dryRun?: boolean;
 }
 
 export interface GenerateAltTextResult {
@@ -157,7 +160,7 @@ async function generateAltTextForMedia(
 	mediaId: number,
 	options: GenerateAltTextOptions = {}
 ): Promise<GenerateAltTextResult> {
-	const { force = false } = options;
+	const { force = false, dryRun = false } = options;
 
 	// Fetch media with optional parent record context
 	const mediaItem = await db.query.media.findFirst({
@@ -220,13 +223,18 @@ async function generateAltTextForMedia(
 	}
 	const { altText } = visionResult;
 
-	// Update media record
-	await db.update(media).set({ altText, recordUpdatedAt: new Date() }).where(eq(media.id, mediaId));
+	if (!dryRun) {
+		// Update media record
+		await db
+			.update(media)
+			.set({ altText, recordUpdatedAt: new Date() })
+			.where(eq(media.id, mediaId));
 
-	// Invalidate parent record's embedding since alt text affects it
-	if (record?.id) {
-		await db.update(records).set({ textEmbedding: null }).where(eq(records.id, record.id));
-		logger.info(`Invalidated embedding for record ${record.id}`);
+		// Invalidate parent record's embedding since alt text affects it
+		if (record?.id) {
+			await db.update(records).set({ textEmbedding: null }).where(eq(records.id, record.id));
+			logger.info(`Invalidated embedding for record ${record.id}`);
+		}
 	}
 
 	const recordTitle = record?.title ?? '(none)';
@@ -298,6 +306,16 @@ export async function generateAltText(
 export interface AltTextSyncOptions {
 	/** Maximum number of images to process per run (default: 100) */
 	limit?: number;
+	/** If true, do not write; output results to `.temp/` */
+	debug?: boolean;
+}
+
+export interface AltTextSyncResult {
+	total: number;
+	generated: number;
+	skipped: number;
+	failed: number;
+	debugOutputPath?: string;
 }
 
 /**
@@ -305,8 +323,10 @@ export interface AltTextSyncOptions {
  * Orders by recordCreatedAt desc to process newest items first.
  * Used by the sync integration.
  */
-async function generateMissingAltText(options: AltTextSyncOptions = {}): Promise<number> {
-	const { limit = 100 } = options;
+async function generateMissingAltText(
+	options: AltTextSyncOptions = {}
+): Promise<AltTextSyncResult> {
+	const { limit = 100, debug = false } = options;
 
 	logger.start(`Generating alt text for up to ${limit} images without descriptions`);
 
@@ -323,24 +343,42 @@ async function generateMissingAltText(options: AltTextSyncOptions = {}): Promise
 
 	if (imagesWithoutAltText.length === 0) {
 		logger.skip('No images without alt text');
-		return 0;
+		return { total: 0, generated: 0, skipped: 0, failed: 0 };
 	}
 
 	logger.info(`Found ${imagesWithoutAltText.length} images to process`);
 
 	const mediaIds = imagesWithoutAltText.map((m) => m.id);
-	const results = await generateAltText(mediaIds);
+	const results = await generateAltText(mediaIds, { dryRun: debug });
 
-	const generated = results.filter((r) => r.success && !r.skipped).length;
-	logger.complete(`Generated alt text for ${generated} images`);
+	const summary = {
+		total: results.length,
+		generated: results.filter((r) => r.success && !r.skipped).length,
+		skipped: results.filter((r) => r.skipped).length,
+		failed: results.filter((r) => !r.success).length,
+	};
 
-	return generated;
+	let debugOutputPath: string | undefined;
+	if (debug) {
+		debugOutputPath = await writeDebugOutput('alt-text', {
+			generatedAt: new Date().toISOString(),
+			limit,
+			results,
+			summary,
+		});
+	}
+
+	logger.complete(`Generated alt text for ${summary.generated} images`);
+
+	return { ...summary, debugOutputPath };
 }
 
 /**
  * Run alt text generation as a sync integration.
  * Should be called before embeddings generation.
  */
-export async function runAltTextIntegration(options: AltTextSyncOptions = {}) {
-	await generateMissingAltText(options);
+export async function runAltTextIntegration(
+	options: AltTextSyncOptions = {}
+): Promise<AltTextSyncResult> {
+	return await generateMissingAltText(options);
 }

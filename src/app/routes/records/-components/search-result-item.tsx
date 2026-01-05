@@ -64,6 +64,8 @@ export const SearchResultItem = memo(function SearchResultItem({
 
 	const TypeIcon = recordTypeIcons[type].icon;
 
+	const thumbnailVideoLabel = mediaItem?.altText?.trim() || mediaCaption?.trim() || undefined;
+
 	return (
 		<div className="flex w-full grow items-center gap-2">
 			<TypeIcon className="size-[1lh] text-c-hint" />
@@ -73,7 +75,7 @@ export const SearchResultItem = memo(function SearchResultItem({
 				<div className="ml-2 line-clamp-1 shrink truncate text-c-secondary">{preview}</div>
 			</div>
 			{mediaItem && (
-				<div className="relative aspect-[3/2] h-[1lh] shrink-0 self-center overflow-hidden rounded-md border border-c-divider bg-c-mist">
+				<div className="relative aspect-3/2 h-lh shrink-0 self-center overflow-hidden rounded-md border border-c-divider bg-c-mist">
 					{mediaItem.type === 'image' ? (
 						<img
 							src={mediaItem.url}
@@ -85,7 +87,7 @@ export const SearchResultItem = memo(function SearchResultItem({
 					) : (
 						<LazyVideo
 							src={mediaItem.url}
-							aria-label={mediaItem.altText ?? mediaCaption ?? ''}
+							aria-label={thumbnailVideoLabel}
 							className="absolute inset-0 object-cover"
 							playsInline
 						/>
