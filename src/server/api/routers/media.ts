@@ -10,6 +10,7 @@ import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getMediaInsertData, uploadClientFileToR2 } from '@/server/lib/media';
+import { generateAltText } from '@/server/services/generate-alt-text';
 import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
 import { createTRPCRouter, publicProcedure } from '../init';
 
@@ -165,6 +166,14 @@ export const mediaRouter = createTRPCRouter({
 				});
 			}
 
+			// 5. Fire-and-forget alt text generation for images
+			// Don't await - this is best-effort and should never slow down or fail uploads
+			if (newMedia.type === 'image') {
+				generateAltText([newMedia.id]).catch((error) => {
+					console.warn(`Failed to generate alt text for media ${newMedia.id}:`, error);
+				});
+			}
+
 			return newMedia;
 		} catch (error) {
 			// Log the specific error before wrapping it
@@ -246,4 +255,18 @@ export const mediaRouter = createTRPCRouter({
 			throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete media' });
 		}
 	}),
+
+	/**
+	 * Generate alt text for media items using OpenAI vision
+	 */
+	generateAltText: publicProcedure
+		.input(
+			z.object({
+				ids: z.array(IdSchema),
+				force: z.boolean().optional().default(false),
+			})
+		)
+		.mutation(async ({ input }) => {
+			return generateAltText(input.ids, { force: input.force });
+		}),
 });

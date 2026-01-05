@@ -44,6 +44,7 @@ function Home() {
 							{item.type === 'video' ? (
 								<LazyVideo
 									src={item.url}
+									aria-label={item.altText || record.title || `Video for record ${record.id}`}
 									className="absolute inset-0 size-full object-cover"
 									muted
 									loop

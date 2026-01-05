@@ -130,3 +130,48 @@ export const update: CommandHandler = async (args, options) => {
 		throw e;
 	}
 };
+
+const GenerateAltOptionsSchema = BaseOptionsSchema.extend({
+	force: z.boolean().optional(),
+}).strict();
+
+/**
+ * Generate alt text for media items using OpenAI vision
+ * Usage: rcr media generate-alt <id...> [--force]
+ * Example: rcr media generate-alt 123 456 789 --force
+ */
+const generateAlt: CommandHandler = async (args, options) => {
+	const parsedOptions = parseOptions(GenerateAltOptionsSchema, options);
+	const ids = parseIds(args);
+
+	if (ids.length === 0) {
+		throw createError('VALIDATION_ERROR', 'At least one ID is required');
+	}
+
+	const results = await caller.media.generateAltText({
+		ids,
+		force: parsedOptions.force ?? false,
+	});
+
+	// Transform to CLI-compatible format
+	const data = results.map((r) => ({
+		mediaId: r.mediaId,
+		recordId: r.recordId ?? null,
+		recordTitle: r.recordTitle ?? null,
+		success: r.success,
+		skipped: r.skipped ?? false,
+		altText: r.altText ?? null,
+		error: r.error ?? null,
+	}));
+
+	const summary = {
+		total: results.length,
+		generated: results.filter((r) => r.success && !r.skipped).length,
+		skipped: results.filter((r) => r.skipped).length,
+		failed: results.filter((r) => !r.success).length,
+	};
+
+	return success(data, summary);
+};
+
+export { generateAlt as 'generate-alt' };

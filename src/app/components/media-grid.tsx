@@ -72,6 +72,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 						{item.type === 'video' ? (
 							<LazyVideo
 								src={item.url}
+								aria-label={item.altText || `Media ${index + 1}`}
 								className="h-full w-full object-cover"
 								controls
 								muted

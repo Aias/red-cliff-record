@@ -101,6 +101,11 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 
 	const TypeIcon = recordTypeIcons[type].icon;
 
+	const hoverCardVideoLabel =
+		mediaItem?.altText?.trim() || mediaCaption?.trim() || title?.trim() || undefined;
+
+	const thumbnailVideoLabel = mediaItem?.altText?.trim() || mediaCaption?.trim() || undefined;
+
 	return (
 		<div
 			className={cn('group relative flex grow gap-3 overflow-hidden break-all', className)}
@@ -167,6 +172,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 												) : (
 													<LazyVideo
 														src={mediaItem.url}
+														aria-label={hoverCardVideoLabel}
 														className="size-full object-cover"
 														autoPlay
 														playsInline
@@ -261,6 +267,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 					) : (
 						<LazyVideo
 							src={mediaItem.url}
+							aria-label={thumbnailVideoLabel}
 							className="absolute inset-0 size-full object-cover"
 							autoPlay
 							playsInline

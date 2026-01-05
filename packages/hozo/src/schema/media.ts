@@ -5,6 +5,7 @@ import {
 	pgTable,
 	serial,
 	text,
+	timestamp,
 	unique,
 	type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
@@ -37,6 +38,7 @@ export const media = pgTable(
 		}),
 		url: text('url').notNull(),
 		altText: text('alt_text'),
+		altTextGeneratedAt: timestamp('alt_text_generated_at', { withTimezone: true }),
 		type: mediaTypeEnum('type').notNull().default('application'),
 		format: text('format').notNull().default('octet-stream'),
 		contentTypeString: text('content_type_string').notNull().default('application/octet-stream'),

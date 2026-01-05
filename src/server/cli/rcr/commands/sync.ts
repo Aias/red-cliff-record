@@ -13,6 +13,7 @@ import { syncCursorHistory } from '@/server/integrations/agents/sync-cursor';
 import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
 import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
+import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
@@ -33,11 +34,16 @@ const IntegrationNameSchema = z.enum([
 	'twitter',
 	'agents',
 	'avatars',
+	'alt-text',
 	'embeddings',
 	'daily',
 ]);
 type IntegrationName = z.infer<typeof IntegrationNameSchema>;
 const INTEGRATION_LIST = IntegrationNameSchema.options;
+
+const AltTextSyncOptionsSchema = BaseOptionsSchema.extend({
+	limit: z.coerce.number().positive().int().optional(),
+}).strict();
 
 /**
  * Run an integration sync
@@ -46,9 +52,11 @@ const INTEGRATION_LIST = IntegrationNameSchema.options;
  * Available integrations:
  *   github, readwise, raindrop, airtable, adobe, feedbin,
  *   browsing, twitter, agents, daily (all daily syncs)
+ *
+ * Options:
+ *   --limit=N   For alt-text/daily: max images to process (default: 100)
  */
 export const run: CommandHandler = async (args, options) => {
-	const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
 	const rawIntegration = args[0]?.toLowerCase();
 
 	if (!rawIntegration) {
@@ -66,15 +74,34 @@ export const run: CommandHandler = async (args, options) => {
 		);
 	}
 	const integration = integrationResult.data;
-	const debug = parsedOptions.debug;
+
+	if (integration !== 'alt-text' && integration !== 'daily' && options.limit !== undefined) {
+		throw createError(
+			'VALIDATION_ERROR',
+			'--limit is only supported for `rcr sync alt-text` (or `rcr sync daily`).'
+		);
+	}
+
+	let debug: boolean;
+	let limit: number | undefined;
+
+	if (integration === 'alt-text' || integration === 'daily') {
+		const parsedOptions = parseOptions(AltTextSyncOptionsSchema, options);
+		debug = parsedOptions.debug;
+		limit = parsedOptions.limit;
+	} else {
+		const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
+		debug = parsedOptions.debug;
+		limit = undefined;
+	}
 
 	// Handle 'daily' as a special case that runs multiple syncs
 	if (integration === 'daily') {
-		return runDailySync(debug);
+		return runDailySync({ debug, limit });
 	}
 
 	try {
-		const result = await runSingleSync(integration, debug);
+		const result = await runSingleSync(integration, { debug, limit });
 		// Integration results have complex types that don't fit ResultValue exactly,
 		// but they serialize to JSON correctly which is what the CLI needs
 		return success(result as Parameters<typeof success>[0]);
@@ -97,10 +124,17 @@ export { run as browsing };
 export { run as twitter };
 export { run as agents };
 export { run as avatars };
+export { run as 'alt-text' };
 export { run as embeddings };
 export { run as daily };
 
-async function runSingleSync(integration: IntegrationName, debug: boolean) {
+interface SyncOptions {
+	debug: boolean;
+	limit?: number;
+}
+
+async function runSingleSync(integration: IntegrationName, options: SyncOptions) {
+	const { debug, limit } = options;
 	const startTime = performance.now();
 
 	switch (integration) {
@@ -190,6 +224,15 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 				duration: Math.round(performance.now() - startTime),
 			};
 		}
+		case 'alt-text': {
+			const result = await runAltTextIntegration({ debug, limit });
+			return {
+				integration,
+				success: true,
+				...result,
+				duration: Math.round(performance.now() - startTime),
+			};
+		}
 		case 'embeddings': {
 			await runEmbedRecordsIntegration();
 			return {
@@ -203,7 +246,7 @@ async function runSingleSync(integration: IntegrationName, debug: boolean) {
 	}
 }
 
-async function runDailySync(debug: boolean) {
+async function runDailySync(options: SyncOptions) {
 	const dailyIntegrations: IntegrationName[] = [
 		'browsing',
 		'raindrop',
@@ -211,6 +254,7 @@ async function runDailySync(debug: boolean) {
 		'github',
 		'airtable',
 		'twitter',
+		'alt-text', // Generate alt text before embeddings
 		'embeddings',
 	];
 
@@ -219,7 +263,7 @@ async function runDailySync(debug: boolean) {
 
 	for (const integration of dailyIntegrations) {
 		try {
-			await runSingleSync(integration, debug);
+			await runSingleSync(integration, options);
 			results.push({ integration, success: true });
 		} catch (e) {
 			results.push({
