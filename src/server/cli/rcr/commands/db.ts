@@ -10,6 +10,9 @@
 
 import { spawn } from 'bun';
 import { count } from 'drizzle-orm';
+import { realpathSync } from 'fs';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { links, predicates, records } from '@aias/hozo';
 import { db } from '@/server/db/connections';
@@ -20,6 +23,12 @@ import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
 const LocationSchema = z.enum(['local', 'remote']);
+
+// Resolve project root from this file's location (src/server/cli/rcr/commands/db.ts -> project root)
+const scriptPath = fileURLToPath(import.meta.url);
+const realScriptPath = realpathSync(scriptPath);
+const projectRoot = resolve(dirname(realScriptPath), '../../../../..');
+const dbManagerPath = resolve(projectRoot, 'src/server/db/db-manager.sh');
 
 const BackupOptionsSchema = BaseOptionsSchema.extend({
 	'data-only': z.boolean().optional(),
@@ -39,8 +48,8 @@ const RestoreOptionsSchema = BaseOptionsSchema.extend({
  */
 async function runDbManager(args: string[]): Promise<void> {
 	const proc = spawn({
-		cmd: ['bash', 'src/server/db/db-manager.sh', ...args],
-		cwd: process.cwd(),
+		cmd: ['bash', dbManagerPath, ...args],
+		cwd: projectRoot,
 		stdout: 'inherit',
 		stderr: 'inherit',
 	});
@@ -216,10 +225,12 @@ export const status: CommandHandler = async (args, options) => {
 		);
 	}
 
-	// Query counts from database
-	const [recordCount] = await db.select({ count: count() }).from(records);
-	const [linkCount] = await db.select({ count: count() }).from(links);
-	const [predicateCount] = await db.select({ count: count() }).from(predicates);
+	// Query counts from database in parallel (sequential queries hang in CLI context)
+	const [[recordCount], [linkCount], [predicateCount]] = await Promise.all([
+		db.select({ count: count() }).from(records),
+		db.select({ count: count() }).from(links),
+		db.select({ count: count() }).from(predicates),
+	]);
 
 	return success({
 		location,

@@ -291,11 +291,11 @@ async function main(): Promise<void> {
 
 	try {
 		const result = withDuration(await handler(args, rawOptions), startTime);
-		console.log(formatOutput(result, baseOptions.format));
+		await Bun.write(Bun.stdout, formatOutput(result, baseOptions.format) + '\n');
 		process.exit(0);
 	} catch (error) {
 		const normalizedError = error instanceof Error ? error : String(error);
-		console.log(formatError(normalizedError, baseOptions.format));
+		await Bun.write(Bun.stdout, formatError(normalizedError, baseOptions.format) + '\n');
 		process.exit(1);
 	}
 }
