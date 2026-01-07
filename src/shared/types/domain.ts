@@ -21,7 +21,10 @@ export interface FullRecord extends RecordSelect {
 }
 
 // Partial link data for efficient operations
-export type LinkPartial = Pick<LinkSelect, 'id' | 'sourceId' | 'targetId' | 'predicateId'>;
+export type LinkPartial = Pick<
+	LinkSelect,
+	'id' | 'sourceId' | 'targetId' | 'predicateId' | 'recordUpdatedAt'
+>;
 
 // Links for a specific record
 export type RecordLinks = {

@@ -74,7 +74,8 @@ export function useUpsertLink() {
 				sourceId: finalSourceId,
 				targetId: finalTargetId,
 				predicateId: finalPredicateId,
-			} as const;
+				recordUpdatedAt: new Date(),
+			};
 
 			// Add the link to the correct arrays based on the final (canonicalized) direction
 			utils.links.listForRecord.setData({ id: finalSourceId }, (data) => {

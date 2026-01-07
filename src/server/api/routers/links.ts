@@ -39,6 +39,7 @@ export const linksRouter = createTRPCRouter({
 							sourceId: true,
 							targetId: true,
 							predicateId: true,
+							recordUpdatedAt: true,
 						},
 					},
 					incomingLinks: {
@@ -47,6 +48,7 @@ export const linksRouter = createTRPCRouter({
 							sourceId: true,
 							targetId: true,
 							predicateId: true,
+							recordUpdatedAt: true,
 						},
 					},
 				},
@@ -78,6 +80,7 @@ export const linksRouter = createTRPCRouter({
 					sourceId: true,
 					targetId: true,
 					predicateId: true,
+					recordUpdatedAt: true,
 				},
 				where: {
 					OR: [

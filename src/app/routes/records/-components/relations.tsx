@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import type { LinkSelect, PredicateSelect } from '@aias/hozo';
+import type { LinkSelect, PredicateSelect, PredicateType } from '@aias/hozo';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
@@ -10,7 +10,19 @@ import { useDeleteLinks } from '@/lib/hooks/link-mutations';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
-import type { DbId, RecordGet } from '@/shared/types';
+import { exhaustive } from '@/shared/lib/type-utils';
+import type { DbId, LinkPartial, RecordGet } from '@/shared/types';
+
+/** Predicate types in display priority order (first = highest priority) */
+const PREDICATE_TYPE_ORDER = exhaustive<PredicateType>()([
+	'identity',
+	'containment',
+	'creation',
+	'reference',
+	'association',
+	'form',
+	'description',
+]);
 
 interface RelationsListProps {
 	id: DbId;
@@ -48,13 +60,33 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 		};
 	}, []);
 
-	const outgoingLinks = useMemo(() => recordLinks?.outgoingLinks ?? [], [recordLinks]);
+	const sortLinks = (links: LinkPartial[]): LinkPartial[] => {
+		return [...links].sort((a, b) => {
+			const typeA = predicates[a.predicateId]?.type;
+			const typeB = predicates[b.predicateId]?.type;
+			const orderA = typeA ? PREDICATE_TYPE_ORDER.indexOf(typeA) : PREDICATE_TYPE_ORDER.length;
+			const orderB = typeB ? PREDICATE_TYPE_ORDER.indexOf(typeB) : PREDICATE_TYPE_ORDER.length;
+
+			// Sort by predicate type priority first
+			if (orderA !== orderB) return orderA - orderB;
+
+			// Then by recordUpdatedAt descending (most recent first)
+			return b.recordUpdatedAt.getTime() - a.recordUpdatedAt.getTime();
+		});
+	};
+
+	const outgoingLinks = useMemo(
+		() => sortLinks(recordLinks?.outgoingLinks ?? []),
+		[recordLinks, predicates]
+	);
 	const incomingLinks = useMemo(
 		() =>
-			recordLinks?.incomingLinks.filter(
-				(link) => predicates[link.predicateId]?.type !== 'containment'
-			) ?? [],
-		[recordLinks]
+			sortLinks(
+				recordLinks?.incomingLinks.filter(
+					(link) => predicates[link.predicateId]?.type !== 'containment'
+				) ?? []
+			),
+		[recordLinks, predicates]
 	);
 	const totalLinks = useMemo(
 		() => outgoingLinks.length + incomingLinks.length,
@@ -185,8 +217,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 						<ArrowLeftIcon className="h-4 w-4" /> Incoming
 					</h4>
 					<ul className="flex flex-col gap-2 text-xs">
-						{/* For incoming links, more recent is more relevant */}
-						{incomingLinks.toReversed().map((link) => (
+						{incomingLinks.map((link) => (
 							<li
 								key={`${link.sourceId}-${link.targetId}-${link.predicateId}`}
 								className="flex items-center gap-2"
