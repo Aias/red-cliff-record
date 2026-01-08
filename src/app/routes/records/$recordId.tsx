@@ -195,6 +195,22 @@ function RouteComponent() {
 		return flattenTree(tree);
 	}, [tree]);
 
+	// Instant scroll to the active record when navigating
+	useEffect(() => {
+		if (!tree || nodes.length === 0) return;
+
+		// Use requestAnimationFrame to ensure DOM is rendered
+		requestAnimationFrame(() => {
+			const element = document.querySelector(`[data-record-id="${recordId}"]`);
+			if (element) {
+				element.scrollIntoView({
+					behavior: 'instant',
+					block: 'center',
+				});
+			}
+		});
+	}, [recordId, tree, nodes.length]);
+
 	const handleFinalize = useCallback(() => {
 		const idsToCurate = Array.from(new Set(nodes.map((t) => t.id)));
 
@@ -269,7 +285,7 @@ function RouteComponent() {
 		<div className="flex flex-1 overflow-x-auto">
 			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider p-3">
 				{nodes.map((node) => (
-					<li key={node.id}>
+					<li key={node.id} data-record-id={node.id}>
 						{node.id === recordId ? (
 							<RecordForm
 								recordId={node.id}
