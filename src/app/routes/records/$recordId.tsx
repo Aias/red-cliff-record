@@ -268,7 +268,8 @@ function RouteComponent() {
 	// Find the index of the active record to split nodes into before/after groups
 	const activeIndex = nodes.findIndex((node) => node.id === recordId);
 	const nodesBefore = activeIndex > 0 ? nodes.slice(0, activeIndex) : [];
-	const nodesAfter = activeIndex >= 0 && activeIndex < nodes.length - 1 ? nodes.slice(activeIndex + 1) : [];
+	const nodesAfter =
+		activeIndex >= 0 && activeIndex < nodes.length - 1 ? nodes.slice(activeIndex + 1) : [];
 
 	return (
 		<div className="flex flex-1 overflow-x-auto">

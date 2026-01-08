@@ -96,10 +96,7 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 	return (
 		<article
 			onClick={handleClick}
-			className={cn(
-				'card cursor-pointer py-3 transition-colors hover:border-c-edge',
-				className
-			)}
+			className={cn('card cursor-pointer py-3 transition-colors hover:border-c-edge', className)}
 		>
 			{/* Header row */}
 			<header className="mb-3 flex items-center gap-2 border-b border-c-divider pb-2">
@@ -166,25 +163,21 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 				{summary && (
 					<div>
 						<h3 className="mb-1 text-xs font-semibold text-c-secondary uppercase">Summary</h3>
-						<p className="whitespace-pre-wrap text-sm leading-relaxed text-c-primary">
-							{summary}
-						</p>
+						<p className="text-sm leading-relaxed whitespace-pre-wrap text-c-primary">{summary}</p>
 					</div>
 				)}
 
 				{content && (
 					<div>
 						<h3 className="mb-1 text-xs font-semibold text-c-secondary uppercase">Content</h3>
-						<p className="whitespace-pre-wrap text-sm leading-relaxed text-c-primary">
-							{content}
-						</p>
+						<p className="text-sm leading-relaxed whitespace-pre-wrap text-c-primary">{content}</p>
 					</div>
 				)}
 
 				{notes && (
 					<div>
 						<h3 className="mb-1 text-xs font-semibold text-c-secondary uppercase">Notes</h3>
-						<p className="whitespace-pre-wrap text-sm leading-relaxed text-c-primary">{notes}</p>
+						<p className="text-sm leading-relaxed whitespace-pre-wrap text-c-primary">{notes}</p>
 					</div>
 				)}
 			</div>
@@ -229,9 +222,7 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 							</div>
 						))}
 					</div>
-					{mediaCaption && (
-						<p className="mt-2 text-sm text-c-secondary italic">{mediaCaption}</p>
-					)}
+					{mediaCaption && <p className="mt-2 text-sm text-c-secondary italic">{mediaCaption}</p>}
 				</div>
 			)}
 		</article>
