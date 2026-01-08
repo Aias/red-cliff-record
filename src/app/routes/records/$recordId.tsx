@@ -265,45 +265,24 @@ function RouteComponent() {
 		);
 	}
 
-	// Find the index of the active record to split nodes into before/after groups
-	const activeIndex = nodes.findIndex((node) => node.id === recordId);
-	const nodesBefore = activeIndex > 0 ? nodes.slice(0, activeIndex) : [];
-	const nodesAfter =
-		activeIndex >= 0 && activeIndex < nodes.length - 1 ? nodes.slice(activeIndex + 1) : [];
-
 	return (
 		<div className="flex flex-1 overflow-x-auto">
-			<div className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider p-3">
-				{/* Records before the active one (parents, grandparents, etc.) */}
-				{nodesBefore.length > 0 && (
-					<ul className="flex flex-col gap-3">
-						{nodesBefore.map((node) => (
-							<li key={node.id}>
-								<RecordDisplay recordId={node.id} />
-							</li>
-						))}
-					</ul>
-				)}
-
-				{/* Active record form */}
-				<RecordForm
-					recordId={recordId}
-					className="card border-c-edge py-3"
-					onFinalize={handleFinalize}
-					onDelete={() => handleDelete(recordId)}
-				/>
-
-				{/* Records after the active one (children, grandchildren, siblings, etc.) */}
-				{nodesAfter.length > 0 && (
-					<ul className="flex flex-col gap-3">
-						{nodesAfter.map((node) => (
-							<li key={node.id}>
-								<RecordDisplay recordId={node.id} />
-							</li>
-						))}
-					</ul>
-				)}
-			</div>
+			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider p-3">
+				{nodes.map((node) => (
+					<li key={node.id}>
+						{node.id === recordId ? (
+							<RecordForm
+								recordId={node.id}
+								className="card border-c-edge py-3"
+								onFinalize={handleFinalize}
+								onDelete={() => handleDelete(node.id)}
+							/>
+						) : (
+							<RecordDisplay recordId={node.id} />
+						)}
+					</li>
+				))}
+			</ul>
 			<div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto bg-c-container p-4">
 				<RelationsList id={recordId} />
 				<SimilarRecords id={recordId} />

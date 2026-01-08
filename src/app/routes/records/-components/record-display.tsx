@@ -1,11 +1,11 @@
 import { memo } from 'react';
-import type { MediaType } from '@aias/hozo';
-import { useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
+import { RectangleEllipsisIcon } from 'lucide-react';
 import { recordTypeIcons } from './type-icons';
 import { Avatar } from '@/components/avatar';
 import { ExternalLink } from '@/components/external-link';
 import { IntegrationLogo } from '@/components/integration-logo';
-import { LazyVideo } from '@/components/lazy-video';
+import MediaGrid from '@/components/media-grid';
 import { Spinner } from '@/components/spinner';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
@@ -16,18 +16,25 @@ interface RecordDisplayProps {
 	className?: string;
 }
 
+const formatDate = (date: Date) => {
+	return new Intl.DateTimeFormat(undefined, {
+		year: 'numeric',
+		month: 'short',
+		day: '2-digit',
+	}).format(date);
+};
+
 /**
  * Compact read-only display of a record.
  * Shows all record data in a typographically clean format.
- * Clicking navigates to edit that record.
+ * Clicking the title navigates to edit that record.
  */
 export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) => {
-	const navigate = useNavigate();
 	const { data: record, isLoading, isError } = useRecord(recordId);
 
 	if (isLoading) {
 		return (
-			<div className={cn('card flex items-center justify-center py-8', className)}>
+			<div className={cn('card flex items-center justify-center py-6', className)}>
 				<Spinner />
 			</div>
 		);
@@ -35,8 +42,9 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 
 	if (isError || !record) {
 		return (
-			<div className={cn('card py-4 text-center text-c-hint italic', className)}>
-				Record not found (ID: {recordId})
+			<div className={cn('card flex items-center gap-2 py-4 text-c-hint italic', className)}>
+				<RectangleEllipsisIcon className="size-4" />
+				<span>Record not found (ID: {recordId})</span>
 			</div>
 		);
 	}
@@ -56,6 +64,8 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 		sources,
 		media,
 		recordCreatedAt,
+		isCurated,
+		isPrivate,
 		outgoingLinks,
 	} = record;
 
@@ -76,65 +86,55 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 
 	const displayTitle = title ?? creatorTitle ?? (parentTitle ? `↳ ${parentTitle}` : 'Untitled');
 	const TypeIcon = recordTypeIcons[type].icon;
-
-	// Pick media items to display
-	const mediaItems: Array<{ type: MediaType; url: string; altText?: string | null }> = [];
-	if (media && media.length > 0) {
-		media.forEach((m) => mediaItems.push(m));
-	} else if (avatarUrl) {
-		mediaItems.push({ type: 'image', url: avatarUrl });
-	}
-
-	const handleClick = () => {
-		void navigate({
-			to: '/records/$recordId',
-			params: { recordId: id.toString() },
-			search: true,
-		});
-	};
+	const recordMedia = media ?? [];
+	const recordSources = sources ?? [];
+	const hasMedia = recordMedia.length > 0;
+	const showAvatar = !hasMedia && Boolean(avatarUrl);
 
 	return (
 		<article
-			onClick={handleClick}
-			className={cn('card cursor-pointer py-3 transition-colors hover:border-c-edge', className)}
+			className={cn('card flex flex-col gap-4 px-4 py-3 text-sm', className)}
+			data-slot="record-display"
 		>
-			{/* Header row */}
-			<header className="mb-3 flex items-center gap-2 border-b border-c-divider pb-2">
+			{/* Header */}
+			<header className="flex flex-wrap items-start gap-3" data-slot="record-display-header">
 				<Avatar
 					src={avatarUrl ?? undefined}
 					fallback={(displayTitle.charAt(0) ?? type.charAt(0)).toUpperCase()}
 					className="size-6"
 				/>
-				<span className="mr-auto truncate font-mono text-sm text-c-secondary capitalize">
-					{type} #{id}, {recordCreatedAt.toLocaleString()}
-				</span>
-				{sources && sources.length > 0 && (
-					<div className="flex items-center gap-1.5">
-						{sources.map((source) => (
-							<IntegrationLogo key={source} integration={source} className="text-base" />
-						))}
+				<div className="flex flex-1 flex-col gap-1">
+					<div className="flex items-center gap-2">
+						<TypeIcon className="size-4 shrink-0 text-c-hint" />
+						<Link
+							to="/records/$recordId"
+							params={{ recordId: id.toString() }}
+							search={true}
+							className="text-base font-semibold text-c-primary underline-offset-4 hover:underline"
+						>
+							{displayTitle}
+						</Link>
+						{abbreviation && <span className="text-xs text-c-hint">({abbreviation})</span>}
 					</div>
+					{sense && <em className="ml-6 text-xs text-c-secondary">{sense}</em>}
+				</div>
+
+				{recordSources.length > 0 && (
+					<ul className="flex items-center gap-2 text-xs text-c-secondary">
+						{recordSources.map((source) => (
+							<li key={source}>
+								<IntegrationLogo integration={source} />
+							</li>
+						))}
+					</ul>
 				)}
 			</header>
 
-			{/* Title section */}
-			<div className="mb-3 flex flex-col gap-1">
-				<div className="flex items-center gap-2">
-					<TypeIcon className="size-5 shrink-0 text-c-hint" />
-					<h2 className="text-lg leading-tight font-semibold text-c-display">
-						{displayTitle}
-						{abbreviation && (
-							<span className="ml-2 text-sm font-normal text-c-hint">({abbreviation})</span>
-						)}
-					</h2>
-				</div>
-				{sense && <p className="ml-7 text-sm text-c-hint italic">{sense}</p>}
-			</div>
-
 			{/* URL */}
 			{url && (
-				<div className="mb-3 ml-7 flex items-center gap-1 text-sm">
-					<ExternalLink href={url} className="truncate text-c-accent hover:underline">
+				<div className="flex items-center gap-2 text-xs text-c-secondary">
+					<span className="text-c-hint">Source</span>
+					<ExternalLink href={url} className="truncate">
 						{(() => {
 							try {
 								return new URL(url).hostname.replace(/^www\./, '');
@@ -148,7 +148,7 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 
 			{/* Creator / Parent metadata */}
 			{(creatorTitle || parentTitle) && (
-				<div className="mb-3 ml-7 flex flex-col gap-0.5 text-sm text-c-secondary">
+				<div className="flex flex-col gap-0.5 text-xs text-c-secondary">
 					{creatorTitle && <span>By {creatorTitle}</span>}
 					{parentTitle && (
 						<span>
@@ -158,73 +158,83 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 				</div>
 			)}
 
-			{/* Text content sections */}
-			<div className="ml-7 flex flex-col gap-3">
-				{summary && (
-					<div>
-						<h3 className="mb-1 text-xs font-semibold text-c-secondary uppercase">Summary</h3>
-						<p className="text-sm leading-relaxed whitespace-pre-wrap text-c-primary">{summary}</p>
-					</div>
-				)}
-
-				{content && (
-					<div>
-						<h3 className="mb-1 text-xs font-semibold text-c-secondary uppercase">Content</h3>
-						<p className="text-sm leading-relaxed whitespace-pre-wrap text-c-primary">{content}</p>
-					</div>
-				)}
-
-				{notes && (
-					<div>
-						<h3 className="mb-1 text-xs font-semibold text-c-secondary uppercase">Notes</h3>
-						<p className="text-sm leading-relaxed whitespace-pre-wrap text-c-primary">{notes}</p>
-					</div>
-				)}
-			</div>
-
-			{/* Media section */}
-			{mediaItems.length > 0 && (
-				<div className="mt-3">
-					<div
-						className={cn(
-							'grid gap-2',
-							mediaItems.length === 1
-								? 'grid-cols-1'
-								: mediaItems.length === 2
-									? 'grid-cols-2'
-									: 'grid-cols-3'
-						)}
-					>
-						{mediaItems.map((item, idx) => (
-							<div
-								key={idx}
-								className="relative aspect-video overflow-hidden rounded-md border border-c-divider bg-c-mist"
-							>
-								{item.type === 'image' ? (
-									<img
-										src={item.url}
-										alt={item.altText ?? mediaCaption ?? ''}
-										className="size-full object-cover"
-										loading="lazy"
-										decoding="async"
-									/>
-								) : (
-									<LazyVideo
-										src={item.url}
-										aria-label={item.altText ?? mediaCaption ?? undefined}
-										className="size-full object-cover"
-										autoPlay
-										playsInline
-										muted
-										loop
-									/>
-								)}
-							</div>
-						))}
-					</div>
-					{mediaCaption && <p className="mt-2 text-sm text-c-secondary italic">{mediaCaption}</p>}
-				</div>
+			{/* Status badges */}
+			{(isPrivate || isCurated) && (
+				<ul className="flex flex-wrap gap-2 text-xs text-c-secondary">
+					{isPrivate && <li className="rounded-full bg-c-mist px-2 py-1">Private</li>}
+					{isCurated && <li className="rounded-full bg-c-mist px-2 py-1">Curated</li>}
+				</ul>
 			)}
+
+			{/* Media */}
+			{hasMedia && (
+				<figure className="flex flex-col gap-2">
+					<MediaGrid media={recordMedia} />
+					{mediaCaption && (
+						<figcaption className="text-xs text-c-secondary">{mediaCaption}</figcaption>
+					)}
+				</figure>
+			)}
+
+			{/* Avatar as fallback image */}
+			{showAvatar && (
+				<figure className="flex flex-col gap-2">
+					<img
+						src={avatarUrl ?? ''}
+						alt={title ?? 'Record avatar'}
+						className="h-auto w-full rounded-md border border-c-divider object-cover"
+						loading="lazy"
+						decoding="async"
+					/>
+					{mediaCaption && (
+						<figcaption className="text-xs text-c-secondary">{mediaCaption}</figcaption>
+					)}
+				</figure>
+			)}
+
+			{/* Media caption without media */}
+			{mediaCaption && !hasMedia && !showAvatar && (
+				<section className="flex flex-col gap-1" data-slot="record-display-media-caption">
+					<h4 className="text-xs font-semibold tracking-wide text-c-hint uppercase">
+						Media caption
+					</h4>
+					<p className="text-sm whitespace-pre-wrap text-c-primary">{mediaCaption}</p>
+				</section>
+			)}
+
+			{/* Summary */}
+			{summary && (
+				<section className="flex flex-col gap-1" data-slot="record-display-summary">
+					<h4 className="text-xs font-semibold tracking-wide text-c-hint uppercase">Summary</h4>
+					<p className="text-sm whitespace-pre-wrap text-c-primary">{summary}</p>
+				</section>
+			)}
+
+			{/* Content */}
+			{content && (
+				<section className="flex flex-col gap-1" data-slot="record-display-content">
+					<h4 className="text-xs font-semibold tracking-wide text-c-hint uppercase">Content</h4>
+					<p className="text-sm whitespace-pre-wrap text-c-primary">{content}</p>
+				</section>
+			)}
+
+			{/* Notes */}
+			{notes && (
+				<section className="flex flex-col gap-1" data-slot="record-display-notes">
+					<h4 className="text-xs font-semibold tracking-wide text-c-hint uppercase">Notes</h4>
+					<p className="text-sm whitespace-pre-wrap text-c-primary">{notes}</p>
+				</section>
+			)}
+
+			{/* Metadata */}
+			<dl className="grid gap-3 text-xs text-c-secondary md:grid-cols-2">
+				<div className="flex flex-col gap-1">
+					<dt className="text-c-hint">Created</dt>
+					<dd className="text-c-primary">
+						<time dateTime={recordCreatedAt.toISOString()}>{formatDate(recordCreatedAt)}</time>
+					</dd>
+				</div>
+			</dl>
 		</article>
 	);
 });
