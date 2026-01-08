@@ -3,6 +3,7 @@ import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
 import { trpc } from '@/app/trpc';
 import type { FamilyTree } from '@/server/api/routers/records/tree';
 import { RecordForm } from './-components/form';
+import { RecordDisplay } from './-components/record-display';
 import { RelationsList, SimilarRecords } from './-components/relations';
 import { Spinner } from '@/components/spinner';
 import { useDeleteRecords, useMarkAsCurated } from '@/lib/hooks/record-mutations';
@@ -194,53 +195,6 @@ function RouteComponent() {
 		return flattenTree(tree);
 	}, [tree]);
 
-	// Auto-scroll to the focused record when navigating
-	useEffect(() => {
-		// Wait for the DOM to update and data to be loaded
-		if (!tree || nodes.length === 0) return;
-
-		// Add a small delay to allow forms to render with their loading states
-		const timeoutId = setTimeout(() => {
-			// Use requestAnimationFrame to ensure DOM is fully rendered
-			const scrollToRecord = () => {
-				const element = document.getElementById(`record-${recordId}`);
-				if (element) {
-					// Check if element is already in view to avoid unnecessary scrolling
-					const rect = element.getBoundingClientRect();
-					const container = element.closest('.overflow-y-auto');
-
-					if (container) {
-						const containerRect = container.getBoundingClientRect();
-						const isInView = rect.top >= containerRect.top && rect.bottom <= containerRect.bottom;
-
-						if (!isInView) {
-							// Add a subtle highlight animation after scrolling
-							element.scrollIntoView({
-								behavior: 'smooth',
-								block: 'center',
-								inline: 'nearest',
-							});
-						}
-					} else {
-						// Fallback if container not found
-						element.scrollIntoView({
-							behavior: 'smooth',
-							block: 'center',
-							inline: 'nearest',
-						});
-					}
-				}
-			};
-
-			// Double requestAnimationFrame to ensure layout is complete
-			requestAnimationFrame(() => {
-				requestAnimationFrame(scrollToRecord);
-			});
-		}, 50); // 50ms delay to allow forms to stabilize
-
-		return () => clearTimeout(timeoutId);
-	}, [recordId, tree]); // Only depend on recordId and tree, not nodes to avoid unnecessary re-runs
-
 	const handleFinalize = useCallback(() => {
 		const idsToCurate = Array.from(new Set(nodes.map((t) => t.id)));
 
@@ -311,21 +265,44 @@ function RouteComponent() {
 		);
 	}
 
+	// Find the index of the active record to split nodes into before/after groups
+	const activeIndex = nodes.findIndex((node) => node.id === recordId);
+	const nodesBefore = activeIndex > 0 ? nodes.slice(0, activeIndex) : [];
+	const nodesAfter = activeIndex >= 0 && activeIndex < nodes.length - 1 ? nodes.slice(activeIndex + 1) : [];
+
 	return (
 		<div className="flex flex-1 overflow-x-auto">
-			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider p-3">
-				{nodes.map((node) => (
-					<li id={`record-${node.id}`} key={node.id} className="shrink-0">
-						<RecordForm
-							recordId={node.id}
-							className="card py-3 transition-colors not-data-active:opacity-80 data-active:border-c-edge"
-							data-active={node.id === recordId ? true : undefined}
-							onFinalize={handleFinalize}
-							onDelete={() => handleDelete(node.id)}
-						/>
-					</li>
-				))}
-			</ul>
+			<div className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider p-3">
+				{/* Records before the active one (parents, grandparents, etc.) */}
+				{nodesBefore.length > 0 && (
+					<ul className="flex flex-col gap-3">
+						{nodesBefore.map((node) => (
+							<li key={node.id}>
+								<RecordDisplay recordId={node.id} />
+							</li>
+						))}
+					</ul>
+				)}
+
+				{/* Active record form */}
+				<RecordForm
+					recordId={recordId}
+					className="card border-c-edge py-3"
+					onFinalize={handleFinalize}
+					onDelete={() => handleDelete(recordId)}
+				/>
+
+				{/* Records after the active one (children, grandchildren, siblings, etc.) */}
+				{nodesAfter.length > 0 && (
+					<ul className="flex flex-col gap-3">
+						{nodesAfter.map((node) => (
+							<li key={node.id}>
+								<RecordDisplay recordId={node.id} />
+							</li>
+						))}
+					</ul>
+				)}
+			</div>
 			<div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto bg-c-container p-4">
 				<RelationsList id={recordId} />
 				<SimilarRecords id={recordId} />
