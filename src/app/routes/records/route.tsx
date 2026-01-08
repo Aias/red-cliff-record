@@ -48,7 +48,7 @@ function RouteComponent() {
 		(value: string) => {
 			void navigate({
 				to: '/records/$recordId',
-				params: { recordId: value },
+				params: { recordId: Number(value) },
 				search,
 			});
 		},

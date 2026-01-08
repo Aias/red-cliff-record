@@ -273,7 +273,7 @@ export function RecordForm({
 					e.stopPropagation();
 					void navigate({
 						to: '/records/$recordId',
-						params: { recordId: recordId.toString() },
+						params: { recordId },
 						search: true,
 					});
 				}
@@ -719,7 +719,7 @@ export function RecordForm({
 						</Popover>
 						<Link
 							to="/records/$recordId"
-							params={{ recordId: recordId.toString() }}
+							params={{ recordId }}
 							search={true}
 							className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
 						>

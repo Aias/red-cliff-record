@@ -48,7 +48,7 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 					<TooltipTrigger asChild>
 						<Link
 							to="/records/$recordId"
-							params={{ recordId: record.id.toString() }}
+							params={{ recordId: record.id }}
 							className="block w-full truncate"
 						>
 							{title}

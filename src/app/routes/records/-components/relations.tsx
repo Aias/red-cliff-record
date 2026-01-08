@@ -124,7 +124,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 								onSelect: () => {
 									void navigate({
 										to: '/records/$recordId',
-										params: { recordId: targetId.toString() },
+										params: { recordId: targetId },
 										search: true,
 										state: { focusForm: true },
 									});
@@ -169,7 +169,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 												onSelect: () => {
 													void navigate({
 														to: '/records/$recordId',
-														params: { recordId: targetId.toString() },
+														params: { recordId: targetId },
 														search: true,
 														state: { focusForm: true },
 													});
@@ -198,7 +198,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 									linkOptions={{
 										to: '/records/$recordId',
 										search: true,
-										params: { recordId: link.targetId.toString() },
+										params: { recordId: link.targetId },
 									}}
 								/>
 							</li>
@@ -248,7 +248,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 												onSelect: () => {
 													void navigate({
 														to: '/records/$recordId',
-														params: { recordId: link.sourceId.toString() },
+														params: { recordId: link.sourceId },
 														search: true,
 														state: { focusForm: true },
 													});
@@ -277,7 +277,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 									linkOptions={{
 										to: '/records/$recordId',
 										search: true,
-										params: { recordId: link.sourceId.toString() },
+										params: { recordId: link.sourceId },
 									}}
 								/>
 							</li>
@@ -339,7 +339,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 											onSelect: () => {
 												void navigate({
 													to: '/records/$recordId',
-													params: { recordId: targetId.toString() },
+													params: { recordId: targetId },
 													search: true,
 													state: { focusForm: true },
 												});
@@ -358,9 +358,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 								linkOptions={{
 									to: '/records/$recordId',
 									search: true,
-									params: {
-										recordId: record.id.toString(),
-									},
+									params: { recordId: record.id },
 								}}
 							/>
 						</li>

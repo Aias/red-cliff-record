@@ -50,7 +50,7 @@ export const SiteSearch = () => {
 		setInputValue('');
 		void navigate({
 			to: '/records/$recordId',
-			params: { recordId: recordId.toString() },
+			params: { recordId },
 			search: (prev) => ({ ...defaultQueueOptions, ...prev }),
 		});
 	};

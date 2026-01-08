@@ -5,7 +5,7 @@
 
 import type { ZodType } from 'zod';
 import { z } from 'zod';
-import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
+import { CoercedIdSchema, IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
 import { createError } from './errors';
 import type { ParsedArgs, RawCLIOptions, ResultValue } from './types';
 
@@ -148,10 +148,10 @@ export async function parseJsonInput<T extends ResultValue>(
 }
 
 /**
- * Parse a list of IDs from args using Zod coercion
+ * Parse a list of IDs from args (coerces strings to numbers)
  */
 export function parseIds(args: string[]): number[] {
-	const result = z.array(z.coerce.number().pipe(IdSchema)).safeParse(args);
+	const result = z.array(CoercedIdSchema).safeParse(args);
 	if (!result.success) {
 		throw createError('VALIDATION_ERROR', `Invalid ID(s): ${args.join(', ')}`);
 	}
@@ -159,14 +159,14 @@ export function parseIds(args: string[]): number[] {
 }
 
 /**
- * Parse a single required ID from args using Zod coercion
+ * Parse a single required ID from args (coerces string to number)
  */
 export function parseId(args: string[], position = 0): number {
 	const arg = args[position];
 	if (arg === undefined) {
 		throw createError('VALIDATION_ERROR', 'ID is required');
 	}
-	const result = z.coerce.number().pipe(IdSchema).safeParse(arg);
+	const result = CoercedIdSchema.safeParse(arg);
 	if (!result.success) {
 		throw createError('VALIDATION_ERROR', `Invalid ID: ${arg}`);
 	}

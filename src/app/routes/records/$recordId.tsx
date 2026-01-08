@@ -7,12 +7,13 @@ import { RelationsList, SimilarRecords } from './-components/relations';
 import { Spinner } from '@/components/spinner';
 import { useDeleteRecords, useMarkAsCurated } from '@/lib/hooks/record-mutations';
 import { useRecordTree } from '@/lib/hooks/record-queries';
-import type { DbId } from '@/shared/types';
+import { CoercedIdSchema, type DbId } from '@/shared/types';
 
 export const Route = createFileRoute('/records/$recordId')({
+	params: { parse: (params) => ({ recordId: CoercedIdSchema.parse(params.recordId) }) },
 	component: RouteComponent,
 	loader: async ({ context: { trpc, queryClient }, params: { recordId } }) => {
-		await queryClient.ensureQueryData(trpc.records.get.queryOptions({ id: Number(recordId) }));
+		await queryClient.ensureQueryData(trpc.records.get.queryOptions({ id: recordId }));
 	},
 	search: {
 		middlewares: [retainSearchParams(true)],
@@ -162,8 +163,7 @@ function RouteComponent() {
 	const { data: recordsList } = trpc.records.list.useQuery(search, {
 		placeholderData: (prev) => prev,
 	});
-	const { recordId: recordIdParam } = Route.useParams();
-	const recordId = useMemo(() => Number(recordIdParam), [recordIdParam]);
+	const { recordId } = Route.useParams();
 	const { data: tree, isError: treeError, isLoading: treeLoading } = useRecordTree(recordId);
 	const markAsCurated = useMarkAsCurated();
 	const deleteMutation = useDeleteRecords();
@@ -176,7 +176,7 @@ function RouteComponent() {
 			if (firstAvailableId && firstAvailableId !== recordId) {
 				void navigate({
 					to: '/records/$recordId',
-					params: { recordId: firstAvailableId.toString() },
+					params: { recordId: firstAvailableId },
 					search: true,
 				});
 			} else {
@@ -256,7 +256,7 @@ function RouteComponent() {
 		if (nextId) {
 			void navigate({
 				to: '/records/$recordId',
-				params: { recordId: nextId.toString() },
+				params: { recordId: nextId },
 				search: true,
 			});
 		} else {
@@ -277,7 +277,7 @@ function RouteComponent() {
 			if (nextId) {
 				void navigate({
 					to: '/records/$recordId',
-					params: { recordId: nextId.toString() },
+					params: { recordId: nextId },
 					search: true,
 				});
 			} else {

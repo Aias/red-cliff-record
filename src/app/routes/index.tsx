@@ -36,7 +36,7 @@ function Home() {
 						<Link
 							key={item.id}
 							to="/records/$recordId"
-							params={{ recordId: record.id.toString() }}
+							params={{ recordId: record.id }}
 							className="relative block aspect-3/2 overflow-hidden rounded-sm border border-c-divider bg-c-app focus-visible:ring-2 focus-visible:ring-c-focus focus-visible:ring-offset-2 focus-visible:outline-none"
 						>
 							{/* Gradient from bottom 50% with semi-transparent black */}
