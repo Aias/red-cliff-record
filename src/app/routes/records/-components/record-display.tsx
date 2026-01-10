@@ -108,7 +108,7 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 						<TypeIcon className="size-4 shrink-0 text-c-hint" />
 						<Link
 							to="/records/$recordId"
-							params={{ recordId: id.toString() }}
+							params={{ recordId: id }}
 							search={true}
 							className="text-base font-semibold text-c-primary underline-offset-4 hover:underline"
 						>
