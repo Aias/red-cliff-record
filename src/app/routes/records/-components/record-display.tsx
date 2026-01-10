@@ -55,23 +55,7 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 		mediaCaption,
 		sources,
 		media,
-		outgoingLinks,
 	} = record;
-
-	// Resolve creator / parent from outgoing links
-	let creatorTitle: string | null = null;
-	let parentTitle: string | null = null;
-
-	if (outgoingLinks) {
-		for (const link of outgoingLinks) {
-			if (link.predicate.type === 'creation' && !creatorTitle) {
-				creatorTitle = link.target.title;
-			}
-			if (link.predicate.type === 'containment' && !parentTitle) {
-				parentTitle = link.target.title;
-			}
-		}
-	}
 
 	const TypeIcon = recordTypeIcons[type].icon;
 	const recordMedia = media ?? [];
