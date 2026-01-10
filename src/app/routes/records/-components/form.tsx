@@ -138,7 +138,7 @@ export function RecordForm({
 
 	const updateMutation = useUpsertRecord();
 	const deleteMediaMutation = useDeleteMedia();
-	const { uploadFile } = useRecordUpload(recordId);
+	const { uploadFile, isUploading } = useRecordUpload(recordId);
 
 	const form = useForm({
 		defaultValues: formData,
@@ -242,6 +242,32 @@ export function RecordForm({
 		[form, immediateSave, onFinalize]
 	);
 
+	// Form-level paste handler for media uploads
+	// Works regardless of whether MediaUpload component is visible
+	const handlePaste = useCallback(
+		(e: React.ClipboardEvent<HTMLFormElement>) => {
+			if (isUploading) return;
+
+			const items = e.clipboardData?.items;
+			if (!items) return;
+
+			for (const item of Array.from(items)) {
+				if (
+					item.kind === 'file' &&
+					(item.type.startsWith('image/') || item.type.startsWith('video/'))
+				) {
+					const file = item.getAsFile();
+					if (file) {
+						e.preventDefault();
+						void uploadFile(file);
+						return;
+					}
+				}
+			}
+		},
+		[uploadFile, isUploading]
+	);
+
 	if (isError) return <div>Error loading record</div>;
 
 	return (
@@ -268,6 +294,7 @@ export function RecordForm({
 					void curateAndNextHandler(e);
 				}
 			}}
+			onPaste={handlePaste}
 			className={cn('relative flex flex-col', className)}
 			{...props}
 		>
