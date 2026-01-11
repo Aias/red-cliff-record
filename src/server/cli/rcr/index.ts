@@ -96,9 +96,10 @@ let commands: Record<string, Record<string, CommandHandler>> | null = null;
 async function loadCommands() {
 	if (commands) return commands;
 
-	const [browsing, db, github, links, media, records, search, sync] = await Promise.all([
+	const [browsing, db, fetch, github, links, media, records, search, sync] = await Promise.all([
 		import('./commands/browsing'),
 		import('./commands/db'),
+		import('./commands/fetch'),
 		import('./commands/github'),
 		import('./commands/links'),
 		import('./commands/media'),
@@ -107,7 +108,7 @@ async function loadCommands() {
 		import('./commands/sync'),
 	]);
 
-	commands = { browsing, db, github, links, media, records, search, sync };
+	commands = { browsing, db, fetch, github, links, media, records, search, sync };
 	return commands;
 }
 
@@ -168,6 +169,8 @@ Commands:
   db seed                       Seed local database with predicates
   db status [local|remote]      Show connection info and record counts
 
+  fetch url <url>               Fetch URL as clean markdown [--content-only]
+
 Records List Filters:
   --type=<types>          Record types (comma-separated: entity,concept,artifact)
   --source=<sources>      Integration sources (comma-separated: readwise,github,...)
@@ -211,6 +214,7 @@ Examples:
   rcr github daily 2026-01-03               # Daily commit summary
   rcr sync github
   rcr db status                             # Show database record counts
+  rcr fetch url https://example.com/article # Fetch article as markdown
 `.trim();
 
 async function main(): Promise<void> {
