@@ -23,14 +23,14 @@
 		"lint": "oxlint --fix --type-aware . && tsgo --noEmit"
 	},
 	"dependencies": {
-		"drizzle-zod": "1.0.0-beta.8-dbc3565"
+		"drizzle-zod": "1.0.0-beta.10-42c284e"
 	},
 	"peerDependencies": {
-		"drizzle-orm": "1.0.0-beta.8-dbc3565",
+		"drizzle-orm": "1.0.0-beta.10-42c284e",
 		"zod": "^4.1.12"
 	},
 	"devDependencies": {
-		"drizzle-orm": "1.0.0-beta.8-dbc3565",
+		"drizzle-orm": "1.0.0-beta.10-42c284e",
 		"tsup": "^8.5.1",
 		"zod": "^4.1.12"
 	}

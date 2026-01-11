@@ -24,7 +24,6 @@ export type ResultValue =
 	| { [key: string]: ResultValue };
 
 export interface SuccessResult<T extends ResultValue> {
-	success: true;
 	data: T;
 	meta?: ResultMeta;
 }
@@ -38,7 +37,6 @@ export interface ResultMeta {
 }
 
 export interface ErrorResult {
-	success: false;
 	error: CLIError;
 }
 

@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import type { MediaType } from '@aias/hozo';
 import type { SearchResult } from '@/server/api/routers/search';
+import { CornerDownRightIcon } from 'lucide-react';
 import { recordTypeIcons } from './type-icons';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
@@ -49,7 +50,14 @@ export const SearchResultItem = memo(function SearchResultItem({
 			<strong className="text-c-accent">
 				{title ??
 					creatorTitle ??
-					(parentTitle ? `↳ ${parentTitle}` : `Untitled ${toTitleCase(type)}`)}
+					(parentTitle ? (
+						<>
+							<CornerDownRightIcon className="text-c-hint" />
+							{parentTitle}
+						</>
+					) : (
+						`Untitled ${toTitleCase(type)}`
+					))}
 			</strong>
 			{abbreviation && <span className="ml-1 text-c-hint">({abbreviation})</span>}
 		</>

@@ -2,7 +2,7 @@ import { memo } from 'react';
 import type { MediaType } from '@aias/hozo';
 import { Link } from '@tanstack/react-router';
 import type { LinkOptions } from '@tanstack/react-router';
-import { RectangleEllipsisIcon } from 'lucide-react';
+import { CornerDownRightIcon, RectangleEllipsisIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { recordTypeIcons } from './type-icons';
 import {
@@ -50,19 +50,22 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 	}
 
 	/* ---------- resolve creator / parent ---------- */
-	let creatorTitle: string | undefined | null;
+	const creatorTitles: string[] = [];
 	let parentTitle: string | undefined | null;
 
 	if (record.outgoingLinks) {
 		for (const link of record.outgoingLinks) {
-			if (link.predicate.type === 'creation' && !creatorTitle) {
-				creatorTitle = link.target.title;
+			if (link.predicate.type === 'creation' && link.target.title) {
+				creatorTitles.push(link.target.title);
 			}
 			if (link.predicate.type === 'containment' && !parentTitle) {
 				parentTitle = link.target.title;
 			}
 		}
 	}
+
+	const listFormatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+	const formattedCreators = creatorTitles.length > 0 ? listFormatter.format(creatorTitles) : null;
 
 	/* ---------- derive text fields ---------- */
 	const {
@@ -86,7 +89,16 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 
 	const labelElement = (
 		<>
-			{title ?? creatorTitle ?? (parentTitle ? `↳ ${parentTitle}` : 'Untitled')}
+			{title ??
+				creatorTitles[0] ??
+				(parentTitle ? (
+					<>
+						<CornerDownRightIcon className="text-c-hint" />
+						{parentTitle}
+					</>
+				) : (
+					'Untitled'
+				))}
 			{abbreviation && <span className="ml-1 text-c-hint">({abbreviation})</span>}
 		</>
 	);
@@ -189,8 +201,15 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 												<div className="flex items-baseline gap-1.5">
 													<h3 className="text-sm leading-tight font-semibold">
 														{title ??
-															creatorTitle ??
-															(parentTitle ? `↳ ${parentTitle}` : 'Untitled')}
+															creatorTitles[0] ??
+															(parentTitle ? (
+																<>
+																	<CornerDownRightIcon className="text-c-hint" />
+																	{parentTitle}
+																</>
+															) : (
+																'Untitled'
+															))}
 													</h3>
 													{abbreviation && (
 														<span className="shrink-0 text-xs text-c-hint">({abbreviation})</span>
@@ -215,9 +234,11 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 											</div>
 
 											{/* Metadata */}
-											{(creatorTitle || parentTitle) && (
+											{(formattedCreators || parentTitle) && (
 												<div className="flex flex-col gap-1 text-xs text-c-secondary">
-													{creatorTitle && <div className="text-c-hint">By {creatorTitle}</div>}
+													{formattedCreators && (
+														<div className="text-c-hint">By {formattedCreators}</div>
+													)}
 													{parentTitle && (
 														<div className="text-c-hint">
 															From <em>{parentTitle}</em>

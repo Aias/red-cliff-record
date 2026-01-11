@@ -1,5 +1,26 @@
+import type { RelationsFieldFilter } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
 import { ListRecordsInputSchema, type IdParamList } from '@/shared/types';
+
+/**
+ * Build a filter condition for the title column based on hasTitle and title text search.
+ * - hasTitle=false → filter for null titles only
+ * - hasTitle=true + title text → filter for non-null titles matching text
+ * - hasTitle=true → filter for non-null titles
+ * - title text only → filter for titles matching text (implicitly excludes nulls via ilike)
+ * - title=null (from API, not CLI) → filter for null titles (backwards compat)
+ */
+function buildTitleFilter(
+	hasTitle: boolean | undefined,
+	title: string | null | undefined
+): RelationsFieldFilter<string> | undefined {
+	if (hasTitle === false) return { isNull: true };
+	if (hasTitle === true && title) return { isNotNull: true, ilike: `%${title}%` };
+	if (hasTitle === true) return { isNotNull: true };
+	if (title === null) return { isNull: true };
+	if (title) return { ilike: `%${title}%` };
+	return undefined;
+}
 
 export const list = publicProcedure
 	.input(ListRecordsInputSchema)
@@ -11,6 +32,7 @@ export const list = publicProcedure
 				text,
 				url: domain,
 				hasParent,
+				hasTitle,
 				minRating,
 				maxRating,
 				isPrivate,
@@ -31,16 +53,7 @@ export const list = publicProcedure
 			},
 			where: {
 				type: types?.length ? { in: types } : undefined,
-				title:
-					title === null
-						? {
-								isNull: true,
-							}
-						: title
-							? {
-									ilike: `%${title}%`,
-								}
-							: undefined,
+				title: buildTitleFilter(hasTitle, title),
 				OR: text
 					? [
 							{

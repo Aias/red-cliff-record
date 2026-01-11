@@ -218,7 +218,7 @@
 }
 
 @utility icon {
-	@apply inline-flex aspect-square h-[1em] w-[1em] shrink-0 leading-none text-current;
+	@apply inline-flex aspect-square size-[1em] shrink-0 leading-none text-current;
 }
 
 @layer components {

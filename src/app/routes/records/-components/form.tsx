@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@aias/hozo';
 import { useForm } from '@tanstack/react-form';
-import { Link, useNavigate, useParams, useRouterState } from '@tanstack/react-router';
+import { Link, useRouterState } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
 import { z } from 'zod';
 import { recordTypeIcons } from './type-icons';
@@ -110,9 +110,6 @@ export function RecordForm({
 	className,
 	...props
 }: RecordFormProps) {
-	const navigate = useNavigate();
-	const params = useParams({ from: '/records/$recordId' });
-	const urlRecordId = useMemo(() => Number(params.recordId), [params.recordId]);
 	const routerState = useRouterState({ select: (s) => s.location.state });
 	const { data: record, isLoading, isError } = useRecord(recordId);
 
@@ -123,8 +120,7 @@ export function RecordForm({
 	const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Auto-focus title input when navigating with focusForm state
-	const isActiveForm = urlRecordId === recordId;
-	const shouldFocus = isActiveForm && routerState?.focusForm;
+	const shouldFocus = routerState?.focusForm;
 
 	useEffect(() => {
 		if (shouldFocus && !isLoading && titleInputRef.current) {
@@ -142,7 +138,7 @@ export function RecordForm({
 
 	const updateMutation = useUpsertRecord();
 	const deleteMediaMutation = useDeleteMedia();
-	const { uploadFile } = useRecordUpload(recordId);
+	const { uploadFile, isUploading } = useRecordUpload(recordId);
 
 	const form = useForm({
 		defaultValues: formData,
@@ -246,6 +242,32 @@ export function RecordForm({
 		[form, immediateSave, onFinalize]
 	);
 
+	// Form-level paste handler for media uploads
+	// Works regardless of whether MediaUpload component is visible
+	const handlePaste = useCallback(
+		(e: React.ClipboardEvent<HTMLFormElement>) => {
+			if (isUploading) return;
+
+			const items = e.clipboardData?.items;
+			if (!items) return;
+
+			for (const item of Array.from(items)) {
+				if (
+					item.kind === 'file' &&
+					(item.type.startsWith('image/') || item.type.startsWith('video/'))
+				) {
+					const file = item.getAsFile();
+					if (file) {
+						e.preventDefault();
+						void uploadFile(file);
+						return;
+					}
+				}
+			}
+		},
+		[uploadFile, isUploading]
+	);
+
 	if (isError) return <div>Error loading record</div>;
 
 	return (
@@ -263,21 +285,6 @@ export function RecordForm({
 					void immediateSave();
 				}
 			}}
-			onClickCapture={(e) => {
-				// Only navigate on actual mouse clicks, not synthetic/keyboard events
-				if (e.detail === 0 || e.detail === undefined || !e.detail) {
-					return;
-				}
-
-				if (!isNaN(urlRecordId) && urlRecordId !== recordId) {
-					e.stopPropagation();
-					void navigate({
-						to: '/records/$recordId',
-						params: { recordId },
-						search: true,
-					});
-				}
-			}}
 			onKeyDown={(e) => {
 				if (e.key === 'Escape') {
 					(document.activeElement as HTMLElement)?.blur();
@@ -287,6 +294,7 @@ export function RecordForm({
 					void curateAndNextHandler(e);
 				}
 			}}
+			onPaste={handlePaste}
 			className={cn('relative flex flex-col', className)}
 			{...props}
 		>

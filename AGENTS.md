@@ -65,14 +65,10 @@ Never attempt to start the development server or build the application. The user
 
 **CLI (`rcr`):**
 
-- Install globally with `bun link` (from repo root) or run directly with `bun ./src/server/cli/rcr/index.ts <command>`
-- Never use `bun run cli` - there is no such npm script
-- JSON-first output; same tRPC procedures as the app
-- Commands: `rcr records`, `rcr media`, `rcr search`, `rcr links`, `rcr sync`
-- Media commands: `rcr media list`, `rcr media get`, `rcr media update`
-- Sync commands: `rcr sync daily`, `rcr sync github`, `rcr sync airtable`, `rcr sync raindrop`, `rcr sync readwise`, `rcr sync feedbin`, `rcr sync browsing`, `rcr sync twitter`, `rcr sync agents`, `rcr sync adobe`, `rcr sync avatars`, `rcr sync embeddings`
-- Use `--debug` to fetch data without writing to the database (outputs to `.temp/`)
-- Run `rcr --help` for full usage
+- Install: `bun link` (from repo root) or run directly with `bun ./src/server/cli/rcr/index.ts <command>`
+- Run `rcr --help` for full command reference
+- JSON output to stdout, errors to stderr with non-zero exit codes
+- Use `--raw` for unwrapped output, `--debug` to preview without writing
 
 **Data Operations:**
 
