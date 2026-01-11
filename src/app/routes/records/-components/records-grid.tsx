@@ -6,7 +6,7 @@ import {
 	type RecordType,
 } from '@aias/hozo';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { CheckIcon, ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon } from 'lucide-react';
 import { trpc } from '@/app/trpc';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 import { Button } from '@/components/button';
@@ -37,6 +37,7 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 	if (!record) return null;
 
 	const title = record.title || record.summary || record.content || 'Untitled Record';
+	const ratingStars = record.rating && record.rating >= 1 ? '⭐'.repeat(record.rating) : '';
 
 	return (
 		<TableRow>
@@ -44,17 +45,24 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 				<RecordTypeIcon type={record.type} />
 			</TableCell>
 			<TableCell className="max-w-60 truncate whitespace-nowrap">
-				<Tooltip delayDuration={500}>
+				<Tooltip delayDuration={1000}>
 					<TooltipTrigger asChild>
 						<Link
 							to="/records/$recordId"
 							params={{ recordId: record.id }}
 							className="block w-full truncate"
 						>
+							{ratingStars && <span className="mr-2">{ratingStars}</span>}
 							{title}
 						</Link>
 					</TooltipTrigger>
-					<TooltipContent>{title}</TooltipContent>
+					<TooltipContent>
+						<div
+							className="line-clamp-3" // Line clamp only works on elements without block padding, otherwise the clipped text will show through on the padding area
+						>
+							{title}
+						</div>
+					</TooltipContent>
 				</Tooltip>
 			</TableCell>
 			<TableCell className="whitespace-nowrap">
@@ -64,14 +72,17 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 					''
 				)}
 			</TableCell>
-			<TableCell className="text-center">
-				{record.rating && record.rating > 0 ? '⭐'.repeat(record.rating) : ''}
-			</TableCell>
-			<TableCell className="text-center text-base">
-				{record.isPrivate ? <CheckIcon /> : null}
-			</TableCell>
-			<TableCell className="text-center text-base">
-				{record.isCurated ? <CheckIcon /> : null}
+			<TableCell className="text-sm whitespace-nowrap">
+				{record.recordCreatedAt
+					? (() => {
+							const date = new Date(record.recordCreatedAt);
+							const hours24 = date.getHours();
+							const minutes = date.getMinutes();
+							const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
+							const ampm = hours24 >= 12 ? 'PM' : 'AM';
+							return `${date.toLocaleDateString()} ${hours12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+						})()
+					: ''}
 			</TableCell>
 			<TableCell className="text-center">
 				<div className="flex justify-center gap-1">
@@ -577,12 +588,10 @@ export const RecordsGrid = () => {
 				<Table className={cn({ 'h-full': queue.ids.length === 0 })}>
 					<TableHeader className="sticky top-0 z-10 bg-c-page before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-c-divider">
 						<TableRow className="sticky top-0 z-10 bg-c-mist">
-							<TableHead className="text-center">Type</TableHead>
+							<TableHead className="sr-only text-center">Type</TableHead>
 							<TableHead>Record</TableHead>
 							<TableHead>URL</TableHead>
-							<TableHead className="text-center">Rating</TableHead>
-							<TableHead className="text-center">Private?</TableHead>
-							<TableHead className="text-center">Curated?</TableHead>
+							<TableHead>Created</TableHead>
 							<TableHead className="text-center">Sources</TableHead>
 						</TableRow>
 					</TableHeader>
@@ -591,7 +600,7 @@ export const RecordsGrid = () => {
 							queue.ids.map(({ id }) => <RecordRow key={id} id={id} />)
 						) : (
 							<TableRow>
-								<TableCell colSpan={12} className="pointer-events-none text-center">
+								<TableCell colSpan={5} className="pointer-events-none text-center">
 									No records found
 								</TableCell>
 							</TableRow>
