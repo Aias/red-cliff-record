@@ -137,6 +137,7 @@ export const MediaUpload = ({
 						const file = item.getAsFile();
 						if (file) {
 							e.preventDefault();
+							e.stopPropagation(); // Prevent form-level paste handler from also triggering
 							void handleFile(file);
 							return; // Handle the first valid file found
 						}

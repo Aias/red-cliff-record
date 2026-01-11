@@ -5,6 +5,7 @@
 @import './theme.css' layer(theme);
 
 @plugin 'tailwindcss-animate';
+@plugin '@tailwindcss/typography';
 
 @source '../';
 
@@ -256,5 +257,27 @@
 	&:is(.selected, [data-status='active'], :has([data-status='active'])):hover,
 	&:is(.selected, [data-status='active'], :has([data-status='active'])):active {
 		@apply border-c-edge bg-c-flood;
+	}
+}
+
+/* Typography plugin customization with project color tokens */
+@layer components {
+	.prose {
+		--tw-prose-body: var(--color-c-primary);
+		--tw-prose-headings: var(--color-c-display);
+		--tw-prose-lead: var(--color-c-secondary);
+		--tw-prose-links: var(--color-c-accent);
+		--tw-prose-bold: var(--color-c-primary);
+		--tw-prose-counters: var(--color-c-hint);
+		--tw-prose-bullets: var(--color-c-hint);
+		--tw-prose-hr: var(--color-c-divider);
+		--tw-prose-quotes: var(--color-c-secondary);
+		--tw-prose-quote-borders: var(--color-c-divider);
+		--tw-prose-captions: var(--color-c-secondary);
+		--tw-prose-code: var(--color-c-primary);
+		--tw-prose-pre-code: var(--color-c-secondary);
+		--tw-prose-pre-bg: var(--color-c-page);
+		--tw-prose-th-borders: var(--color-c-border);
+		--tw-prose-td-borders: var(--color-c-divider);
 	}
 }

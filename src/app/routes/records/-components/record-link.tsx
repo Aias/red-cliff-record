@@ -93,7 +93,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 				creatorTitles[0] ??
 				(parentTitle ? (
 					<>
-						<CornerDownRightIcon className="text-c-hint" />
+						<CornerDownRightIcon className="relative -top-0.25 mr-0.75 text-c-hint" />
 						{parentTitle}
 					</>
 				) : (
@@ -204,7 +204,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 															creatorTitles[0] ??
 															(parentTitle ? (
 																<>
-																	<CornerDownRightIcon className="text-c-hint" />
+																	<CornerDownRightIcon className="relative -top-0.25 mr-0.75 text-c-hint" />
 																	{parentTitle}
 																</>
 															) : (

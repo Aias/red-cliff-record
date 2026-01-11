@@ -28,6 +28,7 @@
 		"@octokit/request-error": "^7.1.0",
 		"@octokit/rest": "^22.0.1",
 		"@radix-ui/react-slot": "^1.2.4",
+		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.18",
 		"@tanstack/react-form": "^1.27.7",
 		"@tanstack/react-query": "^5.90.16",

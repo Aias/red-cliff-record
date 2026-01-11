@@ -52,7 +52,7 @@ export const SearchResultItem = memo(function SearchResultItem({
 					creatorTitle ??
 					(parentTitle ? (
 						<>
-							<CornerDownRightIcon className="text-c-hint" />
+							<CornerDownRightIcon className="relative -top-0.25 mr-0.75 text-c-hint" />
 							{parentTitle}
 						</>
 					) : (

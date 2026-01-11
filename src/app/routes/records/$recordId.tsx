@@ -283,13 +283,12 @@ function RouteComponent() {
 
 	return (
 		<div className="flex flex-1 overflow-x-auto">
-			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-4 overflow-y-auto border-r border-c-divider p-3">
+			<ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-2 overflow-y-auto border-r border-c-divider p-3">
 				{nodes.map((node) => (
-					<li key={node.id} data-record-id={node.id} className="last:mb-8">
+					<li key={node.id} data-record-id={node.id} className="card shrink-0 last:mb-8">
 						{node.id === recordId ? (
 							<RecordForm
 								recordId={node.id}
-								className="card border-c-edge py-3"
 								onFinalize={handleFinalize}
 								onDelete={() => handleDelete(node.id)}
 							/>
