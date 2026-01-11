@@ -39,6 +39,7 @@ export const RecordFiltersSchema = z.object({
 	text: z.string().nullable().optional(),
 	url: z.string().nullable().optional(),
 	hasParent: z.boolean().optional(),
+	hasTitle: z.boolean().optional(),
 	minRating: z.number().int().gte(0).optional(),
 	maxRating: z.number().int().lte(3).optional(),
 	isPrivate: z.boolean().optional(),

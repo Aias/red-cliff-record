@@ -66,7 +66,6 @@ export function normalizeError(error: NormalizableError): CLIError {
 
 export function formatErrorResult(error: NormalizableError): ErrorResult {
 	return {
-		success: false,
 		error: normalizeError(error),
 	};
 }

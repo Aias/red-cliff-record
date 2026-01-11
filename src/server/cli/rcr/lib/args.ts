@@ -17,6 +17,7 @@ export const BaseOptionsSchema = z.object({
 	format: z.enum(['json', 'table']).default('json'),
 	help: z.boolean().default(false),
 	debug: z.boolean().default(false),
+	raw: z.boolean().default(false), // Output just data without {data, meta} wrapper
 });
 
 export type BaseOptions = z.infer<typeof BaseOptionsSchema>;

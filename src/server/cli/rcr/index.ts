@@ -168,35 +168,49 @@ Commands:
   db seed                       Seed local database with predicates
   db status [local|remote]      Show connection info and record counts
 
-Options:
-  --format=json|table   Output format (default: json)
-  --limit=N             Limit number of results
-  --offset=N            Offset for pagination
-  --type=entity|concept|artifact  Filter by record type
-  --source=<integration>         Filter by source integration
-  --curated             Filter to curated records only
-  --debug               Enable debug output
-  --help, -h            Show this help
+Records List Filters:
+  --type=<types>          Record types (comma-separated: entity,concept,artifact)
+  --source=<sources>      Integration sources (comma-separated: readwise,github,...)
+  --title=<text>          Title contains text (case-insensitive)
+  --text=<text>           Content/summary/notes contains text
+  --url=<text>            URL contains text
+  --has-title[=BOOL]      Filter by title presence (true/false)
+  --curated[=BOOL]        Filter by curated status (true/false)
+  --private[=BOOL]        Filter by private status (true/false)
+  --parent[=BOOL]         Filter by has parent (true/false)
+  --media[=BOOL]          Filter by has media (true/false)
+  --embedding[=BOOL]      Filter by has embedding (true/false)
+  --rating-min=N          Minimum rating (0-3)
+  --rating-max=N          Maximum rating (0-3)
+  --order=<fields>        Order by fields (field:dir,... e.g. rating:desc,title:asc)
+  --full                  Return complete records instead of just IDs
+
+Global Options:
+  --format=json|table     Output format (default: json)
+  --raw                   Output just data without {data,meta} wrapper
+  --limit=N               Limit number of results
+  --offset=N              Offset for pagination
+  --debug                 Enable debug output
+  --help, -h              Show this help
+
+Boolean filters accept: --flag (true), --flag=true, --flag=false
 
 Examples:
   rcr records get 123
-  rcr records get 123 456 789          # Multiple records in parallel
+  rcr records get 123 456 789               # Multiple records in parallel
   rcr records list --type=entity --limit=10
+  rcr records list --source=readwise --has-title --full  # Full Readwise docs
+  rcr records list --type=entity,concept --curated=false # Uncurated entities/concepts
+  rcr records list --order=rating:desc,title:asc         # Custom ordering
+  rcr records list --source=readwise --has-title=false   # Records without titles
   rcr media list --type=image --alt-text=false --limit=10
-  rcr media get 7724                   # Get media item with URL
-  rcr media update 7724 '{"altText": "A sunset over mountains"}'
   rcr search "machine learning"
   rcr search similar 456 --limit=5
-  rcr links list 123
-  rcr links list 123 456               # Links for multiple records
-  rcr browsing daily 2026-01-03        # Daily browsing summary
-  rcr browsing omit                    # List omit patterns
-  rcr browsing omit-add "%ads.%"       # Add pattern to omit list
-  rcr github daily 2026-01-03          # Daily commit summary
+  rcr links list 123 456                    # Links for multiple records
+  rcr browsing daily 2026-01-03             # Daily browsing summary
+  rcr github daily 2026-01-03               # Daily commit summary
   rcr sync github
-  rcr db status                        # Show database record counts
-  rcr db backup local --data-only      # Data-only backup
-  rcr db restore remote -n             # Print restore commands without executing
+  rcr db status                             # Show database record counts
 `.trim();
 
 async function main(): Promise<void> {
@@ -207,7 +221,7 @@ async function main(): Promise<void> {
 		baseOptions = parseBaseOptions(rawOptions);
 	} catch (error) {
 		const normalizedError = error instanceof Error ? error : String(error);
-		console.log(formatError(normalizedError, 'json'));
+		await Bun.write(Bun.stderr, formatError(normalizedError, 'json') + '\n');
 		process.exit(1);
 	}
 
@@ -236,11 +250,11 @@ async function main(): Promise<void> {
 				throw new Error('Semantic search handler not found');
 			}
 			const result = withDuration(await handler([query], rawOptions), startTime);
-			console.log(formatOutput(result, baseOptions.format));
+			console.log(formatOutput(result, baseOptions.format, baseOptions.raw));
 			process.exit(0);
 		} catch (error) {
 			const normalizedError = error instanceof Error ? error : String(error);
-			console.log(formatError(normalizedError, baseOptions.format));
+			await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
 			process.exit(1);
 		}
 	}
@@ -253,11 +267,11 @@ async function main(): Promise<void> {
 				throw new Error('Sync handler not found');
 			}
 			const result = withDuration(await handler([subcommand, ...args], rawOptions), startTime);
-			console.log(formatOutput(result, baseOptions.format));
+			console.log(formatOutput(result, baseOptions.format, baseOptions.raw));
 			process.exit(0);
 		} catch (error) {
 			const normalizedError = error instanceof Error ? error : String(error);
-			console.log(formatError(normalizedError, baseOptions.format));
+			await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
 			process.exit(1);
 		}
 	}
@@ -265,11 +279,12 @@ async function main(): Promise<void> {
 	// Find the command handler
 	const commandGroup = cmds[command];
 	if (!commandGroup) {
-		console.log(
+		await Bun.write(
+			Bun.stderr,
 			formatError(
 				createError('UNKNOWN_COMMAND', `Unknown command: ${command}. Run 'rcr --help' for usage.`),
 				baseOptions.format
-			)
+			) + '\n'
 		);
 		process.exit(1);
 	}
@@ -277,25 +292,26 @@ async function main(): Promise<void> {
 	const handler = commandGroup[subcommand];
 	if (!handler) {
 		const available = Object.keys(commandGroup).join(', ');
-		console.log(
+		await Bun.write(
+			Bun.stderr,
 			formatError(
 				createError(
 					'UNKNOWN_COMMAND',
 					`Unknown subcommand: ${command} ${subcommand}. Available: ${available}`
 				),
 				baseOptions.format
-			)
+			) + '\n'
 		);
 		process.exit(1);
 	}
 
 	try {
 		const result = withDuration(await handler(args, rawOptions), startTime);
-		await Bun.write(Bun.stdout, formatOutput(result, baseOptions.format) + '\n');
+		await Bun.write(Bun.stdout, formatOutput(result, baseOptions.format, baseOptions.raw) + '\n');
 		process.exit(0);
 	} catch (error) {
 		const normalizedError = error instanceof Error ? error : String(error);
-		await Bun.write(Bun.stdout, formatError(normalizedError, baseOptions.format) + '\n');
+		await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
 		process.exit(1);
 	}
 }

@@ -16,10 +16,15 @@ function isRecordValue(value: ResultValue): value is RecordValue {
 
 export function formatOutput<T extends ResultValue>(
 	result: SuccessResult<T>,
-	format: OutputFormat
+	format: OutputFormat,
+	raw = false
 ): string {
 	if (format === 'table') {
-		return formatTable(result.data, result.meta);
+		return formatTable(result.data, raw ? undefined : result.meta);
+	}
+	// Raw mode: output just the data without wrapper
+	if (raw) {
+		return JSON.stringify(result.data);
 	}
 	return JSON.stringify(result);
 }
@@ -150,5 +155,5 @@ function formatCellValue(value: ResultValue, maxLen = 40): string {
  * Wrap a successful result
  */
 export function success<T extends ResultValue>(data: T, meta?: ResultMeta): SuccessResult<T> {
-	return { success: true, data, meta };
+	return { data, meta };
 }

@@ -13,6 +13,7 @@ import {
 	DEFAULT_LIMIT,
 	LimitSchema,
 	OffsetSchema,
+	OrderCriteriaSchema,
 	RecordFiltersSchema,
 } from '@/shared/types';
 import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
@@ -21,50 +22,94 @@ import { createError } from '../lib/errors';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
+/**
+ * Parse comma-separated values into an array, validating each against the schema.
+ * Returns undefined if the input is undefined.
+ */
+function parseCommaSeparated<T>(value: string | undefined, schema: z.ZodType<T>): T[] | undefined {
+	if (value === undefined) return undefined;
+	const items = value
+		.split(',')
+		.map((s) => s.trim())
+		.filter(Boolean);
+	if (items.length === 0) return undefined;
+	return items.map((item) => schema.parse(item));
+}
+
+/**
+ * Parse order string like "createdAt:desc,rating:asc" into OrderCriteria array
+ */
+function parseOrderString(
+	value: string | undefined
+): z.infer<typeof OrderCriteriaSchema>[] | undefined {
+	if (!value) return undefined;
+	const criteria = value
+		.split(',')
+		.map((s) => s.trim())
+		.filter(Boolean);
+	return criteria.map((criterion) => {
+		const [field, direction = 'desc'] = criterion.split(':');
+		return OrderCriteriaSchema.parse({ field, direction });
+	});
+}
+
 const caller = createCLICaller();
 
 /**
  * CLI options schema that transforms to ListRecordsInput.
  * Derives validation rules from shared RecordFiltersSchema.
+ *
+ * Boolean filters support: --flag (true), --flag=true, --flag=false
+ * Array filters support comma-separated values: --type=entity,concept
+ * Order supports: --order=field:direction,field2:direction2
  */
 const RecordsListOptionsSchema = BaseOptionsSchema.extend({
 	limit: LimitSchema.optional(),
 	offset: OffsetSchema.optional(),
-	type: RecordTypeSchema.optional(),
+	// Array filters (comma-separated)
+	type: z.string().optional(), // Parsed as comma-separated, e.g., "entity,concept"
+	source: z.string().optional(), // Parsed as comma-separated, e.g., "readwise,github"
+	// Text filters
 	title: RecordFiltersSchema.shape.title.unwrap().optional(),
 	text: RecordFiltersSchema.shape.text.unwrap().optional(),
 	url: RecordFiltersSchema.shape.url.unwrap().optional(),
-	source: IntegrationTypeSchema.optional(),
+	// Boolean filters (support =true/=false)
 	curated: z.boolean().optional(),
 	private: z.boolean().optional(),
-	'rating-min': RecordFiltersSchema.shape.minRating.optional(),
-	'rating-max': RecordFiltersSchema.shape.maxRating.optional(),
 	embedding: z.boolean().optional(),
 	media: z.boolean().optional(),
 	parent: z.boolean().optional(),
+	'has-title': z.boolean().optional(),
+	// Range filters
+	'rating-min': RecordFiltersSchema.shape.minRating.optional(),
+	'rating-max': RecordFiltersSchema.shape.maxRating.optional(),
+	// Ordering
+	order: z.string().optional(), // e.g., "createdAt:desc,rating:asc"
+	// Output options
+	full: z.boolean().optional(), // Return full records instead of just IDs
 })
 	.strict()
-	.transform(
-		(opts): ListRecordsInput => ({
-			filters: {
-				types: opts.type ? [opts.type] : undefined,
-				title: opts.title,
-				text: opts.text,
-				url: opts.url,
-				isCurated: opts.curated,
-				isPrivate: opts.private,
-				minRating: opts['rating-min'],
-				maxRating: opts['rating-max'],
-				hasEmbedding: opts.embedding,
-				hasMedia: opts.media,
-				hasParent: opts.parent,
-				sources: opts.source ? [opts.source] : undefined,
-			},
-			limit: opts.limit ?? DEFAULT_LIMIT,
-			offset: opts.offset ?? 0,
-			orderBy: [{ field: 'recordCreatedAt', direction: 'desc' }],
-		})
-	);
+	.transform((opts): ListRecordsInput & { full?: boolean } => ({
+		filters: {
+			types: parseCommaSeparated(opts.type, RecordTypeSchema),
+			sources: parseCommaSeparated(opts.source, IntegrationTypeSchema),
+			title: opts.title,
+			text: opts.text,
+			url: opts.url,
+			isCurated: opts.curated,
+			isPrivate: opts.private,
+			minRating: opts['rating-min'],
+			maxRating: opts['rating-max'],
+			hasEmbedding: opts.embedding,
+			hasMedia: opts.media,
+			hasParent: opts.parent,
+			hasTitle: opts['has-title'],
+		},
+		limit: opts.limit ?? DEFAULT_LIMIT,
+		offset: opts.offset ?? 0,
+		orderBy: parseOrderString(opts.order) ?? [{ field: 'recordCreatedAt', direction: 'desc' }],
+		full: opts.full,
+	}));
 
 const RecordsGetOptionsSchema = BaseOptionsSchema.extend({
 	links: z.boolean().optional(),
@@ -128,11 +173,39 @@ export const get: CommandHandler = async (args, options) => {
 
 /**
  * List records with filters
- * Usage: rcr records list [--type=...] [--title=...] [--limit=...] [--offset=...]
+ * Usage: rcr records list [--type=...] [--source=...] [--order=...] [--full] [--limit=...] [--offset=...]
+ *
+ * Supports comma-separated values for --type and --source:
+ *   --type=entity,concept --source=readwise,github
+ *
+ * Supports ordering with --order=field:direction (comma-separated for multiple):
+ *   --order=rating:desc,createdAt:asc
+ *
+ * Use --full to return complete record objects instead of just IDs.
  */
 export const list: CommandHandler = async (_args, options) => {
-	const input = parseOptions(RecordsListOptionsSchema, options);
+	const { full, ...input } = parseOptions(RecordsListOptionsSchema, options);
 	const result = await caller.records.list(input);
+
+	// If --full is requested, fetch complete records
+	if (full && result.ids.length > 0) {
+		const ids = result.ids.map((r) => r.id);
+		const records = await Promise.all(
+			ids.map(async (id) => {
+				try {
+					return await caller.records.get({ id });
+				} catch {
+					return { id, error: 'NOT_FOUND' as const };
+				}
+			})
+		);
+		return success(records, {
+			count: records.length,
+			limit: input.limit,
+			offset: input.offset,
+		});
+	}
+
 	return success(result.ids, {
 		count: result.ids.length,
 		limit: input.limit,
