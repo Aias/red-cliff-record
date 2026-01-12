@@ -212,9 +212,10 @@ export async function createRecordsFromTweets() {
 		}
 	}
 
-	// Update parent-child relationships for tweets that are quoting another tweet.
+	// Update relationships for tweets that quote or reply to another tweet.
 	if (updatedTweetIds.length > 0) {
 		await linkQuotedTweets(updatedTweetIds);
+		await linkRepliedToTweets(updatedTweetIds);
 	}
 
 	logger.complete(`Processed ${tweets.length} Twitter tweets`);
@@ -263,6 +264,55 @@ export async function linkQuotedTweets(tweetIds: string[]) {
 	}
 
 	logger.complete(`Linked ${tweetsWithQuotes.length} quoted tweets`);
+}
+
+/**
+ * Links reply tweets to their parent tweets via the responds_to predicate
+ *
+ * @param tweetIds - Array of tweet IDs to check for replies
+ */
+export async function linkRepliedToTweets(tweetIds: string[]) {
+	logger.start('Linking reply tweets');
+
+	const tweetsWithReplies = await db.query.twitterTweets.findMany({
+		where: {
+			id: {
+				in: tweetIds,
+			},
+			inReplyToTweetId: {
+				isNotNull: true,
+			},
+		},
+		with: { inReplyToTweet: true },
+	});
+
+	if (tweetsWithReplies.length === 0) {
+		logger.skip('No tweets with replies to process');
+		return;
+	}
+
+	logger.info(`Found ${tweetsWithReplies.length} tweets with replies to link`);
+
+	for (const tweet of tweetsWithReplies) {
+		const parentTweet = tweet.inReplyToTweet;
+		if (!parentTweet) {
+			logger.warn(`Parent tweet ${tweet.inReplyToTweetId} not in database for reply ${tweet.id}`);
+			continue;
+		}
+
+		if (!tweet.recordId || !parentTweet.recordId) {
+			logger.warn(`Reply tweet ${tweet.id} or parent ${parentTweet.id} not linked to record`);
+			continue;
+		}
+
+		// Link the reply record to the parent tweet record via responds_to
+		await linkRecords(tweet.recordId, parentTweet.recordId, 'responds_to', db, { log: false });
+		logger.info(
+			`Linked reply: tweet record ${tweet.recordId} responds_to -> ${parentTweet.recordId} (${tweet.id} -> ${parentTweet.id})`
+		);
+	}
+
+	logger.complete(`Linked ${tweetsWithReplies.length} reply tweets`);
 }
 
 /**

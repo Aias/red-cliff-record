@@ -29,6 +29,11 @@ export const twitterTweets = pgTable(
 			onDelete: 'set null',
 			onUpdate: 'cascade',
 		}),
+		inReplyToTweetId: text('in_reply_to_tweet_id').references((): AnyPgColumn => twitterTweets.id, {
+			onDelete: 'set null',
+			onUpdate: 'cascade',
+		}),
+		conversationId: text('conversation_id'),
 		integrationRunId: integer('integration_run_id')
 			.references(() => integrationRuns.id)
 			.notNull(),

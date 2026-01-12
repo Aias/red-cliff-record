@@ -563,6 +563,14 @@ export const relations = defineRelations(
 				from: r.twitterTweets.id,
 				to: r.twitterTweets.quotedTweetId,
 			}),
+			inReplyToTweet: r.one.twitterTweets({
+				from: r.twitterTweets.inReplyToTweetId,
+				to: r.twitterTweets.id,
+			}),
+			repliedToBy: r.many.twitterTweets({
+				from: r.twitterTweets.id,
+				to: r.twitterTweets.inReplyToTweetId,
+			}),
 		},
 		twitterUsers: {
 			integrationRun: r.one.integrationRuns({

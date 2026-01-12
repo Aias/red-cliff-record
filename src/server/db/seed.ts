@@ -202,6 +202,20 @@ const predicateSeed = [
 		inverseSlug: 'about',
 		canonical: false,
 	},
+	{
+		slug: 'responds_to',
+		name: 'responds to',
+		type: 'reference',
+		inverseSlug: 'responded_by',
+		canonical: true,
+	},
+	{
+		slug: 'responded_by',
+		name: 'responded by',
+		type: 'reference',
+		inverseSlug: 'responds_to',
+		canonical: false,
+	},
 
 	/* ───────────  Association  ─────────── */
 	{

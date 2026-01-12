@@ -1,7 +1,11 @@
 import type { TwitterMediaInsert, TwitterTweetInsert, TwitterUserInsert } from '@aias/hozo';
 import type { Media, TweetData, User } from './types';
 
-export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRunId'> => {
+/**
+ * Process a Twitter user into database format.
+ * Returns null if the user has missing required fields (e.g., suspended/unavailable accounts).
+ */
+export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRunId'> | null => {
 	const { rest_id, legacy } = user;
 	const {
 		created_at,
@@ -14,6 +18,11 @@ export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRun
 		location,
 		url,
 	} = legacy;
+
+	// Skip users with missing required fields (suspended/unavailable accounts)
+	if (!screen_name || !name) {
+		return null;
+	}
 
 	// First try entities.url.urls then fallback to entities.description.urls
 	let userExternalLinkEntry = entities?.url?.urls?.[0];
@@ -44,7 +53,8 @@ export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRun
 
 export const processTweet = (tweet: TweetData): Omit<TwitterTweetInsert, 'integrationRunId'> => {
 	const { rest_id, legacy, note_tweet, isQuoted, quotedTweetId } = tweet;
-	const { created_at, full_text, user_id_str } = legacy;
+	const { created_at, full_text, user_id_str, in_reply_to_status_id_str, conversation_id_str } =
+		legacy;
 
 	// Safely parse the creation date with fallback to null
 	let contentCreatedAt: Date | null = null;
@@ -58,6 +68,8 @@ export const processTweet = (tweet: TweetData): Omit<TwitterTweetInsert, 'integr
 		userId: user_id_str,
 		text: note_tweet ? note_tweet.note_tweet_results.result.text : full_text,
 		quotedTweetId: isQuoted ? undefined : quotedTweetId,
+		inReplyToTweetId: in_reply_to_status_id_str,
+		conversationId: conversation_id_str,
 		contentCreatedAt,
 	};
 };

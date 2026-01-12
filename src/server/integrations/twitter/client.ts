@@ -7,7 +7,7 @@
 
 import { randomBytes, randomUUID } from 'node:crypto';
 import { type TwitterCredentials, getCredentials } from './auth';
-import { buildBookmarksFeatures } from './features';
+import { buildBookmarksFeatures, buildTweetDetailFeatures } from './features';
 import {
 	type RawBookmarksApiResponse,
 	RawBookmarksApiResponseSchema,
@@ -29,11 +29,13 @@ const TWITTER_API_BASE = 'https://x.com/i/api/graphql';
 // Baseline query IDs - these rotate periodically
 const QUERY_IDS = {
 	Bookmarks: 'RV1g3b8n_SGOHwkqKYSCFw',
+	TweetDetail: '97JF30KziU00483E_8elBA',
 } as const;
 
 // Additional fallback query IDs to try on 404
 const FALLBACK_QUERY_IDS = {
 	Bookmarks: ['tmd4ifV8RHltzn8ymGg1aw'],
+	TweetDetail: ['_NvJCnIjOW__EP5-RF197A'],
 } as const;
 
 interface BookmarksPageResult {
@@ -49,6 +51,20 @@ interface BookmarksPageError {
 }
 
 type BookmarksPageResponse = BookmarksPageResult | BookmarksPageError;
+
+// Types for TweetDetail response
+interface TweetDetailResult {
+	success: true;
+	/** Raw tweet data in the same format as bookmarks */
+	tweetResult: unknown;
+}
+
+interface TweetDetailError {
+	success: false;
+	error: string;
+}
+
+type TweetDetailResponse = TweetDetailResult | TweetDetailError;
 
 /**
  * Twitter GraphQL API client.
@@ -355,6 +371,152 @@ export class TwitterClient {
 
 		logger.complete(`Fetched ${responses.length} pages of bookmarks`);
 		return responses;
+	}
+
+	/**
+	 * Fetches a single tweet by ID using the TweetDetail GraphQL endpoint.
+	 *
+	 * @param tweetId - The ID of the tweet to fetch
+	 * @returns The raw tweet data in the same format as bookmarks, or an error
+	 */
+	async fetchTweetById(tweetId: string): Promise<TweetDetailResponse> {
+		const variables = {
+			focalTweetId: tweetId,
+			with_rux_injections: false,
+			rankingMode: 'Relevance',
+			includePromotedContent: true,
+			withCommunity: true,
+			withQuickPromoteEligibilityTweetFields: true,
+			withBirdwatchNotes: true,
+			withVoice: true,
+		};
+
+		const features = {
+			...buildTweetDetailFeatures(),
+			articles_preview_enabled: true,
+			articles_rest_api_enabled: true,
+			responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
+			creator_subscriptions_tweet_preview_api_enabled: true,
+			graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
+			view_counts_everywhere_api_enabled: true,
+			longform_notetweets_consumption_enabled: true,
+			responsive_web_twitter_article_tweet_consumption_enabled: true,
+			freedom_of_speech_not_reach_fetch_enabled: true,
+			standardized_nudges_misinfo: true,
+			tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
+			rweb_video_timestamps_enabled: true,
+		};
+
+		const fieldToggles = {
+			withPayments: false,
+			withAuxiliaryUserLabels: false,
+			withArticleRichContentState: true,
+			withArticlePlainText: true,
+			withGrokAnalyze: false,
+			withDisallowedReplyControls: false,
+		};
+
+		const params = new URLSearchParams({
+			variables: JSON.stringify(variables),
+			features: JSON.stringify(features),
+			fieldToggles: JSON.stringify(fieldToggles),
+		});
+
+		// Try primary query ID, then fallbacks
+		const queryIds = [QUERY_IDS.TweetDetail, ...FALLBACK_QUERY_IDS.TweetDetail];
+		let lastError: string | undefined;
+
+		for (const queryId of queryIds) {
+			const url = `${TWITTER_API_BASE}/${queryId}/TweetDetail?${params.toString()}`;
+
+			try {
+				logger.info(`Fetching tweet ${tweetId} with queryId=${queryId}`);
+				const response = await this.fetchWithTimeout(url, {
+					method: 'GET',
+					headers: this.buildHeaders(),
+				});
+
+				if (response.status === 404) {
+					lastError = `HTTP 404 for queryId=${queryId}`;
+					logger.warn(lastError);
+					continue;
+				}
+
+				if (!response.ok) {
+					const text = await response.text();
+					return {
+						success: false,
+						error: `HTTP ${response.status}: ${text.slice(0, 200)}`,
+					};
+				}
+
+				const data = (await response.json()) as {
+					data?: {
+						tweetResult?: { result?: unknown };
+						threaded_conversation_with_injections_v2?: {
+							instructions?: Array<{
+								entries?: Array<{
+									content?: {
+										itemContent?: {
+											tweet_results?: { result?: unknown };
+										};
+									};
+								}>;
+							}>;
+						};
+					};
+					errors?: Array<{ message: string }>;
+				};
+
+				if (data.errors && data.errors.length > 0) {
+					const errorMsg = data.errors.map((e) => e.message).join(', ');
+					// Check if we still have usable data
+					const hasData =
+						data.data?.tweetResult?.result ||
+						data.data?.threaded_conversation_with_injections_v2?.instructions?.length;
+					if (!hasData) {
+						return { success: false, error: errorMsg };
+					}
+					logger.warn(`GraphQL errors (non-fatal): ${errorMsg}`);
+				}
+
+				// Extract the tweet result - can be in tweetResult or threaded_conversation
+				let tweetResult = data.data?.tweetResult?.result;
+
+				// If not in tweetResult, find it in threaded_conversation
+				if (!tweetResult) {
+					const instructions = data.data?.threaded_conversation_with_injections_v2?.instructions;
+					if (instructions) {
+						for (const instruction of instructions) {
+							for (const entry of instruction.entries ?? []) {
+								const result = entry.content?.itemContent?.tweet_results?.result;
+								if (result && typeof result === 'object' && 'rest_id' in result) {
+									if ((result as { rest_id?: string }).rest_id === tweetId) {
+										tweetResult = result;
+										break;
+									}
+								}
+							}
+							if (tweetResult) break;
+						}
+					}
+				}
+
+				if (!tweetResult) {
+					return { success: false, error: 'Tweet not found in response' };
+				}
+
+				return { success: true, tweetResult };
+			} catch (error) {
+				lastError = error instanceof Error ? error.message : String(error);
+				logger.error(`Request error for queryId=${queryId}`, error);
+			}
+		}
+
+		return {
+			success: false,
+			error: lastError ?? 'Unknown error fetching tweet',
+		};
 	}
 }
 

@@ -18,6 +18,7 @@ import {
 	createRecordsFromTwitterUsers,
 } from './map';
 import type { Tweet, TweetData, TwitterBookmarksArray } from './types';
+import { isTweet, isTweetWithVisibilityResults, TimelineItemSchema } from './types';
 
 const logger = createIntegrationLogger('twitter', 'sync');
 
@@ -35,6 +36,19 @@ async function getRecentTweetIds(limit = 200): Promise<Set<string>> {
 		limit,
 	});
 	return new Set(recentTweets.map((t) => t.id));
+}
+
+/**
+ * Checks which tweet IDs from a list exist in the database.
+ */
+async function getTweetIdsInDb(tweetIds: string[]): Promise<Set<string>> {
+	if (tweetIds.length === 0) return new Set();
+
+	const rows = await db.query.twitterTweets.findMany({
+		where: { id: { in: tweetIds } },
+		columns: { id: true },
+	});
+	return new Set(rows.map((r) => r.id));
 }
 
 /**
@@ -85,14 +99,37 @@ async function syncTwitterBookmarks(
 		}
 
 		// Step 2: Extract tweets from bookmarks
-		const tweets = extractTweetsFromBookmarks(bookmarkResponses);
-		logger.info(`Extracted ${tweets.length} tweets from bookmarks`);
+		const allExtractedTweets = extractTweetsFromBookmarks(bookmarkResponses);
+		logger.info(`Extracted ${allExtractedTweets.length} tweets from bookmarks`);
 
-		// Step 3: Process tweets, users, and media
+		// Step 3: Filter to only new tweets (not already in DB)
+		const extractedTweetIds = allExtractedTweets.map((t) => t.rest_id);
+		const existingTweetIds = await getTweetIdsInDb(extractedTweetIds);
+		const newTweets = allExtractedTweets.filter((t) => !existingTweetIds.has(t.rest_id));
+		logger.info(
+			`Filtered to ${newTweets.length} new tweets (${existingTweetIds.size} already in DB)`
+		);
+
+		if (newTweets.length === 0) {
+			logger.info('No new tweets to process');
+			return 0;
+		}
+
+		// Step 4: Fetch missing parent tweets for replies (only for new tweets)
+		const { parentTweets, existingParentIds } = await fetchMissingParentTweets(
+			newTweets,
+			existingTweetIds // Pass existing IDs so we don't re-fetch parents already in DB
+		);
+		const allTweets = [...parentTweets, ...newTweets]; // Parents first so they're inserted before replies
+		logger.info(
+			`Total tweets to process: ${allTweets.length} (${parentTweets.length} parent tweets)`
+		);
+
+		// Step 4: Process tweets, users, and media
 		const { processedTweets, processedQuoteTweets, processedUsers, processedMedia } =
-			processTweetData(tweets, integrationRunId);
+			processTweetData(allTweets, integrationRunId, existingParentIds);
 
-		// Step 4: Store data in the database
+		// Step 5: Store data in the database
 		const updatedCount = await storeTweetData(
 			processedTweets,
 			processedQuoteTweets,
@@ -100,7 +137,7 @@ async function syncTwitterBookmarks(
 			processedMedia
 		);
 
-		// Step 5: Create records from Twitter data
+		// Step 6: Create records from Twitter data
 		await createRelatedRecords();
 
 		return updatedCount;
@@ -143,8 +180,11 @@ function extractTweetsFromBookmarks(bookmarkResponses: TwitterBookmarksArray): T
 		if (quotedTweet?.result) {
 			const quotedResult = quotedTweet.result;
 
-			// Skip filtered tweet types
-			if (FILTERED_TWEET_TYPES.includes(quotedResult.__typename)) return;
+			// If quoted tweet is unavailable (tombstone/deleted), still add the main tweet
+			if (FILTERED_TWEET_TYPES.includes(quotedResult.__typename)) {
+				tweets.push(mainTweet);
+				return;
+			}
 
 			if (quotedResult.__typename === 'TweetWithVisibilityResults') {
 				// Add the quoted tweet first
@@ -167,23 +207,173 @@ function extractTweetsFromBookmarks(bookmarkResponses: TwitterBookmarksArray): T
 }
 
 /**
+ * Fetches parent tweets for replies that aren't in the current batch or already in DB.
+ * If a parent can't be fetched (suspended/deleted) but exists in DB, we'll find out via a targeted query.
+ *
+ * @param tweets - Array of tweet data to check for replies
+ * @param knownExistingIds - Set of tweet IDs known to exist in DB (skip fetching these)
+ * @returns Object with parent tweets and set of parent IDs that exist in DB
+ */
+async function fetchMissingParentTweets(
+	tweets: TweetData[],
+	knownExistingIds: Set<string>
+): Promise<{
+	parentTweets: TweetData[];
+	existingParentIds: Set<string>;
+}> {
+	// Collect reply parent IDs that need fetching
+	const batchTweetIds = new Set(tweets.map((t) => t.rest_id));
+	const parentIdsToFetch = new Set<string>();
+
+	for (const tweet of tweets) {
+		const replyToId = tweet.legacy.in_reply_to_status_id_str;
+		if (replyToId) {
+			// Log thread info for visibility
+			const conversationId = tweet.legacy.conversation_id_str;
+			if (conversationId && conversationId !== tweet.rest_id) {
+				logger.info(`Tweet ${tweet.rest_id} is part of thread ${conversationId}`);
+			}
+			logger.info(`Tweet ${tweet.rest_id} replies to ${replyToId}`);
+
+			// Skip if already in current batch or known to exist in DB
+			if (!batchTweetIds.has(replyToId) && !knownExistingIds.has(replyToId)) {
+				parentIdsToFetch.add(replyToId);
+			}
+		}
+	}
+
+	if (parentIdsToFetch.size === 0) {
+		logger.info('No parent tweets to fetch');
+		return { parentTweets: [], existingParentIds: knownExistingIds };
+	}
+
+	logger.info(`Fetching ${parentIdsToFetch.size} parent tweets...`);
+
+	const client = createTwitterClient({ timeoutMs: 30000 });
+	const parentTweets: TweetData[] = [];
+	const failedFetchIds: string[] = [];
+
+	for (const parentId of parentIdsToFetch) {
+		try {
+			const result = await client.fetchTweetById(parentId);
+
+			if (result.success) {
+				// Parse the raw result through our schema
+				const parsed = TimelineItemSchema.safeParse(result.tweetResult);
+				if (parsed.success) {
+					const tweetResult = parsed.data;
+
+					// Skip non-tweet results (cursors, tombstones)
+					if (isTweetWithVisibilityResults(tweetResult)) {
+						parentTweets.push({ ...tweetResult.tweet, isQuoted: false });
+						logger.info(`Fetched parent tweet ${parentId}`);
+					} else if (isTweet(tweetResult)) {
+						parentTweets.push({ ...tweetResult, isQuoted: false });
+						logger.info(`Fetched parent tweet ${parentId}`);
+					} else {
+						logger.warn(
+							`Parent tweet ${parentId} is not a valid tweet type: ${tweetResult.__typename}`
+						);
+						failedFetchIds.push(parentId);
+					}
+				} else {
+					logger.warn(`Failed to parse parent tweet ${parentId}: ${parsed.error.message}`);
+					failedFetchIds.push(parentId);
+				}
+			} else {
+				logger.warn(`Failed to fetch parent tweet ${parentId}: ${result.error}`);
+				failedFetchIds.push(parentId);
+			}
+
+			// Small delay between requests
+			await Bun.sleep(300);
+		} catch (error) {
+			logger.error(`Error fetching parent tweet ${parentId}`, error);
+			failedFetchIds.push(parentId);
+		}
+	}
+
+	logger.info(`Fetched ${parentTweets.length} parent tweets, ${failedFetchIds.length} failed`);
+
+	// For failed fetches, check if they exist in DB (might be older tweets we already have)
+	let existingFromFailedFetches = new Set<string>();
+	if (failedFetchIds.length > 0) {
+		const rows = await db.query.twitterTweets.findMany({
+			where: { id: { in: failedFetchIds } },
+			columns: { id: true },
+		});
+		existingFromFailedFetches = new Set(rows.map((r) => r.id));
+		if (existingFromFailedFetches.size > 0) {
+			logger.info(
+				`Found ${existingFromFailedFetches.size} parent tweets in DB from failed fetches`
+			);
+		}
+	}
+
+	// Combine known existing IDs with any we found from failed fetches
+	const existingParentIds = new Set([...knownExistingIds, ...existingFromFailedFetches]);
+
+	return { parentTweets, existingParentIds };
+}
+
+/**
  * Processes tweet data into database-ready formats
  *
  * @param tweets - Array of tweet data
  * @param integrationRunId - The ID of the current integration run
+ * @param existingParentIds - Set of reply parent tweet IDs that exist in database (for FK validation)
  * @returns Object containing processed tweets, users, and media
  */
-function processTweetData(tweets: TweetData[], integrationRunId: number) {
+function processTweetData(
+	tweets: TweetData[],
+	integrationRunId: number,
+	existingParentIds: Set<string>
+) {
 	// De-dupe aggressively to avoid redundant DB work and noisy logs.
 	const processedUsersById = new Map<string, TwitterUserInsert>();
 	const processedMediaById = new Map<string, TwitterMediaInsert>();
 	const processedTweetsById = new Map<string, TwitterTweetInsert>();
 	const processedQuoteTweetsById = new Map<string, TwitterTweetInsert>();
 
+	// Build set of all tweet IDs that will exist after this batch:
+	// - Reply parent IDs that already exist in DB
+	// - All tweet IDs in the current batch
+	const allValidReplyTargets = new Set(existingParentIds);
+	for (const t of tweets) {
+		allValidReplyTargets.add(t.rest_id);
+	}
+
 	tweets.forEach((t) => {
+		// Process the user first - skip if invalid (suspended/unavailable account)
+		const user = processUser(t.core.user_results.result);
+		if (!user) {
+			logger.warn(
+				`Skipping tweet ${t.rest_id}: user has missing required fields (suspended/unavailable)`
+			);
+			return;
+		}
+
 		// Process the tweet
 		const tweet = processTweet(t);
-		const tweetWithRun: TwitterTweetInsert = { ...tweet, integrationRunId };
+
+		// Only set inReplyToTweetId if the parent tweet exists (or will exist in this batch)
+		// This prevents FK constraint violations for missing parent tweets
+		const validReplyToId =
+			tweet.inReplyToTweetId && allValidReplyTargets.has(tweet.inReplyToTweetId)
+				? tweet.inReplyToTweetId
+				: undefined;
+
+		if (tweet.inReplyToTweetId && !validReplyToId) {
+			logger.warn(
+				`Tweet ${tweet.id} replies to ${tweet.inReplyToTweetId} but parent not in DB, clearing inReplyToTweetId`
+			);
+		}
+
+		const tweetWithRun: TwitterTweetInsert = {
+			...tweet,
+			inReplyToTweetId: validReplyToId,
+			integrationRunId,
+		};
 
 		// Separate regular tweets from quote tweets
 		if (tweetWithRun.quotedTweetId) {
@@ -196,8 +386,7 @@ function processTweetData(tweets: TweetData[], integrationRunId: number) {
 			}
 		}
 
-		// Process the user
-		const user = processUser(t.core.user_results.result);
+		// Store the user
 		if (!processedUsersById.has(user.id)) {
 			processedUsersById.set(user.id, { ...user, integrationRunId });
 		}

@@ -16,10 +16,10 @@ export const UserUrlSchema = z.object({
 // ===============================
 
 export const UserLegacySchema = z.object({
-	// Core user identity fields (required)
-	created_at: z.string(),
-	name: z.string(),
-	screen_name: z.string(),
+	// Core user identity fields (optional - may be missing for suspended/unavailable accounts)
+	created_at: z.string().optional(),
+	name: z.string().optional(),
+	screen_name: z.string().optional(),
 	// Profile fields
 	description: z.string().optional(),
 	profile_banner_url: z.string().optional(),
@@ -155,6 +155,9 @@ export const TweetLegacySchema = z.object({
 	bookmarked: z.boolean().optional(),
 	conversation_control: z.any().optional(),
 	conversation_id_str: z.string().optional(),
+	in_reply_to_status_id_str: z.string().optional(),
+	in_reply_to_user_id_str: z.string().optional(),
+	in_reply_to_screen_name: z.string().optional(),
 	display_text_range: z.array(z.number()).optional(),
 	entities: z
 		.object({
