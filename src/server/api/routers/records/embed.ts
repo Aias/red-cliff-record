@@ -60,7 +60,6 @@ export const embed = publicProcedure
 			.update(records)
 			.set({
 				textEmbedding: embedding,
-				recordUpdatedAt: new Date(),
 			})
 			.where(eq(records.id, id))
 			.returning({

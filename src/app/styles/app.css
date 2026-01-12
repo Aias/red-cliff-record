@@ -261,7 +261,7 @@
 }
 
 /* Typography plugin customization with project color tokens */
-@layer components {
+@layer utilities {
 	.prose {
 		--tw-prose-body: var(--color-c-primary);
 		--tw-prose-headings: var(--color-c-display);
