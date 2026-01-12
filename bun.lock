@@ -27,8 +27,8 @@
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
         "dataloader": "^2.2.3",
-        "drizzle-orm": "1.0.0-beta.10-42c284e",
-        "drizzle-zod": "1.0.0-beta.10-42c284e",
+        "drizzle-orm": "1.0.0-beta.10-4a43a22",
+        "drizzle-zod": "1.0.0-beta.10-4a43a22",
         "lucide-react": "^0.562.0",
         "marked": "^17.0.1",
         "marked-linkify-it": "^3.1.14",
@@ -56,7 +56,7 @@
         "@typescript/native-preview": "^7.0.0-dev.20260112.1",
         "@vitejs/plugin-react": "^5.1.2",
         "babel-plugin-react-compiler": "^1.0.0",
-        "drizzle-kit": "1.0.0-beta.10-42c284e",
+        "drizzle-kit": "1.0.0-beta.10-4a43a22",
         "oxlint": "^1.39.0",
         "oxlint-tsgolint": "^0.11.0",
         "pg": "^8.16.3",
@@ -71,15 +71,15 @@
       "name": "@aias/hozo",
       "version": "0.2.0",
       "dependencies": {
-        "drizzle-zod": "1.0.0-beta.10-42c284e",
+        "drizzle-zod": "1.0.0-beta.10-4a43a22",
       },
       "devDependencies": {
-        "drizzle-orm": "1.0.0-beta.10-42c284e",
+        "drizzle-orm": "1.0.0-beta.10-4a43a22",
         "tsup": "^8.5.1",
         "zod": "^4.1.12",
       },
       "peerDependencies": {
-        "drizzle-orm": "1.0.0-beta.10-42c284e",
+        "drizzle-orm": "1.0.0-beta.10-4a43a22",
         "zod": "^4.1.12",
       },
     },
@@ -769,11 +769,11 @@
 
     "domutils": ["domutils@3.2.2", "", { "dependencies": { "dom-serializer": "^2.0.0", "domelementtype": "^2.3.0", "domhandler": "^5.0.3" } }, "sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw=="],
 
-    "drizzle-kit": ["drizzle-kit@1.0.0-beta.10-42c284e", "", { "dependencies": { "@drizzle-team/brocli": "^0.11.0", "@js-temporal/polyfill": "^0.5.1", "esbuild": "^0.25.10", "tsx": "^4.20.6" }, "bin": { "drizzle-kit": "bin.cjs" } }, "sha512-fRk0QBkl57SRnKyLBMN6UsBOeIYMzjPZ9JDaSkt1+kZH2BbVDls6TRWMg36w9Ub8M2cO+a2in4p/enxyGPbFsw=="],
+    "drizzle-kit": ["drizzle-kit@1.0.0-beta.10-4a43a22", "", { "dependencies": { "@drizzle-team/brocli": "^0.11.0", "@js-temporal/polyfill": "^0.5.1", "esbuild": "^0.25.10", "tsx": "^4.20.6" }, "bin": { "drizzle-kit": "bin.cjs" } }, "sha512-952w6dX5alTfZQh9zJ077mqMWdCUx6QjAX3EI7UhR+1tb8Vi/A9TSTECYiJ40qPa8FFKzhMHIuck9i51esFb9g=="],
 
-    "drizzle-orm": ["drizzle-orm@1.0.0-beta.10-42c284e", "", { "peerDependencies": { "@aws-sdk/client-rds-data": ">=3", "@cloudflare/workers-types": ">=4", "@effect/sql": "^0.48.5", "@effect/sql-pg": "^0.49.7", "@electric-sql/pglite": ">=0.2.0", "@libsql/client": ">=0.10.0", "@libsql/client-wasm": ">=0.10.0", "@neondatabase/serverless": ">=0.10.0", "@op-engineering/op-sqlite": ">=2", "@opentelemetry/api": "^1.4.1", "@planetscale/database": ">=1.13", "@prisma/client": "*", "@sqlitecloud/drivers": ">=1.0.653", "@tidbcloud/serverless": "*", "@tursodatabase/database": ">=0.2.1", "@tursodatabase/database-common": ">=0.2.1", "@tursodatabase/database-wasm": ">=0.2.1", "@types/better-sqlite3": "*", "@types/mssql": "^9.1.4", "@types/pg": "*", "@types/sql.js": "*", "@upstash/redis": ">=1.34.7", "@vercel/postgres": ">=0.8.0", "@xata.io/client": "*", "better-sqlite3": ">=9.3.0", "bun-types": "*", "expo-sqlite": ">=14.0.0", "gel": ">=2", "mssql": "^11.0.1", "mysql2": ">=2", "pg": ">=8", "postgres": ">=3", "sql.js": ">=1", "sqlite3": ">=5" }, "optionalPeers": ["@aws-sdk/client-rds-data", "@cloudflare/workers-types", "@effect/sql", "@effect/sql-pg", "@electric-sql/pglite", "@libsql/client", "@libsql/client-wasm", "@neondatabase/serverless", "@op-engineering/op-sqlite", "@opentelemetry/api", "@planetscale/database", "@prisma/client", "@sqlitecloud/drivers", "@tidbcloud/serverless", "@tursodatabase/database", "@tursodatabase/database-common", "@tursodatabase/database-wasm", "@types/better-sqlite3", "@types/pg", "@types/sql.js", "@upstash/redis", "@vercel/postgres", "@xata.io/client", "better-sqlite3", "bun-types", "expo-sqlite", "gel", "mysql2", "pg", "postgres", "sql.js", "sqlite3"] }, "sha512-/x0gvjSIyhpiLkCHBZ5YftwFN76TRw/Bwk1Zuu4KY9PMBWWiyzj4B/A7hmDRp7eIsjyVkOCZzzun4veMzbBVBg=="],
+    "drizzle-orm": ["drizzle-orm@1.0.0-beta.10-4a43a22", "", { "peerDependencies": { "@aws-sdk/client-rds-data": ">=3", "@cloudflare/workers-types": ">=4", "@effect/sql": "^0.48.5", "@effect/sql-pg": "^0.49.7", "@electric-sql/pglite": ">=0.2.0", "@libsql/client": ">=0.10.0", "@libsql/client-wasm": ">=0.10.0", "@neondatabase/serverless": ">=0.10.0", "@op-engineering/op-sqlite": ">=2", "@opentelemetry/api": "^1.4.1", "@planetscale/database": ">=1.13", "@prisma/client": "*", "@sqlitecloud/drivers": ">=1.0.653", "@tidbcloud/serverless": "*", "@tursodatabase/database": ">=0.2.1", "@tursodatabase/database-common": ">=0.2.1", "@tursodatabase/database-wasm": ">=0.2.1", "@types/better-sqlite3": "*", "@types/mssql": "^9.1.4", "@types/pg": "*", "@types/sql.js": "*", "@upstash/redis": ">=1.34.7", "@vercel/postgres": ">=0.8.0", "@xata.io/client": "*", "better-sqlite3": ">=9.3.0", "bun-types": "*", "expo-sqlite": ">=14.0.0", "gel": ">=2", "mssql": "^11.0.1", "mysql2": ">=2", "pg": ">=8", "postgres": ">=3", "sql.js": ">=1", "sqlite3": ">=5" }, "optionalPeers": ["@aws-sdk/client-rds-data", "@cloudflare/workers-types", "@effect/sql", "@effect/sql-pg", "@electric-sql/pglite", "@libsql/client", "@libsql/client-wasm", "@neondatabase/serverless", "@op-engineering/op-sqlite", "@opentelemetry/api", "@planetscale/database", "@prisma/client", "@sqlitecloud/drivers", "@tidbcloud/serverless", "@tursodatabase/database", "@tursodatabase/database-common", "@tursodatabase/database-wasm", "@types/better-sqlite3", "@types/pg", "@types/sql.js", "@upstash/redis", "@vercel/postgres", "@xata.io/client", "better-sqlite3", "bun-types", "expo-sqlite", "gel", "mysql2", "pg", "postgres", "sql.js", "sqlite3"] }, "sha512-ipys1kZjtMwBBDMtdbIaIt/j06wZITxxPcxsU8Sh93zKIILnADnK1rACwHRrm0kVaAOpZSW19efVZs1LihFZpQ=="],
 
-    "drizzle-zod": ["drizzle-zod@1.0.0-beta.10-42c284e", "", { "peerDependencies": { "drizzle-orm": ">=1.0.0-beta.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-XvSUIHkJPpS2zy8SaXgW+/CEFpvqTCusn17DvaXO5r0tnMrMBlc0qaLKXK/o9o1VXBwbEG84hvHmkPlGwv4PPQ=="],
+    "drizzle-zod": ["drizzle-zod@1.0.0-beta.10-4a43a22", "", { "peerDependencies": { "drizzle-orm": ">=1.0.0-beta.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-EWPe/Ub1hknfTfMlY8yRlI+2mftReRt0VVyq91RVcZhkYPp3Sc9K8mv62dmyb6J2cp+9cO9Sv16t6OIk02Uduw=="],
 
     "ecdsa-sig-formatter": ["ecdsa-sig-formatter@1.0.11", "", { "dependencies": { "safe-buffer": "^5.0.1" } }, "sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ=="],
 
