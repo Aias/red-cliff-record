@@ -3,8 +3,15 @@ import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { publicProcedure } from '../../init';
-import { IdSchema, type DbId } from '@/shared/types';
-import type { RecordGet } from '@/shared/types';
+import { IdSchema, type DbId, type RecordGet } from '@/shared/types';
+
+// Schema for bulk update data - omit fields that shouldn't be bulk-updated
+const BulkUpdateDataSchema = RecordInsertSchema.omit({
+	id: true,
+	slug: true,
+	sources: true,
+	textEmbedding: true,
+}).partial();
 
 export const upsert = publicProcedure
 	.input(RecordInsertSchema)
@@ -42,23 +49,42 @@ export const upsert = publicProcedure
 		return record;
 	});
 
-export const markAsCurated = publicProcedure
-	.input(z.object({ ids: z.array(IdSchema) }))
-	.mutation(async ({ ctx: { db }, input }): Promise<DbId[]> => {
-		const updatedRecords = await db
-			.update(records)
-			.set({ isCurated: true, recordUpdatedAt: new Date() })
-			.where(inArray(records.id, input.ids))
-			.returning({
-				id: records.id,
-			});
+export const bulkUpdate = publicProcedure
+	.input(
+		z.object({
+			ids: z.array(IdSchema).min(1),
+			data: BulkUpdateDataSchema,
+		})
+	)
+	.mutation(async ({ ctx: { db }, input: { ids, data } }): Promise<DbId[]> => {
+		// Filter out undefined values to only update provided fields
+		const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
 
-		if (updatedRecords.length !== input.ids.length) {
+		if (Object.keys(updateData).length === 0) {
 			throw new TRPCError({
-				code: 'INTERNAL_SERVER_ERROR',
-				message: `Failed to update records. Input data:\n\n${JSON.stringify(input, null, 2)}`,
+				code: 'BAD_REQUEST',
+				message: 'No fields provided to update',
 			});
 		}
 
-		return updatedRecords.map((r) => r.id);
+		const updated = await db
+			.update(records)
+			.set({
+				...updateData,
+				recordUpdatedAt: new Date(),
+				textEmbedding: null,
+			})
+			.where(inArray(records.id, ids))
+			.returning({ id: records.id });
+
+		if (updated.length !== ids.length) {
+			const updatedIds = new Set(updated.map((r) => r.id));
+			const missing = ids.filter((id) => !updatedIds.has(id));
+			throw new TRPCError({
+				code: 'NOT_FOUND',
+				message: `Records not found: ${missing.join(', ')}`,
+			});
+		}
+
+		return updated.map((r) => r.id);
 	});

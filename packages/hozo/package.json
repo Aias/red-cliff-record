@@ -20,7 +20,8 @@
 	"scripts": {
 		"build": "bunx --bun tsup src/index.ts --dts --format esm --sourcemap --clean",
 		"dev:watch": "bun run build --watch",
-		"lint": "oxlint --fix --type-aware . && tsgo --noEmit"
+		"lint": "oxlint --fix --type-aware . && tsgo --noEmit",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"drizzle-zod": "1.0.0-beta.10-42c284e"

@@ -1,6 +1,5 @@
-import { ReadwiseCategory, ReadwiseLocation } from '@aias/hozo';
+import { emptyStringToNull, ReadwiseCategory, ReadwiseLocation } from '@aias/hozo';
 import { z } from 'zod';
-import { emptyStringToNull } from '@/shared/lib/formatting';
 
 const ReadwiseTagSchema = z.object({
 	name: z.string(),

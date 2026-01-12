@@ -1,6 +1,6 @@
+import { emptyStringToNull } from '@aias/hozo';
 import { z } from 'zod';
 import { flexibleUrl } from '@/server/lib/url-utils';
-import { emptyStringToNull } from '@/shared/lib/formatting';
 
 /**
  * Subscription (Feed) Schema

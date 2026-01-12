@@ -1,6 +1,6 @@
 import { createTRPCRouter } from '../../init';
 import { deleteRecords } from './delete';
-import { markAsCurated, upsert } from './edit';
+import { bulkUpdate, upsert } from './edit';
 import { embed } from './embed';
 import { get } from './get';
 import { list } from './list';
@@ -12,7 +12,7 @@ export const recordsRouter = createTRPCRouter({
 	list,
 	embed,
 	upsert,
-	markAsCurated,
+	bulkUpdate,
 	merge,
 	delete: deleteRecords,
 	tree: getFamilyTree,

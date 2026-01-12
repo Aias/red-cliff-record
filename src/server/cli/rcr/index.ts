@@ -132,6 +132,7 @@ Commands:
   records list [filters]        List records with optional filters
   records create <json>         Create a new record
   records update <id> <json>    Update an existing record
+  records bulk-update <ids> <json>  Bulk update records by ID
   records delete <id...>        Delete record(s)
   records merge <src> <target>  Merge source record into target
   records embed <id...>         Generate embedding(s) for record(s)

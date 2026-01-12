@@ -6,7 +6,7 @@ import { RecordForm } from './-components/form';
 import { RecordDisplay } from './-components/record-display';
 import { RelationsList, SimilarRecords } from './-components/relations';
 import { Spinner } from '@/components/spinner';
-import { useDeleteRecords, useMarkAsCurated } from '@/lib/hooks/record-mutations';
+import { useBulkUpdate, useDeleteRecords } from '@/lib/hooks/record-mutations';
 import { useRecordTree } from '@/lib/hooks/record-queries';
 import { CoercedIdSchema, type DbId } from '@/shared/types';
 
@@ -166,7 +166,7 @@ function RouteComponent() {
 	});
 	const { recordId } = Route.useParams();
 	const { data: tree, isError: treeError, isLoading: treeLoading } = useRecordTree(recordId);
-	const markAsCurated = useMarkAsCurated();
+	const bulkUpdate = useBulkUpdate();
 	const deleteMutation = useDeleteRecords();
 
 	// If tree query fails, it likely means the record doesn't exist (deleted or invalid ID)
@@ -220,7 +220,7 @@ function RouteComponent() {
 		const nextId = getNextRecord(listIds, recordId, skip);
 
 		// Trigger mutation optimistically
-		markAsCurated.mutate({ ids: idsToCurate });
+		bulkUpdate.mutate({ ids: idsToCurate, data: { isCurated: true } });
 
 		// Navigate immediately - tree structure is unaffected by curation
 		if (nextId) {
@@ -235,7 +235,7 @@ function RouteComponent() {
 				search: true,
 			});
 		}
-	}, [markAsCurated, nodes, recordsList, recordId, navigate]);
+	}, [bulkUpdate, nodes, recordsList, recordId, navigate]);
 
 	const handleDelete = useCallback(
 		(id: DbId) => {

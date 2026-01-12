@@ -1,5 +1,5 @@
+import { emptyStringToNull } from '@aias/hozo';
 import { z } from 'zod';
-import { emptyStringToNull } from '@/shared/lib/formatting';
 
 export const GithubEventSchema = z.object({
 	id: z.string(),

@@ -22,39 +22,34 @@ export function useEmbedRecord() {
 	});
 }
 
-export function useMarkAsCurated() {
+export function useBulkUpdate() {
 	const utils = trpc.useUtils();
 
-	return trpc.records.markAsCurated.useMutation({
-		onMutate: ({ ids }) => {
+	return trpc.records.bulkUpdate.useMutation({
+		onMutate: ({ ids, data }) => {
 			// Fire cancellations but don't await - keeps onMutate synchronous
 			// to avoid race conditions with navigation
 			ids.forEach((id) => void utils.records.get.cancel({ id }));
 
 			const previous = new Map<DbId, RecordGet | undefined>();
 			ids.forEach((id) => {
-				const data = utils.records.get.getData({ id });
-				previous.set(id, data);
-				if (data) {
-					utils.records.get.setData({ id }, { ...data, isCurated: true });
+				const cached = utils.records.get.getData({ id });
+				previous.set(id, cached);
+				if (cached) {
+					utils.records.get.setData({ id }, { ...cached, ...data });
 				}
 			});
 			return { previous };
 		},
 		onSuccess: (ids) => {
 			void utils.records.list.invalidate();
-			ids.forEach((id) => {
-				utils.records.get.setData({ id }, (prev) => {
-					if (!prev) return undefined;
-					return { ...prev, isCurated: true };
-				});
-			});
+			ids.forEach((id) => void utils.records.get.invalidate({ id }));
 		},
 		onError: (err, _vars, ctx) => {
 			ctx?.previous.forEach((data, id) => {
 				utils.records.get.setData({ id }, data);
 			});
-			toast.error(err instanceof Error ? err.message : 'Failed to mark as curated');
+			toast.error(err instanceof Error ? err.message : 'Failed to update records');
 		},
 	});
 }

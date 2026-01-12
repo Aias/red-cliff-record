@@ -255,6 +255,51 @@ export const update: CommandHandler = async (args, options) => {
 	}
 };
 
+// Schema for bulk update data (matches API schema)
+const BulkUpdateDataSchema = RecordInsertSchema.omit({
+	id: true,
+	slug: true,
+	sources: true,
+	textEmbedding: true,
+}).partial();
+
+/**
+ * Bulk update records
+ * Usage: rcr records bulk-update <id,...> '<json-data>'
+ *
+ * First argument is comma-separated IDs, second is the data to apply to all.
+ *
+ * Examples:
+ *   rcr records bulk-update 1,2,3 '{"isCurated": true}'
+ *   rcr records bulk-update 5,10,15 '{"rating": 3, "isPrivate": false}'
+ */
+export const bulkUpdate: CommandHandler = async (args, options) => {
+	parseOptions(BaseOptionsSchema.strict(), options);
+
+	if (args.length < 2) {
+		throw createError('VALIDATION_ERROR', 'Usage: rcr records bulk-update <id,...> <json-data>');
+	}
+
+	const ids = parseIds(args[0]?.split(',') ?? []);
+	if (ids.length === 0) {
+		throw createError('VALIDATION_ERROR', 'At least one ID is required');
+	}
+
+	const data = await parseJsonInput(BulkUpdateDataSchema, args.slice(1));
+
+	try {
+		const updatedIds = await caller.records.bulkUpdate({ ids, data });
+		return success(updatedIds, { count: updatedIds.length });
+	} catch (e) {
+		if (e instanceof TRPCError) {
+			throw createError('VALIDATION_ERROR', e.message);
+		}
+		throw e;
+	}
+};
+// Alias for kebab-case CLI convention
+export { bulkUpdate as 'bulk-update' };
+
 /**
  * Delete record(s)
  * Usage: rcr records delete <id...>

@@ -232,7 +232,7 @@ export function RecordForm({
 	const curateAndNextHandler = useCallback(
 		async (e: React.KeyboardEvent<HTMLFormElement>) => {
 			e.preventDefault();
-			// Set curated flag before saving to avoid race condition with markAsCurated
+			// Set curated flag before saving to avoid race condition with bulkUpsert
 			form.setFieldValue('isCurated', true);
 			// Save immediately before navigation and wait for completion
 			await immediateSave();
