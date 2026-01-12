@@ -71,8 +71,6 @@ export const records = pgTable(
 		index('idx_records_sources').using('gin', table.sources),
 		index().on(table.recordCreatedAt),
 		index().on(table.recordUpdatedAt),
-		index().on(table.rating),
-		index().on(table.isPrivate),
 		index().on(table.isCurated),
 		index().using('hnsw', table.textEmbedding.op('vector_cosine_ops')),
 	]
@@ -116,8 +114,6 @@ export const links = pgTable(
 	(table) => [
 		index().on(table.sourceId, table.predicateId),
 		index().on(table.targetId, table.predicateId),
-		index().on(table.sourceId),
-		index().on(table.targetId),
 		index().on(table.predicateId),
 		unique().on(table.sourceId, table.targetId, table.predicateId),
 	]

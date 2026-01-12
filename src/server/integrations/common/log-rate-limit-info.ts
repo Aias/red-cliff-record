@@ -6,10 +6,23 @@
  * API usage and preventing rate limit issues.
  *
  * @param response - The API response object containing headers
+ * @param logger - Optional logger for consistent prefixing/styling
  */
+type RateLimitLogger = {
+	info: (message: string, ...args: unknown[]) => void;
+};
+
 export function logRateLimitInfo(response: {
 	headers?: Record<string, string | number | undefined>;
-}): void {
+}): void;
+export function logRateLimitInfo(
+	response: { headers?: Record<string, string | number | undefined> },
+	logger: RateLimitLogger
+): void;
+export function logRateLimitInfo(
+	response: { headers?: Record<string, string | number | undefined> },
+	logger?: RateLimitLogger
+): void {
 	const headers = response?.headers;
 	if (!headers) return;
 
@@ -25,11 +38,18 @@ export function logRateLimitInfo(response: {
 		? new Date(Number(resetTimestamp) * 1000).toLocaleString()
 		: 'N/A';
 
-	console.log(
+	const message =
 		`Rate Limits - Limit: ${limit || 'N/A'} | ` +
-			`Remaining: ${remaining || 'N/A'} | ` +
-			`Used: ${used || 'N/A'} | ` +
-			`Reset: ${resetTime} | ` +
-			`Resource: ${resource || 'N/A'}`
-	);
+		`Remaining: ${remaining || 'N/A'} | ` +
+		`Used: ${used || 'N/A'} | ` +
+		`Reset: ${resetTime} | ` +
+		`Resource: ${resource || 'N/A'}`;
+
+	if (logger) {
+		logger.info(message);
+		return;
+	}
+
+	// Backwards-compatible default (still logs to stderr)
+	console.error(message);
 }

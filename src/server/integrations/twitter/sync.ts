@@ -223,7 +223,7 @@ async function fetchMissingParentTweets(
 }> {
 	// Collect reply parent IDs that need fetching
 	const batchTweetIds = new Set(tweets.map((t) => t.rest_id));
-	const parentIdsToFetch = new Set<string>();
+	const parentIdsToFetch: string[] = [];
 
 	for (const tweet of tweets) {
 		const replyToId = tweet.legacy.in_reply_to_status_id_str;
@@ -237,39 +237,44 @@ async function fetchMissingParentTweets(
 
 			// Skip if already in current batch or known to exist in DB
 			if (!batchTweetIds.has(replyToId) && !knownExistingIds.has(replyToId)) {
-				parentIdsToFetch.add(replyToId);
+				// Avoid duplicates in the fetch list
+				if (!parentIdsToFetch.includes(replyToId)) {
+					parentIdsToFetch.push(replyToId);
+				}
 			}
 		}
 	}
 
-	if (parentIdsToFetch.size === 0) {
+	if (parentIdsToFetch.length === 0) {
 		logger.info('No parent tweets to fetch');
 		return { parentTweets: [], existingParentIds: knownExistingIds };
 	}
 
-	logger.info(`Fetching ${parentIdsToFetch.size} parent tweets...`);
+	logger.info(`Fetching ${parentIdsToFetch.length} parent tweets...`);
 
 	const client = createTwitterClient({ timeoutMs: 30000 });
 	const parentTweets: TweetData[] = [];
 	const failedFetchIds: string[] = [];
 
-	for (const parentId of parentIdsToFetch) {
+	for (let i = 0; i < parentIdsToFetch.length; i++) {
+		const parentId = parentIdsToFetch[i];
+		if (!parentId) {
+			continue;
+		}
 		try {
 			const result = await client.fetchTweetById(parentId);
 
 			if (result.success) {
-				// Parse the raw result through our schema
 				const parsed = TimelineItemSchema.safeParse(result.tweetResult);
 				if (parsed.success) {
 					const tweetResult = parsed.data;
 
-					// Skip non-tweet results (cursors, tombstones)
 					if (isTweetWithVisibilityResults(tweetResult)) {
+						logger.info(`Fetched parent tweet ${parentId}`);
 						parentTweets.push({ ...tweetResult.tweet, isQuoted: false });
-						logger.info(`Fetched parent tweet ${parentId}`);
 					} else if (isTweet(tweetResult)) {
-						parentTweets.push({ ...tweetResult, isQuoted: false });
 						logger.info(`Fetched parent tweet ${parentId}`);
+						parentTweets.push({ ...tweetResult, isQuoted: false });
 					} else {
 						logger.warn(
 							`Parent tweet ${parentId} is not a valid tweet type: ${tweetResult.__typename}`
@@ -284,13 +289,14 @@ async function fetchMissingParentTweets(
 				logger.warn(`Failed to fetch parent tweet ${parentId}: ${result.error}`);
 				failedFetchIds.push(parentId);
 			}
-
-			// Small delay between requests
-			await Bun.sleep(300);
 		} catch (error) {
 			logger.error(`Error fetching parent tweet ${parentId}`, error);
 			failedFetchIds.push(parentId);
 		}
+
+		// Small delay between requests for rate limiting
+		await Bun.sleep(300);
+		logger.info(`Parent tweet fetch progress: ${i + 1}/${parentIdsToFetch.length}`);
 	}
 
 	logger.info(`Fetched ${parentTweets.length} parent tweets, ${failedFetchIds.length} failed`);

@@ -1,4 +1,5 @@
 import { lightroomImages } from '@aias/hozo';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { db } from '@/server/db/connections';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
@@ -54,23 +55,37 @@ async function syncLightroomImages(
 		// Collect debug data if requested
 		collectDebugData?.push(jsonData);
 
-		// Step 3: Process and store each image
+		// Step 3: Process and store each image concurrently
 		const baseUrl = jsonData.base;
 		let successCount = 0;
+		let errorCount = 0;
 
-		for (const resource of jsonData.resources) {
-			try {
-				await processLightroomImage(resource, baseUrl, integrationRunId);
-				successCount++;
-			} catch (error) {
-				logger.error('Error processing image', {
-					imageId: resource.asset.id,
-					error: error instanceof Error ? error.message : String(error),
-				});
-			}
-		}
+		await runConcurrentPool({
+			items: jsonData.resources,
+			concurrency: 10,
+			worker: async (resource) => {
+				try {
+					await processLightroomImage(resource, baseUrl, integrationRunId);
+					successCount++;
+				} catch (error) {
+					errorCount++;
+					logger.error('Error processing image', {
+						imageId: resource.asset.id,
+						error: error instanceof Error ? error.message : String(error),
+					});
+				}
+			},
+			onProgress: (completed, total) => {
+				if (completed % 50 === 0 || completed === total) {
+					logger.info(`Progress: ${completed}/${total} images processed`);
+				}
+			},
+		});
 
 		logger.complete(`Processed images`, successCount);
+		if (errorCount > 0) {
+			logger.info(`Errors: ${errorCount} images failed`);
+		}
 		logger.info(`Total images in album: ${jsonData.resources.length}`);
 
 		// Step 4: Create media records from the Lightroom images

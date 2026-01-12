@@ -5,7 +5,7 @@ import { db } from '@/server/db/connections';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { createIntegrationLogger } from '../common/logging';
 import { ensureGithubUserExists } from './sync-users';
-import { GithubStarredReposResponseSchema } from './types';
+import { GithubStarredReposResponseSchema, type StarredRepo } from './types';
 
 const logger = createIntegrationLogger('github', 'sync-stars');
 
@@ -44,6 +44,83 @@ async function getMostRecentStarredAt(): Promise<Date | null> {
 }
 
 /**
+ * Processes a single starred repository
+ *
+ * @param star - The starred repo data from the API
+ * @param integrationRunId - The ID of the current integration run
+ * @returns True if the repo was processed successfully
+ */
+async function processStarredRepo(star: StarredRepo, integrationRunId: number): Promise<boolean> {
+	const { repo, starred_at } = star;
+
+	try {
+		// First ensure the owner exists using shared helper
+		await ensureGithubUserExists(repo.owner, integrationRunId);
+
+		// Then insert the repository
+		const newRepo: GithubRepositoryInsert = {
+			id: repo.id,
+			nodeId: repo.node_id,
+			name: repo.name,
+			fullName: repo.full_name,
+			ownerId: repo.owner.id,
+			private: repo.private,
+			htmlUrl: repo.html_url,
+			homepageUrl: repo.homepage,
+			licenseName: repo.license?.name,
+			description: repo.description,
+			language: repo.language,
+			topics: repo.topics.length > 0 ? repo.topics : null,
+			starredAt: starred_at,
+			contentCreatedAt: repo.created_at,
+			contentUpdatedAt: repo.updated_at,
+			integrationRunId,
+		};
+
+		await db
+			.insert(githubRepositories)
+			.values(newRepo)
+			.onConflictDoUpdate({
+				target: githubRepositories.id,
+				set: {
+					...newRepo,
+					recordUpdatedAt: new Date(),
+				},
+			});
+
+		return true;
+	} catch (error) {
+		logger.error(`Error processing starred repo ${repo.full_name}`, {
+			error: error instanceof Error ? error.message : String(error),
+			repoId: repo.id,
+		});
+		// Return false to indicate failure but allow processing to continue
+		return false;
+	}
+}
+
+/**
+ * Fetches a single page of starred repos from the GitHub API
+ *
+ * @param octokit - The authenticated Octokit instance
+ * @param page - The page number to fetch
+ * @returns Parsed starred repos data and rate limit info
+ */
+async function fetchStarredReposPage(octokit: Octokit, page: number) {
+	const response = await octokit.rest.activity.listReposStarredByAuthenticatedUser({
+		mediaType: {
+			format: 'vnd.github.star+json',
+		},
+		per_page: PAGE_SIZE,
+		page,
+	});
+
+	logRateLimitInfo(response, logger);
+
+	return GithubStarredReposResponseSchema.parse(response);
+}
+
+/**
  * Synchronizes GitHub starred repositories with the database
  *
  * This function:
@@ -77,26 +154,15 @@ export async function syncGitHubStars(
 		logger.info('No existing stars in database');
 	}
 
+	// Collect all new starred repos first, respecting rate limits during pagination
+	const allNewStars: StarredRepo[] = [];
 	let page = 1;
 	let hasMore = true;
-	let totalStars = 0;
 
 	while (hasMore) {
 		try {
 			logger.info(`Fetching page ${page}...`);
-			const response = await octokit.rest.activity.listReposStarredByAuthenticatedUser({
-				mediaType: {
-					format: 'vnd.github.star+json',
-				},
-				per_page: PAGE_SIZE,
-				page,
-			});
-
-			// Log rate limit information for monitoring
-			logRateLimitInfo(response);
-
-			// Parse and validate the response
-			const parsedResponse = GithubStarredReposResponseSchema.parse(response);
+			const parsedResponse = await fetchStarredReposPage(octokit, page);
 
 			// Collect debug data if requested
 			if (collectDebugData) {
@@ -111,9 +177,14 @@ export async function syncGitHubStars(
 
 			// Check if we've hit stars older than our most recent
 			if (mostRecentStarredAt) {
+				const firstStar = parsedResponse.data[0];
+				if (!firstStar) {
+					hasMore = false;
+					break;
+				}
 				const oldestStarOnPage = parsedResponse.data.reduce(
 					(oldest, star) => (star.starred_at < oldest ? star.starred_at : oldest),
-					parsedResponse.data[0]!.starred_at
+					firstStar.starred_at
 				);
 				if (oldestStarOnPage <= mostRecentStarredAt) {
 					logger.info(
@@ -123,67 +194,15 @@ export async function syncGitHubStars(
 				}
 			}
 
-			// Process each starred repo
-			for (const { repo, starred_at } of parsedResponse.data) {
-				// Skip if this star is older than our most recent
-				if (mostRecentStarredAt && new Date(starred_at) <= mostRecentStarredAt) {
-					continue;
-				}
+			// Filter to only new stars
+			const newStarsOnPage = parsedResponse.data.filter(
+				(star) => !mostRecentStarredAt || star.starred_at > mostRecentStarredAt
+			);
+			allNewStars.push(...newStarsOnPage);
 
-				// In debug mode, just count the stars without persisting
-				if (skipPersist) {
-					totalStars++;
-					continue;
-				}
+			logger.info(`Found ${newStarsOnPage.length} new stars on page ${page}`);
 
-				try {
-					// First ensure the owner exists using shared helper
-					await ensureGithubUserExists(repo.owner, integrationRunId);
-
-					// Then insert the repository
-					const newRepo: GithubRepositoryInsert = {
-						id: repo.id,
-						nodeId: repo.node_id,
-						name: repo.name,
-						fullName: repo.full_name,
-						ownerId: repo.owner.id,
-						private: repo.private,
-						htmlUrl: repo.html_url,
-						homepageUrl: repo.homepage,
-						licenseName: repo.license?.name,
-						description: repo.description,
-						language: repo.language,
-						topics: repo.topics.length > 0 ? repo.topics : null,
-						starredAt: starred_at,
-						contentCreatedAt: repo.created_at,
-						contentUpdatedAt: repo.updated_at,
-						integrationRunId,
-					};
-
-					await db
-						.insert(githubRepositories)
-						.values(newRepo)
-						.onConflictDoUpdate({
-							target: githubRepositories.id,
-							set: {
-								...newRepo,
-								recordUpdatedAt: new Date(),
-							},
-						});
-
-					totalStars++;
-				} catch (error) {
-					logger.error(`Error processing starred repo ${repo.full_name}`, {
-						error: error instanceof Error ? error.message : String(error),
-						repoId: repo.id,
-					});
-					// Continue with next repo rather than failing the entire sync
-				}
-			}
-
-			logger.info(`Processed new stars from page ${page}`);
-
-			// Add a small delay between requests to avoid rate limiting
+			// Rate limit delay between API requests
 			await Bun.sleep(REQUEST_DELAY_MS);
 			page++;
 		} catch (error) {
@@ -206,6 +225,27 @@ export async function syncGitHubStars(
 		}
 	}
 
-	logger.complete('Synced starred repositories', totalStars);
-	return totalStars;
+	// In debug mode, just return the count
+	if (skipPersist) {
+		logger.complete('Found starred repositories (debug mode)', allNewStars.length);
+		return allNewStars.length;
+	}
+
+	let successCount = 0;
+	for (let i = 0; i < allNewStars.length; i++) {
+		const star = allNewStars[i];
+		if (!star) {
+			continue;
+		}
+		const result = await processStarredRepo(star, integrationRunId);
+		if (result) successCount++;
+
+		if ((i + 1) % 10 === 0 || i + 1 === allNewStars.length) {
+			logger.info(`Processed ${i + 1}/${allNewStars.length} starred repos`);
+		}
+
+		await Bun.sleep(REQUEST_DELAY_MS);
+	}
+	logger.complete('Synced starred repositories', successCount);
+	return successCount;
 }

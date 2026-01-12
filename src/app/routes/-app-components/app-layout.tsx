@@ -40,7 +40,6 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 					<NavLink to={'/records'} search={defaultQueueOptions}>
 						Records
 					</NavLink>
-					<NavLink to={'/integrations'}>Integrations</NavLink>
 				</li>
 				<li className="flex items-center gap-2">
 					<SiteSearch />

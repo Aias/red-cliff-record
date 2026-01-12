@@ -1,6 +1,7 @@
 import { integrationRuns, IntegrationStatus, RunType, type IntegrationType } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
+import { createIntegrationLogger } from './logging';
 
 /**
  * Function signature for integration implementations
@@ -27,7 +28,10 @@ export async function runIntegration(
 	fn: IntegrationFunction,
 	runType: RunType = RunType.enum.sync
 ): Promise<void> {
-	console.log(`Starting ${integrationType} integration run for ${runType}...`);
+	const integrationLabel = integrationType.replace(/_/g, '-');
+	const logger = createIntegrationLogger(integrationLabel, runType);
+
+	logger.start(`Starting ${integrationLabel} integration run`);
 
 	// Create a new integration run record
 	const [run] = await db
@@ -43,16 +47,16 @@ export async function runIntegration(
 		throw new Error('Failed to create integration run record');
 	}
 
-	console.log(`Created integration run with ID ${run.id}`);
+	logger.info(`Created integration run with ID ${run.id}`);
 
 	try {
 		// Execute the integration function
-		console.log('Executing integration function...');
+		logger.info('Executing integration function...');
 		const entriesCreated = await fn(run.id);
-		console.log(`Successfully created ${entriesCreated} entries`);
+		logger.complete('Successfully created entries', entriesCreated);
 
 		// Update the run record with success status
-		console.log('Updating integration run status...');
+		logger.info('Updating integration run status...');
 		await db
 			.update(integrationRuns)
 			.set({
@@ -61,11 +65,11 @@ export async function runIntegration(
 				entriesCreated,
 			})
 			.where(eq(integrationRuns.id, run.id));
-		console.log('Integration run completed successfully');
+		logger.complete('Integration run completed successfully');
 	} catch (error) {
 		// Handle and log any errors
 		const errorMessage = error instanceof Error ? error.message : String(error);
-		console.error('Integration run failed:', errorMessage);
+		logger.error('Integration run failed', errorMessage);
 
 		// Update the run record with failure status
 		await db

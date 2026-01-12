@@ -1,27 +1,28 @@
 /**
  * Sync commands for the CLI
  *
- * Uses tRPC caller for integrations that have tRPC endpoints,
- * falls back to direct function calls for others.
+ * Calls sync functions directly for all integrations.
  */
 
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { syncLightroomImages } from '@/server/integrations/adobe/sync';
 import { syncClaudeHistory } from '@/server/integrations/agents/sync-claude';
 import { syncCodexHistory } from '@/server/integrations/agents/sync-codex';
 import { syncCursorHistory } from '@/server/integrations/agents/sync-cursor';
+import { syncAirtableData } from '@/server/integrations/airtable/sync';
 import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
+import { syncFeedbin } from '@/server/integrations/feedbin/sync';
+import { syncGitHubData } from '@/server/integrations/github/sync';
+import { syncRaindropData } from '@/server/integrations/raindrop/sync';
+import { syncReadwiseDocuments } from '@/server/integrations/readwise/sync';
 import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
-import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
-
-const caller = createCLICaller();
 
 const IntegrationNameSchema = z.enum([
 	'github',
@@ -100,17 +101,10 @@ export const run: CommandHandler = async (args, options) => {
 		return runDailySync({ debug, limit });
 	}
 
-	try {
-		const result = await runSingleSync(integration, { debug, limit });
-		// Integration results have complex types that don't fit ResultValue exactly,
-		// but they serialize to JSON correctly which is what the CLI needs
-		return success(result as Parameters<typeof success>[0]);
-	} catch (e) {
-		if (e instanceof TRPCError) {
-			throw createError('INTERNAL_ERROR', e.message);
-		}
-		throw e;
-	}
+	const result = await runSingleSync(integration, { debug, limit });
+	// Integration results have complex types that don't fit ResultValue exactly,
+	// but they serialize to JSON correctly which is what the CLI needs
+	return success(result as Parameters<typeof success>[0]);
 };
 
 // Also export as default command name for `rcr sync github` style
@@ -138,57 +132,54 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
 	const startTime = performance.now();
 
 	switch (integration) {
-		// tRPC-based syncs - pass debug flag
 		case 'github': {
-			const result = await caller.integrations.runGithub({ debug });
+			await syncGitHubData(debug);
 			return {
 				integration,
-				...result,
+				success: true,
 				duration: Math.round(performance.now() - startTime),
 			};
 		}
 		case 'readwise': {
-			const result = await caller.integrations.runReadwise({ debug });
+			await syncReadwiseDocuments(debug);
 			return {
 				integration,
-				...result,
+				success: true,
 				duration: Math.round(performance.now() - startTime),
 			};
 		}
 		case 'raindrop': {
-			const result = await caller.integrations.runRaindrop({ debug });
+			await syncRaindropData(debug);
 			return {
 				integration,
-				...result,
+				success: true,
 				duration: Math.round(performance.now() - startTime),
 			};
 		}
 		case 'airtable': {
-			const result = await caller.integrations.runAirtable({ debug });
+			await syncAirtableData(debug);
 			return {
 				integration,
-				...result,
+				success: true,
 				duration: Math.round(performance.now() - startTime),
 			};
 		}
 		case 'adobe': {
-			const result = await caller.integrations.runAdobe({ debug });
+			await syncLightroomImages(debug);
 			return {
 				integration,
-				...result,
+				success: true,
 				duration: Math.round(performance.now() - startTime),
 			};
 		}
 		case 'feedbin': {
-			const result = await caller.integrations.runFeedbin({ debug });
+			await syncFeedbin(debug);
 			return {
 				integration,
-				...result,
+				success: true,
 				duration: Math.round(performance.now() - startTime),
 			};
 		}
-
-		// Direct function calls for syncs not in tRPC
 		case 'browsing': {
 			await syncAllBrowserData(debug);
 			return {

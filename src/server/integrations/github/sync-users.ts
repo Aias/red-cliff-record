@@ -90,6 +90,12 @@ export async function updatePartialUsers(): Promise<number> {
 	});
 
 	logger.info(`Found ${partialUsers.length} partial users to update`);
+
+	if (partialUsers.length === 0) {
+		logger.complete('No partial users to update', 0);
+		return 0;
+	}
+
 	let updatedCount = 0;
 
 	for (const user of partialUsers) {
@@ -102,12 +108,10 @@ export async function updatePartialUsers(): Promise<number> {
 				},
 			});
 
-			// Log rate limit information for monitoring
-			logRateLimitInfo(response);
+			logRateLimitInfo(response, logger);
 
 			const userData = response.data;
 
-			// Update user with full information
 			await db
 				.update(githubUsers)
 				.set({
@@ -122,15 +126,14 @@ export async function updatePartialUsers(): Promise<number> {
 					following: userData.following,
 					contentCreatedAt: new Date(userData.created_at),
 					contentUpdatedAt: new Date(userData.updated_at),
-					partial: false, // Mark as complete
+					partial: false,
 					recordUpdatedAt: new Date(),
 				})
 				.where(eq(githubUsers.id, user.id));
 
 			updatedCount++;
-			logger.info(`Updated user ${user.login}`);
+			logger.info(`Updated user ${user.login} (${updatedCount}/${partialUsers.length})`);
 
-			// Add a small delay between requests to avoid rate limiting
 			await Bun.sleep(REQUEST_DELAY_MS);
 		} catch (error) {
 			if (error instanceof RequestError) {
@@ -141,15 +144,13 @@ export async function updatePartialUsers(): Promise<number> {
 				});
 
 				if (error.response) {
-					logRateLimitInfo(error.response);
+					logRateLimitInfo(error.response, logger);
 				}
 
-				// If we hit rate limits, throw to stop the process
 				if (error.status === 403 || error.status === 429) {
 					throw new Error(`GitHub API rate limit exceeded: ${error.message}`);
 				}
 
-				// For other errors, continue with next user
 				logger.warn(`Skipping user ${user.login} due to error`);
 				continue;
 			}

@@ -4,20 +4,11 @@ import { db } from '@/server/db/connections';
 import { createEmbedding } from '../../app/lib/server/create-embedding';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createRecordEmbeddingText, getRecordTitle } from '@/shared/lib/embedding';
 import type { FullRecord } from '@/shared/types';
 
 const logger = createIntegrationLogger('services', 'embed-records');
-
-/**
- * Maximum number of records retrieved in a single run.
- */
-const RECORD_LIMIT = 5000;
-
-/**
- * Number of records processed concurrently in each batch.
- */
-const BATCH_SIZE = 25;
 
 export async function embedRecords(): Promise<number> {
 	logger.start('Embedding records');
@@ -61,61 +52,47 @@ export async function embedRecords(): Promise<number> {
 		orderBy: {
 			recordUpdatedAt: 'desc',
 		},
-		limit: RECORD_LIMIT,
+		limit: 5000,
 	});
 
 	logger.info(`Found ${curatedRecords.length} records without embeddings`);
 
-	let processedCount = 0;
-	let errorCount = 0;
-	let skippedCount = 0;
+	type EmbedResult = { status: 'processed' } | { status: 'skipped' } | { status: 'error' };
 
-	for (let i = 0; i < curatedRecords.length; i += BATCH_SIZE) {
-		const batch = curatedRecords.slice(i, i + BATCH_SIZE);
+	const results = await runConcurrentPool({
+		items: curatedRecords,
+		concurrency: 25,
+		worker: async (record): Promise<EmbedResult> => {
+			const textToEmbed = createRecordEmbeddingText(record);
 
-		const batchResults = await Promise.all(
-			batch.map(async (record) => {
-				const textToEmbed = createRecordEmbeddingText(record);
-
-				if (!textToEmbed) {
-					logger.warn(`No text to embed for record ${record.id}, skipping`);
-					return { status: 'skipped' };
-				}
-
-				logger.info(`Embedding record ${record.id}: ${getRecordTitle(record, 100)}`);
-
-				try {
-					const embedding = await createEmbedding(textToEmbed);
-					await db
-						.update(records)
-						.set({
-							textEmbedding: embedding,
-						})
-						.where(eq(records.id, record.id));
-
-					logger.info(`Successfully embedded record ${record.id}`);
-					return { status: 'processed' };
-				} catch (error) {
-					logger.error(`Error processing record ${record.id}: ${error}`);
-					return { status: 'error' };
-				}
-			})
-		);
-
-		for (const result of batchResults) {
-			switch (result.status) {
-				case 'processed':
-					processedCount++;
-					break;
-				case 'error':
-					errorCount++;
-					break;
-				case 'skipped':
-					skippedCount++;
-					break;
+			if (!textToEmbed) {
+				logger.warn(`No text to embed for record ${record.id}, skipping`);
+				return { status: 'skipped' };
 			}
-		}
-	}
+
+			logger.info(`Embedding record ${record.id}: ${getRecordTitle(record, 100)}`);
+
+			try {
+				const embedding = await createEmbedding(textToEmbed);
+				await db.update(records).set({ textEmbedding: embedding }).where(eq(records.id, record.id));
+
+				logger.info(`Successfully embedded record ${record.id}`);
+				return { status: 'processed' };
+			} catch (error) {
+				logger.error(`Error processing record ${record.id}: ${error}`);
+				return { status: 'error' };
+			}
+		},
+		onProgress: (completed, total) => {
+			if (completed % 50 === 0 || completed === total) {
+				logger.info(`Progress: ${completed}/${total}`);
+			}
+		},
+	});
+
+	const processedCount = results.filter((r) => r.ok && r.value.status === 'processed').length;
+	const skippedCount = results.filter((r) => r.ok && r.value.status === 'skipped').length;
+	const errorCount = results.filter((r) => !r.ok || r.value.status === 'error').length;
 
 	logger.complete(
 		`Processed ${processedCount} records successfully, ${errorCount} errors, ${skippedCount} skipped`
@@ -130,13 +107,12 @@ export async function runEmbedRecordsIntegration() {
 
 const main = async (): Promise<void> => {
 	try {
-		console.log('\n=== STARTING EMBEDDING FOR RECORDS ===\n');
+		logger.start('Starting embedding for records');
 		await runEmbedRecordsIntegration();
-		console.log('\n=== EMBEDDING FOR RECORDS COMPLETED ===\n');
+		logger.complete('Embedding for records completed');
 		process.exit(0);
 	} catch (error) {
-		console.error('Error in embedding records:', error);
-		console.log('\n=== EMBEDDING FOR RECORDS FAILED ===\n');
+		logger.error('Error in embedding records', error);
 		process.exit(1);
 	}
 };

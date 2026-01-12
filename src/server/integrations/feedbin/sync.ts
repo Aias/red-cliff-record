@@ -1,6 +1,7 @@
 import { feedEntries, feeds } from '@aias/hozo';
 import { inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -18,10 +19,8 @@ import type { FeedbinEntry, FeedbinIcon, FeedbinSubscription } from './types';
 
 const logger = createIntegrationLogger('feedbin', 'sync');
 
-/**
- * Batch size for processing entries
- */
-const ENTRY_BATCH_SIZE = 30;
+/** Concurrency for processing entries */
+const ENTRY_CONCURRENCY = 30;
 
 /**
  * Cache of synced feed IDs to avoid repeated fetches
@@ -263,139 +262,170 @@ async function syncFeeds(
 	logger.complete(`Synced ${successCount} feeds (${errorCount} errors)`);
 }
 
+/** Result of processing a single entry */
+type EntryResult =
+	| { status: 'success'; entryId: number }
+	| { status: 'skipped'; entryId: number }
+	| { status: 'error'; entryId: number; entry: FeedbinEntry };
+
 /**
- * Process a single entry with timeout
+ * Process a single entry (for use with runConcurrentPool)
  */
 async function processSingleEntry(
 	entry: FeedbinEntry,
 	unreadIds: Set<number>,
 	starredIds: Set<number>,
 	integrationRunId: number,
-	updatedEntryIds: Set<number> | undefined,
-	timeoutMs: number = 5000
-): Promise<boolean> {
-	return new Promise((resolve) => {
-		const timeout = setTimeout(() => {
-			logger.error(`Timeout processing entry ${entry.id} after ${timeoutMs}ms`);
-			resolve(false);
-		}, timeoutMs);
+	updatedEntryIds: Set<number> | undefined
+): Promise<EntryResult> {
+	// Determine a usable URL for the entry
+	const effectiveUrl = entry.url ?? entry.extracted_content_url ?? null;
+	if (!effectiveUrl) {
+		// Skip entries without any URL; database requires non-null URL
+		logger.warn(
+			`Skipping entry #${entry.id}: ${entry.title} (feed ${entry.feed_id}) because it has no URL`
+		);
+		return { status: 'skipped', entryId: entry.id };
+	}
 
-		void (async () => {
-			try {
-				// Determine a usable URL for the entry
-				const effectiveUrl = entry.url ?? entry.extracted_content_url ?? null;
-				if (!effectiveUrl) {
-					// Skip entries without any URL; database requires non-null URL
-					logger.warn(
-						`Skipping entry #${entry.id}: ${entry.title} (feed ${entry.feed_id}) because it has no URL`
-					);
-					clearTimeout(timeout);
-					return resolve(true);
-				}
-				// For updated entries, preserve existing read/starred status
-				// For new entries, use the status from Feedbin
-				const isUpdatedEntry = updatedEntryIds?.has(entry.id) ?? false;
-				let isRead = !unreadIds.has(entry.id);
-				let isStarred = starredIds.has(entry.id);
+	// For updated entries, preserve existing read/starred status
+	// For new entries, use the status from Feedbin
+	const isUpdatedEntry = updatedEntryIds?.has(entry.id) ?? false;
+	let isRead = !unreadIds.has(entry.id);
+	let isStarred = starredIds.has(entry.id);
 
-				if (isUpdatedEntry) {
-					// Fetch current status from database for updated entries
-					const existingEntry = await db.query.feedEntries.findFirst({
-						where: {
-							id: entry.id,
-						},
-						columns: { read: true, starred: true },
-					});
-					if (existingEntry) {
-						isRead = existingEntry.read;
-						isStarred = existingEntry.starred;
-					}
-				}
+	if (isUpdatedEntry) {
+		// Fetch current status from database for updated entries
+		const existingEntry = await db.query.feedEntries.findFirst({
+			where: {
+				id: entry.id,
+			},
+			columns: { read: true, starred: true },
+		});
+		if (existingEntry) {
+			isRead = existingEntry.read;
+			isStarred = existingEntry.starred;
+		}
+	}
 
-				// Extract image URLs from content if available
-				let imageUrls: string[] | null = null;
-				if (entry.images?.original_url) {
-					imageUrls = [entry.images.original_url];
-				}
+	// Extract image URLs from content if available
+	let imageUrls: string[] | null = null;
+	if (entry.images?.original_url) {
+		imageUrls = [entry.images.original_url];
+	}
 
-				// Process enclosure - skip if it has invalid data
-				let enclosure = null;
-				if (entry.enclosure) {
-					const enc = entry.enclosure;
-					// Skip if enclosure_type is "false", false, null, or if URLs are objects
-					if (
-						enc.enclosure_type !== 'false' &&
-						enc.enclosure_type !== false &&
-						enc.enclosure_type !== null &&
-						typeof enc.enclosure_url !== 'object' &&
-						enc.enclosure_url !== null
-					) {
-						let enclosureUrl = '';
-						if (typeof enc.enclosure_url === 'string') {
-							enclosureUrl = enc.enclosure_url;
-						}
-
-						let itunesImage = null;
-						if (typeof enc.itunes_image === 'string') {
-							itunesImage = enc.itunes_image;
-						}
-
-						if (enclosureUrl) {
-							enclosure = {
-								enclosureUrl,
-								enclosureType: typeof enc.enclosure_type === 'string' ? enc.enclosure_type : '',
-								enclosureLength:
-									typeof enc.enclosure_length === 'number' ? enc.enclosure_length : 0,
-								itunesDuration: enc.itunes_duration || null,
-								itunesImage,
-							};
-						}
-					}
-				}
-
-				// Upsert entry (without embedding - will be done in post-process)
-				await db
-					.insert(feedEntries)
-					.values({
-						id: entry.id,
-						feedId: entry.feed_id,
-						url: effectiveUrl,
-						title: entry.title,
-						author: entry.author,
-						summary: entry.summary,
-						content: entry.content,
-						imageUrls,
-						enclosure,
-						read: isRead,
-						starred: isStarred,
-						publishedAt: entry.published,
-						integrationRunId,
-					})
-					.onConflictDoUpdate({
-						target: feedEntries.id,
-						set: {
-							title: entry.title,
-							author: entry.author,
-							summary: entry.summary,
-							content: entry.content,
-							imageUrls,
-							enclosure,
-							read: isRead,
-							starred: isStarred,
-							publishedAt: entry.published,
-							recordUpdatedAt: new Date(),
-						},
-					});
-
-				clearTimeout(timeout);
-				resolve(true);
-			} catch (error) {
-				clearTimeout(timeout);
-				logger.warn(`Failed to sync entry ${entry.id}`, error);
-				resolve(false);
+	// Process enclosure - skip if it has invalid data
+	let enclosure = null;
+	if (entry.enclosure) {
+		const enc = entry.enclosure;
+		// Skip if enclosure_type is "false", false, null, or if URLs are objects
+		if (
+			enc.enclosure_type !== 'false' &&
+			enc.enclosure_type !== false &&
+			enc.enclosure_type !== null &&
+			typeof enc.enclosure_url !== 'object' &&
+			enc.enclosure_url !== null
+		) {
+			let enclosureUrl = '';
+			if (typeof enc.enclosure_url === 'string') {
+				enclosureUrl = enc.enclosure_url;
 			}
-		})();
-	});
+
+			let itunesImage = null;
+			if (typeof enc.itunes_image === 'string') {
+				itunesImage = enc.itunes_image;
+			}
+
+			if (enclosureUrl) {
+				enclosure = {
+					enclosureUrl,
+					enclosureType: typeof enc.enclosure_type === 'string' ? enc.enclosure_type : '',
+					enclosureLength: typeof enc.enclosure_length === 'number' ? enc.enclosure_length : 0,
+					itunesDuration: enc.itunes_duration || null,
+					itunesImage,
+				};
+			}
+		}
+	}
+
+	// Upsert entry (without embedding - will be done in post-process)
+	await db
+		.insert(feedEntries)
+		.values({
+			id: entry.id,
+			feedId: entry.feed_id,
+			url: effectiveUrl,
+			title: entry.title,
+			author: entry.author,
+			summary: entry.summary,
+			content: entry.content,
+			imageUrls,
+			enclosure,
+			read: isRead,
+			starred: isStarred,
+			publishedAt: entry.published,
+			integrationRunId,
+		})
+		.onConflictDoUpdate({
+			target: feedEntries.id,
+			set: {
+				title: entry.title,
+				author: entry.author,
+				summary: entry.summary,
+				content: entry.content,
+				imageUrls,
+				enclosure,
+				read: isRead,
+				starred: isStarred,
+				publishedAt: entry.published,
+				recordUpdatedAt: new Date(),
+			},
+		});
+
+	return { status: 'success', entryId: entry.id };
+}
+
+/** Retry delays for failed entries (exponential backoff: 1s, 2s, 4s) */
+const RETRY_DELAYS = [1000, 2000, 4000];
+
+/**
+ * Process an entry with retry logic inside the worker
+ */
+async function processEntryWithRetry(
+	entry: FeedbinEntry,
+	unreadIds: Set<number>,
+	starredIds: Set<number>,
+	integrationRunId: number,
+	updatedEntryIds: Set<number> | undefined
+): Promise<EntryResult> {
+	let lastError: unknown;
+
+	for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+		if (attempt > 0) {
+			const delay = RETRY_DELAYS[attempt - 1];
+			if (delay === undefined) {
+				throw new Error(`Missing retry delay for attempt ${attempt}`);
+			}
+			logger.info(`Retry ${attempt}/${RETRY_DELAYS.length} for entry ${entry.id} after ${delay}ms`);
+			await new Promise((resolve) => setTimeout(resolve, delay));
+		}
+
+		try {
+			return await processSingleEntry(
+				entry,
+				unreadIds,
+				starredIds,
+				integrationRunId,
+				updatedEntryIds
+			);
+		} catch (error) {
+			lastError = error;
+			logger.warn(`Attempt ${attempt + 1} failed for entry ${entry.id}`, error);
+		}
+	}
+
+	logger.error(`Failed to sync entry ${entry.id} after ${RETRY_DELAYS.length} retries`, lastError);
+	return { status: 'error', entryId: entry.id, entry };
 }
 
 /**
@@ -410,169 +440,31 @@ async function syncFeedEntries(
 ): Promise<number> {
 	logger.start(`Syncing ${entries.length} entries`);
 
-	const successfulEntryIds = new Set<number>();
-	const failedEntryMap = new Map<number, FeedbinEntry>();
-	const BATCH_TIMEOUT_MS = 30000; // 30 seconds per batch
-	const ENTRY_TIMEOUT_MS = 5000; // 5 seconds per entry
-	const MAX_RETRY_DURATION_MS = 60000; // Retry failed entries for up to 60 seconds total
-	const RETRY_INITIAL_DELAY_MS = 1000; // 1 second initial backoff
-
-	// Process entries in batches
-	for (let i = 0; i < entries.length; i += ENTRY_BATCH_SIZE) {
-		const batch = entries.slice(i, i + ENTRY_BATCH_SIZE);
-		const batchStartTime = Date.now();
-
-		logger.info(
-			`Processing batch ${Math.floor(i / ENTRY_BATCH_SIZE) + 1} of ${Math.ceil(entries.length / ENTRY_BATCH_SIZE)} (${batch.length} entries)`
-		);
-
-		// Set up batch timeout
-		const batchPromise = Promise.all(
-			batch.map(async (entry, batchIndex) => {
-				const globalIndex = i + batchIndex + 1;
-				const success = await processSingleEntry(
-					entry,
-					unreadIds,
-					starredIds,
-					integrationRunId,
-					updatedEntryIds,
-					ENTRY_TIMEOUT_MS
-				);
-				return { entry, success, globalIndex };
-			})
-		);
-
-		let raceResults: Array<{ entry: FeedbinEntry; success: boolean; globalIndex: number }> | null =
-			null;
-
-		try {
-			raceResults = (await Promise.race([
-				batchPromise,
-				new Promise((_, reject) =>
-					setTimeout(
-						() => reject(new Error(`Batch timeout after ${BATCH_TIMEOUT_MS}ms`)),
-						BATCH_TIMEOUT_MS
-					)
-				),
-			])) as Array<{ entry: FeedbinEntry; success: boolean; globalIndex: number }>;
-			const batchDuration = Date.now() - batchStartTime;
-			logger.info(`Batch completed in ${batchDuration}ms`);
-		} catch (error) {
-			logger.error(`Batch processing failed or timed out`, error);
-			// Continue with next batch even if this one fails
-			for (const entry of batch) {
-				failedEntryMap.set(entry.id, entry);
+	const results = await runConcurrentPool({
+		items: entries,
+		concurrency: ENTRY_CONCURRENCY,
+		timeoutMs: 30_000, // 30 seconds per entry (including retries)
+		worker: async (entry) => {
+			return processEntryWithRetry(entry, unreadIds, starredIds, integrationRunId, updatedEntryIds);
+		},
+		onProgress: (completed, total) => {
+			if (completed % 50 === 0 || completed === total) {
+				logger.info(`Progress: ${completed}/${total} entries processed`);
 			}
-		}
+		},
+	});
 
-		if (raceResults) {
-			for (const { entry, success, globalIndex } of raceResults) {
-				if (success) {
-					if (!successfulEntryIds.has(entry.id)) {
-						successfulEntryIds.add(entry.id);
-					}
-					failedEntryMap.delete(entry.id);
-					logger.info(
-						`Synced entry "${entry.title || 'Untitled'}" (${entry.id}) - ${globalIndex} of ${entries.length}`
-					);
-				} else {
-					failedEntryMap.set(entry.id, entry);
-					logger.warn(`Failed to sync entry ${entry.id} (${globalIndex} of ${entries.length})`);
-				}
-			}
-		}
+	const successCount = results.filter((r) => r.ok && r.value.status === 'success').length;
+	const skippedCount = results.filter((r) => r.ok && r.value.status === 'skipped').length;
+	const errorCount = results.filter((r) => !r.ok || r.value.status === 'error').length;
 
-		// Add delay between batches to prevent overwhelming the system
-		if (i + ENTRY_BATCH_SIZE < entries.length) {
-			logger.info('Waiting 2 seconds before next batch...');
-			await new Promise((resolve) => setTimeout(resolve, 2000));
-		}
+	if (errorCount > 0) {
+		logger.warn(`Failed to sync ${errorCount} entries after retry attempts`);
 	}
 
-	const retryFailedEntries = async () => {
-		if (failedEntryMap.size === 0) {
-			return;
-		}
-
-		logger.info(`Retrying ${failedEntryMap.size} failed entries with exponential backoff`);
-
-		let attempt = 1;
-		let delayMs = RETRY_INITIAL_DELAY_MS;
-		const retryStart = Date.now();
-		let pendingEntries = Array.from(failedEntryMap.values());
-
-		while (pendingEntries.length > 0 && Date.now() - retryStart < MAX_RETRY_DURATION_MS) {
-			logger.info(`Retry attempt ${attempt} for ${pendingEntries.length} entries`);
-
-			const attemptResults = await Promise.all(
-				pendingEntries.map(async (entry) => {
-					const success = await processSingleEntry(
-						entry,
-						unreadIds,
-						starredIds,
-						integrationRunId,
-						updatedEntryIds,
-						ENTRY_TIMEOUT_MS
-					);
-					return { entry, success };
-				})
-			);
-
-			pendingEntries = [];
-
-			for (const { entry, success } of attemptResults) {
-				if (success) {
-					if (!successfulEntryIds.has(entry.id)) {
-						successfulEntryIds.add(entry.id);
-					}
-					failedEntryMap.delete(entry.id);
-					logger.info(
-						`Retry attempt ${attempt} succeeded for entry "${entry.title || 'Untitled'}" (${entry.id})`
-					);
-				} else {
-					failedEntryMap.set(entry.id, entry);
-					pendingEntries.push(entry);
-					logger.warn(`Retry attempt ${attempt} failed for entry ${entry.id}`);
-				}
-			}
-
-			if (pendingEntries.length === 0) {
-				break;
-			}
-
-			const elapsed = Date.now() - retryStart;
-			if (elapsed >= MAX_RETRY_DURATION_MS) {
-				break;
-			}
-
-			const waitMs = Math.min(delayMs, MAX_RETRY_DURATION_MS - elapsed);
-			logger.info(`Waiting ${waitMs}ms before retrying ${pendingEntries.length} entries`);
-			await new Promise((resolve) => setTimeout(resolve, waitMs));
-			delayMs = Math.min(delayMs * 2, MAX_RETRY_DURATION_MS);
-			attempt++;
-		}
-
-		if (failedEntryMap.size > 0) {
-			logger.error(
-				`Failed to sync ${failedEntryMap.size} entries after retries totaling ${Math.min(
-					Date.now() - retryStart,
-					MAX_RETRY_DURATION_MS
-				)}ms`
-			);
-		} else {
-			logger.info('All previously failed entries synced successfully');
-		}
-	};
-
-	await retryFailedEntries();
-
-	const successCount = successfulEntryIds.size;
-
-	if (failedEntryMap.size > 0) {
-		logger.warn(`Failed to sync ${failedEntryMap.size} entries after retry attempts`);
-	}
-
-	logger.complete(`Synced ${successCount} of ${entries.length} entries`);
+	logger.complete(
+		`Synced ${successCount} of ${entries.length} entries (${skippedCount} skipped, ${errorCount} errors)`
+	);
 	return successCount;
 }
 

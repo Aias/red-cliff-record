@@ -187,7 +187,7 @@ async function syncGitHubCommits(
 			});
 
 			// Log rate limit information for monitoring
-			logRateLimitInfo(response);
+			logRateLimitInfo(response, logger);
 
 			// Collect debug data if requested
 			if (collectDebugData) {
@@ -200,37 +200,37 @@ async function syncGitHubCommits(
 				break;
 			}
 
+			// Process commits sequentially with rate limiting
+			let newCommitsOnPage = 0;
 			let processedAnyNewCommits = false;
-			for (const item of response.data.items) {
+
+			for (let i = 0; i < response.data.items.length; i++) {
+				const item = response.data.items[i];
+				if (!item) {
+					logger.warn(`Missing commit item at index ${i} on page ${page}`);
+					continue;
+				}
 				try {
 					// In debug mode, skip DB existence check
 					if (!skipPersist) {
-						// First check if commit exists by SHA
 						const existingCommit = await db.query.githubCommits.findFirst({
-							columns: {
-								id: true,
-								sha: true,
-							},
-							where: {
-								sha: item.sha,
-							},
+							columns: { id: true, sha: true },
+							where: { sha: item.sha },
 						});
 
 						if (existingCommit) {
 							logger.info(`Skipping existing commit ${item.sha}`);
+							await Bun.sleep(REQUEST_DELAY_MS);
 							continue;
 						}
 					}
-
-					processedAnyNewCommits = true;
 
 					// Get the full repository data
 					const repoResponse = await octokit.rest.repos.get({
 						owner: item.repository.owner.login,
 						repo: item.repository.name,
 					});
-
-					logRateLimitInfo(repoResponse);
+					logRateLimitInfo(repoResponse, logger);
 
 					// Skip if this is a fork and the commit is older than the fork date
 					if (repoResponse.data.fork) {
@@ -239,6 +239,7 @@ async function syncGitHubCommits(
 
 						if (commitDate < forkDate) {
 							logger.info(`Skipping commit ${item.sha} as it predates fork creation`);
+							await Bun.sleep(REQUEST_DELAY_MS);
 							continue;
 						}
 					}
@@ -249,13 +250,14 @@ async function syncGitHubCommits(
 						repo: item.repository.name,
 						ref: item.sha,
 					});
+					logRateLimitInfo(detailedCommit, logger);
 
-					logRateLimitInfo(detailedCommit);
+					processedAnyNewCommits = true;
 
 					// In debug mode, just count the commits without persisting
 					if (skipPersist) {
 						logger.info(`Would insert commit ${item.sha} for ${item.repository.full_name}`);
-						totalCommits++;
+						newCommitsOnPage++;
 						await Bun.sleep(REQUEST_DELAY_MS);
 						continue;
 					}
@@ -280,7 +282,7 @@ async function syncGitHubCommits(
 
 					await db.insert(githubCommits).values(newCommit);
 
-					// Insert commit changes only for new commits
+					// Insert commit changes
 					for (const file of detailedCommit.data.files || []) {
 						const newChange: GithubCommitChangeInsert = {
 							filename: file.filename,
@@ -291,23 +293,24 @@ async function syncGitHubCommits(
 							additions: file.additions,
 							deletions: file.deletions,
 						};
-
 						await db.insert(githubCommitChanges).values(newChange);
 					}
 
 					logger.info(`Inserted commit ${item.sha} for ${item.repository.full_name}`);
-					totalCommits++;
-
-					// Add a small delay between requests to avoid rate limiting
+					newCommitsOnPage++;
 					await Bun.sleep(REQUEST_DELAY_MS);
 				} catch (error) {
 					logger.error(`Error processing commit ${item.sha}`, {
 						error: error instanceof Error ? error.message : String(error),
 						repository: item.repository?.full_name,
 					});
-					// Continue with next commit rather than failing the entire sync
+					await Bun.sleep(REQUEST_DELAY_MS);
 				}
+
+				logger.info(`Processing commits: ${i + 1}/${response.data.items.length}`);
 			}
+
+			totalCommits += newCommitsOnPage;
 
 			// If we didn't process any new commits on this page, we can stop
 			if (!processedAnyNewCommits) {
@@ -326,7 +329,7 @@ async function syncGitHubCommits(
 					headers: error.response?.headers,
 				});
 				if (error.response) {
-					logRateLimitInfo(error.response);
+					logRateLimitInfo(error.response, logger);
 				}
 				// If we hit rate limits, throw to stop the process
 				if (error.status === 403 || error.status === 429) {

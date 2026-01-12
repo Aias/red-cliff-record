@@ -44,7 +44,6 @@ export const browsingHistory = pgTable(
 		index().on(table.viewTime),
 		index('browsing_history_url_idx').on(table.url),
 		index().on(table.viewEpochMicroseconds),
-		index().on(table.hostname),
 		// Unique constraint to prevent duplicate entries when browsers import from each other
 		unique('browsing_history_unique_idx').on(
 			table.hostname,

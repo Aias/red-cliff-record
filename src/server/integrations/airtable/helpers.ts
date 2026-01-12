@@ -7,13 +7,24 @@ import Airtable from 'airtable';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { uploadMediaToR2 } from '@/server/lib/media';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
+import { EnvSchema } from '@/shared/lib/env';
+import { createIntegrationLogger } from '../common/logging';
 import { AirtableAttachmentSchema } from './types';
 
+const logger = createIntegrationLogger('airtable', 'media');
+
+const { AIRTABLE_ACCESS_TOKEN, AIRTABLE_BASE_ID, ASSETS_DOMAIN } = EnvSchema.pick({
+	AIRTABLE_ACCESS_TOKEN: true,
+	AIRTABLE_BASE_ID: true,
+	ASSETS_DOMAIN: true,
+}).parse(process.env);
+
 Airtable.configure({
-	apiKey: process.env.AIRTABLE_ACCESS_TOKEN,
+	apiKey: AIRTABLE_ACCESS_TOKEN,
 });
 
-export const airtableBase = Airtable.base(process.env.AIRTABLE_BASE_ID!);
+export const airtableBase = Airtable.base(AIRTABLE_BASE_ID);
 
 type AttachmentWithExtract = AirtableAttachmentSelect & {
 	extract: AirtableExtractSelect;
@@ -27,21 +38,25 @@ async function processAttachment(attachment: AttachmentWithExtract) {
 
 		for (const attachment of attachments) {
 			const { id, url: airtableUrl, filename } = attachment;
-			console.log(`Processing ${filename} (${id})`);
+			logger.info(`Processing ${filename} (${id})`);
 
 			try {
 				const r2Url = await uploadMediaToR2(airtableUrl);
 				if (!r2Url) {
-					console.error('Failed to upload attachment to R2:', {
-						extractTitle,
-						extractId,
-						filename,
-						attachmentId: id,
-					});
+					logger.error(
+						'Failed to upload attachment to R2',
+						undefined,
+						{
+							extractTitle,
+							extractId,
+							filename,
+							attachmentId: id,
+						}
+					);
 					continue;
 				}
 
-				console.log(`Uploaded to R2: ${r2Url}`);
+				logger.info(`Uploaded to R2: ${r2Url}`);
 
 				const [updatedAttachment] = await db
 					.update(airtableAttachments)
@@ -53,42 +68,36 @@ async function processAttachment(attachment: AttachmentWithExtract) {
 					.returning();
 
 				if (!updatedAttachment) {
-					console.error('Failed to update attachment in database:', {
-						extractTitle,
-						extractId,
-						filename,
-						attachmentId: id,
-						r2Url,
-					});
+					logger.error(
+						'Failed to update attachment in database',
+						undefined,
+						{
+							extractTitle,
+							extractId,
+							filename,
+							attachmentId: id,
+							r2Url,
+						}
+					);
 				}
 			} catch (error) {
-				console.error('Error processing attachment:', {
-					extractTitle,
-					extractId,
-					filename,
-					attachmentId: id,
-					error: error instanceof Error ? error.message : String(error),
-				});
+				logger.error(
+					'Error processing attachment',
+					error,
+					{ extractTitle, extractId, filename, attachmentId: id }
+				);
 			}
 		}
 
 		return true;
 	} catch (error) {
-		console.error('Error processing attachment:', {
-			extractId: attachment.extract.id,
-			error: error instanceof Error ? error.message : String(error),
-		});
+		logger.error('Error processing attachment', error, { extractId: attachment.extract.id });
 		return false;
 	}
 }
 
-async function processBatch(batch: AttachmentWithExtract[]) {
-	const results = await Promise.all(batch.map(processAttachment));
-	return results.filter(Boolean).length;
-}
-
 export async function storeMedia() {
-	console.log('Starting media storage process...');
+	logger.start('Starting media storage process');
 
 	const attachments = await db.query.airtableAttachments.findMany({
 		with: {
@@ -96,39 +105,30 @@ export async function storeMedia() {
 		},
 		where: {
 			url: {
-				notIlike: `%${process.env.ASSETS_DOMAIN}%`,
+				notIlike: `%${ASSETS_DOMAIN}%`,
 			},
 		},
 	});
 
 	if (attachments.length === 0) {
-		console.log('No attachments to process');
+		logger.skip('No attachments to process');
 		return 0;
 	}
 
-	console.log(`Found ${attachments.length} attachments to process`);
+	logger.info(`Found ${attachments.length} attachments to process`);
 
-	const BATCH_SIZE = 50;
-	let successCount = 0;
+	const results = await runConcurrentPool({
+		items: attachments,
+		concurrency: 50,
+		worker: processAttachment,
+		onProgress: (completed, total) => {
+			if (completed % 10 === 0 || completed === total) {
+				logger.info(`Progress: ${completed}/${total} attachments processed`);
+			}
+		},
+	});
 
-	// Process in batches
-	for (let i = 0; i < attachments.length; i += BATCH_SIZE) {
-		const batch = attachments.slice(i, i + BATCH_SIZE);
-		console.log(
-			`Processing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(attachments.length / BATCH_SIZE)}`
-		);
-
-		const batchSuccesses = await processBatch(batch);
-		successCount += batchSuccesses;
-
-		console.log(`Completed batch with ${batchSuccesses} successes`);
-
-		// Add a small delay between batches to prevent rate limiting
-		if (i + BATCH_SIZE < attachments.length) {
-			await Bun.sleep(1000);
-		}
-	}
-
-	console.log(`Successfully processed ${successCount} out of ${attachments.length} attachments`);
+	const successCount = results.filter((r) => r.ok && r.value).length;
+	logger.complete(`Successfully processed ${successCount} of ${attachments.length} attachments`);
 	return successCount;
 }

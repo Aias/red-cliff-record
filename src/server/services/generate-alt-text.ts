@@ -4,14 +4,9 @@ import OpenAI from 'openai';
 import { db } from '@/server/db/connections';
 import { writeDebugOutput } from '@/server/integrations/common/debug-output';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 
 const logger = createIntegrationLogger('services', 'generate-alt-text');
-
-const ALT_TEXT_CONCURRENCY = 10;
-const ALT_TEXT_ITEM_TIMEOUT_MS = 90_000;
-const ALT_TEXT_PROGRESS_INTERVAL = 10;
-/** How long to wait before retrying failed alt text generation */
-const ALT_TEXT_RETRY_COOLDOWN_DAYS = 7;
 
 let openai: OpenAI | null = null;
 
@@ -99,29 +94,6 @@ type GenerateAltTextInternalOptions = GenerateAltTextOptions & {
 	signal?: AbortSignal;
 };
 
-async function withTimeout<T>(
-	timeoutMs: number,
-	run: (signal: AbortSignal) => Promise<T>
-): Promise<T> {
-	const controller = new AbortController();
-
-	let timeoutId: ReturnType<typeof setTimeout> | null = null;
-	const timeoutPromise = new Promise<T>((_, reject) => {
-		timeoutId = setTimeout(() => {
-			controller.abort();
-			reject(new Error(`Timed out after ${timeoutMs}ms`));
-		}, timeoutMs);
-	});
-
-	try {
-		return await Promise.race([run(controller.signal), timeoutPromise]);
-	} finally {
-		if (timeoutId) {
-			clearTimeout(timeoutId);
-		}
-	}
-}
-
 /**
  * Check if image URL is accessible
  */
@@ -134,7 +106,7 @@ async function checkImageAccessible(url: string, signal?: AbortSignal): Promise<
 			return response.ok;
 		} catch {
 			if (signal?.aborted) {
-				throw new Error(`Timed out after ${ALT_TEXT_ITEM_TIMEOUT_MS}ms`);
+				throw new Error('Timed out after 90s');
 			}
 			return false;
 		}
@@ -150,6 +122,9 @@ async function checkImageAccessible(url: string, signal?: AbortSignal): Promise<
 		headers: { Range: 'bytes=0-0' },
 	});
 }
+
+/** Timeout for each alt text generation attempt (90 seconds) */
+const ITEM_TIMEOUT_MS = 90_000;
 
 /**
  * Call OpenAI vision API to generate alt text for an image.
@@ -180,7 +155,7 @@ async function callVisionApi(
 					},
 				],
 			},
-			{ signal, timeout: ALT_TEXT_ITEM_TIMEOUT_MS }
+			{ signal, timeout: ITEM_TIMEOUT_MS }
 		);
 
 		const altText = response.output_text?.trim();
@@ -326,77 +301,46 @@ export async function generateAltText(
 
 	logger.info(`Generating alt text for ${mediaIds.length} media items`);
 
-	const results: GenerateAltTextResult[] = new Array(mediaIds.length);
-
-	let generated = 0;
-	let skipped = 0;
-	let failed = 0;
-	let completed = 0;
-	let nextIndex = 0;
-
-	const workerCount = Math.min(ALT_TEXT_CONCURRENCY, mediaIds.length);
-
-	const worker = async () => {
-		while (true) {
-			const index = nextIndex++;
-			if (index >= mediaIds.length) return;
-
-			const mediaId = mediaIds[index];
-			if (mediaId === undefined) return;
-
-			const result: GenerateAltTextResult = await withTimeout<GenerateAltTextResult>(
-				ALT_TEXT_ITEM_TIMEOUT_MS,
-				async (signal) => {
-					const internalOptions: GenerateAltTextInternalOptions = { ...options, signal };
-					try {
-						return await generateAltTextForMedia(mediaId, internalOptions);
-					} catch (error) {
-						const message = error instanceof Error ? error.message : String(error);
-						const failure: GenerateAltTextResult = { mediaId, success: false, error: message };
-						return failure;
-					}
-				}
-			).catch((error) => {
+	const results = await runConcurrentPool({
+		items: mediaIds,
+		concurrency: 10,
+		timeoutMs: ITEM_TIMEOUT_MS,
+		worker: async (mediaId, _index, signal) => {
+			const internalOptions: GenerateAltTextInternalOptions = { ...options, signal };
+			try {
+				return await generateAltTextForMedia(mediaId, internalOptions);
+			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
-				const failure: GenerateAltTextResult = { mediaId, success: false, error: message };
-				return failure;
-			});
-
-			results[index] = result;
-
-			completed++;
-			if (result.success) {
-				if (result.skipped) {
-					skipped++;
-				} else {
-					generated++;
-				}
-			} else {
-				failed++;
+				return { mediaId, success: false, error: message } satisfies GenerateAltTextResult;
 			}
-
-			if (completed % ALT_TEXT_PROGRESS_INTERVAL === 0 || completed === mediaIds.length) {
-				logger.info(
-					`Progress ${completed}/${mediaIds.length}: ${generated} generated, ${skipped} skipped, ${failed} failed`
-				);
+		},
+		onProgress: (completed, total) => {
+			if (completed % 10 === 0 || completed === total) {
+				logger.info(`Progress: ${completed}/${total}`);
 			}
+		},
+	});
+
+	const resolvedResults: GenerateAltTextResult[] = mediaIds.map((mediaId, index) => {
+		const result = results[index];
+		if (!result) {
+			return { mediaId, success: false, error: 'Internal error: missing pool result' };
 		}
-	};
+		if (result.ok) {
+			return result.value;
+		}
+		return { mediaId, success: false, error: result.error.message };
+	});
 
-	await Promise.all(Array.from({ length: workerCount }, () => worker()));
-
-	const summary = {
-		total: results.length,
-		generated,
-		skipped,
-		failed,
-	};
+	const generated = resolvedResults.filter((r) => r.success && !r.skipped).length;
+	const skipped = resolvedResults.filter((r) => r.skipped).length;
+	const failed = resolvedResults.filter((r) => !r.success).length;
 
 	logger.info(
-		`Alt text generation complete: ${summary.generated} generated, ${summary.skipped} skipped, ${summary.failed} failed`
+		`Alt text generation complete: ${generated} generated, ${skipped} skipped, ${failed} failed`
 	);
 
-	return results;
+	return resolvedResults;
 }
 
 export interface AltTextSyncOptions {
@@ -428,7 +372,7 @@ async function generateMissingAltText(
 
 	// Calculate cooldown threshold
 	const cooldownDate = new Date();
-	cooldownDate.setDate(cooldownDate.getDate() - ALT_TEXT_RETRY_COOLDOWN_DAYS);
+	cooldownDate.setDate(cooldownDate.getDate() - 7);
 
 	// Find images without alt text that either:
 	// - Have never been attempted (altTextGeneratedAt is null), OR

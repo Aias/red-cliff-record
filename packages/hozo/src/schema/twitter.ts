@@ -50,6 +50,7 @@ export const twitterTweets = pgTable(
 	(table) => [
 		index().on(table.integrationRunId),
 		index().on(table.recordId),
+		index().on(table.userId),
 		index().on(table.deletedAt),
 	]
 );
@@ -89,7 +90,7 @@ export const twitterMedia = pgTable(
 		...contentTimestamps,
 		...databaseTimestamps,
 	},
-	(table) => [index().on(table.mediaId)]
+	(table) => [index().on(table.tweetId), index().on(table.mediaId)]
 );
 
 export const TwitterMediaSelectSchema = createSelectSchema(twitterMedia);
