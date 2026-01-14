@@ -6,7 +6,7 @@ This file provides guidance to AI coding assistants when working with code in th
 
 > Contributor note: For project overview and scripts, see `README.md` and `INTEGRATIONS.md`.
 
-> Agent file conventions: `AGENTS.md` is the source of truth for agent instructions. Other agent instruction files (e.g., `CLAUDE.md`) should be symlinked to this file rather than maintained separately. Create symlinks with `ln -s AGENTS.md CLAUDE.md` and add the symlink targets to `.gitignore`.
+> Agent file conventions: `AGENTS.md` is the source of truth for agent instructions. Other agent instruction files (e.g., `CLAUDE.md`) should be symlinked to this file rather than maintained separately. Create symlinks with `ln -s AGENTS.md CLAUDE.md` and commit the symlink to the repository.
 
 ## Project Overview
 
