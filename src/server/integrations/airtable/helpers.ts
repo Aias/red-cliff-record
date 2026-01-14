@@ -43,16 +43,12 @@ async function processAttachment(attachment: AttachmentWithExtract) {
 			try {
 				const r2Url = await uploadMediaToR2(airtableUrl);
 				if (!r2Url) {
-					logger.error(
-						'Failed to upload attachment to R2',
-						undefined,
-						{
-							extractTitle,
-							extractId,
-							filename,
-							attachmentId: id,
-						}
-					);
+					logger.error('Failed to upload attachment to R2', undefined, {
+						extractTitle,
+						extractId,
+						filename,
+						attachmentId: id,
+					});
 					continue;
 				}
 
@@ -68,24 +64,21 @@ async function processAttachment(attachment: AttachmentWithExtract) {
 					.returning();
 
 				if (!updatedAttachment) {
-					logger.error(
-						'Failed to update attachment in database',
-						undefined,
-						{
-							extractTitle,
-							extractId,
-							filename,
-							attachmentId: id,
-							r2Url,
-						}
-					);
+					logger.error('Failed to update attachment in database', undefined, {
+						extractTitle,
+						extractId,
+						filename,
+						attachmentId: id,
+						r2Url,
+					});
 				}
 			} catch (error) {
-				logger.error(
-					'Error processing attachment',
-					error,
-					{ extractTitle, extractId, filename, attachmentId: id }
-				);
+				logger.error('Error processing attachment', error, {
+					extractTitle,
+					extractId,
+					filename,
+					attachmentId: id,
+				});
 			}
 		}
 

@@ -6,21 +6,17 @@ import type { Media, TweetData, User } from './types';
  * Returns null if the user has missing required fields (e.g., suspended/unavailable accounts).
  */
 export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRunId'> | null => {
-	const { rest_id, legacy } = user;
-	const {
-		created_at,
-		name,
-		screen_name,
-		description,
-		entities,
-		profile_banner_url,
-		profile_image_url_https,
-		location,
-		url,
-	} = legacy;
+	const { rest_id, legacy, core, avatar, location: userLocation, profile_bio } = user;
+	const name = core?.name ?? legacy.name;
+	const screenName = core?.screen_name ?? legacy.screen_name;
+	const createdAt = core?.created_at ?? legacy.created_at;
+	const description = legacy.description ?? profile_bio?.description;
+	const location = legacy.location ?? userLocation?.location ?? null;
+	const profileImageUrl = legacy.profile_image_url_https ?? avatar?.image_url ?? null;
+	const { entities, profile_banner_url, url } = legacy;
 
 	// Skip users with missing required fields (suspended/unavailable accounts)
-	if (!screen_name || !name) {
+	if (!screenName || !name) {
 		return null;
 	}
 
@@ -32,8 +28,8 @@ export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRun
 
 	// Safely parse the creation date with fallback to null
 	let contentCreatedAt: Date | null = null;
-	if (created_at) {
-		const parsedDate = new Date(created_at);
+	if (createdAt) {
+		const parsedDate = new Date(createdAt);
 		contentCreatedAt = isNaN(parsedDate.getTime()) ? null : parsedDate;
 	}
 
@@ -41,9 +37,9 @@ export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRun
 		id: rest_id,
 		description,
 		displayName: name,
-		username: screen_name,
-		location: location ?? null,
-		profileImageUrl: profile_image_url_https ?? null,
+		username: screenName,
+		location,
+		profileImageUrl,
 		profileBannerUrl: profile_banner_url,
 		url: url,
 		externalUrl: userExternalLinkEntry?.expanded_url,

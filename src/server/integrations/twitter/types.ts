@@ -65,12 +65,34 @@ export const UserSchema = z.object({
 	__typename: z.string(),
 	id: z.string(),
 	rest_id: z.string(),
+	avatar: z
+		.object({
+			image_url: z.string().optional(),
+		})
+		.optional(),
+	core: z
+		.object({
+			created_at: z.string().optional(),
+			name: z.string().optional(),
+			screen_name: z.string().optional(),
+		})
+		.optional(),
 	legacy: UserLegacySchema,
+	location: z
+		.object({
+			location: z.string().optional(),
+		})
+		.optional(),
 	// Additional fields that may be present
 	affiliates_highlighted_label: z.unknown().optional(),
 	business_account: z.unknown().optional(),
 	has_graduated_access: z.boolean().optional(),
 	is_blue_verified: z.boolean().optional(),
+	profile_bio: z
+		.object({
+			description: z.string().optional(),
+		})
+		.optional(),
 	profile_image_shape: z.string().optional(),
 	super_follow_eligible: z.boolean().optional(),
 });

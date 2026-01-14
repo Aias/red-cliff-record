@@ -196,7 +196,9 @@ async function processCommit(
 			})
 			.where(eq(githubCommits.sha, commit.sha));
 
-		logger.info(`[${commit.sha.slice(0, 7)}] ${commit.repository.fullName}: ${summary.primary_purpose}`);
+		logger.info(
+			`[${commit.sha.slice(0, 7)}] ${commit.repository.fullName}: ${summary.primary_purpose}`
+		);
 
 		return { success: true, sha: commit.sha };
 	} catch (error) {

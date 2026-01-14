@@ -25,7 +25,9 @@ const logger = createIntegrationLogger('services', 'save-avatars');
  */
 export async function saveAvatarsToR2(): Promise<number> {
 	logger.start('Saving record avatars to R2 storage');
-	const { ASSETS_DOMAIN: assetsDomain } = EnvSchema.pick({ ASSETS_DOMAIN: true }).parse(process.env);
+	const { ASSETS_DOMAIN: assetsDomain } = EnvSchema.pick({ ASSETS_DOMAIN: true }).parse(
+		process.env
+	);
 
 	// Find records with non-null avatarUrl and isCurated set to true
 	const recordsWithAvatars = await db.query.records.findMany({

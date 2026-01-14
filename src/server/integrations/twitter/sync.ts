@@ -351,10 +351,13 @@ function processTweetData(
 
 	tweets.forEach((t) => {
 		// Process the user first - skip if invalid (suspended/unavailable account)
-		const user = processUser(t.core.user_results.result);
+		const userResult = t.core.user_results.result;
+		const user = processUser(userResult);
 		if (!user) {
+			const username = userResult.core?.screen_name ?? userResult.legacy.screen_name ?? 'unknown';
+			const displayName = userResult.core?.name ?? userResult.legacy.name ?? 'unknown';
 			logger.warn(
-				`Skipping tweet ${t.rest_id}: user has missing required fields (suspended/unavailable)`
+				`Skipping tweet ${t.rest_id}: user missing required fields (id=${userResult.rest_id}, username=${username}, name=${displayName})`
 			);
 			return;
 		}

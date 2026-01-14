@@ -24,6 +24,16 @@ export function createIntegrationLogger(integration: string, process: string) {
 
 		if (error instanceof Error) {
 			console.error(`${styledPrefix} ${styledMessage}:`, error.message, ...args);
+			if (error.cause) {
+				if (error.cause instanceof Error) {
+					console.error(`${styledPrefix} ${styledMessage} cause:`, error.cause.message);
+					if (error.cause.stack) {
+						console.error(style(error.cause.stack, { dim: true, useAnsi }));
+					}
+				} else {
+					console.error(`${styledPrefix} ${styledMessage} cause:`, error.cause);
+				}
+			}
 			if (error.stack) {
 				console.error(style(error.stack, { dim: true, useAnsi }));
 			}
