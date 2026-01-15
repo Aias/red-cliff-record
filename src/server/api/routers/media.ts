@@ -10,6 +10,7 @@ import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getMediaInsertData, uploadClientFileToR2, uploadMediaToR2 } from '@/server/lib/media';
+import { embedRecordById } from '@/server/services/embed-records';
 import { generateAltText } from '@/server/services/generate-alt-text';
 import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
 import { createTRPCRouter, publicProcedure } from '../init';
@@ -120,10 +121,10 @@ export const mediaRouter = createTRPCRouter({
 	update: publicProcedure.input(MediaUpdateInputSchema).mutation(async ({ ctx: { db }, input }) => {
 		const { id, altText } = input;
 
-		// Check if media exists
+		// Fetch existing media with recordId for embedding regeneration
 		const existing = await db.query.media.findFirst({
 			where: { id },
-			columns: { id: true },
+			columns: { id: true, recordId: true, altText: true },
 		});
 
 		if (!existing) {
@@ -135,6 +136,13 @@ export const mediaRouter = createTRPCRouter({
 			.set({ altText, recordUpdatedAt: new Date() })
 			.where(eq(media.id, id))
 			.returning();
+
+		// Regenerate parent record's embedding if alt text changed
+		if (existing.recordId && altText !== existing.altText) {
+			embedRecordById(existing.recordId).catch((error) => {
+				console.warn(`Failed to regenerate embedding for record ${existing.recordId}:`, error);
+			});
+		}
 
 		return updated;
 	}),

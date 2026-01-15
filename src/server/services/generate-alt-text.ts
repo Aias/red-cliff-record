@@ -1,9 +1,10 @@
-import { media, records } from '@aias/hozo';
+import { media } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { db } from '@/server/db/connections';
 import { writeDebugOutput } from '@/server/integrations/common/debug-output';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
+import { embedRecordsByIds } from '@/server/services/embed-records';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 
 const logger = createIntegrationLogger('services', 'generate-alt-text');
@@ -259,12 +260,6 @@ async function generateAltTextForMedia(
 			.update(media)
 			.set({ altText, altTextGeneratedAt: now, recordUpdatedAt: now })
 			.where(eq(media.id, mediaId));
-
-		// Invalidate parent record's embedding since alt text affects it
-		if (record?.id) {
-			await db.update(records).set({ textEmbedding: null }).where(eq(records.id, record.id));
-			logger.info(`Invalidated embedding for record ${record.id}`);
-		}
 	}
 
 	const recordTitle = record?.title ?? '(none)';
@@ -339,6 +334,24 @@ export async function generateAltText(
 	logger.info(
 		`Alt text generation complete: ${generated} generated, ${skipped} skipped, ${failed} failed`
 	);
+
+	// Regenerate embeddings for affected records (unless dry run)
+	if (!options.dryRun) {
+		const recordIdsToEmbed = resolvedResults
+			.filter(
+				(r): r is GenerateAltTextResult & { recordId: number } =>
+					r.success && !r.skipped && r.recordId !== undefined
+			)
+			.map((r) => r.recordId);
+
+		if (recordIdsToEmbed.length > 0) {
+			logger.info(`Regenerating embeddings for ${recordIdsToEmbed.length} affected record(s)`);
+			const embedResults = await embedRecordsByIds(recordIdsToEmbed);
+			const embedSuccess = embedResults.filter((r) => r.success).length;
+			const embedFailed = embedResults.filter((r) => !r.success).length;
+			logger.info(`Embedding regeneration: ${embedSuccess} succeeded, ${embedFailed} failed`);
+		}
+	}
 
 	return resolvedResults;
 }

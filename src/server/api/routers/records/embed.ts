@@ -1,76 +1,30 @@
-import { records } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
-import { eq } from 'drizzle-orm';
 import { publicProcedure } from '../../init';
-import { createEmbedding } from '@/lib/server/create-embedding';
-import { createRecordEmbeddingText } from '@/shared/lib/embedding';
+import { embedRecordById } from '@/server/services/embed-records';
 import { IdParamSchema } from '@/shared/types';
 
 export const embed = publicProcedure
 	.input(IdParamSchema)
 	.mutation(async ({ ctx: { db }, input: { id } }) => {
-		const record = await db.query.records.findFirst({
-			where: {
-				id,
-			},
-			with: {
-				outgoingLinks: {
-					with: {
-						target: {
-							columns: {
-								textEmbedding: false,
-							},
-						},
-						predicate: true,
-					},
-				},
-				incomingLinks: {
-					with: {
-						source: {
-							columns: {
-								textEmbedding: false,
-							},
-						},
-						predicate: true,
-					},
-					where: {
-						predicate: {
-							slug: {
-								notIn: ['format_of'], // Would bring back too many that are not useful for embedding.
-							},
-						},
-					},
-				},
-				media: true,
-			},
-		});
+		const result = await embedRecordById(id);
 
-		if (!record) {
+		if (!result.success) {
 			throw new TRPCError({
-				code: 'NOT_FOUND',
-				message: `Embed record: Record ${id} not found`,
+				code: result.error === 'Record not found' ? 'NOT_FOUND' : 'INTERNAL_SERVER_ERROR',
+				message: `Embed record: ${result.error}`,
 			});
 		}
 
-		const embeddingText = createRecordEmbeddingText(record);
-
-		const embedding = await createEmbedding(embeddingText);
-
-		const [updatedRecord] = await db
-			.update(records)
-			.set({
-				textEmbedding: embedding,
-			})
-			.where(eq(records.id, id))
-			.returning({
-				id: records.id,
-				recordUpdatedAt: records.recordUpdatedAt,
-			});
+		// Fetch updated record to return timestamp
+		const updatedRecord = await db.query.records.findFirst({
+			where: { id },
+			columns: { id: true, recordUpdatedAt: true },
+		});
 
 		if (!updatedRecord) {
 			throw new TRPCError({
 				code: 'INTERNAL_SERVER_ERROR',
-				message: `Embed record: Failed to embed record ${id}`,
+				message: `Embed record: Failed to fetch updated record ${id}`,
 			});
 		}
 
