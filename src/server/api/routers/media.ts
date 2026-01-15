@@ -9,18 +9,23 @@ import {
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { getMediaInsertData, uploadClientFileToR2 } from '@/server/lib/media';
+import { getMediaInsertData, uploadClientFileToR2, uploadMediaToR2 } from '@/server/lib/media';
 import { generateAltText } from '@/server/services/generate-alt-text';
 import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
 import { createTRPCRouter, publicProcedure } from '../init';
 
-// Schema for file upload input
-const MediaCreateInputSchema = z.object({
+// Schema for media create input
+const MediaCreateFileInputSchema = z.object({
 	recordId: IdSchema,
 	fileData: z.string(), // Expecting base64 encoded string
 	fileName: z.string(),
 	fileType: z.string(), // e.g., 'image/png'
 });
+const MediaCreateUrlInputSchema = z.object({
+	recordId: IdSchema,
+	url: z.string().min(1),
+});
+const MediaCreateInputSchema = z.xor([MediaCreateFileInputSchema, MediaCreateUrlInputSchema]);
 
 // Media-specific order fields
 const MediaOrderByFieldSchema = z.enum(['recordCreatedAt', 'recordUpdatedAt', 'id']);
@@ -136,11 +141,14 @@ export const mediaRouter = createTRPCRouter({
 
 	create: publicProcedure.input(MediaCreateInputSchema).mutation(async ({ ctx: { db }, input }) => {
 		try {
-			// 1. Decode base64 file data
-			const fileBuffer = Buffer.from(input.fileData, 'base64');
-
-			// 2. Upload file to R2
-			const r2Url = await uploadClientFileToR2(fileBuffer, input.fileType, input.fileName);
+			const r2Url =
+				'fileData' in input
+					? await uploadClientFileToR2(
+							Buffer.from(input.fileData, 'base64'),
+							input.fileType,
+							input.fileName
+						)
+					: await uploadMediaToR2(input.url);
 
 			// 3. Get metadata for the uploaded file using its R2 URL
 			const mediaInsertData = await getMediaInsertData(r2Url, {

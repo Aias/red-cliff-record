@@ -82,6 +82,14 @@ export const linksRouter = createTRPCRouter({
 					predicateId: true,
 					recordUpdatedAt: true,
 				},
+				with: {
+					predicate: {
+						columns: {
+							id: true,
+							type: true,
+						},
+					},
+				},
 				where: {
 					OR: [
 						{

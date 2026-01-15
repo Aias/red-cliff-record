@@ -140,6 +140,7 @@ Commands:
 
   media get <id...> [--with-record]  Fetch media item(s) by ID
   media list [filters]              List media with optional filters
+  media create --record <id> ...    Upload media from file or URL
   media update <id> <json>          Update media metadata (alt text, etc.)
   media generate-alt <id...>        Generate alt text using OpenAI vision [--force]
 

@@ -245,7 +245,8 @@ async function runDailySync(options: SyncOptions) {
 		'github',
 		'airtable',
 		'twitter',
-		'alt-text', // Generate alt text before embeddings
+		'alt-text',
+		'avatars',
 		'embeddings',
 	];
 

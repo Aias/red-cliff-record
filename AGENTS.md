@@ -65,7 +65,8 @@ Never attempt to start the development server or build the application. The user
 
 **CLI (`rcr`):**
 
-- Install: `bun link` (from repo root) or run directly with `bun ./src/server/cli/rcr/index.ts <command>`
+- Install: `bun link` (from repo root) - this makes `rcr` available globally
+- Always use `rcr` directly (not `bun ./src/server/cli/rcr/index.ts`)
 - Run `rcr --help` for full command reference
 - JSON output to stdout, errors to stderr with non-zero exit codes
 - Use `--raw` for unwrapped output, `--debug` to preview without writing
