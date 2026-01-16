@@ -62,7 +62,6 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 	const recordMedia = media ?? [];
 	const recordSources = sources ?? [];
 	const hasMedia = recordMedia.length > 0;
-	const showAvatar = !hasMedia && Boolean(avatarUrl);
 
 	return (
 		<article
@@ -115,36 +114,18 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 
 			{/* Media */}
 			{hasMedia && (
-				<figure className="flex flex-col gap-2">
+				<figure className="flex flex-col gap-1">
 					<MediaGrid media={recordMedia} />
 					{mediaCaption && (
-						<figcaption className="text-xs text-c-secondary">
-							<Markdown inline>{mediaCaption}</Markdown>
-						</figcaption>
-					)}
-				</figure>
-			)}
-
-			{/* Avatar as fallback image */}
-			{showAvatar && (
-				<figure className="flex flex-col gap-2">
-					<img
-						src={avatarUrl ?? ''}
-						alt={title ?? 'Record avatar'}
-						className="h-auto w-full rounded-md border border-c-divider object-cover"
-						loading="lazy"
-						decoding="async"
-					/>
-					{mediaCaption && (
-						<figcaption className="text-xs text-c-secondary">
-							<Markdown inline>{mediaCaption}</Markdown>
-						</figcaption>
+						<Markdown as="figcaption" className="text-xs text-c-secondary">
+							{mediaCaption}
+						</Markdown>
 					)}
 				</figure>
 			)}
 
 			{/* Media caption without media */}
-			{mediaCaption && !hasMedia && !showAvatar && (
+			{mediaCaption && !hasMedia && (
 				<section className="flex flex-col gap-1" data-slot="record-display-media-caption">
 					<h4 className="text-xs font-semibold tracking-wide text-c-hint uppercase">
 						Media caption

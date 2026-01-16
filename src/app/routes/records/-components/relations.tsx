@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import type { LinkSelect, PredicateSelect, PredicateType } from '@aias/hozo';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
@@ -7,6 +7,7 @@ import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 import { Spinner } from '@/components/spinner';
 import { useDeleteLinks } from '@/lib/hooks/link-mutations';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
@@ -46,19 +47,11 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 	const navigate = useNavigate();
 	const addRelationshipButtonRef = useRef<HTMLButtonElement | null>(null);
 
-	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.metaKey && event.altKey && (event.key === '+' || event.code === 'Equal')) {
-				event.preventDefault();
-				addRelationshipButtonRef.current?.click();
-			}
-		};
-
-		document.addEventListener('keydown', handleKeyDown);
-		return () => {
-			document.removeEventListener('keydown', handleKeyDown);
-		};
-	}, []);
+	// Keyboard shortcut to add a link to the current record
+	useKeyboardShortcut('mod+shift+k', () => addRelationshipButtonRef.current?.click(), {
+		description: 'Add link to record',
+		category: 'Records',
+	});
 
 	const sortLinks = (links: LinkPartial[]): LinkPartial[] => {
 		return [...links].sort((a, b) => {

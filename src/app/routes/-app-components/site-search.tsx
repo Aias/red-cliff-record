@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PlusCircleIcon, SearchIcon } from 'lucide-react';
 import { useRecordSearch } from '@/app/lib/hooks/use-record-search';
@@ -16,6 +16,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { cn } from '@/lib/utils';
 import { defaultQueueOptions } from '@/shared/types';
 
@@ -55,26 +56,16 @@ export const SiteSearch = () => {
 		});
 	};
 
-	useEffect(() => {
-		const down = (e: KeyboardEvent) => {
-			if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || e.key === '/') {
-				if (
-					(e.target instanceof HTMLElement && e.target.isContentEditable) ||
-					e.target instanceof HTMLInputElement ||
-					e.target instanceof HTMLTextAreaElement ||
-					e.target instanceof HTMLSelectElement
-				) {
-					return;
-				}
+	// Register keyboard shortcuts for opening the command menu
+	useKeyboardShortcut('mod+k', () => setCommandOpen((open) => !open), {
+		description: 'Open search',
+		category: 'Navigation',
+	});
 
-				e.preventDefault();
-				setCommandOpen((open) => !open);
-			}
-		};
-
-		document.addEventListener('keydown', down);
-		return () => document.removeEventListener('keydown', down);
-	}, []);
+	useKeyboardShortcut('/', () => setCommandOpen((open) => !open), {
+		description: 'Open search',
+		category: 'Navigation',
+	});
 
 	return (
 		<>

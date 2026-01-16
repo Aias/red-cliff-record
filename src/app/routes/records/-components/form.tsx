@@ -4,6 +4,7 @@ import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
 import { z } from 'zod';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { recordTypeIcons } from './type-icons';
 import {
 	AlertDialog,
@@ -197,7 +198,10 @@ export function RecordForm({
 			clearTimeout(saveTimeoutRef.current);
 		}
 		saveTimeoutRef.current = setTimeout(() => {
-			void form.handleSubmit();
+			// Only save if values have actually changed
+			if (!form.state.isDefaultValue) {
+				void form.handleSubmit();
+			}
 		}, 1000); // Save after 1 second of inactivity
 	}, [form]);
 
@@ -212,7 +216,8 @@ export function RecordForm({
 	// Save immediately before navigation or form blur
 	useEffect(() => {
 		const handleBeforeUnload = () => {
-			if (saveTimeoutRef.current) {
+			// Only save if there's a pending save and values have actually changed
+			if (saveTimeoutRef.current && !form.state.isDefaultValue) {
 				// Note: beforeunload can't wait for async operations, so we trigger it but can't guarantee completion
 				void immediateSave();
 			}
@@ -227,19 +232,37 @@ export function RecordForm({
 				clearTimeout(saveTimeoutRef.current);
 			}
 		};
-	}, [immediateSave]);
+	}, [form.state.isDefaultValue, immediateSave]);
 
-	const curateAndNextHandler = useCallback(
-		async (e: React.KeyboardEvent<HTMLFormElement>) => {
-			e.preventDefault();
-			// Set curated flag before saving to avoid race condition with bulkUpsert
-			form.setFieldValue('isCurated', true);
-			// Save immediately before navigation and wait for completion
-			await immediateSave();
-			// Navigate after save completes
-			onFinalize();
+	const curateAndNextHandler = useCallback(async () => {
+		// Set curated flag before saving to avoid race condition with bulkUpsert
+		form.setFieldValue('isCurated', true);
+		// Save immediately before navigation and wait for completion
+		await immediateSave();
+		// Navigate after save completes
+		onFinalize();
+	}, [form, immediateSave, onFinalize]);
+
+	// Register keyboard shortcuts
+	useKeyboardShortcut('mod+shift+enter', () => void curateAndNextHandler(), {
+		description: 'Curate and go to next record',
+		category: 'Records',
+		allowInInput: true,
+	});
+
+	useKeyboardShortcut(
+		'mod+s',
+		() => {
+			// Only save if values have actually changed
+			if (!form.state.isDefaultValue) {
+				void immediateSave();
+			}
 		},
-		[form, immediateSave, onFinalize]
+		{
+			description: 'Save record',
+			category: 'Records',
+			allowInInput: true,
+		}
 	);
 
 	// Form-level paste handler for media uploads
@@ -280,18 +303,15 @@ export function RecordForm({
 				void form.handleSubmit();
 			}}
 			onBlur={(e) => {
-				// If focus is leaving the form entirely, save immediately
-				if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+				// If focus is leaving the form entirely and values changed, save immediately
+				if (!e.currentTarget.contains(e.relatedTarget as Node) && !form.state.isDefaultValue) {
 					void immediateSave();
 				}
 			}}
 			onKeyDown={(e) => {
+				// Escape blurs the currently focused element (first escape unfocuses field)
 				if (e.key === 'Escape') {
 					(document.activeElement as HTMLElement)?.blur();
-				}
-
-				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'Enter' || e.key === 'Return')) {
-					void curateAndNextHandler(e);
 				}
 			}}
 			onPaste={handlePaste}

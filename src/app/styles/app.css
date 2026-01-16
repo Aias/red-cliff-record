@@ -173,6 +173,13 @@
 		@apply font-medium;
 	}
 
+	::marker,
+	mark {
+		@apply themed;
+		color: var(--color-c-accent);
+		background-color: var(--color-c-mist);
+	}
+
 	a:where(:any-link, button),
 	.link {
 		@apply font-medium text-c-accent hover:text-c-accent-active hover:underline;

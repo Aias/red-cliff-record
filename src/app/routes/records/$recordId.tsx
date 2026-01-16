@@ -7,6 +7,7 @@ import { RecordDisplay } from './-components/record-display';
 import { RelationsList, SimilarRecords } from './-components/relations';
 import { Spinner } from '@/components/spinner';
 import { useBulkUpdate, useDeleteRecords } from '@/lib/hooks/record-mutations';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { useRecordTree } from '@/lib/hooks/record-queries';
 import { CoercedIdSchema, type DbId } from '@/shared/types';
 
@@ -158,6 +159,22 @@ const getNextRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId | un
 	return undefined;
 };
 
+const getPreviousRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId | undefined => {
+	if (ids.length === 0) return undefined;
+
+	const currentIndex = ids.findIndex((id) => id === currentId);
+	const start = currentIndex === -1 ? ids.length - 1 : (currentIndex - 1 + ids.length) % ids.length;
+
+	for (let i = 0; i < ids.length; i++) {
+		const idx = (start - i + ids.length) % ids.length;
+		const id = ids[idx];
+		if (id === undefined) continue;
+		if (!skip.has(id)) return id;
+	}
+
+	return undefined;
+};
+
 function RouteComponent() {
 	const navigate = Route.useNavigate();
 	const search = Route.useSearch();
@@ -259,6 +276,56 @@ function RouteComponent() {
 		},
 		[deleteMutation, recordsList, recordId, navigate]
 	);
+
+	// Navigate to next record
+	const navigateToNext = useCallback(() => {
+		const listIds = recordsList?.ids.map((r) => r.id) ?? [];
+		const nextId = getNextRecord(listIds, recordId, new Set());
+		if (nextId) {
+			void navigate({
+				to: '/records/$recordId',
+				params: { recordId: nextId },
+				search: true,
+			});
+		}
+	}, [recordsList, recordId, navigate]);
+
+	// Navigate to previous record
+	const navigateToPrevious = useCallback(() => {
+		const listIds = recordsList?.ids.map((r) => r.id) ?? [];
+		const prevId = getPreviousRecord(listIds, recordId, new Set());
+		if (prevId) {
+			void navigate({
+				to: '/records/$recordId',
+				params: { recordId: prevId },
+				search: true,
+			});
+		}
+	}, [recordsList, recordId, navigate]);
+
+	// Navigate back to records list
+	const navigateToList = useCallback(() => {
+		void navigate({
+			to: '/records',
+			search: true,
+		});
+	}, [navigate]);
+
+	// Keyboard shortcuts for record navigation
+	useKeyboardShortcut('mod+shift+arrowdown', navigateToNext, {
+		description: 'Go to next record',
+		category: 'Records',
+	});
+
+	useKeyboardShortcut('mod+shift+arrowup', navigateToPrevious, {
+		description: 'Go to previous record',
+		category: 'Records',
+	});
+
+	useKeyboardShortcut('escape', navigateToList, {
+		description: 'Go back to record list',
+		category: 'Records',
+	});
 
 	// Show loading state while tree is loading
 	if (treeLoading) {
