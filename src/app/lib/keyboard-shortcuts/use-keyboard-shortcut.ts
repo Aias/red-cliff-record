@@ -54,12 +54,15 @@ export function useKeyboardShortcut(
 
 	// Use refs to avoid re-registering on every render
 	const callbackRef = useRef(callback);
+	const contextRef = useRef(context);
 
 	// Update refs on each render
 	callbackRef.current = callback;
+	contextRef.current = context;
 
 	useLayoutEffect(() => {
-		if (!context) return;
+		const ctx = contextRef.current;
+		if (!ctx) return;
 
 		// Don't register if disabled
 		if (enabled === false) return;
@@ -80,18 +83,8 @@ export function useKeyboardShortcut(
 			category,
 		};
 
-		return context.register(config);
-	}, [
-		allowInInput,
-		category,
-		context,
-		description,
-		enabled,
-		keys,
-		preventDefault,
-		scope,
-		when,
-	]);
+		return ctx.register(config);
+	}, [allowInInput, category, description, enabled, keys, preventDefault, scope, when]);
 }
 
 /**

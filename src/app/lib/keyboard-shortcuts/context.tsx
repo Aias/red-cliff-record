@@ -1,4 +1,11 @@
-import { createContext, useCallback, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
+import {
+	createContext,
+	useCallback,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useSyncExternalStore,
+} from 'react';
 import { isInputElement, matchesShortcut, parseShortcut } from './parse';
 import type {
 	KeyboardShortcutConfig,
@@ -20,8 +27,18 @@ function createShortcutStore() {
 	let activeScope: ShortcutScope = 'global';
 	let priorityCounter = 0;
 	const listeners = new Set<() => void>();
+	// Cached snapshot - only recreated when data changes
+	let cachedSnapshot: { shortcuts: RegisteredShortcut[]; activeScope: ShortcutScope } = {
+		shortcuts,
+		activeScope,
+	};
+
+	const updateSnapshot = () => {
+		cachedSnapshot = { shortcuts, activeScope };
+	};
 
 	const notify = () => {
+		updateSnapshot();
 		for (const listener of listeners) {
 			listener();
 		}
@@ -58,7 +75,7 @@ function createShortcutStore() {
 			return () => listeners.delete(listener);
 		},
 
-		getSnapshot: () => ({ shortcuts, activeScope }),
+		getSnapshot: () => cachedSnapshot,
 	};
 }
 
@@ -164,13 +181,16 @@ export function KeyboardShortcutProvider({ children }: KeyboardShortcutProviderP
 		};
 	}, []);
 
-	const contextValue: KeyboardShortcutContextValue = {
-		register,
-		shortcuts,
-		activeScope,
-		setActiveScope,
-		isShortcutActive,
-	};
+	const contextValue: KeyboardShortcutContextValue = useMemo(
+		() => ({
+			register,
+			shortcuts,
+			activeScope,
+			setActiveScope,
+			isShortcutActive,
+		}),
+		[register, shortcuts, activeScope, setActiveScope, isShortcutActive]
+	);
 
 	return (
 		<KeyboardShortcutContext.Provider value={contextValue}>
