@@ -84,6 +84,7 @@
 		"vite-tsconfig-paths": "^6.0.4"
 	},
 	"scripts": {
+		"postinstall": "bun run --filter @aias/hozo build",
 		"rcr": "bun src/server/cli/rcr/index.ts",
 		"format": "prettier --write .",
 		"lint": "oxlint --fix --type-aware . && tsgo --noEmit",
