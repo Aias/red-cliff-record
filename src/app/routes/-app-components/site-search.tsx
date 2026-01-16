@@ -57,17 +57,15 @@ export const SiteSearch = () => {
 	};
 
 	// Register keyboard shortcuts for opening the command menu
-	useKeyboardShortcut(
-		'mod+k',
-		() => setCommandOpen((open) => !open),
-		{ description: 'Open search', category: 'Navigation' }
-	);
+	useKeyboardShortcut('mod+k', () => setCommandOpen((open) => !open), {
+		description: 'Open search',
+		category: 'Navigation',
+	});
 
-	useKeyboardShortcut(
-		'/',
-		() => setCommandOpen((open) => !open),
-		{ description: 'Open search', category: 'Navigation' }
-	);
+	useKeyboardShortcut('/', () => setCommandOpen((open) => !open), {
+		description: 'Open search',
+		category: 'Navigation',
+	});
 
 	return (
 		<>

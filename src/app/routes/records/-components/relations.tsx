@@ -48,14 +48,10 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 	const addRelationshipButtonRef = useRef<HTMLButtonElement | null>(null);
 
 	// Keyboard shortcut to add a link to the current record
-	useKeyboardShortcut(
-		'mod+shift+k',
-		() => addRelationshipButtonRef.current?.click(),
-		{
-			description: 'Add link to record',
-			category: 'Records',
-		}
-	);
+	useKeyboardShortcut('mod+shift+k', () => addRelationshipButtonRef.current?.click(), {
+		description: 'Add link to record',
+		category: 'Records',
+	});
 
 	const sortLinks = (links: LinkPartial[]): LinkPartial[] => {
 		return [...links].sort((a, b) => {

@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 import { KeyboardIcon } from 'lucide-react';
-import { formatShortcut, useKeyboardShortcut, useRegisteredShortcuts } from '@/lib/keyboard-shortcuts';
+import {
+	formatShortcut,
+	useKeyboardShortcut,
+	useRegisteredShortcuts,
+} from '@/lib/keyboard-shortcuts';
 import { Button } from './button';
 import {
 	Dialog,
@@ -27,14 +31,10 @@ export function KeyboardShortcutsHelp() {
 	const shortcuts = useRegisteredShortcuts();
 
 	// Register the shortcut to open the help dialog
-	useKeyboardShortcut(
-		'mod+/',
-		() => setOpen(true),
-		{
-			description: 'Show keyboard shortcuts',
-			category: 'General',
-		}
-	);
+	useKeyboardShortcut('mod+/', () => setOpen(true), {
+		description: 'Show keyboard shortcuts',
+		category: 'General',
+	});
 
 	// Group shortcuts by category and deduplicate
 	const groups = useMemo(() => {
@@ -80,16 +80,12 @@ export function KeyboardShortcutsHelp() {
 			<DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>Keyboard Shortcuts</DialogTitle>
-					<DialogDescription>
-						Quick actions available throughout the application
-					</DialogDescription>
+					<DialogDescription>Quick actions available throughout the application</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-6 pt-4">
 					{groups.map((group) => (
 						<section key={group.category}>
-							<h3 className="mb-3 text-sm font-medium text-c-secondary">
-								{group.category}
-							</h3>
+							<h3 className="mb-3 text-sm font-medium text-c-secondary">{group.category}</h3>
 							<div className="flex flex-col gap-2">
 								{group.shortcuts.map((shortcut) => (
 									<div
@@ -106,9 +102,7 @@ export function KeyboardShortcutsHelp() {
 						</section>
 					))}
 					{groups.length === 0 && (
-						<p className="text-center text-sm text-c-hint">
-							No keyboard shortcuts registered
-						</p>
+						<p className="text-center text-sm text-c-hint">No keyboard shortcuts registered</p>
 					)}
 				</div>
 			</DialogContent>
