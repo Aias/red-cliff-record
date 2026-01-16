@@ -50,46 +50,48 @@ export function useKeyboardShortcut(
 ): void {
 	const context = useContext(KeyboardShortcutContext);
 
+	const { allowInInput, category, description, enabled, preventDefault, scope, when } = options;
+
 	// Use refs to avoid re-registering on every render
 	const callbackRef = useRef(callback);
-	const optionsRef = useRef(options);
 
 	// Update refs on each render
 	callbackRef.current = callback;
-	optionsRef.current = options;
 
 	useLayoutEffect(() => {
 		if (!context) return;
 
-		const opts = optionsRef.current;
-
 		// Don't register if disabled
-		if (opts.enabled === false) return;
+		if (enabled === false) return;
 
 		// Generate stable ID from keys + scope
-		const id = `${opts.scope ?? 'global'}:${keys}`;
+		const id = `${scope ?? 'global'}:${keys}`;
 
-		// Runtime-relevant options use getters to always read the latest values from the ref.
-		// Static metadata (description, category) is captured at registration time since
-		// it's only used for display in the help menu.
+		// Options are captured at registration time. Re-register when they change.
 		const config: KeyboardShortcutConfig = {
 			id,
 			keys,
-			description: opts.description,
+			description,
 			callback: (event) => callbackRef.current(event),
-			scope: opts.scope,
-			when: () => optionsRef.current.when?.() ?? true,
-			get allowInInput() {
-				return optionsRef.current.allowInInput;
-			},
-			get preventDefault() {
-				return optionsRef.current.preventDefault;
-			},
-			category: opts.category,
+			scope,
+			when,
+			allowInInput,
+			preventDefault,
+			category,
 		};
 
 		return context.register(config);
-	}, [context, keys, options.enabled, options.scope]);
+	}, [
+		allowInInput,
+		category,
+		context,
+		description,
+		enabled,
+		keys,
+		preventDefault,
+		scope,
+		when,
+	]);
 }
 
 /**
