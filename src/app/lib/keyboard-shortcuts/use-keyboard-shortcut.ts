@@ -1,6 +1,11 @@
 import { useContext, useLayoutEffect, useRef } from 'react';
 import { KeyboardShortcutContext } from './context';
-import type { KeyboardShortcutConfig, KeyboardShortcutContextValue, ShortcutScope } from './types';
+import type {
+	KeyboardShortcutConfig,
+	KeyboardShortcutContextValue,
+	ShortcutKeys,
+	UseKeyboardShortcutOptions,
+} from './types';
 
 /**
  * Get the keyboard shortcut context
@@ -14,25 +19,8 @@ export function useKeyboardShortcutContext(): KeyboardShortcutContextValue {
 	return context;
 }
 
-/**
- * Options for useKeyboardShortcut hook
- */
-export interface UseKeyboardShortcutOptions {
-	/** Human-readable description (required for help menu) */
-	description: string;
-	/** Scope where this shortcut is active */
-	scope?: ShortcutScope;
-	/** Additional condition for when shortcut should trigger */
-	when?: () => boolean;
-	/** Allow trigger even when focus is in an input */
-	allowInInput?: boolean;
-	/** Prevent default browser behavior */
-	preventDefault?: boolean;
-	/** Category for grouping in help menu */
-	category?: string;
-	/** Whether the shortcut is enabled (default: true) */
-	enabled?: boolean;
-}
+// Re-export for convenience
+export type { UseKeyboardShortcutOptions } from './types';
 
 /**
  * Hook to register a keyboard shortcut
@@ -56,7 +44,7 @@ export interface UseKeyboardShortcutOptions {
  * });
  */
 export function useKeyboardShortcut(
-	keys: string,
+	keys: ShortcutKeys,
 	callback: (event: KeyboardEvent) => void,
 	options: UseKeyboardShortcutOptions
 ): void {
@@ -81,15 +69,22 @@ export function useKeyboardShortcut(
 		// Generate stable ID from keys + scope
 		const id = `${opts.scope ?? 'global'}:${keys}`;
 
+		// Runtime-relevant options use getters to always read the latest values from the ref.
+		// Static metadata (description, category) is captured at registration time since
+		// it's only used for display in the help menu.
 		const config: KeyboardShortcutConfig = {
 			id,
 			keys,
 			description: opts.description,
 			callback: (event) => callbackRef.current(event),
 			scope: opts.scope,
-			when: opts.when,
-			allowInInput: opts.allowInInput,
-			preventDefault: opts.preventDefault,
+			when: () => optionsRef.current.when?.() ?? true,
+			get allowInInput() {
+				return optionsRef.current.allowInInput;
+			},
+			get preventDefault() {
+				return optionsRef.current.preventDefault;
+			},
 			category: opts.category,
 		};
 

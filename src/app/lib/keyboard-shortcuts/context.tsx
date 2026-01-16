@@ -1,4 +1,4 @@
-import { createContext, useCallback, useRef, useSyncExternalStore } from 'react';
+import { createContext, useCallback, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { isInputElement, matchesShortcut, parseShortcut } from './parse';
 import type {
 	KeyboardShortcutConfig,
@@ -148,17 +148,21 @@ export function KeyboardShortcutProvider({ children }: KeyboardShortcutProviderP
 		[shortcuts, activeScope]
 	);
 
-	// Set up global event listener
-	const listenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
+	// Set up global event listener in an effect for SSR safety
+	const handleKeyDownRef = useRef(handleKeyDown);
+	handleKeyDownRef.current = handleKeyDown;
 
-	// Update listener when handleKeyDown changes
-	if (listenerRef.current !== handleKeyDown) {
-		if (listenerRef.current) {
-			document.removeEventListener('keydown', listenerRef.current);
-		}
-		document.addEventListener('keydown', handleKeyDown);
-		listenerRef.current = handleKeyDown;
-	}
+	useLayoutEffect(() => {
+		// Guard for SSR/non-browser environments
+		if (typeof document === 'undefined') return;
+
+		const listener = (event: KeyboardEvent) => handleKeyDownRef.current(event);
+		document.addEventListener('keydown', listener);
+
+		return () => {
+			document.removeEventListener('keydown', listener);
+		};
+	}, []);
 
 	const contextValue: KeyboardShortcutContextValue = {
 		register,

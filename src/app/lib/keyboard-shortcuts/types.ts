@@ -14,6 +14,17 @@
 export type ModifierKey = 'mod' | 'ctrl' | 'alt' | 'shift' | 'meta';
 
 /**
+ * Shortcut key string type.
+ * Format: modifier keys joined with '+', followed by the main key.
+ * Examples: "mod+k", "mod+shift+k", "escape", "mod+arrowup"
+ *
+ * Note: TypeScript cannot fully validate shortcut strings at compile time,
+ * but this type provides documentation and could be extended with template
+ * literal types for basic autocomplete support in the future.
+ */
+export type ShortcutKeys = string;
+
+/**
  * Parsed representation of a keyboard shortcut
  */
 export interface ParsedShortcut {
@@ -33,17 +44,10 @@ export type ShortcutScope =
 	| 'dialog'; // Active when a dialog is open
 
 /**
- * Configuration for a keyboard shortcut
+ * Base options shared by all shortcut registration methods.
+ * These are the optional configuration properties that control shortcut behavior.
  */
-export interface KeyboardShortcutConfig {
-	/** Unique identifier for this shortcut */
-	id: string;
-	/** Shortcut key combination (e.g., "mod+shift+k") */
-	keys: string;
-	/** Human-readable description shown in help */
-	description: string;
-	/** Callback when shortcut is triggered */
-	callback: (event: KeyboardEvent) => void;
+export interface ShortcutOptions {
 	/** Scope where this shortcut is active (default: 'global') */
 	scope?: ShortcutScope;
 	/** Additional condition for when shortcut should trigger */
@@ -54,6 +58,20 @@ export interface KeyboardShortcutConfig {
 	preventDefault?: boolean;
 	/** Category for grouping in help menu */
 	category?: string;
+}
+
+/**
+ * Configuration for a keyboard shortcut (used internally by the context)
+ */
+export interface KeyboardShortcutConfig extends ShortcutOptions {
+	/** Unique identifier for this shortcut */
+	id: string;
+	/** Shortcut key combination (e.g., "mod+shift+k") */
+	keys: ShortcutKeys;
+	/** Human-readable description shown in help */
+	description: string;
+	/** Callback when shortcut is triggered */
+	callback: (event: KeyboardEvent) => void;
 }
 
 /**
@@ -89,9 +107,23 @@ export interface KeyboardShortcutContextValue {
 /**
  * Props for the KeyboardShortcut component
  */
-export interface KeyboardShortcutProps extends Omit<KeyboardShortcutConfig, 'callback'> {
+export interface KeyboardShortcutProps extends ShortcutOptions {
+	/** Shortcut key combination (e.g., "mod+shift+k") */
+	keys: ShortcutKeys;
 	/** Callback when shortcut is triggered */
 	onActivate: (event: KeyboardEvent) => void;
-	/** Children are not rendered - component is purely for registration */
-	children?: never;
+	/** Human-readable description shown in help */
+	description: string;
+	/** Whether the shortcut is enabled (default: true) */
+	enabled?: boolean;
+}
+
+/**
+ * Options for the useKeyboardShortcut hook
+ */
+export interface UseKeyboardShortcutOptions extends ShortcutOptions {
+	/** Human-readable description (required for help menu) */
+	description: string;
+	/** Whether the shortcut is enabled (default: true) */
+	enabled?: boolean;
 }

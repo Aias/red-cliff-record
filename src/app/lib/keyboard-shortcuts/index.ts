@@ -7,7 +7,10 @@ export type {
 	ModifierKey,
 	ParsedShortcut,
 	RegisteredShortcut,
+	ShortcutKeys,
+	ShortcutOptions,
 	ShortcutScope,
+	UseKeyboardShortcutOptions,
 } from './types';
 export {
 	useKeyboardShortcut,
@@ -15,4 +18,3 @@ export {
 	useRegisteredShortcuts,
 	useShortcutScope,
 } from './use-keyboard-shortcut';
-export type { UseKeyboardShortcutOptions } from './use-keyboard-shortcut';
