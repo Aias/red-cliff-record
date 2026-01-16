@@ -3,6 +3,7 @@ import { Link, type LinkComponentProps } from '@tanstack/react-router';
 import { ArchiveIcon, MoonIcon, SunIcon } from 'lucide-react';
 import { SiteSearch } from './site-search';
 import { Button } from '@/components/button';
+import { KeyboardShortcutsHelp } from '@/components/keyboard-shortcuts-help';
 import { Separator } from '@/components/separator';
 import { setTheme } from '@/lib/server/theme';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 				</li>
 				<li className="flex items-center gap-2">
 					<SiteSearch />
+					<KeyboardShortcutsHelp />
 					<Button variant="ghost" onClick={toggleTheme} className="h-9 w-9 p-0">
 						{currentTheme === 'light' ? (
 							<SunIcon className="h-5 w-5" />

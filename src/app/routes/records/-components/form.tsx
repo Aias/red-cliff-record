@@ -4,6 +4,7 @@ import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
 import { z } from 'zod';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { recordTypeIcons } from './type-icons';
 import {
 	AlertDialog,
@@ -229,18 +230,27 @@ export function RecordForm({
 		};
 	}, [immediateSave]);
 
-	const curateAndNextHandler = useCallback(
-		async (e: React.KeyboardEvent<HTMLFormElement>) => {
-			e.preventDefault();
-			// Set curated flag before saving to avoid race condition with bulkUpsert
-			form.setFieldValue('isCurated', true);
-			// Save immediately before navigation and wait for completion
-			await immediateSave();
-			// Navigate after save completes
-			onFinalize();
-		},
-		[form, immediateSave, onFinalize]
-	);
+	const curateAndNextHandler = useCallback(async () => {
+		// Set curated flag before saving to avoid race condition with bulkUpsert
+		form.setFieldValue('isCurated', true);
+		// Save immediately before navigation and wait for completion
+		await immediateSave();
+		// Navigate after save completes
+		onFinalize();
+	}, [form, immediateSave, onFinalize]);
+
+	// Register keyboard shortcuts
+	useKeyboardShortcut('mod+shift+enter', () => void curateAndNextHandler(), {
+		description: 'Curate and go to next record',
+		category: 'Records',
+		allowInInput: true,
+	});
+
+	useKeyboardShortcut('mod+s', () => void immediateSave(), {
+		description: 'Save record',
+		category: 'Records',
+		allowInInput: true,
+	});
 
 	// Form-level paste handler for media uploads
 	// Works regardless of whether MediaUpload component is visible
@@ -286,12 +296,9 @@ export function RecordForm({
 				}
 			}}
 			onKeyDown={(e) => {
+				// Escape blurs the currently focused element (first escape unfocuses field)
 				if (e.key === 'Escape') {
 					(document.activeElement as HTMLElement)?.blur();
-				}
-
-				if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'Enter' || e.key === 'Return')) {
-					void curateAndNextHandler(e);
 				}
 			}}
 			onPaste={handlePaste}
