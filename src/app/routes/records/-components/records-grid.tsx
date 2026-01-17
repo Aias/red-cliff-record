@@ -4,7 +4,7 @@ import {
   type IntegrationType,
   type RecordType,
 } from '@aias/hozo';
-import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { ChevronDownIcon } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { trpc } from '@/app/trpc';
@@ -26,9 +26,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { useRecord } from '@/lib/hooks/record-queries';
+import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types';
-import { defaultQueueOptions } from '@/shared/types';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 
 const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
@@ -96,18 +96,16 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 });
 
 export const RecordsGrid = () => {
-  const search = useSearch({
-    from: '/records',
-  });
-  const navigate = useNavigate({
-    from: '/records',
-  });
-  const { data: queue } = trpc.records.list.useQuery(search);
+  const { state, setFilters, setLimit, reset } = useRecordFilters();
+  const { data: queue } = trpc.records.list.useQuery(
+    { ...state, offset: 0 },
+    { placeholderData: (prev) => prev }
+  );
 
   const {
     filters: { types, title, url, isCurated, isPrivate, sources, hasParent, text, hasMedia },
     limit,
-  } = search;
+  } = state;
 
   // Memoize filter values
   const filterValues = useMemo(
@@ -126,188 +124,98 @@ export const RecordsGrid = () => {
   const [textInput, setTextInput] = useState(text ?? '');
   const [limitInput, setLimitInput] = useState(limit?.toString() ?? '');
 
-  // Debounced navigation handlers
+  // Filter change handlers
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setTitleInput(value);
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          filters: {
-            ...prev.filters,
-            title: value || undefined,
-          },
-        }),
-      });
+      setFilters((prev) => ({ ...prev, title: value || undefined }));
     },
-    [navigate]
+    [setFilters]
   );
 
   const handleUrlChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setUrlInput(value);
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          filters: {
-            ...prev.filters,
-            url: value || undefined,
-          },
-        }),
-      });
+      setFilters((prev) => ({ ...prev, url: value || undefined }));
     },
-    [navigate]
+    [setFilters]
   );
 
   const handleTextChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setTextInput(value);
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          filters: {
-            ...prev.filters,
-            text: value || undefined,
-          },
-        }),
-      });
+      setFilters((prev) => ({ ...prev, text: value || undefined }));
     },
-    [navigate]
+    [setFilters]
   );
 
   const handleTypeToggle = useCallback(
     (recordType: RecordType) => {
-      void navigate({
-        search: (prev) => {
-          const currentTypes = prev.filters.types ?? [];
-          const newTypes = currentTypes.includes(recordType)
-            ? currentTypes.filter((t) => t !== recordType)
-            : [...currentTypes, recordType];
-          return {
-            ...prev,
-            filters: {
-              ...prev.filters,
-              types: newTypes.length > 0 ? newTypes : undefined,
-            },
-          };
-        },
+      setFilters((prev) => {
+        const currentTypes = prev.types ?? [];
+        const newTypes = currentTypes.includes(recordType)
+          ? currentTypes.filter((t) => t !== recordType)
+          : [...currentTypes, recordType];
+        return { ...prev, types: newTypes.length > 0 ? newTypes : undefined };
       });
     },
-    [navigate]
+    [setFilters]
   );
 
   const handleSourceToggle = useCallback(
     (source: IntegrationType) => {
-      void navigate({
-        search: (prev) => {
-          const currentSources = prev.filters.sources ?? [];
-          const newSources = currentSources.includes(source)
-            ? currentSources.filter((s) => s !== source)
-            : [...currentSources, source];
-          return {
-            ...prev,
-            filters: {
-              ...prev.filters,
-              sources: newSources.length > 0 ? newSources : undefined,
-            },
-          };
-        },
+      setFilters((prev) => {
+        const currentSources = prev.sources ?? [];
+        const newSources = currentSources.includes(source)
+          ? currentSources.filter((s) => s !== source)
+          : [...currentSources, source];
+        return { ...prev, sources: newSources.length > 0 ? newSources : undefined };
       });
     },
-    [navigate]
+    [setFilters]
   );
 
   const handleCuratedChange = useCallback(
     (value: string) => {
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          filters: {
-            ...prev.filters,
-            isCurated: value === 'All' ? undefined : value === 'Yes',
-          },
-        }),
-      });
+      setFilters((prev) => ({
+        ...prev,
+        isCurated: value === 'All' ? undefined : value === 'Yes',
+      }));
     },
-    [navigate]
-  );
-
-  const handleIndexNodeChange = useCallback(
-    (value: string) => {
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          filters: {
-            ...prev.filters,
-            isIndexNode: value === 'All' ? undefined : value === 'Yes',
-          },
-        }),
-      });
-    },
-    [navigate]
-  );
-
-  const handleFormatChange = useCallback(
-    (value: string) => {
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          filters: {
-            ...prev.filters,
-            isFormat: value === 'All' ? undefined : value === 'Yes',
-          },
-        }),
-      });
-    },
-    [navigate]
+    [setFilters]
   );
 
   const handlePrivateChange = useCallback(
     (value: string) => {
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          filters: {
-            ...prev.filters,
-            isPrivate: value === 'All' ? undefined : value === 'Yes',
-          },
-        }),
-      });
+      setFilters((prev) => ({
+        ...prev,
+        isPrivate: value === 'All' ? undefined : value === 'Yes',
+      }));
     },
-    [navigate]
+    [setFilters]
   );
 
   const handleHasParentChange = useCallback(
     (value: string) => {
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          filters: {
-            ...prev.filters,
-            hasParent: value === 'All' ? undefined : value === 'Yes',
-          },
-        }),
-      });
+      setFilters((prev) => ({
+        ...prev,
+        hasParent: value === 'All' ? undefined : value === 'Yes',
+      }));
     },
-    [navigate]
+    [setFilters]
   );
 
   const handleHasMediaChange = useCallback(
     (value: string) => {
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          filters: {
-            ...prev.filters,
-            hasMedia: value === 'All' ? undefined : value === 'Yes',
-          },
-        }),
-      });
+      setFilters((prev) => ({
+        ...prev,
+        hasMedia: value === 'All' ? undefined : value === 'Yes',
+      }));
     },
-    [navigate]
+    [setFilters]
   );
 
   const handleLimitChange = useCallback(
@@ -316,16 +224,11 @@ export const RecordsGrid = () => {
       if (value === '' || /^\d+$/.test(value)) {
         setLimitInput(value);
         if (value) {
-          void navigate({
-            search: (prev) => ({
-              ...prev,
-              limit: parseInt(value, 10),
-            }),
-          });
+          setLimit(parseInt(value, 10));
         }
       }
     },
-    [navigate]
+    [setLimit]
   );
 
   // Memoize the filter sidebar content
@@ -335,21 +238,16 @@ export const RecordsGrid = () => {
         <h3 className="mb-1 text-base">Record Filters</h3>
         <hr />
         <div className="flex flex-col gap-1.5">
-          <Link to="/records" search={defaultQueueOptions}>
+          <button type="button" onClick={reset} className="text-start hover:underline">
             Reset to Defaults
-          </Link>
-          <Link
-            to="/records"
-            search={(prev) => ({
-              ...prev,
-              filters: {
-                isCurated: false,
-                hasParent: false,
-              },
-            })}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilters({ isCurated: false, hasParent: false })}
+            className="text-start hover:underline"
           >
             Curation Queue
-          </Link>
+          </button>
         </div>
         <hr />
         <div className="flex flex-col gap-1.5">
@@ -560,6 +458,8 @@ export const RecordsGrid = () => {
       </div>
     ),
     [
+      reset,
+      setFilters,
       types,
       handleTypeToggle,
       sources,
@@ -574,10 +474,9 @@ export const RecordsGrid = () => {
       handleLimitChange,
       filterValues,
       handleCuratedChange,
-      handleIndexNodeChange,
-      handleFormatChange,
       handlePrivateChange,
       handleHasParentChange,
+      handleHasMediaChange,
     ]
   );
 

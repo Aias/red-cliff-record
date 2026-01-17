@@ -17,7 +17,6 @@ import { Spinner } from '@/components/spinner';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { cn } from '@/lib/utils';
-import { defaultQueueOptions } from '@/shared/types';
 import { SearchResultItem } from '../records/-components/search-result-item';
 
 export const SiteSearch = () => {
@@ -52,7 +51,6 @@ export const SiteSearch = () => {
     void navigate({
       to: '/records/$recordId',
       params: { recordId },
-      search: (prev) => ({ ...defaultQueueOptions, ...prev }),
     });
   };
 

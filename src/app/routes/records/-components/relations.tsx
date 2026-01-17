@@ -118,7 +118,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                   void navigate({
                     to: '/records/$recordId',
                     params: { recordId: targetId },
-                    search: true,
                     state: { focusForm: true },
                   });
                   mergeRecordsMutation.mutate({
@@ -163,7 +162,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                           void navigate({
                             to: '/records/$recordId',
                             params: { recordId: targetId },
-                            search: true,
                             state: { focusForm: true },
                           });
                           mergeRecordsMutation.mutate({
@@ -190,7 +188,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                   id={link.targetId}
                   linkOptions={{
                     to: '/records/$recordId',
-                    search: true,
                     params: { recordId: link.targetId },
                   }}
                 />
@@ -242,7 +239,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                           void navigate({
                             to: '/records/$recordId',
                             params: { recordId: link.sourceId },
-                            search: true,
                             state: { focusForm: true },
                           });
                           mergeRecordsMutation.mutate({
@@ -269,7 +265,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                   id={link.sourceId}
                   linkOptions={{
                     to: '/records/$recordId',
-                    search: true,
                     params: { recordId: link.sourceId },
                   }}
                 />
@@ -333,7 +328,6 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
                         void navigate({
                           to: '/records/$recordId',
                           params: { recordId: targetId },
-                          search: true,
                           state: { focusForm: true },
                         });
                         mergeRecordsMutation.mutate({
@@ -350,7 +344,6 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
                 className="flex-1"
                 linkOptions={{
                   to: '/records/$recordId',
-                  search: true,
                   params: { recordId: record.id },
                 }}
               />

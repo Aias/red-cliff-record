@@ -1,9 +1,10 @@
-import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo } from 'react';
 import { trpc } from '@/app/trpc';
 import { Spinner } from '@/components/spinner';
 import { useBulkUpdate, useDeleteRecords } from '@/lib/hooks/record-mutations';
 import { useRecordTree } from '@/lib/hooks/record-queries';
+import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import type { FamilyTree } from '@/server/api/routers/records/tree';
 import { CoercedIdSchema, type DbId } from '@/shared/types';
@@ -16,9 +17,6 @@ export const Route = createFileRoute('/records/$recordId')({
   component: RouteComponent,
   loader: async ({ context: { trpc, queryClient }, params: { recordId } }) => {
     await queryClient.ensureQueryData(trpc.records.get.queryOptions({ id: recordId }));
-  },
-  search: {
-    middlewares: [retainSearchParams(true)],
   },
 });
 
@@ -177,10 +175,11 @@ const getPreviousRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId 
 
 function RouteComponent() {
   const navigate = Route.useNavigate();
-  const search = Route.useSearch();
-  const { data: recordsList } = trpc.records.list.useQuery(search, {
-    placeholderData: (prev) => prev,
-  });
+  const { state: filtersState } = useRecordFilters();
+  const { data: recordsList } = trpc.records.list.useQuery(
+    { ...filtersState, offset: 0 },
+    { placeholderData: (prev) => prev }
+  );
   const { recordId } = Route.useParams();
   const { data: tree, isError: treeError, isLoading: treeLoading } = useRecordTree(recordId);
   const bulkUpdate = useBulkUpdate();
@@ -195,14 +194,10 @@ function RouteComponent() {
         void navigate({
           to: '/records/$recordId',
           params: { recordId: firstAvailableId },
-          search: true,
         });
       } else {
         // No records available, go to records list
-        void navigate({
-          to: '/records',
-          search: true,
-        });
+        void navigate({ to: '/records' });
       }
     }
   }, [treeError, recordsList, recordId, navigate]);
@@ -244,13 +239,9 @@ function RouteComponent() {
       void navigate({
         to: '/records/$recordId',
         params: { recordId: nextId },
-        search: true,
       });
     } else {
-      void navigate({
-        to: '/records',
-        search: true,
-      });
+      void navigate({ to: '/records' });
     }
   }, [bulkUpdate, nodes, recordsList, recordId, navigate]);
 
@@ -265,13 +256,9 @@ function RouteComponent() {
         void navigate({
           to: '/records/$recordId',
           params: { recordId: nextId },
-          search: true,
         });
       } else {
-        void navigate({
-          to: '/records',
-          search: true,
-        });
+        void navigate({ to: '/records' });
       }
     },
     [deleteMutation, recordsList, recordId, navigate]
@@ -285,7 +272,6 @@ function RouteComponent() {
       void navigate({
         to: '/records/$recordId',
         params: { recordId: nextId },
-        search: true,
       });
     }
   }, [recordsList, recordId, navigate]);
@@ -298,17 +284,13 @@ function RouteComponent() {
       void navigate({
         to: '/records/$recordId',
         params: { recordId: prevId },
-        search: true,
       });
     }
   }, [recordsList, recordId, navigate]);
 
   // Navigate back to records list
   const navigateToList = useCallback(() => {
-    void navigate({
-      to: '/records',
-      search: true,
-    });
+    void navigate({ to: '/records' });
   }, [navigate]);
 
   // Keyboard shortcuts for record navigation

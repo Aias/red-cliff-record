@@ -1,12 +1,11 @@
 import { Link, type LinkComponentProps } from '@tanstack/react-router';
-import { ArchiveIcon, MoonIcon, SunIcon } from 'lucide-react';
+import { MoonIcon, MountainSnowIcon, SunIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Button } from '@/components/button';
 import { KeyboardShortcutsHelp } from '@/components/keyboard-shortcuts-help';
 import { Separator } from '@/components/separator';
 import { setTheme } from '@/lib/server/theme';
 import { cn } from '@/lib/utils';
-import { defaultQueueOptions } from '@/shared/types';
 import { SiteSearch } from './site-search';
 
 interface AppLayoutProps {
@@ -37,15 +36,13 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
         <li className="flex items-center gap-4">
           <Link
             to={'/'}
-            className="flex shrink-0 cursor-pointer items-center gap-2 rounded bg-c-main px-2.5 py-1.5 font-mono text-sm font-medium tracking-normal text-c-main-contrast no-underline transition-colors hover:bg-c-main-active hover:no-underline"
+            className="flex shrink-0 cursor-pointer items-center gap-2 rounded bg-c-main px-3.5 py-1.5 font-mono text-sm font-medium tracking-normal text-c-main-contrast no-underline transition-colors hover:bg-c-main-active hover:no-underline"
           >
-            <ArchiveIcon className="opacity-75" />
+            <MountainSnowIcon className="opacity-75" />
             <span>Red Cliff Record</span>
           </Link>
           <Separator orientation="vertical" className="h-5! border-c-border" />
-          <NavLink to={'/records'} search={defaultQueueOptions}>
-            Records
-          </NavLink>
+          <NavLink to={'/records'}>Index</NavLink>
         </li>
         <li className="flex items-center gap-2">
           <SiteSearch />

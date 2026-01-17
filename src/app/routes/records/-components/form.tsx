@@ -748,7 +748,6 @@ export function RecordForm({
             <Link
               to="/records/$recordId"
               params={{ recordId }}
-              search={true}
               className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
             >
               {`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleString()}`}

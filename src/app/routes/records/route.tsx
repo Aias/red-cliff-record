@@ -1,36 +1,23 @@
-import {
-  createFileRoute,
-  Link,
-  Outlet,
-  retainSearchParams,
-  useMatches,
-} from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet, useMatches } from '@tanstack/react-router';
 import { useCallback } from 'react';
 import { trpc } from '@/app/trpc';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
+import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
-import { ListRecordsInputSchema } from '@/shared/types';
 import { RecordLink } from './-components/record-link';
 import { RecordsGrid } from './-components/records-grid';
 
 export const Route = createFileRoute('/records')({
-  validateSearch: ListRecordsInputSchema,
-  loaderDeps: ({ search }) => ({ search }),
-  loader: async ({ context: { trpc, queryClient }, deps: { search } }) => {
-    await queryClient.ensureQueryData(trpc.records.list.queryOptions(search));
-  },
   component: RouteComponent,
-  search: {
-    middlewares: [retainSearchParams(true)],
-  },
 });
 
 function RouteComponent() {
   const navigate = Route.useNavigate();
-  const search = Route.useSearch();
-  const { data: recordsList } = trpc.records.list.useQuery(search, {
-    placeholderData: (prev) => prev,
-  });
+  const { state: filtersState } = useRecordFilters();
+  const { data: recordsList } = trpc.records.list.useQuery(
+    { ...filtersState, offset: 0 },
+    { placeholderData: (prev) => prev }
+  );
   const matches = useMatches();
 
   // Check if a record is selected by seeing if we're on a record detail route
@@ -50,10 +37,9 @@ function RouteComponent() {
       void navigate({
         to: '/records/$recordId',
         params: { recordId: Number(value) },
-        search,
       });
     },
-    [navigate, search]
+    [navigate]
   );
 
   // Open first record from list view
@@ -63,10 +49,9 @@ function RouteComponent() {
       void navigate({
         to: '/records/$recordId',
         params: { recordId: firstRecordId },
-        search,
       });
     }
-  }, [recordsList, navigate, search]);
+  }, [recordsList, navigate]);
 
   // Focus current record in sidebar (or first if not found)
   const focusSidebarRecord = useCallback(() => {
@@ -98,7 +83,7 @@ function RouteComponent() {
               <h2 className="text-lg font-medium">
                 Records <span className="text-sm text-c-secondary">({recordsList.ids.length})</span>
               </h2>
-              <Link to="/records" search={true} className="text-sm">
+              <Link to="/records" className="text-sm">
                 Index
               </Link>
             </header>

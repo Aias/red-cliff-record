@@ -71,7 +71,6 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
         void navigate({
           to: '/records/$recordId',
           params: { recordId: id },
-          search: true,
         });
       }}
     >
@@ -89,7 +88,6 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
             <Link
               to="/records/$recordId"
               params={{ recordId: id }}
-              search={true}
               data-has-title={Boolean(title)}
               className="text-base font-semibold text-c-primary underline-offset-4 hover:underline data-[has-title=false]:font-medium data-[has-title=false]:text-c-hint"
             >
