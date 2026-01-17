@@ -6,12 +6,12 @@ import { flexibleUrl } from '@/server/lib/url-utils';
  * Subscription (Feed) Schema
  */
 export const FeedbinSubscriptionSchema = z.object({
-	id: z.number().int().positive(),
-	created_at: z.coerce.date(),
-	feed_id: z.number().int().positive(),
-	title: z.string(),
-	feed_url: z.url(),
-	site_url: flexibleUrl,
+  id: z.number().int().positive(),
+  created_at: z.coerce.date(),
+  feed_id: z.number().int().positive(),
+  title: z.string(),
+  feed_url: z.url(),
+  site_url: flexibleUrl,
 });
 
 export const FeedbinSubscriptionsResponseSchema = z.array(FeedbinSubscriptionSchema);
@@ -20,24 +20,24 @@ export const FeedbinSubscriptionsResponseSchema = z.array(FeedbinSubscriptionSch
  * Feed Schema
  */
 export const FeedbinFeedSchema = z.object({
-	id: z.number().int().positive(),
-	title: z.string(),
-	feed_url: z.url(),
-	site_url: flexibleUrl,
+  id: z.number().int().positive(),
+  title: z.string(),
+  feed_url: z.url(),
+  site_url: flexibleUrl,
 });
 
 /**
  * URL components that Feedbin sometimes returns instead of a string URL
  */
 const UrlComponentsSchema = z.object({
-	scheme: z.string(),
-	user: z.string().nullable().optional(),
-	password: z.string().nullable().optional(),
-	host: z.string(),
-	port: z.number().nullable().optional(),
-	path: z.string(),
-	query: z.string().nullable().optional(),
-	fragment: z.string().nullable().optional(),
+  scheme: z.string(),
+  user: z.string().nullable().optional(),
+  password: z.string().nullable().optional(),
+  host: z.string(),
+  port: z.number().nullable().optional(),
+  path: z.string(),
+  query: z.string().nullable().optional(),
+  fragment: z.string().nullable().optional(),
 });
 
 /**
@@ -46,46 +46,46 @@ const UrlComponentsSchema = z.object({
  * and enclosure_type can be "false" string or other invalid values
  */
 export const FeedbinEnclosureSchema = z.object({
-	enclosure_url: z.xor([z.string(), UrlComponentsSchema]).optional().nullable(),
-	enclosure_type: z.xor([z.string(), z.boolean()]).optional().nullable(),
-	enclosure_length: z.union([z.coerce.number(), z.string()]).optional().nullable(), // union kept: z.coerce.number() accepts strings
-	itunes_duration: z.string().optional().nullable(),
-	itunes_image: z.xor([z.string(), UrlComponentsSchema]).optional().nullable(),
+  enclosure_url: z.xor([z.string(), UrlComponentsSchema]).optional().nullable(),
+  enclosure_type: z.xor([z.string(), z.boolean()]).optional().nullable(),
+  enclosure_length: z.union([z.coerce.number(), z.string()]).optional().nullable(), // union kept: z.coerce.number() accepts strings
+  itunes_duration: z.string().optional().nullable(),
+  itunes_image: z.xor([z.string(), UrlComponentsSchema]).optional().nullable(),
 });
 
 /**
  * Entry Schema
  */
 export const FeedbinEntrySchema = z.object({
-	id: z.number().int().positive(),
-	feed_id: z.number().int().positive(),
-	title: emptyStringToNull(z.string()),
-	// Feedbin may return null or invalid URLs for url/extracted_content_url on some entries
-	url: flexibleUrl,
-	extracted_content_url: flexibleUrl.optional(),
-	author: emptyStringToNull(z.string()),
-	content: emptyStringToNull(z.string()),
-	summary: emptyStringToNull(z.string()),
-	published: z.coerce.date(),
-	created_at: z.coerce.date(),
-	// Extended mode fields
-	enclosure: FeedbinEnclosureSchema.optional().nullable(),
-	images: z
-		.object({
-			original_url: z.url(),
-			size_1: z
-				.object({
-					cdn_url: z.url(),
-					width: z.number().int().positive(),
-					height: z.number().int().positive(),
-				})
-				.optional()
-				.nullable(),
-		})
-		.optional()
-		.nullable(),
-	twitter_id: z.number().nullable().optional(),
-	twitter_thread_ids: z.array(z.number()).nullable().optional(),
+  id: z.number().int().positive(),
+  feed_id: z.number().int().positive(),
+  title: emptyStringToNull(z.string()),
+  // Feedbin may return null or invalid URLs for url/extracted_content_url on some entries
+  url: flexibleUrl,
+  extracted_content_url: flexibleUrl.optional(),
+  author: emptyStringToNull(z.string()),
+  content: emptyStringToNull(z.string()),
+  summary: emptyStringToNull(z.string()),
+  published: z.coerce.date(),
+  created_at: z.coerce.date(),
+  // Extended mode fields
+  enclosure: FeedbinEnclosureSchema.optional().nullable(),
+  images: z
+    .object({
+      original_url: z.url(),
+      size_1: z
+        .object({
+          cdn_url: z.url(),
+          width: z.number().int().positive(),
+          height: z.number().int().positive(),
+        })
+        .optional()
+        .nullable(),
+    })
+    .optional()
+    .nullable(),
+  twitter_id: z.number().nullable().optional(),
+  twitter_thread_ids: z.array(z.number()).nullable().optional(),
 });
 
 export const FeedbinEntriesResponseSchema = z.array(FeedbinEntrySchema);
@@ -99,8 +99,8 @@ export const FeedbinEntryIdsResponseSchema = z.array(z.number().int().positive()
  * Icon Schema
  */
 export const FeedbinIconSchema = z.object({
-	host: z.string(),
-	url: z.url(),
+  host: z.string(),
+  url: z.url(),
 });
 
 export const FeedbinIconsResponseSchema = z.array(FeedbinIconSchema);
@@ -109,29 +109,29 @@ export const FeedbinIconsResponseSchema = z.array(FeedbinIconSchema);
  * Pagination Link Header Parser
  */
 export interface PaginationLinks {
-	first?: string;
-	prev?: string;
-	next?: string;
-	last?: string;
+  first?: string;
+  prev?: string;
+  next?: string;
+  last?: string;
 }
 
 export function parseLinkHeader(linkHeader: string | null): PaginationLinks {
-	if (!linkHeader) return {};
+  if (!linkHeader) return {};
 
-	const links: PaginationLinks = {};
-	const parts = linkHeader.split(',');
+  const links: PaginationLinks = {};
+  const parts = linkHeader.split(',');
 
-	for (const part of parts) {
-		const match = part.match(/<([^>]+)>;\s*rel="([^"]+)"/);
-		if (match) {
-			const [, url, rel] = match;
-			if (rel === 'first' || rel === 'prev' || rel === 'next' || rel === 'last') {
-				links[rel] = url;
-			}
-		}
-	}
+  for (const part of parts) {
+    const match = part.match(/<([^>]+)>;\s*rel="([^"]+)"/);
+    if (match) {
+      const [, url, rel] = match;
+      if (rel === 'first' || rel === 'prev' || rel === 'next' || rel === 'last') {
+        links[rel] = url;
+      }
+    }
+  }
 
-	return links;
+  return links;
 }
 
 /**

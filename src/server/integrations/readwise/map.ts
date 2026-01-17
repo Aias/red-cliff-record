@@ -1,15 +1,15 @@
 import {
-	readwiseAuthors,
-	readwiseDocuments,
-	readwiseDocumentTags,
-	ReadwiseLocation,
-	readwiseTags,
-	records,
-	type LinkInsert,
-	type ReadwiseAuthorSelect,
-	type ReadwiseDocumentSelect,
-	type ReadwiseTagSelect,
-	type RecordInsert,
+  readwiseAuthors,
+  readwiseDocuments,
+  readwiseDocumentTags,
+  ReadwiseLocation,
+  readwiseTags,
+  records,
+  type LinkInsert,
+  type ReadwiseAuthorSelect,
+  type ReadwiseDocumentSelect,
+  type ReadwiseTagSelect,
+  type RecordInsert,
 } from '@aias/hozo';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
@@ -31,86 +31,86 @@ const logger = createIntegrationLogger('readwise', 'map');
  * Creates authors from Readwise documents that don't have associated authors yet
  */
 export async function createReadwiseAuthors() {
-	logger.start('Creating authors from Readwise documents');
+  logger.start('Creating authors from Readwise documents');
 
-	const documentsWithoutAuthors = await db.query.readwiseDocuments.findMany({
-		where: {
-			author: {
-				isNotNull: true,
-			},
-			authorId: {
-				isNull: true,
-			},
-		},
-	});
-	if (documentsWithoutAuthors.length === 0) {
-		logger.skip('No documents without authors found');
-		return;
-	}
+  const documentsWithoutAuthors = await db.query.readwiseDocuments.findMany({
+    where: {
+      author: {
+        isNotNull: true,
+      },
+      authorId: {
+        isNull: true,
+      },
+    },
+  });
+  if (documentsWithoutAuthors.length === 0) {
+    logger.skip('No documents without authors found');
+    return;
+  }
 
-	logger.info(`Found ${documentsWithoutAuthors.length} documents without authors`);
+  logger.info(`Found ${documentsWithoutAuthors.length} documents without authors`);
 
-	let processed = 0;
-	const authorResults = await runConcurrentPool({
-		items: documentsWithoutAuthors,
-		concurrency: DB_CONCURRENCY,
-		async worker(document) {
-			if (!document.author) {
-				logger.warn(`Document ${document.id} has no author`);
-				return;
-			}
+  let processed = 0;
+  const authorResults = await runConcurrentPool({
+    items: documentsWithoutAuthors,
+    concurrency: DB_CONCURRENCY,
+    async worker(document) {
+      if (!document.author) {
+        logger.warn(`Document ${document.id} has no author`);
+        return;
+      }
 
-			let origin: string | null = null;
+      let origin: string | null = null;
 
-			try {
-				if (document.sourceUrl) {
-					const url = new URL(document.sourceUrl);
-					origin = url.origin;
-				}
-			} catch {
-				logger.warn(`Skipping invalid author: ${document.author}`);
-				return;
-			}
+      try {
+        if (document.sourceUrl) {
+          const url = new URL(document.sourceUrl);
+          origin = url.origin;
+        }
+      } catch {
+        logger.warn(`Skipping invalid author: ${document.author}`);
+        return;
+      }
 
-			const [newRecord] = await db
-				.insert(readwiseAuthors)
-				.values({
-					name: document.author,
-					origin,
-				})
-				.onConflictDoUpdate({
-					target: [readwiseAuthors.name, readwiseAuthors.origin],
-					set: {
-						recordUpdatedAt: new Date(),
-					},
-				})
-				.returning();
+      const [newRecord] = await db
+        .insert(readwiseAuthors)
+        .values({
+          name: document.author,
+          origin,
+        })
+        .onConflictDoUpdate({
+          target: [readwiseAuthors.name, readwiseAuthors.origin],
+          set: {
+            recordUpdatedAt: new Date(),
+          },
+        })
+        .returning();
 
-			if (!newRecord) {
-				logger.error(`Failed to create author ${document.author}`);
-				return;
-			}
+      if (!newRecord) {
+        logger.error(`Failed to create author ${document.author}`);
+        return;
+      }
 
-			logger.info(`Linked document ${document.id} to author ${newRecord.id}`);
+      logger.info(`Linked document ${document.id} to author ${newRecord.id}`);
 
-			await db
-				.update(readwiseDocuments)
-				.set({ authorId: newRecord.id })
-				.where(eq(readwiseDocuments.id, document.id));
+      await db
+        .update(readwiseDocuments)
+        .set({ authorId: newRecord.id })
+        .where(eq(readwiseDocuments.id, document.id));
 
-			processed++;
-		},
-	});
-	const authorFailures = authorResults.filter((r) => !r.ok);
-	if (authorFailures.length > 0) {
-		throw new Error(
-			`Readwise author creation failed for ${authorFailures.length}/${documentsWithoutAuthors.length} documents`
-		);
-	}
+      processed++;
+    },
+  });
+  const authorFailures = authorResults.filter((r) => !r.ok);
+  if (authorFailures.length > 0) {
+    throw new Error(
+      `Readwise author creation failed for ${authorFailures.length}/${documentsWithoutAuthors.length} documents`
+    );
+  }
 
-	logger.complete(
-		`Processed ${processed} of ${documentsWithoutAuthors.length} documents without authors`
-	);
+  logger.complete(
+    `Processed ${processed} of ${documentsWithoutAuthors.length} documents without authors`
+  );
 }
 
 /**
@@ -120,85 +120,85 @@ export async function createReadwiseAuthors() {
  * @returns A record insert object
  */
 const mapReadwiseAuthorToRecord = (author: ReadwiseAuthorSelect): RecordInsert => {
-	return {
-		id: author.recordId ?? undefined,
-		type: 'entity',
-		title: author.name,
-		url: author.origin ? mapUrl(author.origin) : undefined,
-		sources: ['readwise'],
-		isCurated: false,
-		isPrivate: false,
-		recordCreatedAt: author.recordCreatedAt,
-		recordUpdatedAt: author.recordUpdatedAt,
-	};
+  return {
+    id: author.recordId ?? undefined,
+    type: 'entity',
+    title: author.name,
+    url: author.origin ? mapUrl(author.origin) : undefined,
+    sources: ['readwise'],
+    isCurated: false,
+    isPrivate: false,
+    recordCreatedAt: author.recordCreatedAt,
+    recordUpdatedAt: author.recordUpdatedAt,
+  };
 };
 
 /**
  * Creates records from Readwise authors that don't have associated records yet
  */
 export async function createRecordsFromReadwiseAuthors() {
-	logger.start('Creating records from Readwise authors');
+  logger.start('Creating records from Readwise authors');
 
-	const authors = await db.query.readwiseAuthors.findMany({
-		where: {
-			documents: {
-				location: ReadwiseLocation.enum.archive, // Only map authors with at least one document in the archive.
-			},
-			recordId: {
-				isNull: true,
-			},
-			deletedAt: {
-				isNull: true,
-			},
-		},
-	});
-	if (authors.length === 0) {
-		logger.skip('No new or updated authors to process');
-		return;
-	}
+  const authors = await db.query.readwiseAuthors.findMany({
+    where: {
+      documents: {
+        location: ReadwiseLocation.enum.archive, // Only map authors with at least one document in the archive.
+      },
+      recordId: {
+        isNull: true,
+      },
+      deletedAt: {
+        isNull: true,
+      },
+    },
+  });
+  if (authors.length === 0) {
+    logger.skip('No new or updated authors to process');
+    return;
+  }
 
-	logger.info(`Found ${authors.length} unmapped Readwise authors`);
+  logger.info(`Found ${authors.length} unmapped Readwise authors`);
 
-	let processed = 0;
-	const recordFromAuthorResults = await runConcurrentPool({
-		items: authors,
-		concurrency: DB_CONCURRENCY,
-		async worker(author) {
-			const entity = mapReadwiseAuthorToRecord(author);
+  let processed = 0;
+  const recordFromAuthorResults = await runConcurrentPool({
+    items: authors,
+    concurrency: DB_CONCURRENCY,
+    async worker(author) {
+      const entity = mapReadwiseAuthorToRecord(author);
 
-			const [newEntity] = await db
-				.insert(records)
-				.values(entity)
-				.onConflictDoUpdate({
-					target: records.id,
-					set: { recordUpdatedAt: new Date() },
-				})
-				.returning({ id: records.id });
+      const [newEntity] = await db
+        .insert(records)
+        .values(entity)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: { recordUpdatedAt: new Date() },
+        })
+        .returning({ id: records.id });
 
-			if (!newEntity) {
-				logger.error(`Failed to create record for author ${author.name}`);
-				return;
-			}
+      if (!newEntity) {
+        logger.error(`Failed to create record for author ${author.name}`);
+        return;
+      }
 
-			logger.info(`Created record ${newEntity.id} for author ${author.name} (${author.id})`);
+      logger.info(`Created record ${newEntity.id} for author ${author.name} (${author.id})`);
 
-			await db
-				.update(readwiseAuthors)
-				.set({ recordId: newEntity.id })
-				.where(eq(readwiseAuthors.id, author.id));
+      await db
+        .update(readwiseAuthors)
+        .set({ recordId: newEntity.id })
+        .where(eq(readwiseAuthors.id, author.id));
 
-			logger.info(`Linked author ${author.name} to record ${newEntity.id}`);
-			processed++;
-		},
-	});
-	const recordFromAuthorFailures = recordFromAuthorResults.filter((r) => !r.ok);
-	if (recordFromAuthorFailures.length > 0) {
-		throw new Error(
-			`Readwise author→record mapping failed for ${recordFromAuthorFailures.length}/${authors.length} authors`
-		);
-	}
+      logger.info(`Linked author ${author.name} to record ${newEntity.id}`);
+      processed++;
+    },
+  });
+  const recordFromAuthorFailures = recordFromAuthorResults.filter((r) => !r.ok);
+  if (recordFromAuthorFailures.length > 0) {
+    throw new Error(
+      `Readwise author→record mapping failed for ${recordFromAuthorFailures.length}/${authors.length} authors`
+    );
+  }
 
-	logger.complete(`Processed ${processed} of ${authors.length} Readwise authors`);
+  logger.complete(`Processed ${processed} of ${authors.length} Readwise authors`);
 }
 
 // ------------------------------------------------------------------------
@@ -212,103 +212,103 @@ export async function createRecordsFromReadwiseAuthors() {
  * @returns A promise resolving to the processed documents
  */
 export async function createReadwiseTags(integrationRunId?: number) {
-	logger.start('Processing document tags');
+  logger.start('Processing document tags');
 
-	const documents = await db.query.readwiseDocuments.findMany({
-		where: {
-			tags: {
-				isNotNull: true,
-			},
-			integrationRunId: integrationRunId,
-		},
-	});
+  const documents = await db.query.readwiseDocuments.findMany({
+    where: {
+      tags: {
+        isNotNull: true,
+      },
+      integrationRunId: integrationRunId,
+    },
+  });
 
-	if (documents.length === 0) {
-		logger.skip('No new or updated tags to process');
-		return;
-	}
+  if (documents.length === 0) {
+    logger.skip('No new or updated tags to process');
+    return;
+  }
 
-	logger.info(`Found ${documents.length} documents with tags to process`);
+  logger.info(`Found ${documents.length} documents with tags to process`);
 
-	// Extract unique tags from all documents
-	const uniqueTags = [...new Set(documents.map((document) => document.tags).flat())].filter(
-		(tag): tag is string => tag !== null
-	);
+  // Extract unique tags from all documents
+  const uniqueTags = [...new Set(documents.map((document) => document.tags).flat())].filter(
+    (tag): tag is string => tag !== null
+  );
 
-	// Insert or update tags
-	const insertedTags = await db
-		.insert(readwiseTags)
-		.values(uniqueTags.map((tag) => ({ tag })))
-		.onConflictDoUpdate({
-			target: readwiseTags.tag,
-			set: {
-				recordUpdatedAt: new Date(),
-			},
-		})
-		.returning();
+  // Insert or update tags
+  const insertedTags = await db
+    .insert(readwiseTags)
+    .values(uniqueTags.map((tag) => ({ tag })))
+    .onConflictDoUpdate({
+      target: readwiseTags.tag,
+      set: {
+        recordUpdatedAt: new Date(),
+      },
+    })
+    .returning();
 
-	logger.info(`Upserted ${insertedTags.length} tags`);
+  logger.info(`Upserted ${insertedTags.length} tags`);
 
-	// Create a map of tag names to tag IDs
-	const tagMap = new Map(insertedTags.map((tag) => [tag.tag, tag.id]));
+  // Create a map of tag names to tag IDs
+  const tagMap = new Map(insertedTags.map((tag) => [tag.tag, tag.id]));
 
-	// Clear existing document-tag relationships
-	logger.info('Clearing existing document tags');
+  // Clear existing document-tag relationships
+  logger.info('Clearing existing document tags');
 
-	if (integrationRunId) {
-		const documentIds = documents.map((document) => document.id);
-		const deletedDocumentTags = await db
-			.delete(readwiseDocumentTags)
-			.where(inArray(readwiseDocumentTags.documentId, documentIds))
-			.returning();
+  if (integrationRunId) {
+    const documentIds = documents.map((document) => document.id);
+    const deletedDocumentTags = await db
+      .delete(readwiseDocumentTags)
+      .where(inArray(readwiseDocumentTags.documentId, documentIds))
+      .returning();
 
-		logger.info(
-			`Deleted ${deletedDocumentTags.length} document tags for ${documents.length} documents in integration run ${integrationRunId}`
-		);
-	} else {
-		logger.info('No integration run id provided, deleting all document tags');
-		await db.delete(readwiseDocumentTags);
-	}
+    logger.info(
+      `Deleted ${deletedDocumentTags.length} document tags for ${documents.length} documents in integration run ${integrationRunId}`
+    );
+  } else {
+    logger.info('No integration run id provided, deleting all document tags');
+    await db.delete(readwiseDocumentTags);
+  }
 
-	// Create new document-tag relationships
-	// Build flat list of document-tag pairs to insert
-	const documentTagPairs = documents.flatMap((document) => {
-		if (!document.tags) return [];
-		return document.tags
-			.map((tag) => {
-				const tagId = tagMap.get(tag);
-				if (!tagId) return null;
-				return { documentId: document.id, tagId };
-			})
-			.filter((pair): pair is { documentId: string; tagId: number } => pair !== null);
-	});
+  // Create new document-tag relationships
+  // Build flat list of document-tag pairs to insert
+  const documentTagPairs = documents.flatMap((document) => {
+    if (!document.tags) return [];
+    return document.tags
+      .map((tag) => {
+        const tagId = tagMap.get(tag);
+        if (!tagId) return null;
+        return { documentId: document.id, tagId };
+      })
+      .filter((pair): pair is { documentId: string; tagId: number } => pair !== null);
+  });
 
-	let insertedCount = 0;
-	const documentTagResults = await runConcurrentPool({
-		items: documentTagPairs,
-		concurrency: DB_CONCURRENCY,
-		async worker(pair) {
-			await db
-				.insert(readwiseDocumentTags)
-				.values(pair)
-				.onConflictDoUpdate({
-					target: [readwiseDocumentTags.documentId, readwiseDocumentTags.tagId],
-					set: { recordUpdatedAt: new Date() },
-				});
-			insertedCount++;
-		},
-	});
-	const documentTagFailures = documentTagResults.filter((r) => !r.ok);
-	if (documentTagFailures.length > 0) {
-		throw new Error(
-			`Readwise document-tag linking failed for ${documentTagFailures.length}/${documentTagPairs.length} pairs`
-		);
-	}
+  let insertedCount = 0;
+  const documentTagResults = await runConcurrentPool({
+    items: documentTagPairs,
+    concurrency: DB_CONCURRENCY,
+    async worker(pair) {
+      await db
+        .insert(readwiseDocumentTags)
+        .values(pair)
+        .onConflictDoUpdate({
+          target: [readwiseDocumentTags.documentId, readwiseDocumentTags.tagId],
+          set: { recordUpdatedAt: new Date() },
+        });
+      insertedCount++;
+    },
+  });
+  const documentTagFailures = documentTagResults.filter((r) => !r.ok);
+  if (documentTagFailures.length > 0) {
+    throw new Error(
+      `Readwise document-tag linking failed for ${documentTagFailures.length}/${documentTagPairs.length} pairs`
+    );
+  }
 
-	logger.info(`Inserted ${insertedCount} document tags`);
+  logger.info(`Inserted ${insertedCount} document tags`);
 
-	logger.complete(`Processed tags for ${documents.length} documents`);
-	return documents;
+  logger.complete(`Processed tags for ${documents.length} documents`);
+  return documents;
 }
 
 // ------------------------------------------------------------------------
@@ -322,133 +322,133 @@ export async function createReadwiseTags(integrationRunId?: number) {
  * @returns A record insert object
  */
 const mapReadwiseTagToRecord = (tag: ReadwiseTagSelect): RecordInsert => {
-	return {
-		id: tag.recordId ?? undefined,
-		type: 'concept',
-		title: tag.tag,
-		sources: ['readwise'],
-		isCurated: false,
-		isPrivate: false,
-		recordCreatedAt: tag.recordCreatedAt,
-		recordUpdatedAt: tag.recordUpdatedAt,
-	};
+  return {
+    id: tag.recordId ?? undefined,
+    type: 'concept',
+    title: tag.tag,
+    sources: ['readwise'],
+    isCurated: false,
+    isPrivate: false,
+    recordCreatedAt: tag.recordCreatedAt,
+    recordUpdatedAt: tag.recordUpdatedAt,
+  };
 };
 
 /**
  * Creates records from Readwise tags that don't have associated records yet
  */
 export async function createRecordsFromReadwiseTags() {
-	logger.start('Creating records from Readwise tags');
+  logger.start('Creating records from Readwise tags');
 
-	const tags = await db.query.readwiseTags.findMany({
-		where: {
-			recordId: {
-				isNull: true,
-			},
-			deletedAt: {
-				isNull: true,
-			},
-		},
-		with: {
-			documents: true,
-		},
-	});
+  const tags = await db.query.readwiseTags.findMany({
+    where: {
+      recordId: {
+        isNull: true,
+      },
+      deletedAt: {
+        isNull: true,
+      },
+    },
+    with: {
+      documents: true,
+    },
+  });
 
-	if (tags.length === 0) {
-		logger.skip('No new or updated tags to process');
-		return;
-	}
+  if (tags.length === 0) {
+    logger.skip('No new or updated tags to process');
+    return;
+  }
 
-	logger.info(`Found ${tags.length} unmapped Readwise tags`);
+  logger.info(`Found ${tags.length} unmapped Readwise tags`);
 
-	// Step 1: Create records for each tag (can run in parallel - no dependencies between tags)
-	const tagRecordMap = new Map<number, number>(); // tagId -> recordId
-	let processed = 0;
+  // Step 1: Create records for each tag (can run in parallel - no dependencies between tags)
+  const tagRecordMap = new Map<number, number>(); // tagId -> recordId
+  let processed = 0;
 
-	const tagResults = await runConcurrentPool({
-		items: tags,
-		concurrency: DB_CONCURRENCY,
-		async worker(tag) {
-			const category = mapReadwiseTagToRecord(tag);
+  const tagResults = await runConcurrentPool({
+    items: tags,
+    concurrency: DB_CONCURRENCY,
+    async worker(tag) {
+      const category = mapReadwiseTagToRecord(tag);
 
-			const [newCategory] = await db
-				.insert(records)
-				.values(category)
-				.onConflictDoUpdate({
-					target: records.id,
-					set: { recordUpdatedAt: new Date() },
-				})
-				.returning({ id: records.id });
+      const [newCategory] = await db
+        .insert(records)
+        .values(category)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: { recordUpdatedAt: new Date() },
+        })
+        .returning({ id: records.id });
 
-			if (!newCategory) {
-				logger.error(`Failed to create record for tag ${tag.tag}`);
-				return;
-			}
+      if (!newCategory) {
+        logger.error(`Failed to create record for tag ${tag.tag}`);
+        return;
+      }
 
-			logger.info(`Created record ${newCategory.id} for tag ${tag.tag} (${tag.id})`);
+      logger.info(`Created record ${newCategory.id} for tag ${tag.tag} (${tag.id})`);
 
-			const [updatedTag] = await db
-				.update(readwiseTags)
-				.set({ recordId: newCategory.id })
-				.where(eq(readwiseTags.id, tag.id))
-				.returning();
+      const [updatedTag] = await db
+        .update(readwiseTags)
+        .set({ recordId: newCategory.id })
+        .where(eq(readwiseTags.id, tag.id))
+        .returning();
 
-			if (!updatedTag) {
-				logger.error(`Failed to update tag ${tag.tag} with record ${newCategory.id}`);
-				return;
-			}
+      if (!updatedTag) {
+        logger.error(`Failed to update tag ${tag.tag} with record ${newCategory.id}`);
+        return;
+      }
 
-			logger.info(`Linked tag ${tag.tag} to record ${newCategory.id}`);
-			tagRecordMap.set(tag.id, newCategory.id);
-			processed++;
-		},
-	});
-	const tagFailures = tagResults.filter((r) => !r.ok);
-	if (tagFailures.length > 0) {
-		throw new Error(
-			`Readwise tag→record mapping failed for ${tagFailures.length}/${tags.length} tags`
-		);
-	}
+      logger.info(`Linked tag ${tag.tag} to record ${newCategory.id}`);
+      tagRecordMap.set(tag.id, newCategory.id);
+      processed++;
+    },
+  });
+  const tagFailures = tagResults.filter((r) => !r.ok);
+  if (tagFailures.length > 0) {
+    throw new Error(
+      `Readwise tag→record mapping failed for ${tagFailures.length}/${tags.length} tags`
+    );
+  }
 
-	// Step 2: Link documents to tags (can also run in parallel)
-	// Build flat list of document-tag links
-	const documentTagLinks: Array<{
-		documentRecordId: number;
-		tagRecordId: number;
-		tagName: string;
-	}> = [];
-	for (const tag of tags) {
-		const tagRecordId = tagRecordMap.get(tag.id);
-		if (!tagRecordId) continue;
-		for (const tagDocument of tag.documents) {
-			if (tagDocument.recordId) {
-				documentTagLinks.push({
-					documentRecordId: tagDocument.recordId,
-					tagRecordId,
-					tagName: tag.tag,
-				});
-			}
-		}
-	}
+  // Step 2: Link documents to tags (can also run in parallel)
+  // Build flat list of document-tag links
+  const documentTagLinks: Array<{
+    documentRecordId: number;
+    tagRecordId: number;
+    tagName: string;
+  }> = [];
+  for (const tag of tags) {
+    const tagRecordId = tagRecordMap.get(tag.id);
+    if (!tagRecordId) continue;
+    for (const tagDocument of tag.documents) {
+      if (tagDocument.recordId) {
+        documentTagLinks.push({
+          documentRecordId: tagDocument.recordId,
+          tagRecordId,
+          tagName: tag.tag,
+        });
+      }
+    }
+  }
 
-	if (documentTagLinks.length > 0) {
-		const tagLinkResults = await runConcurrentPool({
-			items: documentTagLinks,
-			concurrency: DB_CONCURRENCY,
-			async worker(link) {
-				logger.info(`Linking tag ${link.tagName} to record ${link.documentRecordId}`);
-				await linkRecords(link.documentRecordId, link.tagRecordId, 'tagged_with', db);
-			},
-		});
-		const tagLinkFailures = tagLinkResults.filter((r) => !r.ok);
-		if (tagLinkFailures.length > 0) {
-			throw new Error(
-				`Readwise tag linking failed for ${tagLinkFailures.length}/${documentTagLinks.length} links`
-			);
-		}
-	}
+  if (documentTagLinks.length > 0) {
+    const tagLinkResults = await runConcurrentPool({
+      items: documentTagLinks,
+      concurrency: DB_CONCURRENCY,
+      async worker(link) {
+        logger.info(`Linking tag ${link.tagName} to record ${link.documentRecordId}`);
+        await linkRecords(link.documentRecordId, link.tagRecordId, 'tagged_with', db);
+      },
+    });
+    const tagLinkFailures = tagLinkResults.filter((r) => !r.ok);
+    if (tagLinkFailures.length > 0) {
+      throw new Error(
+        `Readwise tag linking failed for ${tagLinkFailures.length}/${documentTagLinks.length} links`
+      );
+    }
+  }
 
-	logger.complete(`Processed ${processed} of ${tags.length} Readwise tags`);
+  logger.complete(`Processed ${processed} of ${tags.length} Readwise tags`);
 }
 
 // ------------------------------------------------------------------------
@@ -459,7 +459,7 @@ export async function createRecordsFromReadwiseTags() {
  * Type for a Readwise document with its children
  */
 type ReadwiseDocumentWithChildren = ReadwiseDocumentSelect & {
-	children: ReadwiseDocumentSelect[];
+  children: ReadwiseDocumentSelect[];
 };
 
 /**
@@ -469,283 +469,283 @@ type ReadwiseDocumentWithChildren = ReadwiseDocumentSelect & {
  * @returns A record insert object
  */
 export const mapReadwiseDocumentToRecord = (
-	document: ReadwiseDocumentWithChildren
+  document: ReadwiseDocumentWithChildren
 ): RecordInsert => {
-	// Combine notes from children and document
-	const notes = [
-		document.notes,
-		...document.children.filter((child) => child.category === 'note').map((child) => child.content),
-	]
-		.filter(Boolean)
-		.join('\n\n');
+  // Combine notes from children and document
+  const notes = [
+    document.notes,
+    ...document.children.filter((child) => child.category === 'note').map((child) => child.content),
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 
-	// Determine rating from tags
-	let rating = 0;
-	if (document.tags?.includes('⭐')) {
-		rating = 1;
-	}
-	if (document.tags?.includes('⭐⭐')) {
-		rating = 2;
-	}
-	if (document.tags?.includes('⭐⭐⭐')) {
-		rating = 3;
-	}
+  // Determine rating from tags
+  let rating = 0;
+  if (document.tags?.includes('⭐')) {
+    rating = 1;
+  }
+  if (document.tags?.includes('⭐⭐')) {
+    rating = 2;
+  }
+  if (document.tags?.includes('⭐⭐⭐')) {
+    rating = 3;
+  }
 
-	return {
-		id: document.recordId ?? undefined,
-		type: 'artifact',
-		title: document.title || null,
-		url: document.sourceUrl,
-		content: document.content ? document.content.replace(/(?<!\n)\n(?!\n)/g, '\n\n') : null, // Normalize newlines: add extra newlines between paragraphs but keep existing double newlines.
-		summary: document.summary || null,
-		notes: notes || null,
-		isPrivate: false,
-		isCurated: false,
-		avatarUrl: document.imageUrl?.startsWith(
-			'https://assets.feedbin.com/assets-site/images/icon-manifest.png' // Ignore Feedbin favicon
-		)
-			? null
-			: document.imageUrl,
-		rating,
-		sources: ['readwise'],
-		recordCreatedAt: document.recordCreatedAt,
-		recordUpdatedAt: document.recordUpdatedAt,
-		contentCreatedAt: document.contentCreatedAt,
-		contentUpdatedAt: document.contentUpdatedAt,
-	};
+  return {
+    id: document.recordId ?? undefined,
+    type: 'artifact',
+    title: document.title || null,
+    url: document.sourceUrl,
+    content: document.content ? document.content.replace(/(?<!\n)\n(?!\n)/g, '\n\n') : null, // Normalize newlines: add extra newlines between paragraphs but keep existing double newlines.
+    summary: document.summary || null,
+    notes: notes || null,
+    isPrivate: false,
+    isCurated: false,
+    avatarUrl: document.imageUrl?.startsWith(
+      'https://assets.feedbin.com/assets-site/images/icon-manifest.png' // Ignore Feedbin favicon
+    )
+      ? null
+      : document.imageUrl,
+    rating,
+    sources: ['readwise'],
+    recordCreatedAt: document.recordCreatedAt,
+    recordUpdatedAt: document.recordUpdatedAt,
+    contentCreatedAt: document.contentCreatedAt,
+    contentUpdatedAt: document.contentUpdatedAt,
+  };
 };
 
 /**
  * Creates records from Readwise documents that don't have associated records yet
  */
 export async function createRecordsFromReadwiseDocuments() {
-	logger.start('Creating records from Readwise documents');
+  logger.start('Creating records from Readwise documents');
 
-	// Query readwise documents that need records created (skip notes-only docs)
-	// We only want to process documents that are in the archive or have no location set (i.e. are highlights within other documents) and whose parent is in the archive.
-	const documents = await db.query.readwiseDocuments.findMany({
-		with: {
-			children: true,
-		},
-		where: {
-			OR: [
-				{
-					location: {
-						isNull: true,
-					},
-					parent: {
-						location: ReadwiseLocation.enum.archive,
-					},
-				},
-				{
-					location: ReadwiseLocation.enum.archive,
-				},
-			],
-			recordId: {
-				isNull: true,
-			},
-			category: {
-				ne: 'note',
-			},
-			deletedAt: {
-				isNull: true,
-			},
-		},
-	});
+  // Query readwise documents that need records created (skip notes-only docs)
+  // We only want to process documents that are in the archive or have no location set (i.e. are highlights within other documents) and whose parent is in the archive.
+  const documents = await db.query.readwiseDocuments.findMany({
+    with: {
+      children: true,
+    },
+    where: {
+      OR: [
+        {
+          location: {
+            isNull: true,
+          },
+          parent: {
+            location: ReadwiseLocation.enum.archive,
+          },
+        },
+        {
+          location: ReadwiseLocation.enum.archive,
+        },
+      ],
+      recordId: {
+        isNull: true,
+      },
+      category: {
+        ne: 'note',
+      },
+      deletedAt: {
+        isNull: true,
+      },
+    },
+  });
 
-	if (documents.length === 0) {
-		logger.skip('No new or updated documents to process');
-		return;
-	}
+  if (documents.length === 0) {
+    logger.skip('No new or updated documents to process');
+    return;
+  }
 
-	logger.info(`Found ${documents.length} unmapped Readwise documents`);
+  logger.info(`Found ${documents.length} unmapped Readwise documents`);
 
-	// Map to store the new record IDs keyed by the corresponding readwise document ID.
-	const recordMap = new Map<string, number>();
+  // Map to store the new record IDs keyed by the corresponding readwise document ID.
+  const recordMap = new Map<string, number>();
 
-	// Step 1: Insert each document as a record (can run in parallel - no parent-child FK in records table).
-	const documentResults = await runConcurrentPool({
-		items: documents,
-		concurrency: DB_CONCURRENCY,
-		async worker(doc) {
-			const recordPayload = mapReadwiseDocumentToRecord(doc);
+  // Step 1: Insert each document as a record (can run in parallel - no parent-child FK in records table).
+  const documentResults = await runConcurrentPool({
+    items: documents,
+    concurrency: DB_CONCURRENCY,
+    async worker(doc) {
+      const recordPayload = mapReadwiseDocumentToRecord(doc);
 
-			const [insertedRecord] = await db
-				.insert(records)
-				.values(recordPayload)
-				.onConflictDoUpdate({
-					target: records.id,
-					set: { recordUpdatedAt: new Date() },
-				})
-				.returning({ id: records.id });
+      const [insertedRecord] = await db
+        .insert(records)
+        .values(recordPayload)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: { recordUpdatedAt: new Date() },
+        })
+        .returning({ id: records.id });
 
-			if (!insertedRecord) {
-				logger.error(`Failed to create record for readwise document ${doc.id}`);
-				return;
-			}
+      if (!insertedRecord) {
+        logger.error(`Failed to create record for readwise document ${doc.id}`);
+        return;
+      }
 
-			logger.info(
-				`Created record ${insertedRecord.id} for readwise document ${doc.title || doc.content?.slice(0, 20)} (${doc.id})`
-			);
+      logger.info(
+        `Created record ${insertedRecord.id} for readwise document ${doc.title || doc.content?.slice(0, 20)} (${doc.id})`
+      );
 
-			// Update the readwise document with the corresponding record id.
-			await db
-				.update(readwiseDocuments)
-				.set({ recordId: insertedRecord.id })
-				.where(eq(readwiseDocuments.id, doc.id));
+      // Update the readwise document with the corresponding record id.
+      await db
+        .update(readwiseDocuments)
+        .set({ recordId: insertedRecord.id })
+        .where(eq(readwiseDocuments.id, doc.id));
 
-			recordMap.set(doc.id, insertedRecord.id);
-			logger.info(`Linked readwise document ${doc.id} to record ${insertedRecord.id}`);
-		},
-	});
-	const documentFailures = documentResults.filter((r) => !r.ok);
-	if (documentFailures.length > 0) {
-		throw new Error(
-			`Readwise document→record mapping failed for ${documentFailures.length}/${documents.length} documents`
-		);
-	}
+      recordMap.set(doc.id, insertedRecord.id);
+      logger.info(`Linked readwise document ${doc.id} to record ${insertedRecord.id}`);
+    },
+  });
+  const documentFailures = documentResults.filter((r) => !r.ok);
+  if (documentFailures.length > 0) {
+    throw new Error(
+      `Readwise document→record mapping failed for ${documentFailures.length}/${documents.length} documents`
+    );
+  }
 
-	// Step 2: Update the parent-child relationships (can run in parallel after Step 1).
-	const documentsWithParents = documents.filter((doc) => doc.parentId && recordMap.has(doc.id));
+  // Step 2: Update the parent-child relationships (can run in parallel after Step 1).
+  const documentsWithParents = documents.filter((doc) => doc.parentId && recordMap.has(doc.id));
 
-	const parentLinkResults = await runConcurrentPool({
-		items: documentsWithParents,
-		concurrency: DB_CONCURRENCY,
-		async worker(doc) {
-			const childRecordId = recordMap.get(doc.id);
-			if (!childRecordId || !doc.parentId) return;
+  const parentLinkResults = await runConcurrentPool({
+    items: documentsWithParents,
+    concurrency: DB_CONCURRENCY,
+    async worker(doc) {
+      const childRecordId = recordMap.get(doc.id);
+      if (!childRecordId || !doc.parentId) return;
 
-			// Determine the parent's record id:
-			// Either it was just created in this run or exists already.
-			let parentRecordId = recordMap.get(doc.parentId);
-			if (!parentRecordId) {
-				const parentDoc = await db.query.readwiseDocuments.findFirst({
-					where: {
-						id: doc.parentId,
-					},
-					columns: { recordId: true },
-				});
-				parentRecordId = parentDoc?.recordId ?? undefined;
-			}
+      // Determine the parent's record id:
+      // Either it was just created in this run or exists already.
+      let parentRecordId = recordMap.get(doc.parentId);
+      if (!parentRecordId) {
+        const parentDoc = await db.query.readwiseDocuments.findFirst({
+          where: {
+            id: doc.parentId,
+          },
+          columns: { recordId: true },
+        });
+        parentRecordId = parentDoc?.recordId ?? undefined;
+      }
 
-			if (parentRecordId) {
-				await linkRecords(childRecordId, parentRecordId, 'contained_by', db);
-				logger.info(`Linked child record ${childRecordId} to parent record ${parentRecordId}`);
-			} else {
-				logger.warn(`Skipping linking for document ${doc.id} due to missing parent record id`);
-			}
-		},
-	});
-	const parentLinkFailures = parentLinkResults.filter((r) => !r.ok);
-	if (parentLinkFailures.length > 0) {
-		throw new Error(
-			`Readwise parent-child linking failed for ${parentLinkFailures.length}/${documentsWithParents.length} documents`
-		);
-	}
+      if (parentRecordId) {
+        await linkRecords(childRecordId, parentRecordId, 'contained_by', db);
+        logger.info(`Linked child record ${childRecordId} to parent record ${parentRecordId}`);
+      } else {
+        logger.warn(`Skipping linking for document ${doc.id} due to missing parent record id`);
+      }
+    },
+  });
+  const parentLinkFailures = parentLinkResults.filter((r) => !r.ok);
+  if (parentLinkFailures.length > 0) {
+    throw new Error(
+      `Readwise parent-child linking failed for ${parentLinkFailures.length}/${documentsWithParents.length} documents`
+    );
+  }
 
-	// Step 3: Link records to index entries via recordCreators (for authors) and recordCategories (for tags).
-	// Build a map for authors.
-	const authorIdsSet = new Set<number>();
-	for (const doc of documents) {
-		if (doc.authorId) {
-			authorIdsSet.add(doc.authorId);
-		}
-	}
+  // Step 3: Link records to index entries via recordCreators (for authors) and recordCategories (for tags).
+  // Build a map for authors.
+  const authorIdsSet = new Set<number>();
+  for (const doc of documents) {
+    if (doc.authorId) {
+      authorIdsSet.add(doc.authorId);
+    }
+  }
 
-	const authorIds = Array.from(authorIdsSet);
-	const authorsRows = await db.query.readwiseAuthors.findMany({
-		where: {
-			id: {
-				in: authorIds,
-			},
-		},
-		columns: { id: true, recordId: true },
-	});
+  const authorIds = Array.from(authorIdsSet);
+  const authorsRows = await db.query.readwiseAuthors.findMany({
+    where: {
+      id: {
+        in: authorIds,
+      },
+    },
+    columns: { id: true, recordId: true },
+  });
 
-	const authorIndexMap = new Map<number, number>();
-	for (const row of authorsRows) {
-		if (row.recordId) {
-			authorIndexMap.set(row.id, row.recordId);
-		}
-	}
+  const authorIndexMap = new Map<number, number>();
+  for (const row of authorsRows) {
+    if (row.recordId) {
+      authorIndexMap.set(row.id, row.recordId);
+    }
+  }
 
-	// Build a map for tags.
-	const tagSet = new Set<string>();
-	for (const doc of documents) {
-		if (doc.tags) {
-			doc.tags.forEach((tag) => tagSet.add(tag));
-		}
-	}
+  // Build a map for tags.
+  const tagSet = new Set<string>();
+  for (const doc of documents) {
+    if (doc.tags) {
+      doc.tags.forEach((tag) => tagSet.add(tag));
+    }
+  }
 
-	const tagsArray = Array.from(tagSet);
-	const tagRows = await db.query.readwiseTags.findMany({
-		where: {
-			tag: {
-				in: tagsArray,
-			},
-		},
-		columns: { tag: true, recordId: true },
-	});
+  const tagsArray = Array.from(tagSet);
+  const tagRows = await db.query.readwiseTags.findMany({
+    where: {
+      tag: {
+        in: tagsArray,
+      },
+    },
+    columns: { tag: true, recordId: true },
+  });
 
-	const tagIndexMap = new Map<string, number>();
-	for (const row of tagRows) {
-		if (row.recordId) {
-			tagIndexMap.set(row.tag, row.recordId);
-		}
-	}
+  const tagIndexMap = new Map<string, number>();
+  for (const row of tagRows) {
+    if (row.recordId) {
+      tagIndexMap.set(row.tag, row.recordId);
+    }
+  }
 
-	// Bulk prepare linking arrays.
-	const recordCreatorsValues: LinkInsert[] = [];
-	const recordRelationsValues: LinkInsert[] = [];
+  // Bulk prepare linking arrays.
+  const recordCreatorsValues: LinkInsert[] = [];
+  const recordRelationsValues: LinkInsert[] = [];
 
-	for (const doc of documents) {
-		const recordId = recordMap.get(doc.id);
-		if (!recordId) continue;
+  for (const doc of documents) {
+    const recordId = recordMap.get(doc.id);
+    if (!recordId) continue;
 
-		const createdByPredicateId = await getPredicateId('created_by', db);
-		const taggedWithPredicateId = await getPredicateId('tagged_with', db);
+    const createdByPredicateId = await getPredicateId('created_by', db);
+    const taggedWithPredicateId = await getPredicateId('tagged_with', db);
 
-		// Link author via recordCreators.
-		if (doc.authorId && authorIndexMap.has(doc.authorId)) {
-			const authorRecordId = authorIndexMap.get(doc.authorId);
-			if (authorRecordId === undefined) {
-				continue;
-			}
-			recordCreatorsValues.push({
-				sourceId: recordId,
-				targetId: authorRecordId,
-				predicateId: createdByPredicateId,
-			});
-		}
+    // Link author via recordCreators.
+    if (doc.authorId && authorIndexMap.has(doc.authorId)) {
+      const authorRecordId = authorIndexMap.get(doc.authorId);
+      if (authorRecordId === undefined) {
+        continue;
+      }
+      recordCreatorsValues.push({
+        sourceId: recordId,
+        targetId: authorRecordId,
+        predicateId: createdByPredicateId,
+      });
+    }
 
-		// Link tags via recordRelations.
-		if (doc.tags && Array.isArray(doc.tags)) {
-			for (const tag of doc.tags) {
-				if (tagIndexMap.has(tag)) {
-					const tagRecordId = tagIndexMap.get(tag);
-					if (tagRecordId === undefined) {
-						continue;
-					}
-					recordRelationsValues.push({
-						sourceId: recordId,
-						targetId: tagRecordId,
-						predicateId: taggedWithPredicateId,
-					});
-				}
-			}
-		}
-	}
+    // Link tags via recordRelations.
+    if (doc.tags && Array.isArray(doc.tags)) {
+      for (const tag of doc.tags) {
+        if (tagIndexMap.has(tag)) {
+          const tagRecordId = tagIndexMap.get(tag);
+          if (tagRecordId === undefined) {
+            continue;
+          }
+          recordRelationsValues.push({
+            sourceId: recordId,
+            targetId: tagRecordId,
+            predicateId: taggedWithPredicateId,
+          });
+        }
+      }
+    }
+  }
 
-	// Bulk insert relationships
-	if (recordCreatorsValues.length > 0) {
-		await bulkInsertLinks(recordCreatorsValues, db);
-		logger.info(`Linked ${recordCreatorsValues.length} authors to records`);
-	}
+  // Bulk insert relationships
+  if (recordCreatorsValues.length > 0) {
+    await bulkInsertLinks(recordCreatorsValues, db);
+    logger.info(`Linked ${recordCreatorsValues.length} authors to records`);
+  }
 
-	if (recordRelationsValues.length > 0) {
-		await bulkInsertLinks(recordRelationsValues, db);
-		logger.info(`Linked ${recordRelationsValues.length} tags to records`);
-	}
+  if (recordRelationsValues.length > 0) {
+    await bulkInsertLinks(recordRelationsValues, db);
+    logger.info(`Linked ${recordRelationsValues.length} tags to records`);
+  }
 
-	logger.complete(`Processed ${recordMap.size} Readwise documents`);
+  logger.complete(`Processed ${recordMap.size} Readwise documents`);
 }

@@ -9,13 +9,13 @@ import { recordsRouter } from './routers/records';
 import { searchRouter } from './routers/search';
 
 export const appRouter = createTRPCRouter({
-	admin: adminRouter,
-	browsing: browsingRouter,
-	github: githubRouter,
-	links: linksRouter,
-	media: mediaRouter,
-	records: recordsRouter,
-	search: searchRouter,
+  admin: adminRouter,
+  browsing: browsingRouter,
+  github: githubRouter,
+  links: linksRouter,
+  media: mediaRouter,
+  records: recordsRouter,
+  search: searchRouter,
 });
 
 export type AppRouter = typeof appRouter;

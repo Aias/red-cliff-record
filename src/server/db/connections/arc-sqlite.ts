@@ -11,18 +11,18 @@ export const arcDbCopyPath = `${process.env.HOME}/${arcHistoryPath}-copy`;
 export const connectionUrl = `file:${arcDbCopyPath}`;
 
 export const createArcConnection = async () => {
-	const sourceFile = Bun.file(arcDbPath);
-	if (!(await sourceFile.exists())) {
-		throw new BrowserNotInstalledError('Arc', arcDbPath);
-	}
-	// Copy file using Bun's file API
-	await Bun.write(arcDbCopyPath, sourceFile);
+  const sourceFile = Bun.file(arcDbPath);
+  if (!(await sourceFile.exists())) {
+    throw new BrowserNotInstalledError('Arc', arcDbPath);
+  }
+  // Copy file using Bun's file API
+  await Bun.write(arcDbCopyPath, sourceFile);
 
-	const client = createClient({
-		url: connectionUrl,
-		intMode: 'bigint',
-	});
-	const db = drizzle({ client, schema: arcSchema });
+  const client = createClient({
+    url: connectionUrl,
+    intMode: 'bigint',
+  });
+  const db = drizzle({ client, schema: arcSchema });
 
-	return { db, client };
+  return { db, client };
 };

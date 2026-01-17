@@ -3,48 +3,48 @@ import * as React from 'react';
 import { cn } from '@/app/lib/utils';
 
 function TooltipProvider({
-	delayDuration = 0,
-	...props
+  delayDuration = 0,
+  ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
-	return (
-		<TooltipPrimitive.Provider
-			data-slot="tooltip-provider"
-			delayDuration={delayDuration}
-			{...props}
-		/>
-	);
+  return (
+    <TooltipPrimitive.Provider
+      data-slot="tooltip-provider"
+      delayDuration={delayDuration}
+      {...props}
+    />
+  );
 }
 
 function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-	return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
 }
 
 function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-	return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
 function TooltipContent({
-	className,
-	sideOffset = 0,
-	children,
-	...props
+  className,
+  sideOffset = 0,
+  children,
+  ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
-	return (
-		<TooltipPrimitive.Portal>
-			<TooltipPrimitive.Content
-				data-slot="tooltip-content"
-				sideOffset={sideOffset}
-				className={cn(
-					'z-50 w-fit max-w-[50vw] origin-(--radix-tooltip-content-transform-origin) rounded-md bg-c-main px-3 py-1.5 text-xs text-c-main-contrast animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
-					className
-				)}
-				{...props}
-			>
-				{children}
-				<TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-sm bg-c-main fill-c-main" />
-			</TooltipPrimitive.Content>
-		</TooltipPrimitive.Portal>
-	);
+  return (
+    <TooltipPrimitive.Portal>
+      <TooltipPrimitive.Content
+        data-slot="tooltip-content"
+        sideOffset={sideOffset}
+        className={cn(
+          'z-50 w-fit max-w-[50vw] origin-(--radix-tooltip-content-transform-origin) rounded-md bg-c-primary px-3 py-1.5 text-xs text-c-main-contrast animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 dark:border dark:border-c-border dark:bg-c-float dark:text-c-primary',
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%)] rotate-45 rounded-sm bg-c-primary fill-c-primary dark:border-r dark:border-b dark:border-c-border dark:bg-c-float dark:fill-c-float" />
+      </TooltipPrimitive.Content>
+    </TooltipPrimitive.Portal>
+  );
 }
 
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };

@@ -13,15 +13,15 @@ import type { CommandHandler } from '../lib/types';
 const JINA_READER_BASE = 'https://r.jina.ai/';
 
 const FetchOptionsSchema = BaseOptionsSchema.extend({
-	/** Return only the markdown content without metadata */
-	'content-only': z.boolean().optional(),
+  /** Return only the markdown content without metadata */
+  'content-only': z.boolean().optional(),
 }).strict();
 
 interface JinaReaderResult {
-	[key: string]: string | null;
-	title: string | null;
-	url: string;
-	markdown: string;
+  [key: string]: string | null;
+  title: string | null;
+  url: string;
+  markdown: string;
 }
 
 /**
@@ -29,27 +29,27 @@ interface JinaReaderResult {
  * Jina returns plain text with Title:, URL Source:, and Markdown Content: sections.
  */
 function parseJinaResponse(response: string): JinaReaderResult {
-	const lines = response.split('\n');
+  const lines = response.split('\n');
 
-	let title: string | null = null;
-	let url = '';
-	let markdownStartIndex = 0;
+  let title: string | null = null;
+  let url = '';
+  let markdownStartIndex = 0;
 
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i];
-		if (line?.startsWith('Title: ')) {
-			title = line.slice(7).trim() || null;
-		} else if (line?.startsWith('URL Source: ')) {
-			url = line.slice(12).trim();
-		} else if (line === 'Markdown Content:') {
-			markdownStartIndex = i + 1;
-			break;
-		}
-	}
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line?.startsWith('Title: ')) {
+      title = line.slice(7).trim() || null;
+    } else if (line?.startsWith('URL Source: ')) {
+      url = line.slice(12).trim();
+    } else if (line === 'Markdown Content:') {
+      markdownStartIndex = i + 1;
+      break;
+    }
+  }
 
-	const markdown = lines.slice(markdownStartIndex).join('\n').trim();
+  const markdown = lines.slice(markdownStartIndex).join('\n').trim();
 
-	return { title, url, markdown };
+  return { title, url, markdown };
 }
 
 /**
@@ -64,41 +64,41 @@ function parseJinaResponse(response: string): JinaReaderResult {
  *   rcr fetch https://example.com/article --content-only --raw
  */
 export const url: CommandHandler = async (args, options) => {
-	const opts = parseOptions(FetchOptionsSchema, options);
+  const opts = parseOptions(FetchOptionsSchema, options);
 
-	const targetUrl = args[0];
-	if (!targetUrl) {
-		throw createError('VALIDATION_ERROR', 'URL is required');
-	}
+  const targetUrl = args[0];
+  if (!targetUrl) {
+    throw createError('VALIDATION_ERROR', 'URL is required');
+  }
 
-	// Basic URL validation
-	try {
-		new URL(targetUrl);
-	} catch {
-		throw createError('VALIDATION_ERROR', `Invalid URL: ${targetUrl}`);
-	}
+  // Basic URL validation
+  try {
+    new URL(targetUrl);
+  } catch {
+    throw createError('VALIDATION_ERROR', `Invalid URL: ${targetUrl}`);
+  }
 
-	const jinaUrl = `${JINA_READER_BASE}${targetUrl}`;
+  const jinaUrl = `${JINA_READER_BASE}${targetUrl}`;
 
-	const response = await fetch(jinaUrl, {
-		headers: {
-			Accept: 'text/plain',
-		},
-	});
+  const response = await fetch(jinaUrl, {
+    headers: {
+      Accept: 'text/plain',
+    },
+  });
 
-	if (!response.ok) {
-		throw createError(
-			'INTERNAL_ERROR',
-			`Failed to fetch URL: ${response.status} ${response.statusText}`
-		);
-	}
+  if (!response.ok) {
+    throw createError(
+      'INTERNAL_ERROR',
+      `Failed to fetch URL: ${response.status} ${response.statusText}`
+    );
+  }
 
-	const text = await response.text();
-	const parsed = parseJinaResponse(text);
+  const text = await response.text();
+  const parsed = parseJinaResponse(text);
 
-	if (opts['content-only']) {
-		return success(parsed.markdown);
-	}
+  if (opts['content-only']) {
+    return success(parsed.markdown);
+  }
 
-	return success(parsed);
+  return success(parsed);
 };

@@ -28,50 +28,50 @@ export type ShortcutKeys = string;
  * Parsed representation of a keyboard shortcut
  */
 export interface ParsedShortcut {
-	/** Modifier keys required */
-	modifiers: Set<ModifierKey>;
-	/** The main key (lowercase) */
-	key: string;
+  /** Modifier keys required */
+  modifiers: Set<ModifierKey>;
+  /** The main key (lowercase) */
+  key: string;
 }
 
 /**
  * Scope for keyboard shortcuts - allows different shortcuts in different contexts
  */
 export type ShortcutScope =
-	| 'global' // Always active
-	| 'record-form' // Active when editing a record
-	| 'record-list' // Active when viewing record list
-	| 'dialog'; // Active when a dialog is open
+  | 'global' // Always active
+  | 'record-form' // Active when editing a record
+  | 'record-list' // Active when viewing record list
+  | 'dialog'; // Active when a dialog is open
 
 /**
  * Base options shared by all shortcut registration methods.
  * These are the optional configuration properties that control shortcut behavior.
  */
 export interface ShortcutOptions {
-	/** Scope where this shortcut is active (default: 'global') */
-	scope?: ShortcutScope;
-	/** Additional condition for when shortcut should trigger */
-	when?: () => boolean;
-	/** Allow trigger even when focus is in an input (default: false) */
-	allowInInput?: boolean;
-	/** Prevent default browser behavior (default: true) */
-	preventDefault?: boolean;
-	/** Category for grouping in help menu */
-	category?: string;
+  /** Scope where this shortcut is active (default: 'global') */
+  scope?: ShortcutScope;
+  /** Additional condition for when shortcut should trigger */
+  when?: () => boolean;
+  /** Allow trigger even when focus is in an input (default: false) */
+  allowInInput?: boolean;
+  /** Prevent default browser behavior (default: true) */
+  preventDefault?: boolean;
+  /** Category for grouping in help menu */
+  category?: string;
 }
 
 /**
  * Configuration for a keyboard shortcut (used internally by the context)
  */
 export interface KeyboardShortcutConfig extends ShortcutOptions {
-	/** Unique identifier for this shortcut */
-	id: string;
-	/** Shortcut key combination (e.g., "mod+shift+k") */
-	keys: ShortcutKeys;
-	/** Human-readable description shown in help */
-	description: string;
-	/** Callback when shortcut is triggered */
-	callback: (event: KeyboardEvent) => void;
+  /** Unique identifier for this shortcut */
+  id: string;
+  /** Shortcut key combination (e.g., "mod+shift+k") */
+  keys: ShortcutKeys;
+  /** Human-readable description shown in help */
+  description: string;
+  /** Callback when shortcut is triggered */
+  callback: (event: KeyboardEvent) => void;
 }
 
 /**
@@ -82,48 +82,48 @@ export interface KeyboardShortcutConfig extends ShortcutOptions {
  * take precedence over shortcuts registered higher up (more general).
  */
 export interface RegisteredShortcut extends KeyboardShortcutConfig {
-	/** Parsed shortcut for efficient matching */
-	parsed: ParsedShortcut;
-	/** Registration order - higher numbers = later registration = higher priority */
-	priority: number;
+  /** Parsed shortcut for efficient matching */
+  parsed: ParsedShortcut;
+  /** Registration order - higher numbers = later registration = higher priority */
+  priority: number;
 }
 
 /**
  * Context value for keyboard shortcuts
  */
 export interface KeyboardShortcutContextValue {
-	/** Register a shortcut, returns cleanup function */
-	register: (config: KeyboardShortcutConfig) => () => void;
-	/** All currently registered shortcuts */
-	shortcuts: RegisteredShortcut[];
-	/** Current active scope */
-	activeScope: ShortcutScope;
-	/** Set the active scope */
-	setActiveScope: (scope: ShortcutScope) => void;
-	/** Check if a shortcut is currently active */
-	isShortcutActive: (id: string) => boolean;
+  /** Register a shortcut, returns cleanup function */
+  register: (config: KeyboardShortcutConfig) => () => void;
+  /** All currently registered shortcuts */
+  shortcuts: RegisteredShortcut[];
+  /** Current active scope */
+  activeScope: ShortcutScope;
+  /** Set the active scope */
+  setActiveScope: (scope: ShortcutScope) => void;
+  /** Check if a shortcut is currently active */
+  isShortcutActive: (id: string) => boolean;
 }
 
 /**
  * Props for the KeyboardShortcut component
  */
 export interface KeyboardShortcutProps extends ShortcutOptions {
-	/** Shortcut key combination (e.g., "mod+shift+k") */
-	keys: ShortcutKeys;
-	/** Callback when shortcut is triggered */
-	onActivate: (event: KeyboardEvent) => void;
-	/** Human-readable description shown in help */
-	description: string;
-	/** Whether the shortcut is enabled (default: true) */
-	enabled?: boolean;
+  /** Shortcut key combination (e.g., "mod+shift+k") */
+  keys: ShortcutKeys;
+  /** Callback when shortcut is triggered */
+  onActivate: (event: KeyboardEvent) => void;
+  /** Human-readable description shown in help */
+  description: string;
+  /** Whether the shortcut is enabled (default: true) */
+  enabled?: boolean;
 }
 
 /**
  * Options for the useKeyboardShortcut hook
  */
 export interface UseKeyboardShortcutOptions extends ShortcutOptions {
-	/** Human-readable description (required for help menu) */
-	description: string;
-	/** Whether the shortcut is enabled (default: true) */
-	enabled?: boolean;
+  /** Human-readable description (required for help menu) */
+  description: string;
+  /** Whether the shortcut is enabled (default: true) */
+  enabled?: boolean;
 }

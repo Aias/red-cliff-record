@@ -24,25 +24,25 @@ import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
  * />
  */
 export function KeyboardShortcut({
-	keys,
-	onActivate,
-	description,
-	scope,
-	when,
-	allowInInput,
-	preventDefault,
-	category,
-	enabled,
+  keys,
+  onActivate,
+  description,
+  scope,
+  when,
+  allowInInput,
+  preventDefault,
+  category,
+  enabled,
 }: KeyboardShortcutProps) {
-	useKeyboardShortcut(keys, onActivate, {
-		description,
-		scope,
-		when,
-		allowInInput,
-		preventDefault,
-		category,
-		enabled,
-	});
+  useKeyboardShortcut(keys, onActivate, {
+    description,
+    scope,
+    when,
+    allowInInput,
+    preventDefault,
+    category,
+    enabled,
+  });
 
-	return null;
+  return null;
 }

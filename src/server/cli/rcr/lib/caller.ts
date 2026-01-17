@@ -19,12 +19,12 @@ const createCaller = createCallerFactory(appRouter);
  * This reuses the exact same code paths as the frontend
  */
 export function createCLICaller() {
-	// Create a minimal context for CLI usage (no real HTTP headers needed)
-	const ctx = createTRPCContext({
-		headers: new Headers(),
-	});
+  // Create a minimal context for CLI usage (no real HTTP headers needed)
+  const ctx = createTRPCContext({
+    headers: new Headers(),
+  });
 
-	return createCaller(ctx);
+  return createCaller(ctx);
 }
 
 export type CLICaller = ReturnType<typeof createCLICaller>;

@@ -24,64 +24,64 @@ type IntegrationFunction = (integrationRunId: number) => Promise<number>;
  * @throws Rethrows any errors from the integration function after logging them
  */
 export async function runIntegration(
-	integrationType: IntegrationType,
-	fn: IntegrationFunction,
-	runType: RunType = RunType.enum.sync
+  integrationType: IntegrationType,
+  fn: IntegrationFunction,
+  runType: RunType = RunType.enum.sync
 ): Promise<void> {
-	const integrationLabel = integrationType.replace(/_/g, '-');
-	const logger = createIntegrationLogger(integrationLabel, runType);
+  const integrationLabel = integrationType.replace(/_/g, '-');
+  const logger = createIntegrationLogger(integrationLabel, runType);
 
-	logger.start(`Starting ${integrationLabel} integration run`);
+  logger.start(`Starting ${integrationLabel} integration run`);
 
-	// Create a new integration run record
-	const [run] = await db
-		.insert(integrationRuns)
-		.values({
-			integrationType,
-			runType,
-			runStartTime: new Date(),
-		})
-		.returning();
+  // Create a new integration run record
+  const [run] = await db
+    .insert(integrationRuns)
+    .values({
+      integrationType,
+      runType,
+      runStartTime: new Date(),
+    })
+    .returning();
 
-	if (!run) {
-		throw new Error('Failed to create integration run record');
-	}
+  if (!run) {
+    throw new Error('Failed to create integration run record');
+  }
 
-	logger.info(`Created integration run with ID ${run.id}`);
+  logger.info(`Created integration run with ID ${run.id}`);
 
-	try {
-		// Execute the integration function
-		logger.info('Executing integration function...');
-		const entriesCreated = await fn(run.id);
-		logger.complete('Successfully created entries', entriesCreated);
+  try {
+    // Execute the integration function
+    logger.info('Executing integration function...');
+    const entriesCreated = await fn(run.id);
+    logger.complete('Successfully created entries', entriesCreated);
 
-		// Update the run record with success status
-		logger.info('Updating integration run status...');
-		await db
-			.update(integrationRuns)
-			.set({
-				status: IntegrationStatus.enum.success,
-				runEndTime: new Date(),
-				entriesCreated,
-			})
-			.where(eq(integrationRuns.id, run.id));
-		logger.complete('Integration run completed successfully');
-	} catch (error) {
-		// Handle and log any errors
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		logger.error('Integration run failed', errorMessage);
+    // Update the run record with success status
+    logger.info('Updating integration run status...');
+    await db
+      .update(integrationRuns)
+      .set({
+        status: IntegrationStatus.enum.success,
+        runEndTime: new Date(),
+        entriesCreated,
+      })
+      .where(eq(integrationRuns.id, run.id));
+    logger.complete('Integration run completed successfully');
+  } catch (error) {
+    // Handle and log any errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Integration run failed', errorMessage);
 
-		// Update the run record with failure status
-		await db
-			.update(integrationRuns)
-			.set({
-				status: IntegrationStatus.enum.fail,
-				runEndTime: new Date(),
-				message: errorMessage,
-			})
-			.where(eq(integrationRuns.id, run.id));
+    // Update the run record with failure status
+    await db
+      .update(integrationRuns)
+      .set({
+        status: IntegrationStatus.enum.fail,
+        runEndTime: new Date(),
+        message: errorMessage,
+      })
+      .where(eq(integrationRuns.id, run.id));
 
-		// Rethrow the error for upstream handling
-		throw error;
-	}
+    // Rethrow the error for upstream handling
+    throw error;
+  }
 }

@@ -20,21 +20,21 @@ const caller = createCLICaller();
  * Example: rcr github daily 2026-01-03
  */
 export const daily: CommandHandler = async (args, options) => {
-	parseOptions(BaseOptionsSchema.strict(), options);
+  parseOptions(BaseOptionsSchema.strict(), options);
 
-	const date = args[0];
-	if (!date) {
-		throw createError('VALIDATION_ERROR', 'Date is required (format: YYYY-MM-DD)');
-	}
+  const date = args[0];
+  if (!date) {
+    throw createError('VALIDATION_ERROR', 'Date is required (format: YYYY-MM-DD)');
+  }
 
-	const parsedDate = DateSchema.safeParse(date);
-	if (!parsedDate.success) {
-		throw createError('VALIDATION_ERROR', 'Invalid date format. Use YYYY-MM-DD');
-	}
+  const parsedDate = DateSchema.safeParse(date);
+  if (!parsedDate.success) {
+    throw createError('VALIDATION_ERROR', 'Invalid date format. Use YYYY-MM-DD');
+  }
 
-	const result = await caller.github.dailySummary({ date: parsedDate.data });
+  const result = await caller.github.dailySummary({ date: parsedDate.data });
 
-	return success(result, { count: result.commits.length });
+  return success(result, { count: result.commits.length });
 };
 
 /**
@@ -43,14 +43,14 @@ export const daily: CommandHandler = async (args, options) => {
  * Example: rcr github get abc123
  */
 export const get: CommandHandler = async (args, options) => {
-	parseOptions(BaseOptionsSchema.strict(), options);
+  parseOptions(BaseOptionsSchema.strict(), options);
 
-	const id = args[0];
-	if (!id) {
-		throw createError('VALIDATION_ERROR', 'Commit ID is required');
-	}
+  const id = args[0];
+  if (!id) {
+    throw createError('VALIDATION_ERROR', 'Commit ID is required');
+  }
 
-	const result = await caller.github.getCommit({ id });
+  const result = await caller.github.getCommit({ id });
 
-	return success(result);
+  return success(result);
 };

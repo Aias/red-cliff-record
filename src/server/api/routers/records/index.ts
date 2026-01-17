@@ -8,12 +8,12 @@ import { merge } from './merge';
 import { getFamilyTree } from './tree';
 
 export const recordsRouter = createTRPCRouter({
-	get,
-	list,
-	embed,
-	upsert,
-	bulkUpdate,
-	merge,
-	delete: deleteRecords,
-	tree: getFamilyTree,
+  get,
+  list,
+  embed,
+  upsert,
+  bulkUpdate,
+  merge,
+  delete: deleteRecords,
+  tree: getFamilyTree,
 });

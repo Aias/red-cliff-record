@@ -9,51 +9,51 @@ import { routeTree } from './routeTree.gen';
 import { trpc, trpcClient } from './trpc';
 
 export function getRouter() {
-	const queryClient = new QueryClient({
-		defaultOptions: {
-			dehydrate: {
-				serializeData: serialize,
-			},
-			hydrate: {
-				deserializeData: deserialize,
-			},
-			queries: {
-				staleTime: 1000 * 60 * 5, // 5 minutes
-				refetchOnWindowFocus: false,
-				refetchOnMount: true,
-			},
-		},
-	});
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        serializeData: serialize,
+      },
+      hydrate: {
+        deserializeData: deserialize,
+      },
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        refetchOnWindowFocus: false,
+        refetchOnMount: true,
+      },
+    },
+  });
 
-	const serverHelpers = createServerSideHelpers({
-		client: trpcClient,
-	});
+  const serverHelpers = createServerSideHelpers({
+    client: trpcClient,
+  });
 
-	return routerWithQueryClient(
-		createTanStackRouter({
-			routeTree,
-			context: { queryClient, trpc: serverHelpers },
-			defaultPreload: 'intent',
-			scrollRestoration: true,
-			defaultErrorComponent: DefaultCatchBoundary,
-			defaultNotFoundComponent: () => <NotFound />,
-			Wrap: (props) => {
-				return (
-					<trpc.Provider client={trpcClient} queryClient={queryClient}>
-						{props.children}
-					</trpc.Provider>
-				);
-			},
-		}),
-		queryClient
-	);
+  return routerWithQueryClient(
+    createTanStackRouter({
+      routeTree,
+      context: { queryClient, trpc: serverHelpers },
+      defaultPreload: 'intent',
+      scrollRestoration: true,
+      defaultErrorComponent: DefaultCatchBoundary,
+      defaultNotFoundComponent: () => <NotFound />,
+      Wrap: (props) => {
+        return (
+          <trpc.Provider client={trpcClient} queryClient={queryClient}>
+            {props.children}
+          </trpc.Provider>
+        );
+      },
+    }),
+    queryClient
+  );
 }
 
 declare module '@tanstack/react-router' {
-	interface Register {
-		router: ReturnType<typeof getRouter>;
-	}
-	interface HistoryState {
-		focusForm?: boolean;
-	}
+  interface Register {
+    router: ReturnType<typeof getRouter>;
+  }
+  interface HistoryState {
+    focusForm?: boolean;
+  }
 }

@@ -14,122 +14,122 @@ import { DefaultCatchBoundary } from './-app-components/catch-boundary';
 import { NotFound } from './-app-components/not-found';
 
 export interface RouterAppContext {
-	queryClient: QueryClient;
-	trpc: ServerHelpers;
+  queryClient: QueryClient;
+  trpc: ServerHelpers;
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-	loader: () => getTheme(),
-	head: () => ({
-		meta: [
-			{
-				charSet: 'utf-8',
-			},
-			{
-				name: 'viewport',
-				content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
-			},
-			...seo({
-				title: `${SITE_NAME}`,
-				description: `Digital knowledge repository.`,
-			}),
-		],
-		links: [
-			{ rel: 'stylesheet', href: stylesUrl },
-			{
-				rel: 'apple-touch-icon',
-				sizes: '180x180',
-				href: '/apple-touch-icon.png',
-			},
-			{
-				rel: 'icon',
-				type: 'image/png',
-				sizes: '32x32',
-				href: '/favicon-32x32.png',
-			},
-			{
-				rel: 'icon',
-				type: 'image/png',
-				sizes: '16x16',
-				href: '/favicon-16x16.png',
-			},
-			{ rel: 'manifest', href: '/site.webmanifest', color: '#000000' },
-			{ rel: 'icon', href: '/favicon.ico' },
-		],
-	}),
-	component: RootComponent,
-	errorComponent: (props) => {
-		const { theme: initialTheme } = Route.useLoaderData();
-		return (
-			<RootDocument appearance={initialTheme} isTransitioning={false}>
-				<DefaultCatchBoundary {...props} />
-			</RootDocument>
-		);
-	},
-	notFoundComponent: () => <NotFound />,
+  loader: () => getTheme(),
+  head: () => ({
+    meta: [
+      {
+        charSet: 'utf-8',
+      },
+      {
+        name: 'viewport',
+        content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+      },
+      ...seo({
+        title: `${SITE_NAME}`,
+        description: `Digital knowledge repository.`,
+      }),
+    ],
+    links: [
+      { rel: 'stylesheet', href: stylesUrl },
+      {
+        rel: 'apple-touch-icon',
+        sizes: '180x180',
+        href: '/apple-touch-icon.png',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '32x32',
+        href: '/favicon-32x32.png',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '16x16',
+        href: '/favicon-16x16.png',
+      },
+      { rel: 'manifest', href: '/site.webmanifest', color: '#000000' },
+      { rel: 'icon', href: '/favicon.ico' },
+    ],
+  }),
+  component: RootComponent,
+  errorComponent: (props) => {
+    const { theme: initialTheme } = Route.useLoaderData();
+    return (
+      <RootDocument appearance={initialTheme} isTransitioning={false}>
+        <DefaultCatchBoundary {...props} />
+      </RootDocument>
+    );
+  },
+  notFoundComponent: () => <NotFound />,
 });
 
 function RootComponent() {
-	const { theme: initialTheme } = Route.useLoaderData();
-	const [appearance, setAppearance] = useState<'light' | 'dark'>(initialTheme);
-	const [isTransitioning, setIsTransitioning] = useState(false);
-	const prevAppearanceRef = useRef(appearance);
+  const { theme: initialTheme } = Route.useLoaderData();
+  const [appearance, setAppearance] = useState<'light' | 'dark'>(initialTheme);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const prevAppearanceRef = useRef(appearance);
 
-	useLayoutEffect(() => {
-		// Detect theme changes and disable transitions during the change
-		if (prevAppearanceRef.current !== appearance) {
-			setIsTransitioning(true);
-			prevAppearanceRef.current = appearance;
-			// Re-enable transitions after the browser paints the new theme
-			requestAnimationFrame(() => {
-				requestAnimationFrame(() => {
-					setIsTransitioning(false);
-				});
-			});
-		}
-	}, [appearance]);
+  useLayoutEffect(() => {
+    // Detect theme changes and disable transitions during the change
+    if (prevAppearanceRef.current !== appearance) {
+      setIsTransitioning(true);
+      prevAppearanceRef.current = appearance;
+      // Re-enable transitions after the browser paints the new theme
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsTransitioning(false);
+        });
+      });
+    }
+  }, [appearance]);
 
-	return (
-		<RootDocument appearance={appearance} isTransitioning={isTransitioning}>
-			<KeyboardShortcutProvider>
-				<TooltipProvider delayDuration={300}>
-					<AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
-						<Outlet />
-					</AppLayout>
-				</TooltipProvider>
-			</KeyboardShortcutProvider>
-		</RootDocument>
-	);
+  return (
+    <RootDocument appearance={appearance} isTransitioning={isTransitioning}>
+      <KeyboardShortcutProvider>
+        <TooltipProvider delayDuration={300}>
+          <AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
+            <Outlet />
+          </AppLayout>
+        </TooltipProvider>
+      </KeyboardShortcutProvider>
+    </RootDocument>
+  );
 }
 
 function RootDocument({
-	children,
-	appearance,
-	isTransitioning,
+  children,
+  appearance,
+  isTransitioning,
 }: Readonly<{ children: ReactNode; appearance: Theme; isTransitioning: boolean }>) {
-	useEffect(() => {
-		if (import.meta.env.DEV) {
-			import('react-scan')
-				.then(({ scan }) => {
-					scan({
-						enabled: false,
-					});
-				})
-				.catch((err) => {
-					console.error('Failed to load react-scan:', err);
-				});
-		}
-	}, []);
-	return (
-		<html className={cn('h-viewport w-full', appearance, isTransitioning && 'theme-transitioning')}>
-			<head>
-				<HeadContent />
-			</head>
-			<body className="size-full bg-c-app text-c-primary">
-				{children}
-				<Toaster />
-				<Scripts />
-			</body>
-		</html>
-	);
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      import('react-scan')
+        .then(({ scan }) => {
+          scan({
+            enabled: false,
+          });
+        })
+        .catch((err) => {
+          console.error('Failed to load react-scan:', err);
+        });
+    }
+  }, []);
+  return (
+    <html className={cn('h-viewport w-full', appearance, isTransitioning && 'theme-transitioning')}>
+      <head>
+        <HeadContent />
+      </head>
+      <body className="size-full bg-c-app text-c-primary">
+        {children}
+        <Toaster />
+        <Scripts />
+      </body>
+    </html>
+  );
 }

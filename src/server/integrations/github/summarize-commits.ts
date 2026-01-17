@@ -1,9 +1,9 @@
 import {
-	githubCommits,
-	GithubCommitType,
-	type GithubCommitChangeSelect,
-	type GithubCommitSelect,
-	type GithubRepositorySelect,
+  githubCommits,
+  GithubCommitType,
+  type GithubCommitChangeSelect,
+  type GithubCommitSelect,
+  type GithubRepositorySelect,
 } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
@@ -13,52 +13,52 @@ import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createIntegrationLogger } from '../common/logging';
 
 export const CommitSummaryInputSchema = z.object({
-	message: z.string(),
-	sha: z.string(),
-	changes: z.number().nullable(),
-	additions: z.number().nullable(),
-	deletions: z.number().nullable(),
-	commitChanges: z.array(
-		z.object({
-			filename: z.string(),
-			status: z.string(),
-			changes: z.number().nullable(),
-			deletions: z.number().nullable(),
-			additions: z.number().nullable(),
-			patch: z.string(),
-		})
-	),
-	repository: z.object({
-		fullName: z.string(),
-		description: z.string().nullable(),
-		language: z.string().nullable(),
-		topics: z.array(z.string()).nullable(),
-		licenseName: z.string().nullable(),
-	}),
+  message: z.string(),
+  sha: z.string(),
+  changes: z.number().nullable(),
+  additions: z.number().nullable(),
+  deletions: z.number().nullable(),
+  commitChanges: z.array(
+    z.object({
+      filename: z.string(),
+      status: z.string(),
+      changes: z.number().nullable(),
+      deletions: z.number().nullable(),
+      additions: z.number().nullable(),
+      patch: z.string(),
+    })
+  ),
+  repository: z.object({
+    fullName: z.string(),
+    description: z.string().nullable(),
+    language: z.string().nullable(),
+    topics: z.array(z.string()).nullable(),
+    licenseName: z.string().nullable(),
+  }),
 });
 
 export type CommitSummaryInput = z.infer<typeof CommitSummaryInputSchema>;
 
 export const CommitSummaryResponseSchema = z.object({
-	primary_purpose: GithubCommitType.describe(
-		'The primary purpose of the commit based on conventional commit types.'
-	),
-	summary: z
-		.string()
-		.describe(
-			'A markdown-formatted summary of the github commit according to the given instructions.'
-		),
-	technologies: z
-		.array(z.string())
-		.describe(
-			'An array of strings which represent relevant tools, technologies, packages, languages, frameworks, etc.'
-		),
+  primary_purpose: GithubCommitType.describe(
+    'The primary purpose of the commit based on conventional commit types.'
+  ),
+  summary: z
+    .string()
+    .describe(
+      'A markdown-formatted summary of the github commit according to the given instructions.'
+    ),
+  technologies: z
+    .array(z.string())
+    .describe(
+      'An array of strings which represent relevant tools, technologies, packages, languages, frameworks, etc.'
+    ),
 });
 
 export type CommitSummaryResponse = z.infer<typeof CommitSummaryResponseSchema>;
 
 export const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export const commitSummarizerInstructions = `
@@ -95,141 +95,141 @@ You will be given the following as input:
 </style-rules>`;
 
 export const summarizeCommit = async (
-	commit: CommitSummaryInput
+  commit: CommitSummaryInput
 ): Promise<CommitSummaryResponse> => {
-	const response = await openai.responses.create({
-		model: 'gpt-5.2',
-		instructions: commitSummarizerInstructions,
-		text: {
-			format: {
-				type: 'json_schema',
-				name: 'commit_summary',
-				schema: z.toJSONSchema(CommitSummaryResponseSchema),
-				strict: true,
-			},
-		},
-		input: [{ role: 'user', content: JSON.stringify(commit) }],
-	});
+  const response = await openai.responses.create({
+    model: 'gpt-5.2',
+    instructions: commitSummarizerInstructions,
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'commit_summary',
+        schema: z.toJSONSchema(CommitSummaryResponseSchema),
+        strict: true,
+      },
+    },
+    input: [{ role: 'user', content: JSON.stringify(commit) }],
+  });
 
-	const summaryJson = JSON.parse(response.output_text);
-	const summary = CommitSummaryResponseSchema.parse(summaryJson);
+  const summaryJson = JSON.parse(response.output_text);
+  const summary = CommitSummaryResponseSchema.parse(summaryJson);
 
-	return summary;
+  return summary;
 };
 
 type CommitWithRelations = GithubCommitSelect & {
-	repository: GithubRepositorySelect;
-	commitChanges: GithubCommitChangeSelect[];
+  repository: GithubRepositorySelect;
+  commitChanges: GithubCommitChangeSelect[];
 };
 
 const logger = createIntegrationLogger('github', 'summarize-commits');
 
 async function getCommitsWithoutSummaries() {
-	const commits = await db.query.githubCommits.findMany({
-		with: {
-			repository: {
-				columns: {
-					fullName: true,
-					description: true,
-					language: true,
-					topics: true,
-					licenseName: true,
-				},
-			},
-			commitChanges: {
-				columns: {
-					filename: true,
-					status: true,
-					changes: true,
-					deletions: true,
-					additions: true,
-					patch: true,
-				},
-			},
-		},
-		where: {
-			summary: {
-				isNull: true,
-			},
-		},
-		orderBy: {
-			committedAt: 'asc',
-		},
-	});
+  const commits = await db.query.githubCommits.findMany({
+    with: {
+      repository: {
+        columns: {
+          fullName: true,
+          description: true,
+          language: true,
+          topics: true,
+          licenseName: true,
+        },
+      },
+      commitChanges: {
+        columns: {
+          filename: true,
+          status: true,
+          changes: true,
+          deletions: true,
+          additions: true,
+          patch: true,
+        },
+      },
+    },
+    where: {
+      summary: {
+        isNull: true,
+      },
+    },
+    orderBy: {
+      committedAt: 'asc',
+    },
+  });
 
-	return commits as unknown as CommitWithRelations[];
+  return commits as unknown as CommitWithRelations[];
 }
 
 async function processCommit(
-	commit: CommitWithRelations
+  commit: CommitWithRelations
 ): Promise<{ success: boolean; sha: string }> {
-	try {
-		const summary = await summarizeCommit({
-			message: commit.message,
-			sha: commit.sha,
-			changes: commit.changes,
-			additions: commit.additions,
-			deletions: commit.deletions,
-			commitChanges: commit.commitChanges.map((change) => ({
-				filename: change.filename,
-				status: change.status,
-				changes: change.changes,
-				deletions: change.deletions,
-				additions: change.additions,
-				patch: change.patch,
-			})),
-			repository: {
-				fullName: commit.repository.fullName,
-				description: commit.repository.description,
-				language: commit.repository.language,
-				topics: commit.repository.topics,
-				licenseName: commit.repository.licenseName,
-			},
-		});
+  try {
+    const summary = await summarizeCommit({
+      message: commit.message,
+      sha: commit.sha,
+      changes: commit.changes,
+      additions: commit.additions,
+      deletions: commit.deletions,
+      commitChanges: commit.commitChanges.map((change) => ({
+        filename: change.filename,
+        status: change.status,
+        changes: change.changes,
+        deletions: change.deletions,
+        additions: change.additions,
+        patch: change.patch,
+      })),
+      repository: {
+        fullName: commit.repository.fullName,
+        description: commit.repository.description,
+        language: commit.repository.language,
+        topics: commit.repository.topics,
+        licenseName: commit.repository.licenseName,
+      },
+    });
 
-		await db
-			.update(githubCommits)
-			.set({
-				summary: summary.summary,
-				commitType: summary.primary_purpose,
-				technologies: summary.technologies,
-			})
-			.where(eq(githubCommits.sha, commit.sha));
+    await db
+      .update(githubCommits)
+      .set({
+        summary: summary.summary,
+        commitType: summary.primary_purpose,
+        technologies: summary.technologies,
+      })
+      .where(eq(githubCommits.sha, commit.sha));
 
-		logger.info(
-			`[${commit.sha.slice(0, 7)}] ${commit.repository.fullName}: ${summary.primary_purpose}`
-		);
+    logger.info(
+      `[${commit.sha.slice(0, 7)}] ${commit.repository.fullName}: ${summary.primary_purpose}`
+    );
 
-		return { success: true, sha: commit.sha };
-	} catch (error) {
-		logger.error(`[${commit.sha.slice(0, 7)}] Failed`, error);
-		return { success: false, sha: commit.sha };
-	}
+    return { success: true, sha: commit.sha };
+  } catch (error) {
+    logger.error(`[${commit.sha.slice(0, 7)}] Failed`, error);
+    return { success: false, sha: commit.sha };
+  }
 }
 
 export async function syncCommitSummaries(): Promise<number> {
-	const commits = await getCommitsWithoutSummaries();
+  const commits = await getCommitsWithoutSummaries();
 
-	if (commits.length === 0) {
-		logger.skip('No commits to summarize');
-		return 0;
-	}
+  if (commits.length === 0) {
+    logger.skip('No commits to summarize');
+    return 0;
+  }
 
-	logger.start(`Starting summarization of ${commits.length} commits (concurrency: 20)`);
+  logger.start(`Starting summarization of ${commits.length} commits (concurrency: 20)`);
 
-	const results = await runConcurrentPool({
-		items: commits,
-		concurrency: 20,
-		worker: async (commit) => processCommit(commit),
-		onProgress: (completed, total) => {
-			if (completed % 20 === 0 || completed === total) {
-				logger.info(`Progress: ${completed}/${total} (${Math.round((completed / total) * 100)}%)`);
-			}
-		},
-	});
+  const results = await runConcurrentPool({
+    items: commits,
+    concurrency: 20,
+    worker: async (commit) => processCommit(commit),
+    onProgress: (completed, total) => {
+      if (completed % 20 === 0 || completed === total) {
+        logger.info(`Progress: ${completed}/${total} (${Math.round((completed / total) * 100)}%)`);
+      }
+    },
+  });
 
-	const successful = results.filter((r) => r.ok && r.value.success).length;
-	logger.complete(`Finished summarizing commits (${successful}/${commits.length} successful)`);
+  const successful = results.filter((r) => r.ok && r.value.success).length;
+  logger.complete(`Finished summarizing commits (${successful}/${commits.length} successful)`);
 
-	return successful;
+  return successful;
 }

@@ -6,9 +6,9 @@
  */
 
 export interface TwitterCredentials {
-	authToken: string;
-	ct0: string;
-	cookieHeader: string;
+  authToken: string;
+  ct0: string;
+  cookieHeader: string;
 }
 
 /**
@@ -17,26 +17,26 @@ export interface TwitterCredentials {
  * @throws Error if required environment variables are missing
  */
 export function getCredentials(): TwitterCredentials {
-	const authToken = process.env.TWITTER_AUTH_TOKEN;
-	const ct0 = process.env.TWITTER_CT0;
+  const authToken = process.env.TWITTER_AUTH_TOKEN;
+  const ct0 = process.env.TWITTER_CT0;
 
-	if (!authToken) {
-		throw new Error(
-			'Missing TWITTER_AUTH_TOKEN environment variable. ' +
-				'Get this from browser DevTools → Application → Cookies → x.com → auth_token'
-		);
-	}
+  if (!authToken) {
+    throw new Error(
+      'Missing TWITTER_AUTH_TOKEN environment variable. ' +
+        'Get this from browser DevTools → Application → Cookies → x.com → auth_token'
+    );
+  }
 
-	if (!ct0) {
-		throw new Error(
-			'Missing TWITTER_CT0 environment variable. ' +
-				'Get this from browser DevTools → Application → Cookies → x.com → ct0'
-		);
-	}
+  if (!ct0) {
+    throw new Error(
+      'Missing TWITTER_CT0 environment variable. ' +
+        'Get this from browser DevTools → Application → Cookies → x.com → ct0'
+    );
+  }
 
-	return {
-		authToken,
-		ct0,
-		cookieHeader: `auth_token=${authToken}; ct0=${ct0}`,
-	};
+  return {
+    authToken,
+    ct0,
+    cookieHeader: `auth_token=${authToken}; ct0=${ct0}`,
+  };
 }

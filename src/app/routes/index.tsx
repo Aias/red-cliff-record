@@ -5,73 +5,73 @@ import { Spinner } from '@/components/spinner';
 import { useRecordList } from '@/lib/hooks/record-queries';
 
 export const Route = createFileRoute('/')({
-	component: Home,
+  component: Home,
 });
 
 function Home() {
-	const { records, isLoading, isError } = useRecordList({
-		filters: {
-			hasMedia: true,
-		},
-		limit: 100,
-		offset: 0,
-		orderBy: [{ field: 'recordUpdatedAt', direction: 'desc' }],
-	});
+  const { records, isLoading, isError } = useRecordList({
+    filters: {
+      hasMedia: true,
+    },
+    limit: 100,
+    offset: 0,
+    orderBy: [{ field: 'recordUpdatedAt', direction: 'desc' }],
+  });
 
-	return (
-		<main className="relative flex basis-full flex-col items-center gap-4 overflow-y-auto p-1">
-			{isLoading && (
-				<Spinner className="absolute top-1/2 left-1/2 size-8 -translate-x-1/2 -translate-y-1/2" />
-			)}
-			{isError && <p className="text-c-destructive">Error loading records.</p>}
-			{!isLoading && !isError && records.length === 0 && (
-				<p className="text-c-hint">No records with media found.</p>
-			)}
-			<div className="grid w-full grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] gap-0.25">
-				{records.map((record) => {
-					const item = record.media?.[0]; // Get only the first media item
-					if (!item) return null; // Skip if no media
+  return (
+    <main className="relative flex basis-full flex-col items-center gap-4 overflow-y-auto p-1">
+      {isLoading && (
+        <Spinner className="absolute top-1/2 left-1/2 size-8 -translate-x-1/2 -translate-y-1/2" />
+      )}
+      {isError && <p className="text-c-destructive">Error loading records.</p>}
+      {!isLoading && !isError && records.length === 0 && (
+        <p className="text-c-hint">No records with media found.</p>
+      )}
+      <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] gap-0.25">
+        {records.map((record) => {
+          const item = record.media?.[0]; // Get only the first media item
+          if (!item) return null; // Skip if no media
 
-					return (
-						<Link
-							key={item.id}
-							to="/records/$recordId"
-							params={{ recordId: record.id }}
-							className="relative block aspect-3/2 overflow-hidden rounded-sm border border-c-divider bg-c-app focus-visible:ring-2 focus-visible:ring-c-focus focus-visible:ring-offset-2 focus-visible:outline-none"
-						>
-							{/* Gradient from bottom 50% with semi-transparent black */}
-							<div className="pointer-events-none absolute inset-x-0 top-1/2 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent opacity-75" />
-							{item.type === 'video' ? (
-								<LazyVideo
-									src={item.url}
-									aria-label={item.altText || record.title || `Video for record ${record.id}`}
-									className="absolute inset-0 size-full object-cover"
-									muted
-									loop
-									playsInline
-									autoPlay
-								/>
-							) : (
-								<img
-									src={item.url}
-									alt={item.altText || record.title || `Media for record ${record.id}`}
-									className="absolute inset-0 size-full object-cover"
-									loading="lazy"
-									decoding="async"
-								/>
-							)}
-							{record.title && (
-								<div
-									className="absolute right-0 bottom-0 left-0 z-20 truncate p-2 text-xs text-white"
-									style={{ textShadow: '0 0 4px rgba(0, 0, 0)' }} // Use rgba for black shadow
-								>
-									{record.title}
-								</div>
-							)}
-						</Link>
-					);
-				})}
-			</div>
-		</main>
-	);
+          return (
+            <Link
+              key={item.id}
+              to="/records/$recordId"
+              params={{ recordId: record.id }}
+              className="relative block aspect-3/2 overflow-hidden rounded-sm border border-c-divider bg-c-app focus-visible:ring-2 focus-visible:ring-c-focus focus-visible:ring-offset-2 focus-visible:outline-none"
+            >
+              {/* Gradient from bottom 50% with semi-transparent black */}
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent opacity-75" />
+              {item.type === 'video' ? (
+                <LazyVideo
+                  src={item.url}
+                  aria-label={item.altText || record.title || `Video for record ${record.id}`}
+                  className="absolute inset-0 size-full object-cover"
+                  muted
+                  loop
+                  playsInline
+                  autoPlay
+                />
+              ) : (
+                <img
+                  src={item.url}
+                  alt={item.altText || record.title || `Media for record ${record.id}`}
+                  className="absolute inset-0 size-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+              {record.title && (
+                <div
+                  className="absolute right-0 bottom-0 left-0 z-20 truncate p-2 text-xs text-white"
+                  style={{ textShadow: '0 0 4px rgba(0, 0, 0)' }} // Use rgba for black shadow
+                >
+                  {record.title}
+                </div>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </main>
+  );
 }

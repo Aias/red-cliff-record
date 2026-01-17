@@ -22,21 +22,21 @@ const DailyOptionsSchema = BaseOptionsSchema.extend({}).strict();
  * Example: rcr browsing daily 2026-01-03
  */
 export const daily: CommandHandler = async (args, options) => {
-	parseOptions(DailyOptionsSchema, options);
+  parseOptions(DailyOptionsSchema, options);
 
-	const date = args[0];
-	if (!date) {
-		throw createError('VALIDATION_ERROR', 'Date is required (format: YYYY-MM-DD)');
-	}
+  const date = args[0];
+  if (!date) {
+    throw createError('VALIDATION_ERROR', 'Date is required (format: YYYY-MM-DD)');
+  }
 
-	const parsedDate = DateSchema.safeParse(date);
-	if (!parsedDate.success) {
-		throw createError('VALIDATION_ERROR', 'Invalid date format. Use YYYY-MM-DD');
-	}
+  const parsedDate = DateSchema.safeParse(date);
+  if (!parsedDate.success) {
+    throw createError('VALIDATION_ERROR', 'Invalid date format. Use YYYY-MM-DD');
+  }
 
-	const result = await caller.browsing.dailySummary({ date: parsedDate.data });
+  const result = await caller.browsing.dailySummary({ date: parsedDate.data });
 
-	return success(result);
+  return success(result);
 };
 
 /**
@@ -44,11 +44,11 @@ export const daily: CommandHandler = async (args, options) => {
  * Usage: rcr browsing omit
  */
 export const omit: CommandHandler = async (_args, options) => {
-	parseOptions(BaseOptionsSchema.strict(), options);
+  parseOptions(BaseOptionsSchema.strict(), options);
 
-	const result = await caller.browsing.listOmitPatterns();
+  const result = await caller.browsing.listOmitPatterns();
 
-	return success(result, { count: result.length });
+  return success(result, { count: result.length });
 };
 
 /**
@@ -57,16 +57,16 @@ export const omit: CommandHandler = async (_args, options) => {
  * Example: rcr browsing omit-add "%example.com%"
  */
 const omitAdd: CommandHandler = async (args, options) => {
-	parseOptions(BaseOptionsSchema.strict(), options);
+  parseOptions(BaseOptionsSchema.strict(), options);
 
-	const pattern = args[0];
-	if (!pattern) {
-		throw createError('VALIDATION_ERROR', 'Pattern is required (SQL LIKE syntax: % for wildcard)');
-	}
+  const pattern = args[0];
+  if (!pattern) {
+    throw createError('VALIDATION_ERROR', 'Pattern is required (SQL LIKE syntax: % for wildcard)');
+  }
 
-	const result = await caller.browsing.upsertOmitPattern({ pattern });
+  const result = await caller.browsing.upsertOmitPattern({ pattern });
 
-	return success(result);
+  return success(result);
 };
 
 /**
@@ -75,15 +75,15 @@ const omitAdd: CommandHandler = async (args, options) => {
  * Example: rcr browsing omit-delete "%example.com%" "%test.com%"
  */
 const omitDelete: CommandHandler = async (args, options) => {
-	parseOptions(BaseOptionsSchema.strict(), options);
+  parseOptions(BaseOptionsSchema.strict(), options);
 
-	if (args.length === 0) {
-		throw createError('VALIDATION_ERROR', 'At least one pattern is required');
-	}
+  if (args.length === 0) {
+    throw createError('VALIDATION_ERROR', 'At least one pattern is required');
+  }
 
-	const result = await caller.browsing.deleteOmitPatterns(args);
+  const result = await caller.browsing.deleteOmitPatterns(args);
 
-	return success(result, { count: result.length });
+  return success(result, { count: result.length });
 };
 
 export { omitAdd as 'omit-add', omitDelete as 'omit-delete' };

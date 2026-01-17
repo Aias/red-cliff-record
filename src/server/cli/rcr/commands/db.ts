@@ -31,34 +31,34 @@ const projectRoot = resolve(dirname(realScriptPath), '../../../../..');
 const dbManagerPath = resolve(projectRoot, 'src/server/db/db-manager.sh');
 
 const BackupOptionsSchema = BaseOptionsSchema.extend({
-	'data-only': z.boolean().optional(),
-	'dry-run': z.boolean().optional(),
-	n: z.boolean().optional(),
+  'data-only': z.boolean().optional(),
+  'dry-run': z.boolean().optional(),
+  n: z.boolean().optional(),
 }).strict();
 
 const RestoreOptionsSchema = BaseOptionsSchema.extend({
-	clean: z.boolean().optional(),
-	'data-only': z.boolean().optional(),
-	'dry-run': z.boolean().optional(),
-	n: z.boolean().optional(),
+  clean: z.boolean().optional(),
+  'data-only': z.boolean().optional(),
+  'dry-run': z.boolean().optional(),
+  n: z.boolean().optional(),
 }).strict();
 
 /**
  * Run db-manager.sh with given arguments, streaming output to console
  */
 async function runDbManager(args: string[]): Promise<void> {
-	const proc = spawn({
-		cmd: ['bash', dbManagerPath, ...args],
-		cwd: projectRoot,
-		stdout: 'inherit',
-		stderr: 'inherit',
-	});
+  const proc = spawn({
+    cmd: ['bash', dbManagerPath, ...args],
+    cwd: projectRoot,
+    stdout: 'inherit',
+    stderr: 'inherit',
+  });
 
-	const exitCode = await proc.exited;
+  const exitCode = await proc.exited;
 
-	if (exitCode !== 0) {
-		throw createError('DATABASE_ERROR', `db-manager.sh exited with code ${exitCode}`);
-	}
+  if (exitCode !== 0) {
+    throw createError('DATABASE_ERROR', `db-manager.sh exited with code ${exitCode}`);
+  }
 }
 
 /**
@@ -66,43 +66,43 @@ async function runDbManager(args: string[]): Promise<void> {
  * Usage: rcr db backup <local|remote> [--data-only] [--dry-run]
  */
 export const backup: CommandHandler = async (args, options) => {
-	const parsedOptions = parseOptions(BackupOptionsSchema, options);
-	const locationArg = args[0];
+  const parsedOptions = parseOptions(BackupOptionsSchema, options);
+  const locationArg = args[0];
 
-	if (!locationArg) {
-		throw createError('VALIDATION_ERROR', 'Location required: local or remote');
-	}
+  if (!locationArg) {
+    throw createError('VALIDATION_ERROR', 'Location required: local or remote');
+  }
 
-	const locationResult = LocationSchema.safeParse(locationArg);
-	if (!locationResult.success) {
-		throw createError(
-			'VALIDATION_ERROR',
-			`Invalid location: ${locationArg}. Must be 'local' or 'remote'`
-		);
-	}
+  const locationResult = LocationSchema.safeParse(locationArg);
+  if (!locationResult.success) {
+    throw createError(
+      'VALIDATION_ERROR',
+      `Invalid location: ${locationArg}. Must be 'local' or 'remote'`
+    );
+  }
 
-	const location = locationResult.data;
-	const shellArgs: string[] = [];
-	const dryRun = parsedOptions['dry-run'] ?? parsedOptions.n ?? false;
+  const location = locationResult.data;
+  const shellArgs: string[] = [];
+  const dryRun = parsedOptions['dry-run'] ?? parsedOptions.n ?? false;
 
-	if (parsedOptions['data-only']) {
-		shellArgs.push('--data-only');
-	}
+  if (parsedOptions['data-only']) {
+    shellArgs.push('--data-only');
+  }
 
-	if (dryRun) {
-		shellArgs.push('--dry-run');
-	}
+  if (dryRun) {
+    shellArgs.push('--dry-run');
+  }
 
-	shellArgs.push('backup', location);
+  shellArgs.push('backup', location);
 
-	await runDbManager(shellArgs);
+  await runDbManager(shellArgs);
 
-	return success({
-		action: 'backup',
-		location,
-		dataOnly: parsedOptions['data-only'] ?? false,
-		dryRun,
-	});
+  return success({
+    action: 'backup',
+    location,
+    dataOnly: parsedOptions['data-only'] ?? false,
+    dryRun,
+  });
 };
 
 /**
@@ -110,48 +110,48 @@ export const backup: CommandHandler = async (args, options) => {
  * Usage: rcr db restore <local|remote> [--clean] [--data-only] [--dry-run]
  */
 export const restore: CommandHandler = async (args, options) => {
-	const parsedOptions = parseOptions(RestoreOptionsSchema, options);
-	const locationArg = args[0];
+  const parsedOptions = parseOptions(RestoreOptionsSchema, options);
+  const locationArg = args[0];
 
-	if (!locationArg) {
-		throw createError('VALIDATION_ERROR', 'Location required: local or remote');
-	}
+  if (!locationArg) {
+    throw createError('VALIDATION_ERROR', 'Location required: local or remote');
+  }
 
-	const locationResult = LocationSchema.safeParse(locationArg);
-	if (!locationResult.success) {
-		throw createError(
-			'VALIDATION_ERROR',
-			`Invalid location: ${locationArg}. Must be 'local' or 'remote'`
-		);
-	}
+  const locationResult = LocationSchema.safeParse(locationArg);
+  if (!locationResult.success) {
+    throw createError(
+      'VALIDATION_ERROR',
+      `Invalid location: ${locationArg}. Must be 'local' or 'remote'`
+    );
+  }
 
-	const location = locationResult.data;
-	const shellArgs: string[] = [];
-	const dryRun = parsedOptions['dry-run'] ?? parsedOptions.n ?? false;
+  const location = locationResult.data;
+  const shellArgs: string[] = [];
+  const dryRun = parsedOptions['dry-run'] ?? parsedOptions.n ?? false;
 
-	if (parsedOptions.clean) {
-		shellArgs.push('--clean');
-	}
+  if (parsedOptions.clean) {
+    shellArgs.push('--clean');
+  }
 
-	if (parsedOptions['data-only']) {
-		shellArgs.push('--data-only');
-	}
+  if (parsedOptions['data-only']) {
+    shellArgs.push('--data-only');
+  }
 
-	if (dryRun) {
-		shellArgs.push('--dry-run');
-	}
+  if (dryRun) {
+    shellArgs.push('--dry-run');
+  }
 
-	shellArgs.push('restore', location);
+  shellArgs.push('restore', location);
 
-	await runDbManager(shellArgs);
+  await runDbManager(shellArgs);
 
-	return success({
-		action: 'restore',
-		location,
-		clean: parsedOptions.clean ?? false,
-		dataOnly: parsedOptions['data-only'] ?? false,
-		dryRun,
-	});
+  return success({
+    action: 'restore',
+    location,
+    clean: parsedOptions.clean ?? false,
+    dataOnly: parsedOptions['data-only'] ?? false,
+    dryRun,
+  });
 };
 
 /**
@@ -159,20 +159,20 @@ export const restore: CommandHandler = async (args, options) => {
  * Usage: rcr db reset
  */
 export const reset: CommandHandler = async (args, options) => {
-	parseOptions(BaseOptionsSchema.strict(), options);
+  parseOptions(BaseOptionsSchema.strict(), options);
 
-	// Reset is always local-only
-	const locationArg = args[0];
-	if (locationArg && locationArg !== 'local') {
-		throw createError('PERMISSION_DENIED', 'Reset is only supported for local database');
-	}
+  // Reset is always local-only
+  const locationArg = args[0];
+  if (locationArg && locationArg !== 'local') {
+    throw createError('PERMISSION_DENIED', 'Reset is only supported for local database');
+  }
 
-	await runDbManager(['reset', 'local']);
+  await runDbManager(['reset', 'local']);
 
-	return success({
-		action: 'reset',
-		location: 'local',
-	});
+  return success({
+    action: 'reset',
+    location: 'local',
+  });
 };
 
 /**
@@ -180,22 +180,22 @@ export const reset: CommandHandler = async (args, options) => {
  * Usage: rcr db seed
  */
 export const seed: CommandHandler = async (args, options) => {
-	parseOptions(BaseOptionsSchema.strict(), options);
+  parseOptions(BaseOptionsSchema.strict(), options);
 
-	// Seed is always local-only
-	const locationArg = args[0];
-	if (locationArg && locationArg !== 'local') {
-		throw createError('PERMISSION_DENIED', 'Seed is only supported for local database');
-	}
+  // Seed is always local-only
+  const locationArg = args[0];
+  if (locationArg && locationArg !== 'local') {
+    throw createError('PERMISSION_DENIED', 'Seed is only supported for local database');
+  }
 
-	const result = await seedDatabase();
+  const result = await seedDatabase();
 
-	return success({
-		action: 'seed',
-		location: 'local',
-		predicatesSeeded: result.predicatesSeeded,
-		recordsSeeded: result.recordsSeeded,
-	});
+  return success({
+    action: 'seed',
+    location: 'local',
+    predicatesSeeded: result.predicatesSeeded,
+    recordsSeeded: result.recordsSeeded,
+  });
 };
 
 /**
@@ -203,42 +203,42 @@ export const seed: CommandHandler = async (args, options) => {
  * Usage: rcr db status [local|remote]
  */
 export const status: CommandHandler = async (args, options) => {
-	parseOptions(BaseOptionsSchema.strict(), options);
+  parseOptions(BaseOptionsSchema.strict(), options);
 
-	const locationArg = args[0] ?? 'local';
-	const locationResult = LocationSchema.safeParse(locationArg);
-	if (!locationResult.success) {
-		throw createError(
-			'VALIDATION_ERROR',
-			`Invalid location: ${locationArg}. Must be 'local' or 'remote'`
-		);
-	}
+  const locationArg = args[0] ?? 'local';
+  const locationResult = LocationSchema.safeParse(locationArg);
+  if (!locationResult.success) {
+    throw createError(
+      'VALIDATION_ERROR',
+      `Invalid location: ${locationArg}. Must be 'local' or 'remote'`
+    );
+  }
 
-	const location = locationResult.data;
+  const location = locationResult.data;
 
-	// Note: Currently we only support the default connection (DATABASE_URL)
-	// In the future, we could support switching connections based on location
-	if (location === 'remote') {
-		throw createError(
-			'VALIDATION_ERROR',
-			'Remote status check not yet implemented. The CLI currently uses DATABASE_URL which should point to your desired database.'
-		);
-	}
+  // Note: Currently we only support the default connection (DATABASE_URL)
+  // In the future, we could support switching connections based on location
+  if (location === 'remote') {
+    throw createError(
+      'VALIDATION_ERROR',
+      'Remote status check not yet implemented. The CLI currently uses DATABASE_URL which should point to your desired database.'
+    );
+  }
 
-	// Query counts from database in parallel (sequential queries hang in CLI context)
-	const [[recordCount], [linkCount], [predicateCount]] = await Promise.all([
-		db.select({ count: count() }).from(records),
-		db.select({ count: count() }).from(links),
-		db.select({ count: count() }).from(predicates),
-	]);
+  // Query counts from database in parallel (sequential queries hang in CLI context)
+  const [[recordCount], [linkCount], [predicateCount]] = await Promise.all([
+    db.select({ count: count() }).from(records),
+    db.select({ count: count() }).from(links),
+    db.select({ count: count() }).from(predicates),
+  ]);
 
-	return success({
-		location,
-		connected: true,
-		counts: {
-			records: recordCount?.count ?? 0,
-			links: linkCount?.count ?? 0,
-			predicates: predicateCount?.count ?? 0,
-		},
-	});
+  return success({
+    location,
+    connected: true,
+    counts: {
+      records: recordCount?.count ?? 0,
+      links: linkCount?.count ?? 0,
+      predicates: predicateCount?.count ?? 0,
+    },
+  });
 };
