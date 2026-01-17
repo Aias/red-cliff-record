@@ -16,7 +16,12 @@ interface AppLayoutProps {
 }
 
 const NavLink = ({ className, ...props }: LinkComponentProps) => {
-  return <Link {...props} className={cn('rounded-lg p-2 hover:bg-c-splash', className)} />;
+  return (
+    <Link
+      {...props}
+      className={cn('rounded-md px-2.5 py-1.5 hover:bg-c-splash hover:no-underline', className)}
+    />
+  );
 };
 
 export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutProps) => {
