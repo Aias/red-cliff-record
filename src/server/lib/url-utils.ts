@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 // More robust URL schema with custom error message
 const urlSchema = z.url({
-	error: 'Invalid URL format. Please provide a valid URL.',
+  error: 'Invalid URL format. Please provide a valid URL.',
 });
 
 type UrlOptions = {
-	skipHttps?: boolean;
+  skipHttps?: boolean;
 };
 
 /**
@@ -22,37 +22,37 @@ type UrlOptions = {
  */
 export function validateAndFormatUrl(url: string, safe?: false, options?: UrlOptions): string;
 export function validateAndFormatUrl(
-	url: string,
-	safe: true,
-	options?: UrlOptions
+  url: string,
+  safe: true,
+  options?: UrlOptions
 ): z.ZodSafeParseResult<string>;
 export function validateAndFormatUrl(
-	url: string,
-	safe?: boolean,
-	options?: UrlOptions
+  url: string,
+  safe?: boolean,
+  options?: UrlOptions
 ): string | z.ZodSafeParseResult<string> {
-	// Default options
-	const { skipHttps = false } = options || {};
+  // Default options
+  const { skipHttps = false } = options || {};
 
-	// Add https:// if no HTTP/HTTPS protocol is present (unless explicitly skipped)
-	let formattedUrl = url;
-	if (!skipHttps && !url.match(/^https?:\/\//)) {
-		formattedUrl = `https://${url}`;
-	}
+  // Add https:// if no HTTP/HTTPS protocol is present (unless explicitly skipped)
+  let formattedUrl = url;
+  if (!skipHttps && !url.match(/^https?:\/\//)) {
+    formattedUrl = `https://${url}`;
+  }
 
-	// Validate and return based on safe parameter
-	if (safe === true) {
-		return urlSchema.safeParse(formattedUrl);
-	} else {
-		try {
-			return urlSchema.parse(formattedUrl);
-		} catch (error) {
-			// Enhance error message with the attempted URL
-			throw new Error(
-				`Invalid URL: ${url}. ${error instanceof Error ? error.message : String(error)}`
-			);
-		}
-	}
+  // Validate and return based on safe parameter
+  if (safe === true) {
+    return urlSchema.safeParse(formattedUrl);
+  } else {
+    try {
+      return urlSchema.parse(formattedUrl);
+    } catch (error) {
+      // Enhance error message with the attempted URL
+      throw new Error(
+        `Invalid URL: ${url}. ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
 }
 
 /**
@@ -62,45 +62,45 @@ export function validateAndFormatUrl(
  * @returns The validated URL or undefined if invalid
  */
 export function mapUrl(url?: string | null): string | undefined {
-	if (!url) return undefined;
+  if (!url) return undefined;
 
-	try {
-		const { success, data } = validateAndFormatUrl(url, true);
-		return success ? data : undefined;
-	} catch {
-		console.error('Invalid URL:', url);
-		return undefined;
-	}
+  try {
+    const { success, data } = validateAndFormatUrl(url, true);
+    return success ? data : undefined;
+  } catch {
+    console.error('Invalid URL:', url);
+    return undefined;
+  }
 }
 
 /**
  * Helper to validate URLs and convert invalid ones to null
  */
 export const flexibleUrl = z.preprocess((val) => {
-	// If null or undefined, return null
-	if (val === null || val === undefined) return null;
+  // If null or undefined, return null
+  if (val === null || val === undefined) return null;
 
-	// If not a string, return null
-	if (typeof val !== 'string') {
-		console.warn(`Invalid URL type: expected string, got ${typeof val}`);
-		return null;
-	}
+  // If not a string, return null
+  if (typeof val !== 'string') {
+    console.warn(`Invalid URL type: expected string, got ${typeof val}`);
+    return null;
+  }
 
-	// If empty string, return null
-	if (val.trim() === '') {
-		console.warn('Empty string provided as URL, converting to null');
-		return null;
-	}
+  // If empty string, return null
+  if (val.trim() === '') {
+    console.warn('Empty string provided as URL, converting to null');
+    return null;
+  }
 
-	// Try to parse as URL - if it fails, return null
-	try {
-		new URL(val);
-		return val;
-	} catch {
-		// Invalid URL format - return null
-		console.warn(
-			`Failed to parse invalid URL: "${val.length > 100 ? val.substring(0, 100) + '...' : val}"`
-		);
-		return null;
-	}
+  // Try to parse as URL - if it fails, return null
+  try {
+    new URL(val);
+    return val;
+  } catch {
+    // Invalid URL format - return null
+    console.warn(
+      `Failed to parse invalid URL: "${val.length > 100 ? val.substring(0, 100) + '...' : val}"`
+    );
+    return null;
+  }
 }, z.url().nullable());

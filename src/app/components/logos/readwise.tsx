@@ -1,39 +1,39 @@
 import { cn } from '@/app/lib/utils';
 
 export const ReadwiseLogo = ({ className }: { className?: string }) => {
-	return (
-		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={cn('icon', className)}>
-			<title>Readwise</title>
-			<g clipPath="url(#a)">
-				<path fill="#fff" d="M100 0H0v100h100V0Z" style={{ fill: '#fff', fillOpacity: 1 }} />
-				<path
-					fill="#000"
-					fillRule="evenodd"
-					d="M0 0h100v100H0V0Zm5.776 5.776v88.448h88.448V5.776H5.776Z"
-					clipRule="evenodd"
-					style={{ fill: '#000', fillOpacity: 1 }}
-				/>
-				<path
-					fill="#000"
-					d="M72.445 71.571c2.109 3.508 3.828 4.674 7.346 5.091v3.508H62.437L46.182 53.042H42.12v17.78c0 4.762 1.176 5.423 6.18 5.84v3.508H22.105v-3.508c5.004-.417 6.18-1.087 6.18-5.84V31.094c0-4.838-1.02-5.421-6.18-5.84v-3.507h26.963c16.255 0 24.747 3.42 24.747 15.44 0 9.094-4.42 13.437-13.33 14.933l11.96 19.452Zm-27.983-44.14c-1.409 0-2.342 1-2.342 2.506v17.44h6.724c6.957 0 11.096-2.506 11.096-10.182 0-7.763-4.14-9.765-10.863-9.765h-4.615Z"
-					style={{ fill: '#000', fillOpacity: 1 }}
-				/>
-				<path
-					fill="#000"
-					d="M62.69 23.836H37.408v24.135H62.69V23.836Z"
-					style={{ fill: '#000', fillOpacity: 1 }}
-				/>
-				<path
-					fill="#F4F9F9"
-					d="M59.512 28.004c-1.38 2.536.748 14.487.748 14.487a1.289 1.289 0 0 1-1.02 1.322s-13.03.058-17.334 3.633"
-					style={{ fill: '#f4f9f9', fillOpacity: 1 }}
-				/>
-			</g>
-			<defs>
-				<clipPath id="a">
-					<path fill="#fff" d="M0 0h100v100H0z" style={{ fill: '#fff', fillOpacity: 1 }} />
-				</clipPath>
-			</defs>
-		</svg>
-	);
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={cn('icon', className)}>
+      <title>Readwise</title>
+      <g clipPath="url(#a)">
+        <path fill="#fff" d="M100 0H0v100h100V0Z" style={{ fill: '#fff', fillOpacity: 1 }} />
+        <path
+          fill="#000"
+          fillRule="evenodd"
+          d="M0 0h100v100H0V0Zm5.776 5.776v88.448h88.448V5.776H5.776Z"
+          clipRule="evenodd"
+          style={{ fill: '#000', fillOpacity: 1 }}
+        />
+        <path
+          fill="#000"
+          d="M72.445 71.571c2.109 3.508 3.828 4.674 7.346 5.091v3.508H62.437L46.182 53.042H42.12v17.78c0 4.762 1.176 5.423 6.18 5.84v3.508H22.105v-3.508c5.004-.417 6.18-1.087 6.18-5.84V31.094c0-4.838-1.02-5.421-6.18-5.84v-3.507h26.963c16.255 0 24.747 3.42 24.747 15.44 0 9.094-4.42 13.437-13.33 14.933l11.96 19.452Zm-27.983-44.14c-1.409 0-2.342 1-2.342 2.506v17.44h6.724c6.957 0 11.096-2.506 11.096-10.182 0-7.763-4.14-9.765-10.863-9.765h-4.615Z"
+          style={{ fill: '#000', fillOpacity: 1 }}
+        />
+        <path
+          fill="#000"
+          d="M62.69 23.836H37.408v24.135H62.69V23.836Z"
+          style={{ fill: '#000', fillOpacity: 1 }}
+        />
+        <path
+          fill="#F4F9F9"
+          d="M59.512 28.004c-1.38 2.536.748 14.487.748 14.487a1.289 1.289 0 0 1-1.02 1.322s-13.03.058-17.334 3.633"
+          style={{ fill: '#f4f9f9', fillOpacity: 1 }}
+        />
+      </g>
+      <defs>
+        <clipPath id="a">
+          <path fill="#fff" d="M0 0h100v100H0z" style={{ fill: '#fff', fillOpacity: 1 }} />
+        </clipPath>
+      </defs>
+    </svg>
+  );
 };

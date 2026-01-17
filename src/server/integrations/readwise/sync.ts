@@ -5,16 +5,16 @@ import { requireEnv } from '../common/env';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {
-	createReadwiseAuthors,
-	createReadwiseTags,
-	createRecordsFromReadwiseAuthors,
-	createRecordsFromReadwiseDocuments,
-	createRecordsFromReadwiseTags,
+  createReadwiseAuthors,
+  createReadwiseTags,
+  createRecordsFromReadwiseAuthors,
+  createRecordsFromReadwiseDocuments,
+  createRecordsFromReadwiseTags,
 } from './map';
 import {
-	ReadwiseArticlesResponseSchema,
-	type ReadwiseArticle,
-	type ReadwiseArticlesResponse,
+  ReadwiseArticlesResponseSchema,
+  type ReadwiseArticle,
+  type ReadwiseArticlesResponse,
 } from './types';
 
 /**
@@ -33,22 +33,22 @@ const logger = createIntegrationLogger('readwise', 'sync');
  * @returns The date of the most recently updated document, or null if none exists
  */
 async function getMostRecentUpdateTime(): Promise<Date | null> {
-	const mostRecent = await db.query.readwiseDocuments.findFirst({
-		columns: {
-			contentUpdatedAt: true,
-		},
-		orderBy: {
-			contentUpdatedAt: 'desc',
-		},
-	});
-	if (mostRecent) {
-		logger.info(
-			`Last known readwise date: ${mostRecent.contentUpdatedAt?.toLocaleString() ?? 'none'}`
-		);
-		return mostRecent.contentUpdatedAt;
-	}
-	logger.info('No existing documents found');
-	return null;
+  const mostRecent = await db.query.readwiseDocuments.findFirst({
+    columns: {
+      contentUpdatedAt: true,
+    },
+    orderBy: {
+      contentUpdatedAt: 'desc',
+    },
+  });
+  if (mostRecent) {
+    logger.info(
+      `Last known readwise date: ${mostRecent.contentUpdatedAt?.toLocaleString() ?? 'none'}`
+    );
+    return mostRecent.contentUpdatedAt;
+  }
+  logger.info('No existing documents found');
+  return null;
 }
 
 /**
@@ -63,64 +63,64 @@ async function getMostRecentUpdateTime(): Promise<Date | null> {
  * @throws Error if the API request fails
  */
 async function fetchReadwiseDocuments(
-	pageCursor?: string,
-	updatedAfter?: Date,
-	collectRawData?: unknown[]
+  pageCursor?: string,
+  updatedAfter?: Date,
+  collectRawData?: unknown[]
 ): Promise<ReadwiseArticlesResponse> {
-	const params = new URLSearchParams();
-	let updatedAfterParam: string | null = null;
+  const params = new URLSearchParams();
+  let updatedAfterParam: string | null = null;
 
-	if (pageCursor) params.append('pageCursor', pageCursor);
-	if (updatedAfter) {
-		const afterDate = new Date(updatedAfter.getTime() + 1);
-		updatedAfterParam = afterDate.toISOString();
-		params.append('updatedAfter', updatedAfterParam);
-	}
-	params.append('withHtmlContent', 'true');
+  if (pageCursor) params.append('pageCursor', pageCursor);
+  if (updatedAfter) {
+    const afterDate = new Date(updatedAfter.getTime() + 1);
+    updatedAfterParam = afterDate.toISOString();
+    params.append('updatedAfter', updatedAfterParam);
+  }
+  params.append('withHtmlContent', 'true');
 
-	let attempt = 0;
-	while (true) {
-		logger.info(`Fetching Readwise documents${pageCursor ? ' (with cursor)' : ''}`);
-		const response = await fetch(`${API_BASE_URL}?${params.toString()}`, {
-			headers: {
-				Authorization: `Token ${READWISE_TOKEN}`,
-				'Content-Type': 'application/json',
-			},
-		});
+  let attempt = 0;
+  while (true) {
+    logger.info(`Fetching Readwise documents${pageCursor ? ' (with cursor)' : ''}`);
+    const response = await fetch(`${API_BASE_URL}?${params.toString()}`, {
+      headers: {
+        Authorization: `Token ${READWISE_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-		if (response.ok) {
-			const data = await response.json();
-			// Collect raw data BEFORE validation
-			if (collectRawData) {
-				collectRawData.push({
-					request: {
-						pageCursor: pageCursor ?? null,
-						updatedAfter: updatedAfterParam,
-						query: params.toString(),
-					},
-					response: data,
-				});
-			}
-			const parsed = ReadwiseArticlesResponseSchema.parse(data);
-			return parsed;
-		}
+    if (response.ok) {
+      const data = await response.json();
+      // Collect raw data BEFORE validation
+      if (collectRawData) {
+        collectRawData.push({
+          request: {
+            pageCursor: pageCursor ?? null,
+            updatedAfter: updatedAfterParam,
+            query: params.toString(),
+          },
+          response: data,
+        });
+      }
+      const parsed = ReadwiseArticlesResponseSchema.parse(data);
+      return parsed;
+    }
 
-		if (response.status === 429) {
-			const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
-			logger.warn(`Rate limit hit, waiting ${retryAfter} seconds before retrying...`);
-			await new Promise((r) => setTimeout(r, retryAfter * RETRY_DELAY_BASE));
-			continue;
-		}
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
+      logger.warn(`Rate limit hit, waiting ${retryAfter} seconds before retrying...`);
+      await new Promise((r) => setTimeout(r, retryAfter * RETRY_DELAY_BASE));
+      continue;
+    }
 
-		attempt++;
-		if (attempt >= 3) {
-			throw new Error(
-				`Failed to fetch Readwise documents: ${response.statusText} (${response.status})`
-			);
-		}
-		logger.warn(`Request failed with status ${response.status}, retrying...`);
-		await new Promise((r) => setTimeout(r, RETRY_DELAY_BASE));
-	}
+    attempt++;
+    if (attempt >= 3) {
+      throw new Error(
+        `Failed to fetch Readwise documents: ${response.statusText} (${response.status})`
+      );
+    }
+    logger.warn(`Request failed with status ${response.status}, retrying...`);
+    await new Promise((r) => setTimeout(r, RETRY_DELAY_BASE));
+  }
 }
 
 /**
@@ -133,66 +133,66 @@ async function fetchReadwiseDocuments(
  * @returns A document object ready for database insertion
  */
 const mapReadwiseArticleToDocument = (
-	article: ReadwiseArticle,
-	integrationRunId: number
+  article: ReadwiseArticle,
+  integrationRunId: number
 ): ReadwiseDocumentInsert => {
-	// Validate source URL
-	let validSourceUrl: string | null = null;
-	if (article.source_url) {
-		try {
-			if (/^https?:\/\//.test(article.source_url)) {
-				new URL(article.source_url);
-				validSourceUrl = article.source_url;
-			}
-		} catch {
-			logger.warn(`Skipping invalid source_url: ${article.source_url}`);
-		}
-	}
+  // Validate source URL
+  let validSourceUrl: string | null = null;
+  if (article.source_url) {
+    try {
+      if (/^https?:\/\//.test(article.source_url)) {
+        new URL(article.source_url);
+        validSourceUrl = article.source_url;
+      }
+    } catch {
+      logger.warn(`Skipping invalid source_url: ${article.source_url}`);
+    }
+  }
 
-	// Validate image URL
-	let validImageUrl: string | null = null;
-	if (article.image_url) {
-		try {
-			if (/^https?:\/\//.test(article.image_url)) {
-				new URL(article.image_url);
-				validImageUrl = article.image_url;
-			}
-		} catch {
-			logger.warn(`Skipping invalid image_url: ${article.image_url}`);
-		}
-	}
+  // Validate image URL
+  let validImageUrl: string | null = null;
+  if (article.image_url) {
+    try {
+      if (/^https?:\/\//.test(article.image_url)) {
+        new URL(article.image_url);
+        validImageUrl = article.image_url;
+      }
+    } catch {
+      logger.warn(`Skipping invalid image_url: ${article.image_url}`);
+    }
+  }
 
-	// Map to database format
-	return {
-		id: article.id,
-		parentId: article.parent_id,
-		url: article.url,
-		title: article.title || null,
-		author: article.author || null,
-		source: article.source,
-		category: article.category,
-		location: article.location,
-		tags: article.tags,
-		siteName: article.site_name || null,
-		wordCount: article.word_count,
-		summary: article.summary || null,
-		content: article.content || null,
-		htmlContent: article.html_content || null,
-		notes: article.notes || null,
-		imageUrl: validImageUrl,
-		sourceUrl: validSourceUrl,
-		readingProgress: article.reading_progress.toString(),
-		firstOpenedAt: article.first_opened_at,
-		lastOpenedAt: article.last_opened_at,
-		savedAt: article.saved_at,
-		lastMovedAt: article.last_moved_at,
-		publishedDate: article.published_date
-			? article.published_date.toISOString().split('T')[0]
-			: null,
-		contentCreatedAt: article.created_at,
-		contentUpdatedAt: article.updated_at,
-		integrationRunId,
-	};
+  // Map to database format
+  return {
+    id: article.id,
+    parentId: article.parent_id,
+    url: article.url,
+    title: article.title || null,
+    author: article.author || null,
+    source: article.source,
+    category: article.category,
+    location: article.location,
+    tags: article.tags,
+    siteName: article.site_name || null,
+    wordCount: article.word_count,
+    summary: article.summary || null,
+    content: article.content || null,
+    htmlContent: article.html_content || null,
+    notes: article.notes || null,
+    imageUrl: validImageUrl,
+    sourceUrl: validSourceUrl,
+    readingProgress: article.reading_progress.toString(),
+    firstOpenedAt: article.first_opened_at,
+    lastOpenedAt: article.last_opened_at,
+    savedAt: article.saved_at,
+    lastMovedAt: article.last_moved_at,
+    publishedDate: article.published_date
+      ? article.published_date.toISOString().split('T')[0]
+      : null,
+    contentCreatedAt: article.created_at,
+    contentUpdatedAt: article.updated_at,
+    integrationRunId,
+  };
 };
 
 /**
@@ -204,31 +204,31 @@ const mapReadwiseArticleToDocument = (
  * @returns Sorted array of documents
  */
 function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle[] {
-	// Create a map of id to document for quick lookup
-	const idToDocument = new Map(documents.map((doc) => [doc.id, doc]));
+  // Create a map of id to document for quick lookup
+  const idToDocument = new Map(documents.map((doc) => [doc.id, doc]));
 
-	// Helper function to get the ancestry chain for a document
-	function getAncestryChain(doc: ReadwiseArticle): string[] {
-		const chain: string[] = [];
-		let current = doc;
-		while (current.parent_id) {
-			const parent = idToDocument.get(current.parent_id);
-			if (!parent) break;
-			chain.push(current.parent_id);
-			current = parent;
-		}
-		return chain;
-	}
+  // Helper function to get the ancestry chain for a document
+  function getAncestryChain(doc: ReadwiseArticle): string[] {
+    const chain: string[] = [];
+    let current = doc;
+    while (current.parent_id) {
+      const parent = idToDocument.get(current.parent_id);
+      if (!parent) break;
+      chain.push(current.parent_id);
+      current = parent;
+    }
+    return chain;
+  }
 
-	// Sort by ancestry chain length (parents first), then by creation date
-	return [...documents].sort((a, b) => {
-		const aChain = getAncestryChain(a);
-		const bChain = getAncestryChain(b);
-		if (aChain.length !== bChain.length) {
-			return aChain.length - bChain.length;
-		}
-		return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-	});
+  // Sort by ancestry chain length (parents first), then by creation date
+  return [...documents].sort((a, b) => {
+    const aChain = getAncestryChain(a);
+    const bChain = getAncestryChain(b);
+    if (aChain.length !== bChain.length) {
+      return aChain.length - bChain.length;
+    }
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
 }
 
 /**
@@ -237,22 +237,22 @@ function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle
  * @param debugData - Array to collect raw API data
  */
 async function fetchReadwiseDataOnly(debugData: unknown[]): Promise<void> {
-	logger.info('Fetching documents from Readwise API');
-	let nextPageCursor: string | null = null;
-	let totalDocuments = 0;
+  logger.info('Fetching documents from Readwise API');
+  let nextPageCursor: string | null = null;
+  let totalDocuments = 0;
 
-	do {
-		const response = await fetchReadwiseDocuments(
-			nextPageCursor ?? undefined,
-			undefined,
-			debugData
-		);
-		totalDocuments += response.results.length;
-		nextPageCursor = response.nextPageCursor;
-		logger.info(`Retrieved ${response.results.length} documents (total: ${totalDocuments})`);
-	} while (nextPageCursor);
+  do {
+    const response = await fetchReadwiseDocuments(
+      nextPageCursor ?? undefined,
+      undefined,
+      debugData
+    );
+    totalDocuments += response.results.length;
+    nextPageCursor = response.nextPageCursor;
+    logger.info(`Retrieved ${response.results.length} documents (total: ${totalDocuments})`);
+  } while (nextPageCursor);
 
-	logger.info(`Fetched ${totalDocuments} documents total`);
+  logger.info(`Fetched ${totalDocuments} documents total`);
 }
 
 /**
@@ -269,78 +269,78 @@ async function fetchReadwiseDataOnly(debugData: unknown[]): Promise<void> {
  * @throws Error if API requests fail
  */
 async function syncReadwiseDocumentsInternal(integrationRunId: number): Promise<number> {
-	try {
-		logger.start('Starting Readwise documents sync');
+  try {
+    logger.start('Starting Readwise documents sync');
 
-		// Step 1: Determine last sync point
-		const lastUpdateTime = await getMostRecentUpdateTime();
+    // Step 1: Determine last sync point
+    const lastUpdateTime = await getMostRecentUpdateTime();
 
-		// Step 2: Fetch all documents
-		logger.info('Fetching documents from Readwise API');
-		const allDocuments: ReadwiseArticle[] = [];
-		let nextPageCursor: string | null = null;
+    // Step 2: Fetch all documents
+    logger.info('Fetching documents from Readwise API');
+    const allDocuments: ReadwiseArticle[] = [];
+    let nextPageCursor: string | null = null;
 
-		do {
-			const response = await fetchReadwiseDocuments(
-				nextPageCursor ?? undefined,
-				lastUpdateTime ?? undefined
-			);
-			allDocuments.push(...response.results);
-			nextPageCursor = response.nextPageCursor;
+    do {
+      const response = await fetchReadwiseDocuments(
+        nextPageCursor ?? undefined,
+        lastUpdateTime ?? undefined
+      );
+      allDocuments.push(...response.results);
+      nextPageCursor = response.nextPageCursor;
 
-			logger.info(`Retrieved ${response.results.length} documents (total: ${allDocuments.length})`);
-		} while (nextPageCursor);
+      logger.info(`Retrieved ${response.results.length} documents (total: ${allDocuments.length})`);
+    } while (nextPageCursor);
 
-		// Step 3: Process documents
-		let successCount = 0;
-		if (allDocuments.length > 0) {
-			logger.info(`Processing ${allDocuments.length} documents`);
+    // Step 3: Process documents
+    let successCount = 0;
+    if (allDocuments.length > 0) {
+      logger.info(`Processing ${allDocuments.length} documents`);
 
-			// Sort documents to ensure parents are processed before children
-			const sortedDocuments = sortDocumentsByHierarchy(allDocuments);
+      // Sort documents to ensure parents are processed before children
+      const sortedDocuments = sortDocumentsByHierarchy(allDocuments);
 
-			// Process each document
-			for (const doc of sortedDocuments) {
-				try {
-					// Map and insert the document
-					const documentToInsert = mapReadwiseArticleToDocument(doc, integrationRunId);
-					await db
-						.insert(readwiseDocuments)
-						.values(documentToInsert)
-						.onConflictDoUpdate({
-							target: readwiseDocuments.id,
-							set: { ...documentToInsert, recordUpdatedAt: new Date() },
-						});
+      // Process each document
+      for (const doc of sortedDocuments) {
+        try {
+          // Map and insert the document
+          const documentToInsert = mapReadwiseArticleToDocument(doc, integrationRunId);
+          await db
+            .insert(readwiseDocuments)
+            .values(documentToInsert)
+            .onConflictDoUpdate({
+              target: readwiseDocuments.id,
+              set: { ...documentToInsert, recordUpdatedAt: new Date() },
+            });
 
-					successCount++;
+          successCount++;
 
-					// Log progress periodically
-					if (successCount % 20 === 0) {
-						logger.info(`Processed ${successCount} of ${sortedDocuments.length} documents`);
-					}
-				} catch (error) {
-					logger.error('Error processing document', {
-						documentId: doc.id,
-						error: error instanceof Error ? error.message : String(error),
-					});
-				}
-			}
+          // Log progress periodically
+          if (successCount % 20 === 0) {
+            logger.info(`Processed ${successCount} of ${sortedDocuments.length} documents`);
+          }
+        } catch (error) {
+          logger.error('Error processing document', {
+            documentId: doc.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
 
-			// Step 4: Create related entities
-			logger.info('Creating related entities');
-			await createReadwiseAuthors();
-			await createReadwiseTags(integrationRunId);
-			await createRecordsFromReadwiseAuthors();
-			await createRecordsFromReadwiseTags();
-			await createRecordsFromReadwiseDocuments();
-		}
+      // Step 4: Create related entities
+      logger.info('Creating related entities');
+      await createReadwiseAuthors();
+      await createReadwiseTags(integrationRunId);
+      await createRecordsFromReadwiseAuthors();
+      await createRecordsFromReadwiseTags();
+      await createRecordsFromReadwiseDocuments();
+    }
 
-		logger.complete('Processed documents', successCount);
-		return successCount;
-	} catch (error) {
-		logger.error('Error syncing Readwise documents', error);
-		throw error;
-	}
+    logger.complete('Processed documents', successCount);
+    return successCount;
+  } catch (error) {
+    logger.error('Error syncing Readwise documents', error);
+    throw error;
+  }
 }
 
 /**
@@ -349,29 +349,29 @@ async function syncReadwiseDocumentsInternal(integrationRunId: number): Promise<
  * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncReadwiseData(debug = false): Promise<void> {
-	const debugContext = createDebugContext('readwise', debug, [] as unknown[]);
-	try {
-		if (debug) {
-			// Debug mode: fetch data and output to .temp/ only, skip database writes
-			logger.start('Starting Readwise data fetch (debug mode - no database writes)');
-			if (debugContext.data) {
-				await fetchReadwiseDataOnly(debugContext.data);
-			}
-			logger.complete('Readwise data fetch completed (debug mode)');
-		} else {
-			// Normal mode: full sync with database writes
-			logger.start('Starting Readwise data synchronization');
-			await runIntegration('readwise', (runId) => syncReadwiseDocumentsInternal(runId));
-			logger.complete('Readwise data synchronization completed');
-		}
-	} catch (error) {
-		logger.error('Error syncing Readwise data', error);
-		throw error;
-	} finally {
-		await debugContext.flush().catch((flushError) => {
-			logger.error('Failed to write debug output for Readwise', flushError);
-		});
-	}
+  const debugContext = createDebugContext('readwise', debug, [] as unknown[]);
+  try {
+    if (debug) {
+      // Debug mode: fetch data and output to .temp/ only, skip database writes
+      logger.start('Starting Readwise data fetch (debug mode - no database writes)');
+      if (debugContext.data) {
+        await fetchReadwiseDataOnly(debugContext.data);
+      }
+      logger.complete('Readwise data fetch completed (debug mode)');
+    } else {
+      // Normal mode: full sync with database writes
+      logger.start('Starting Readwise data synchronization');
+      await runIntegration('readwise', (runId) => syncReadwiseDocumentsInternal(runId));
+      logger.complete('Readwise data synchronization completed');
+    }
+  } catch (error) {
+    logger.error('Error syncing Readwise data', error);
+    throw error;
+  } finally {
+    await debugContext.flush().catch((flushError) => {
+      logger.error('Failed to write debug output for Readwise', flushError);
+    });
+  }
 }
 
 export { syncReadwiseData as syncReadwiseDocuments };

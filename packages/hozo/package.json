@@ -1,39 +1,39 @@
 {
-	"name": "@aias/hozo",
-	"version": "0.2.0",
-	"description": "Shared schema, relations, and validation for Red Cliff Record",
-	"license": "MIT",
-	"files": [
-		"dist"
-	],
-	"type": "module",
-	"sideEffects": false,
-	"module": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		},
-		"./package.json": "./package.json"
-	},
-	"scripts": {
-		"build": "bunx --bun tsup src/index.ts --dts --format esm --sourcemap --clean",
-		"dev:watch": "bun run build --watch",
-		"lint": "oxlint --fix --type-aware . && tsgo --noEmit",
-		"test": "bun test"
-	},
-	"dependencies": {
-		"drizzle-kit": "1.0.0-beta.11-fc31a5f",
-		"drizzle-zod": "1.0.0-beta.11-fc31a5f"
-	},
-	"devDependencies": {
-		"drizzle-orm": "1.0.0-beta.11-fc31a5f",
-		"tsup": "^8.5.1",
-		"zod": "^4.1.12"
-	},
-	"peerDependencies": {
-		"drizzle-orm": "1.0.0-beta.11-fc31a5f",
-		"zod": "^4.1.12"
-	}
+  "name": "@aias/hozo",
+  "version": "0.2.0",
+  "description": "Shared schema, relations, and validation for Red Cliff Record",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "bunx --bun tsup src/index.ts --dts --format esm --sourcemap --clean",
+    "dev:watch": "bun run build --watch",
+    "lint": "oxlint --fix --type-aware . && tsgo --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "drizzle-kit": "1.0.0-beta.11-fc31a5f",
+    "drizzle-zod": "1.0.0-beta.11-fc31a5f"
+  },
+  "devDependencies": {
+    "drizzle-orm": "1.0.0-beta.11-fc31a5f",
+    "tsup": "^8.5.1",
+    "zod": "^4.1.12"
+  },
+  "peerDependencies": {
+    "drizzle-orm": "1.0.0-beta.11-fc31a5f",
+    "zod": "^4.1.12"
+  }
 }

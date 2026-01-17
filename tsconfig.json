@@ -1,60 +1,60 @@
 {
-	"compilerOptions": {
-		/* Base Options: */
-		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"target": "ESNext",
-		"allowJs": true,
-		"checkJs": true,
-		"resolveJsonModule": true,
-		"moduleDetection": "force",
-		"isolatedModules": true,
-		"types": ["vite/client"],
-		// "noErrorTruncation": true, // Toggle comment to see full Intellisense errors and types.
+  "compilerOptions": {
+    /* Base Options: */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "ESNext",
+    "allowJs": true,
+    "checkJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "types": ["vite/client"],
+    // "noErrorTruncation": true, // Toggle comment to see full Intellisense errors and types.
 
-		/* Strictness */
-		"strict": true,
-		"noUncheckedIndexedAccess": true,
-		"noFallthroughCasesInSwitch": true, // Bun recommended
-		"forceConsistentCasingInFileNames": true,
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true, // Bun recommended
+    "forceConsistentCasingInFileNames": true,
 
-		/* Bundled projects */
-		"noEmit": true,
-		"lib": ["dom", "dom.iterable", "ESNext"],
-		"jsx": "react-jsx",
-		"module": "ESNext",
-		"moduleResolution": "Bundler",
-		"verbatimModuleSyntax": true, // Bun recommended
-		"allowImportingTsExtensions": true, // Bun recommended
+    /* Bundled projects */
+    "noEmit": true,
+    "lib": ["dom", "dom.iterable", "ESNext"],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "verbatimModuleSyntax": true, // Bun recommended
+    "allowImportingTsExtensions": true, // Bun recommended
 
-		/* Performance */
-		"incremental": true,
-		"disableSolutionSearching": true,
-		"disableSourceOfProjectReferenceRedirect": true,
+    /* Performance */
+    "incremental": true,
+    "disableSolutionSearching": true,
+    "disableSourceOfProjectReferenceRedirect": true,
 
-		/* Path Aliases */
-		"paths": {
-			"@/components": ["./src/app/components"],
-			"@/components/*": ["./src/app/components/*"],
-			"@/lib": ["./src/app/lib"],
-			"@/lib/*": ["./src/app/lib/*"],
-			"@/shared/*": ["./src/shared/*"],
-			"@/shared/types/*": ["./src/shared/types/*"],
-			"@/server/*": ["./src/server/*"],
-			"@/*": ["./src/*"]
-		}
-	},
-	"include": ["src/**/*.ts", "src/**/*.tsx", "packages/**/*.ts", "./*.ts"],
-	"exclude": [
-		"**/node_modules/**/*",
-		".pnpm/**/*",
-		"build/**/*",
-		"dist/**/*",
-		".output/**/*",
-		".vinxi/**/*",
-		"**/*.generated.ts",
-		"coverage/**/*",
-		"**/*.spec.ts",
-		"**/*.test.ts"
-	]
+    /* Path Aliases */
+    "paths": {
+      "@/components": ["./src/app/components"],
+      "@/components/*": ["./src/app/components/*"],
+      "@/lib": ["./src/app/lib"],
+      "@/lib/*": ["./src/app/lib/*"],
+      "@/shared/*": ["./src/shared/*"],
+      "@/shared/types/*": ["./src/shared/types/*"],
+      "@/server/*": ["./src/server/*"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "packages/**/*.ts", "./*.ts"],
+  "exclude": [
+    "**/node_modules/**/*",
+    ".pnpm/**/*",
+    "build/**/*",
+    "dist/**/*",
+    ".output/**/*",
+    ".vinxi/**/*",
+    "**/*.generated.ts",
+    "coverage/**/*",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
 }

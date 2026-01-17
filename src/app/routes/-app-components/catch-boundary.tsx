@@ -3,38 +3,38 @@ import { ErrorComponent, Link, rootRouteId, useMatch, useRouter } from '@tanstac
 import { Button } from '@/components/button';
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
-	const router = useRouter();
-	const isRoot = useMatch({
-		strict: false,
-		select: (state) => state.id === rootRouteId,
-	});
+  const router = useRouter();
+  const isRoot = useMatch({
+    strict: false,
+    select: (state) => state.id === rootRouteId,
+  });
 
-	console.error('DefaultCatchBoundary Error:', error);
+  console.error('DefaultCatchBoundary Error:', error);
 
-	return (
-		<div className="flex max-w-lg flex-col items-center justify-center gap-4 p-4">
-			<ErrorComponent error={error} />
-			<div className="flex flex-wrap items-center gap-2">
-				<Button variant="default" onClick={() => void router.invalidate()}>
-					Try Again
-				</Button>
-				{isRoot ? (
-					<Button asChild>
-						<Link to="/">Home</Link>
-					</Button>
-				) : (
-					<Button
-						variant="default"
-						asChild
-						onClick={(e) => {
-							e.preventDefault();
-							window.history.back();
-						}}
-					>
-						<Link to="/">Go Back</Link>
-					</Button>
-				)}
-			</div>
-		</div>
-	);
+  return (
+    <div className="flex max-w-lg flex-col items-center justify-center gap-4 p-4">
+      <ErrorComponent error={error} />
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="default" onClick={() => void router.invalidate()}>
+          Try Again
+        </Button>
+        {isRoot ? (
+          <Button asChild>
+            <Link to="/">Home</Link>
+          </Button>
+        ) : (
+          <Button
+            variant="default"
+            asChild
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.back();
+            }}
+          >
+            <Link to="/">Go Back</Link>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 }

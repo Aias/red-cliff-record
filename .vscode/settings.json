@@ -1,46 +1,46 @@
 {
-	"editor.codeActionsOnSave": {
-		"source.fixAll.oxc": "explicit",
-		"source.fixAll.ts": "explicit"
-	},
-	"files.associations": {
-		"*.css": "tailwindcss",
-		"*.svg": "html"
-	},
-	"files.watcherExclude": {
-		"**/node_modules/**": true,
-		"**/dist/**": true,
-		"**/.vinxi/**": true,
-		"**/.output/**": true
-	},
-	"search.exclude": {
-		"**/node_modules": true,
-		"**/bower_components": true,
-		"**/*.code-search": true,
-		"**/dist": true,
-		"**/.vinxi": true,
-		"**/.output": true
-	},
-	"terminal.integrated.defaultProfile.osx": "zsh",
-	"terminal.integrated.profiles.osx": {
-		"zsh": {
-			"path": "/bin/zsh",
-			"args": ["-l", "-i"]
-		}
-	},
-	"terminal.integrated.automationProfile.osx": {
-		"path": "/bin/zsh",
-		"args": ["-l", "-i"]
-	},
-	"terminal.integrated.shellArgs.osx": ["-l", "-i"],
-	"debug.javascript.terminalOptions": {},
-	"npm.packageManager": "bun",
-	"npm.scriptRunner": "bun",
-	"typescript.experimental.useTsgo": true,
-	"oxc.typeAware": true,
-	"oxc.unusedDisableDirectives": "warn",
-	"oxc.fmt.configPath": ".oxfmtrc.json",
-	"editor.defaultFormatter": "oxc.oxc-vscode",
-	"editor.formatOnSave": true,
-	"github.gitProtocol": "ssh"
+  "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "explicit",
+    "source.fixAll.ts": "explicit"
+  },
+  "files.associations": {
+    "*.css": "tailwindcss",
+    "*.svg": "html"
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.vinxi/**": true,
+    "**/.output/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/dist": true,
+    "**/.vinxi": true,
+    "**/.output": true
+  },
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.profiles.osx": {
+    "zsh": {
+      "path": "/bin/zsh",
+      "args": ["-l", "-i"]
+    }
+  },
+  "terminal.integrated.automationProfile.osx": {
+    "path": "/bin/zsh",
+    "args": ["-l", "-i"]
+  },
+  "terminal.integrated.shellArgs.osx": ["-l", "-i"],
+  "debug.javascript.terminalOptions": {},
+  "npm.packageManager": "bun",
+  "npm.scriptRunner": "bun",
+  "typescript.experimental.useTsgo": true,
+  "oxc.typeAware": true,
+  "oxc.unusedDisableDirectives": "warn",
+  "oxc.fmt.configPath": ".oxfmtrc.json",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
+  "github.gitProtocol": "ssh"
 }

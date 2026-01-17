@@ -11,18 +11,18 @@ export const diaDbCopyPath = `${process.env.HOME}/${diaHistoryPath}-copy`;
 export const connectionUrl = `file:${diaDbCopyPath}`;
 
 export const createDiaConnection = async () => {
-	const sourceFile = Bun.file(diaDbPath);
-	if (!(await sourceFile.exists())) {
-		throw new BrowserNotInstalledError('Dia', diaDbPath);
-	}
-	// Copy file using Bun's file API
-	await Bun.write(diaDbCopyPath, sourceFile);
+  const sourceFile = Bun.file(diaDbPath);
+  if (!(await sourceFile.exists())) {
+    throw new BrowserNotInstalledError('Dia', diaDbPath);
+  }
+  // Copy file using Bun's file API
+  await Bun.write(diaDbCopyPath, sourceFile);
 
-	const client = createClient({
-		url: connectionUrl,
-		intMode: 'bigint',
-	});
-	const db = drizzle({ client, schema: diaSchema });
+  const client = createClient({
+    url: connectionUrl,
+    intMode: 'bigint',
+  });
+  const db = drizzle({ client, schema: diaSchema });
 
-	return { db, client };
+  return { db, client };
 };

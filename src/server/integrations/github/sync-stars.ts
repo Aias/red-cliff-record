@@ -23,24 +23,24 @@ const REQUEST_DELAY_MS = 1000;
  * @returns The date of the most recently starred repository, or null if none exists
  */
 async function getMostRecentStarredAt(): Promise<Date | null> {
-	const result = await db.query.githubRepositories.findFirst({
-		columns: {
-			starredAt: true,
-		},
-		where: {
-			starredAt: {
-				isNotNull: true,
-			},
-			deletedAt: {
-				isNull: true,
-			},
-		},
-		orderBy: {
-			starredAt: 'desc',
-		},
-	});
+  const result = await db.query.githubRepositories.findFirst({
+    columns: {
+      starredAt: true,
+    },
+    where: {
+      starredAt: {
+        isNotNull: true,
+      },
+      deletedAt: {
+        isNull: true,
+      },
+    },
+    orderBy: {
+      starredAt: 'desc',
+    },
+  });
 
-	return result?.starredAt ?? null;
+  return result?.starredAt ?? null;
 }
 
 /**
@@ -51,52 +51,52 @@ async function getMostRecentStarredAt(): Promise<Date | null> {
  * @returns True if the repo was processed successfully
  */
 async function processStarredRepo(star: StarredRepo, integrationRunId: number): Promise<boolean> {
-	const { repo, starred_at } = star;
+  const { repo, starred_at } = star;
 
-	try {
-		// First ensure the owner exists using shared helper
-		await ensureGithubUserExists(repo.owner, integrationRunId);
+  try {
+    // First ensure the owner exists using shared helper
+    await ensureGithubUserExists(repo.owner, integrationRunId);
 
-		// Then insert the repository
-		const newRepo: GithubRepositoryInsert = {
-			id: repo.id,
-			nodeId: repo.node_id,
-			name: repo.name,
-			fullName: repo.full_name,
-			ownerId: repo.owner.id,
-			private: repo.private,
-			htmlUrl: repo.html_url,
-			homepageUrl: repo.homepage,
-			licenseName: repo.license?.name,
-			description: repo.description,
-			language: repo.language,
-			topics: repo.topics.length > 0 ? repo.topics : null,
-			starredAt: starred_at,
-			contentCreatedAt: repo.created_at,
-			contentUpdatedAt: repo.updated_at,
-			integrationRunId,
-		};
+    // Then insert the repository
+    const newRepo: GithubRepositoryInsert = {
+      id: repo.id,
+      nodeId: repo.node_id,
+      name: repo.name,
+      fullName: repo.full_name,
+      ownerId: repo.owner.id,
+      private: repo.private,
+      htmlUrl: repo.html_url,
+      homepageUrl: repo.homepage,
+      licenseName: repo.license?.name,
+      description: repo.description,
+      language: repo.language,
+      topics: repo.topics.length > 0 ? repo.topics : null,
+      starredAt: starred_at,
+      contentCreatedAt: repo.created_at,
+      contentUpdatedAt: repo.updated_at,
+      integrationRunId,
+    };
 
-		await db
-			.insert(githubRepositories)
-			.values(newRepo)
-			.onConflictDoUpdate({
-				target: githubRepositories.id,
-				set: {
-					...newRepo,
-					recordUpdatedAt: new Date(),
-				},
-			});
+    await db
+      .insert(githubRepositories)
+      .values(newRepo)
+      .onConflictDoUpdate({
+        target: githubRepositories.id,
+        set: {
+          ...newRepo,
+          recordUpdatedAt: new Date(),
+        },
+      });
 
-		return true;
-	} catch (error) {
-		logger.error(`Error processing starred repo ${repo.full_name}`, {
-			error: error instanceof Error ? error.message : String(error),
-			repoId: repo.id,
-		});
-		// Return false to indicate failure but allow processing to continue
-		return false;
-	}
+    return true;
+  } catch (error) {
+    logger.error(`Error processing starred repo ${repo.full_name}`, {
+      error: error instanceof Error ? error.message : String(error),
+      repoId: repo.id,
+    });
+    // Return false to indicate failure but allow processing to continue
+    return false;
+  }
 }
 
 /**
@@ -107,17 +107,17 @@ async function processStarredRepo(star: StarredRepo, integrationRunId: number): 
  * @returns Parsed starred repos data and rate limit info
  */
 async function fetchStarredReposPage(octokit: Octokit, page: number) {
-	const response = await octokit.rest.activity.listReposStarredByAuthenticatedUser({
-		mediaType: {
-			format: 'vnd.github.star+json',
-		},
-		per_page: PAGE_SIZE,
-		page,
-	});
+  const response = await octokit.rest.activity.listReposStarredByAuthenticatedUser({
+    mediaType: {
+      format: 'vnd.github.star+json',
+    },
+    per_page: PAGE_SIZE,
+    page,
+  });
 
-	logRateLimitInfo(response, logger);
+  logRateLimitInfo(response, logger);
 
-	return GithubStarredReposResponseSchema.parse(response);
+  return GithubStarredReposResponseSchema.parse(response);
 }
 
 /**
@@ -136,116 +136,116 @@ async function fetchStarredReposPage(octokit: Octokit, page: number) {
  * @throws Error if the GitHub API request fails
  */
 export async function syncGitHubStars(
-	integrationRunId: number,
-	collectDebugData?: unknown[],
-	skipPersist = false
+  integrationRunId: number,
+  collectDebugData?: unknown[],
+  skipPersist = false
 ): Promise<number> {
-	const octokit = new Octokit({
-		auth: process.env.GITHUB_TOKEN,
-	});
+  const octokit = new Octokit({
+    auth: process.env.GITHUB_TOKEN,
+  });
 
-	logger.start('Fetching GitHub starred repos');
+  logger.start('Fetching GitHub starred repos');
 
-	// Get the most recent star date to use as a cutoff (skip DB query in debug mode)
-	const mostRecentStarredAt = skipPersist ? null : await getMostRecentStarredAt();
-	if (mostRecentStarredAt) {
-		logger.info(`Most recent star in database: ${mostRecentStarredAt.toLocaleString()}`);
-	} else if (!skipPersist) {
-		logger.info('No existing stars in database');
-	}
+  // Get the most recent star date to use as a cutoff (skip DB query in debug mode)
+  const mostRecentStarredAt = skipPersist ? null : await getMostRecentStarredAt();
+  if (mostRecentStarredAt) {
+    logger.info(`Most recent star in database: ${mostRecentStarredAt.toLocaleString()}`);
+  } else if (!skipPersist) {
+    logger.info('No existing stars in database');
+  }
 
-	// Collect all new starred repos first, respecting rate limits during pagination
-	const allNewStars: StarredRepo[] = [];
-	let page = 1;
-	let hasMore = true;
+  // Collect all new starred repos first, respecting rate limits during pagination
+  const allNewStars: StarredRepo[] = [];
+  let page = 1;
+  let hasMore = true;
 
-	while (hasMore) {
-		try {
-			logger.info(`Fetching page ${page}...`);
-			const parsedResponse = await fetchStarredReposPage(octokit, page);
+  while (hasMore) {
+    try {
+      logger.info(`Fetching page ${page}...`);
+      const parsedResponse = await fetchStarredReposPage(octokit, page);
 
-			// Collect debug data if requested
-			if (collectDebugData) {
-				collectDebugData.push(...parsedResponse.data);
-			}
+      // Collect debug data if requested
+      if (collectDebugData) {
+        collectDebugData.push(...parsedResponse.data);
+      }
 
-			// Check if we've reached the end of the results
-			if (parsedResponse.data.length === 0) {
-				hasMore = false;
-				break;
-			}
+      // Check if we've reached the end of the results
+      if (parsedResponse.data.length === 0) {
+        hasMore = false;
+        break;
+      }
 
-			// Check if we've hit stars older than our most recent
-			if (mostRecentStarredAt) {
-				const firstStar = parsedResponse.data[0];
-				if (!firstStar) {
-					hasMore = false;
-					break;
-				}
-				const oldestStarOnPage = parsedResponse.data.reduce(
-					(oldest, star) => (star.starred_at < oldest ? star.starred_at : oldest),
-					firstStar.starred_at
-				);
-				if (oldestStarOnPage <= mostRecentStarredAt) {
-					logger.info(
-						`Reached stars older than ${mostRecentStarredAt.toLocaleString()}, stopping pagination`
-					);
-					hasMore = false;
-				}
-			}
+      // Check if we've hit stars older than our most recent
+      if (mostRecentStarredAt) {
+        const firstStar = parsedResponse.data[0];
+        if (!firstStar) {
+          hasMore = false;
+          break;
+        }
+        const oldestStarOnPage = parsedResponse.data.reduce(
+          (oldest, star) => (star.starred_at < oldest ? star.starred_at : oldest),
+          firstStar.starred_at
+        );
+        if (oldestStarOnPage <= mostRecentStarredAt) {
+          logger.info(
+            `Reached stars older than ${mostRecentStarredAt.toLocaleString()}, stopping pagination`
+          );
+          hasMore = false;
+        }
+      }
 
-			// Filter to only new stars
-			const newStarsOnPage = parsedResponse.data.filter(
-				(star) => !mostRecentStarredAt || star.starred_at > mostRecentStarredAt
-			);
-			allNewStars.push(...newStarsOnPage);
+      // Filter to only new stars
+      const newStarsOnPage = parsedResponse.data.filter(
+        (star) => !mostRecentStarredAt || star.starred_at > mostRecentStarredAt
+      );
+      allNewStars.push(...newStarsOnPage);
 
-			logger.info(`Found ${newStarsOnPage.length} new stars on page ${page}`);
+      logger.info(`Found ${newStarsOnPage.length} new stars on page ${page}`);
 
-			// Rate limit delay between API requests
-			await Bun.sleep(REQUEST_DELAY_MS);
-			page++;
-		} catch (error) {
-			if (error instanceof RequestError) {
-				logger.error('GitHub API Error', {
-					status: error.status,
-					message: error.message,
-					headers: error.response?.headers,
-				});
-				if (error.response) {
-					logRateLimitInfo(error.response);
-				}
+      // Rate limit delay between API requests
+      await Bun.sleep(REQUEST_DELAY_MS);
+      page++;
+    } catch (error) {
+      if (error instanceof RequestError) {
+        logger.error('GitHub API Error', {
+          status: error.status,
+          message: error.message,
+          headers: error.response?.headers,
+        });
+        if (error.response) {
+          logRateLimitInfo(error.response);
+        }
 
-				// If we hit rate limits, throw to stop the process
-				if (error.status === 403 || error.status === 429) {
-					throw new Error(`GitHub API rate limit exceeded: ${error.message}`);
-				}
-			}
-			throw error;
-		}
-	}
+        // If we hit rate limits, throw to stop the process
+        if (error.status === 403 || error.status === 429) {
+          throw new Error(`GitHub API rate limit exceeded: ${error.message}`);
+        }
+      }
+      throw error;
+    }
+  }
 
-	// In debug mode, just return the count
-	if (skipPersist) {
-		logger.complete('Found starred repositories (debug mode)', allNewStars.length);
-		return allNewStars.length;
-	}
+  // In debug mode, just return the count
+  if (skipPersist) {
+    logger.complete('Found starred repositories (debug mode)', allNewStars.length);
+    return allNewStars.length;
+  }
 
-	let successCount = 0;
-	for (let i = 0; i < allNewStars.length; i++) {
-		const star = allNewStars[i];
-		if (!star) {
-			continue;
-		}
-		const result = await processStarredRepo(star, integrationRunId);
-		if (result) successCount++;
+  let successCount = 0;
+  for (let i = 0; i < allNewStars.length; i++) {
+    const star = allNewStars[i];
+    if (!star) {
+      continue;
+    }
+    const result = await processStarredRepo(star, integrationRunId);
+    if (result) successCount++;
 
-		if ((i + 1) % 10 === 0 || i + 1 === allNewStars.length) {
-			logger.info(`Processed ${i + 1}/${allNewStars.length} starred repos`);
-		}
+    if ((i + 1) % 10 === 0 || i + 1 === allNewStars.length) {
+      logger.info(`Processed ${i + 1}/${allNewStars.length} starred repos`);
+    }
 
-		await Bun.sleep(REQUEST_DELAY_MS);
-	}
-	logger.complete('Synced starred repositories', successCount);
-	return successCount;
+    await Bun.sleep(REQUEST_DELAY_MS);
+  }
+  logger.complete('Synced starred repositories', successCount);
+  return successCount;
 }

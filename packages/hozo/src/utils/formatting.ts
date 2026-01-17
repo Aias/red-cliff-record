@@ -8,4 +8,4 @@ import { z } from 'zod';
  * emptyStringToNull(z.string()) // '' → null, 'hello' → 'hello'
  */
 export const emptyStringToNull = <T extends z.ZodType>(schema: T) =>
-	z.union([z.literal(''), z.null(), schema]).transform((v): z.output<T> | null => v || null);
+  z.union([z.literal(''), z.null(), schema]).transform((v): z.output<T> | null => v || null);

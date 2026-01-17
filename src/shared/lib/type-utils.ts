@@ -8,6 +8,6 @@
  * const statuses = exhaustive<Status>()(['pending', 'active']); // Error: missing 'done'
  */
 export const exhaustive =
-	<T extends string>() =>
-	<const A extends readonly T[]>(arr: A & ([T] extends [A[number]] ? unknown : never)) =>
-		arr;
+  <T extends string>() =>
+  <const A extends readonly T[]>(arr: A & ([T] extends [A[number]] ? unknown : never)) =>
+    arr;

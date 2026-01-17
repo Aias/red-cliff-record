@@ -15,37 +15,37 @@ export const toTitleCase = (str: string) => str.replace(/\b\w/g, (char) => char.
  * decodeHtmlEntities('&quot;Hello&quot;') -> '"Hello"'
  */
 export const decodeHtmlEntities = (text: string): string => {
-	const entities: Record<string, string> = {
-		'&amp;': '&',
-		'&lt;': '<',
-		'&gt;': '>',
-		'&quot;': '"',
-		'&#39;': "'",
-		'&apos;': "'",
-		'&nbsp;': ' ',
-		'&ndash;': '–',
-		'&mdash;': '—',
-		'&hellip;': '…',
-		'&copy;': '©',
-		'&reg;': '®',
-		'&trade;': '™',
-		'&euro;': '€',
-		'&pound;': '£',
-		'&yen;': '¥',
-		'&cent;': '¢',
-	};
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+    '&nbsp;': ' ',
+    '&ndash;': '–',
+    '&mdash;': '—',
+    '&hellip;': '…',
+    '&copy;': '©',
+    '&reg;': '®',
+    '&trade;': '™',
+    '&euro;': '€',
+    '&pound;': '£',
+    '&yen;': '¥',
+    '&cent;': '¢',
+  };
 
-	// Replace known entities
-	let decoded = text;
-	for (const [entity, char] of Object.entries(entities)) {
-		decoded = decoded.replaceAll(entity, char);
-	}
+  // Replace known entities
+  let decoded = text;
+  for (const [entity, char] of Object.entries(entities)) {
+    decoded = decoded.replaceAll(entity, char);
+  }
 
-	// Handle numeric character references (&#123; or &#xABC;)
-	decoded = decoded.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)));
-	decoded = decoded.replace(/&#x([0-9A-Fa-f]+);/g, (_, code) =>
-		String.fromCharCode(parseInt(code, 16))
-	);
+  // Handle numeric character references (&#123; or &#xABC;)
+  decoded = decoded.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)));
+  decoded = decoded.replace(/&#x([0-9A-Fa-f]+);/g, (_, code) =>
+    String.fromCharCode(parseInt(code, 16))
+  );
 
-	return decoded;
+  return decoded;
 };

@@ -31,94 +31,94 @@ import type { CommandHandler, ResultValue, SuccessResult } from './lib/types';
 // Load environment variables from project root or ~/.secrets when CWD has no .env
 // Bun automatically loads .env from CWD, so we only need fallback logic
 function loadEnvFile(path: string) {
-	try {
-		const content = readFileSync(path, 'utf-8');
-		for (const line of content.split('\n')) {
-			const trimmed = line.trim();
-			if (!trimmed || trimmed.startsWith('#')) continue;
+  try {
+    const content = readFileSync(path, 'utf-8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
 
-			const match = trimmed.match(/^([^=]+)=(.*)$/);
-			if (match && match[1] && match[2] !== undefined) {
-				const cleanKey = match[1].trim();
-				let cleanValue = match[2].trim();
+      const match = trimmed.match(/^([^=]+)=(.*)$/);
+      if (match && match[1] && match[2] !== undefined) {
+        const cleanKey = match[1].trim();
+        let cleanValue = match[2].trim();
 
-				// Remove surrounding quotes if present
-				if (
-					(cleanValue.startsWith('"') && cleanValue.endsWith('"')) ||
-					(cleanValue.startsWith("'") && cleanValue.endsWith("'"))
-				) {
-					cleanValue = cleanValue.slice(1, -1);
-				}
+        // Remove surrounding quotes if present
+        if (
+          (cleanValue.startsWith('"') && cleanValue.endsWith('"')) ||
+          (cleanValue.startsWith("'") && cleanValue.endsWith("'"))
+        ) {
+          cleanValue = cleanValue.slice(1, -1);
+        }
 
-				// Only set if not already defined (Bun may have loaded from CWD)
-				if (!process.env[cleanKey]) {
-					process.env[cleanKey] = cleanValue;
-				}
-			}
-		}
-	} catch {
-		// Silently fail if file can't be read
-	}
+        // Only set if not already defined (Bun may have loaded from CWD)
+        if (!process.env[cleanKey]) {
+          process.env[cleanKey] = cleanValue;
+        }
+      }
+    }
+  } catch {
+    // Silently fail if file can't be read
+  }
 }
 
 // Only load manually if CWD has no .env (Bun handles CWD automatically)
 const cwdEnv = resolve(process.cwd(), '.env');
 if (!existsSync(cwdEnv)) {
-	// Try to find project root by resolving symlink
-	try {
-		const scriptPath = fileURLToPath(import.meta.url);
-		const realScriptPath = realpathSync(scriptPath);
-		// Navigate from src/server/cli/rcr/index.ts to project root
-		const projectRoot = resolve(dirname(realScriptPath), '../../../..');
-		const projectEnv = join(projectRoot, '.env');
+  // Try to find project root by resolving symlink
+  try {
+    const scriptPath = fileURLToPath(import.meta.url);
+    const realScriptPath = realpathSync(scriptPath);
+    // Navigate from src/server/cli/rcr/index.ts to project root
+    const projectRoot = resolve(dirname(realScriptPath), '../../../..');
+    const projectEnv = join(projectRoot, '.env');
 
-		if (existsSync(projectEnv)) {
-			loadEnvFile(projectEnv);
-		} else {
-			// Fallback to ~/.secrets
-			const homeSecrets = join(process.env.HOME || '~', '.secrets');
-			if (existsSync(homeSecrets)) {
-				loadEnvFile(homeSecrets);
-			}
-		}
-	} catch {
-		// If symlink resolution fails, try ~/.secrets
-		const homeSecrets = join(process.env.HOME || '~', '.secrets');
-		if (existsSync(homeSecrets)) {
-			loadEnvFile(homeSecrets);
-		}
-	}
+    if (existsSync(projectEnv)) {
+      loadEnvFile(projectEnv);
+    } else {
+      // Fallback to ~/.secrets
+      const homeSecrets = join(process.env.HOME || '~', '.secrets');
+      if (existsSync(homeSecrets)) {
+        loadEnvFile(homeSecrets);
+      }
+    }
+  } catch {
+    // If symlink resolution fails, try ~/.secrets
+    const homeSecrets = join(process.env.HOME || '~', '.secrets');
+    if (existsSync(homeSecrets)) {
+      loadEnvFile(homeSecrets);
+    }
+  }
 }
 
 // Commands will be loaded dynamically after env vars are configured
 let commands: Record<string, Record<string, CommandHandler>> | null = null;
 
 async function loadCommands() {
-	if (commands) return commands;
+  if (commands) return commands;
 
-	const [browsing, db, fetch, github, links, media, records, search, sync] = await Promise.all([
-		import('./commands/browsing'),
-		import('./commands/db'),
-		import('./commands/fetch'),
-		import('./commands/github'),
-		import('./commands/links'),
-		import('./commands/media'),
-		import('./commands/records'),
-		import('./commands/search'),
-		import('./commands/sync'),
-	]);
+  const [browsing, db, fetch, github, links, media, records, search, sync] = await Promise.all([
+    import('./commands/browsing'),
+    import('./commands/db'),
+    import('./commands/fetch'),
+    import('./commands/github'),
+    import('./commands/links'),
+    import('./commands/media'),
+    import('./commands/records'),
+    import('./commands/search'),
+    import('./commands/sync'),
+  ]);
 
-	commands = { browsing, db, fetch, github, links, media, records, search, sync };
-	return commands;
+  commands = { browsing, db, fetch, github, links, media, records, search, sync };
+  return commands;
 }
 
 function withDuration<T extends ResultValue>(
-	result: SuccessResult<T>,
-	startTime: number
+  result: SuccessResult<T>,
+  startTime: number
 ): SuccessResult<T> {
-	const duration = Math.round(performance.now() - startTime);
-	const meta = result.meta ? { ...result.meta, duration } : { duration };
-	return { ...result, meta };
+  const duration = Math.round(performance.now() - startTime);
+  const meta = result.meta ? { ...result.meta, duration } : { duration };
+  return { ...result, meta };
 }
 
 const HELP_TEXT = `
@@ -220,106 +220,106 @@ Examples:
 `.trim();
 
 async function main(): Promise<void> {
-	const startTime = performance.now();
-	const { command, subcommand, args, options: rawOptions } = parseArgs(process.argv.slice(2));
-	let baseOptions: BaseOptions;
-	try {
-		baseOptions = parseBaseOptions(rawOptions);
-	} catch (error) {
-		const normalizedError = error instanceof Error ? error : String(error);
-		await Bun.write(Bun.stderr, formatError(normalizedError, 'json') + '\n');
-		process.exit(1);
-	}
+  const startTime = performance.now();
+  const { command, subcommand, args, options: rawOptions } = parseArgs(process.argv.slice(2));
+  let baseOptions: BaseOptions;
+  try {
+    baseOptions = parseBaseOptions(rawOptions);
+  } catch (error) {
+    const normalizedError = error instanceof Error ? error : String(error);
+    await Bun.write(Bun.stderr, formatError(normalizedError, 'json') + '\n');
+    process.exit(1);
+  }
 
-	// Handle help
-	if (baseOptions.help || (!command && !subcommand)) {
-		console.log(HELP_TEXT);
-		process.exit(0);
-	}
+  // Handle help
+  if (baseOptions.help || (!command && !subcommand)) {
+    console.log(HELP_TEXT);
+    process.exit(0);
+  }
 
-	// Load command modules
-	const cmds = await loadCommands();
+  // Load command modules
+  const cmds = await loadCommands();
 
-	// Special case: "search <query>" without subcommand means semantic search
-	if (
-		command === 'search' &&
-		subcommand &&
-		subcommand !== 'text' &&
-		subcommand !== 'similar' &&
-		!(subcommand === 'semantic' && args.length > 0)
-	) {
-		// Treat subcommand as the query for semantic search
-		const query = [subcommand, ...args].join(' ');
-		try {
-			const handler = cmds.search?.semantic;
-			if (!handler) {
-				throw new Error('Semantic search handler not found');
-			}
-			const result = withDuration(await handler([query], rawOptions), startTime);
-			console.log(formatOutput(result, baseOptions.format, baseOptions.raw));
-			process.exit(0);
-		} catch (error) {
-			const normalizedError = error instanceof Error ? error : String(error);
-			await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
-			process.exit(1);
-		}
-	}
+  // Special case: "search <query>" without subcommand means semantic search
+  if (
+    command === 'search' &&
+    subcommand &&
+    subcommand !== 'text' &&
+    subcommand !== 'similar' &&
+    !(subcommand === 'semantic' && args.length > 0)
+  ) {
+    // Treat subcommand as the query for semantic search
+    const query = [subcommand, ...args].join(' ');
+    try {
+      const handler = cmds.search?.semantic;
+      if (!handler) {
+        throw new Error('Semantic search handler not found');
+      }
+      const result = withDuration(await handler([query], rawOptions), startTime);
+      console.log(formatOutput(result, baseOptions.format, baseOptions.raw));
+      process.exit(0);
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : String(error);
+      await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
+      process.exit(1);
+    }
+  }
 
-	// Special case: "sync <integration>" - pass integration name as first arg
-	if (command === 'sync' && subcommand) {
-		try {
-			const handler = cmds.sync?.run;
-			if (!handler) {
-				throw new Error('Sync handler not found');
-			}
-			const result = withDuration(await handler([subcommand, ...args], rawOptions), startTime);
-			console.log(formatOutput(result, baseOptions.format, baseOptions.raw));
-			process.exit(0);
-		} catch (error) {
-			const normalizedError = error instanceof Error ? error : String(error);
-			await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
-			process.exit(1);
-		}
-	}
+  // Special case: "sync <integration>" - pass integration name as first arg
+  if (command === 'sync' && subcommand) {
+    try {
+      const handler = cmds.sync?.run;
+      if (!handler) {
+        throw new Error('Sync handler not found');
+      }
+      const result = withDuration(await handler([subcommand, ...args], rawOptions), startTime);
+      console.log(formatOutput(result, baseOptions.format, baseOptions.raw));
+      process.exit(0);
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : String(error);
+      await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
+      process.exit(1);
+    }
+  }
 
-	// Find the command handler
-	const commandGroup = cmds[command];
-	if (!commandGroup) {
-		await Bun.write(
-			Bun.stderr,
-			formatError(
-				createError('UNKNOWN_COMMAND', `Unknown command: ${command}. Run 'rcr --help' for usage.`),
-				baseOptions.format
-			) + '\n'
-		);
-		process.exit(1);
-	}
+  // Find the command handler
+  const commandGroup = cmds[command];
+  if (!commandGroup) {
+    await Bun.write(
+      Bun.stderr,
+      formatError(
+        createError('UNKNOWN_COMMAND', `Unknown command: ${command}. Run 'rcr --help' for usage.`),
+        baseOptions.format
+      ) + '\n'
+    );
+    process.exit(1);
+  }
 
-	const handler = commandGroup[subcommand];
-	if (!handler) {
-		const available = Object.keys(commandGroup).join(', ');
-		await Bun.write(
-			Bun.stderr,
-			formatError(
-				createError(
-					'UNKNOWN_COMMAND',
-					`Unknown subcommand: ${command} ${subcommand}. Available: ${available}`
-				),
-				baseOptions.format
-			) + '\n'
-		);
-		process.exit(1);
-	}
+  const handler = commandGroup[subcommand];
+  if (!handler) {
+    const available = Object.keys(commandGroup).join(', ');
+    await Bun.write(
+      Bun.stderr,
+      formatError(
+        createError(
+          'UNKNOWN_COMMAND',
+          `Unknown subcommand: ${command} ${subcommand}. Available: ${available}`
+        ),
+        baseOptions.format
+      ) + '\n'
+    );
+    process.exit(1);
+  }
 
-	try {
-		const result = withDuration(await handler(args, rawOptions), startTime);
-		await Bun.write(Bun.stdout, formatOutput(result, baseOptions.format, baseOptions.raw) + '\n');
-		process.exit(0);
-	} catch (error) {
-		const normalizedError = error instanceof Error ? error : String(error);
-		await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
-		process.exit(1);
-	}
+  try {
+    const result = withDuration(await handler(args, rawOptions), startTime);
+    await Bun.write(Bun.stdout, formatOutput(result, baseOptions.format, baseOptions.raw) + '\n');
+    process.exit(0);
+  } catch (error) {
+    const normalizedError = error instanceof Error ? error : String(error);
+    await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
+    process.exit(1);
+  }
 }
 
 void main();

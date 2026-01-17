@@ -10,22 +10,22 @@ export const cursorDbCopyPath = `${CURSOR_GLOBAL_STORAGE_PATH}/state-copy.vscdb`
 export const connectionUrl = `file:${cursorDbCopyPath}`; // For drizzle-kit
 
 export class CursorNotInstalledError extends Error {
-	constructor() {
-		super(`Cursor IDE database not found at: ${cursorDbPath}`);
-		this.name = 'CursorNotInstalledError';
-	}
+  constructor() {
+    super(`Cursor IDE database not found at: ${cursorDbPath}`);
+    this.name = 'CursorNotInstalledError';
+  }
 }
 
 export const createCursorConnection = async () => {
-	const sourceFile = Bun.file(cursorDbPath);
-	if (!(await sourceFile.exists())) {
-		throw new CursorNotInstalledError();
-	}
-	// Copy file using Bun's file API
-	await Bun.write(cursorDbCopyPath, sourceFile);
+  const sourceFile = Bun.file(cursorDbPath);
+  if (!(await sourceFile.exists())) {
+    throw new CursorNotInstalledError();
+  }
+  // Copy file using Bun's file API
+  await Bun.write(cursorDbCopyPath, sourceFile);
 
-	const client = new Database(cursorDbCopyPath, { readonly: true });
-	const db = drizzle({ client, schema: cursorSchema });
+  const client = new Database(cursorDbCopyPath, { readonly: true });
+  const db = drizzle({ client, schema: cursorSchema });
 
-	return { db, client };
+  return { db, client };
 };

@@ -1,38 +1,38 @@
 {
-	"$schema": "./node_modules/oxfmt/configuration_schema.json",
-	"useTabs": true,
-	"tabWidth": 2,
-	"singleQuote": true,
-	"trailingComma": "es5",
-	"printWidth": 100,
-	"experimentalTailwindcss": {
-		"stylesheet": "./src/app/styles/app.css",
-		"attributes": ["class", "className"],
-		"functions": ["clsx", "cn"],
-		"preserveDuplicates": false,
-		"preserveWhitespace": false
-	},
-	"experimentalSortImports": {
-		"newlinesBetween": false,
-		"groups": [
-			["side-effect"],
-			["builtin"],
-			["external", "external-type"],
-			["internal", "internal-type"],
-			["parent", "parent-type"],
-			["sibling", "sibling-type"],
-			["index", "index-type"]
-		]
-	},
-	"experimentalSortPackageJson": {
-		"sortScripts": true
-	},
-	"embeddedLanguageFormatting": "auto",
-	"ignorePatterns": [
-		"pnpm-lock.yaml",
-		"package-lock.json",
-		"yarn.lock",
-		"**/*.gen.ts",
-		"**/migrations/*"
-	]
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "useTabs": false,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "printWidth": 100,
+  "experimentalTailwindcss": {
+    "stylesheet": "./src/app/styles/app.css",
+    "attributes": ["class", "className"],
+    "functions": ["clsx", "cn"],
+    "preserveDuplicates": false,
+    "preserveWhitespace": false
+  },
+  "experimentalSortImports": {
+    "newlinesBetween": false,
+    "groups": [
+      ["side-effect"],
+      ["builtin"],
+      ["external", "external-type"],
+      ["internal", "internal-type"],
+      ["parent", "parent-type"],
+      ["sibling", "sibling-type"],
+      ["index", "index-type"]
+    ]
+  },
+  "experimentalSortPackageJson": {
+    "sortScripts": true
+  },
+  "embeddedLanguageFormatting": "auto",
+  "ignorePatterns": [
+    "pnpm-lock.yaml",
+    "package-lock.json",
+    "yarn.lock",
+    "**/*.gen.ts",
+    "**/migrations/*"
+  ]
 }

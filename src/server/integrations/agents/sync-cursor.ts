@@ -17,18 +17,18 @@ const DEFAULT_SESSION_LIMIT = 10;
 // ----------------------------------------------------------------------------
 
 interface CursorDebugData {
-	sessions: ParsedCursorSession[];
-	errors: CursorParseError[];
-	stats: {
-		totalSessions: number;
-		totalMessages: number;
-		userMessages: number;
-		assistantMessages: number;
-	};
-	config: {
-		databasePath: string;
-		sessionLimit: number;
-	};
+  sessions: ParsedCursorSession[];
+  errors: CursorParseError[];
+  stats: {
+    totalSessions: number;
+    totalMessages: number;
+    userMessages: number;
+    assistantMessages: number;
+  };
+  config: {
+    databasePath: string;
+    sessionLimit: number;
+  };
 }
 
 // ----------------------------------------------------------------------------
@@ -36,8 +36,8 @@ interface CursorDebugData {
 // ----------------------------------------------------------------------------
 
 export interface SyncCursorOptions {
-	/** Number of recent sessions to process (default: 10) */
-	sessionLimit?: number;
+  /** Number of recent sessions to process (default: 10) */
+  sessionLimit?: number;
 }
 
 /**
@@ -51,99 +51,99 @@ export interface SyncCursorOptions {
  * 5. Outputs to .temp/agents-cursor-debug-{timestamp}.json
  */
 export async function syncCursorHistory(
-	debug = false,
-	options: SyncCursorOptions = {}
+  debug = false,
+  options: SyncCursorOptions = {}
 ): Promise<void> {
-	const { sessionLimit = DEFAULT_SESSION_LIMIT } = options;
+  const { sessionLimit = DEFAULT_SESSION_LIMIT } = options;
 
-	const initialDebugData: CursorDebugData = {
-		sessions: [],
-		errors: [],
-		stats: {
-			totalSessions: 0,
-			totalMessages: 0,
-			userMessages: 0,
-			assistantMessages: 0,
-		},
-		config: {
-			databasePath: cursorDbPath,
-			sessionLimit,
-		},
-	};
+  const initialDebugData: CursorDebugData = {
+    sessions: [],
+    errors: [],
+    stats: {
+      totalSessions: 0,
+      totalMessages: 0,
+      userMessages: 0,
+      assistantMessages: 0,
+    },
+    config: {
+      databasePath: cursorDbPath,
+      sessionLimit,
+    },
+  };
 
-	const debugContext = createDebugContext<CursorDebugData>(
-		'agents-cursor',
-		debug,
-		initialDebugData
-	);
+  const debugContext = createDebugContext<CursorDebugData>(
+    'agents-cursor',
+    debug,
+    initialDebugData
+  );
 
-	try {
-		logger.start('Starting Cursor IDE history sync');
+  try {
+    logger.start('Starting Cursor IDE history sync');
 
-		// Extract sessions
-		logger.info(`Extracting sessions from ${cursorDbPath}`);
-		const { sessions, errors } = await getRecentCursorSessions(sessionLimit);
+    // Extract sessions
+    logger.info(`Extracting sessions from ${cursorDbPath}`);
+    const { sessions, errors } = await getRecentCursorSessions(sessionLimit);
 
-		if (sessions.length === 0) {
-			logger.warn('No sessions found');
-			if (errors.length > 0) {
-				logger.warn(`Errors: ${errors.length}`);
-			}
-			return;
-		}
+    if (sessions.length === 0) {
+      logger.warn('No sessions found');
+      if (errors.length > 0) {
+        logger.warn(`Errors: ${errors.length}`);
+      }
+      return;
+    }
 
-		logger.info(`Found ${sessions.length} session(s)`);
+    logger.info(`Found ${sessions.length} session(s)`);
 
-		// Calculate stats
-		let totalMessages = 0;
-		let userMessages = 0;
-		let assistantMessages = 0;
+    // Calculate stats
+    let totalMessages = 0;
+    let userMessages = 0;
+    let assistantMessages = 0;
 
-		for (const session of sessions) {
-			totalMessages += session.messages.length;
+    for (const session of sessions) {
+      totalMessages += session.messages.length;
 
-			for (const msg of session.messages) {
-				if (msg.role === 'user') userMessages++;
-				else assistantMessages++;
-			}
+      for (const msg of session.messages) {
+        if (msg.role === 'user') userMessages++;
+        else assistantMessages++;
+      }
 
-			logger.info(`Session: ${session.name ?? session.composerId}`);
-			logger.info(`  Messages: ${session.messages.length}`);
-			if (session.mode) logger.info(`  Mode: ${session.mode}`);
-			if (session.branch) logger.info(`  Branch: ${session.branch}`);
-			if (session.stats.filesChanged) {
-				logger.info(
-					`  Changes: +${session.stats.linesAdded ?? 0}/-${session.stats.linesRemoved ?? 0} in ${session.stats.filesChanged} files`
-				);
-			}
-		}
+      logger.info(`Session: ${session.name ?? session.composerId}`);
+      logger.info(`  Messages: ${session.messages.length}`);
+      if (session.mode) logger.info(`  Mode: ${session.mode}`);
+      if (session.branch) logger.info(`  Branch: ${session.branch}`);
+      if (session.stats.filesChanged) {
+        logger.info(
+          `  Changes: +${session.stats.linesAdded ?? 0}/-${session.stats.linesRemoved ?? 0} in ${session.stats.filesChanged} files`
+        );
+      }
+    }
 
-		// Update debug data
-		if (debugContext.data) {
-			debugContext.data.sessions = sessions;
-			debugContext.data.errors = errors;
-			debugContext.data.stats = {
-				totalSessions: sessions.length,
-				totalMessages,
-				userMessages,
-				assistantMessages,
-			};
-		}
+    // Update debug data
+    if (debugContext.data) {
+      debugContext.data.sessions = sessions;
+      debugContext.data.errors = errors;
+      debugContext.data.stats = {
+        totalSessions: sessions.length,
+        totalMessages,
+        userMessages,
+        assistantMessages,
+      };
+    }
 
-		logger.complete('Cursor IDE history sync completed');
-		logger.info(
-			`Total: ${totalMessages} messages (${userMessages} user, ${assistantMessages} assistant)`
-		);
+    logger.complete('Cursor IDE history sync completed');
+    logger.info(
+      `Total: ${totalMessages} messages (${userMessages} user, ${assistantMessages} assistant)`
+    );
 
-		if (errors.length > 0) {
-			logger.warn(`Parse errors: ${errors.length}`);
-		}
-	} catch (error) {
-		logger.error('Error syncing Cursor IDE history', error);
-		throw error;
-	} finally {
-		await debugContext.flush().catch((flushError) => {
-			logger.error('Failed to write debug output', flushError);
-		});
-	}
+    if (errors.length > 0) {
+      logger.warn(`Parse errors: ${errors.length}`);
+    }
+  } catch (error) {
+    logger.error('Error syncing Cursor IDE history', error);
+    throw error;
+  } finally {
+    await debugContext.flush().catch((flushError) => {
+      logger.error('Failed to write debug output', flushError);
+    });
+  }
 }

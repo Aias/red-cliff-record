@@ -5,12 +5,12 @@ import type { MediaType } from '@aias/hozo';
  */
 
 export type MediaMetadata = {
-	mediaType: MediaType;
-	mediaFormat: string;
-	contentTypeString: string;
-	size?: number;
-	width?: number;
-	height?: number;
-	format?: string;
-	hasAlpha?: boolean;
+  mediaType: MediaType;
+  mediaFormat: string;
+  contentTypeString: string;
+  size?: number;
+  width?: number;
+  height?: number;
+  format?: string;
+  hasAlpha?: boolean;
 };

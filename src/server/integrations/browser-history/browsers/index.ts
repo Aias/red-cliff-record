@@ -3,8 +3,8 @@ import { arcConfig } from './arc';
 import { diaConfig } from './dia';
 
 export const browserConfigs: Record<string, BrowserConfig> = {
-	arc: arcConfig,
-	dia: diaConfig,
+  arc: arcConfig,
+  dia: diaConfig,
 };
 
 export { arcConfig, diaConfig };

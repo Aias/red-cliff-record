@@ -32,9 +32,9 @@ Schema for LLM output:
 
 ```typescript
 const CleanedFieldsSchema = z.object({
-	summary: z.string().nullable(),
-	content: z.string().nullable(),
-	notes: z.string().nullable(),
+  summary: z.string().nullable(),
+  content: z.string().nullable(),
+  notes: z.string().nullable(),
 });
 ```
 
@@ -48,8 +48,8 @@ Add import and register:
 import { clean } from './clean';
 // ...
 export const recordsRouter = createTRPCRouter({
-	// ...existing...
-	clean,
+  // ...existing...
+  clean,
 });
 ```
 
@@ -59,11 +59,11 @@ Add CLI handler following `embed` pattern:
 
 ```typescript
 const RecordsCleanOptionsSchema = BaseOptionsSchema.extend({
-	'dry-run': z.boolean().optional(),
+  'dry-run': z.boolean().optional(),
 }).strict();
 
 export const clean: CommandHandler = async (args, options) => {
-	// parseIds, call caller.records.clean, return success
+  // parseIds, call caller.records.clean, return success
 };
 ```
 
@@ -81,17 +81,17 @@ records clean <id...>        Clean record text using LLM [--dry-run]
 
 ```typescript
 const response = await openai.responses.create({
-	model: 'gpt-5.2',
-	instructions: CLEANING_INSTRUCTIONS,
-	text: {
-		format: {
-			type: 'json_schema',
-			name: 'cleaned_record_fields',
-			schema: z.toJSONSchema(CleanedFieldsSchema),
-			strict: true,
-		},
-	},
-	input: [{ role: 'user', content: contextString }],
+  model: 'gpt-5.2',
+  instructions: CLEANING_INSTRUCTIONS,
+  text: {
+    format: {
+      type: 'json_schema',
+      name: 'cleaned_record_fields',
+      schema: z.toJSONSchema(CleanedFieldsSchema),
+      strict: true,
+    },
+  },
+  input: [{ role: 'user', content: contextString }],
 });
 ```
 

@@ -6,7 +6,7 @@ import { syncBrowserHistory } from './sync';
  * Synchronizes Dia browser history with the database
  */
 export async function syncDiaBrowserData(): Promise<void> {
-	await runIntegration('browser_history', (integrationRunId) =>
-		syncBrowserHistory(diaConfig, integrationRunId)
-	);
+  await runIntegration('browser_history', (integrationRunId) =>
+    syncBrowserHistory(diaConfig, integrationRunId)
+  );
 }

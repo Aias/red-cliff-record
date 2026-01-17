@@ -18,47 +18,47 @@ const BATCH_SIZE = 200;
  * @returns Promise that resolves when all records have been processed
  */
 export const updateRecordsSources = async (): Promise<void> => {
-	console.log('Starting records sources update process');
+  console.log('Starting records sources update process');
 
-	let offset = 0;
-	let totalProcessed = 0;
-	let batchCount = 0;
+  let offset = 0;
+  let totalProcessed = 0;
+  let batchCount = 0;
 
-	try {
-		// Process records in batches
-		while (true) {
-			batchCount++;
-			console.log(`Fetching batch ${batchCount} (offset: ${offset}, size: ${BATCH_SIZE})`);
+  try {
+    // Process records in batches
+    while (true) {
+      batchCount++;
+      console.log(`Fetching batch ${batchCount} (offset: ${offset}, size: ${BATCH_SIZE})`);
 
-			// Fetch a batch of records with all their integration relationships
-			const recordList = await fetchRecordBatch(offset, BATCH_SIZE);
+      // Fetch a batch of records with all their integration relationships
+      const recordList = await fetchRecordBatch(offset, BATCH_SIZE);
 
-			// Exit loop when no more records
-			if (recordList.length === 0) {
-				console.log('No more records to process');
-				break;
-			}
+      // Exit loop when no more records
+      if (recordList.length === 0) {
+        console.log('No more records to process');
+        break;
+      }
 
-			console.log(`Processing batch with ${recordList.length} records`);
+      console.log(`Processing batch with ${recordList.length} records`);
 
-			await Promise.all(
-				recordList.map(async (record) => {
-					await updateRecordSources(record);
-					totalProcessed++;
-				})
-			);
+      await Promise.all(
+        recordList.map(async (record) => {
+          await updateRecordSources(record);
+          totalProcessed++;
+        })
+      );
 
-			// Move to next batch
-			offset += BATCH_SIZE;
-		}
+      // Move to next batch
+      offset += BATCH_SIZE;
+    }
 
-		console.log(`Successfully updated sources for ${totalProcessed} records`);
-	} catch (error) {
-		console.error('Error updating record sources:', error);
-		throw new Error(
-			`Failed to update record sources: ${error instanceof Error ? error.message : String(error)}`
-		);
-	}
+    console.log(`Successfully updated sources for ${totalProcessed} records`);
+  } catch (error) {
+    console.error('Error updating record sources:', error);
+    throw new Error(
+      `Failed to update record sources: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 };
 
 /**
@@ -69,27 +69,27 @@ export const updateRecordsSources = async (): Promise<void> => {
  * @returns Array of records with their relationships
  */
 async function fetchRecordBatch(offset: number, limit: number) {
-	return db.query.records.findMany({
-		limit,
-		offset,
-		with: {
-			airtableCreators: { columns: { id: true } },
-			airtableExtracts: { columns: { id: true } },
-			airtableFormats: { columns: { id: true } },
-			airtableSpaces: { columns: { id: true } },
-			githubRepositories: { columns: { id: true } },
-			githubUsers: { columns: { id: true } },
-			lightroomImages: { columns: { id: true } },
-			raindropBookmarks: { columns: { id: true } },
-			raindropCollections: { columns: { id: true } },
-			raindropTags: { columns: { id: true } },
-			readwiseAuthors: { columns: { id: true } },
-			readwiseDocuments: { columns: { id: true } },
-			readwiseTags: { columns: { id: true } },
-			twitterTweets: { columns: { id: true } },
-			twitterUsers: { columns: { id: true } },
-		},
-	});
+  return db.query.records.findMany({
+    limit,
+    offset,
+    with: {
+      airtableCreators: { columns: { id: true } },
+      airtableExtracts: { columns: { id: true } },
+      airtableFormats: { columns: { id: true } },
+      airtableSpaces: { columns: { id: true } },
+      githubRepositories: { columns: { id: true } },
+      githubUsers: { columns: { id: true } },
+      lightroomImages: { columns: { id: true } },
+      raindropBookmarks: { columns: { id: true } },
+      raindropCollections: { columns: { id: true } },
+      raindropTags: { columns: { id: true } },
+      readwiseAuthors: { columns: { id: true } },
+      readwiseDocuments: { columns: { id: true } },
+      readwiseTags: { columns: { id: true } },
+      twitterTweets: { columns: { id: true } },
+      twitterUsers: { columns: { id: true } },
+    },
+  });
 }
 
 /**
@@ -98,68 +98,68 @@ async function fetchRecordBatch(offset: number, limit: number) {
  * @param record - The record with its relationships
  */
 async function updateRecordSources(record: Awaited<ReturnType<typeof fetchRecordBatch>>[0]) {
-	const sources: IntegrationType[] = [];
+  const sources: IntegrationType[] = [];
 
-	// Check for Airtable sources
-	if (
-		record.airtableExtracts.length > 0 ||
-		record.airtableCreators.length > 0 ||
-		record.airtableFormats.length > 0 ||
-		record.airtableSpaces.length > 0
-	) {
-		sources.push('airtable');
-	}
+  // Check for Airtable sources
+  if (
+    record.airtableExtracts.length > 0 ||
+    record.airtableCreators.length > 0 ||
+    record.airtableFormats.length > 0 ||
+    record.airtableSpaces.length > 0
+  ) {
+    sources.push('airtable');
+  }
 
-	// Check for GitHub sources
-	if (record.githubRepositories.length > 0 || record.githubUsers.length > 0) {
-		sources.push('github');
-	}
+  // Check for GitHub sources
+  if (record.githubRepositories.length > 0 || record.githubUsers.length > 0) {
+    sources.push('github');
+  }
 
-	// Check for Raindrop sources
-	if (
-		record.raindropBookmarks.length > 0 ||
-		record.raindropCollections.length > 0 ||
-		record.raindropTags.length > 0
-	) {
-		sources.push('raindrop');
-	}
+  // Check for Raindrop sources
+  if (
+    record.raindropBookmarks.length > 0 ||
+    record.raindropCollections.length > 0 ||
+    record.raindropTags.length > 0
+  ) {
+    sources.push('raindrop');
+  }
 
-	// Check for Readwise sources
-	if (
-		record.readwiseDocuments.length > 0 ||
-		record.readwiseTags.length > 0 ||
-		record.readwiseAuthors.length > 0
-	) {
-		sources.push('readwise');
-	}
+  // Check for Readwise sources
+  if (
+    record.readwiseDocuments.length > 0 ||
+    record.readwiseTags.length > 0 ||
+    record.readwiseAuthors.length > 0
+  ) {
+    sources.push('readwise');
+  }
 
-	// Check for Twitter sources
-	if (record.twitterTweets.length > 0 || record.twitterUsers.length > 0) {
-		sources.push('twitter');
-	}
+  // Check for Twitter sources
+  if (record.twitterTweets.length > 0 || record.twitterUsers.length > 0) {
+    sources.push('twitter');
+  }
 
-	// Check for Lightroom sources
-	if (record.lightroomImages.length > 0) {
-		sources.push('lightroom');
-	}
+  // Check for Lightroom sources
+  if (record.lightroomImages.length > 0) {
+    sources.push('lightroom');
+  }
 
-	// Only update if there are sources to set
-	if (sources.length > 0) {
-		console.log(`Setting sources for record ${record.id}: ${sources.join(', ')}`);
+  // Only update if there are sources to set
+  if (sources.length > 0) {
+    console.log(`Setting sources for record ${record.id}: ${sources.join(', ')}`);
 
-		await db.update(records).set({ sources }).where(eq(records.id, record.id));
-	}
+    await db.update(records).set({ sources }).where(eq(records.id, record.id));
+  }
 }
 
 // Execute the function if this file is run directly
 if (import.meta.main) {
-	updateRecordsSources()
-		.then(() => {
-			console.log('Records sources update completed successfully');
-			process.exit(0);
-		})
-		.catch((error) => {
-			console.error('Records sources update failed:', error);
-			process.exit(1);
-		});
+  updateRecordsSources()
+    .then(() => {
+      console.log('Records sources update completed successfully');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Records sources update failed:', error);
+      process.exit(1);
+    });
 }

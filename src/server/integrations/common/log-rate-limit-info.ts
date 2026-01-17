@@ -9,47 +9,47 @@
  * @param logger - Optional logger for consistent prefixing/styling
  */
 type RateLimitLogger = {
-	info: (message: string, ...args: unknown[]) => void;
+  info: (message: string, ...args: unknown[]) => void;
 };
 
 export function logRateLimitInfo(response: {
-	headers?: Record<string, string | number | undefined>;
+  headers?: Record<string, string | number | undefined>;
 }): void;
 export function logRateLimitInfo(
-	response: { headers?: Record<string, string | number | undefined> },
-	logger: RateLimitLogger
+  response: { headers?: Record<string, string | number | undefined> },
+  logger: RateLimitLogger
 ): void;
 export function logRateLimitInfo(
-	response: { headers?: Record<string, string | number | undefined> },
-	logger?: RateLimitLogger
+  response: { headers?: Record<string, string | number | undefined> },
+  logger?: RateLimitLogger
 ): void {
-	const headers = response?.headers;
-	if (!headers) return;
+  const headers = response?.headers;
+  if (!headers) return;
 
-	// Extract rate limit information from headers
-	const limit = headers['x-ratelimit-limit'];
-	const remaining = headers['x-ratelimit-remaining'];
-	const used = headers['x-ratelimit-used'];
-	const resetTimestamp = headers['x-ratelimit-reset'];
-	const resource = headers['x-ratelimit-resource'];
+  // Extract rate limit information from headers
+  const limit = headers['x-ratelimit-limit'];
+  const remaining = headers['x-ratelimit-remaining'];
+  const used = headers['x-ratelimit-used'];
+  const resetTimestamp = headers['x-ratelimit-reset'];
+  const resource = headers['x-ratelimit-resource'];
 
-	// Format reset time as a readable date string if available
-	const resetTime = resetTimestamp
-		? new Date(Number(resetTimestamp) * 1000).toLocaleString()
-		: 'N/A';
+  // Format reset time as a readable date string if available
+  const resetTime = resetTimestamp
+    ? new Date(Number(resetTimestamp) * 1000).toLocaleString()
+    : 'N/A';
 
-	const message =
-		`Rate Limits - Limit: ${limit || 'N/A'} | ` +
-		`Remaining: ${remaining || 'N/A'} | ` +
-		`Used: ${used || 'N/A'} | ` +
-		`Reset: ${resetTime} | ` +
-		`Resource: ${resource || 'N/A'}`;
+  const message =
+    `Rate Limits - Limit: ${limit || 'N/A'} | ` +
+    `Remaining: ${remaining || 'N/A'} | ` +
+    `Used: ${used || 'N/A'} | ` +
+    `Reset: ${resetTime} | ` +
+    `Resource: ${resource || 'N/A'}`;
 
-	if (logger) {
-		logger.info(message);
-		return;
-	}
+  if (logger) {
+    logger.info(message);
+    return;
+  }
 
-	// Backwards-compatible default (still logs to stderr)
-	console.error(message);
+  // Backwards-compatible default (still logs to stderr)
+  console.error(message);
 }

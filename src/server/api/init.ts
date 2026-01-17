@@ -6,51 +6,51 @@ import { db } from '@/server/db/connections/postgres';
 import type { RecordGet } from '@/shared/types';
 
 function createRecordLoader() {
-	return new DataLoader<number, RecordGet>(async (ids) => {
-		const rows = await db.query.records.findMany({
-			where: {
-				id: {
-					in: ids as number[],
-				},
-			},
-			columns: {
-				textEmbedding: false,
-			},
-			with: {
-				media: true,
-				outgoingLinks: {
-					with: {
-						predicate: {
-							columns: {
-								id: true,
-								type: true,
-							},
-						},
-						target: {
-							columns: {
-								id: true,
-								title: true,
-							},
-						},
-					},
-					where: {
-						predicate: {
-							type: {
-								in: ['creation', 'containment'],
-							},
-						},
-					},
-				},
-			},
-		});
+  return new DataLoader<number, RecordGet>(async (ids) => {
+    const rows = await db.query.records.findMany({
+      where: {
+        id: {
+          in: ids as number[],
+        },
+      },
+      columns: {
+        textEmbedding: false,
+      },
+      with: {
+        media: true,
+        outgoingLinks: {
+          with: {
+            predicate: {
+              columns: {
+                id: true,
+                type: true,
+              },
+            },
+            target: {
+              columns: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+          where: {
+            predicate: {
+              type: {
+                in: ['creation', 'containment'],
+              },
+            },
+          },
+        },
+      },
+    });
 
-		const byId = new Map(rows.map((r) => [r.id, r]));
+    const byId = new Map(rows.map((r) => [r.id, r]));
 
-		return ids.map((id) => {
-			const record = byId.get(id);
-			return record ? record : new Error(`Record not found for ID: ${id}`);
-		});
-	});
+    return ids.map((id) => {
+      const record = byId.get(id);
+      return record ? record : new Error(`Record not found for ID: ${id}`);
+    });
+  });
 }
 
 /**
@@ -66,13 +66,13 @@ function createRecordLoader() {
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = (opts: { headers: Headers }) => {
-	return {
-		...opts,
-		db,
-		loaders: {
-			record: createRecordLoader(),
-		},
-	};
+  return {
+    ...opts,
+    db,
+    loaders: {
+      record: createRecordLoader(),
+    },
+  };
 };
 
 export type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
@@ -85,16 +85,16 @@ export type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
  * errors on the backend.
  */
 const t = initTRPC.context<typeof createTRPCContext>().create({
-	transformer: superjson,
-	errorFormatter({ shape, error }) {
-		return {
-			...shape,
-			data: {
-				...shape.data,
-				zodError: error.cause instanceof ZodError ? z.treeifyError(error.cause) : null,
-			},
-		};
-	},
+  transformer: superjson,
+  errorFormatter({ shape, error }) {
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        zodError: error.cause instanceof ZodError ? z.treeifyError(error.cause) : null,
+      },
+    };
+  },
 });
 
 /**
@@ -130,42 +130,42 @@ const logBuffer = new Map<string, number[]>();
 let flushTimeout: Timer | null = null;
 
 const formatTimestamp = () => {
-	const now = new Date();
-	const hours = now.getHours();
-	const minutes = now.getMinutes().toString().padStart(2, '0');
-	const seconds = now.getSeconds().toString().padStart(2, '0');
-	const ampm = hours >= 12 ? 'PM' : 'AM';
-	const displayHours = hours % 12 || 12;
-	return `${displayHours}:${minutes}:${seconds} ${ampm}`;
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  const seconds = now.getSeconds().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${minutes}:${seconds} ${ampm}`;
 };
 
 const SLOW_THRESHOLD_MS = 200;
 
 const flushLogs = () => {
-	if (logBuffer.size === 0) return;
-	// Suppress logging in CLI context (set by CLI caller)
-	if (process.env.RCR_CLI === '1') return;
+  if (logBuffer.size === 0) return;
+  // Suppress logging in CLI context (set by CLI caller)
+  if (process.env.RCR_CLI === '1') return;
 
-	const timestamp = formatTimestamp();
+  const timestamp = formatTimestamp();
 
-	for (const [path, durations] of logBuffer.entries()) {
-		const count = durations.length;
-		const avg = durations.reduce((a, b) => a + b, 0) / count;
-		const max = Math.max(...durations);
-		const isSlow = max >= SLOW_THRESHOLD_MS;
-		const log = isSlow ? console.warn : console.log;
+  for (const [path, durations] of logBuffer.entries()) {
+    const count = durations.length;
+    const avg = durations.reduce((a, b) => a + b, 0) / count;
+    const max = Math.max(...durations);
+    const isSlow = max >= SLOW_THRESHOLD_MS;
+    const log = isSlow ? console.warn : console.log;
 
-		if (count > 1) {
-			log(
-				`${timestamp} [tRPC] ${path} x${count} (avg: ${avg.toFixed(2)}ms, max: ${max.toFixed(2)}ms)`
-			);
-		} else {
-			log(`${timestamp} [tRPC] ${path}: ${durations[0]?.toFixed(2)} ms`);
-		}
-	}
+    if (count > 1) {
+      log(
+        `${timestamp} [tRPC] ${path} x${count} (avg: ${avg.toFixed(2)}ms, max: ${max.toFixed(2)}ms)`
+      );
+    } else {
+      log(`${timestamp} [tRPC] ${path}: ${durations[0]?.toFixed(2)} ms`);
+    }
+  }
 
-	logBuffer.clear();
-	flushTimeout = null;
+  logBuffer.clear();
+  flushTimeout = null;
 };
 
 /**
@@ -175,23 +175,23 @@ const flushLogs = () => {
  * network latency that would occur in production but not in local development.
  */
 const timingMiddleware = t.middleware(async ({ next, path }) => {
-	const start = performance.now();
-	const result = await next();
-	const end = performance.now();
-	const duration = end - start;
+  const start = performance.now();
+  const result = await next();
+  const end = performance.now();
+  const duration = end - start;
 
-	// Add to buffer
-	const current = logBuffer.get(path) || [];
-	current.push(duration);
-	logBuffer.set(path, current);
+  // Add to buffer
+  const current = logBuffer.get(path) || [];
+  current.push(duration);
+  logBuffer.set(path, current);
 
-	// Schedule flush if not already scheduled
-	if (!flushTimeout) {
-		// Flush after a short delay to catch batched requests
-		flushTimeout = setTimeout(flushLogs, 50);
-	}
+  // Schedule flush if not already scheduled
+  if (!flushTimeout) {
+    // Flush after a short delay to catch batched requests
+    flushTimeout = setTimeout(flushLogs, 50);
+  }
 
-	return result;
+  return result;
 });
 
 /**

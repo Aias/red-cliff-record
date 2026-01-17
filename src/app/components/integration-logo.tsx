@@ -10,51 +10,51 @@ import { XLogo } from './logos/x';
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
 
 interface IntegrationLogoProps {
-	integration: IntegrationType;
-	className?: string;
+  integration: IntegrationType;
+  className?: string;
 }
 
 const LogoComponent = ({
-	service,
-	className,
+  service,
+  className,
 }: {
-	service: IntegrationType;
-	className?: string;
+  service: IntegrationType;
+  className?: string;
 }) => {
-	switch (service) {
-		case 'lightroom':
-			return <AdobeLogo className={className} />;
-		case 'airtable':
-			return <AirtableLogo className={className} />;
-		case 'browser_history':
-			return <ArcLogo className={className} />;
-		case 'github':
-			return <GithubLogo className={className} />;
-		case 'raindrop':
-			return <RaindropLogo className={className} />;
-		case 'readwise':
-			return <ReadwiseLogo className={className} />;
-		case 'twitter':
-			return <XLogo className={className} />;
-		default:
-			return null;
-	}
+  switch (service) {
+    case 'lightroom':
+      return <AdobeLogo className={className} />;
+    case 'airtable':
+      return <AirtableLogo className={className} />;
+    case 'browser_history':
+      return <ArcLogo className={className} />;
+    case 'github':
+      return <GithubLogo className={className} />;
+    case 'raindrop':
+      return <RaindropLogo className={className} />;
+    case 'readwise':
+      return <ReadwiseLogo className={className} />;
+    case 'twitter':
+      return <XLogo className={className} />;
+    default:
+      return null;
+  }
 };
 
 export const IntegrationLogo = memo(function IntegrationLogo({
-	integration: service,
-	className,
+  integration: service,
+  className,
 }: IntegrationLogoProps) {
-	return (
-		<Tooltip>
-			<TooltipTrigger asChild>
-				<div className={className}>
-					<LogoComponent service={service} />
-				</div>
-			</TooltipTrigger>
-			<TooltipContent>
-				<span className="capitalize">{service}</span>
-			</TooltipContent>
-		</Tooltip>
-	);
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className={className}>
+          <LogoComponent service={service} />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <span className="capitalize">{service}</span>
+      </TooltipContent>
+    </Tooltip>
+  );
 });
