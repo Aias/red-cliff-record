@@ -243,7 +243,7 @@ Never attempt to start the development server or build the application. The user
 
 **Formatting & Indentation:**
 
-- Governed by Oxfmt (`.oxfmtrc.json`): tabs for indentation (width 2). Run `bun run format` at the end of a session before committing.
+- Governed by Oxfmt (`.oxfmtrc.json`): spaces for indentation (width 2). Run `bun run format` at the end of a session before committing.
 
 **Media & File Handling:**
 
