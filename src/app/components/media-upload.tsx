@@ -1,11 +1,11 @@
+import { UploadIcon } from 'lucide-react';
 import * as React from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { UploadIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { Spinner } from './spinner';
 import { Button } from '@/components/button';
 import { cn } from '@/lib/utils';
+import { Spinner } from './spinner';
 
 const mediaFileSchema = z
 	.instanceof(File)

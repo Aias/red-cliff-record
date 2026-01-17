@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
 import { KeyboardIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import {
 	formatShortcut,
 	useKeyboardShortcut,

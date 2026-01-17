@@ -1,7 +1,7 @@
-import { memo } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { RectangleEllipsisIcon } from 'lucide-react';
-import { recordTypeIcons } from './type-icons';
+import { memo } from 'react';
 import { Avatar } from '@/components/avatar';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { Markdown } from '@/components/markdown';
@@ -10,7 +10,7 @@ import { Spinner } from '@/components/spinner';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types';
-import { useNavigate } from '@tanstack/react-router';
+import { recordTypeIcons } from './type-icons';
 
 interface RecordDisplayProps {
 	recordId: DbId;

@@ -3,8 +3,8 @@
  * JSON by default, table format for human debugging
  */
 
-import type { OutputFormat, ResultMeta, ResultValue, SuccessResult } from './types';
 import { formatErrorResult } from './errors';
+import type { OutputFormat, ResultMeta, ResultValue, SuccessResult } from './types';
 
 type RecordValue = { [key: string]: ResultValue };
 

@@ -1,18 +1,18 @@
-import { useMemo, useRef } from 'react';
 import type { LinkSelect, PredicateSelect, PredicateType } from '@aias/hozo';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
+import { useMemo, useRef } from 'react';
 import { trpc } from '@/app/trpc';
-import { RecordLink } from './record-link';
-import { RelationshipSelector } from './record-lookup';
 import { Spinner } from '@/components/spinner';
 import { useDeleteLinks } from '@/lib/hooks/link-mutations';
-import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { cn } from '@/lib/utils';
 import { exhaustive } from '@/shared/lib/type-utils';
 import type { DbId, LinkPartial, RecordGet } from '@/shared/types';
+import { RecordLink } from './record-link';
+import { RelationshipSelector } from './record-lookup';
 
 /** Predicate types in display priority order (first = highest priority) */
 const PREDICATE_TYPE_ORDER = exhaustive<PredicateType>()([

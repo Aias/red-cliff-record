@@ -1,6 +1,6 @@
 import type { RelationsFieldFilter } from 'drizzle-orm';
-import { publicProcedure } from '../../init';
 import { ListRecordsInputSchema, type IdParamList } from '@/shared/types';
+import { publicProcedure } from '../../init';
 
 /**
  * Build a filter condition for the title column based on hasTitle and title text search.

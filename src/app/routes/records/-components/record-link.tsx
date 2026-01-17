@@ -1,10 +1,9 @@
-import { memo } from 'react';
 import type { MediaType } from '@aias/hozo';
-import { Link } from '@tanstack/react-router';
 import type { LinkOptions } from '@tanstack/react-router';
-import { CornerDownRightIcon, RectangleEllipsisIcon } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
-import { recordTypeIcons } from './type-icons';
+import { CornerDownRightIcon, RectangleEllipsisIcon } from 'lucide-react';
+import { memo } from 'react';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,6 +19,7 @@ import { Spinner } from '@/components/spinner';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types';
+import { recordTypeIcons } from './type-icons';
 
 interface RecordAction {
 	label: string;
@@ -131,7 +131,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
 									<RectangleEllipsisIcon
-										className="peer absolute inset-0 z-10 size-full cursor-pointer themed opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-c-accent focus-visible:opacity-100 data-[state=open]:opacity-100"
+										className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-c-accent focus-visible:opacity-100 data-[state=open]:opacity-100"
 										role="button"
 									/>
 								</DropdownMenuTrigger>

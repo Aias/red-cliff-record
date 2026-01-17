@@ -2,11 +2,11 @@ import type { IntegrationType, MediaType, RecordType } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
 import { cosineDistance, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { createEmbedding } from '@/lib/server/create-embedding';
 import { similarity, SIMILARITY_THRESHOLD } from '@/server/lib/constants';
 import { seriateRecordsByEmbedding } from '@/server/lib/seriation';
-import { createTRPCRouter, publicProcedure } from '../init';
-import { createEmbedding } from '@/lib/server/create-embedding';
 import { IdSchema, SearchRecordsInputSchema } from '@/shared/types';
+import { createTRPCRouter, publicProcedure } from '../init';
 
 export type SearchResult = {
 	id: number;

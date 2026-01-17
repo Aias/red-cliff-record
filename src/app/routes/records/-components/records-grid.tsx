@@ -1,4 +1,3 @@
-import { memo, useCallback, useMemo, useState } from 'react';
 import {
 	IntegrationTypeSchema,
 	RecordTypeSchema,
@@ -7,8 +6,8 @@ import {
 } from '@aias/hozo';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { ChevronDownIcon } from 'lucide-react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { trpc } from '@/app/trpc';
-import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 import { Button } from '@/components/button';
 import { Checkbox } from '@/components/checkbox';
 import {
@@ -28,8 +27,9 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
-import { defaultQueueOptions } from '@/shared/types';
 import type { DbId } from '@/shared/types';
+import { defaultQueueOptions } from '@/shared/types';
+import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 
 const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 	const { data: record } = useRecord(id);

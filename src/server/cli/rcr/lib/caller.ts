@@ -5,8 +5,8 @@
  * reusing all the query logic from the API routers.
  */
 
-import { appRouter } from '@/server/api/root';
 import { createCallerFactory, createTRPCContext } from '@/server/api/init';
+import { appRouter } from '@/server/api/root';
 
 // Suppress tRPC timing logs in CLI context
 process.env.RCR_CLI = '1';

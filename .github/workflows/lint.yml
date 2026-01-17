@@ -17,9 +17,6 @@ jobs:
       # 2 – Install dependencies
       - run: bun install
 
-      # 3 - Build hozo package
-      - run: bun run --filter @aias/hozo build
-
-      # 4 – Check formatting and lint
-      - run: bunx prettier --check .
+      # 3 – Check formatting and lint
+      - run: bun run format:check
       - run: bun run lint

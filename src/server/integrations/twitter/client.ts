@@ -6,6 +6,7 @@
  */
 
 import { randomBytes, randomUUID } from 'node:crypto';
+import { createIntegrationLogger } from '../common/logging';
 import { type TwitterCredentials, getCredentials } from './auth';
 import { buildBookmarksFeatures, buildTweetDetailFeatures } from './features';
 import {
@@ -16,7 +17,6 @@ import {
 	type TwitterBookmarksArray,
 	extractTweetId,
 } from './types';
-import { createIntegrationLogger } from '../common/logging';
 
 const logger = createIntegrationLogger('twitter', 'client');
 

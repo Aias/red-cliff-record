@@ -7,10 +7,10 @@ import {
 	type TwitterUserInsert,
 } from '@aias/hozo';
 import { db } from '@/server/db/connections';
-import { createTwitterClient } from './client';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
+import { createTwitterClient } from './client';
 import { processMedia, processTweet, processUser } from './helpers';
 import {
 	createMediaFromTweets,

@@ -8,8 +8,8 @@ import {
 	type RefCallback,
 	type RefObject,
 } from 'react';
-import { Textarea } from './textarea';
 import { cn } from '@/lib/utils';
+import { Textarea } from './textarea';
 
 interface DynamicTextareaProps
 	extends Omit<ComponentProps<'textarea'>, 'rows'>, React.ComponentPropsWithRef<'textarea'> {

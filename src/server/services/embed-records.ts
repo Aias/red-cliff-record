@@ -1,12 +1,12 @@
 import { records, RunType } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
-import { createEmbedding } from '../../app/lib/server/create-embedding';
-import { createIntegrationLogger } from '../integrations/common/logging';
-import { runIntegration } from '../integrations/common/run-integration';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createRecordEmbeddingText, getRecordTitle } from '@/shared/lib/embedding';
 import type { FullRecord } from '@/shared/types';
+import { createEmbedding } from '../../app/lib/server/create-embedding';
+import { createIntegrationLogger } from '../integrations/common/logging';
+import { runIntegration } from '../integrations/common/run-integration';
 
 const logger = createIntegrationLogger('services', 'embed-records');
 

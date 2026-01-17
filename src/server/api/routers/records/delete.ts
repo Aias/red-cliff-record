@@ -23,8 +23,8 @@ import {
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { publicProcedure } from '../../init';
 import { IdSchema } from '@/shared/types';
+import { publicProcedure } from '../../init';
 
 export const deleteRecords = publicProcedure
 	.input(z.array(IdSchema))

@@ -13,10 +13,10 @@ import {
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
+import { decodeHtmlEntities } from '@/shared/lib/formatting';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 import { createUrlResolver, loadKnownTweetIds, normalizeTweetContent } from './tweet-text';
-import { decodeHtmlEntities } from '@/shared/lib/formatting';
 
 const logger = createIntegrationLogger('twitter', 'map');
 

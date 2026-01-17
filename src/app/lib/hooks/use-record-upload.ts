@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
+import type { DbId } from '@/shared/types';
 import { readFileAsBase64 } from '../read-file';
 import { useCreateMedia } from './media-mutations';
-import type { DbId } from '@/shared/types';
 
 export interface UseRecordUploadResult {
 	uploadFile: (file: File) => Promise<void>;

@@ -2,8 +2,8 @@ import { RecordInsertSchema, records } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { publicProcedure } from '../../init';
 import { IdSchema, type DbId, type RecordGet } from '@/shared/types';
+import { publicProcedure } from '../../init';
 
 // Schema for bulk update data - omit fields that shouldn't be bulk-updated
 const BulkUpdateDataSchema = RecordInsertSchema.omit({

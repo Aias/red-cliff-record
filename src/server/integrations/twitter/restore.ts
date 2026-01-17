@@ -1,6 +1,7 @@
 import { records } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
+import { decodeHtmlEntities } from '@/shared/lib/formatting';
 import { createIntegrationLogger } from '../common/logging';
 import {
 	createUrlResolver,
@@ -8,7 +9,6 @@ import {
 	normalizeTweetContent,
 	stripUrls,
 } from './tweet-text';
-import { decodeHtmlEntities } from '@/shared/lib/formatting';
 
 const logger = createIntegrationLogger('twitter', 'restore-records');
 

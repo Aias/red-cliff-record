@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PlusCircleIcon, SearchIcon } from 'lucide-react';
+import { useState } from 'react';
 import { useRecordSearch } from '@/app/lib/hooks/use-record-search';
-import { SearchResultItem } from '../records/-components/search-result-item';
 import { Button } from '@/components/button';
 import {
 	Command,
@@ -19,6 +18,7 @@ import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { cn } from '@/lib/utils';
 import { defaultQueueOptions } from '@/shared/types';
+import { SearchResultItem } from '../records/-components/search-result-item';
 
 export const SiteSearch = () => {
 	const navigate = useNavigate();

@@ -294,7 +294,7 @@ bun run build
 # Lint and type check (oxlint + tsgo, fast—run frequently)
 bun run lint
 
-# Format code (Prettier, run before commits)
+# Format code (Oxfmt, run before commits)
 bun run format
 
 # Open database studio

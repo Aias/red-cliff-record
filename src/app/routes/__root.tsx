@@ -1,17 +1,17 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { type QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { ServerHelpers } from '@/app/trpc';
-import stylesUrl from '../styles/app.css?url';
-import { AppLayout } from './-app-components/app-layout';
-import { DefaultCatchBoundary } from './-app-components/catch-boundary';
-import { NotFound } from './-app-components/not-found';
 import { Toaster } from '@/components/sonner';
 import { TooltipProvider } from '@/components/tooltip';
 import { KeyboardShortcutProvider } from '@/lib/keyboard-shortcuts';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getTheme, type Theme } from '@/lib/server/theme';
 import { cn } from '@/lib/utils';
+import stylesUrl from '../styles/app.css?url';
+import { AppLayout } from './-app-components/app-layout';
+import { DefaultCatchBoundary } from './-app-components/catch-boundary';
+import { NotFound } from './-app-components/not-found';
 
 export interface RouterAppContext {
 	queryClient: QueryClient;

@@ -1,5 +1,5 @@
-import { memo } from 'react';
 import type { IntegrationType } from '@aias/hozo';
+import { memo } from 'react';
 import { AdobeLogo } from './logos/adobe';
 import { AirtableLogo } from './logos/airtable';
 import { ArcLogo } from './logos/arc';

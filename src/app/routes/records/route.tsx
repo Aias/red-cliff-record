@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import {
 	createFileRoute,
 	Link,
@@ -6,12 +5,13 @@ import {
 	retainSearchParams,
 	useMatches,
 } from '@tanstack/react-router';
+import { useCallback } from 'react';
 import { trpc } from '@/app/trpc';
-import { RecordLink } from './-components/record-link';
-import { RecordsGrid } from './-components/records-grid';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { ListRecordsInputSchema } from '@/shared/types';
+import { RecordLink } from './-components/record-link';
+import { RecordsGrid } from './-components/records-grid';
 
 export const Route = createFileRoute('/records')({
 	validateSearch: ListRecordsInputSchema,

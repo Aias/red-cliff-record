@@ -1,12 +1,12 @@
-import { memo } from 'react';
 import type { MediaType } from '@aias/hozo';
-import type { SearchResult } from '@/server/api/routers/search';
 import { CornerDownRightIcon } from 'lucide-react';
-import { recordTypeIcons } from './type-icons';
+import { memo } from 'react';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
 import { usePredicateMap } from '@/lib/hooks/record-queries';
+import type { SearchResult } from '@/server/api/routers/search';
 import { toTitleCase } from '@/shared/lib/formatting';
+import { recordTypeIcons } from './type-icons';
 
 export const SearchResultItem = memo(function SearchResultItem({
 	result,

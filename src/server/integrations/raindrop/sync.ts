@@ -17,8 +17,8 @@ import {
 	createRecordsFromRaindropBookmarks,
 	createRecordsFromRaindropTags,
 } from './map';
-import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 import type { Raindrop } from './types';
+import { CollectionsResponseSchema, RaindropResponseSchema } from './types';
 
 /**
  * Configuration constants

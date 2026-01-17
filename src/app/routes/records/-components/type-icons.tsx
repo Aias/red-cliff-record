@@ -1,6 +1,6 @@
-import { memo } from 'react';
 import type { RecordType } from '@aias/hozo';
 import { FileTextIcon, LightbulbIcon, UserIcon } from 'lucide-react';
+import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 
 // Map record types to their corresponding icons and descriptions

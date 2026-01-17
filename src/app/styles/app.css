@@ -29,47 +29,12 @@
 	--color-c-page: var(--c-neutral-elevation-hill);
 	--color-c-container: var(--c-neutral-elevation-ground);
 	--color-c-float: var(--c-neutral-elevation-peak);
-	--color-c-background-accent: var(--c-neutral-elevation-ground);
 
 	--color-c-display: var(--c-neutral-display);
 	--color-c-primary: var(--c-neutral-primary);
 	--color-c-secondary: var(--c-neutral-secondary);
 	--color-c-hint: var(--c-neutral-hint);
-	--color-c-ghost: var(--c-neutral-ghost);
 	--color-c-symbol: var(--c-neutral-symbol);
-
-	--color-c-accent: var(--c-neutral-accent);
-	--color-c-accent-active: var(--c-neutral-primary);
-
-	--color-c-main: var(--c-neutral-main);
-	--color-c-main-active: var(--c-neutral-main-active);
-	--color-c-main-contrast: var(--c-neutral-main-contrast);
-
-	--color-c-mist: var(--c-neutral-mist);
-	--color-c-splash: var(--c-neutral-splash);
-	--color-c-flood: var(--c-neutral-flood);
-
-	--color-c-divider: var(--c-neutral-divider);
-	--color-c-border: var(--c-neutral-border);
-	--color-c-edge: var(--c-neutral-edge);
-	--color-c-focus: var(--c-theme-main);
-
-	--color-c-destructive: oklch(50.42% 0.165 28);
-	--color-c-destructive-contrast: var(--white);
-}
-
-@utility themed {
-	--color-c-app: var(--c-theme-elevation-core);
-	--color-c-float: var(--c-theme-elevation-ground);
-	--color-c-container: var(--c-theme-elevation-hill);
-	--color-c-page: var(--c-theme-elevation-ground);
-
-	--color-c-display: var(--c-theme-display);
-	--color-c-primary: var(--c-theme-primary);
-	--color-c-secondary: var(--c-theme-secondary);
-	--color-c-hint: var(--c-theme-hint);
-	--color-c-ghost: var(--c-theme-ghost);
-	--color-c-symbol: var(--c-theme-symbol);
 
 	--color-c-accent: var(--c-theme-accent);
 	--color-c-accent-active: var(--c-theme-primary);
@@ -78,27 +43,25 @@
 	--color-c-main-active: var(--c-theme-main-active);
 	--color-c-main-contrast: var(--c-theme-main-contrast);
 
-	--color-c-mist: var(--c-theme-mist);
-	--color-c-splash: var(--c-theme-splash);
-	--color-c-flood: var(--c-theme-flood);
+	--color-c-mist: var(--c-neutral-mist);
+	--color-c-splash: var(--c-neutral-splash);
+	--color-c-flood: var(--c-neutral-flood);
 
-	--color-c-divider: var(--c-theme-divider);
-	--color-c-border: var(--c-theme-border);
-	--color-c-edge: var(--c-theme-edge);
+	--color-c-divider: var(--c-neutral-divider);
+	--color-c-border: var(--c-neutral-border);
 	--color-c-focus: var(--c-theme-main);
 
-	color: var(--color-c-primary);
+	--color-c-destructive: oklch(50.42% 0.165 28);
+	--color-c-destructive-contrast: var(--white);
 }
 
 @layer components {
 	:root {
 		--font-family-sans:
-			'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI (Custom)', Roboto,
-			'Helvetica Neue', 'Open Sans (Custom)', system-ui, sans-serif, 'Apple Color Emoji',
-			'Segoe UI Emoji';
+			'IBM Plex Sans', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
 		--font-family-mono:
-			'Berkeley Mono', ui-monospace, SFMono-Regular, 'Menlo', 'Consolas (Custom)',
-			'Bitstream Vera Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji';
+			'Berkeley Mono', ui-monospace, SFMono-Regular, 'Menlo', monospace, 'Apple Color Emoji',
+			'Segoe UI Emoji';
 		--font-family-serif: ui-serif, 'Georgia', Cambria, 'Times New Roman', Times, serif;
 
 		--default-font-family: var(--font-family-sans);
@@ -115,7 +78,7 @@
 	}
 
 	html {
-		accent-color: var(--color-primary);
+		accent-color: var(--color-c-main);
 		scrollbar-width: thin;
 		text-rendering: optimizeLegibility;
 		-webkit-font-smoothing: antialiased;
@@ -175,7 +138,6 @@
 
 	::marker,
 	mark {
-		@apply themed;
 		color: var(--color-c-accent);
 		background-color: var(--color-c-mist);
 	}
@@ -185,7 +147,7 @@
 		@apply font-medium text-c-accent hover:text-c-accent-active hover:underline;
 		text-decoration-line: none;
 		text-decoration-style: solid;
-		text-decoration-thickness: min(2px, max(1px, 0.05em));
+		text-decoration-thickness: clamp(1px, 0.05em, 2px);
 		text-underline-offset: calc(0.025em + 2px);
 		text-decoration-skip-ink: auto;
 		text-decoration-color: var(--c-theme-divider);
@@ -236,7 +198,7 @@
 }
 
 @utility code {
-	@apply rounded-sm bg-c-splash px-1.25 font-mono text-[0.875em] themed;
+	@apply rounded-sm bg-c-splash px-1.25 font-mono text-[0.875em];
 }
 
 @utility checkbox {
@@ -263,7 +225,7 @@
 	}
 	&:is(.selected, [data-status='active'], :has([data-status='active'])):hover,
 	&:is(.selected, [data-status='active'], :has([data-status='active'])):active {
-		@apply border-c-edge bg-c-flood;
+		@apply border-c-focus bg-c-flood;
 	}
 }
 

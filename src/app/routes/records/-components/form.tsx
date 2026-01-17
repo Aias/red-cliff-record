@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useRef } from 'react';
 import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@aias/hozo';
 import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
+import { useCallback, useEffect, useRef } from 'react';
 import { z } from 'zod';
-import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
-import { recordTypeIcons } from './type-icons';
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -39,8 +37,10 @@ import { useDeleteMedia } from '@/lib/hooks/media-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { useRecordUpload } from '@/lib/hooks/use-record-upload';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { cn } from '@/lib/utils';
 import type { RecordGet } from '@/shared/types';
+import { recordTypeIcons } from './type-icons';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
 	recordId: number;

@@ -2,10 +2,10 @@ import { records, RunType } from '@aias/hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { uploadMediaToR2 } from '@/server/lib/media';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { EnvSchema } from '@/shared/lib/env';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';
-import { runConcurrentPool } from '@/shared/lib/async-pool';
 
 const logger = createIntegrationLogger('services', 'save-avatars');
 

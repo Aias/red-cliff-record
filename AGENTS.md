@@ -36,7 +36,7 @@ Use all tools at your disposal to diagnose and resolve issues. This includes but
 
 - `bun lint` - Runs oxlint + tsgo (type-checking). Fast enough to run frequently during development.
 - `bun lint:watch` - Runs tsgo in watch mode for continuous type-checking during development.
-- `bun format` - Runs Prettier. Run at the end of a set of changes before committing.
+- `bun format` - Runs oxfmt. Run at the end of a set of changes before committing.
 
 The lint command handles both linting and type-checking in one step via tsgo (the TypeScript Go port). Since it's very fast (~1s), run it liberally during development rather than waiting until the end. There are no separate `tsc` commands—always use `lint` or `lint:watch`.
 
@@ -117,7 +117,7 @@ Never attempt to start the development server or build the application. The user
 - When writing transforms, use `translate`, `rotate`, `scale`, and other transform sub-properties directly rather than putting them all in a `transform` property
 - Across all code, prefer semantic HTML first, then a CSS-only implementation for behavior HTML cannot express, then TypeScript for behavior CSS cannot express, and only add or rely on external dependencies when absolutely necessary or when they are already in the project
 - Theme colors follow a semantic naming pattern: `c-main` for primary actions, `c-main-contrast` for text on `c-main` backgrounds. Similar patterns exist for `c-destructive`/`c-destructive-contrast`. Never invent color token names—check `src/app/styles/app.css` for available tokens
-- **Detecting invalid Tailwind classes**: Prettier's Tailwind plugin sorts invalid/unknown classes to the front of the class list. If classes appear out of order after running `bun format`, they're likely misspelled or don't exist in the theme
+- **Detecting invalid Tailwind classes**: Oxfmt sorts invalid/unknown classes to the front of the class list. If classes appear out of order after running `bun format`, they're likely misspelled or don't exist in the theme
 
 **TypeScript Requirements:**
 
@@ -243,7 +243,7 @@ Never attempt to start the development server or build the application. The user
 
 **Formatting & Indentation:**
 
-- Governed by Prettier (`.prettierrc`): tabs for indentation (width 2). Run `bun run format` at the end of a session before committing.
+- Governed by Oxfmt (`.oxfmtrc.json`): tabs for indentation (width 2). Run `bun run format` at the end of a session before committing.
 
 **Media & File Handling:**
 

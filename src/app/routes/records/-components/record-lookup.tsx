@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { PredicateSelect } from '@aias/hozo';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRecordSearch } from '@/app/lib/hooks/use-record-search';
 import { trpc } from '@/app/trpc';
-import { SearchResultItem } from './search-result-item';
-import { RecordTypeIcon } from './type-icons';
 import { Badge } from '@/components/badge';
 import { Button, type ButtonProps } from '@/components/button';
 import {
@@ -26,6 +24,8 @@ import { useUpsertLink } from '@/lib/hooks/link-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { cn } from '@/lib/utils';
 import type { DbId, LinkPartial } from '@/shared/types';
+import { SearchResultItem } from './search-result-item';
+import { RecordTypeIcon } from './type-icons';
 
 /* --------------------------------------------------------------------------
  * Types for extra, runtime‑supplied actions shown after the predicate list.

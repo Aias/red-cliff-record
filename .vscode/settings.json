@@ -1,6 +1,4 @@
 {
-	"eslint.useFlatConfig": true,
-	"eslint.workingDirectories": ["."],
 	"editor.codeActionsOnSave": {
 		"source.fixAll.oxc": "explicit",
 		"source.fixAll.ts": "explicit"
@@ -41,5 +39,8 @@
 	"typescript.experimental.useTsgo": true,
 	"oxc.typeAware": true,
 	"oxc.unusedDisableDirectives": "warn",
+	"oxc.fmt.configPath": ".oxfmtrc.json",
+	"editor.defaultFormatter": "oxc.oxc-vscode",
+	"editor.formatOnSave": true,
 	"github.gitProtocol": "ssh"
 }

@@ -1,7 +1,7 @@
-import type React from 'react';
-import { useCallback, useMemo, useRef } from 'react';
 import type { MediaSelect } from '@aias/hozo';
 import { Dialog as DialogPrimitive } from 'radix-ui';
+import type React from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 type LightboxImage = Pick<MediaSelect, 'altText' | 'id' | 'url'>;
 

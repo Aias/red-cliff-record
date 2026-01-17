@@ -1,10 +1,10 @@
-import { useMemo } from 'react';
 import type { PredicateSelect } from '@aias/hozo';
 import { useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
-import { useEmbedRecord } from './record-mutations';
 import type { DbId, RecordLinks } from '@/shared/types';
+import { useEmbedRecord } from './record-mutations';
 
 export function useUpsertLink() {
 	const utils = trpc.useUtils();

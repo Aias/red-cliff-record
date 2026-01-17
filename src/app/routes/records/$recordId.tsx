@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useMemo } from 'react';
 import { createFileRoute, retainSearchParams } from '@tanstack/react-router';
+import { useCallback, useEffect, useMemo } from 'react';
 import { trpc } from '@/app/trpc';
+import { Spinner } from '@/components/spinner';
+import { useBulkUpdate, useDeleteRecords } from '@/lib/hooks/record-mutations';
+import { useRecordTree } from '@/lib/hooks/record-queries';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import type { FamilyTree } from '@/server/api/routers/records/tree';
+import { CoercedIdSchema, type DbId } from '@/shared/types';
 import { RecordForm } from './-components/form';
 import { RecordDisplay } from './-components/record-display';
 import { RelationsList, SimilarRecords } from './-components/relations';
-import { Spinner } from '@/components/spinner';
-import { useBulkUpdate, useDeleteRecords } from '@/lib/hooks/record-mutations';
-import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
-import { useRecordTree } from '@/lib/hooks/record-queries';
-import { CoercedIdSchema, type DbId } from '@/shared/types';
 
 export const Route = createFileRoute('/records/$recordId')({
 	params: { parse: (params) => ({ recordId: CoercedIdSchema.parse(params.recordId) }) },

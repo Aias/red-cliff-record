@@ -1,3 +1,4 @@
+import type { LinkInsert, LinkSelect, RecordSelect } from '@aias/hozo';
 import {
 	airtableCreators,
 	airtableExtracts,
@@ -18,13 +19,12 @@ import {
 	twitterTweets,
 	twitterUsers,
 } from '@aias/hozo';
-import type { LinkInsert, LinkSelect, RecordSelect } from '@aias/hozo';
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { publicProcedure } from '../../init';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId } from '@/shared/types';
+import { publicProcedure } from '../../init';
 
 export const merge = publicProcedure
 	.input(
