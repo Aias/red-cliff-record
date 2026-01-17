@@ -10,6 +10,7 @@ import { trpc } from '@/app/trpc';
 import { RecordLink } from './-components/record-link';
 import { RecordsGrid } from './-components/records-grid';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
 import { ListRecordsInputSchema } from '@/shared/types';
 
 export const Route = createFileRoute('/records')({
@@ -55,6 +56,39 @@ function RouteComponent() {
 		[navigate, search]
 	);
 
+	// Open first record from list view
+	const openFirstRecord = useCallback(() => {
+		const firstRecordId = recordsList?.ids[0]?.id;
+		if (firstRecordId) {
+			void navigate({
+				to: '/records/$recordId',
+				params: { recordId: firstRecordId },
+				search,
+			});
+		}
+	}, [recordsList, navigate, search]);
+
+	// Focus current record in sidebar (or first if not found)
+	const focusSidebarRecord = useCallback(() => {
+		const selector = currentRecordId
+			? `[data-record-sidebar-id="${currentRecordId}"]`
+			: '[data-record-sidebar-id]';
+		const element = document.querySelector<HTMLElement>(selector);
+		element?.focus();
+	}, [currentRecordId]);
+
+	useKeyboardShortcut('mod+arrowright', openFirstRecord, {
+		description: 'Open first record',
+		category: 'Records',
+		when: () => !isRecordSelected,
+	});
+
+	useKeyboardShortcut('mod+arrowleft', focusSidebarRecord, {
+		description: 'Focus record in sidebar',
+		category: 'Records',
+		when: () => isRecordSelected,
+	});
+
 	return (
 		<main className={`flex basis-full overflow-hidden ${!isRecordSelected ? 'p-3' : ''}`}>
 			{isRecordSelected && recordsList ? (
@@ -74,7 +108,7 @@ function RouteComponent() {
 							className="flex flex-col gap-1 overflow-y-auto px-3 text-xs"
 						>
 							{recordsList.ids.map(({ id }) => (
-								<RadioCardsItem key={id} value={id.toString()}>
+								<RadioCardsItem key={id} value={id.toString()} data-record-sidebar-id={id}>
 									<RecordLink id={id} className="w-full overflow-hidden" />
 								</RadioCardsItem>
 							))}
