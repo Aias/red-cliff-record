@@ -83,19 +83,18 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
             className="size-6"
           />
         )}
-        <div className="flex flex-1 flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <Link
-              to="/records/$recordId"
-              params={{ recordId: id }}
-              data-has-title={Boolean(title)}
-              className="text-base font-semibold text-c-primary underline-offset-4 hover:underline data-[has-title=false]:font-medium data-[has-title=false]:text-c-hint"
-            >
-              {title ?? 'Untitled'}
-            </Link>
-            {abbreviation && <span className="text-xs text-c-hint">({abbreviation})</span>}
-          </div>
-          {sense && <em className="ml-6 text-xs text-c-secondary">{sense}</em>}
+
+        <div className="flex flex-1 flex-wrap items-center gap-3">
+          <Link
+            to="/records/$recordId"
+            params={{ recordId: id }}
+            data-has-title={Boolean(title)}
+            className="text-base font-semibold text-c-primary underline-offset-4 hover:underline data-[has-title=false]:font-medium data-[has-title=false]:text-c-hint"
+          >
+            {title ?? 'Untitled'}
+          </Link>
+          {abbreviation && <span className="text-xs text-c-hint">({abbreviation})</span>}
+          {sense && <em className="text-xs text-c-secondary">{sense}</em>}
         </div>
 
         <TypeIcon className="size-4 shrink-0 text-c-hint" />

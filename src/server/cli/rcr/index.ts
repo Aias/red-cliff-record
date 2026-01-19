@@ -282,8 +282,12 @@ async function main(): Promise<void> {
     }
   }
 
+  // Command aliases (e.g., "record" -> "records" for natural typing)
+  const commandAliases: Record<string, string> = { record: 'records' };
+  const resolvedCommand = commandAliases[command] ?? command;
+
   // Find the command handler
-  const commandGroup = cmds[command];
+  const commandGroup = cmds[resolvedCommand];
   if (!commandGroup) {
     await Bun.write(
       Bun.stderr,
@@ -303,7 +307,7 @@ async function main(): Promise<void> {
       formatError(
         createError(
           'UNKNOWN_COMMAND',
-          `Unknown subcommand: ${command} ${subcommand}. Available: ${available}`
+          `Unknown subcommand: ${resolvedCommand} ${subcommand}. Available: ${available}`
         ),
         baseOptions.format
       ) + '\n'
