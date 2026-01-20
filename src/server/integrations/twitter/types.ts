@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 // ===============================
-// User URL Schemas
+// URL Entity Schema (shared by users and tweets)
 // ===============================
 
-export const UserUrlSchema = z.object({
+export const UrlEntitySchema = z.object({
   display_url: z.string(),
   expanded_url: z.string(),
   url: z.string(),
-  indices: z.array(z.number()),
+  indices: z.tuple([z.number(), z.number()]),
 });
 
 // ===============================
@@ -30,12 +30,12 @@ export const UserLegacySchema = z.object({
     .object({
       url: z
         .object({
-          urls: z.array(UserUrlSchema).optional(),
+          urls: z.array(UrlEntitySchema).optional(),
         })
         .optional(),
       description: z
         .object({
-          urls: z.array(UserUrlSchema).optional(),
+          urls: z.array(UrlEntitySchema).optional(),
         })
         .optional(),
     })
@@ -146,7 +146,7 @@ export const NoteTweetSchema = z.object({
       entity_set: z.object({
         hashtags: z.array(z.any()),
         symbols: z.array(z.any()),
-        urls: z.array(z.any()),
+        urls: z.array(UrlEntitySchema),
         user_mentions: z.array(z.any()),
       }),
       richtext: z
@@ -187,7 +187,7 @@ export const TweetLegacySchema = z.object({
       media: z.array(MediaSchema).optional(),
       symbols: z.array(z.any()).optional(),
       timestamps: z.array(z.any()).optional(),
-      urls: z.array(z.any()).optional(),
+      urls: z.array(UrlEntitySchema).optional(),
       user_mentions: z.array(z.any()).optional(),
     })
     .optional(),
@@ -322,7 +322,7 @@ export const TwitterBookmarksArraySchema = z.array(TwitterBookmarkResponseSchema
 // Inferred Types
 // ===============================
 
-export type UserUrl = z.infer<typeof UserUrlSchema>;
+export type UrlEntity = z.infer<typeof UrlEntitySchema>;
 export type UserLegacy = z.infer<typeof UserLegacySchema>;
 export type User = z.infer<typeof UserSchema>;
 

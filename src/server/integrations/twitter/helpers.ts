@@ -1,5 +1,5 @@
 import type { TwitterMediaInsert, TwitterTweetInsert, TwitterUserInsert } from '@aias/hozo';
-import type { Media, TweetData, User } from './types';
+import type { Media, TweetData, UrlEntity, User } from './types';
 
 /**
  * Process a Twitter user into database format.
@@ -47,6 +47,28 @@ export const processUser = (user: User): Omit<TwitterUserInsert, 'integrationRun
   };
 };
 
+/**
+ * Expands t.co URLs in text using URL entities.
+ * Replaces shortened URLs with their expanded forms using character indices.
+ */
+function expandUrls(text: string, urls: UrlEntity[] | undefined): string {
+  if (!urls || urls.length === 0) return text;
+
+  // Sort by start index descending so replacements don't shift subsequent indices
+  const sortedUrls = [...urls].sort((a, b) => b.indices[0] - a.indices[0]);
+
+  let result = text;
+  for (const { url, expanded_url, indices } of sortedUrls) {
+    const [start, end] = indices;
+    // Verify the t.co URL at the expected position (handles edge cases)
+    if (result.slice(start, end) === url) {
+      result = result.slice(0, start) + expanded_url + result.slice(end);
+    }
+  }
+
+  return result;
+}
+
 export const processTweet = (tweet: TweetData): Omit<TwitterTweetInsert, 'integrationRunId'> => {
   const { rest_id, legacy, note_tweet, isQuoted, quotedTweetId } = tweet;
   const { created_at, full_text, user_id_str, in_reply_to_status_id_str, conversation_id_str } =
@@ -59,10 +81,17 @@ export const processTweet = (tweet: TweetData): Omit<TwitterTweetInsert, 'integr
     contentCreatedAt = isNaN(parsedDate.getTime()) ? null : parsedDate;
   }
 
+  // Get text and URL entities (note_tweet uses entity_set, regular tweets use legacy.entities)
+  const rawText = note_tweet ? note_tweet.note_tweet_results.result.text : full_text;
+  const urlEntities = note_tweet
+    ? note_tweet.note_tweet_results.result.entity_set.urls
+    : legacy.entities?.urls;
+  const text = expandUrls(rawText, urlEntities);
+
   return {
     id: rest_id,
     userId: user_id_str,
-    text: note_tweet ? note_tweet.note_tweet_results.result.text : full_text,
+    text,
     quotedTweetId: isQuoted ? undefined : quotedTweetId,
     inReplyToTweetId: in_reply_to_status_id_str,
     conversationId: conversation_id_str,

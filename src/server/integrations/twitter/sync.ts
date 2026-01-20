@@ -126,16 +126,14 @@ async function syncTwitterBookmarks(
     );
 
     // Step 4: Process tweets, users, and media
-    const { processedTweets, processedQuoteTweets, processedUsers, processedMedia } =
-      processTweetData(allTweets, integrationRunId, existingParentIds);
+    const { processedTweets, processedUsers, processedMedia } = processTweetData(
+      allTweets,
+      integrationRunId,
+      existingParentIds
+    );
 
     // Step 5: Store data in the database
-    const updatedCount = await storeTweetData(
-      processedTweets,
-      processedQuoteTweets,
-      processedUsers,
-      processedMedia
-    );
+    const updatedCount = await storeTweetData(processedTweets, processedUsers, processedMedia);
 
     // Step 6: Create records from Twitter data
     await createRelatedRecords();
@@ -323,6 +321,54 @@ async function fetchMissingParentTweets(
 }
 
 /**
+ * Topologically sorts tweets so that dependencies (reply parents, quoted tweets) come first.
+ * This ensures FK constraints are satisfied when inserting in order.
+ *
+ * @param tweets - Array of processed tweets
+ * @returns Array sorted so parents/quoted tweets come before their dependents
+ */
+function topologicalSortTweets(tweets: TwitterTweetInsert[]): TwitterTweetInsert[] {
+  const tweetMap = new Map<string, TwitterTweetInsert>();
+  for (const t of tweets) tweetMap.set(t.id, t);
+
+  const sorted: TwitterTweetInsert[] = [];
+  const visited = new Set<string>();
+  const visiting = new Set<string>(); // For cycle detection
+
+  function visit(tweet: TwitterTweetInsert) {
+    if (visited.has(tweet.id)) return;
+    if (visiting.has(tweet.id)) {
+      // Cycle detected - just add it (FK will be handled by DB or cleared earlier)
+      visited.add(tweet.id);
+      sorted.push(tweet);
+      return;
+    }
+
+    visiting.add(tweet.id);
+
+    // Visit dependencies first (if they're in this batch)
+    if (tweet.inReplyToTweetId && tweetMap.has(tweet.inReplyToTweetId)) {
+      const parent = tweetMap.get(tweet.inReplyToTweetId);
+      if (parent) visit(parent);
+    }
+    if (tweet.quotedTweetId && tweetMap.has(tweet.quotedTweetId)) {
+      const quoted = tweetMap.get(tweet.quotedTweetId);
+      if (quoted) visit(quoted);
+    }
+
+    visiting.delete(tweet.id);
+    visited.add(tweet.id);
+    sorted.push(tweet);
+  }
+
+  for (const tweet of tweets) {
+    visit(tweet);
+  }
+
+  return sorted;
+}
+
+/**
  * Processes tweet data into database-ready formats
  *
  * @param tweets - Array of tweet data
@@ -409,9 +455,13 @@ function processTweetData(
     });
   });
 
+  // Topologically sort all tweets so dependencies are inserted first
+  // (both regular and quote tweets together, since a regular tweet could reply to a quote tweet)
+  const allTweetsUnsorted = [...processedTweetsById.values(), ...processedQuoteTweetsById.values()];
+  const sortedTweets = topologicalSortTweets(allTweetsUnsorted);
+
   return {
-    processedTweets: [...processedTweetsById.values()],
-    processedQuoteTweets: [...processedQuoteTweetsById.values()],
+    processedTweets: sortedTweets,
     processedUsers: [...processedUsersById.values()],
     processedMedia: [...processedMediaById.values()],
   };
@@ -420,15 +470,13 @@ function processTweetData(
 /**
  * Stores tweet data in the database
  *
- * @param processedTweets - Regular tweets to store
- * @param processedQuoteTweets - Quote tweets to store
+ * @param processedTweets - All tweets to store (topologically sorted so dependencies come first)
  * @param processedUsers - Users to store
  * @param processedMedia - Media to store
  * @returns The total number of tweets stored
  */
 async function storeTweetData(
   processedTweets: TwitterTweetInsert[],
-  processedQuoteTweets: TwitterTweetInsert[],
   processedUsers: TwitterUserInsert[],
   processedMedia: TwitterMediaInsert[]
 ): Promise<number> {
@@ -533,19 +581,21 @@ async function storeTweetData(
           });
       }
 
-      // 2. Insert Regular Tweets
+      // 2. Insert Tweets (already topologically sorted so dependencies come first)
       const existingTweetIds = await getExistingTweetIds(processedTweets.map((t) => t.id));
-      const newTweets = processedTweets.length - existingTweetIds.size;
+      const newTweetsCount = processedTweets.length - existingTweetIds.size;
       logger.info(
-        `Tweets: total=${processedTweets.length} new=${newTweets} existing=${existingTweetIds.size}`
+        `Tweets: total=${processedTweets.length} new=${newTweetsCount} existing=${existingTweetIds.size}`
       );
 
       let tweetIndex = 0;
       for (const tweet of processedTweets) {
         tweetIndex++;
         const action = existingTweetIds.has(tweet.id) ? 'update' : 'insert';
+        const tweetType = tweet.quotedTweetId ? 'quote' : 'tweet';
+        const suffix = tweet.quotedTweetId ? ` -> ${tweet.quotedTweetId}` : '';
         logger.info(
-          `Tweet ${formatProgress(tweetIndex, processedTweets.length)} ${action} (${tweet.id})`
+          `Tweet ${formatProgress(tweetIndex, processedTweets.length)} ${action} ${tweetType} (${tweet.id}${suffix})`
         );
 
         await tx
@@ -557,33 +607,7 @@ async function storeTweetData(
           });
       }
 
-      // 3. Insert Quoted Tweets
-      const existingQuoteTweetIds = await getExistingTweetIds(
-        processedQuoteTweets.map((t) => t.id)
-      );
-      const newQuoteTweets = processedQuoteTweets.length - existingQuoteTweetIds.size;
-      logger.info(
-        `Quote tweets: total=${processedQuoteTweets.length} new=${newQuoteTweets} existing=${existingQuoteTweetIds.size}`
-      );
-
-      let quoteTweetIndex = 0;
-      for (const tweet of processedQuoteTweets) {
-        quoteTweetIndex++;
-        const action = existingQuoteTweetIds.has(tweet.id) ? 'update' : 'insert';
-        logger.info(
-          `Quote tweet ${formatProgress(quoteTweetIndex, processedQuoteTweets.length)} ${action} (${tweet.id} -> ${tweet.quotedTweetId})`
-        );
-
-        await tx
-          .insert(tweetsTable)
-          .values(tweet)
-          .onConflictDoUpdate({
-            target: tweetsTable.id,
-            set: { ...tweet, recordUpdatedAt: new Date() },
-          });
-      }
-
-      // 4. Insert Media
+      // 3. Insert Media
       const existingMediaIds = await getExistingMediaIds(processedMedia.map((m) => m.id));
       const newMediaItems = processedMedia.length - existingMediaIds.size;
       logger.info(
@@ -603,12 +627,11 @@ async function storeTweetData(
         await tx.insert(mediaTable).values(mediaItem).onConflictDoNothing();
       }
 
-      const totalTweets = processedTweets.length + processedQuoteTweets.length;
       logger.info(
-        `Already in DB: users=${existingUserIds.size} tweets=${existingTweetIds.size} quoteTweets=${existingQuoteTweetIds.size} media=${existingMediaIds.size}`
+        `Already in DB: users=${existingUserIds.size} tweets=${existingTweetIds.size} media=${existingMediaIds.size}`
       );
-      logger.complete(`Processed tweets`, totalTweets);
-      return totalTweets;
+      logger.complete(`Processed tweets`, processedTweets.length);
+      return processedTweets.length;
     },
     {
       isolationLevel: 'read committed',
@@ -648,14 +671,49 @@ async function syncTwitterData(debug = false): Promise<void> {
   const debugContext = createDebugContext('twitter', debug, [] as unknown[]);
   try {
     if (debug) {
-      // Debug mode: fetch data and output to .temp/ only, skip database writes
+      // Debug mode: fetch and process data, output to .temp/ without database writes
       logger.start('Starting Twitter data fetch (debug mode - no database writes)');
-      // Still use incremental sync in debug mode to avoid fetching all pages
+
+      // Fetch bookmarks (still use incremental sync to avoid fetching all pages)
       const recentTweetIds = await getRecentTweetIds();
       logger.info(`Loaded ${recentTweetIds.size} recent tweet IDs for incremental sync`);
       const bookmarkResponses = await fetchBookmarksFromApi(recentTweetIds);
-      debugContext.data?.push(...bookmarkResponses);
-      logger.complete(`Fetched ${bookmarkResponses.length} pages of bookmarks (debug mode)`);
+      logger.info(`Fetched ${bookmarkResponses.length} pages of bookmarks`);
+
+      // Extract tweets - in debug mode, process ALL tweets (don't filter by "already in DB")
+      const allExtractedTweets = extractTweetsFromBookmarks(bookmarkResponses);
+      logger.info(`Extracted ${allExtractedTweets.length} tweets from bookmarks`);
+
+      // Check which exist in DB (for reference) but process all in debug mode
+      const extractedTweetIds = allExtractedTweets.map((t) => t.rest_id);
+      const existingTweetIds = await getTweetIdsInDb(extractedTweetIds);
+      logger.info(`${existingTweetIds.size} of ${allExtractedTweets.length} tweets already in DB`);
+
+      // In debug mode, process all tweets to verify parsing/expansion
+      const allTweets = allExtractedTweets;
+      const existingParentIds = existingTweetIds;
+      logger.info(`Processing all ${allTweets.length} tweets for debug output`);
+
+      // Process into database-ready format (with URL expansion, etc.)
+      const { processedTweets, processedUsers, processedMedia } = processTweetData(
+        allTweets,
+        0, // dummy integration run ID for debug
+        existingParentIds
+      );
+
+      // Write both raw and processed data to debug output
+      debugContext.data?.push({
+        raw: bookmarkResponses,
+        processed: {
+          tweets: processedTweets,
+          users: processedUsers,
+          media: processedMedia,
+        },
+      });
+
+      logger.complete(
+        `Debug mode complete: ${processedTweets.length} tweets, ${processedUsers.length} users, ${processedMedia.length} media`
+      );
     } else {
       // Normal mode: full sync with database writes
       logger.start('Starting Twitter data synchronization');
