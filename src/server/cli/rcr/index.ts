@@ -96,19 +96,21 @@ let commands: Record<string, Record<string, CommandHandler>> | null = null;
 async function loadCommands() {
   if (commands) return commands;
 
-  const [browsing, db, fetch, github, links, media, records, search, sync] = await Promise.all([
-    import('./commands/browsing'),
-    import('./commands/db'),
-    import('./commands/fetch'),
-    import('./commands/github'),
-    import('./commands/links'),
-    import('./commands/media'),
-    import('./commands/records'),
-    import('./commands/search'),
-    import('./commands/sync'),
-  ]);
+  const [browsing, db, enrich, fetch, github, links, media, records, search, sync] =
+    await Promise.all([
+      import('./commands/browsing'),
+      import('./commands/db'),
+      import('./commands/enrich'),
+      import('./commands/fetch'),
+      import('./commands/github'),
+      import('./commands/links'),
+      import('./commands/media'),
+      import('./commands/records'),
+      import('./commands/search'),
+      import('./commands/sync'),
+    ]);
 
-  commands = { browsing, db, fetch, github, links, media, records, search, sync };
+  commands = { browsing, db, enrich, fetch, github, links, media, records, search, sync };
   return commands;
 }
 
@@ -162,8 +164,13 @@ Commands:
   github daily <date>           Get daily commit summary (YYYY-MM-DD)
   github get <id>               Get commit details with file changes
 
-  sync <integration>            Run a sync (github, readwise, etc.)
-  sync daily                    Run all daily syncs
+  sync <integration>            Run a sync (github, readwise, etc.) + enrich
+  sync daily                    Run all daily syncs + enrich
+
+  enrich [enrichment]           Run enrichments (avatars, alt-text, embeddings)
+  enrich avatars                Upload external avatar URLs to R2
+  enrich alt-text               Generate alt text for images [--limit=N]
+  enrich embeddings             Generate text embeddings for records
 
   db backup <local|remote>      Backup database [--data-only] [--dry-run|-n]
   db restore <local|remote>     Restore database [--clean] [--data-only] [--dry-run|-n]
@@ -273,6 +280,24 @@ async function main(): Promise<void> {
         throw new Error('Sync handler not found');
       }
       const result = withDuration(await handler([subcommand, ...args], rawOptions), startTime);
+      console.log(formatOutput(result, baseOptions.format, baseOptions.raw));
+      process.exit(0);
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : String(error);
+      await Bun.write(Bun.stderr, formatError(normalizedError, baseOptions.format) + '\n');
+      process.exit(1);
+    }
+  }
+
+  // Special case: "enrich [enrichment]" - pass enrichment name as first arg (or none for all)
+  if (command === 'enrich') {
+    try {
+      const handler = cmds.enrich?.run;
+      if (!handler) {
+        throw new Error('Enrich handler not found');
+      }
+      const enrichArgs = subcommand ? [subcommand, ...args] : args;
+      const result = withDuration(await handler(enrichArgs, rawOptions), startTime);
       console.log(formatOutput(result, baseOptions.format, baseOptions.raw));
       process.exit(0);
     } catch (error) {

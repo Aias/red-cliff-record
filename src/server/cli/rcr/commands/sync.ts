@@ -34,17 +34,10 @@ const IntegrationNameSchema = z.enum([
   'browsing',
   'twitter',
   'agents',
-  'avatars',
-  'alt-text',
-  'embeddings',
   'daily',
 ]);
 type IntegrationName = z.infer<typeof IntegrationNameSchema>;
 const INTEGRATION_LIST = IntegrationNameSchema.options;
-
-const AltTextSyncOptionsSchema = BaseOptionsSchema.extend({
-  limit: z.coerce.number().positive().int().optional(),
-}).strict();
 
 /**
  * Run an integration sync
@@ -54,8 +47,8 @@ const AltTextSyncOptionsSchema = BaseOptionsSchema.extend({
  *   github, readwise, raindrop, airtable, adobe, feedbin,
  *   browsing, twitter, agents, daily (all daily syncs)
  *
- * Options:
- *   --limit=N   For alt-text/daily: max images to process (default: 100)
+ * After syncing, enrichments (avatars, alt-text, embeddings) are run automatically.
+ * Use `rcr enrich` to run enrichments separately.
  */
 export const run: CommandHandler = async (args, options) => {
   const rawIntegration = args[0]?.toLowerCase();
@@ -76,35 +69,23 @@ export const run: CommandHandler = async (args, options) => {
   }
   const integration = integrationResult.data;
 
-  if (integration !== 'alt-text' && integration !== 'daily' && options.limit !== undefined) {
-    throw createError(
-      'VALIDATION_ERROR',
-      '--limit is only supported for `rcr sync alt-text` (or `rcr sync daily`).'
-    );
-  }
+  const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
+  const { debug } = parsedOptions;
 
-  let debug: boolean;
-  let limit: number | undefined;
-
-  if (integration === 'alt-text' || integration === 'daily') {
-    const parsedOptions = parseOptions(AltTextSyncOptionsSchema, options);
-    debug = parsedOptions.debug;
-    limit = parsedOptions.limit;
-  } else {
-    const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
-    debug = parsedOptions.debug;
-    limit = undefined;
-  }
-
-  // Handle 'daily' as a special case that runs multiple syncs
+  // Handle 'daily' as a special case that runs multiple syncs + enrichments
   if (integration === 'daily') {
-    return runDailySync({ debug, limit });
+    return runDailySync({ debug });
   }
 
-  const result = await runSingleSync(integration, { debug, limit });
-  // Integration results have complex types that don't fit ResultValue exactly,
-  // but they serialize to JSON correctly which is what the CLI needs
-  return success(result as Parameters<typeof success>[0]);
+  // Run the single sync, then enrichments
+  const startTime = performance.now();
+  const syncResult = await runSingleSync(integration, { debug });
+  await runEnrichments(debug);
+
+  return success({
+    ...syncResult,
+    duration: Math.round(performance.now() - startTime),
+  } as Parameters<typeof success>[0]);
 };
 
 // Also export as default command name for `rcr sync github` style
@@ -117,18 +98,21 @@ export { run as feedbin };
 export { run as browsing };
 export { run as twitter };
 export { run as agents };
-export { run as avatars };
-export { run as 'alt-text' };
-export { run as embeddings };
 export { run as daily };
 
 interface SyncOptions {
   debug: boolean;
-  limit?: number;
+}
+
+/** Run all enrichments in order: avatars → alt-text → embeddings */
+async function runEnrichments(debug: boolean) {
+  await runSaveAvatarsIntegration();
+  await runAltTextIntegration({ debug });
+  await runEmbedRecordsIntegration();
 }
 
 async function runSingleSync(integration: IntegrationName, options: SyncOptions) {
-  const { debug, limit } = options;
+  const { debug } = options;
   const startTime = performance.now();
 
   switch (integration) {
@@ -207,31 +191,6 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
         duration: Math.round(performance.now() - startTime),
       };
     }
-    case 'avatars': {
-      await runSaveAvatarsIntegration();
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'alt-text': {
-      const result = await runAltTextIntegration({ debug, limit });
-      return {
-        integration,
-        success: true,
-        ...result,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'embeddings': {
-      await runEmbedRecordsIntegration();
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
     default:
       throw createError('VALIDATION_ERROR', `Unknown integration: ${integration}`);
   }
@@ -245,25 +204,35 @@ async function runDailySync(options: SyncOptions) {
     'github',
     'airtable',
     'twitter',
-    'alt-text',
-    'avatars',
-    'embeddings',
   ];
 
-  const results: Array<{ integration: string; success: boolean; error?: string }> = [];
+  const results: Array<{ step: string; success: boolean; error?: string }> = [];
   const startTime = performance.now();
 
+  // Run external syncs
   for (const integration of dailyIntegrations) {
     try {
       await runSingleSync(integration, options);
-      results.push({ integration, success: true });
+      results.push({ step: integration, success: true });
     } catch (e) {
       results.push({
-        integration,
+        step: integration,
         success: false,
         error: e instanceof Error ? e.message : String(e),
       });
     }
+  }
+
+  // Run enrichments once at the end
+  try {
+    await runEnrichments(options.debug);
+    results.push({ step: 'enrich', success: true });
+  } catch (e) {
+    results.push({
+      step: 'enrich',
+      success: false,
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 
   const successCount = results.filter((r) => r.success).length;
@@ -272,9 +241,9 @@ async function runDailySync(options: SyncOptions) {
     {
       results,
       summary: {
-        total: dailyIntegrations.length,
+        total: results.length,
         succeeded: successCount,
-        failed: dailyIntegrations.length - successCount,
+        failed: results.length - successCount,
       },
     },
     { duration: Math.round(performance.now() - startTime) }
