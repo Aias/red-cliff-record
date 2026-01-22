@@ -79,6 +79,16 @@ export function createDebugContext<T>(
 }
 
 /**
+ * Replacer function for JSON.stringify that handles BigInt values
+ */
+function bigintReplacer(_key: string, value: unknown): unknown {
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  return value;
+}
+
+/**
  * Writes debug data to a timestamped JSON file
  *
  * @param integrationName - The name of the integration (e.g., 'readwise', 'github')
@@ -95,7 +105,8 @@ export async function writeDebugOutput(integrationName: string, data: unknown): 
     const filepath = `${tempDir}/${filename}`;
 
     // Write the data as formatted JSON using Bun's native file writer
-    await write(filepath, JSON.stringify(data, null, 2));
+    // Use bigintReplacer to handle BigInt values
+    await write(filepath, JSON.stringify(data, bigintReplacer, 2));
 
     logger.info(`Debug data written to ${filepath}`);
     return filepath;

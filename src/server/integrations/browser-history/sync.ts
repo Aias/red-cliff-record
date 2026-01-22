@@ -169,11 +169,17 @@ async function syncBrowserHistory(
       : `Starting ${browserConfig.displayName} browser history incremental update`
   );
 
-  // Step 2: Get the most recent history entry (skip in debug mode - fetch all)
-  const lastKnownTime = skipPersist
-    ? null
-    : await getLastSyncPoint(currentHostname, browserConfig.name);
-  if (!skipPersist) {
+  // Step 2: Get the most recent history entry (in debug mode - fetch last 24 hours)
+  let lastKnownTime: bigint | null;
+  if (skipPersist) {
+    // In debug mode, fetch last 24 hours
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    lastKnownTime = BigInt((oneDayAgo.getTime() + CHROME_EPOCH_TO_UNIX_SECONDS * 1000) * 1000);
+    logger.info(
+      `Debug mode: fetching history from last 24 hours (since ${oneDayAgo.toISOString()})`
+    );
+  } else {
+    lastKnownTime = await getLastSyncPoint(currentHostname, browserConfig.name);
     logLastSyncPoint(lastKnownTime);
   }
 
