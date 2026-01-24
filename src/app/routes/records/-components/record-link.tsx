@@ -93,7 +93,10 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
         creatorTitles[0] ??
         (parentTitle ? (
           <>
-            <CornerDownRightIcon className="relative -top-0.25 mr-0.75 text-c-hint" />
+            <CornerDownRightIcon
+              className="relative -top-0.25 mr-0.75 text-c-hint"
+              aria-label="Child of"
+            />
             {parentTitle}
           </>
         ) : (
@@ -133,6 +136,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
                   <RectangleEllipsisIcon
                     className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-c-accent focus-visible:opacity-100 data-[state=open]:opacity-100"
                     role="button"
+                    aria-label="Record actions menu"
                   />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
@@ -204,7 +208,10 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
                               creatorTitles[0] ??
                               (parentTitle ? (
                                 <>
-                                  <CornerDownRightIcon className="relative -top-0.25 mr-0.75 text-c-hint" />
+                                  <CornerDownRightIcon
+                                    className="relative -top-0.25 mr-0.75 text-c-hint"
+                                    aria-label="Child of"
+                                  />
                                   {parentTitle}
                                 </>
                               ) : (

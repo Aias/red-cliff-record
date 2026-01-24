@@ -34,11 +34,9 @@ Use all tools at your disposal to diagnose and resolve issues. This includes but
 
 **Development:**
 
-- `bun lint` - Runs oxlint + tsgo (type-checking). Fast enough to run frequently during development.
-- `bun lint:watch` - Runs tsgo in watch mode for continuous type-checking during development.
-- `bun format` - Runs oxfmt. Run at the end of a set of changes before committing.
+- `bun check` - **Run this early and often during development.** Runs linting (oxlint), type-checking (tsgo), and formatting (oxfmt) in one command. Extremely fast (~1s total).
 
-The lint command handles both linting and type-checking in one step via tsgo (the TypeScript Go port). Since it's very fast (~1s), run it liberally during development rather than waiting until the end. There are no separate `tsc` commands—always use `lint` or `lint:watch`.
+**IMPORTANT: Run `bun check` frequently throughout development, not just at the end.** Since all checks complete in ~1 second, you should run `bun check` after making any non-trivial changes. This catches issues immediately rather than accumulating technical debt. The checks are so fast and easy that there's no excuse not to run them every time.
 
 Never attempt to start the development server or build the application. The user will run these commands manually.
 
@@ -117,7 +115,7 @@ Never attempt to start the development server or build the application. The user
 - When writing transforms, use `translate`, `rotate`, `scale`, and other transform sub-properties directly rather than putting them all in a `transform` property
 - Across all code, prefer semantic HTML first, then a CSS-only implementation for behavior HTML cannot express, then TypeScript for behavior CSS cannot express, and only add or rely on external dependencies when absolutely necessary or when they are already in the project
 - Theme colors follow a semantic naming pattern: `c-main` for primary actions, `c-main-contrast` for text on `c-main` backgrounds. Similar patterns exist for `c-destructive`/`c-destructive-contrast`. Never invent color token names—check `src/app/styles/app.css` for available tokens
-- **Detecting invalid Tailwind classes**: Oxfmt sorts invalid/unknown classes to the front of the class list. If classes appear out of order after running `bun format`, they're likely misspelled or don't exist in the theme
+- **Detecting invalid Tailwind classes**: Oxfmt sorts invalid/unknown classes to the front of the class list. If classes appear out of order after running `bun check`, they're likely misspelled or don't exist in the theme
 
 **TypeScript Requirements:**
 
@@ -187,9 +185,9 @@ Never attempt to start the development server or build the application. The user
 
 **Before Finalizing Changes:**
 
-- Run `bun run lint` frequently during development (it's fast—includes both oxlint and tsgo type-checking)
-- Run `bun run format` at the end of a set of changes before committing
-- In addition to linting and formatting, prior to committing, re-read this document to ensure all instructions are followed and to refresh your memory of the project's guidelines and conventions
+- Run `bun check` early and often throughout development—after any meaningful code change, not just at the end
+- The command is extremely fast (~1s for linting, type-checking, and formatting combined) so run it liberally
+- Prior to committing, re-read this document to ensure all instructions are followed and to refresh your memory of the project's guidelines and conventions
 - Update this file if refactoring changes architectural patterns or introduces new conventions
 
 **Git & Repository State:**
@@ -243,7 +241,7 @@ Never attempt to start the development server or build the application. The user
 
 **Formatting & Indentation:**
 
-- Governed by Oxfmt (`.oxfmtrc.json`): spaces for indentation (width 2). Run `bun run format` at the end of a session before committing.
+- Governed by Oxfmt (`.oxfmtrc.json`): spaces for indentation (width 2). Formatting is included in `bun check`.
 
 **Media & File Handling:**
 

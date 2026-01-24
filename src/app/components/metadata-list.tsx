@@ -76,7 +76,10 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
                 {copiedKey === key ? (
                   <div className="absolute top-0 right-0 text-xs text-c-hint">Copied!</div>
                 ) : (
-                  <CopyIcon className="absolute right-0 text-c-hint opacity-0 transition-opacity group-hover:opacity-100" />
+                  <CopyIcon
+                    className="absolute right-0 text-c-hint opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-label="Copy to clipboard"
+                  />
                 )}
               </div>
             )}
