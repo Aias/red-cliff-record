@@ -163,49 +163,52 @@ do_clean_setup() {
     fi
 
     echo "Performing clean database setup${label_suffix}..."
-    
+
+    # Extract database name from URL
+    local db_name=$(echo "$db_url" | sed 's|.*/||')
+
     # Parse postgres URL to get connection details
-    local postgres_url=$(echo "$db_url" | sed "s|/${DATABASE_NAME}|/postgres|")
-    
+    local postgres_url=$(echo "$db_url" | sed "s|/${db_name}|/postgres|")
+
     # Check if database exists
     local db_exists
 
     if [ "$DRY_RUN" = true ]; then
-        print_cmd psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'"
+        print_cmd psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$db_name'"
         db_exists=1
     else
-        db_exists=$(psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME'")
+        db_exists=$(psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$db_name'")
     fi
-    
+
     if [ "$db_exists" = "1" ]; then
         # Terminate all connections to the database if it exists
         echo "Terminating connections to existing database..."
         run_cmd psql "$postgres_url" -c "
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
+            WHERE pg_stat_activity.datname = '$db_name'
             AND pid <> pg_backend_pid();"
-        
+
         # Drop the database
-        echo "Dropping database $DATABASE_NAME..."
-        run_cmd psql "$postgres_url" -c "DROP DATABASE $DATABASE_NAME;"
+        echo "Dropping database $db_name..."
+        run_cmd psql "$postgres_url" -c "DROP DATABASE \"$db_name\";"
     else
-        echo "Database $DATABASE_NAME does not exist, will create it..."
+        echo "Database $db_name does not exist, will create it..."
     fi
-    
+
     # Create the database
-    echo "Creating database $DATABASE_NAME..."
-    run_cmd psql "$postgres_url" -c "CREATE DATABASE $DATABASE_NAME;"
-    
+    echo "Creating database $db_name..."
+    run_cmd psql "$postgres_url" -c "CREATE DATABASE \"$db_name\";"
+
     # Create extensions
     echo "Creating required extensions..."
     run_cmd psql "$db_url" -c "CREATE SCHEMA IF NOT EXISTS extensions;"
     run_cmd psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;"
     run_cmd psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;"
-    
+
     # Set up search path to include extensions schema for vector operations
     echo "Setting up search path for vector operations..."
-    run_cmd psql "$db_url" -c "ALTER DATABASE $DATABASE_NAME SET search_path TO public, extensions;"
+    run_cmd psql "$db_url" -c "ALTER DATABASE \"$db_name\" SET search_path TO public, extensions;"
     
     echo "Clean setup completed"
 }
@@ -217,7 +220,7 @@ do_restore() {
     local restore_args
 
     set_target "$target"
-    
+
     # Find the most recent backup file based on type
     if [ "$DATA_ONLY" = true ]; then
         dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}"-data-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
@@ -257,11 +260,13 @@ do_restore() {
     if [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = false ]; then
         echo "Skipping additional connection termination after clean restore."
     else
+        # Extract database name from URL for connection termination
+        local db_name=$(echo "$TARGET_DB_URL" | sed 's|.*/||')
         echo "Terminating connections to $TARGET_LABEL database..."
         run_cmd psql "$TARGET_DB_URL" -c "
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '$DATABASE_NAME'
+            WHERE pg_stat_activity.datname = '$db_name'
             AND pid <> pg_backend_pid();"
     fi
 
