@@ -1,7 +1,7 @@
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { SaveIcon, Trash2Icon } from 'lucide-react';
+import { Trash2Icon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { z } from 'zod';
 import {
@@ -249,21 +249,6 @@ export function RecordForm({
     category: 'Records',
     allowInInput: true,
   });
-
-  useKeyboardShortcut(
-    'mod+s',
-    () => {
-      // Only save if values have actually changed
-      if (!form.state.isDefaultValue) {
-        void immediateSave();
-      }
-    },
-    {
-      description: 'Save record',
-      category: 'Records',
-      allowInInput: true,
-    }
-  );
 
   // Form-level paste handler for media uploads
   // Works regardless of whether MediaUpload component is visible
@@ -625,12 +610,6 @@ export function RecordForm({
                   debouncedSave();
                 }}
                 onBlur={() => debouncedSave()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    void immediateSave();
-                  }
-                }}
                 disabled={isFormLoading}
               />
             </div>
@@ -650,12 +629,6 @@ export function RecordForm({
                   debouncedSave();
                 }}
                 onBlur={() => debouncedSave()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    void immediateSave();
-                  }
-                }}
                 disabled={isFormLoading}
               />
             </div>
@@ -685,12 +658,6 @@ export function RecordForm({
                           debouncedSave();
                         }}
                         onBlur={() => debouncedSave()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            void immediateSave();
-                          }
-                        }}
                         disabled={isFormLoading}
                       />
                     </div>
@@ -718,67 +685,54 @@ export function RecordForm({
                   debouncedSave();
                 }}
                 onBlur={() => debouncedSave()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    void immediateSave();
-                  }
-                }}
                 disabled={isFormLoading}
               />
             </div>
           )}
         </form.Field>
       </div>
-      <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
-        {([canSubmit, isSubmitting]) => (
-          <div className="order-first -mt-1 mb-3 flex items-center border-b border-c-divider pb-1">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Avatar
-                  src={formData.avatarUrl ?? undefined}
-                  fallback={(formData.title?.charAt(0) ?? formData.type.charAt(0)).toUpperCase()}
-                  className="mr-2 cursor-pointer"
-                />
-              </PopoverTrigger>
-              <PopoverContent className="min-w-84">
-                <MetadataSection record={formData} />
-              </PopoverContent>
-            </Popover>
-            <Link
-              to="/records/$recordId"
-              params={{ recordId }}
-              className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
-            >
-              {`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleString()}`}
-            </Link>
-            <Button size="icon" variant="ghost" type="submit" disabled={!canSubmit || isSubmitting}>
-              {isSubmitting ? <Spinner /> : <SaveIcon />}
+      <div className="order-first -mt-1 mb-3 flex items-center border-b border-c-divider pb-1">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Avatar
+              src={formData.avatarUrl ?? undefined}
+              fallback={(formData.title?.charAt(0) ?? formData.type.charAt(0)).toUpperCase()}
+              className="mr-2 cursor-pointer"
+            />
+          </PopoverTrigger>
+          <PopoverContent className="min-w-84">
+            <MetadataSection record={formData} />
+          </PopoverContent>
+        </Popover>
+        <Link
+          to="/records/$recordId"
+          params={{ recordId }}
+          className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
+        >
+          {`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleString()}`}
+        </Link>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="icon" variant="ghost" type="button">
+              <Trash2Icon />
             </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="icon" variant="ghost" type="button">
-                  <Trash2Icon />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete this record.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <Button variant="destructive" asChild>
-                    <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        )}
-      </form.Subscribe>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this record.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <Button variant="destructive" asChild>
+                <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </form>
   );
 }
