@@ -172,11 +172,12 @@ Commands:
   enrich alt-text               Generate alt text for images [--limit=N]
   enrich embeddings             Generate text embeddings for records
 
-  db backup <local|remote>      Backup database [--data-only] [--dry-run|-n]
-  db restore <local|remote>     Restore database [--clean] [--data-only] [--dry-run|-n]
-  db reset                      Reset local database (drop & recreate)
-  db seed                       Seed local database with predicates
-  db status [local|remote]      Show connection info and record counts
+  db backup <prod|dev>          Backup database [--data-only] [--dry-run|-n]
+  db restore <prod|dev>         Restore database [--clean] [--data-only] [--dry-run|-n]
+  db reset [dev]                Reset dev database (drop & recreate)
+  db seed [dev]                 Seed dev database with predicates
+  db status [prod|dev]          Show connection info and record counts
+  db clone-prod-to-dev          Clone production to development [--dry-run|-n]
 
   fetch url <url>               Fetch URL as clean markdown [--content-only]
 

@@ -22,7 +22,7 @@ import { createError } from '../lib/errors';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
-const LocationSchema = z.enum(['local', 'remote']);
+const LocationSchema = z.enum(['prod', 'dev']);
 
 // Resolve project root from this file's location (src/server/cli/rcr/commands/db.ts -> project root)
 const scriptPath = fileURLToPath(import.meta.url);
@@ -63,21 +63,21 @@ async function runDbManager(args: string[]): Promise<void> {
 
 /**
  * Backup database
- * Usage: rcr db backup <local|remote> [--data-only] [--dry-run]
+ * Usage: rcr db backup <prod|dev> [--data-only] [--dry-run]
  */
 export const backup: CommandHandler = async (args, options) => {
   const parsedOptions = parseOptions(BackupOptionsSchema, options);
   const locationArg = args[0];
 
   if (!locationArg) {
-    throw createError('VALIDATION_ERROR', 'Location required: local or remote');
+    throw createError('VALIDATION_ERROR', 'Environment required: prod or dev');
   }
 
   const locationResult = LocationSchema.safeParse(locationArg);
   if (!locationResult.success) {
     throw createError(
       'VALIDATION_ERROR',
-      `Invalid location: ${locationArg}. Must be 'local' or 'remote'`
+      `Invalid environment: ${locationArg}. Must be 'prod' or 'dev'`
     );
   }
 
@@ -114,14 +114,14 @@ export const restore: CommandHandler = async (args, options) => {
   const locationArg = args[0];
 
   if (!locationArg) {
-    throw createError('VALIDATION_ERROR', 'Location required: local or remote');
+    throw createError('VALIDATION_ERROR', 'Environment required: prod or dev');
   }
 
   const locationResult = LocationSchema.safeParse(locationArg);
   if (!locationResult.success) {
     throw createError(
       'VALIDATION_ERROR',
-      `Invalid location: ${locationArg}. Must be 'local' or 'remote'`
+      `Invalid environment: ${locationArg}. Must be 'prod' or 'dev'`
     );
   }
 
@@ -155,44 +155,44 @@ export const restore: CommandHandler = async (args, options) => {
 };
 
 /**
- * Reset database (local only)
- * Usage: rcr db reset
+ * Reset database (dev only)
+ * Usage: rcr db reset [dev]
  */
 export const reset: CommandHandler = async (args, options) => {
   parseOptions(BaseOptionsSchema.strict(), options);
 
-  // Reset is always local-only
+  // Reset is always dev-only
   const locationArg = args[0];
-  if (locationArg && locationArg !== 'local') {
-    throw createError('PERMISSION_DENIED', 'Reset is only supported for local database');
+  if (locationArg && locationArg !== 'dev') {
+    throw createError('PERMISSION_DENIED', 'Reset is only supported for dev database');
   }
 
-  await runDbManager(['reset', 'local']);
+  await runDbManager(['reset', 'dev']);
 
   return success({
     action: 'reset',
-    location: 'local',
+    location: 'dev',
   });
 };
 
 /**
- * Seed database with initial data (local only)
- * Usage: rcr db seed
+ * Seed database with initial data (dev only)
+ * Usage: rcr db seed [dev]
  */
 export const seed: CommandHandler = async (args, options) => {
   parseOptions(BaseOptionsSchema.strict(), options);
 
-  // Seed is always local-only
+  // Seed is always dev-only
   const locationArg = args[0];
-  if (locationArg && locationArg !== 'local') {
-    throw createError('PERMISSION_DENIED', 'Seed is only supported for local database');
+  if (locationArg && locationArg !== 'dev') {
+    throw createError('PERMISSION_DENIED', 'Seed is only supported for dev database');
   }
 
   const result = await seedDatabase();
 
   return success({
     action: 'seed',
-    location: 'local',
+    location: 'dev',
     predicatesSeeded: result.predicatesSeeded,
     recordsSeeded: result.recordsSeeded,
   });
@@ -200,29 +200,22 @@ export const seed: CommandHandler = async (args, options) => {
 
 /**
  * Show database status and record counts
- * Usage: rcr db status [local|remote]
+ * Usage: rcr db status [prod|dev]
  */
 export const status: CommandHandler = async (args, options) => {
   parseOptions(BaseOptionsSchema.strict(), options);
 
-  const locationArg = args[0] ?? 'local';
-  const locationResult = LocationSchema.safeParse(locationArg);
-  if (!locationResult.success) {
-    throw createError(
-      'VALIDATION_ERROR',
-      `Invalid location: ${locationArg}. Must be 'local' or 'remote'`
-    );
-  }
-
-  const location = locationResult.data;
-
-  // Note: Currently we only support the default connection (DATABASE_URL)
-  // In the future, we could support switching connections based on location
-  if (location === 'remote') {
-    throw createError(
-      'VALIDATION_ERROR',
-      'Remote status check not yet implemented. The CLI currently uses DATABASE_URL which should point to your desired database.'
-    );
+  const locationArg = args[0];
+  if (locationArg) {
+    const locationResult = LocationSchema.safeParse(locationArg);
+    if (!locationResult.success) {
+      throw createError(
+        'VALIDATION_ERROR',
+        `Invalid environment: ${locationArg}. Must be 'prod' or 'dev'`
+      );
+    }
+    // Note: Status always uses the current connection based on NODE_ENV
+    // The argument is parsed but not used yet
   }
 
   // Query counts from database in parallel (sequential queries hang in CLI context)
@@ -232,8 +225,12 @@ export const status: CommandHandler = async (args, options) => {
     db.select({ count: count() }).from(predicates),
   ]);
 
+  // Determine which database we're connected to based on NODE_ENV
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const connectedTo = nodeEnv === 'production' ? 'prod' : 'dev';
+
   return success({
-    location,
+    environment: connectedTo,
     connected: true,
     counts: {
       records: recordCount?.count ?? 0,
@@ -242,3 +239,28 @@ export const status: CommandHandler = async (args, options) => {
     },
   });
 };
+
+/**
+ * Clone production database to development
+ * Usage: rcr db clone-prod-to-dev [--dry-run]
+ */
+export const cloneProdToDev: CommandHandler = async (args, options) => {
+  const parsedOptions = parseOptions(BackupOptionsSchema, options);
+  const shellArgs: string[] = [];
+  const dryRun = parsedOptions['dry-run'] ?? parsedOptions.n ?? false;
+
+  if (dryRun) {
+    shellArgs.push('--dry-run');
+  }
+
+  shellArgs.push('clone-prod-to-dev');
+
+  await runDbManager(shellArgs);
+
+  return success({
+    action: 'clone-prod-to-dev',
+    dryRun,
+  });
+};
+
+export { cloneProdToDev as 'clone-prod-to-dev' };

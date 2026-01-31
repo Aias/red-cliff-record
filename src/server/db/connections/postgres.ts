@@ -1,10 +1,11 @@
 import { relations, schema } from '@hozo';
 import { drizzle } from 'drizzle-orm/bun-sql';
+import { getDatabaseUrl } from '@/server/lib/db-url';
 
 const createDb = () =>
   drizzle({
     connection: {
-      url: process.env.DATABASE_URL!,
+      url: getDatabaseUrl(),
       connectionTimeout: 5,
     },
     schema,
