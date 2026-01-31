@@ -1,7 +1,7 @@
 import { media } from '@hozo';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { writeDebugOutput } from '@/server/integrations/common/debug-output';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import { embedRecordsByIds } from '@/server/services/embed-records';

@@ -1,7 +1,7 @@
 import type { GithubCommitSelect } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { DateSchema } from '@/shared/types';
+import { DateSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
 const CommitSummarySchema = z.object({

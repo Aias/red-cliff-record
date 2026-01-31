@@ -2,7 +2,7 @@ import { browsingHistory, type Browser, type BrowsingHistoryInsert } from '@hozo
 import { arcSchema } from '@hozo';
 import { and, eq, gt, isNotNull, ne, notLike, sql } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {

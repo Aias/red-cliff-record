@@ -1,6 +1,6 @@
 import { integrationRuns, IntegrationStatus, RunType, type IntegrationType } from '@hozo';
 import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from './logging';
 
 /**

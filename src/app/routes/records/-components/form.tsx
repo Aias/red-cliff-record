@@ -37,10 +37,10 @@ import { useDeleteMedia } from '@/lib/hooks/media-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { useRecordUpload } from '@/lib/hooks/use-record-upload';
-import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { validateRecord } from '@/lib/server/validate-record';
 import { cn } from '@/lib/utils';
-import type { RecordGet } from '@/shared/types';
+import type { RecordGet } from '@/shared/types/domain';
 import { recordTypeIcons } from './type-icons';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {

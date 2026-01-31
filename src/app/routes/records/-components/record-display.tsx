@@ -9,7 +9,7 @@ import MediaGrid from '@/components/media-grid';
 import { Spinner } from '@/components/spinner';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
-import type { DbId } from '@/shared/types';
+import type { DbId } from '@/shared/types/api';
 import { recordTypeIcons } from './type-icons';
 
 interface RecordDisplayProps {

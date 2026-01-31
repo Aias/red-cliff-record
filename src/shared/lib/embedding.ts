@@ -1,5 +1,5 @@
 import type { RecordSelect } from '@hozo';
-import type { FullRecord } from '@/shared/types';
+import type { FullRecord } from '@/shared/types/domain';
 
 const truncateText = (text: string, maxLength: number = 200) => {
   if (text.length <= maxLength) {

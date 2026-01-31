@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { createEmbedding } from '@/lib/server/create-embedding';
 import { similarity, SIMILARITY_THRESHOLD } from '@/server/lib/constants';
 import { seriateRecordsByEmbedding } from '@/server/lib/seriation';
-import { IdSchema, SearchRecordsInputSchema } from '@/shared/types';
+import { IdSchema, SearchRecordsInputSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
 export type SearchResult = {

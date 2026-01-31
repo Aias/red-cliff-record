@@ -5,7 +5,7 @@
 
 import type { ZodType } from 'zod';
 import { z } from 'zod';
-import { CoercedIdSchema, IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
+import { CoercedIdSchema, IdSchema, LimitSchema, OffsetSchema } from '@/shared/types/api';
 import { createError } from './errors';
 import type { ParsedArgs, RawCLIOptions, ResultValue } from './types';
 

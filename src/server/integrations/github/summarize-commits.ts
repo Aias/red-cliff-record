@@ -8,7 +8,7 @@ import {
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createIntegrationLogger } from '../common/logging';
 

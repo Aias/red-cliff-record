@@ -1,7 +1,7 @@
 import { browsingHistoryOmitList, BrowsingHistoryOmitListInsertSchema } from '@hozo';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { DateSchema } from '@/shared/types';
+import { DateSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
 const OverviewSchema = z.object({

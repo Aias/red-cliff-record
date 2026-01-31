@@ -3,7 +3,7 @@ import DataLoader from 'dataloader';
 import superjson from 'superjson';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/connections/postgres';
-import type { RecordGet } from '@/shared/types';
+import type { RecordGet } from '@/shared/types/domain';
 
 function createRecordLoader() {
   return new DataLoader<number, RecordGet>(async (ids) => {

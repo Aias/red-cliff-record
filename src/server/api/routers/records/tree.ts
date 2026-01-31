@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { IdParamSchema } from '@/shared/types';
+import { IdParamSchema } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
 
 export const getFamilyTree = publicProcedure

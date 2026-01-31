@@ -1,7 +1,7 @@
 import { MediaType, type MediaInsert } from '@hozo';
 import { S3Client } from 'bun';
 import mime from 'mime-types';
-import type { MediaMetadata } from '@/shared/types';
+import type { MediaMetadata } from '@/shared/types/media';
 import { getImageMetadata } from './image-metadata';
 import { validateAndFormatUrl } from './url-utils';
 

@@ -7,10 +7,11 @@ import { Spinner } from '@/components/spinner';
 import { useDeleteLinks } from '@/lib/hooks/link-mutations';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
-import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { cn } from '@/lib/utils';
 import { exhaustive } from '@/shared/lib/type-utils';
-import type { DbId, LinkPartial, RecordGet } from '@/shared/types';
+import type { DbId } from '@/shared/types/api';
+import type { LinkPartial, RecordGet } from '@/shared/types/domain';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 

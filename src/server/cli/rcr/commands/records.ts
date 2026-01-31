@@ -9,13 +9,13 @@ import { IntegrationTypeSchema, RecordInsertSchema, RecordTypeSchema } from '@ho
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
-  type ListRecordsInput,
   DEFAULT_LIMIT,
   LimitSchema,
   OffsetSchema,
   OrderCriteriaSchema,
   RecordFiltersSchema,
-} from '@/shared/types';
+  type ListRecordsInput,
+} from '@/shared/types/api';
 import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';

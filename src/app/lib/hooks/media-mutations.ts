@@ -1,5 +1,5 @@
 import { trpc } from '@/app/trpc';
-import type { DbId } from '@/shared/types';
+import type { DbId } from '@/shared/types/api';
 
 export function useCreateMedia(id: DbId) {
   const utils = trpc.useUtils();

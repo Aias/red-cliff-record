@@ -5,7 +5,7 @@
  * reusing all query logic from the API routers.
  */
 
-import { DateSchema } from '@/shared/types';
+import { DateSchema } from '@/shared/types/api';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';

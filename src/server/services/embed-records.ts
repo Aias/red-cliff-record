@@ -1,9 +1,9 @@
 import { records, RunType } from '@hozo';
 import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createRecordEmbeddingText, getRecordTitle } from '@/shared/lib/embedding';
-import type { FullRecord } from '@/shared/types';
+import type { FullRecord } from '@/shared/types/domain';
 import { createEmbedding } from '../../app/lib/server/create-embedding';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';

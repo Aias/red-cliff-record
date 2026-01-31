@@ -1,5 +1,5 @@
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@hozo';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';
 import { createIntegrationLogger } from '../common/logging';

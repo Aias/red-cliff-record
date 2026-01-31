@@ -2,7 +2,8 @@ import { RecordInsertSchema, records } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { IdSchema, type DbId, type RecordGet } from '@/shared/types';
+import { IdSchema, type DbId } from '@/shared/types/api';
+import type { RecordGet } from '@/shared/types/domain';
 import { publicProcedure } from '../../init';
 
 // Schema for bulk update data - omit fields that shouldn't be bulk-updated

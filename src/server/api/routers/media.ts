@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { getMediaInsertData, uploadClientFileToR2, uploadMediaToR2 } from '@/server/lib/media';
 import { embedRecordById } from '@/server/services/embed-records';
 import { generateAltText } from '@/server/services/generate-alt-text';
-import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
+import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
 // Schema for media create input

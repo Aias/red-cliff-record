@@ -9,7 +9,7 @@ import {
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { createIntegrationLogger } from '../common/logging';
 import { syncCommitSummaries } from './summarize-commits';

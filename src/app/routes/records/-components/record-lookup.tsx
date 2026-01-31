@@ -23,7 +23,8 @@ import { Spinner } from '@/components/spinner';
 import { useUpsertLink } from '@/lib/hooks/link-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { cn } from '@/lib/utils';
-import type { DbId, LinkPartial } from '@/shared/types';
+import type { DbId } from '@/shared/types/api';
+import type { LinkPartial } from '@/shared/types/domain';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
 

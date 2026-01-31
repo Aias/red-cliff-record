@@ -16,7 +16,7 @@ import {
   type RecordInsert,
 } from '@hozo';
 import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { getMediaInsertData } from '@/server/lib/media';
 import { mapUrl } from '@/server/lib/url-utils';
 import { bulkInsertLinks, getPredicateId } from '../common/db-helpers';

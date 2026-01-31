@@ -24,7 +24,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { cn } from '@/lib/utils';
-import type { DbId } from '@/shared/types';
+import type { DbId } from '@/shared/types/api';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 
 const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {

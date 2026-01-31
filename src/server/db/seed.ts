@@ -12,7 +12,7 @@
 import type { PredicateInsert, RecordInsert } from '@hozo';
 import { predicates, records } from '@hozo';
 import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '../integrations/common/logging';
 
 export interface SeedResult {

@@ -1,5 +1,5 @@
-import type { KeyboardShortcutProps } from '@/lib/keyboard-shortcuts';
-import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
+import type { KeyboardShortcutProps } from '@/lib/keyboard-shortcuts/types';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 
 /**
  * Declarative component for registering keyboard shortcuts

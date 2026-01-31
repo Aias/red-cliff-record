@@ -11,7 +11,7 @@ import { MediaType } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { lookup } from 'mime-types';
 import { z } from 'zod';
-import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
+import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types/api';
 import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';

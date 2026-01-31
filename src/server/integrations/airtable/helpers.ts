@@ -5,7 +5,7 @@ import {
 } from '@hozo';
 import Airtable from 'airtable';
 import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { uploadMediaToR2 } from '@/server/lib/media';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { EnvSchema } from '@/shared/lib/env';

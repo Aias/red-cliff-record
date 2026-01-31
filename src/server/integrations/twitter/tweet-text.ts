@@ -1,4 +1,4 @@
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '../common/logging';
 
 const logger = createIntegrationLogger('twitter', 'tweet-text');

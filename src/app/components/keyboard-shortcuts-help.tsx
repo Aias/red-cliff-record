@@ -1,10 +1,10 @@
 import { KeyboardIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { formatShortcut } from '@/lib/keyboard-shortcuts/parse';
 import {
-  formatShortcut,
   useKeyboardShortcut,
   useRegisteredShortcuts,
-} from '@/lib/keyboard-shortcuts';
+} from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { Button } from './button';
 import {
   Dialog,
