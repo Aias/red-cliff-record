@@ -15,7 +15,6 @@ import { mediaTypes } from './media.shared';
 import { databaseTimestamps } from './operations';
 import { records } from './records';
 
-// Re-export client-safe types
 export * from './media.shared';
 
 export const mediaTypeEnum = pgEnum('media_type', mediaTypes);

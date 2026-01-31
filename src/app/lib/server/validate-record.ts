@@ -6,16 +6,11 @@ export type ValidationResult =
   | { success: true }
   | { success: false; formError?: string; fieldErrors: Record<string, string[]> };
 
-// Accept any object as input - we'll validate with RecordInsertSchema
 const inputSchema = z.record(z.string(), z.unknown());
 
 export const validateRecord = createServerFn({ method: 'POST' })
-  .inputValidator((input: unknown) => {
-    // Validate that we received an object
-    return inputSchema.parse(input);
-  })
+  .inputValidator((input: unknown) => inputSchema.parse(input))
   .handler(({ data }): ValidationResult => {
-    // Validate against the full RecordInsertSchema
     const parsed = RecordInsertSchema.safeParse(data);
 
     if (!parsed.success) {

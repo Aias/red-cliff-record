@@ -19,7 +19,6 @@ import {
   TEXT_EMBEDDING_DIMENSIONS,
 } from './operations.shared';
 
-// Re-export client-safe types
 export * from './operations.shared';
 
 export const integrationStatusEnum = pgEnum('integration_status', integrationStatuses);

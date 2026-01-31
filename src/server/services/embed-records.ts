@@ -1,4 +1,4 @@
-import { records, RunType } from '@hozo';
+import { records, RunTypeSchema } from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
@@ -145,7 +145,7 @@ export async function embedRecords(): Promise<number> {
 }
 
 export async function runEmbedRecordsIntegration() {
-  await runIntegration('embeddings', embedRecords, RunType.enum.sync);
+  await runIntegration('embeddings', embedRecords, RunTypeSchema.enum.sync);
 }
 
 const main = async (): Promise<void> => {

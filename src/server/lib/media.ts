@@ -1,4 +1,4 @@
-import { MediaType, type MediaInsert } from '@hozo';
+import { MediaTypeSchema, type MediaInsert, type MediaType } from '@hozo';
 import { S3Client } from 'bun';
 import mime from 'mime-types';
 import type { MediaMetadata } from '@/shared/types/media';
@@ -8,7 +8,7 @@ import { validateAndFormatUrl } from './url-utils';
 /* ---------------------------------------------------------------------------
  * Constants & Defaults
  * -------------------------------------------------------------------------*/
-const DEFAULT_MEDIA_TYPE = MediaType.enum.application;
+const DEFAULT_MEDIA_TYPE = MediaTypeSchema.enum.application;
 const DEFAULT_MEDIA_FORMAT = 'octet-stream';
 const DEFAULT_MIME_TYPE = `${DEFAULT_MEDIA_TYPE}/${DEFAULT_MEDIA_FORMAT}`;
 
@@ -65,7 +65,7 @@ export const getMediaType = (filenameOrExt: string): MediaType => {
     return DEFAULT_MEDIA_TYPE;
   }
   const type = fullMimeType.split('/')[0];
-  const parsed = MediaType.safeParse(type);
+  const parsed = MediaTypeSchema.safeParse(type);
   return parsed.success ? parsed.data : DEFAULT_MEDIA_TYPE;
 };
 
@@ -128,7 +128,9 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
     const contentLengthHeader = headResponse.headers.get('content-length');
 
     if (contentTypeHeader) {
-      const { data: typeFromHeaders } = MediaType.safeParse(contentTypeHeader?.split('/')[0] || '');
+      const { data: typeFromHeaders } = MediaTypeSchema.safeParse(
+        contentTypeHeader?.split('/')[0] || ''
+      );
       mediaType = typeFromHeaders ?? getMediaTypeFromURL(validatedUrl);
       mediaFormat = contentTypeHeader?.split('/')[1] ?? DEFAULT_MEDIA_FORMAT;
     } else {

@@ -7,7 +7,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { MediaType } from '@hozo';
+import { MediaTypeSchema } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { lookup } from 'mime-types';
 import { z } from 'zod';
@@ -29,7 +29,7 @@ const MediaOrderByFieldSchema = z.enum(['recordCreatedAt', 'recordUpdatedAt', 'i
 const MediaListOptionsSchema = BaseOptionsSchema.extend({
   limit: LimitSchema.optional(),
   offset: OffsetSchema.optional(),
-  type: MediaType.optional(),
+  type: MediaTypeSchema.optional(),
   'alt-text': z.boolean().optional(),
   record: z.coerce.number().positive().int().optional(),
   order: MediaOrderByFieldSchema.optional(),

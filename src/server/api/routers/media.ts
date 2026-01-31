@@ -2,7 +2,7 @@ import {
   airtableAttachments,
   lightroomImages,
   media,
-  MediaType,
+  MediaTypeSchema,
   raindropImages,
   twitterMedia,
 } from '@hozo';
@@ -37,7 +37,7 @@ const MediaOrderCriteriaSchema = z.object({
 
 // Schema for listing media with filters
 const MediaListInputSchema = z.object({
-  type: MediaType.optional(),
+  type: MediaTypeSchema.optional(),
   hasAltText: z.boolean().optional(),
   recordId: IdSchema.optional(),
   limit: LimitSchema.optional().default(50),

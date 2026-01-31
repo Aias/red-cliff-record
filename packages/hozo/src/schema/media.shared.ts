@@ -13,5 +13,3 @@ export const mediaTypes = [
 ] as const;
 export const MediaTypeSchema = z.enum(mediaTypes);
 export type MediaType = z.infer<typeof MediaTypeSchema>;
-// Backward-compatible alias for runtime use (e.g., MediaType.enum.image)
-export { MediaTypeSchema as MediaType };

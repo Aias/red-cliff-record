@@ -19,5 +19,3 @@ export const predicateTypes = [
 ] as const;
 export const PredicateTypeSchema = z.enum(predicateTypes);
 export type PredicateType = z.infer<typeof PredicateTypeSchema>;
-// Backward-compatible alias for runtime use
-export { PredicateTypeSchema as PredicateType };

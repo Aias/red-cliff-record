@@ -22,12 +22,10 @@ import {
 } from './operations';
 import { predicateTypes, recordTypes } from './records.shared';
 
-// Re-export client-safe types
 export * from './records.shared';
 
 export const recordTypeEnum = pgEnum('record_type', recordTypes);
 
-// Main index table
 export const records = pgTable(
   'records',
   {
