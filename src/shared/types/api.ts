@@ -1,4 +1,5 @@
-import { IntegrationTypeSchema, RecordTypeSchema } from '@hozo';
+import { IntegrationTypeSchema } from '@hozo/schema/operations.shared';
+import { RecordTypeSchema } from '@hozo/schema/records.shared';
 import { z } from 'zod';
 
 export const DEFAULT_LIMIT = 50;

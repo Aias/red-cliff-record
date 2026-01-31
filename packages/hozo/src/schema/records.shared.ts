@@ -1,0 +1,23 @@
+import { z } from 'zod';
+
+export const recordTypes = [
+  'entity', // an actor in the world, has will
+  'concept', // a category, idea, or abstraction
+  'artifact', // physical or digital objects, content, or media
+] as const;
+export const RecordTypeSchema = z.enum(recordTypes);
+export type RecordType = z.infer<typeof RecordTypeSchema>;
+
+export const predicateTypes = [
+  'creation', // authorship, ownership …
+  'containment', // has_part, sequence …
+  'description', // about, tag …
+  'association', // related_to, similar_to …
+  'reference', // cites, responds_to …
+  'identity', // instance_of, same_as …
+  'form', // has_format, format_of …
+] as const;
+export const PredicateTypeSchema = z.enum(predicateTypes);
+export type PredicateType = z.infer<typeof PredicateTypeSchema>;
+// Backward-compatible alias for runtime use
+export { PredicateTypeSchema as PredicateType };

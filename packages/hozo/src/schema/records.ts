@@ -20,14 +20,10 @@ import {
   integrationTypeEnum,
   textEmbeddingColumns,
 } from './operations';
+import { predicateTypes, recordTypes } from './records.shared';
 
-export const recordTypes = [
-  'entity', // an actor in the world, has will
-  'concept', // a category, idea, or abstraction
-  'artifact', // physical or digital objects, content, or media
-] as const;
-export const RecordTypeSchema = z.enum(recordTypes);
-export type RecordType = z.infer<typeof RecordTypeSchema>;
+// Re-export client-safe types
+export * from './records.shared';
 
 export const recordTypeEnum = pgEnum('record_type', recordTypes);
 
@@ -125,19 +121,6 @@ export const LinkSelectSchema = createSelectSchema(links);
 export type LinkSelect = typeof links.$inferSelect;
 export const LinkInsertSchema = createInsertSchema(links);
 export type LinkInsert = typeof links.$inferInsert;
-
-export const predicateTypes = [
-  'creation', // authorship, ownership …
-  'containment', // has_part, sequence …
-  'description', // about, tag …
-  'association', // related_to, similar_to …
-  'reference', // cites, responds_to …
-  'identity', // instance_of, same_as …
-  'form', // has_format, format_of …
-] as const;
-export const PredicateTypeSchema = z.enum(predicateTypes);
-export type PredicateType = z.infer<typeof PredicateTypeSchema>;
-export { PredicateTypeSchema as PredicateType };
 
 export const predicateTypeEnum = pgEnum('predicate_type', predicateTypes);
 

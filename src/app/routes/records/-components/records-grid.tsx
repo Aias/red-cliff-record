@@ -1,5 +1,5 @@
-import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations';
-import { RecordTypeSchema, type RecordType } from '@hozo/schema/records';
+import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations.shared';
+import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { Link } from '@tanstack/react-router';
 import { ChevronDownIcon } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
