@@ -3,8 +3,8 @@ import { getQueryKey } from '@trpc/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import { mergeRecords } from '@/shared/lib/merge-records';
-import type { RecordGet } from '@/shared/types';
-import type { DbId, IdParamList } from '@/shared/types';
+import type { DbId, IdParamList } from '@/shared/types/api';
+import type { RecordGet } from '@/shared/types/domain';
 
 export function useEmbedRecord() {
   const utils = trpc.useUtils();

@@ -1,4 +1,4 @@
-import { TEXT_EMBEDDING_DIMENSIONS } from '@aias/hozo';
+import { TEXT_EMBEDDING_DIMENSIONS } from '@hozo/schema/operations';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({

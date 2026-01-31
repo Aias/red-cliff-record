@@ -17,16 +17,12 @@ import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
 
-export const raindropTypeEnum = pgEnum('raindrop_type', [
-  'link',
-  'document',
-  'video',
-  'image',
-  'audio',
-  'article',
-]);
-export const RaindropType = z.enum(raindropTypeEnum.enumValues);
-export type RaindropType = z.infer<typeof RaindropType>;
+export const raindropTypes = ['link', 'document', 'video', 'image', 'audio', 'article'] as const;
+export const RaindropTypeSchema = z.enum(raindropTypes);
+export type RaindropType = z.infer<typeof RaindropTypeSchema>;
+export { RaindropTypeSchema as RaindropType };
+
+export const raindropTypeEnum = pgEnum('raindrop_type', raindropTypes);
 
 export const raindropBookmarks = pgTable(
   'raindrop_bookmarks',

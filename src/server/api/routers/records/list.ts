@@ -1,5 +1,5 @@
 import type { RelationsFieldFilter } from 'drizzle-orm';
-import { ListRecordsInputSchema, type IdParamList } from '@/shared/types';
+import { ListRecordsInputSchema, type IdParamList } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
 
 /**

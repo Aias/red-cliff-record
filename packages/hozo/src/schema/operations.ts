@@ -10,36 +10,20 @@ import {
   vector,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import {
+  IntegrationStatusSchema,
+  integrationStatuses,
+  integrationTypes,
+  RunTypeSchema,
+  runTypes,
+  TEXT_EMBEDDING_DIMENSIONS,
+} from './operations.shared';
 
-export const integrationStatusEnum = pgEnum('integration_status', [
-  'success',
-  'fail',
-  'in_progress',
-]);
-export const IntegrationStatus = z.enum(integrationStatusEnum.enumValues);
-export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
+export * from './operations.shared';
 
-export const integrationTypeEnum = pgEnum('integration_type', [
-  'ai_chat',
-  'airtable',
-  'browser_history',
-  'crawler',
-  'embeddings',
-  'feedbin',
-  'github',
-  'lightroom',
-  'manual',
-  'raindrop',
-  'readwise',
-  'twitter',
-]);
-export const IntegrationTypeSchema = z.enum(integrationTypeEnum.enumValues);
-export type IntegrationType = z.infer<typeof IntegrationTypeSchema>;
-
-export const runTypeEnum = pgEnum('run_type', ['seed', 'sync']);
-export const RunType = z.enum(runTypeEnum.enumValues);
-export type RunType = z.infer<typeof RunType>;
+export const integrationStatusEnum = pgEnum('integration_status', integrationStatuses);
+export const integrationTypeEnum = pgEnum('integration_type', integrationTypes);
+export const runTypeEnum = pgEnum('run_type', runTypes);
 
 const recordCreatedAt = timestamp('created_at', {
   withTimezone: true,
@@ -84,7 +68,6 @@ export const commonColumns = {
   sources: integrationTypeEnum('sources').array(),
 };
 
-export const TEXT_EMBEDDING_DIMENSIONS = 768;
 const textEmbedding = vector('text_embedding', { dimensions: TEXT_EMBEDDING_DIMENSIONS });
 
 export const textEmbeddingColumns = {
@@ -96,8 +79,10 @@ export const integrationRuns = pgTable(
   {
     id: serial('id').primaryKey(),
     integrationType: integrationTypeEnum('integration_type').notNull(),
-    runType: runTypeEnum('run_type').notNull().default(RunType.enum.sync),
-    status: integrationStatusEnum('status').notNull().default(IntegrationStatus.enum.in_progress),
+    runType: runTypeEnum('run_type').notNull().default(RunTypeSchema.enum.sync),
+    status: integrationStatusEnum('status')
+      .notNull()
+      .default(IntegrationStatusSchema.enum.in_progress),
     message: text('message'),
     runStartTime: timestamp('run_start_time', {
       withTimezone: true,

@@ -1,4 +1,4 @@
-import { diaSchema } from '@aias/hozo';
+import { diaSchema } from '@hozo';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { BrowserNotInstalledError } from '@/server/integrations/browser-history/types';

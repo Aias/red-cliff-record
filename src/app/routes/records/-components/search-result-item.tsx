@@ -1,4 +1,4 @@
-import type { MediaType } from '@aias/hozo';
+import type { MediaType } from '@hozo/schema/media';
 import { CornerDownRightIcon } from 'lucide-react';
 import { memo } from 'react';
 import { IntegrationLogo } from '@/components/integration-logo';

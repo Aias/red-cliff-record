@@ -1,4 +1,4 @@
-import { emptyStringToNull } from '@aias/hozo';
+import { emptyStringToNull } from '@hozo';
 import { z } from 'zod';
 
 const RaindropRefSchema = z.object({

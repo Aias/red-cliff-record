@@ -1,5 +1,5 @@
-import { lightroomImages } from '@aias/hozo';
-import { db } from '@/server/db/connections';
+import { lightroomImages } from '@hozo';
+import { db } from '@/server/db/connections/postgres';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';

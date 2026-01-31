@@ -1,4 +1,4 @@
-import { RecordInsertSchema, RecordTypeSchema, type RecordType } from '@aias/hozo';
+import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';
@@ -37,9 +37,10 @@ import { useDeleteMedia } from '@/lib/hooks/media-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { useRecordUpload } from '@/lib/hooks/use-record-upload';
-import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
+import { validateRecord } from '@/lib/server/validate-record';
 import { cn } from '@/lib/utils';
-import type { RecordGet } from '@/shared/types';
+import type { RecordGet } from '@/shared/types/domain';
 import { recordTypeIcons } from './type-icons';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
@@ -170,13 +171,12 @@ export function RecordForm({
       });
     },
     validators: {
-      onSubmit: ({ value }) => {
-        const parsed = RecordInsertSchema.safeParse(value);
-        if (!parsed.success) {
-          const flat = z.flattenError(parsed.error);
+      onSubmitAsync: async ({ value }) => {
+        const result = await validateRecord({ data: value });
+        if (!result.success) {
           return {
-            formError: flat.formErrors.join(', '),
-            fieldErrors: flat.fieldErrors,
+            form: result.formError,
+            fields: result.fieldErrors,
           };
         }
         return undefined;

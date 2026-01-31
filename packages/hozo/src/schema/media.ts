@@ -11,22 +11,13 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
+import { mediaTypes } from './media.shared';
 import { databaseTimestamps } from './operations';
 import { records } from './records';
 
-export const mediaTypeEnum = pgEnum('media_type', [
-  'application', // application or binary data
-  'audio', // audio files
-  'font', // font/typeface files
-  'image', // images (jpg, png, etc)
-  'message', // message data
-  'model', // 3D models
-  'multipart', // multipart files
-  'text', // plain text, markdown, etc.
-  'video', // video files
-]);
-export const MediaType = z.enum(mediaTypeEnum.enumValues);
-export type MediaType = z.infer<typeof MediaType>;
+export * from './media.shared';
+
+export const mediaTypeEnum = pgEnum('media_type', mediaTypes);
 
 export const media = pgTable(
   'media',

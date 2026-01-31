@@ -80,7 +80,7 @@ Never attempt to start the development server or build the application. The user
 - Frontend: `src/app/**` (routes, components, client libs). Import aliases defined in `tsconfig.json`.
 - Backend: `src/server/**` (tRPC routers, libs, db, integrations).
 - Shared: `src/shared/**` (cross-environment libs and types).
-- Packages: `packages/hozo` contains the database schema, relations, and validation logic (imported as `@aias/hozo`).
+- Packages: `packages/hozo` contains the database schema, relations, and validation logic (imported as `@hozo`).
 - Keep client/server boundaries: client must not import server code; server may import shared.
 - Theme tokens: `src/app/styles/theme.css` holds the `c-*` color variables used across components.
 
@@ -207,7 +207,7 @@ Never attempt to start the development server or build the application. The user
 - `@/server/` - server code (includes `@/server/lib/` for server utilities)
 - `@/components` - frontend components
 - `@/lib` - client-side utility functions
-- `@aias/hozo` - database schema, relations, and validation (workspace package)
+- `@hozo` - database schema, relations, and validation (workspace package)
 
 **Import Rules:**
 

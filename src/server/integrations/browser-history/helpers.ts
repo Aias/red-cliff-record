@@ -1,4 +1,4 @@
-import { arcSchema } from '@aias/hozo';
+import { arcSchema } from '@hozo';
 import { asc, eq } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type { DailyVisitsQueryRow } from './types';

@@ -1,4 +1,4 @@
-import type { MediaType } from '@aias/hozo';
+import type { MediaType } from '@hozo/schema/media';
 import type { LinkOptions } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
@@ -18,7 +18,7 @@ import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
-import type { DbId } from '@/shared/types';
+import type { DbId } from '@/shared/types/api';
 import { recordTypeIcons } from './type-icons';
 
 interface RecordAction {

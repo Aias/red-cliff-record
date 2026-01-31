@@ -1,5 +1,5 @@
-import type { RecordSelect } from '@aias/hozo';
-import type { RecordGet } from '@/shared/types';
+import type { RecordSelect } from '@hozo';
+import type { RecordGet } from '@/shared/types/domain';
 
 /**
  * Helper function to merge text fields during record merging.

@@ -17,17 +17,14 @@ import { contentTimestamps, databaseTimestamps } from './operations';
 import { integrationRuns } from './operations';
 import { records } from './records';
 
-export const readwiseLocationEnum = pgEnum('readwise_location', [
-  'new',
-  'later',
-  'shortlist',
-  'archive',
-  'feed',
-]);
-export const ReadwiseLocation = z.enum(readwiseLocationEnum.enumValues);
-export type ReadwiseLocation = z.infer<typeof ReadwiseLocation>;
+export const readwiseLocations = ['new', 'later', 'shortlist', 'archive', 'feed'] as const;
+export const ReadwiseLocationSchema = z.enum(readwiseLocations);
+export type ReadwiseLocation = z.infer<typeof ReadwiseLocationSchema>;
+export { ReadwiseLocationSchema as ReadwiseLocation };
 
-export const readwiseCategoryEnum = pgEnum('readwise_category', [
+export const readwiseLocationEnum = pgEnum('readwise_location', readwiseLocations);
+
+export const readwiseCategories = [
   'article',
   'email',
   'rss',
@@ -37,9 +34,12 @@ export const readwiseCategoryEnum = pgEnum('readwise_category', [
   'epub',
   'tweet',
   'video',
-]);
-export const ReadwiseCategory = z.enum(readwiseCategoryEnum.enumValues);
-export type ReadwiseCategory = z.infer<typeof ReadwiseCategory>;
+] as const;
+export const ReadwiseCategorySchema = z.enum(readwiseCategories);
+export type ReadwiseCategory = z.infer<typeof ReadwiseCategorySchema>;
+export { ReadwiseCategorySchema as ReadwiseCategory };
+
+export const readwiseCategoryEnum = pgEnum('readwise_category', readwiseCategories);
 
 export const readwiseDocuments = pgTable(
   'readwise_documents',

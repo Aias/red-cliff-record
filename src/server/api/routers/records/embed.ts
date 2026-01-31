@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { embedRecordById } from '@/server/services/embed-records';
-import { IdParamSchema } from '@/shared/types';
+import { IdParamSchema } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
 
 export const embed = publicProcedure

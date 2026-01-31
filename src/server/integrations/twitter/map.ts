@@ -9,9 +9,9 @@ import {
   type TwitterMediaSelect,
   type TwitterTweetSelect,
   type TwitterUserSelect,
-} from '@aias/hozo';
+} from '@hozo';
 import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
 import { decodeHtmlEntities } from '@/shared/lib/formatting';
 import { linkRecords } from '../common/db-helpers';

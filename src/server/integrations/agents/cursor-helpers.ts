@@ -1,5 +1,5 @@
 import { Database } from 'bun:sqlite';
-import { cursorSchema } from '@aias/hozo';
+import { cursorSchema } from '@hozo';
 import { like } from 'drizzle-orm';
 import { createCursorConnection } from '@/server/db/connections/cursor-sqlite';
 import type {

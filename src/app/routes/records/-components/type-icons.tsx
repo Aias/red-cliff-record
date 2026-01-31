@@ -1,4 +1,4 @@
-import type { RecordType } from '@aias/hozo';
+import type { RecordType } from '@hozo/schema/records';
 import { FileTextIcon, LightbulbIcon, UserIcon } from 'lucide-react';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';

@@ -1,6 +1,6 @@
-import { records, type IntegrationType } from '@aias/hozo';
+import { records, type IntegrationType } from '@hozo';
 import { eq } from 'drizzle-orm';
-import { db } from '../db/connections';
+import { db } from '@/server/db/connections/postgres';
 
 /**
  * Configuration for batch processing

@@ -4,12 +4,12 @@ import {
   type LinkInsert,
   type LinkSelect,
   type PredicateSelect,
-} from '@aias/hozo';
+} from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import type { RecordLinks, RecordLinksMap } from '@/shared/types';
-import { IdSchema, type DbId } from '@/shared/types';
+import { IdSchema, type DbId } from '@/shared/types/api';
+import type { RecordLinks, RecordLinksMap } from '@/shared/types/domain';
 import { createTRPCRouter, publicProcedure } from '../init';
 
 export const linksRouter = createTRPCRouter({

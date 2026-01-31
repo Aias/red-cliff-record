@@ -1,4 +1,4 @@
-import { relations, schema } from '@aias/hozo';
+import { relations, schema } from '@hozo';
 import { drizzle } from 'drizzle-orm/bun-sql';
 
 const createDb = () =>

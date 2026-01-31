@@ -5,9 +5,9 @@ import {
   type GithubRepositorySelect,
   type GithubUserSelect,
   type RecordInsert,
-} from '@aias/hozo';
+} from '@hozo';
 import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { mapUrl } from '@/server/lib/url-utils';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';

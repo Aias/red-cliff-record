@@ -10,9 +10,9 @@ import {
   type ReadwiseDocumentSelect,
   type ReadwiseTagSelect,
   type RecordInsert,
-} from '@aias/hozo';
+} from '@hozo';
 import { eq, inArray } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { mapUrl } from '@/server/lib/url-utils';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { bulkInsertLinks, getPredicateId, linkRecords } from '../common/db-helpers';

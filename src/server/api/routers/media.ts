@@ -2,17 +2,17 @@ import {
   airtableAttachments,
   lightroomImages,
   media,
-  MediaType,
+  MediaTypeSchema,
   raindropImages,
   twitterMedia,
-} from '@aias/hozo';
+} from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getMediaInsertData, uploadClientFileToR2, uploadMediaToR2 } from '@/server/lib/media';
 import { embedRecordById } from '@/server/services/embed-records';
 import { generateAltText } from '@/server/services/generate-alt-text';
-import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types';
+import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
 // Schema for media create input
@@ -37,7 +37,7 @@ const MediaOrderCriteriaSchema = z.object({
 
 // Schema for listing media with filters
 const MediaListInputSchema = z.object({
-  type: MediaType.optional(),
+  type: MediaTypeSchema.optional(),
   hasAltText: z.boolean().optional(),
   recordId: IdSchema.optional(),
   limit: LimitSchema.optional().default(50),

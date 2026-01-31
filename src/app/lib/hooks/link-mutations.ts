@@ -1,9 +1,10 @@
-import type { PredicateSelect } from '@aias/hozo';
+import type { PredicateSelect } from '@hozo/schema/records';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
-import type { DbId, RecordLinks } from '@/shared/types';
+import type { DbId } from '@/shared/types/api';
+import type { RecordLinks } from '@/shared/types/domain';
 import { useEmbedRecord } from './record-mutations';
 
 export function useUpsertLink() {

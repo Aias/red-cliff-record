@@ -5,7 +5,7 @@
  * reusing all query logic from the API routers.
  */
 
-import { RecordTypeSchema } from '@aias/hozo';
+import { RecordTypeSchema } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import {
   BaseOptionsSchema,

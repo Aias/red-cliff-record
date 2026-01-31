@@ -4,11 +4,11 @@ import {
   type GithubCommitChangeSelect,
   type GithubCommitSelect,
   type GithubRepositorySelect,
-} from '@aias/hozo';
+} from '@hozo';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createIntegrationLogger } from '../common/logging';
 

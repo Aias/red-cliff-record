@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { trpc } from '@/app/trpc';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
-import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts';
+import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { RecordLink } from './-components/record-link';
 import { RecordsGrid } from './-components/records-grid';
 

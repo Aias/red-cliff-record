@@ -1,7 +1,8 @@
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
-import { defineConfig, loadEnv } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import tsConfigPaths from 'vite-tsconfig-paths';
 import { EnvSchema, PortSchema } from './src/shared/lib/env';
 
@@ -19,6 +20,9 @@ export default defineConfig(({ mode }) => {
   const processEnv = parsedEnv.success ? parsedEnv.data : {};
 
   return {
+    build: {
+      sourcemap: true,
+    },
     server: {
       port: PortSchema.parse(env.PUBLIC_DEV_PORT),
     },
@@ -38,6 +42,11 @@ export default defineConfig(({ mode }) => {
         },
       }),
       tailwindcss(),
+      visualizer({
+        filename: 'dist/stats.html',
+        gzipSize: true,
+        brotliSize: true,
+      }) as PluginOption,
     ],
   };
 });

@@ -6,14 +6,18 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  text,
   timestamp,
 } from 'drizzle-orm/pg-core';
-import { text } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps, integrationRuns } from './operations';
 import { records } from './records';
 
-export const feedSourceEnum = pgEnum('feed_source', ['feedbin', 'feedly', 'reeder']);
+export const feedSources = ['feedbin', 'feedly', 'reeder'] as const;
+export const FeedSourceSchema = z.enum(feedSources);
+export type FeedSource = z.infer<typeof FeedSourceSchema>;
+
+export const feedSourceEnum = pgEnum('feed_source', feedSources);
 
 export const feeds = pgTable(
   'feeds',

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import type { DbId } from '@/shared/types';
+import type { DbId } from '@/shared/types/api';
 import { readFileAsBase64 } from '../read-file';
 import { useCreateMedia } from './media-mutations';
 

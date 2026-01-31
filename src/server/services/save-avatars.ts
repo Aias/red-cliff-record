@@ -1,4 +1,4 @@
-import { records, RunType } from '@aias/hozo';
+import { records, RunTypeSchema } from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { uploadMediaToR2 } from '@/server/lib/media';
@@ -144,7 +144,7 @@ export async function saveAvatarsToR2(): Promise<number> {
  * Run the avatar saving process as a tracked integration
  */
 export async function runSaveAvatarsIntegration(): Promise<void> {
-  await runIntegration('manual', saveAvatarsToR2, RunType.enum.sync);
+  await runIntegration('manual', saveAvatarsToR2, RunTypeSchema.enum.sync);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { Database } from 'bun:sqlite';
-import { cursorSchema } from '@aias/hozo';
+import { cursorSchema } from '@hozo';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 
 const CURSOR_GLOBAL_STORAGE_PATH = `${process.env.HOME}/Library/Application Support/Cursor/User/globalStorage`;

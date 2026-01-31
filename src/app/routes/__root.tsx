@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import type { ServerHelpers } from '@/app/trpc';
 import { Toaster } from '@/components/sonner';
 import { TooltipProvider } from '@/components/tooltip';
-import { KeyboardShortcutProvider } from '@/lib/keyboard-shortcuts';
+import { KeyboardShortcutProvider } from '@/lib/keyboard-shortcuts/context';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getTheme, type Theme } from '@/lib/server/theme';
 import { cn } from '@/lib/utils';

@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
-import type { RecordGet } from '@/shared/types';
-import { IdParamSchema } from '@/shared/types';
+import { IdParamSchema } from '@/shared/types/api';
+import type { RecordGet } from '@/shared/types/domain';
 import { publicProcedure } from '../../init';
 
 export const get = publicProcedure

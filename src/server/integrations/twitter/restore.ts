@@ -1,6 +1,6 @@
-import { records } from '@aias/hozo';
+import { records } from '@hozo';
 import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { decodeHtmlEntities } from '@/shared/lib/formatting';
 import { createIntegrationLogger } from '../common/logging';
 import {

@@ -1,7 +1,11 @@
 import { useSyncExternalStore, useCallback } from 'react';
 import type { z } from 'zod';
-import type { RecordFiltersSchema } from '@/shared/types';
-import { DEFAULT_LIMIT, ListRecordsInputSchema, type ListRecordsInput } from '@/shared/types';
+import {
+  DEFAULT_LIMIT,
+  ListRecordsInputSchema,
+  type ListRecordsInput,
+  type RecordFiltersSchema,
+} from '@/shared/types/api';
 
 const STORAGE_KEY = 'rcr:record-filters';
 

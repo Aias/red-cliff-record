@@ -1,4 +1,4 @@
-import { emptyStringToNull, ReadwiseCategory, ReadwiseLocation } from '@aias/hozo';
+import { emptyStringToNull, ReadwiseCategory, ReadwiseLocation } from '@hozo';
 import { z } from 'zod';
 
 const ReadwiseTagSchema = z.object({

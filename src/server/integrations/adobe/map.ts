@@ -5,7 +5,7 @@ import {
   type LightroomImageSelect,
   type MediaInsert,
   type RecordInsert,
-} from '@aias/hozo';
+} from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';

@@ -1,6 +1,12 @@
-import { integrationRuns, IntegrationStatus, RunType, type IntegrationType } from '@aias/hozo';
+import {
+  integrationRuns,
+  IntegrationStatusSchema,
+  RunTypeSchema,
+  type IntegrationType,
+  type RunType,
+} from '@hozo';
 import { eq } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from './logging';
 
 /**
@@ -26,7 +32,7 @@ type IntegrationFunction = (integrationRunId: number) => Promise<number>;
 export async function runIntegration(
   integrationType: IntegrationType,
   fn: IntegrationFunction,
-  runType: RunType = RunType.enum.sync
+  runType: RunType = RunTypeSchema.enum.sync
 ): Promise<void> {
   const integrationLabel = integrationType.replace(/_/g, '-');
   const logger = createIntegrationLogger(integrationLabel, runType);
@@ -60,7 +66,7 @@ export async function runIntegration(
     await db
       .update(integrationRuns)
       .set({
-        status: IntegrationStatus.enum.success,
+        status: IntegrationStatusSchema.enum.success,
         runEndTime: new Date(),
         entriesCreated,
       })
@@ -75,7 +81,7 @@ export async function runIntegration(
     await db
       .update(integrationRuns)
       .set({
-        status: IntegrationStatus.enum.fail,
+        status: IntegrationStatusSchema.enum.fail,
         runEndTime: new Date(),
         message: errorMessage,
       })

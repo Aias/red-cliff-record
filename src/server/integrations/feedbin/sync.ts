@@ -1,6 +1,6 @@
-import { feedEntries, feeds } from '@aias/hozo';
+import { feedEntries, feeds } from '@hozo';
 import { inArray } from 'drizzle-orm';
-import { db } from '@/server/db/connections';
+import { db } from '@/server/db/connections/postgres';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';

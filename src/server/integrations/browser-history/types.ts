@@ -1,4 +1,4 @@
-import { emptyStringToNull, type arcSchema, type Browser } from '@aias/hozo';
+import { emptyStringToNull, type arcSchema, type Browser } from '@hozo';
 import type { Client } from '@libsql/client';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { z } from 'zod';
