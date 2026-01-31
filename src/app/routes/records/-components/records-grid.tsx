@@ -41,7 +41,7 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
         <RecordTypeIcon type={record.type} />
       </TableCell>
       <TableCell className="max-w-60 truncate whitespace-nowrap">
-        <Tooltip delayDuration={1000}>
+        <Tooltip delayDuration={1000} disableHoverableContent>
           <TooltipTrigger asChild>
             <Link
               to="/records/$recordId"
@@ -52,7 +52,7 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
               {title}
             </Link>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="max-w-96">
             <div
               className="line-clamp-3" // Line clamp only works on elements without block padding, otherwise the clipped text will show through on the padding area
             >

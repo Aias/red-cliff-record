@@ -58,6 +58,7 @@ export const SiteSearch = () => {
   useKeyboardShortcut('mod+k', () => setCommandOpen((open) => !open), {
     description: 'Open search',
     category: 'Navigation',
+    allowInInput: true,
   });
 
   useKeyboardShortcut('/', () => setCommandOpen((open) => !open), {

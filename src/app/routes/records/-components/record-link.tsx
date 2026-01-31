@@ -166,7 +166,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
               <HoverCard openDelay={300} closeDelay={100}>
                 <HoverCardTrigger asChild>
                   <Link
-                    className="mr-auto min-w-0 flex-1 truncate focus-visible:underline"
+                    className="mr-auto min-w-0 truncate focus-visible:underline"
                     {...linkOptions}
                   >
                     {labelElement}

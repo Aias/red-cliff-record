@@ -52,6 +52,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
   useKeyboardShortcut('mod+shift+k', () => addRelationshipButtonRef.current?.click(), {
     description: 'Add link to record',
     category: 'Records',
+    allowInInput: true,
   });
 
   const sortLinks = (links: LinkPartial[]): LinkPartial[] => {
