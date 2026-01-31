@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { databaseTimestamps } from './operations';
 import { records } from './records';
 
-export const mediaTypeEnum = pgEnum('media_type', [
+export const mediaTypes = [
   'application', // application or binary data
   'audio', // audio files
   'font', // font/typeface files
@@ -24,9 +24,12 @@ export const mediaTypeEnum = pgEnum('media_type', [
   'multipart', // multipart files
   'text', // plain text, markdown, etc.
   'video', // video files
-]);
-export const MediaType = z.enum(mediaTypeEnum.enumValues);
-export type MediaType = z.infer<typeof MediaType>;
+] as const;
+export const MediaTypeSchema = z.enum(mediaTypes);
+export type MediaType = z.infer<typeof MediaTypeSchema>;
+export { MediaTypeSchema as MediaType };
+
+export const mediaTypeEnum = pgEnum('media_type', mediaTypes);
 
 export const media = pgTable(
   'media',

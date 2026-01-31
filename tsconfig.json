@@ -34,6 +34,7 @@
 
     /* Path Aliases */
     "paths": {
+      "@aias/hozo": ["./packages/hozo/src/index.ts"],
       "@/components": ["./src/app/components"],
       "@/components/*": ["./src/app/components/*"],
       "@/lib": ["./src/app/lib"],

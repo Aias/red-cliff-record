@@ -11,12 +11,15 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { databaseTimestamps, databaseTimestampsNonUpdatable } from './operations';
-import { integrationRuns } from './operations';
+import { databaseTimestamps, databaseTimestampsNonUpdatable, integrationRuns } from './operations';
 
-export const browserEnum = pgEnum('browser', ['arc', 'dia', 'chrome', 'firefox', 'safari', 'edge']);
-export const Browser = z.enum(browserEnum.enumValues);
-export type Browser = z.infer<typeof Browser>;
+// Define values first (client-safe), then derive both Zod and drizzle from them
+export const browsers = ['arc', 'dia', 'chrome', 'firefox', 'safari', 'edge'] as const;
+export const BrowserSchema = z.enum(browsers);
+export type Browser = z.infer<typeof BrowserSchema>;
+export { BrowserSchema as Browser };
+
+export const browserEnum = pgEnum('browser', browsers);
 
 export const browsingHistory = pgTable(
   'browsing_history',
@@ -25,7 +28,7 @@ export const browsingHistory = pgTable(
     viewTime: timestamp('view_time', {
       withTimezone: true,
     }).notNull(),
-    browser: browserEnum('browser').notNull().default(Browser.enum.arc),
+    browser: browserEnum('browser').notNull().default(BrowserSchema.enum.arc),
     hostname: text('hostname').notNull(),
     viewEpochMicroseconds: bigint('view_epoch_microseconds', { mode: 'bigint' }),
     viewDuration: integer('view_duration'),
