@@ -1,10 +1,7 @@
 import { defineConfig } from 'drizzle-kit';
+import { getDatabaseUrl } from './src/server/lib/db-url';
 
-// Get the correct database URL
-const databaseUrl = process.env.DATABASE_URL?.replace(
-  '${DATABASE_URL_LOCAL}',
-  process.env.DATABASE_URL_LOCAL ?? ''
-).replace('${DATABASE_URL_REMOTE}', process.env.DATABASE_URL_REMOTE ?? '');
+const databaseUrl = getDatabaseUrl();
 
 export default defineConfig({
   out: './migrations/main',
