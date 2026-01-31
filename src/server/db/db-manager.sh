@@ -8,6 +8,7 @@ BACKUP_DIR="$HOME/Documents/Red Cliff Record/Backups"
 CLEAN_RESTORE=false
 DATA_ONLY=false
 DRY_RUN=false
+SKIP_CONFIRM=false
 
 # Parse connection details from .env
 if [ -f .env ]; then
@@ -54,6 +55,7 @@ print_usage() {
     echo "  -c, --clean            Clean restore (drop & recreate database)"
     echo "  -D, --data-only        Backup/Restore data only (public schema only, excludes migration history)"
     echo "  -n, --dry-run          Print commands without executing them"
+    echo "  -y, --yes              Skip confirmation prompts"
     echo "  -h, --help             Show this help message"
     echo
     echo "Examples:"
@@ -76,6 +78,7 @@ while [[ "$#" -gt 0 ]]; do
         -c|--clean) CLEAN_RESTORE=true ;;
         -D|--data-only) DATA_ONLY=true ;;
         -n|--dry-run) DRY_RUN=true ;;
+        -y|--yes) SKIP_CONFIRM=true ;;
         -h|--help) print_usage; exit 0 ;;
         *) break ;;
     esac
@@ -380,8 +383,10 @@ do_clone_prod_to_dev() {
         exit 0
     fi
 
-    echo "Press Ctrl+C to cancel, or Enter to continue..."
-    read -r
+    if [ "$SKIP_CONFIRM" = false ]; then
+        echo "Press Ctrl+C to cancel, or Enter to continue..."
+        read -r
+    fi
 
     # Verify prod database is accessible
     if ! psql "$PROD_URL" -c '\q' 2>/dev/null; then

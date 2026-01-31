@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { uploadMediaToR2 } from '@/server/lib/media';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
-import { EnvSchema } from '@/shared/lib/env';
+import { EnvSchemaBase } from '@/shared/lib/env';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';
 
@@ -25,7 +25,7 @@ const logger = createIntegrationLogger('services', 'save-avatars');
  */
 export async function saveAvatarsToR2(): Promise<number> {
   logger.start('Saving record avatars to R2 storage');
-  const { ASSETS_DOMAIN: assetsDomain } = EnvSchema.pick({ ASSETS_DOMAIN: true }).parse(
+  const { ASSETS_DOMAIN: assetsDomain } = EnvSchemaBase.pick({ ASSETS_DOMAIN: true }).parse(
     process.env
   );
 

@@ -1,6 +1,6 @@
 import {
   githubCommits,
-  GithubCommitType,
+  GithubCommitTypeSchema,
   type GithubCommitChangeSelect,
   type GithubCommitSelect,
   type GithubRepositorySelect,
@@ -40,7 +40,7 @@ export const CommitSummaryInputSchema = z.object({
 export type CommitSummaryInput = z.infer<typeof CommitSummaryInputSchema>;
 
 export const CommitSummaryResponseSchema = z.object({
-  primary_purpose: GithubCommitType.describe(
+  primary_purpose: GithubCommitTypeSchema.describe(
     'The primary purpose of the commit based on conventional commit types.'
   ),
   summary: z

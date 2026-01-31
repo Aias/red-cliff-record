@@ -1,9 +1,9 @@
-import { Browser } from '@hozo';
+import { BrowserSchema } from '@hozo';
 import { createDiaConnection } from '@/server/db/connections/dia-sqlite';
 import type { BrowserConfig } from '../types';
 
 export const diaConfig: BrowserConfig = {
-  name: Browser.enum.dia,
+  name: BrowserSchema.enum.dia,
   displayName: 'Dia',
   createConnection: createDiaConnection,
   // Cutoff date for Dia browser (June 20, 2025)

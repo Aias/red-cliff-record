@@ -124,7 +124,6 @@ export const githubCommitChangeStatuses = [
 ] as const;
 export const GithubCommitChangeStatusSchema = z.enum(githubCommitChangeStatuses);
 export type GithubCommitChangeStatus = z.infer<typeof GithubCommitChangeStatusSchema>;
-export { GithubCommitChangeStatusSchema as GithubCommitChangeStatus };
 
 export const githubCommitChangeStatusEnum = pgEnum(
   'github_commit_change_status',
@@ -144,7 +143,6 @@ export const githubCommitTypes = [
 ] as const;
 export const GithubCommitTypeSchema = z.enum(githubCommitTypes);
 export type GithubCommitType = z.infer<typeof GithubCommitTypeSchema>;
-export { GithubCommitTypeSchema as GithubCommitType };
 
 export const githubCommitTypesEnum = pgEnum('github_commit_types', githubCommitTypes);
 

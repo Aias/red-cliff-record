@@ -2,7 +2,7 @@ import {
   readwiseAuthors,
   readwiseDocuments,
   readwiseDocumentTags,
-  ReadwiseLocation,
+  ReadwiseLocationSchema,
   readwiseTags,
   records,
   type LinkInsert,
@@ -142,7 +142,7 @@ export async function createRecordsFromReadwiseAuthors() {
   const authors = await db.query.readwiseAuthors.findMany({
     where: {
       documents: {
-        location: ReadwiseLocation.enum.archive, // Only map authors with at least one document in the archive.
+        location: ReadwiseLocationSchema.enum.archive, // Only map authors with at least one document in the archive.
       },
       recordId: {
         isNull: true,
@@ -534,11 +534,11 @@ export async function createRecordsFromReadwiseDocuments() {
             isNull: true,
           },
           parent: {
-            location: ReadwiseLocation.enum.archive,
+            location: ReadwiseLocationSchema.enum.archive,
           },
         },
         {
-          location: ReadwiseLocation.enum.archive,
+          location: ReadwiseLocationSchema.enum.archive,
         },
       ],
       recordId: {

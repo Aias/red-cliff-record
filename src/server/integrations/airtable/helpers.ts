@@ -8,13 +8,13 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { uploadMediaToR2 } from '@/server/lib/media';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
-import { EnvSchema } from '@/shared/lib/env';
+import { EnvSchemaBase } from '@/shared/lib/env';
 import { createIntegrationLogger } from '../common/logging';
 import { AirtableAttachmentSchema } from './types';
 
 const logger = createIntegrationLogger('airtable', 'media');
 
-const { AIRTABLE_ACCESS_TOKEN, AIRTABLE_BASE_ID, ASSETS_DOMAIN } = EnvSchema.pick({
+const { AIRTABLE_ACCESS_TOKEN, AIRTABLE_BASE_ID, ASSETS_DOMAIN } = EnvSchemaBase.pick({
   AIRTABLE_ACCESS_TOKEN: true,
   AIRTABLE_BASE_ID: true,
   ASSETS_DOMAIN: true,

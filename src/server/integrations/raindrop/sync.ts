@@ -2,7 +2,7 @@ import {
   raindropBookmarks,
   raindropCollections,
   raindropImages,
-  RaindropType,
+  RaindropTypeSchema,
   type RaindropBookmarkInsert,
   type RaindropCollectionInsert,
 } from '@hozo';
@@ -306,7 +306,7 @@ async function processRaindrops(raindrops: Raindrop[], integrationRunId: number)
           title: raindrop.title,
           excerpt: raindrop.excerpt,
           note: raindrop.note,
-          type: RaindropType.parse(raindrop.type),
+          type: RaindropTypeSchema.parse(raindrop.type),
           tags: raindrop.tags.length > 0 ? raindrop.tags : null,
           important: raindrop.important,
           domain: raindrop.domain,

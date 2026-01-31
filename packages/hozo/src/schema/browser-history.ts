@@ -17,7 +17,6 @@ import { databaseTimestamps, databaseTimestampsNonUpdatable, integrationRuns } f
 export const browsers = ['arc', 'dia', 'chrome', 'firefox', 'safari', 'edge'] as const;
 export const BrowserSchema = z.enum(browsers);
 export type Browser = z.infer<typeof BrowserSchema>;
-export { BrowserSchema as Browser };
 
 export const browserEnum = pgEnum('browser', browsers);
 

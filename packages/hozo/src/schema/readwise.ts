@@ -20,7 +20,6 @@ import { records } from './records';
 export const readwiseLocations = ['new', 'later', 'shortlist', 'archive', 'feed'] as const;
 export const ReadwiseLocationSchema = z.enum(readwiseLocations);
 export type ReadwiseLocation = z.infer<typeof ReadwiseLocationSchema>;
-export { ReadwiseLocationSchema as ReadwiseLocation };
 
 export const readwiseLocationEnum = pgEnum('readwise_location', readwiseLocations);
 
@@ -37,7 +36,6 @@ export const readwiseCategories = [
 ] as const;
 export const ReadwiseCategorySchema = z.enum(readwiseCategories);
 export type ReadwiseCategory = z.infer<typeof ReadwiseCategorySchema>;
-export { ReadwiseCategorySchema as ReadwiseCategory };
 
 export const readwiseCategoryEnum = pgEnum('readwise_category', readwiseCategories);
 

@@ -1,4 +1,4 @@
-import { emptyStringToNull, ReadwiseCategory, ReadwiseLocation } from '@hozo';
+import { emptyStringToNull, ReadwiseCategorySchema, ReadwiseLocationSchema } from '@hozo';
 import { z } from 'zod';
 
 const ReadwiseTagSchema = z.object({
@@ -18,8 +18,8 @@ export const ReadwiseArticleSchema = z
     content: z.string().nullable(),
     html_content: z.string().nullable().optional(),
     notes: z.string().nullable(),
-    category: ReadwiseCategory,
-    location: ReadwiseLocation.nullable(),
+    category: ReadwiseCategorySchema,
+    location: ReadwiseLocationSchema.nullable(),
     tags: z
       .record(z.string(), ReadwiseTagSchema)
       .nullable()

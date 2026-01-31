@@ -34,6 +34,8 @@ const BackupOptionsSchema = BaseOptionsSchema.extend({
   'data-only': z.boolean().optional(),
   'dry-run': z.boolean().optional(),
   n: z.boolean().optional(),
+  yes: z.boolean().optional(),
+  y: z.boolean().optional(),
 }).strict();
 
 const RestoreOptionsSchema = BaseOptionsSchema.extend({
@@ -242,15 +244,20 @@ export const status: CommandHandler = async (args, options) => {
 
 /**
  * Clone production database to development
- * Usage: rcr db clone-prod-to-dev [--dry-run]
+ * Usage: rcr db clone-prod-to-dev [--dry-run] [--yes|-y]
  */
 export const cloneProdToDev: CommandHandler = async (args, options) => {
   const parsedOptions = parseOptions(BackupOptionsSchema, options);
   const shellArgs: string[] = [];
   const dryRun = parsedOptions['dry-run'] ?? parsedOptions.n ?? false;
+  const skipConfirm = parsedOptions.yes ?? parsedOptions.y ?? false;
 
   if (dryRun) {
     shellArgs.push('--dry-run');
+  }
+
+  if (skipConfirm) {
+    shellArgs.push('--yes');
   }
 
   shellArgs.push('clone-prod-to-dev');
