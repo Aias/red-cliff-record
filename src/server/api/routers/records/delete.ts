@@ -19,7 +19,7 @@ import {
   twitterTweets,
   twitterUsers,
   type RecordSelect,
-} from '@aias/hozo';
+} from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';

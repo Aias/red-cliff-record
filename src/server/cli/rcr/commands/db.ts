@@ -11,7 +11,7 @@
 import { realpathSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { links, predicates, records } from '@aias/hozo';
+import { links, predicates, records } from '@hozo';
 import { spawn } from 'bun';
 import { count } from 'drizzle-orm';
 import { z } from 'zod';

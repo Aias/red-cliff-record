@@ -1,4 +1,4 @@
-import { Browser } from '@aias/hozo';
+import { Browser } from '@hozo';
 import { createArcConnection } from '@/server/db/connections/arc-sqlite';
 import type { BrowserConfig } from '../types';
 

@@ -1,4 +1,4 @@
-import { integrationRuns, IntegrationStatus, RunType, type IntegrationType } from '@aias/hozo';
+import { integrationRuns, IntegrationStatus, RunType, type IntegrationType } from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { createIntegrationLogger } from './logging';

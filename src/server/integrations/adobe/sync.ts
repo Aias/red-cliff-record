@@ -1,4 +1,4 @@
-import { lightroomImages } from '@aias/hozo';
+import { lightroomImages } from '@hozo';
 import { db } from '@/server/db/connections';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createDebugContext } from '../common/debug-output';

@@ -1,4 +1,4 @@
-import { githubUsers, type GithubUserInsert } from '@aias/hozo';
+import { githubUsers, type GithubUserInsert } from '@hozo';
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';

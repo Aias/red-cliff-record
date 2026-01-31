@@ -1,9 +1,5 @@
-import {
-  IntegrationTypeSchema,
-  RecordTypeSchema,
-  type IntegrationType,
-  type RecordType,
-} from '@aias/hozo';
+import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations';
+import { RecordTypeSchema, type RecordType } from '@hozo/schema/records';
 import { Link } from '@tanstack/react-router';
 import { ChevronDownIcon } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';

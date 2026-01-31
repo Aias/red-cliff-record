@@ -5,7 +5,7 @@
  * reusing all query logic from the API routers.
  */
 
-import { IntegrationTypeSchema, RecordInsertSchema, RecordTypeSchema } from '@aias/hozo';
+import { IntegrationTypeSchema, RecordInsertSchema, RecordTypeSchema } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {

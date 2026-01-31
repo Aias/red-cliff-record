@@ -1,4 +1,4 @@
-import { IntegrationTypeSchema, RecordTypeSchema } from '@aias/hozo';
+import { IntegrationTypeSchema, RecordTypeSchema } from '@hozo';
 import { z } from 'zod';
 
 export const DEFAULT_LIMIT = 50;

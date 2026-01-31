@@ -1,4 +1,4 @@
-import type { LinkSelect, MediaSelect, PredicateSelect, RecordSelect } from '@aias/hozo';
+import type { LinkSelect, MediaSelect, PredicateSelect, RecordSelect } from '@hozo';
 import type { DbId } from './api';
 
 /**

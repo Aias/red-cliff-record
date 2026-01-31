@@ -1,4 +1,4 @@
-import { feedEntries, feeds } from '@aias/hozo';
+import { feedEntries, feeds } from '@hozo';
 import { inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { runConcurrentPool } from '@/shared/lib/async-pool';

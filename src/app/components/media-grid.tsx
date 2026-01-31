@@ -1,4 +1,4 @@
-import type { MediaSelect } from '@aias/hozo';
+import type { MediaSelect } from '@hozo/schema/media';
 import { Trash2Icon } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { Button } from './button';

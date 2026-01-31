@@ -4,7 +4,7 @@ import {
   type LinkInsert,
   type LinkSelect,
   type PredicateSelect,
-} from '@aias/hozo';
+} from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';

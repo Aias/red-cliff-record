@@ -1,4 +1,4 @@
-import { RecordTypeSchema, type RecordType } from '@aias/hozo';
+import { RecordTypeSchema, type RecordType } from '@hozo/schema/records';
 import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { SaveIcon, Trash2Icon } from 'lucide-react';

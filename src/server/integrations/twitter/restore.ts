@@ -1,4 +1,4 @@
-import { records } from '@aias/hozo';
+import { records } from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { decodeHtmlEntities } from '@/shared/lib/formatting';

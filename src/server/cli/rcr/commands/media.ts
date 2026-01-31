@@ -7,7 +7,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { MediaType } from '@aias/hozo';
+import { MediaType } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { lookup } from 'mime-types';
 import { z } from 'zod';

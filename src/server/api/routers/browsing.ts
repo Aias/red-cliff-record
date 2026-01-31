@@ -1,4 +1,4 @@
-import { browsingHistoryOmitList, BrowsingHistoryOmitListInsertSchema } from '@aias/hozo';
+import { browsingHistoryOmitList, BrowsingHistoryOmitListInsertSchema } from '@hozo';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { DateSchema } from '@/shared/types';

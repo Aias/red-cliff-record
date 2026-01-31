@@ -15,7 +15,7 @@ import {
   type AirtableExtractSpaceInsert,
   type AirtableFormatInsert,
   type AirtableSpaceInsert,
-} from '@aias/hozo';
+} from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { uploadMediaToR2 } from '@/server/lib/media';

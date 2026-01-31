@@ -1,4 +1,4 @@
-import { links as linksTable, type LinkInsert } from '@aias/hozo';
+import { links as linksTable, type LinkInsert } from '@hozo';
 import { type Db } from '@/server/db/connections';
 import type { PredicateSlug, RecordSlug } from '@/server/db/seed';
 import { createIntegrationLogger } from './logging';

@@ -1,4 +1,4 @@
-import type { TwitterMediaInsert, TwitterTweetInsert, TwitterUserInsert } from '@aias/hozo';
+import type { TwitterMediaInsert, TwitterTweetInsert, TwitterUserInsert } from '@hozo';
 import type { Media, TweetData, UrlEntity, User } from './types';
 
 /**

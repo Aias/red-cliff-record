@@ -1,4 +1,4 @@
-import { records, RunType } from '@aias/hozo';
+import { records, RunType } from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { runConcurrentPool } from '@/shared/lib/async-pool';

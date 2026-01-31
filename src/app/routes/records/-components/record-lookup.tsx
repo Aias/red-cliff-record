@@ -1,4 +1,4 @@
-import type { PredicateSelect } from '@aias/hozo';
+import type { PredicateSelect } from '@hozo/schema/records';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRecordSearch } from '@/app/lib/hooks/use-record-search';

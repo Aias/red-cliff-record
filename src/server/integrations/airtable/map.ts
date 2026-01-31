@@ -14,7 +14,7 @@ import {
   type LinkInsert,
   type MediaInsert,
   type RecordInsert,
-} from '@aias/hozo';
+} from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { getMediaInsertData } from '@/server/lib/media';

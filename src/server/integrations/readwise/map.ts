@@ -10,7 +10,7 @@ import {
   type ReadwiseDocumentSelect,
   type ReadwiseTagSelect,
   type RecordInsert,
-} from '@aias/hozo';
+} from '@hozo';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections';
 import { mapUrl } from '@/server/lib/url-utils';

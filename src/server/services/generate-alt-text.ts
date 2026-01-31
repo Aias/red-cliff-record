@@ -1,4 +1,4 @@
-import { media } from '@aias/hozo';
+import { media } from '@hozo';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { db } from '@/server/db/connections';

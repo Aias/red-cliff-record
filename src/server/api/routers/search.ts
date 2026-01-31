@@ -1,4 +1,4 @@
-import type { IntegrationType, MediaType, RecordType } from '@aias/hozo';
+import type { IntegrationType, MediaType, RecordType } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { cosineDistance, sql } from 'drizzle-orm';
 import { z } from 'zod';

@@ -1,4 +1,4 @@
-import type { MediaType } from '@aias/hozo';
+import type { MediaType } from '@hozo';
 
 /**
  * Media-related types used across client and server

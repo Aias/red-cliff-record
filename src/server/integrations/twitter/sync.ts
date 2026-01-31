@@ -5,7 +5,7 @@ import {
   type TwitterMediaInsert,
   type TwitterTweetInsert,
   type TwitterUserInsert,
-} from '@aias/hozo';
+} from '@hozo';
 import { db } from '@/server/db/connections';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';

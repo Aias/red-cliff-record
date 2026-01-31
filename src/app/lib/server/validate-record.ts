@@ -1,4 +1,4 @@
-import { RecordInsertSchema } from '@aias/hozo';
+import { RecordInsertSchema } from '@hozo/schema/records';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 

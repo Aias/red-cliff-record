@@ -5,7 +5,7 @@
  * reusing all query logic from the API routers.
  */
 
-import { LinkInsertSchema } from '@aias/hozo';
+import { LinkInsertSchema } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { BaseOptionsSchema, parseIds, parseJsonInput, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';

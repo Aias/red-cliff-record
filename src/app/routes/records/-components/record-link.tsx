@@ -1,4 +1,4 @@
-import type { MediaType } from '@aias/hozo';
+import type { MediaType } from '@hozo/schema/media';
 import type { LinkOptions } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';

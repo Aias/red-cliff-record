@@ -1,4 +1,4 @@
-import { Browser } from '@aias/hozo';
+import { Browser } from '@hozo';
 import { createDiaConnection } from '@/server/db/connections/dia-sqlite';
 import type { BrowserConfig } from '../types';
 

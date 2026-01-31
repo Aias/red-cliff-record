@@ -1,4 +1,4 @@
-import type { GithubCommitSelect } from '@aias/hozo';
+import type { GithubCommitSelect } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { DateSchema } from '@/shared/types';

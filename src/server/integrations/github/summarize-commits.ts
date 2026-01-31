@@ -4,7 +4,7 @@ import {
   type GithubCommitChangeSelect,
   type GithubCommitSelect,
   type GithubRepositorySelect,
-} from '@aias/hozo';
+} from '@hozo';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { z } from 'zod';

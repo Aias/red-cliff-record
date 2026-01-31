@@ -1,4 +1,4 @@
-import type { IntegrationType } from '@aias/hozo';
+import type { IntegrationType } from '@hozo/schema/operations';
 import { memo } from 'react';
 import { AdobeLogo } from './logos/adobe';
 import { AirtableLogo } from './logos/airtable';

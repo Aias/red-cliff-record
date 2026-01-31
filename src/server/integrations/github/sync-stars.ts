@@ -1,4 +1,4 @@
-import { githubRepositories, type GithubRepositoryInsert } from '@aias/hozo';
+import { githubRepositories, type GithubRepositoryInsert } from '@hozo';
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import { db } from '@/server/db/connections';

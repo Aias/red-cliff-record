@@ -1,4 +1,4 @@
-import type { MediaSelect } from '@aias/hozo';
+import type { MediaSelect } from '@hozo/schema/media';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import type React from 'react';
 import { useCallback, useMemo, useRef } from 'react';

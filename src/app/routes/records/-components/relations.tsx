@@ -1,4 +1,4 @@
-import type { LinkSelect, PredicateSelect, PredicateType } from '@aias/hozo';
+import type { LinkSelect, PredicateSelect, PredicateType } from '@hozo/schema/records';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { useMemo, useRef } from 'react';

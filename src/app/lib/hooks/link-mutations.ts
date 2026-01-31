@@ -1,4 +1,4 @@
-import type { PredicateSelect } from '@aias/hozo';
+import type { PredicateSelect } from '@hozo/schema/records';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { toast } from 'sonner';

@@ -5,7 +5,7 @@ import {
   type GithubCommitChangeInsert,
   type GithubCommitInsert,
   type GithubRepositoryInsert,
-} from '@aias/hozo';
+} from '@hozo';
 import { RequestError } from '@octokit/request-error';
 import { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';

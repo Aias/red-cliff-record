@@ -1,4 +1,4 @@
-import { readwiseDocuments, type ReadwiseDocumentInsert } from '@aias/hozo';
+import { readwiseDocuments, type ReadwiseDocumentInsert } from '@hozo';
 import { db } from '@/server/db/connections';
 import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';

@@ -1,4 +1,4 @@
-import { MediaType, type MediaInsert } from '@aias/hozo';
+import { MediaType, type MediaInsert } from '@hozo';
 import { S3Client } from 'bun';
 import mime from 'mime-types';
 import type { MediaMetadata } from '@/shared/types';
