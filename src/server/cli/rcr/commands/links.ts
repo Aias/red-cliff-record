@@ -5,7 +5,7 @@
  * reusing all query logic from the API routers.
  */
 
-import { LinkInsertSchema } from '@hozo';
+import { LinkInsertSchema, PREDICATES } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { BaseOptionsSchema, parseIds, parseJsonInput, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
@@ -94,6 +94,6 @@ export { del as delete };
  */
 export const predicates: CommandHandler = async (_args, options) => {
   parseOptions(BaseOptionsSchema.strict(), options);
-  const result = await caller.links.listPredicates();
-  return success(result, { count: result.length });
+  const result = Object.values(PREDICATES);
+  return await Promise.resolve(success(result, { count: result.length }));
 };

@@ -86,7 +86,7 @@ export const list = publicProcedure
           ? {
               outgoingLinks: {
                 predicate: {
-                  type: 'containment',
+                  in: ['contained_by', 'contains'],
                 },
               },
             }
@@ -94,7 +94,7 @@ export const list = publicProcedure
             ? {
                 NOT: {
                   outgoingLinks: {
-                    predicate: { type: 'containment' },
+                    predicate: { in: ['contained_by', 'contains'] },
                   },
                 },
               }

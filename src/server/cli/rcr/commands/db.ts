@@ -11,7 +11,7 @@
 import { realpathSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { links, predicates, records } from '@hozo';
+import { links, PREDICATES, records } from '@hozo';
 import { spawn } from 'bun';
 import { count } from 'drizzle-orm';
 import { z } from 'zod';
@@ -195,7 +195,6 @@ export const seed: CommandHandler = async (args, options) => {
   return success({
     action: 'seed',
     location: 'dev',
-    predicatesSeeded: result.predicatesSeeded,
     recordsSeeded: result.recordsSeeded,
   });
 };
@@ -221,10 +220,9 @@ export const status: CommandHandler = async (args, options) => {
   }
 
   // Query counts from database in parallel (sequential queries hang in CLI context)
-  const [[recordCount], [linkCount], [predicateCount]] = await Promise.all([
+  const [[recordCount], [linkCount]] = await Promise.all([
     db.select({ count: count() }).from(records),
     db.select({ count: count() }).from(links),
-    db.select({ count: count() }).from(predicates),
   ]);
 
   // Determine which database we're connected to based on NODE_ENV
@@ -237,7 +235,7 @@ export const status: CommandHandler = async (args, options) => {
     counts: {
       records: recordCount?.count ?? 0,
       links: linkCount?.count ?? 0,
-      predicates: predicateCount?.count ?? 0,
+      predicates: Object.keys(PREDICATES).length, // Now static from code
     },
   });
 };

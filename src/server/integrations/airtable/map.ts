@@ -19,7 +19,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { getMediaInsertData } from '@/server/lib/media';
 import { mapUrl } from '@/server/lib/url-utils';
-import { bulkInsertLinks, getPredicateId } from '../common/db-helpers';
+import { bulkInsertLinks } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 
 const logger = createIntegrationLogger('airtable', 'map');
@@ -467,11 +467,6 @@ export async function createRecordsFromAirtableExtracts() {
   // ------------------------------------------------------------------------
   logger.info('Starting Pass 2: Create relationships');
 
-  const createdByPredicateId = await getPredicateId('created_by', db);
-  const taggedWithPredicateId = await getPredicateId('tagged_with', db);
-  const hasFormatPredicateId = await getPredicateId('has_format', db);
-  const containedByPredicateId = await getPredicateId('contained_by', db);
-
   const recordCreatorsValues: LinkInsert[] = [];
   const recordFormatsValues: LinkInsert[] = [];
   const recordParentValues: LinkInsert[] = [];
@@ -493,7 +488,7 @@ export async function createRecordsFromAirtableExtracts() {
         recordParentValues.push({
           sourceId: sourceRecordId,
           targetId: parentRecordId,
-          predicateId: containedByPredicateId,
+          predicate: 'contained_by',
         });
       } else {
         logger.warn(
@@ -507,7 +502,7 @@ export async function createRecordsFromAirtableExtracts() {
       recordFormatsValues.push({
         sourceId: sourceRecordId,
         targetId: extract.format.recordId,
-        predicateId: hasFormatPredicateId,
+        predicate: 'has_format',
       });
     }
 
@@ -517,7 +512,7 @@ export async function createRecordsFromAirtableExtracts() {
         recordCreatorsValues.push({
           sourceId: sourceRecordId,
           targetId: creator.recordId,
-          predicateId: createdByPredicateId,
+          predicate: 'created_by',
         });
       } else {
         logger.warn(
@@ -532,7 +527,7 @@ export async function createRecordsFromAirtableExtracts() {
         recordTagsValues.push({
           sourceId: sourceRecordId,
           targetId: space.recordId,
-          predicateId: taggedWithPredicateId,
+          predicate: 'tagged_with',
         });
       } else {
         logger.warn(
@@ -609,7 +604,6 @@ export async function createConnectionsBetweenRecords(updatedIds?: string[]) {
 
   logger.info(`Found ${connections.length} connections to process`);
 
-  const relatedToPredicateId = await getPredicateId('related_to', db);
   const relationValues: LinkInsert[] = [];
 
   for (const connection of connections) {
@@ -621,7 +615,7 @@ export async function createConnectionsBetweenRecords(updatedIds?: string[]) {
       relationValues.push({
         sourceId: connection.fromExtract.recordId,
         targetId: connection.toExtract.recordId,
-        predicateId: relatedToPredicateId,
+        predicate: 'related_to',
       });
     }
   }

@@ -1,3 +1,4 @@
+import { PREDICATES, type Predicate, type PredicateSlug } from '@hozo';
 import { useQueries } from '@tanstack/react-query';
 import { trpc } from '@/app/trpc';
 import type { DbId, ListRecordsInput } from '@/shared/types/api';
@@ -38,7 +39,7 @@ export function useLinksMap(ids: DbId[]) {
   return trpc.links.map.useQuery({ recordIds: ids });
 }
 
-export function usePredicateMap() {
-  const { data } = trpc.links.listPredicates.useQuery(undefined);
-  return Object.fromEntries((data ?? []).map((p) => [p.id, p]));
+/** Returns predicates keyed by slug (static data, no network request) */
+export function usePredicateMap(): Record<PredicateSlug, Predicate> {
+  return PREDICATES;
 }

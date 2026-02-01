@@ -2,21 +2,20 @@
 /**
  * Seed script for initial database data
  *
- * Loads canonical predicate vocabulary and core records into the database.
+ * Loads core records into the database.
+ * Predicates are now defined in code (packages/hozo/src/schema/predicates.ts).
  * Safe to run multiple times - uses upsert logic to avoid duplicates.
  *
  * Can be run directly: bun src/server/db/seed.ts
  * Or called from CLI: rcr db seed
  */
 
-import type { PredicateInsert, RecordInsert } from '@hozo';
-import { predicates, records } from '@hozo';
-import { eq } from 'drizzle-orm';
+import type { RecordInsert } from '@hozo';
+import { records } from '@hozo';
 import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '../integrations/common/logging';
 
 export interface SeedResult {
-  predicatesSeeded: number;
   recordsSeeded: number;
 }
 
@@ -35,259 +34,15 @@ const recordSeed = [
   },
 ] as const satisfies ReadonlyArray<RecordInsert>;
 
-/**
- * Canonical predicate vocabulary
- * ──────────────────────────────
- * • Only rows with `canonical: true` are stored in `links`.
- * • `inverseSlug` supplies a readable label when traversing the edge
- *   in the opposite direction.
- * • Active-present verb style: has_creator, contained_by, format_of …
- */
-
-const predicateSeed = [
-  /* ────────────  Creation  ──────────── */
-  {
-    slug: 'created_by', // work → person
-    name: 'created by',
-    type: 'creation',
-    role: 'creator',
-    inverseSlug: 'creator_of',
-    canonical: true,
-  },
-  {
-    slug: 'creator_of', // person ← work
-    name: 'creator of',
-    type: 'creation',
-    role: 'creator',
-    inverseSlug: 'created_by',
-    canonical: false,
-  },
-  {
-    slug: 'via', // work → referrer
-    name: 'via',
-    type: 'creation',
-    role: 'referrer',
-    inverseSlug: 'source_for',
-    canonical: true,
-  },
-  {
-    slug: 'source_for', // referrer ← work
-    name: 'source for',
-    type: 'creation',
-    role: 'referrer',
-    inverseSlug: 'via',
-    canonical: false,
-  },
-  {
-    slug: 'edited_by',
-    name: 'edited by',
-    type: 'creation',
-    role: 'editor',
-    inverseSlug: 'editor_of',
-    canonical: true,
-  },
-  {
-    slug: 'editor_of',
-    name: 'editor of',
-    type: 'creation',
-    role: 'editor',
-    inverseSlug: 'edited_by',
-    canonical: false,
-  },
-
-  {
-    slug: 'translated_by',
-    name: 'translated by',
-    type: 'creation',
-    role: 'translator',
-    inverseSlug: 'translator_of',
-    canonical: true,
-  },
-  {
-    slug: 'translator_of',
-    name: 'translator of',
-    type: 'creation',
-    role: 'translator',
-    inverseSlug: 'translated_by',
-    canonical: false,
-  },
-  /* ─────── Containment (child → parent) ─────── */
-  {
-    slug: 'contained_by',
-    name: 'contained by',
-    type: 'containment',
-    inverseSlug: 'contains',
-    canonical: true,
-  },
-  {
-    slug: 'contains',
-    name: 'contains',
-    type: 'containment',
-    inverseSlug: 'contained_by',
-    canonical: false,
-  },
-  {
-    slug: 'quotes',
-    name: 'quotes',
-    type: 'containment',
-    inverseSlug: 'quoted_in',
-    canonical: true,
-  },
-  {
-    slug: 'quoted_in',
-    name: 'quoted in',
-    type: 'containment',
-    inverseSlug: 'quotes',
-    canonical: false,
-  },
-
-  /* ───────────  Form  ─────────── */
-  {
-    slug: 'has_format',
-    name: 'has format',
-    type: 'form',
-    inverseSlug: 'format_of',
-    canonical: true,
-  },
-  {
-    slug: 'format_of',
-    name: 'format of',
-    type: 'form',
-    inverseSlug: 'has_format',
-    canonical: false,
-  },
-
-  /* ───────────  Description  ─────────── */
-  {
-    slug: 'tagged_with',
-    name: 'tagged with',
-    type: 'description',
-    inverseSlug: 'tag_of',
-    canonical: true,
-  },
-  {
-    slug: 'tag_of',
-    name: 'tag of',
-    type: 'description',
-    inverseSlug: 'tagged_with',
-    canonical: false,
-  },
-
-  /* ───────────  Reference  ─────────── */
-  {
-    slug: 'references',
-    name: 'references',
-    type: 'reference',
-    inverseSlug: 'referenced_by',
-    canonical: true,
-  },
-  {
-    slug: 'referenced_by',
-    name: 'referenced by',
-    type: 'reference',
-    inverseSlug: 'references',
-    canonical: false,
-  },
-  {
-    slug: 'about',
-    name: 'about',
-    type: 'reference',
-    inverseSlug: 'subject_of',
-    canonical: true,
-  },
-  {
-    slug: 'subject_of',
-    name: 'subject of',
-    type: 'reference',
-    inverseSlug: 'about',
-    canonical: false,
-  },
-  {
-    slug: 'responds_to',
-    name: 'responds to',
-    type: 'reference',
-    inverseSlug: 'responded_by',
-    canonical: true,
-  },
-  {
-    slug: 'responded_by',
-    name: 'responded by',
-    type: 'reference',
-    inverseSlug: 'responds_to',
-    canonical: false,
-  },
-
-  /* ───────────  Association  ─────────── */
-  {
-    slug: 'related_to',
-    name: 'related to',
-    type: 'association',
-    inverseSlug: 'related_to', // self-inverse
-    canonical: true,
-  },
-
-  /* ───────────  Identity  ─────────── */
-  {
-    slug: 'same_as',
-    name: 'same as',
-    type: 'identity',
-    inverseSlug: 'same_as',
-    canonical: true, // self-inverse
-  },
-] as const satisfies ReadonlyArray<PredicateInsert>;
-
 // Export types for use in other modules
 export type RecordSlug = (typeof recordSeed)[number]['slug'];
-export type PredicateSlug = (typeof predicateSeed)[number]['slug'];
 
 /**
- * Seeds the database with initial predicates and core records.
+ * Seeds the database with core records.
  * Safe to run multiple times - uses upsert logic.
  * Returns counts of seeded items.
  */
 export async function seedDatabase(): Promise<SeedResult> {
-  // Seed predicates in two passes to handle foreign key constraints
-  // Pass 1: Insert all predicates without inverseSlug (set to null)
-  logger.info(
-    `Inserting ${predicateSeed.length} predicates (pass 1: without inverse references)...`
-  );
-  for (const predicate of predicateSeed) {
-    await db
-      .insert(predicates)
-      .values({
-        ...predicate,
-        inverseSlug: null, // Defer inverseSlug to pass 2
-      })
-      .onConflictDoUpdate({
-        target: predicates.slug,
-        set: {
-          name: predicate.name,
-          type: predicate.type,
-          role: 'role' in predicate ? (predicate.role ?? null) : null,
-          canonical: predicate.canonical,
-          recordUpdatedAt: new Date(),
-        },
-      });
-  }
-
-  // Pass 2: Update all predicates to set their inverseSlug references
-  logger.info(
-    `Updating ${predicateSeed.length} predicates (pass 2: setting inverse references)...`
-  );
-  for (const predicate of predicateSeed) {
-    if (predicate.inverseSlug) {
-      await db
-        .update(predicates)
-        .set({
-          inverseSlug: predicate.inverseSlug,
-          recordUpdatedAt: new Date(),
-        })
-        .where(eq(predicates.slug, predicate.slug));
-    }
-  }
-
-  logger.info(`Inserted/updated ${predicateSeed.length} predicates`);
-
   // Seed records
   logger.info(`Inserting ${recordSeed.length} records...`);
   for (const record of recordSeed) {
@@ -307,7 +62,6 @@ export async function seedDatabase(): Promise<SeedResult> {
   logger.info(`Inserted/updated ${recordSeed.length} records`);
 
   return {
-    predicatesSeeded: predicateSeed.length,
     recordsSeeded: recordSeed.length,
   };
 }
@@ -317,7 +71,7 @@ async function main(): Promise<void> {
     logger.start('=== STARTING DATABASE SEED ===');
     const result = await seedDatabase();
     logger.complete('=== DATABASE SEED COMPLETED ===');
-    logger.info(`Seeded ${result.predicatesSeeded} predicates, ${result.recordsSeeded} records`);
+    logger.info(`Seeded ${result.recordsSeeded} records`);
     logger.info('-'.repeat(50));
     process.exit(0);
   } catch (error) {

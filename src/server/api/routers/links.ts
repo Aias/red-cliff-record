@@ -1,9 +1,11 @@
 import {
+  getInverse,
   LinkInsertSchema,
   links,
+  PREDICATES,
   type LinkInsert,
   type LinkSelect,
-  type PredicateSelect,
+  type PredicateSlug,
 } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
@@ -38,7 +40,7 @@ export const linksRouter = createTRPCRouter({
               id: true,
               sourceId: true,
               targetId: true,
-              predicateId: true,
+              predicate: true,
               recordUpdatedAt: true,
             },
           },
@@ -47,7 +49,7 @@ export const linksRouter = createTRPCRouter({
               id: true,
               sourceId: true,
               targetId: true,
-              predicateId: true,
+              predicate: true,
               recordUpdatedAt: true,
             },
           },
@@ -79,16 +81,8 @@ export const linksRouter = createTRPCRouter({
           id: true,
           sourceId: true,
           targetId: true,
-          predicateId: true,
+          predicate: true,
           recordUpdatedAt: true,
-        },
-        with: {
-          predicate: {
-            columns: {
-              id: true,
-              type: true,
-            },
-          },
         },
         where: {
           OR: [
@@ -146,20 +140,15 @@ export const linksRouter = createTRPCRouter({
    * Used by: Relationship creation/editing, record linking interfaces
    */
   upsert: publicProcedure.input(LinkInsertSchema).mutation(async ({ ctx: { db }, input }) => {
-    /* 1 ─ fetch predicate + inverse */
-    const predicate = await db.query.predicates.findFirst({
-      where: { id: input.predicateId },
-      with: { inverse: true },
-    });
-    if (!predicate) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Predicate not found' });
-    }
+    /* 1 ─ lookup predicate from const */
+    const predicateDef = PREDICATES[input.predicate];
 
     /* 2 ─ compute canonical direction */
-    let { sourceId, targetId, predicateId } = input;
-    if (!predicate.canonical) {
-      const inv = predicate.inverse;
-      if (!inv?.canonical) {
+    let { sourceId, targetId } = input;
+    let predicate: PredicateSlug = input.predicate;
+    if (!predicateDef.canonical) {
+      const inv = getInverse(input.predicate);
+      if (!inv.canonical) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Non-canonical predicate is not reversible',
@@ -167,7 +156,7 @@ export const linksRouter = createTRPCRouter({
       }
       sourceId = input.targetId;
       targetId = input.sourceId;
-      predicateId = inv.id;
+      predicate = inv.slug as PredicateSlug;
     }
 
     if (sourceId === targetId) {
@@ -183,7 +172,7 @@ export const linksRouter = createTRPCRouter({
     const linkData = {
       sourceId,
       targetId,
-      predicateId,
+      predicate,
       notes: input.notes ?? null,
       recordUpdatedAt: now,
     } satisfies Partial<LinkInsert>;
@@ -202,7 +191,7 @@ export const linksRouter = createTRPCRouter({
         .insert(links)
         .values(linkData)
         .onConflictDoUpdate({
-          target: [links.sourceId, links.targetId, links.predicateId],
+          target: [links.sourceId, links.targetId, links.predicate],
           set: { ...linkData, recordUpdatedAt: now },
         })
         .returning();
@@ -224,22 +213,6 @@ export const linksRouter = createTRPCRouter({
     }
 
     return row;
-  }),
-
-  /**
-   * Get all available relationship predicates
-   *
-   * @returns Array of all predicate definitions
-   *
-   * Predicates define the types of relationships that can exist between records
-   * (e.g., "contains", "created by", "similar to"). Used to populate relationship
-   * type selectors and validate relationship creation.
-   *
-   * Used by: Relationship creation forms, predicate selectors
-   */
-  listPredicates: publicProcedure.query(async ({ ctx: { db } }): Promise<PredicateSelect[]> => {
-    const predicates = await db.query.predicates.findMany();
-    return predicates;
   }),
 
   /**

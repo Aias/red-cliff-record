@@ -1,4 +1,4 @@
-import type { LinkSelect, PredicateSelect, PredicateType } from '@hozo/schema/records';
+import { PREDICATES, type PredicateType } from '@hozo';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { useMemo, useRef } from 'react';
@@ -11,7 +11,7 @@ import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-short
 import { cn } from '@/lib/utils';
 import { exhaustive } from '@/shared/lib/type-utils';
 import type { DbId } from '@/shared/types/api';
-import type { LinkPartial, RecordGet } from '@/shared/types/domain';
+import type { LinkPartial } from '@/shared/types/domain';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 
@@ -30,19 +30,9 @@ interface RelationsListProps {
   id: DbId;
 }
 
-interface RecordLink extends LinkSelect {
-  predicate: PredicateSelect;
-  record: RecordGet;
-  direction: 'outgoing' | 'incoming';
-}
-
 export const RelationsList = ({ id }: RelationsListProps) => {
   const { data: recordLinks } = useRecordLinks(id);
   const predicates = usePredicateMap();
-  const predicatesBySlug = useMemo(
-    () => Object.fromEntries(Object.values(predicates).map((p) => [p.slug, p])),
-    [predicates]
-  );
   const mergeRecordsMutation = useMergeRecords();
   const deleteLinkMutation = useDeleteLinks();
   const navigate = useNavigate();
@@ -57,8 +47,8 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 
   const sortLinks = (links: LinkPartial[]): LinkPartial[] => {
     return [...links].sort((a, b) => {
-      const typeA = predicates[a.predicateId]?.type;
-      const typeB = predicates[b.predicateId]?.type;
+      const typeA = predicates[a.predicate]?.type;
+      const typeB = predicates[b.predicate]?.type;
       const orderA = typeA ? PREDICATE_TYPE_ORDER.indexOf(typeA) : PREDICATE_TYPE_ORDER.length;
       const orderB = typeB ? PREDICATE_TYPE_ORDER.indexOf(typeB) : PREDICATE_TYPE_ORDER.length;
 
@@ -71,14 +61,19 @@ export const RelationsList = ({ id }: RelationsListProps) => {
   };
 
   const outgoingLinks = useMemo(
-    () => sortLinks(recordLinks?.outgoingLinks ?? []),
+    () =>
+      sortLinks(
+        recordLinks?.outgoingLinks.filter(
+          (link) => predicates[link.predicate]?.type !== 'containment'
+        ) ?? []
+      ),
     [recordLinks, predicates]
   );
   const incomingLinks = useMemo(
     () =>
       sortLinks(
         recordLinks?.incomingLinks.filter(
-          (link) => predicates[link.predicateId]?.type !== 'containment'
+          (link) => predicates[link.predicate]?.type !== 'containment'
         ) ?? []
       ),
     [recordLinks, predicates]
@@ -140,11 +135,11 @@ export const RelationsList = ({ id }: RelationsListProps) => {
           <ul className="flex flex-col gap-2 text-xs">
             {outgoingLinks.map((link) => (
               <li
-                key={`${link.sourceId}-${link.targetId}-${link.predicateId}`}
+                key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
                 className="flex items-center gap-2"
               >
                 <RelationshipSelector
-                  label={predicates[link.predicateId]?.name ?? 'Unknown'}
+                  label={predicates[link.predicate]?.name ?? 'Unknown'}
                   sourceId={link.sourceId}
                   initialTargetId={link.targetId}
                   link={link}
@@ -211,15 +206,15 @@ export const RelationsList = ({ id }: RelationsListProps) => {
           <ul className="flex flex-col gap-2 text-xs">
             {incomingLinks.map((link) => (
               <li
-                key={`${link.sourceId}-${link.targetId}-${link.predicateId}`}
+                key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
                 className="flex items-center gap-2"
               >
                 <RelationshipSelector
                   label={(() => {
-                    const inv = predicates[link.predicateId]?.inverseSlug;
+                    const inv = predicates[link.predicate]?.inverseSlug;
                     return inv
-                      ? (predicatesBySlug[inv]?.name ?? 'Unknown')
-                      : (predicates[link.predicateId]?.name ?? 'Unknown');
+                      ? (PREDICATES[inv as keyof typeof PREDICATES]?.name ?? 'Unknown')
+                      : (predicates[link.predicate]?.name ?? 'Unknown');
                   })()}
                   sourceId={link.targetId}
                   initialTargetId={link.sourceId}

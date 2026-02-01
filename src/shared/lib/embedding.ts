@@ -1,4 +1,4 @@
-import type { RecordSelect } from '@hozo';
+import { PREDICATES, type RecordSelect } from '@hozo';
 import type { FullRecord } from '@/shared/types/domain';
 
 const truncateText = (text: string, maxLength: number = 200) => {
@@ -77,34 +77,34 @@ export const createRecordEmbeddingText = (record: FullRecord) => {
 
   // Extract relationships by predicate type
   const creators = outgoingLinks
-    .filter((link) => link.predicate.type === 'creation')
+    .filter((link) => PREDICATES[link.predicate].type === 'creation')
     .map((link) => link.target);
   const created = incomingLinks
-    .filter((link) => link.predicate.type === 'creation')
+    .filter((link) => PREDICATES[link.predicate].type === 'creation')
     .map((link) => link.source);
   const formats = outgoingLinks
-    .filter((link) => link.predicate.type === 'form')
+    .filter((link) => PREDICATES[link.predicate].type === 'form')
     .map((link) => link.target);
   const sameAs = outgoingLinks
-    .filter((link) => link.predicate.type === 'identity')
+    .filter((link) => PREDICATES[link.predicate].type === 'identity')
     .map((link) => link.target);
   const parents = outgoingLinks
-    .filter((link) => link.predicate.type === 'containment')
+    .filter((link) => PREDICATES[link.predicate].type === 'containment')
     .map((link) => link.target);
   const children = incomingLinks
-    .filter((link) => link.predicate.type === 'containment')
+    .filter((link) => PREDICATES[link.predicate].type === 'containment')
     .map((link) => link.source);
   const references = outgoingLinks
-    .filter((link) => link.predicate.type === 'reference')
+    .filter((link) => PREDICATES[link.predicate].type === 'reference')
     .map((link) => link.target);
   const referencedBy = incomingLinks
-    .filter((link) => link.predicate.type === 'reference')
+    .filter((link) => PREDICATES[link.predicate].type === 'reference')
     .map((link) => link.source);
   const associations = outgoingLinks
-    .filter((link) => link.predicate.type === 'association')
+    .filter((link) => PREDICATES[link.predicate].type === 'association')
     .map((link) => link.target);
   const tags = outgoingLinks
-    .filter((link) => link.predicate.type === 'description')
+    .filter((link) => PREDICATES[link.predicate].type === 'description')
     .map((link) => link.target);
 
   const parts: string[] = [];

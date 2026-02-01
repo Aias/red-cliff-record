@@ -1,3 +1,4 @@
+import { PREDICATES } from '@hozo';
 import type { MediaType } from '@hozo/schema/media';
 import type { LinkOptions } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
@@ -55,10 +56,11 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
 
   if (record.outgoingLinks) {
     for (const link of record.outgoingLinks) {
-      if (link.predicate.type === 'creation' && link.target.title) {
+      const predicateType = PREDICATES[link.predicate].type;
+      if (predicateType === 'creation' && link.target.title) {
         creatorTitles.push(link.target.title);
       }
-      if (link.predicate.type === 'containment' && !parentTitle) {
+      if (predicateType === 'containment' && !parentTitle) {
         parentTitle = link.target.title;
       }
     }

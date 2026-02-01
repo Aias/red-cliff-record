@@ -5,6 +5,7 @@ export * from './feeds';
 export * from './github';
 export * from './media';
 export * from './operations';
+export * from './predicates';
 export * from './raindrop';
 export * from './readwise';
 export * from './records';

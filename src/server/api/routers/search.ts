@@ -1,4 +1,10 @@
-import type { IntegrationType, MediaType, RecordType } from '@hozo';
+import {
+  PREDICATES,
+  type IntegrationType,
+  type MediaType,
+  type PredicateSlug,
+  type RecordType,
+} from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { cosineDistance, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -7,6 +13,16 @@ import { similarity, SIMILARITY_THRESHOLD } from '@/server/lib/constants';
 import { seriateRecordsByEmbedding } from '@/server/lib/seriation';
 import { IdSchema, SearchRecordsInputSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
+
+/** Predicate slugs for relevant link types in search results */
+const searchLinkPredicates = Object.values(PREDICATES)
+  .filter((p) => ['containment', 'creation', 'description', 'identity'].includes(p.type))
+  .map((p) => p.slug);
+
+/** Predicate slugs that are NOT containment (for filtering "standalone" records) */
+const nonContainmentPredicates = Object.values(PREDICATES)
+  .filter((p) => p.type !== 'containment')
+  .map((p) => p.slug);
 
 export type SearchResult = {
   id: number;
@@ -33,9 +49,7 @@ export type SearchResult = {
   }[];
   outgoingLinks: {
     id: number;
-    predicate: {
-      id: number;
-    };
+    predicate: PredicateSlug;
     target: {
       id: number;
       type: RecordType;
@@ -102,13 +116,9 @@ export const searchRouter = createTRPCRouter({
           outgoingLinks: {
             columns: {
               id: true,
+              predicate: true,
             },
             with: {
-              predicate: {
-                columns: {
-                  id: true,
-                },
-              },
               target: {
                 columns: {
                   id: true,
@@ -123,9 +133,7 @@ export const searchRouter = createTRPCRouter({
             },
             where: {
               predicate: {
-                type: {
-                  in: ['containment', 'creation', 'description', 'identity'],
-                },
+                in: searchLinkPredicates,
               },
             },
           },
@@ -179,13 +187,9 @@ export const searchRouter = createTRPCRouter({
             outgoingLinks: {
               columns: {
                 id: true,
+                predicate: true,
               },
               with: {
-                predicate: {
-                  columns: {
-                    id: true,
-                  },
-                },
                 target: {
                   columns: {
                     id: true,
@@ -200,9 +204,7 @@ export const searchRouter = createTRPCRouter({
               },
               where: {
                 predicate: {
-                  type: {
-                    in: ['containment', 'creation', 'description', 'identity'],
-                  },
+                  in: searchLinkPredicates,
                 },
               },
             },
@@ -228,9 +230,7 @@ export const searchRouter = createTRPCRouter({
                   {
                     outgoingLinks: {
                       predicate: {
-                        type: {
-                          ne: 'containment',
-                        },
+                        in: nonContainmentPredicates,
                       },
                     },
                   },
@@ -333,9 +333,7 @@ export const searchRouter = createTRPCRouter({
                   {
                     outgoingLinks: {
                       predicate: {
-                        type: {
-                          ne: 'containment',
-                        },
+                        in: nonContainmentPredicates,
                       },
                     },
                   },

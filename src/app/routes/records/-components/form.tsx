@@ -1,9 +1,10 @@
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { Trash2Icon } from 'lucide-react';
+import { GlobeIcon, Trash2Icon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { z } from 'zod';
+import { trpc } from '@/app/trpc';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +141,7 @@ export function RecordForm({
 
   const updateMutation = useUpsertRecord();
   const deleteMediaMutation = useDeleteMedia();
+  const fetchFaviconMutation = trpc.records.fetchFavicon.useMutation();
   const { uploadFile, isUploading } = useRecordUpload(recordId);
 
   const form = useForm({
@@ -436,7 +438,7 @@ export function RecordForm({
                   >
                     {(field) => (
                       <>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           <GhostInput
                             id="url"
                             className="w-full text-c-display"
@@ -449,9 +451,41 @@ export function RecordForm({
                             onBlur={() => debouncedSave()}
                             readOnly={isFormLoading}
                           />
-                          {field.state.value && (
-                            <ExternalLink href={field.state.value} children={null} />
-                          )}
+                          {(() => {
+                            const url = field.state.value;
+                            if (!url) return null;
+                            return (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        void fetchFaviconMutation
+                                          .mutateAsync({ url })
+                                          .then((result) => {
+                                            form.setFieldValue('avatarUrl', result.avatarUrl);
+                                            debouncedSave();
+                                          });
+                                      }}
+                                      disabled={fetchFaviconMutation.isPending || isFormLoading}
+                                      className="size-fit cursor-pointer p-0"
+                                    >
+                                      {fetchFaviconMutation.isPending ? (
+                                        <Spinner className="size-[1em]" />
+                                      ) : (
+                                        <GlobeIcon className="size-[1em]" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Fetch favicon as avatar</TooltipContent>
+                                </Tooltip>
+                                <ExternalLink href={url} children={null} />
+                              </>
+                            );
+                          })()}
                         </div>
                         {field.state.meta.errors && (
                           <p className="text-sm text-c-destructive">
@@ -695,8 +729,10 @@ export function RecordForm({
         <Popover>
           <PopoverTrigger asChild>
             <Avatar
-              src={formData.avatarUrl ?? undefined}
-              fallback={(formData.title?.charAt(0) ?? formData.type.charAt(0)).toUpperCase()}
+              src={form.getFieldValue('avatarUrl') ?? undefined}
+              fallback={(
+                form.getFieldValue('title')?.charAt(0) ?? form.getFieldValue('type').charAt(0)
+              ).toUpperCase()}
               className="mr-2 cursor-pointer"
             />
           </PopoverTrigger>

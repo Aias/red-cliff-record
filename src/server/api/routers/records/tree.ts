@@ -1,3 +1,4 @@
+import { containmentPredicateSlugs } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { IdParamSchema } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
@@ -18,11 +19,11 @@ export const getFamilyTree = publicProcedure
         outgoingLinks: {
           where: {
             predicate: {
-              type: 'containment',
+              in: containmentPredicateSlugs,
             },
           },
           columns: {
-            predicateId: true,
+            predicate: true,
           },
           with: {
             target: {
@@ -35,11 +36,11 @@ export const getFamilyTree = publicProcedure
                 outgoingLinks: {
                   where: {
                     predicate: {
-                      type: 'containment',
+                      in: containmentPredicateSlugs,
                     },
                   },
                   columns: {
-                    predicateId: true,
+                    predicate: true,
                   },
                   with: {
                     target: {
@@ -54,11 +55,11 @@ export const getFamilyTree = publicProcedure
                 incomingLinks: {
                   where: {
                     predicate: {
-                      type: 'containment',
+                      in: containmentPredicateSlugs,
                     },
                   },
                   columns: {
-                    predicateId: true,
+                    predicate: true,
                   },
                   with: {
                     source: {
@@ -77,11 +78,11 @@ export const getFamilyTree = publicProcedure
         incomingLinks: {
           where: {
             predicate: {
-              type: 'containment',
+              in: containmentPredicateSlugs,
             },
           },
           columns: {
-            predicateId: true,
+            predicate: true,
           },
           with: {
             source: {
@@ -89,27 +90,6 @@ export const getFamilyTree = publicProcedure
                 id: true, // Children
                 title: true,
                 recordCreatedAt: true,
-              },
-              with: {
-                outgoingLinks: {
-                  where: {
-                    predicate: {
-                      type: 'containment',
-                    },
-                  },
-                  columns: {
-                    predicateId: true,
-                  },
-                  with: {
-                    target: {
-                      columns: {
-                        id: true, // Grandchildren
-                        title: true,
-                        recordCreatedAt: true,
-                      },
-                    },
-                  },
-                },
               },
             },
           },

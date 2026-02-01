@@ -9,7 +9,6 @@ import {
   text,
   timestamp,
   unique,
-  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -20,8 +19,10 @@ import {
   integrationTypeEnum,
   textEmbeddingColumns,
 } from './operations';
-import { predicateTypes, recordTypes } from './records.shared';
+import { predicateSlugs, type PredicateSlug } from './predicates';
+import { recordTypes } from './records.shared';
 
+export * from './predicates';
 export * from './records.shared';
 
 export const recordTypeEnum = pgEnum('record_type', recordTypes);
@@ -98,57 +99,22 @@ export const links = pgTable(
         onUpdate: 'cascade',
       })
       .notNull(),
-    predicateId: integer('predicate_id')
-      .references(() => predicates.id, {
-        onDelete: 'cascade',
-        onUpdate: 'cascade',
-      })
-      .notNull(),
+    /** Predicate slug identifying the relationship type (e.g., 'contained_by', 'created_by') */
+    predicate: text('predicate').notNull().$type<PredicateSlug>(),
     notes: text('notes'),
     ...databaseTimestamps,
   },
   (table) => [
-    index().on(table.sourceId, table.predicateId),
-    index().on(table.targetId, table.predicateId),
-    index().on(table.predicateId),
-    unique().on(table.sourceId, table.targetId, table.predicateId),
+    index().on(table.sourceId, table.predicate),
+    index().on(table.targetId, table.predicate),
+    index().on(table.predicate),
+    unique().on(table.sourceId, table.targetId, table.predicate),
   ]
 );
 
 export const LinkSelectSchema = createSelectSchema(links);
 export type LinkSelect = typeof links.$inferSelect;
-export const LinkInsertSchema = createInsertSchema(links);
-export type LinkInsert = typeof links.$inferInsert;
-
-export const predicateTypeEnum = pgEnum('predicate_type', predicateTypes);
-
-export const predicates = pgTable(
-  'predicates',
-  {
-    id: serial('id').primaryKey(),
-    slug: text('slug').unique().notNull(),
-    name: text('name').notNull(),
-    type: predicateTypeEnum('type').notNull(),
-    role: text('role'),
-    inverseSlug: text('inverse_slug').references((): AnyPgColumn => predicates.slug, {
-      onDelete: 'set null',
-      onUpdate: 'cascade',
-    }),
-    canonical: boolean('canonical').notNull().default(true),
-    ...databaseTimestamps,
-  },
-  (table) => [
-    index().on(table.id, table.type),
-    index().on(table.slug),
-    index().on(table.type),
-    index().on(table.role),
-    index().on(table.canonical),
-    index().on(table.inverseSlug),
-    index().on(table.type, table.canonical),
-  ]
-);
-
-export const PredicateSelectSchema = createSelectSchema(predicates);
-export type PredicateSelect = typeof predicates.$inferSelect;
-export const PredicateInsertSchema = createInsertSchema(predicates);
-export type PredicateInsert = typeof predicates.$inferInsert;
+export const LinkInsertSchema = createInsertSchema(links).extend({
+  predicate: z.enum(predicateSlugs as [PredicateSlug, ...PredicateSlug[]]),
+});
+export type LinkInsert = z.infer<typeof LinkInsertSchema>;

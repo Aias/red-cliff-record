@@ -45,15 +45,13 @@ export async function embedRecordsByIds(
       outgoingLinks: {
         with: {
           target: { columns: { textEmbedding: false } },
-          predicate: true,
         },
       },
       incomingLinks: {
         with: {
           source: { columns: { textEmbedding: false } },
-          predicate: true,
         },
-        where: { predicate: { slug: { notIn: ['format_of'] } } },
+        where: { predicate: { notIn: ['format_of'] } },
       },
       media: true,
     },
