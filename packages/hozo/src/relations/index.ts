@@ -20,7 +20,6 @@ import {
   lightroomImages,
   links,
   media,
-  predicates,
   raindropBookmarks,
   raindropBookmarkTags,
   raindropCollections,
@@ -66,7 +65,6 @@ export const relations = defineRelations(
     readwiseDocuments,
     readwiseDocumentTags,
     readwiseTags,
-    predicates,
     links,
     records,
     twitterMedia,
@@ -509,21 +507,6 @@ export const relations = defineRelations(
         from: r.links.targetId,
         to: r.records.id,
         optional: false,
-      }),
-      predicate: r.one.predicates({
-        from: r.links.predicateId,
-        to: r.predicates.id,
-        optional: false,
-      }),
-    },
-    predicates: {
-      links: r.many.links({
-        from: r.predicates.id,
-        to: r.links.predicateId,
-      }),
-      inverse: r.one.predicates({
-        from: r.predicates.inverseSlug,
-        to: r.predicates.slug,
       }),
     },
     twitterMedia: {

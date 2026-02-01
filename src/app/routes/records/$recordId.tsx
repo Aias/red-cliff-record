@@ -1,3 +1,4 @@
+import type { PredicateSlug } from '@hozo';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo } from 'react';
 import { trpc } from '@/app/trpc';
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/records/$recordId')({
 });
 
 type TreeNode = {
-  predicateId?: DbId;
+  predicate?: PredicateSlug;
   title?: string | null;
   id: DbId;
   recordCreatedAt: Date;
@@ -45,7 +46,7 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 
   sortedOutgoingLinks.forEach((parent) => {
     const {
-      predicateId: parentPredicateId,
+      predicate: parentPredicate,
       target: {
         id: parentId,
         title: parentTitle,
@@ -65,7 +66,7 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 
     sortedGrandparentLinks.forEach((grandparent) => {
       const {
-        predicateId: grandparentPredicateId,
+        predicate: grandparentPredicate,
         target: {
           id: grandparentId,
           title: grandparentTitle,
@@ -74,7 +75,7 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
       } = grandparent;
 
       nodes.push({
-        predicateId: grandparentPredicateId,
+        predicate: grandparentPredicate,
         id: grandparentId,
         title: grandparentTitle,
         recordCreatedAt: grandparentRecordCreatedAt,
@@ -82,7 +83,7 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
     });
 
     nodes.push({
-      predicateId: parentPredicateId,
+      predicate: parentPredicate,
       id: parentId,
       title: parentTitle,
       recordCreatedAt: parentRecordCreatedAt,
@@ -98,12 +99,12 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 
     sortedChildLinks.forEach((child) => {
       const {
-        predicateId: childPredicateId,
+        predicate: childPredicate,
         source: { id: childId, title: childTitle, recordCreatedAt: childRecordCreatedAt },
       } = child;
 
       nodes.push({
-        predicateId: childPredicateId,
+        predicate: childPredicate,
         id: childId,
         title: childTitle,
         recordCreatedAt: childRecordCreatedAt,
@@ -126,12 +127,12 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 
   sortedIncomingLinks.forEach((child) => {
     const {
-      predicateId: childPredicateId,
+      predicate: childPredicate,
       source: { id: childId, title: childTitle, recordCreatedAt: childRecordCreatedAt },
     } = child;
 
     nodes.push({
-      predicateId: childPredicateId,
+      predicate: childPredicate,
       id: childId,
       title: childTitle,
       recordCreatedAt: childRecordCreatedAt,

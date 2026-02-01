@@ -1,9 +1,15 @@
+import { PREDICATES } from '@hozo';
 import { initTRPC } from '@trpc/server';
 import DataLoader from 'dataloader';
 import superjson from 'superjson';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/connections/postgres';
 import type { RecordGet } from '@/shared/types/domain';
+
+/** Predicate slugs for creation and containment types */
+const creationContainmentPredicates = Object.values(PREDICATES)
+  .filter((p) => p.type === 'creation' || p.type === 'containment')
+  .map((p) => p.slug);
 
 function createRecordLoader() {
   return new DataLoader<number, RecordGet>(async (ids) => {
@@ -19,13 +25,13 @@ function createRecordLoader() {
       with: {
         media: true,
         outgoingLinks: {
+          columns: {
+            id: true,
+            predicate: true,
+            sourceId: true,
+            targetId: true,
+          },
           with: {
-            predicate: {
-              columns: {
-                id: true,
-                type: true,
-              },
-            },
             target: {
               columns: {
                 id: true,
@@ -35,9 +41,7 @@ function createRecordLoader() {
           },
           where: {
             predicate: {
-              type: {
-                in: ['creation', 'containment'],
-              },
+              in: creationContainmentPredicates,
             },
           },
         },

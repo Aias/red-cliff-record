@@ -1,6 +1,10 @@
+import type { PredicateSlug } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { IdParamSchema } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
+
+/** Containment predicate slugs for filtering */
+const containmentPredicates: PredicateSlug[] = ['contained_by', 'contains'];
 
 export const getFamilyTree = publicProcedure
   .input(IdParamSchema)
@@ -18,11 +22,11 @@ export const getFamilyTree = publicProcedure
         outgoingLinks: {
           where: {
             predicate: {
-              type: 'containment',
+              in: containmentPredicates,
             },
           },
           columns: {
-            predicateId: true,
+            predicate: true,
           },
           with: {
             target: {
@@ -35,11 +39,11 @@ export const getFamilyTree = publicProcedure
                 outgoingLinks: {
                   where: {
                     predicate: {
-                      type: 'containment',
+                      in: containmentPredicates,
                     },
                   },
                   columns: {
-                    predicateId: true,
+                    predicate: true,
                   },
                   with: {
                     target: {
@@ -54,11 +58,11 @@ export const getFamilyTree = publicProcedure
                 incomingLinks: {
                   where: {
                     predicate: {
-                      type: 'containment',
+                      in: containmentPredicates,
                     },
                   },
                   columns: {
-                    predicateId: true,
+                    predicate: true,
                   },
                   with: {
                     source: {
@@ -77,11 +81,11 @@ export const getFamilyTree = publicProcedure
         incomingLinks: {
           where: {
             predicate: {
-              type: 'containment',
+              in: containmentPredicates,
             },
           },
           columns: {
-            predicateId: true,
+            predicate: true,
           },
           with: {
             source: {
@@ -94,11 +98,11 @@ export const getFamilyTree = publicProcedure
                 outgoingLinks: {
                   where: {
                     predicate: {
-                      type: 'containment',
+                      in: containmentPredicates,
                     },
                   },
                   columns: {
-                    predicateId: true,
+                    predicate: true,
                   },
                   with: {
                     target: {

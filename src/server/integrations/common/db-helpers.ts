@@ -1,24 +1,9 @@
-import { links as linksTable, type LinkInsert } from '@hozo';
+import { links as linksTable, type LinkInsert, type PredicateSlug } from '@hozo';
 import { type Db } from '@/server/db/connections/postgres';
-import type { PredicateSlug, RecordSlug } from '@/server/db/seed';
+import type { RecordSlug } from '@/server/db/seed';
 import { createIntegrationLogger } from './logging';
 
-const predicateCache = new Map<PredicateSlug, number>();
 const recordCache = new Map<RecordSlug, number>();
-
-export async function getPredicateId(slug: PredicateSlug, db: Db): Promise<number> {
-  if (predicateCache.has(slug)) return predicateCache.get(slug)!;
-
-  const row = await db.query.predicates.findFirst({
-    where: {
-      slug: slug,
-    },
-  });
-
-  if (!row) throw new Error(`Predicate slug ${slug} not found in DB`);
-  predicateCache.set(slug, row.id);
-  return row.id;
-}
 
 export async function getRecordId(slug: RecordSlug, db: Db): Promise<number> {
   if (recordCache.has(slug)) return recordCache.get(slug)!;
@@ -41,13 +26,13 @@ const logger = createIntegrationLogger('common', 'db-helpers');
  *
  * @param sourceId - The ID of the source record
  * @param targetId - The ID of the target record
- * @param predicateSlug - The slug of the relation type
+ * @param predicate - The predicate slug identifying the relation type
  * @returns A promise that resolves when the link is created
  */
 export async function linkRecords(
   sourceId: number,
   targetId: number,
-  predicateSlug: PredicateSlug,
+  predicate: PredicateSlug,
   db: Db,
   options?: {
     /**
@@ -57,7 +42,6 @@ export async function linkRecords(
     log?: boolean;
   }
 ): Promise<void> {
-  const predicateId = await getPredicateId(predicateSlug, db);
   const shouldLog = options?.log ?? true;
   try {
     await db
@@ -65,10 +49,10 @@ export async function linkRecords(
       .values({
         sourceId,
         targetId,
-        predicateId,
+        predicate,
       })
       .onConflictDoUpdate({
-        target: [linksTable.sourceId, linksTable.targetId, linksTable.predicateId],
+        target: [linksTable.sourceId, linksTable.targetId, linksTable.predicate],
         set: {
           recordUpdatedAt: new Date(),
         },
@@ -76,7 +60,7 @@ export async function linkRecords(
 
     if (shouldLog) {
       logger.info(
-        `Linked record ${sourceId} to record ${targetId} with relation type ${predicateSlug} (${predicateId})`
+        `Linked record ${sourceId} to record ${targetId} with relation type ${predicate}`
       );
     }
   } catch (error) {
@@ -90,7 +74,7 @@ export async function bulkInsertLinks(links: LinkInsert[], db: Db): Promise<void
     .insert(linksTable)
     .values(links)
     .onConflictDoUpdate({
-      target: [linksTable.sourceId, linksTable.targetId, linksTable.predicateId],
+      target: [linksTable.sourceId, linksTable.targetId, linksTable.predicate],
       set: {
         recordUpdatedAt: new Date(),
       },

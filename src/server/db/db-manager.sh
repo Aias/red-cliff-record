@@ -397,7 +397,7 @@ do_clone_prod_to_dev() {
     echo "[1/4] Backing up production database (schema + data)..."
     BACKUP_FILE="$BACKUP_DIR/${PROD_DB}-clone-source-$(date +%Y%m%d_%H%M%S).dump"
     ensure_backup_dir
-    pg_dump "$PROD_URL" --format=custom --schema=public --verbose > "$BACKUP_FILE"
+    pg_dump "$PROD_URL" --format=custom --schema=public --schema=drizzle --verbose > "$BACKUP_FILE"
 
     if [ $? -ne 0 ]; then
         echo "Error: Production backup failed"

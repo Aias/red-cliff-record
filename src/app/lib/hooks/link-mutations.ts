@@ -1,6 +1,5 @@
-import type { PredicateSelect } from '@hozo/schema/records';
+import { getInverse, PREDICATES, type PredicateSlug } from '@hozo';
 import { useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/shared/types/api';
@@ -10,27 +9,9 @@ import { useEmbedRecord } from './record-mutations';
 export function useUpsertLink() {
   const utils = trpc.useUtils();
   const embedMutation = useEmbedRecord();
-  const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
-
-  // Memoize predicate lookups for O(1) access
-  const predicatesById = useMemo(() => {
-    const map = new Map<number, PredicateSelect>();
-    for (const predicate of predicates) {
-      map.set(predicate.id, predicate);
-    }
-    return map;
-  }, [predicates]);
-
-  const predicatesBySlug = useMemo(() => {
-    const map = new Map<string, PredicateSelect>();
-    for (const predicate of predicates) {
-      map.set(predicate.slug, predicate);
-    }
-    return map;
-  }, [predicates]);
 
   return trpc.links.upsert.useMutation({
-    onMutate: async ({ sourceId, targetId, predicateId, id }) => {
+    onMutate: async ({ sourceId, targetId, predicate, id }) => {
       // For updates, skip optimistic updates entirely - let the server handle it
       // This avoids the complexity of tracking which direction the link was originally
       // and how the server's canonicalization might change it
@@ -52,20 +33,18 @@ export function useUpsertLink() {
       const prevTarget = utils.links.listForRecord.getData({ id: targetId });
 
       // Check if the predicate will be canonicalized by the server
-      const predicate = predicatesById.get(predicateId);
+      const predicateDef = PREDICATES[predicate];
       let finalSourceId = sourceId;
       let finalTargetId = targetId;
-      let finalPredicateId = predicateId;
+      let finalPredicate: PredicateSlug = predicate;
 
-      if (predicate && !predicate.canonical) {
+      if (!predicateDef.canonical) {
         // The server will flip this - mirror that behavior
-        const inversePredicate = predicate.inverseSlug
-          ? predicatesBySlug.get(predicate.inverseSlug)
-          : undefined;
-        if (inversePredicate?.canonical) {
+        const inversePredicate = getInverse(predicate);
+        if (inversePredicate.canonical) {
           finalSourceId = targetId;
           finalTargetId = sourceId;
-          finalPredicateId = inversePredicate.id;
+          finalPredicate = inversePredicate.slug as PredicateSlug;
         }
       }
 
@@ -74,7 +53,7 @@ export function useUpsertLink() {
         id: optimisticId,
         sourceId: finalSourceId,
         targetId: finalTargetId,
-        predicateId: finalPredicateId,
+        predicate: finalPredicate,
         recordUpdatedAt: new Date(),
       };
 

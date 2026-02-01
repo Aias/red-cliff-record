@@ -33,7 +33,7 @@ export const SearchResultItem = memo(function SearchResultItem({
   let parentTitle: string | undefined | null;
 
   for (const edge of outgoingLinks) {
-    const kind = predicates[edge.predicate.id]?.type;
+    const kind = predicates[edge.predicate]?.type;
     if (kind === 'creation' && !creatorTitle) {
       creatorTitle = edge.target.title;
     }

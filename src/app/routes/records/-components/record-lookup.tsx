@@ -1,4 +1,10 @@
-import type { PredicateSelect } from '@hozo/schema/records';
+import {
+  canonicalPredicates,
+  getInverse,
+  PREDICATES,
+  type Predicate,
+  type PredicateSlug,
+} from '@hozo';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRecordSearch } from '@/app/lib/hooks/use-record-search';
@@ -137,8 +143,8 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
  * extra runtime actions (delete link, merge, open record, …).
  * -------------------------------------------------------------------------- */
 interface PredicateComboboxProps {
-  predicates: PredicateSelect[];
-  onPredicateSelect(id: number): void;
+  predicates: Predicate[];
+  onPredicateSelect(slug: PredicateSlug): void;
   actions?: RelationshipAction[];
   includeNonCanonical?: boolean;
 }
@@ -160,8 +166,8 @@ function PredicateCombobox({
             .map((p) => (
               <CommandItem
                 className="flex gap-2 capitalize"
-                key={p.id}
-                onSelect={() => onPredicateSelect(p.id)}
+                key={p.slug}
+                onSelect={() => onPredicateSelect(p.slug as PredicateSlug)}
               >
                 <span className="font-medium">{p.name}</span>
                 <span className="text-c-hint">{p.type}</span>
@@ -199,7 +205,7 @@ interface RelationshipSelectorProps {
   /** Existing link information, if editing. */
   link?: LinkPartial | null;
   /** Called after any predicate or action completes. */
-  onComplete?: (sourceId: number, targetId: number, predicateId: number) => void;
+  onComplete?: (sourceId: number, targetId: number, predicate: PredicateSlug) => void;
   buttonProps?: ButtonProps;
   popoverProps?: PopoverContentProps;
   /** Optional extra‑action builder; receives runtime context. */
@@ -229,27 +235,20 @@ export function RelationshipSelector({
 }: RelationshipSelectorProps) {
   const initialTarget = initialTargetId ?? link?.targetId ?? null;
   const [targetId, setTargetId] = useState<number | null>(initialTarget);
-  const [predicateId, setPredicateId] = useState<number | null>(link?.predicateId ?? null);
+  const [predicate, setPredicate] = useState<PredicateSlug | null>(link?.predicate ?? null);
   const [open, setOpen] = useState(false);
   const altRef = useRef(false);
   const [altPressed, setAltPressed] = useState(false);
 
-  const { data: predicates = [] } = trpc.links.listPredicates.useQuery();
-  const predicatesBySlug = useMemo(
-    () => Object.fromEntries(predicates.map((p) => [p.slug, p])),
-    [predicates]
-  );
-  const canonicalPredicates = useMemo(() => predicates.filter((p) => p.canonical), [predicates]);
   const displayPredicates = useMemo(() => {
     if (!incoming) return canonicalPredicates;
-    const list = canonicalPredicates.map((p) => {
-      const slug = p.inverseSlug;
-      return slug ? (predicatesBySlug[slug] ?? p) : p;
-    });
-    const map = new Map<number, PredicateSelect>();
-    list.forEach((p) => map.set(p.id, p));
+    // For incoming links, show inverse predicates
+    const list = canonicalPredicates.map((p) => getInverse(p.slug as PredicateSlug));
+    // Dedupe by slug
+    const map = new Map<string, Predicate>();
+    list.forEach((p) => map.set(p.slug, p));
     return Array.from(map.values());
-  }, [incoming, canonicalPredicates, predicatesBySlug]);
+  }, [incoming]);
   const { data: targetRecord } = trpc.records.get.useQuery(
     { id: targetId! },
     { enabled: targetId != null }
@@ -262,7 +261,7 @@ export function RelationshipSelector({
   useEffect(() => {
     if (!open && !initialTargetId && !link) {
       setTargetId(null);
-      setPredicateId(null);
+      setPredicate(null);
     }
     if (!open) {
       altRef.current = false;
@@ -298,9 +297,9 @@ export function RelationshipSelector({
 
   const handleRecordSelect = (id: DbId) => setTargetId(id);
 
-  const handlePredicateSelect = (predId: number) => {
+  const handlePredicateSelect = (selectedPredicate: PredicateSlug) => {
     if (!targetId) return;
-    setPredicateId(predId);
+    setPredicate(selectedPredicate);
     const swap = altRef.current;
     altRef.current = false;
     setAltPressed(false);
@@ -309,11 +308,11 @@ export function RelationshipSelector({
         id: link?.id,
         sourceId: swap ? targetId : sourceId,
         targetId: swap ? sourceId : targetId,
-        predicateId: predId,
+        predicate: selectedPredicate,
       },
       {
         onSuccess: (updatedLink) => {
-          onComplete?.(updatedLink.sourceId, updatedLink.targetId, updatedLink.predicateId);
+          onComplete?.(updatedLink.sourceId, updatedLink.targetId, updatedLink.predicate);
           setOpen(false);
         },
       }
@@ -321,8 +320,8 @@ export function RelationshipSelector({
   };
 
   const currentPredicateName = useMemo(
-    () => predicates.find((p) => p.id === predicateId)?.name,
-    [predicateId, predicates]
+    () => (predicate ? PREDICATES[predicate]?.name : undefined),
+    [predicate]
   );
 
   return (
