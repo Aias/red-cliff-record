@@ -438,7 +438,7 @@ export function RecordForm({
                   >
                     {(field) => (
                       <>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           <GhostInput
                             id="url"
                             className="w-full text-c-display"
@@ -471,8 +471,13 @@ export function RecordForm({
                                           });
                                       }}
                                       disabled={fetchFaviconMutation.isPending || isFormLoading}
+                                      className="size-fit cursor-pointer p-0"
                                     >
-                                      {fetchFaviconMutation.isPending ? <Spinner /> : <GlobeIcon />}
+                                      {fetchFaviconMutation.isPending ? (
+                                        <Spinner className="size-[1em]" />
+                                      ) : (
+                                        <GlobeIcon className="size-[1em]" />
+                                      )}
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>Fetch favicon as avatar</TooltipContent>
@@ -724,8 +729,10 @@ export function RecordForm({
         <Popover>
           <PopoverTrigger asChild>
             <Avatar
-              src={formData.avatarUrl ?? undefined}
-              fallback={(formData.title?.charAt(0) ?? formData.type.charAt(0)).toUpperCase()}
+              src={form.getFieldValue('avatarUrl') ?? undefined}
+              fallback={(
+                form.getFieldValue('title')?.charAt(0) ?? form.getFieldValue('type').charAt(0)
+              ).toUpperCase()}
               className="mr-2 cursor-pointer"
             />
           </PopoverTrigger>
