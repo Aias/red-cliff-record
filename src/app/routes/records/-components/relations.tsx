@@ -61,7 +61,12 @@ export const RelationsList = ({ id }: RelationsListProps) => {
   };
 
   const outgoingLinks = useMemo(
-    () => sortLinks(recordLinks?.outgoingLinks ?? []),
+    () =>
+      sortLinks(
+        recordLinks?.outgoingLinks.filter(
+          (link) => predicates[link.predicate]?.type !== 'containment'
+        ) ?? []
+      ),
     [recordLinks, predicates]
   );
   const incomingLinks = useMemo(

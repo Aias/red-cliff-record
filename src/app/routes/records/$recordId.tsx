@@ -1,4 +1,4 @@
-import type { PredicateSlug } from '@hozo';
+import { isStructuralContainment, type PredicateSlug } from '@hozo';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo } from 'react';
 import { trpc } from '@/app/trpc';
@@ -11,6 +11,7 @@ import type { FamilyTree } from '@/server/api/routers/records/tree';
 import { CoercedIdSchema, type DbId } from '@/shared/types/api';
 import { RecordForm } from './-components/form';
 import { RecordDisplay } from './-components/record-display';
+import { RecordLink } from './-components/record-link';
 import { RelationsList, SimilarRecords } from './-components/relations';
 
 export const Route = createFileRoute('/records/$recordId')({
@@ -23,6 +24,8 @@ export const Route = createFileRoute('/records/$recordId')({
 
 type TreeNode = {
   predicate?: PredicateSlug;
+  /** True for structural containment (contained_by/contains), false for citation (quotes/quoted_in) */
+  isStructural: boolean;
   title?: string | null;
   id: DbId;
   recordCreatedAt: Date;
@@ -76,6 +79,7 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 
       nodes.push({
         predicate: grandparentPredicate,
+        isStructural: isStructuralContainment(grandparentPredicate),
         id: grandparentId,
         title: grandparentTitle,
         recordCreatedAt: grandparentRecordCreatedAt,
@@ -84,6 +88,7 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 
     nodes.push({
       predicate: parentPredicate,
+      isStructural: isStructuralContainment(parentPredicate),
       id: parentId,
       title: parentTitle,
       recordCreatedAt: parentRecordCreatedAt,
@@ -105,6 +110,7 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 
       nodes.push({
         predicate: childPredicate,
+        isStructural: isStructuralContainment(childPredicate),
         id: childId,
         title: childTitle,
         recordCreatedAt: childRecordCreatedAt,
@@ -114,7 +120,7 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 
   // Only add if there are no outgoing links, otherwise we'll get duplicates from parent's child nodes.
   if (outgoingLinks.length === 0) {
-    nodes.push({ id, title, recordCreatedAt: recordCreatedAt });
+    nodes.push({ id, title, recordCreatedAt, isStructural: true });
   }
 
   // Sort incoming links by recordCreatedAt
@@ -133,6 +139,7 @@ const flattenTree = (tree: FamilyTree): TreeNode[] => {
 
     nodes.push({
       predicate: childPredicate,
+      isStructural: isStructuralContainment(childPredicate),
       id: childId,
       title: childTitle,
       recordCreatedAt: childRecordCreatedAt,
@@ -335,15 +342,26 @@ function RouteComponent() {
     <div className="flex flex-1 overflow-x-auto">
       <ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-2 overflow-y-auto border-r border-c-divider p-3">
         {nodes.map((node) => (
-          <li key={node.id} data-record-id={node.id} className="card shrink-0 last:mb-8">
+          <li
+            key={node.id}
+            data-record-id={node.id}
+            className={
+              node.isStructural ? 'card shrink-0 last:mb-8' : 'card-compact shrink-0 last:mb-8'
+            }
+          >
             {node.id === recordId ? (
               <RecordForm
                 recordId={node.id}
                 onFinalize={handleFinalize}
                 onDelete={() => handleDelete(node.id)}
               />
-            ) : (
+            ) : node.isStructural ? (
               <RecordDisplay recordId={node.id} />
+            ) : (
+              <RecordLink
+                id={node.id}
+                linkOptions={{ to: '/records/$recordId', params: { recordId: node.id } }}
+              />
             )}
           </li>
         ))}

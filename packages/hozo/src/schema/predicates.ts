@@ -261,3 +261,16 @@ export function getPredicate(slug: PredicateSlug): Predicate {
 export function isPredicateSlug(value: string): value is PredicateSlug {
   return value in PREDICATES;
 }
+
+/** Predicate slugs for all containment relationships (structural and citation) */
+export const containmentPredicateSlugs = Object.values(PREDICATES)
+  .filter((p) => p.type === 'containment')
+  .map((p) => p.slug) as PredicateSlug[];
+
+/** Predicate slugs for structural parent-child hierarchies only (excludes citation) */
+export const structuralContainmentSlugs: PredicateSlug[] = ['contained_by', 'contains'];
+
+/** Check if a predicate is structural containment (vs citation like quotes) */
+export function isStructuralContainment(slug: PredicateSlug): boolean {
+  return structuralContainmentSlugs.includes(slug);
+}
