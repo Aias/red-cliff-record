@@ -1,9 +1,10 @@
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { Trash2Icon } from 'lucide-react';
+import { GlobeIcon, Trash2Icon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { z } from 'zod';
+import { trpc } from '@/app/trpc';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +141,7 @@ export function RecordForm({
 
   const updateMutation = useUpsertRecord();
   const deleteMediaMutation = useDeleteMedia();
+  const fetchFaviconMutation = trpc.records.fetchFavicon.useMutation();
   const { uploadFile, isUploading } = useRecordUpload(recordId);
 
   const form = useForm({
@@ -449,9 +451,36 @@ export function RecordForm({
                             onBlur={() => debouncedSave()}
                             readOnly={isFormLoading}
                           />
-                          {field.state.value && (
-                            <ExternalLink href={field.state.value} children={null} />
-                          )}
+                          {(() => {
+                            const url = field.state.value;
+                            if (!url) return null;
+                            return (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        void fetchFaviconMutation
+                                          .mutateAsync({ url })
+                                          .then((result) => {
+                                            form.setFieldValue('avatarUrl', result.avatarUrl);
+                                            debouncedSave();
+                                          });
+                                      }}
+                                      disabled={fetchFaviconMutation.isPending || isFormLoading}
+                                    >
+                                      {fetchFaviconMutation.isPending ? <Spinner /> : <GlobeIcon />}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Fetch favicon as avatar</TooltipContent>
+                                </Tooltip>
+                                <ExternalLink href={url} children={null} />
+                              </>
+                            );
+                          })()}
                         </div>
                         {field.state.meta.errors && (
                           <p className="text-sm text-c-destructive">
