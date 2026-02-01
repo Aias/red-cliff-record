@@ -3,6 +3,7 @@ import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { GlobeIcon, Trash2Icon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
 import {
@@ -468,6 +469,13 @@ export function RecordForm({
                                           .then((result) => {
                                             form.setFieldValue('avatarUrl', result.avatarUrl);
                                             debouncedSave();
+                                          })
+                                          .catch((error) => {
+                                            const message =
+                                              error instanceof Error
+                                                ? error.message
+                                                : 'Unknown error';
+                                            toast.error(`Failed to fetch favicon: ${message}`);
                                           });
                                       }}
                                       disabled={fetchFaviconMutation.isPending || isFormLoading}
