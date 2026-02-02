@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
+import { assertNever } from '@/shared/lib/type-utils';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createError } from '../lib/errors';
 import { success } from '../lib/output';
@@ -102,7 +103,7 @@ async function runSingleEnrichment(enrichment: EnrichmentName, options: EnrichOp
       };
     }
     default:
-      throw createError('VALIDATION_ERROR', `Unknown enrichment: ${enrichment}`);
+      assertNever(enrichment);
   }
 }
 

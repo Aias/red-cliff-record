@@ -19,6 +19,7 @@ import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
+import { assertNever } from '@/shared/lib/type-utils';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createError } from '../lib/errors';
 import { success } from '../lib/output';
@@ -37,6 +38,7 @@ const IntegrationNameSchema = z.enum([
   'daily',
 ]);
 type IntegrationName = z.infer<typeof IntegrationNameSchema>;
+type SingleIntegrationName = Exclude<IntegrationName, 'daily'>;
 const INTEGRATION_LIST = IntegrationNameSchema.options;
 
 /**
@@ -111,7 +113,7 @@ async function runEnrichments(debug: boolean) {
   await runEmbedRecordsIntegration();
 }
 
-async function runSingleSync(integration: IntegrationName, options: SyncOptions) {
+async function runSingleSync(integration: SingleIntegrationName, options: SyncOptions) {
   const { debug } = options;
   const startTime = performance.now();
 
@@ -192,12 +194,12 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
       };
     }
     default:
-      throw createError('VALIDATION_ERROR', `Unknown integration: ${integration}`);
+      assertNever(integration);
   }
 }
 
 async function runDailySync(options: SyncOptions) {
-  const dailyIntegrations: IntegrationName[] = [
+  const dailyIntegrations: SingleIntegrationName[] = [
     'browsing',
     'raindrop',
     'readwise',

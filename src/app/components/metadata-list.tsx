@@ -43,21 +43,28 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
   const formatValue = (value: unknown) => {
     if (value === null || value === undefined) return null;
     if (value instanceof Date) return value.toLocaleString();
-    if (value instanceof Object) {
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object') {
       return (
         <pre className="block text-[0.875em] break-all whitespace-pre-wrap text-c-secondary">
           {JSON.stringify(value, null, 2)}
         </pre>
       );
     }
-    if (value instanceof Array) return value.join(', ');
 
-    const stringValue = String(value);
-    const urlResult = urlSchema.safeParse(stringValue);
-    if (urlResult.success) {
-      return <ExternalLink href={urlResult.data}>{stringValue}</ExternalLink>;
+    // At this point value is a primitive (string, number, boolean, symbol, bigint, function)
+    if (typeof value === 'string') {
+      const urlResult = urlSchema.safeParse(value);
+      if (urlResult.success) {
+        return <ExternalLink href={urlResult.data}>{value}</ExternalLink>;
+      }
+      return value;
     }
-    return stringValue;
+    if (typeof value === 'number') return value.toString();
+    if (typeof value === 'boolean') return value.toString();
+    if (typeof value === 'bigint') return value.toString();
+
+    return null;
   };
 
   return (

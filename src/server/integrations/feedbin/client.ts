@@ -34,13 +34,13 @@ async function makeRequest<T>(
   options: RequestInit = {}
 ): Promise<{ data: T; headers: Headers }> {
   const url = `${API_BASE_URL}${endpoint}`;
+  const headers = new Headers(options.headers);
+  headers.set('Authorization', createAuthHeader());
+  headers.set('Content-Type', 'application/json; charset=utf-8');
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      Authorization: createAuthHeader(),
-      'Content-Type': 'application/json; charset=utf-8',
-      ...options.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {

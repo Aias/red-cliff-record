@@ -1,5 +1,6 @@
 import type { IntegrationType } from '@hozo/schema/operations';
 import { memo } from 'react';
+import { assertNever } from '@/shared/lib/type-utils';
 import { AdobeLogo } from './logos/adobe';
 import { AirtableLogo } from './logos/airtable';
 import { ArcLogo } from './logos/arc';
@@ -36,8 +37,14 @@ const LogoComponent = ({
       return <ReadwiseLogo className={className} />;
     case 'twitter':
       return <XLogo className={className} />;
-    default:
+    case 'ai_chat':
+    case 'crawler':
+    case 'embeddings':
+    case 'feedbin':
+    case 'manual':
       return null;
+    default:
+      assertNever(service);
   }
 };
 
