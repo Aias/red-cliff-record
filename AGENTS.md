@@ -44,22 +44,21 @@ Never attempt to start the development server or build the application. The user
 
 - `bun run db:migrate` - Run database migrations
 - `bun run db:studio` - Open Drizzle Studio for database inspection
-- `bun run db:backup-local` - Backup local database
-- `bun run db:backup-remote` - Backup remote database
-- `bun run db:restore-local` - Restore to local database
-- `bun run db:restore-remote` - Restore to remote database
-- `./src/server/db/db-manager.sh -c restore <local|remote>` - Clean restore (drop & recreate database with extensions)
-- `./src/server/db/db-manager.sh --dry-run restore <local|remote>` - Print restore commands without executing
-- `./src/server/db/db-manager.sh seed local` - Seed database with initial data (predicates and core records)
-- **Direct queries**: `source .env && psql "$DATABASE_URL" -c "SELECT ..."` (never echo/log the connection string)
+- `./src/server/db/db-manager.sh backup <dev|prod>` - Backup database
+- `./src/server/db/db-manager.sh restore <dev|prod>` - Restore database
+- `./src/server/db/db-manager.sh -c restore dev` - Clean restore (drop & recreate database with extensions)
+- `./src/server/db/db-manager.sh --dry-run restore dev` - Print restore commands without executing
+- `./src/server/db/db-manager.sh seed dev` - Seed database with initial data (predicates and core records)
+- `./src/server/db/db-manager.sh clone-prod-to-dev` - Clone production to development
+- **Direct queries**: `source .env && psql "$DATABASE_URL_DEV" -c "SELECT ..."` (never echo/log the connection string)
 - **Database Reset / Migration Squash**: To reset migration history while preserving data:
-  1. `./src/server/db/db-manager.sh -D backup local` (Backup data only)
-  2. `./src/server/db/db-manager.sh reset local` (Drop & recreate DB with extensions)
+  1. `./src/server/db/db-manager.sh -D backup dev` (Backup data only)
+  2. `./src/server/db/db-manager.sh reset dev` (Drop & recreate DB with extensions)
   3. Delete old migrations: `rm -rf migrations/main/*`
   4. `bun run db:generate` (Create fresh migration)
   5. `bun run db:migrate` (Apply fresh schema)
-  6. `./src/server/db/db-manager.sh seed local` (Seed initial data)
-  7. `./src/server/db/db-manager.sh -D restore local` (Restore data into new schema)
+  6. `./src/server/db/db-manager.sh seed dev` (Seed initial data)
+  7. `./src/server/db/db-manager.sh -D restore dev` (Restore data into new schema)
 
 **CLI (`rcr`):**
 
