@@ -5,9 +5,10 @@
  * reusing all query logic from the API routers.
  */
 
-import { LinkInsertSchema, PREDICATES } from '@hozo';
+import { LinkInsertSchema, PREDICATES, predicateSlugs, type PredicateSlug } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { BaseOptionsSchema, parseIds, parseJsonInput, parseOptions } from '../lib/args';
+import { z } from 'zod';
+import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
 import { success } from '../lib/output';
@@ -15,35 +16,56 @@ import type { CommandHandler } from '../lib/types';
 
 const caller = createCLICaller();
 
+const LinksListOptionsSchema = BaseOptionsSchema.extend({
+  predicate: z.enum(predicateSlugs as [PredicateSlug, ...PredicateSlug[]]).optional(),
+  direction: z.enum(['incoming', 'outgoing']).optional(),
+}).strict();
+
 /**
- * List all links for record(s)
- * Usage: rcr links list <record-id...>
+ * List links for a record with optional filtering
+ * Usage: rcr links list <record-id> [--predicate=<slug>] [--direction=incoming|outgoing]
+ *
+ * Examples:
+ *   rcr links list 123                           # All links for record 123
+ *   rcr links list 123 --predicate=contained_by  # Only contained_by links
+ *   rcr links list 123 --direction=outgoing      # Only outgoing links
+ *   rcr links list 123 --predicate=contained_by --direction=outgoing  # Parent link
  */
 export const list: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const ids = parseIds(args);
+  const opts = parseOptions(LinksListOptionsSchema, options);
+  const id = parseId(args);
 
-  if (ids.length === 0) {
-    throw createError('VALIDATION_ERROR', 'At least one record ID is required');
-  }
+  try {
+    const result = await caller.links.listForRecord({ id });
 
-  // Single ID: use listForRecord for detailed output
-  const [firstId] = ids;
-  if (ids.length === 1 && firstId !== undefined) {
-    try {
-      const result = await caller.links.listForRecord({ id: firstId });
-      return success(result);
-    } catch (e) {
-      if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-        throw createError('NOT_FOUND', `Record ${firstId} not found`);
-      }
-      throw e;
+    // Apply filters
+    let outgoing = result.outgoingLinks;
+    let incoming = result.incomingLinks;
+
+    if (opts.predicate) {
+      outgoing = outgoing.filter((l) => l.predicate === opts.predicate);
+      incoming = incoming.filter((l) => l.predicate === opts.predicate);
     }
-  }
 
-  // Multiple IDs: use the efficient map procedure
-  const result = await caller.links.map({ recordIds: ids });
-  return success(result, { count: Object.keys(result).length });
+    if (opts.direction === 'outgoing') {
+      incoming = [];
+    } else if (opts.direction === 'incoming') {
+      outgoing = [];
+    }
+
+    const filtered = {
+      id: result.id,
+      outgoingLinks: outgoing,
+      incomingLinks: incoming,
+    };
+
+    return success(filtered, { count: outgoing.length + incoming.length });
+  } catch (e) {
+    if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
+      throw createError('NOT_FOUND', `Record ${id} not found`);
+    }
+    throw e;
+  }
 };
 
 /**

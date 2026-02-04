@@ -139,6 +139,8 @@ Commands:
   records merge <src> <target>  Merge source record into target
   records embed <id...>         Generate embedding(s) for record(s)
   records tree <id...>          Get hierarchical family tree(s)
+  records children <id>         Get children of a record
+  records parent <id>           Get parent of a record
 
   media get <id...> [--with-record]  Fetch media item(s) by ID
   media list [filters]              List media with optional filters
@@ -151,7 +153,7 @@ Commands:
   search text <query>           Full-text trigram search
   search similar <id...>        Find records similar to given ID(s)
 
-  links list <record-id...>     List links for record(s)
+  links list <id> [--predicate=...] [--direction=...]  List/filter links
   links create <json>           Create/upsert a link
   links delete <id...>          Delete link(s)
   links predicates              List available predicate types

@@ -421,3 +421,63 @@ export const tree: CommandHandler = async (args, options) => {
 
   return success(results, { count: results.length });
 };
+
+/**
+ * Get children of a record (records with contained_by links to this record)
+ * Usage: rcr records children <id>
+ *
+ * This is a convenience wrapper around `tree` that returns just the children.
+ */
+export const children: CommandHandler = async (args, options) => {
+  parseOptions(BaseOptionsSchema.strict(), options);
+  const id = parseId(args);
+
+  try {
+    const tree = await caller.records.tree({ id });
+    const children = tree.incomingLinks.map((link) => ({
+      id: link.source.id,
+      title: link.source.title,
+      recordCreatedAt: link.source.recordCreatedAt,
+      predicate: link.predicate,
+    }));
+    return success({ parentId: id, children }, { count: children.length });
+  } catch (e) {
+    if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
+      throw createError('NOT_FOUND', `Record ${id} not found`);
+    }
+    throw e;
+  }
+};
+
+/**
+ * Get the parent of a record (the target of its contained_by link)
+ * Usage: rcr records parent <id>
+ *
+ * This is a convenience wrapper around `tree` that returns just the parent.
+ */
+export const parent: CommandHandler = async (args, options) => {
+  parseOptions(BaseOptionsSchema.strict(), options);
+  const id = parseId(args);
+
+  try {
+    const tree = await caller.records.tree({ id });
+    const parentLink = tree.outgoingLinks[0];
+    if (!parentLink) {
+      return success({ childId: id, parent: null });
+    }
+    return success({
+      childId: id,
+      parent: {
+        id: parentLink.target.id,
+        title: parentLink.target.title,
+        recordCreatedAt: parentLink.target.recordCreatedAt,
+        predicate: parentLink.predicate,
+      },
+    });
+  } catch (e) {
+    if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
+      throw createError('NOT_FOUND', `Record ${id} not found`);
+    }
+    throw e;
+  }
+};

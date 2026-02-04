@@ -62,11 +62,26 @@ Never attempt to start the development server or build the application. The user
 
 **CLI (`rcr`):**
 
-- Install: `bun link` (from repo root) - this makes `rcr` available globally
-- Always use `rcr` directly (not `bun ./src/server/cli/rcr/index.ts`)
-- Run `rcr --help` for full command reference
+The `rcr` CLI is the primary tool for agents to interact with the knowledge base. **Always use `rcr` instead of direct database queries or psql.**
+
+- Install: `bun link` (from repo root) - makes `rcr` available globally
+- Run `rcr --help` for the full command reference (always check this for available commands)
 - JSON output to stdout, errors to stderr with non-zero exit codes
-- Use `--raw` for unwrapped output, `--debug` to preview without writing
+- Use `--raw` for unwrapped output (just data, no `{data, meta}` wrapper)
+- Use `jq` to extract specific fields from JSON output
+
+Key command groups:
+
+- `rcr record <cmd>` - CRUD operations on records (get, list, create, update, delete, merge)
+- `rcr record tree <id>` - Get record with parent/children hierarchy
+- `rcr record children <id>` - Get just the children of a record
+- `rcr record parent <id>` - Get just the parent of a record
+- `rcr search <query>` - Semantic search across records
+- `rcr links list <id> [--predicate=X] [--direction=incoming|outgoing]` - List/filter links
+- `rcr links create/delete` - Manage links between records
+- `rcr media <cmd>` - Manage media attachments
+- `rcr sync <integration>` - Run integration syncs
+- `rcr db <cmd>` - Database operations (backup, restore, status)
 
 **Data Operations:**
 
