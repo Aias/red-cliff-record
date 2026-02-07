@@ -106,7 +106,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
 }
 
 export function parseBaseOptions(options: RawCLIOptions): BaseOptions {
-  const result = BaseOptionsSchema.passthrough().safeParse(options);
+  const result = BaseOptionsSchema.loose().safeParse(options);
   if (!result.success) {
     throw createError('VALIDATION_ERROR', result.error.message);
   }

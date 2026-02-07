@@ -43,7 +43,7 @@ const MediaGetOptionsSchema = BaseOptionsSchema.extend({
 const MediaCreateOptionsSchema = BaseOptionsSchema.extend({
   record: IdSchema,
   file: z.string().optional(),
-  url: z.string().url().optional(),
+  url: z.url().optional(),
   name: z.string().optional(),
   type: z.string().optional(),
 }).strict();

@@ -277,7 +277,7 @@ const mapAirtableAttachmentToMedia = async (
   try {
     // Since the URL should already be uploaded to R2 during the sync process,
     // we only need to get the metadata
-    return getMediaInsertData(attachment.url, {
+    return await getMediaInsertData(attachment.url, {
       recordId: attachment.extract.recordId,
       recordCreatedAt: attachment.extract.recordCreatedAt,
       recordUpdatedAt: attachment.extract.recordUpdatedAt,

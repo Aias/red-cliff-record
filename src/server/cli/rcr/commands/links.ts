@@ -117,5 +117,5 @@ export { del as delete };
 export const predicates: CommandHandler = async (_args, options) => {
   parseOptions(BaseOptionsSchema.strict(), options);
   const result = Object.values(PREDICATES);
-  return await Promise.resolve(success(result, { count: result.length }));
+  return Promise.resolve(success(result, { count: result.length }));
 };

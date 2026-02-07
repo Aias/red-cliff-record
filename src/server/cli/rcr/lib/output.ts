@@ -97,9 +97,9 @@ function formatArrayAsTable(data: RecordValue[]): string {
     widths[key] = key.length;
     for (const item of data) {
       const value = formatCellValue(key in item ? item[key] : null);
-      widths[key] = Math.max(widths[key]!, value.length);
+      widths[key] = Math.max(widths[key], value.length);
     }
-    widths[key] = Math.min(widths[key]!, 40); // Max width
+    widths[key] = Math.min(widths[key], 40); // Max width
   }
 
   // Build table

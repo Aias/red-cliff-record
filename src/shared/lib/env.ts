@@ -38,7 +38,7 @@ export const ServerEnvSchema = z.object({
 });
 
 // Base environment variables schema (without refinements, allows .pick())
-export const EnvSchemaBase = ClientEnvSchema.merge(ServerEnvSchema);
+export const EnvSchemaBase = ClientEnvSchema.extend(ServerEnvSchema.shape);
 
 // Full environment variables schema with refinements
 export const EnvSchema = EnvSchemaBase.refine(
@@ -61,6 +61,6 @@ export function parseEnv(env: Record<string, string | undefined>): Env {
 
 // Get a validated environment variable
 export function getEnv<K extends keyof Env>(key: K): Env[K] {
-  const env = parseEnv(typeof process !== 'undefined' && process.env ? process.env : {});
+  const env = parseEnv(process?.env ?? {});
   return env[key];
 }

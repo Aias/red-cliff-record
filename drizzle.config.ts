@@ -8,7 +8,7 @@ export default defineConfig({
   schema: ['./packages/hozo/src/schema/index.ts'],
   dialect: 'postgresql',
   dbCredentials: {
-    url: databaseUrl!,
+    url: databaseUrl,
   },
   casing: 'snake_case',
   strict: true,

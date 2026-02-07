@@ -244,7 +244,7 @@ export const canonicalPredicateSlugs = canonicalPredicates.map((p) => p.slug) as
  */
 export function getInverse(slug: PredicateSlug): Predicate {
   const predicate = PREDICATES[slug];
-  return PREDICATES[predicate.inverseSlug as PredicateSlug];
+  return PREDICATES[predicate.inverseSlug];
 }
 
 /**

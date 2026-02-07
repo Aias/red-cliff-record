@@ -50,7 +50,7 @@ export async function createEmbedding(text: string, maxRetries = 5): Promise<num
           // Try to parse the wait time from the error message
           const errorMessage = error.message || '';
           const waitMatch = errorMessage.match(/Please try again in (\d+)ms/);
-          if (waitMatch && waitMatch[1]) {
+          if (waitMatch?.[1]) {
             // Add a small buffer to the suggested wait time
             waitTime = parseInt(waitMatch[1], 10) + 100;
           }

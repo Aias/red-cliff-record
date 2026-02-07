@@ -9,14 +9,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1 – Install Bun
-      - uses: oven-sh/setup-bun@v2 # official action
+      # 1 – Install Node.js 22+ (required for oxlint.config.ts)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 2 – Install Bun
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      # 2 – Install dependencies
+      # 3 – Install dependencies
       - run: bun install
 
-      # 3 – Check formatting and lint
+      # 4 – Check formatting and lint
       - run: bun run format:check
       - run: bun run lint

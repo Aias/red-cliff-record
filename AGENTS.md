@@ -34,8 +34,8 @@ Theme tokens: `src/app/styles/theme.css` (`c-*` color variables). Check `src/app
 
 ## Skills Index
 
-| Skill                              | Trigger                                                       |
-| ---------------------------------- | ------------------------------------------------------------- |
-| `.agents/skills/rcr-frontend/`     | Component work, styling, design tokens, Radix/Shadcn          |
-| `.agents/skills/rcr-backend/`      | Drizzle, tRPC, integrations, DB management, alt-text workflow |
-| `rcr` (global)                     | CLI operations on records, links, media, syncs                |
+| Skill                          | Trigger                                                       |
+| ------------------------------ | ------------------------------------------------------------- |
+| `.agents/skills/rcr-frontend/` | Component work, styling, design tokens, Radix/Shadcn          |
+| `.agents/skills/rcr-backend/`  | Drizzle, tRPC, integrations, DB management, alt-text workflow |
+| `rcr` (global)                 | CLI operations on records, links, media, syncs                |

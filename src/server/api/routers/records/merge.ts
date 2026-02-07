@@ -137,7 +137,7 @@ export const merge = publicProcedure
             .select({ id: table.id, recordId: table.recordId })
             .from(table)
             .where(eq(table.recordId, sourceId));
-          const tableName = getTableName(table) as IntegrationTableName;
+          const tableName = getTableName(table);
           for (const row of rows) {
             if (row.recordId !== null) {
               premergeIntegrations.push({

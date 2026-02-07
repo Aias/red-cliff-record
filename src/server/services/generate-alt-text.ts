@@ -118,7 +118,7 @@ async function checkImageAccessible(url: string, signal?: AbortSignal): Promise<
 
   // Some CDNs/servers don't support HEAD (or treat it differently than GET).
   // Use a minimal GET with a Range header as a fallback to avoid downloading the full image.
-  return await tryRequest({
+  return tryRequest({
     method: 'GET',
     headers: { Range: 'bytes=0-0' },
   });
@@ -440,5 +440,5 @@ async function generateMissingAltText(
 export async function runAltTextIntegration(
   options: AltTextSyncOptions = {}
 ): Promise<AltTextSyncResult> {
-  return await generateMissingAltText(options);
+  return generateMissingAltText(options);
 }

@@ -38,7 +38,7 @@ function loadEnvFile(path: string) {
       if (!trimmed || trimmed.startsWith('#')) continue;
 
       const match = trimmed.match(/^([^=]+)=(.*)$/);
-      if (match && match[1] && match[2] !== undefined) {
+      if (match?.[1] && match[2] !== undefined) {
         const cleanKey = match[1].trim();
         let cleanValue = match[2].trim();
 
