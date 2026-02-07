@@ -11,8 +11,6 @@ A personal knowledge repository that aggregates data from multiple external sour
 - **Deployment/Hosting**: Bun server + local PostgreSQL on a Tailscale network
 - **Search**: PostgreSQL full-text search + OpenAI embeddings
 
-For detailed development guidelines, see [AGENTS.md](./AGENTS.md). Plenty of AI was used in the development of this project.
-
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
@@ -285,56 +283,38 @@ bun run build
 ## Development Commands
 
 ```bash
-# Start development server
-bun run dev
-
-# Build for production
-bun run build
-
-# Lint and type check (oxlint + tsgo, fast—run frequently)
-bun run lint
-
-# Format code (Oxfmt, run before commits)
-bun run format
-
-# Open database studio
-bun run db:studio
-
-# Run migrations
-bun run db:migrate
-
-# Database Management
-bun run db:backup-local  # Local backup
-bun run db:backup-remote # Remote backup
-bun run db:restore-local # Restore local backup
-bun run db:restore-remote # Restore remote backup
-
-# Note: Restores terminate existing connections to the target database before running pg_restore.
-# Tip: Use --dry-run (or -n) with db-manager.sh to print commands without executing.
-
-# Database Reset Workflow
-# If you need to squash migrations or reset the schema while preserving data:
-# 1. Backup data only
-./src/server/db/db-manager.sh -D backup local
-
-# 2. Reset database (drops DB, recreates with extensions, empty schema)
-./src/server/db/db-manager.sh reset local
-
-# 3. Clear old migration history (optional/manual step)
-# rm -rf migrations/main/*
-
-# 4. Generate new migration (if clearing history)
-# bun run db:generate
-
-# 5. Apply migrations
-bun run db:migrate
-
-# 6. Seed initial data (predicates and core records)
-./src/server/db/db-manager.sh seed local
-
-# 7. Restore data only
-./src/server/db/db-manager.sh -D restore local
+bun run dev          # Start development server
+bun run build        # Build for production
+bun check            # Lint (oxlint) + type-check (tsgo) + format (oxfmt) — fast, run often
+bun run lint         # Lint + type-check only
+bun run format       # Format only
+bun run db:studio    # Open Drizzle Studio
+bun run db:migrate   # Run migrations
 ```
+
+### Database Management
+
+All backup/restore operations go through `db-manager.sh`:
+
+```bash
+./src/server/db/db-manager.sh backup <local|remote>    # Backup
+./src/server/db/db-manager.sh restore <local|remote>   # Restore
+./src/server/db/db-manager.sh seed local               # Seed predicates + core records
+./src/server/db/db-manager.sh reset local              # Drop & recreate DB with extensions
+./src/server/db/db-manager.sh clone-prod-to-dev        # Clone production → development
+```
+
+Flags: `--dry-run` (`-n`) prints commands without executing. `-D` operates on data only (no schema). `-c` does a clean restore (drop & recreate first). Restores terminate existing connections before running `pg_restore`.
+
+**Reset workflow** (squash migrations while preserving data):
+
+1. `./src/server/db/db-manager.sh -D backup local`
+2. `./src/server/db/db-manager.sh reset local`
+3. `rm -rf migrations/main/*` (optional)
+4. `bun run db:generate` (if step 3 was done)
+5. `bun run db:migrate`
+6. `./src/server/db/db-manager.sh seed local`
+7. `./src/server/db/db-manager.sh -D restore local`
 
 ## Troubleshooting
 
