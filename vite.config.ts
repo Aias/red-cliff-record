@@ -21,9 +21,12 @@ export default defineConfig(({ mode }) => {
       port: PortSchema.parse(env.PUBLIC_DEV_PORT),
     },
     envPrefix: ['PUBLIC_', 'VITE_'],
-    define: {
-      'process.env': JSON.stringify(ClientEnvSchema.parse({ ...env, NODE_ENV: mode })),
-    },
+    define: Object.fromEntries(
+      Object.entries(ClientEnvSchema.parse({ ...env, NODE_ENV: mode })).map(([key, value]) => [
+        `process.env.${key}`,
+        JSON.stringify(value),
+      ])
+    ),
     plugins: [
       tsConfigPaths({ projectDiscovery: 'lazy' }),
       tanstackStart({
