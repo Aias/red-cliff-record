@@ -20,11 +20,44 @@ import {
   twitterUsers,
 } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, getTableName, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
+
+/** Integration tables whose `recordId` may be reassigned during a merge. */
+export const integrationTableMap = {
+  airtable_creators: airtableCreators,
+  airtable_extracts: airtableExtracts,
+  airtable_formats: airtableFormats,
+  airtable_spaces: airtableSpaces,
+  github_repositories: githubRepositories,
+  github_users: githubUsers,
+  lightroom_images: lightroomImages,
+  raindrop_bookmarks: raindropBookmarks,
+  raindrop_collections: raindropCollections,
+  raindrop_tags: raindropTags,
+  readwise_authors: readwiseAuthors,
+  readwise_documents: readwiseDocuments,
+  readwise_tags: readwiseTags,
+  twitter_tweets: twitterTweets,
+  twitter_users: twitterUsers,
+} as const;
+
+export type IntegrationTableName = keyof typeof integrationTableMap;
+
+export type MergeSnapshot = {
+  sourceRecord: RecordSelect;
+  targetRecord: RecordSelect;
+  links: LinkSelect[];
+  mediaAssignments: Array<{ id: number; recordId: number | null }>;
+  integrationAssignments: Array<{
+    table: IntegrationTableName;
+    id: string | number;
+    recordId: number;
+  }>;
+};
 
 export const merge = publicProcedure
   .input(
@@ -37,7 +70,12 @@ export const merge = publicProcedure
     async ({
       ctx: { db },
       input,
-    }): Promise<{ updatedRecord: RecordSelect; deletedRecordId: DbId; touchedIds: DbId[] }> => {
+    }): Promise<{
+      updatedRecord: RecordSelect;
+      deletedRecordId: DbId;
+      touchedIds: DbId[];
+      snapshot: MergeSnapshot;
+    }> => {
       const { sourceId, targetId } = input;
       const ids = [sourceId, targetId];
 
@@ -68,6 +106,55 @@ export const merge = publicProcedure
             message: 'Merge records: One or both records not found',
           });
         }
+
+        // Capture pre-merge state for undo
+        const premergeMedia = await db.query.media.findMany({
+          where: { recordId: { in: ids } },
+          columns: { id: true, recordId: true },
+        });
+
+        const premergeIntegrations: MergeSnapshot['integrationAssignments'] = [];
+        const integrationTables = [
+          airtableCreators,
+          airtableExtracts,
+          airtableFormats,
+          airtableSpaces,
+          githubRepositories,
+          githubUsers,
+          lightroomImages,
+          raindropBookmarks,
+          raindropCollections,
+          raindropTags,
+          readwiseAuthors,
+          readwiseDocuments,
+          readwiseTags,
+          twitterTweets,
+          twitterUsers,
+        ] as const;
+
+        for (const table of integrationTables) {
+          const rows = await db
+            .select({ id: table.id, recordId: table.recordId })
+            .from(table)
+            .where(eq(table.recordId, sourceId));
+          const tableName = getTableName(table) as IntegrationTableName;
+          for (const row of rows) {
+            if (row.recordId !== null) {
+              premergeIntegrations.push({
+                table: tableName,
+                id: row.id,
+                recordId: row.recordId,
+              });
+            }
+          }
+        }
+
+        // Capture links before any mutations for the undo snapshot
+        const premergeLinks = await db.query.links.findMany({
+          where: {
+            OR: [{ sourceId: { in: ids } }, { targetId: { in: ids } }],
+          },
+        });
 
         // Use shared merge logic
         const updatePayload = mergeRecords(source, target);
@@ -102,24 +189,6 @@ export const merge = publicProcedure
             .where(eq(media.recordId, sourceId));
 
           // 2. Update integration tables that reference the source record
-          const integrationTables = [
-            airtableCreators,
-            airtableExtracts,
-            airtableFormats,
-            airtableSpaces,
-            githubRepositories,
-            githubUsers,
-            lightroomImages,
-            raindropBookmarks,
-            raindropCollections,
-            raindropTags,
-            readwiseAuthors,
-            readwiseDocuments,
-            readwiseTags,
-            twitterTweets,
-            twitterUsers,
-          ] as const;
-
           for (const table of integrationTables) {
             await db
               .update(table)
@@ -131,22 +200,7 @@ export const merge = publicProcedure
           }
 
           // 3. Handle merging links
-          const linksToMerge = await db.query.links.findMany({
-            where: {
-              OR: [
-                {
-                  sourceId: {
-                    in: ids,
-                  },
-                },
-                {
-                  targetId: {
-                    in: ids,
-                  },
-                },
-              ],
-            },
-          });
+          const linksToMerge = premergeLinks;
 
           // Store original IDs to delete them later
           const linkIdsToDelete = linksToMerge.map((link) => link.id);
@@ -225,16 +279,19 @@ export const merge = publicProcedure
             });
           }
 
-          // Log before returning
-          console.log('[Merge Operation] Returning:', {
-            updatedRecord,
-            deletedRecordId: sourceId,
-            touchedIds,
-          });
+          const snapshot: MergeSnapshot = {
+            sourceRecord: source,
+            targetRecord: target,
+            links: premergeLinks,
+            mediaAssignments: premergeMedia,
+            integrationAssignments: premergeIntegrations,
+          };
+
           return {
             updatedRecord,
             deletedRecordId: sourceId,
             touchedIds,
+            snapshot,
           };
         } catch (error) {
           console.error('Merge error:', error);

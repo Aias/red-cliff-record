@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { getQueryKey } from '@trpc/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
@@ -183,6 +184,8 @@ export function useMergeRecords() {
   const qc = useQueryClient();
   const utils = trpc.useUtils();
   const embedMutation = useEmbedRecord();
+  const undoMergeMutation = useUndoMerge();
+
   return trpc.records.merge.useMutation({
     onMutate: ({ sourceId, targetId }) => {
       // Fire cancellations but don't await - keeps onMutate synchronous
@@ -226,7 +229,7 @@ export function useMergeRecords() {
 
       return { previousSource, previousTarget, previousLists };
     },
-    onSuccess: ({ updatedRecord, deletedRecordId, touchedIds }) => {
+    onSuccess: ({ updatedRecord, deletedRecordId, touchedIds, snapshot }) => {
       void utils.records.get.invalidate({ id: updatedRecord.id });
       void utils.search.byRecordId.invalidate({ id: updatedRecord.id });
       void utils.records.tree.invalidate();
@@ -261,6 +264,15 @@ export function useMergeRecords() {
 
       /* re-embed the target record */
       embedMutation.mutate({ id: updatedRecord.id });
+
+      /* undo toast */
+      toast('Records merged', {
+        action: {
+          label: 'Undo',
+          onClick: () => undoMergeMutation.mutate({ snapshot }),
+        },
+        duration: 15_000,
+      });
     },
     onError: (err, vars, ctx) => {
       // Revert optimistic updates
@@ -275,6 +287,50 @@ export function useMergeRecords() {
         qc.setQueryData(key, data);
       });
       toast.error(err instanceof Error ? err.message : 'Failed to merge records');
+    },
+  });
+}
+
+function useUndoMerge() {
+  const qc = useQueryClient();
+  const utils = trpc.useUtils();
+  const embedMutation = useEmbedRecord();
+  const navigate = useNavigate();
+
+  return trpc.records.undoMerge.useMutation({
+    onSuccess: ({ sourceRecord, targetRecord }) => {
+      const sourceId = sourceRecord.id;
+      const targetId = targetRecord.id;
+
+      // Remove the staleTime: Infinity freeze on the source record
+      const sourceKey = utils.records.get.queryOptions({ id: sourceId }).queryKey;
+      qc.setQueryDefaults(sourceKey, { staleTime: undefined, retry: undefined });
+
+      // Invalidate caches for both records
+      void utils.records.get.invalidate({ id: sourceId });
+      void utils.records.get.invalidate({ id: targetId });
+      void utils.search.byRecordId.invalidate({ id: sourceId });
+      void utils.search.byRecordId.invalidate({ id: targetId });
+      void utils.records.list.invalidate();
+      void utils.records.tree.invalidate();
+      void utils.links.listForRecord.invalidate({ id: sourceId });
+      void utils.links.listForRecord.invalidate({ id: targetId });
+      void utils.links.map.invalidate();
+
+      // Re-embed both records
+      embedMutation.mutate({ id: sourceId });
+      embedMutation.mutate({ id: targetId });
+
+      // Navigate back to the restored source record
+      void navigate({
+        to: '/records/$recordId',
+        params: { recordId: sourceId },
+      });
+
+      toast.success('Merge undone');
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to undo merge');
     },
   });
 }

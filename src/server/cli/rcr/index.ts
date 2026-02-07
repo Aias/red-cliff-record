@@ -90,6 +90,11 @@ if (!existsSync(cwdEnv)) {
   }
 }
 
+// Set NODE_ENV=development when --dev flag is present (must happen before DB imports)
+if (process.argv.includes('--dev')) {
+  process.env.NODE_ENV = 'development';
+}
+
 // Commands will be loaded dynamically after env vars are configured
 let commands: Record<string, Record<string, CommandHandler>> | null = null;
 
@@ -205,6 +210,7 @@ Global Options:
   --raw                   Output just data without {data,meta} wrapper
   --limit=N               Limit number of results
   --offset=N              Offset for pagination
+  --dev                   Use development database (DATABASE_URL_DEV)
   --debug                 Enable debug output
   --help, -h              Show this help
 

@@ -18,6 +18,7 @@ export const BaseOptionsSchema = z.object({
   help: z.boolean().default(false),
   debug: z.boolean().default(false),
   raw: z.boolean().default(false), // Output just data without {data, meta} wrapper
+  dev: z.boolean().default(false), // Use development database
 });
 
 export type BaseOptions = z.infer<typeof BaseOptionsSchema>;
