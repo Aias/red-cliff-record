@@ -5,20 +5,13 @@ dist
 .env
 .env.*
 !.env.example
-.yarn
 .temp
 .output
-.vinxi
 *.tsbuildinfo
-.nitro
 .tanstack
 
-# App uses paid fonts, don't commit to public repo
-public/fonts
-
-# Cloudflare
-.dev.vars
-.wrangler
+*.local
+*.local.*
 
 # Logs
 logs

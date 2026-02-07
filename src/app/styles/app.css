@@ -60,8 +60,8 @@
     --font-family-sans:
       'IBM Plex Sans', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
     --font-family-mono:
-      'Berkeley Mono', ui-monospace, SFMono-Regular, 'Menlo', monospace, 'Apple Color Emoji',
-      'Segoe UI Emoji';
+      'Berkeley Mono Variable', 'Berkeley Mono' ui-monospace, SFMono-Regular, 'Menlo', monospace,
+      'Apple Color Emoji', 'Segoe UI Emoji';
     --font-family-serif: ui-serif, 'Georgia', Cambria, 'Times New Roman', Times, serif;
 
     --default-font-family: var(--font-family-sans);
