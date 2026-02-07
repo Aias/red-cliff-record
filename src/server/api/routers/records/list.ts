@@ -24,7 +24,7 @@ function buildTitleFilter(
 
 export const list = publicProcedure
   .input(ListRecordsInputSchema)
-  .query(async ({ ctx: { db }, input }): Promise<IdParamList> => {
+  .query(async ({ ctx: { db, isAdmin }, input }): Promise<IdParamList> => {
     const {
       filters: {
         types,
@@ -35,7 +35,7 @@ export const list = publicProcedure
         hasTitle,
         minRating,
         maxRating,
-        isPrivate,
+        isPrivate: isPrivateFilter,
         isCurated,
         hasReminder,
         hasEmbedding,
@@ -80,7 +80,7 @@ export const list = publicProcedure
                   ilike: `%${domain}%`,
                 }
               : undefined,
-        isPrivate,
+        isPrivate: isAdmin ? isPrivateFilter : false,
         isCurated,
         ...(hasParent === true
           ? {

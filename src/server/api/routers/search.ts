@@ -12,7 +12,12 @@ import { createEmbedding } from '@/lib/server/create-embedding';
 import { similarity, SIMILARITY_THRESHOLD } from '@/server/lib/constants';
 import { seriateRecordsByEmbedding } from '@/server/lib/seriation';
 import { IdSchema, SearchRecordsInputSchema } from '@/shared/types/api';
-import { createTRPCRouter, publicProcedure } from '../init';
+import { createAdminRateLimitedProcedure, createTRPCRouter, publicProcedure } from '../init';
+
+const vectorSearchProcedure = createAdminRateLimitedProcedure({
+  windowMs: 60_000,
+  maxRequests: 60,
+});
 
 /** Predicate slugs for relevant link types in search results */
 const searchLinkPredicates = Object.values(PREDICATES)
@@ -66,7 +71,7 @@ export type SearchResult = {
 export const searchRouter = createTRPCRouter({
   byTextQuery: publicProcedure
     .input(SearchRecordsInputSchema)
-    .query(({ ctx: { db }, input }): Promise<SearchResult[]> => {
+    .query(({ ctx: { db, isAdmin }, input }): Promise<SearchResult[]> => {
       const {
         query,
         filters: { recordType },
@@ -82,6 +87,7 @@ export const searchRouter = createTRPCRouter({
 						${records.abbreviation} <-> ${query} < ${SIMILARITY_THRESHOLD}
 					)`,
           type: recordType,
+          ...(isAdmin ? {} : { isPrivate: false }),
         },
         limit,
         orderBy: (records, { desc, sql }) => [
@@ -149,7 +155,7 @@ export const searchRouter = createTRPCRouter({
       });
     }),
 
-  byVector: publicProcedure
+  byVector: vectorSearchProcedure
     .input(
       z.object({
         query: z.string(),

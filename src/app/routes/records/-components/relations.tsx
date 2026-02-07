@@ -28,9 +28,10 @@ const PREDICATE_TYPE_ORDER = exhaustive<PredicateType>()([
 
 interface RelationsListProps {
   id: DbId;
+  isAdmin: boolean;
 }
 
-export const RelationsList = ({ id }: RelationsListProps) => {
+export const RelationsList = ({ id, isAdmin }: RelationsListProps) => {
   const { data: recordLinks } = useRecordLinks(id);
   const predicates = usePredicateMap();
   const mergeRecordsMutation = useMergeRecords();
@@ -89,43 +90,45 @@ export const RelationsList = ({ id }: RelationsListProps) => {
         <h3 className="mb-2">
           Relations <span className="text-sm text-c-secondary">({totalLinks})</span>
         </h3>
-        <RelationshipSelector
-          sourceId={id}
-          label={
-            <span>
-              <PlusIcon /> Add
-            </span>
-          }
-          buttonProps={{
-            ref: addRelationshipButtonRef,
-            size: 'sm',
-            variant: 'outline',
-            className: 'h-[1.5lh]',
-          }}
-          buildActions={({ sourceId, targetId }) => {
-            return [
-              {
-                key: 'merge-records',
-                label: (
-                  <>
-                    <MergeIcon /> Merge
-                  </>
-                ),
-                onSelect: () => {
-                  void navigate({
-                    to: '/records/$recordId',
-                    params: { recordId: targetId },
-                    state: { focusForm: true },
-                  });
-                  mergeRecordsMutation.mutate({
-                    sourceId,
-                    targetId,
-                  });
+        {isAdmin && (
+          <RelationshipSelector
+            sourceId={id}
+            label={
+              <span>
+                <PlusIcon /> Add
+              </span>
+            }
+            buttonProps={{
+              ref: addRelationshipButtonRef,
+              size: 'sm',
+              variant: 'outline',
+              className: 'h-[1.5lh]',
+            }}
+            buildActions={({ sourceId, targetId }) => {
+              return [
+                {
+                  key: 'merge-records',
+                  label: (
+                    <>
+                      <MergeIcon /> Merge
+                    </>
+                  ),
+                  onSelect: () => {
+                    void navigate({
+                      to: '/records/$recordId',
+                      params: { recordId: targetId },
+                      state: { focusForm: true },
+                    });
+                    mergeRecordsMutation.mutate({
+                      sourceId,
+                      targetId,
+                    });
+                  },
                 },
-              },
-            ];
-          }}
-        />
+              ];
+            }}
+          />
+        )}
       </header>
       {outgoingLinks.length > 0 && (
         <>
@@ -138,49 +141,55 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                 key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
                 className="flex items-center gap-2"
               >
-                <RelationshipSelector
-                  label={predicates[link.predicate]?.name ?? 'Unknown'}
-                  sourceId={link.sourceId}
-                  initialTargetId={link.targetId}
-                  link={link}
-                  buttonProps={{
-                    className: 'w-30',
-                  }}
-                  buildActions={({ sourceId, targetId }) => {
-                    return [
-                      {
-                        key: 'merge-records',
-                        label: (
-                          <>
-                            <MergeIcon /> Merge
-                          </>
-                        ),
-                        onSelect: () => {
-                          void navigate({
-                            to: '/records/$recordId',
-                            params: { recordId: targetId },
-                            state: { focusForm: true },
-                          });
-                          mergeRecordsMutation.mutate({
-                            sourceId,
-                            targetId,
-                          });
+                {isAdmin ? (
+                  <RelationshipSelector
+                    label={predicates[link.predicate]?.name ?? 'Unknown'}
+                    sourceId={link.sourceId}
+                    initialTargetId={link.targetId}
+                    link={link}
+                    buttonProps={{
+                      className: 'w-30',
+                    }}
+                    buildActions={({ sourceId, targetId }) => {
+                      return [
+                        {
+                          key: 'merge-records',
+                          label: (
+                            <>
+                              <MergeIcon /> Merge
+                            </>
+                          ),
+                          onSelect: () => {
+                            void navigate({
+                              to: '/records/$recordId',
+                              params: { recordId: targetId },
+                              state: { focusForm: true },
+                            });
+                            mergeRecordsMutation.mutate({
+                              sourceId,
+                              targetId,
+                            });
+                          },
                         },
-                      },
-                      {
-                        key: 'delete-link',
-                        label: (
-                          <>
-                            <TrashIcon /> Delete
-                          </>
-                        ),
-                        onSelect: () => {
-                          deleteLinkMutation.mutate([link.id]);
+                        {
+                          key: 'delete-link',
+                          label: (
+                            <>
+                              <TrashIcon /> Delete
+                            </>
+                          ),
+                          onSelect: () => {
+                            deleteLinkMutation.mutate([link.id]);
+                          },
                         },
-                      },
-                    ];
-                  }}
-                />
+                      ];
+                    }}
+                  />
+                ) : (
+                  <span className="inline-flex w-30 items-center text-sm font-medium text-c-secondary capitalize">
+                    {predicates[link.predicate]?.name ?? 'Unknown'}
+                  </span>
+                )}
                 <RecordLink
                   id={link.targetId}
                   linkOptions={{
@@ -204,69 +213,78 @@ export const RelationsList = ({ id }: RelationsListProps) => {
             <ArrowLeftIcon className="h-4 w-4" /> Incoming
           </h4>
           <ul className="flex flex-col gap-2 text-xs">
-            {incomingLinks.map((link) => (
-              <li
-                key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
-                className="flex items-center gap-2"
-              >
-                <RelationshipSelector
-                  label={(() => {
-                    const inv = predicates[link.predicate]?.inverseSlug;
-                    return inv
-                      ? (PREDICATES[inv as keyof typeof PREDICATES]?.name ?? 'Unknown')
-                      : (predicates[link.predicate]?.name ?? 'Unknown');
-                  })()}
-                  sourceId={link.targetId}
-                  initialTargetId={link.sourceId}
-                  incoming
-                  link={link}
-                  buttonProps={{
-                    className: 'w-30',
-                  }}
-                  buildActions={() => {
-                    return [
-                      {
-                        key: 'merge-records',
-                        label: (
-                          <>
-                            <MergeIcon /> Merge
-                          </>
-                        ),
-                        onSelect: () => {
-                          void navigate({
-                            to: '/records/$recordId',
-                            params: { recordId: link.sourceId },
-                            state: { focusForm: true },
-                          });
-                          mergeRecordsMutation.mutate({
-                            sourceId: link.targetId,
-                            targetId: link.sourceId,
-                          });
-                        },
-                      },
-                      {
-                        key: 'delete-link',
-                        label: (
-                          <>
-                            <TrashIcon /> Delete
-                          </>
-                        ),
-                        onSelect: () => {
-                          deleteLinkMutation.mutate([link.id]);
-                        },
-                      },
-                    ];
-                  }}
-                />
-                <RecordLink
-                  id={link.sourceId}
-                  linkOptions={{
-                    to: '/records/$recordId',
-                    params: { recordId: link.sourceId },
-                  }}
-                />
-              </li>
-            ))}
+            {incomingLinks.map((link) => {
+              const incomingLabel = (() => {
+                const inv = predicates[link.predicate]?.inverseSlug;
+                return inv
+                  ? (PREDICATES[inv as keyof typeof PREDICATES]?.name ?? 'Unknown')
+                  : (predicates[link.predicate]?.name ?? 'Unknown');
+              })();
+              return (
+                <li
+                  key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
+                  className="flex items-center gap-2"
+                >
+                  {isAdmin ? (
+                    <RelationshipSelector
+                      label={incomingLabel}
+                      sourceId={link.targetId}
+                      initialTargetId={link.sourceId}
+                      incoming
+                      link={link}
+                      buttonProps={{
+                        className: 'w-30',
+                      }}
+                      buildActions={() => {
+                        return [
+                          {
+                            key: 'merge-records',
+                            label: (
+                              <>
+                                <MergeIcon /> Merge
+                              </>
+                            ),
+                            onSelect: () => {
+                              void navigate({
+                                to: '/records/$recordId',
+                                params: { recordId: link.sourceId },
+                                state: { focusForm: true },
+                              });
+                              mergeRecordsMutation.mutate({
+                                sourceId: link.targetId,
+                                targetId: link.sourceId,
+                              });
+                            },
+                          },
+                          {
+                            key: 'delete-link',
+                            label: (
+                              <>
+                                <TrashIcon /> Delete
+                              </>
+                            ),
+                            onSelect: () => {
+                              deleteLinkMutation.mutate([link.id]);
+                            },
+                          },
+                        ];
+                      }}
+                    />
+                  ) : (
+                    <span className="inline-flex w-30 items-center text-sm font-medium text-c-secondary capitalize">
+                      {incomingLabel}
+                    </span>
+                  )}
+                  <RecordLink
+                    id={link.sourceId}
+                    linkOptions={{
+                      to: '/records/$recordId',
+                      params: { recordId: link.sourceId },
+                    }}
+                  />
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
@@ -274,7 +292,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
   );
 };
 
-export const SimilarRecords = ({ id }: { id: DbId }) => {
+export const SimilarRecords = ({ id, isAdmin }: { id: DbId; isAdmin: boolean }) => {
   const navigate = useNavigate();
   const mergeRecordsMutation = useMergeRecords();
 
@@ -302,40 +320,46 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
         <ul>
           {similarRecords.map((record) => (
             <li key={record.id} className="mb-2 flex items-center gap-4">
-              <RelationshipSelector
-                sourceId={id}
-                initialTargetId={record.id}
-                label={`${Math.round(record.similarity * 100)}%`}
-                buttonProps={{
-                  size: 'sm',
-                  variant: 'outline',
-                  className: 'h-[1.5lh] font-mono text-xs text-c-secondary',
-                }}
-                popoverProps={{ side: 'left' }}
-                buildActions={({ sourceId, targetId }) => {
-                  return [
-                    {
-                      key: 'merge-records',
-                      label: (
-                        <>
-                          <MergeIcon /> Merge
-                        </>
-                      ),
-                      onSelect: () => {
-                        void navigate({
-                          to: '/records/$recordId',
-                          params: { recordId: targetId },
-                          state: { focusForm: true },
-                        });
-                        mergeRecordsMutation.mutate({
-                          sourceId,
-                          targetId,
-                        });
+              {isAdmin ? (
+                <RelationshipSelector
+                  sourceId={id}
+                  initialTargetId={record.id}
+                  label={`${Math.round(record.similarity * 100)}%`}
+                  buttonProps={{
+                    size: 'sm',
+                    variant: 'outline',
+                    className: 'h-[1.5lh] font-mono text-xs text-c-secondary',
+                  }}
+                  popoverProps={{ side: 'left' }}
+                  buildActions={({ sourceId, targetId }) => {
+                    return [
+                      {
+                        key: 'merge-records',
+                        label: (
+                          <>
+                            <MergeIcon /> Merge
+                          </>
+                        ),
+                        onSelect: () => {
+                          void navigate({
+                            to: '/records/$recordId',
+                            params: { recordId: targetId },
+                            state: { focusForm: true },
+                          });
+                          mergeRecordsMutation.mutate({
+                            sourceId,
+                            targetId,
+                          });
+                        },
                       },
-                    },
-                  ];
-                }}
-              />
+                    ];
+                  }}
+                />
+              ) : (
+                <span className="inline-flex h-[1.5lh] items-center font-mono text-xs text-c-secondary">
+                  {Math.round(record.similarity * 100)}%
+                </span>
+              )}
               <RecordLink
                 id={record.id}
                 className="flex-1"

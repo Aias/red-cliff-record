@@ -3,7 +3,7 @@ import { S3Client } from 'bun';
 import mime from 'mime-types';
 import type { MediaMetadata } from '@/shared/types/media';
 import { getImageMetadata } from './image-metadata';
-import { validateAndFormatUrl } from './url-utils';
+import { assertPublicUrl, validateAndFormatUrl } from './url-utils';
 
 /* ---------------------------------------------------------------------------
  * Constants & Defaults
@@ -120,6 +120,8 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
       throw new Error(`Invalid URL: ${url}`);
     }
 
+    assertPublicUrl(validatedUrl);
+
     // Start with a HEAD request to get basic info without downloading the entire file
     const headResponse = await fetch(validatedUrl, { method: 'HEAD' });
     let mediaType: MediaType = DEFAULT_MEDIA_TYPE;
@@ -186,6 +188,8 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
     console.log(`Media URL already on R2: ${mediaUrl}`);
     return mediaUrl;
   }
+
+  assertPublicUrl(mediaUrl);
 
   const startTime = Date.now();
   console.log(`[Media Upload] Starting download: ${mediaUrl}`);

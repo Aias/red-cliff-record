@@ -2,7 +2,7 @@ import type { GithubCommitSelect } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { DateSchema } from '@/shared/types/api';
-import { createTRPCRouter, publicProcedure } from '../init';
+import { adminProcedure, createTRPCRouter } from '../init';
 
 const CommitSummarySchema = z.object({
   id: z.string(),
@@ -48,7 +48,7 @@ export const githubRouter = createTRPCRouter({
   /**
    * Get daily commit summary
    */
-  dailySummary: publicProcedure
+  dailySummary: adminProcedure
     .input(z.object({ date: DateSchema }))
     .query(async ({ ctx: { db }, input: { date } }): Promise<DailySummary> => {
       const startOfDay = new Date(`${date}T00:00:00`);
@@ -82,7 +82,7 @@ export const githubRouter = createTRPCRouter({
   /**
    * Get a single commit by ID with full details including file changes
    */
-  getCommit: publicProcedure
+  getCommit: adminProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx: { db }, input: { id } }) => {
       const commit = await db.query.githubCommits.findFirst({

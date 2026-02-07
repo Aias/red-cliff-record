@@ -13,7 +13,16 @@ import { getMediaInsertData, uploadClientFileToR2, uploadMediaToR2 } from '@/ser
 import { embedRecordById } from '@/server/services/embed-records';
 import { generateAltText } from '@/server/services/generate-alt-text';
 import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types/api';
-import { createTRPCRouter, publicProcedure } from '../init';
+import {
+  adminProcedure,
+  adminRateLimitedProcedure,
+  createAdminRateLimitedProcedure,
+  createTRPCRouter,
+  publicProcedure,
+} from '../init';
+
+const deleteProcedure = createAdminRateLimitedProcedure({ windowMs: 60_000, maxRequests: 100 });
+const altTextProcedure = createAdminRateLimitedProcedure({ windowMs: 60_000, maxRequests: 200 });
 
 // Schema for media create input
 const MediaCreateFileInputSchema = z.object({
@@ -58,40 +67,44 @@ export const mediaRouter = createTRPCRouter({
   /**
    * List media items with optional filters
    */
-  list: publicProcedure.input(MediaListInputSchema).query(async ({ ctx: { db }, input }) => {
-    const { type, hasAltText, recordId, limit, offset, orderBy } = input;
+  list: publicProcedure
+    .input(MediaListInputSchema)
+    .query(async ({ ctx: { db, isAdmin }, input }) => {
+      const { type, hasAltText, recordId, limit, offset, orderBy } = input;
 
-    const results = await db.query.media.findMany({
-      where: {
-        type,
-        recordId,
-        altText:
-          hasAltText === true
-            ? { isNotNull: true }
-            : hasAltText === false
-              ? { isNull: true }
-              : undefined,
-      },
-      limit,
-      offset,
-      orderBy: (media, { asc, desc }) =>
-        orderBy.map(({ field, direction }) =>
-          direction === 'asc' ? asc(media[field]) : desc(media[field])
-        ),
-    });
+      const results = await db.query.media.findMany({
+        where: {
+          type,
+          recordId,
+          altText:
+            hasAltText === true
+              ? { isNotNull: true }
+              : hasAltText === false
+                ? { isNull: true }
+                : undefined,
+          ...(isAdmin ? {} : { record: { isPrivate: false } }),
+        },
+        limit,
+        offset,
+        orderBy: (media, { asc, desc }) =>
+          orderBy.map(({ field, direction }) =>
+            direction === 'asc' ? asc(media[field]) : desc(media[field])
+          ),
+      });
 
-    return results;
-  }),
+      return results;
+    }),
 
   /**
    * Get a single media item by ID, optionally including parent record context
    */
   get: publicProcedure
     .input(z.object({ id: IdSchema, includeRecord: z.boolean().optional().default(false) }))
-    .query(async ({ ctx: { db }, input }) => {
+    .query(async ({ ctx: { db, isAdmin }, input }) => {
       const mediaItem = await db.query.media.findFirst({
         where: {
           id: input.id,
+          ...(isAdmin ? {} : { record: { isPrivate: false } }),
         },
         with: input.includeRecord
           ? {
@@ -118,7 +131,7 @@ export const mediaRouter = createTRPCRouter({
   /**
    * Update media metadata (primarily for alt text)
    */
-  update: publicProcedure.input(MediaUpdateInputSchema).mutation(async ({ ctx: { db }, input }) => {
+  update: adminProcedure.input(MediaUpdateInputSchema).mutation(async ({ ctx: { db }, input }) => {
     const { id, altText } = input;
 
     // Fetch existing media with recordId for embedding regeneration
@@ -147,64 +160,66 @@ export const mediaRouter = createTRPCRouter({
     return updated;
   }),
 
-  create: publicProcedure.input(MediaCreateInputSchema).mutation(async ({ ctx: { db }, input }) => {
-    try {
-      const r2Url =
-        'fileData' in input
-          ? await uploadClientFileToR2(
-              Buffer.from(input.fileData, 'base64'),
-              input.fileType,
-              input.fileName
-            )
-          : await uploadMediaToR2(input.url);
+  create: adminRateLimitedProcedure
+    .input(MediaCreateInputSchema)
+    .mutation(async ({ ctx: { db }, input }) => {
+      try {
+        const r2Url =
+          'fileData' in input
+            ? await uploadClientFileToR2(
+                Buffer.from(input.fileData, 'base64'),
+                input.fileType,
+                input.fileName
+              )
+            : await uploadMediaToR2(input.url);
 
-      // 3. Get metadata for the uploaded file using its R2 URL
-      const mediaInsertData = await getMediaInsertData(r2Url, {
-        recordId: input.recordId,
-      });
+        // 3. Get metadata for the uploaded file using its R2 URL
+        const mediaInsertData = await getMediaInsertData(r2Url, {
+          recordId: input.recordId,
+        });
 
-      if (!mediaInsertData) {
-        console.error('Failed to get media metadata after upload.');
+        if (!mediaInsertData) {
+          console.error('Failed to get media metadata after upload.');
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to get media metadata after upload.',
+          });
+        }
+
+        // 4. Insert media record into the database
+        const [newMedia] = await db.insert(media).values(mediaInsertData).returning();
+
+        if (!newMedia) {
+          console.error('Failed to insert media record into database.');
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to insert media record into database.',
+          });
+        }
+
+        // 5. Fire-and-forget alt text generation for images
+        // Don't await - this is best-effort and should never slow down or fail uploads
+        if (newMedia.type === 'image') {
+          generateAltText([newMedia.id]).catch((error) => {
+            console.warn(`Failed to generate alt text for media ${newMedia.id}:`, error);
+          });
+        }
+
+        return newMedia;
+      } catch (error) {
+        // Log the specific error before wrapping it
+        console.error('Caught error during media creation:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to get media metadata after upload.',
+          message: `Failed to create media: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
+    }),
 
-      // 4. Insert media record into the database
-      const [newMedia] = await db.insert(media).values(mediaInsertData).returning();
-
-      if (!newMedia) {
-        console.error('Failed to insert media record into database.');
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to insert media record into database.',
-        });
-      }
-
-      // 5. Fire-and-forget alt text generation for images
-      // Don't await - this is best-effort and should never slow down or fail uploads
-      if (newMedia.type === 'image') {
-        generateAltText([newMedia.id]).catch((error) => {
-          console.warn(`Failed to generate alt text for media ${newMedia.id}:`, error);
-        });
-      }
-
-      return newMedia;
-    } catch (error) {
-      // Log the specific error before wrapping it
-      console.error('Caught error during media creation:', error);
-      if (error instanceof TRPCError) {
-        throw error;
-      }
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: `Failed to create media: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
-    }
-  }),
-
-  delete: publicProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
+  delete: deleteProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
     const mediaToDelete = await db.query.media.findMany({
       where: {
         id: { in: input },
@@ -275,7 +290,7 @@ export const mediaRouter = createTRPCRouter({
   /**
    * Generate alt text for media items using OpenAI vision
    */
-  generateAltText: publicProcedure
+  generateAltText: altTextProcedure
     .input(
       z.object({
         ids: z.array(IdSchema),

@@ -24,7 +24,7 @@ import { eq, getTableName, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId } from '@/shared/types/api';
-import { publicProcedure } from '../../init';
+import { adminProcedure } from '../../init';
 
 /** Integration tables whose `recordId` may be reassigned during a merge. */
 export const integrationTableMap = {
@@ -59,7 +59,7 @@ export type MergeSnapshot = {
   }>;
 };
 
-export const merge = publicProcedure
+export const merge = adminProcedure
   .input(
     z.object({
       sourceId: z.number().int().positive(),

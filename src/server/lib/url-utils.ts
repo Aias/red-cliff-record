@@ -1,9 +1,80 @@
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 // More robust URL schema with custom error message
 const urlSchema = z.url({
   error: 'Invalid URL format. Please provide a valid URL.',
 });
+
+/* ---------------------------------------------------------------------------
+ * SSRF Protection
+ * -------------------------------------------------------------------------*/
+
+const BLOCKED_HOSTNAMES = new Set([
+  'localhost',
+  'metadata.google.internal',
+  'metadata.google',
+  'kubernetes.default.svc',
+]);
+
+/** Matches private/reserved IPv4 ranges and link-local */
+const PRIVATE_IP_PATTERNS = [
+  /^127\./, // loopback
+  /^10\./, // RFC 1918 class A
+  /^172\.(1[6-9]|2\d|3[01])\./, // RFC 1918 class B
+  /^192\.168\./, // RFC 1918 class C
+  /^169\.254\./, // link-local / cloud metadata
+  /^0\./, // "this" network
+];
+
+const BLOCKED_IPV6 = new Set(['::1', '::', '::ffff:127.0.0.1']);
+
+/**
+ * Rejects URLs targeting internal/private network addresses.
+ * Call before any server-side fetch of user-supplied URLs.
+ */
+export function assertPublicUrl(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: `Invalid URL: ${url}` });
+  }
+
+  // Only allow http(s)
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `URL protocol not allowed: ${parsed.protocol}`,
+    });
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  // Block known-dangerous hostnames
+  if (BLOCKED_HOSTNAMES.has(hostname)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `URL hostname not allowed: ${hostname}`,
+    });
+  }
+
+  // Block private IPv4 ranges
+  if (PRIVATE_IP_PATTERNS.some((re) => re.test(hostname))) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `URL resolves to a private IP range: ${hostname}`,
+    });
+  }
+
+  // Block IPv6 loopback and mapped addresses (bracket-stripped by URL parser)
+  if (BLOCKED_IPV6.has(hostname) || hostname.startsWith('::ffff:')) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `URL resolves to a private IPv6 address: ${hostname}`,
+    });
+  }
+}
 
 type UrlOptions = {
   skipHttps?: boolean;

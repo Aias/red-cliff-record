@@ -4,7 +4,7 @@ import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { IdSchema, type DbId } from '@/shared/types/api';
 import type { RecordGet } from '@/shared/types/domain';
-import { publicProcedure } from '../../init';
+import { adminProcedure } from '../../init';
 
 // Schema for bulk update data - omit fields that shouldn't be bulk-updated
 const BulkUpdateDataSchema = RecordInsertSchema.omit({
@@ -14,7 +14,7 @@ const BulkUpdateDataSchema = RecordInsertSchema.omit({
   textEmbedding: true,
 }).partial();
 
-export const upsert = publicProcedure
+export const upsert = adminProcedure
   .input(RecordInsertSchema)
   .mutation(async ({ ctx: { db, loaders }, input }): Promise<RecordGet> => {
     const [result] = await db
@@ -50,7 +50,7 @@ export const upsert = publicProcedure
     return record;
   });
 
-export const bulkUpdate = publicProcedure
+export const bulkUpdate = adminProcedure
   .input(
     z.object({
       ids: z.array(IdSchema).min(1),

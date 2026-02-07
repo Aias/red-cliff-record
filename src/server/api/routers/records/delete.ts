@@ -24,9 +24,9 @@ import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { IdSchema } from '@/shared/types/api';
-import { publicProcedure } from '../../init';
+import { adminProcedure } from '../../init';
 
-export const deleteRecords = publicProcedure
+export const deleteRecords = adminProcedure
   .input(z.array(IdSchema))
   .mutation(async ({ ctx: { db }, input }): Promise<RecordSelect[]> => {
     const recordsToDelete = await db.query.records.findMany({

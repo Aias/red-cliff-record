@@ -26,6 +26,12 @@ export const ServerEnvSchema = z.object({
   S3_BUCKET: z.string(),
   ASSETS_DOMAIN: z.string(),
 
+  // Authentication (all optional — when absent, auth is disabled and all requests are admin)
+  ADMIN_GITHUB_ID: z.string().optional(),
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
+  SESSION_SECRET: z.string().min(32).optional(),
+
   // External Services
   AIRTABLE_BASE_ID: z.string(),
   AIRTABLE_ACCESS_TOKEN: z.string(),

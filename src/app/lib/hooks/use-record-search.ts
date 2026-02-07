@@ -11,6 +11,8 @@ interface UseRecordSearchOptions {
   textLimit?: number;
   /** Maximum vector search results (default: 5) */
   vectorLimit?: number;
+  /** Enable vector/semantic search (default: true). Disable for non-admin users. */
+  enableVectorSearch?: boolean;
 }
 
 /**
@@ -20,7 +22,13 @@ interface UseRecordSearchOptions {
  * are filtered to exclude any records already in text results.
  */
 export function useRecordSearch(query: string, options: UseRecordSearchOptions = {}) {
-  const { debounceMs = 300, minQueryLength = 1, textLimit = 10, vectorLimit = 5 } = options;
+  const {
+    debounceMs = 300,
+    minQueryLength = 1,
+    textLimit = 10,
+    vectorLimit = 5,
+    enableVectorSearch = true,
+  } = options;
 
   const debouncedQuery = useDebounce(query, debounceMs);
   const shouldSearch = debouncedQuery.length >= minQueryLength;
@@ -40,7 +48,7 @@ export function useRecordSearch(query: string, options: UseRecordSearchOptions =
   const { data: vectorResults = [], isFetching: vectorFetching } = trpc.search.byVector.useQuery(
     { query: debouncedQuery, limit: vectorLimit },
     {
-      enabled: shouldSearch,
+      enabled: shouldSearch && enableVectorSearch,
       trpc: {
         context: {
           skipBatch: true,
