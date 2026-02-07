@@ -92,6 +92,8 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
 });
 
 export const RecordsGrid = () => {
+  const { data: session } = trpc.admin.session.useQuery();
+  const isAdmin = session?.isAdmin ?? false;
   const { state, setFilters, setLimit, reset } = useRecordFilters();
   const { data: queue } = trpc.records.list.useQuery(
     { ...state, offset: 0 },
@@ -237,13 +239,15 @@ export const RecordsGrid = () => {
           <button type="button" onClick={reset} className="text-start hover:underline">
             Reset to Defaults
           </button>
-          <button
-            type="button"
-            onClick={() => setFilters({ isCurated: false, hasParent: false })}
-            className="text-start hover:underline"
-          >
-            Curation Queue
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setFilters({ isCurated: false, hasParent: false })}
+              className="text-start hover:underline"
+            >
+              Curation Queue
+            </button>
+          )}
         </div>
         <hr />
         <div className="flex flex-col gap-1.5">
@@ -419,27 +423,29 @@ export const RecordsGrid = () => {
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="private">Is Private?</Label>
-          <ToggleGroup
-            id="private"
-            type="single"
-            value={filterValues.privateValue}
-            onValueChange={handlePrivateChange}
-            variant="outline"
-            className="w-full"
-          >
-            <ToggleGroupItem value="All" className="flex-1">
-              All
-            </ToggleGroupItem>
-            <ToggleGroupItem value="Yes" className="flex-1">
-              Yes
-            </ToggleGroupItem>
-            <ToggleGroupItem value="No" className="flex-1">
-              No
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
+        {isAdmin && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="private">Is Private?</Label>
+            <ToggleGroup
+              id="private"
+              type="single"
+              value={filterValues.privateValue}
+              onValueChange={handlePrivateChange}
+              variant="outline"
+              className="w-full"
+            >
+              <ToggleGroupItem value="All" className="flex-1">
+                All
+              </ToggleGroupItem>
+              <ToggleGroupItem value="Yes" className="flex-1">
+                Yes
+              </ToggleGroupItem>
+              <ToggleGroupItem value="No" className="flex-1">
+                No
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        )}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="limit">Results Limit</Label>
           <Input
@@ -454,6 +460,7 @@ export const RecordsGrid = () => {
       </div>
     ),
     [
+      isAdmin,
       reset,
       setFilters,
       types,

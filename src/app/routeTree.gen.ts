@@ -13,6 +13,9 @@ import { Route as RecordsRouteRouteImport } from './routes/records/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthGithubRouteImport } from './routes/api/auth/github'
+import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
 
 const RecordsRouteRoute = RecordsRouteRouteImport.update({
   id: '/records',
@@ -34,17 +37,38 @@ const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   path: '/api/trpc/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthGithubRoute = ApiAuthGithubRouteImport.update({
+  id: '/api/auth/github',
+  path: '/api/auth/github',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
+  id: '/api/auth/callback',
+  path: '/api/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
   '/records/$recordId': typeof RecordsRecordIdRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/github': typeof ApiAuthGithubRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
   '/records/$recordId': typeof RecordsRecordIdRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/github': typeof ApiAuthGithubRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRoutesById {
@@ -52,19 +76,47 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
   '/records/$recordId': typeof RecordsRecordIdRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/github': typeof ApiAuthGithubRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/records' | '/records/$recordId' | '/api/trpc/$'
+  fullPaths:
+    | '/'
+    | '/records'
+    | '/records/$recordId'
+    | '/api/auth/callback'
+    | '/api/auth/github'
+    | '/api/auth/logout'
+    | '/api/trpc/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/records' | '/records/$recordId' | '/api/trpc/$'
-  id: '__root__' | '/' | '/records' | '/records/$recordId' | '/api/trpc/$'
+  to:
+    | '/'
+    | '/records'
+    | '/records/$recordId'
+    | '/api/auth/callback'
+    | '/api/auth/github'
+    | '/api/auth/logout'
+    | '/api/trpc/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/records'
+    | '/records/$recordId'
+    | '/api/auth/callback'
+    | '/api/auth/github'
+    | '/api/auth/logout'
+    | '/api/trpc/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RecordsRouteRoute: typeof RecordsRouteRouteWithChildren
+  ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
+  ApiAuthGithubRoute: typeof ApiAuthGithubRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
 
@@ -98,6 +150,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTrpcSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/github': {
+      id: '/api/auth/github'
+      path: '/api/auth/github'
+      fullPath: '/api/auth/github'
+      preLoaderRoute: typeof ApiAuthGithubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/callback': {
+      id: '/api/auth/callback'
+      path: '/api/auth/callback'
+      fullPath: '/api/auth/callback'
+      preLoaderRoute: typeof ApiAuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -116,6 +189,9 @@ const RecordsRouteRouteWithChildren = RecordsRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RecordsRouteRoute: RecordsRouteRouteWithChildren,
+  ApiAuthCallbackRoute: ApiAuthCallbackRoute,
+  ApiAuthGithubRoute: ApiAuthGithubRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }
 export const routeTree = rootRouteImport

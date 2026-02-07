@@ -5,10 +5,11 @@ import { publicProcedure } from '../../init';
 
 export const getFamilyTree = publicProcedure
   .input(IdParamSchema)
-  .query(async ({ ctx: { db }, input: { id } }) => {
+  .query(async ({ ctx: { db, isAdmin }, input: { id } }) => {
     const family = await db.query.records.findFirst({
       where: {
         id,
+        ...(isAdmin ? {} : { isPrivate: false }),
       },
       columns: {
         id: true,

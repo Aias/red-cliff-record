@@ -185,6 +185,43 @@ Each integration is optional. Only configure the ones you need:
 
   Note: Currently hardcoded to the author's album. See [INTEGRATIONS.md](./INTEGRATIONS.md#adobe-lightroom-integration) for setup details.
 
+### 5. Authentication (Optional)
+
+Authentication uses GitHub OAuth to restrict mutations to a single admin user. **When auth env vars are absent, all requests are treated as admin** — no setup needed for local-only use.
+
+To enable authentication:
+
+1. Find your GitHub user ID:
+
+   ```bash
+   gh api user --jq .id
+   ```
+
+2. Create a [GitHub OAuth App](https://github.com/settings/developers) → "New OAuth App":
+   - **Homepage URL**: your app URL (e.g. `http://localhost:5173`)
+   - **Authorization callback URL**: `<your-url>/api/auth/callback`
+
+3. Generate a session secret:
+
+   ```bash
+   openssl rand -base64 32
+   ```
+
+4. Add to `.env`:
+   ```
+   ADMIN_GITHUB_ID=<your-numeric-github-id>
+   GITHUB_CLIENT_ID=<oauth-app-client-id>
+   GITHUB_CLIENT_SECRET=<oauth-app-client-secret>
+   SESSION_SECRET=<random-32+-char-string>
+   ```
+
+All four must be set for auth to activate. With auth enabled:
+
+- Read-only queries (records, search, media, links) remain public
+- All mutations require admin session
+- Browsing history and GitHub commit data require admin session
+- CLI (`rcr`) always bypasses auth
+
 ### Configure Cloudflare R2 Storage
 
 For media storage, you'll need a Cloudflare R2 bucket:
@@ -266,8 +303,6 @@ Notes:
 - Use `--` to stop option parsing when needed.
 
 ## Production Build & Deployment
-
-**⚠️ Security Warning**: This application currently has **no authentication or authorization**. If deployed publicly, anyone with the URL will have full read/write access to all data through the UI. Only deploy to production if you understand and accept this security risk, or implement authentication first.
 
 ### Build for Production
 

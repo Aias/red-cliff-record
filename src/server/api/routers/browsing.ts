@@ -2,7 +2,7 @@ import { browsingHistoryOmitList, BrowsingHistoryOmitListInsertSchema } from '@h
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { DateSchema } from '@/shared/types/api';
-import { createTRPCRouter, publicProcedure } from '../init';
+import { adminProcedure, createTRPCRouter } from '../init';
 
 const OverviewSchema = z.object({
   date: z.string(),
@@ -283,7 +283,7 @@ function createEmptySummary(date: string): DailySummary {
 }
 
 export const browsingRouter = createTRPCRouter({
-  dailySummary: publicProcedure
+  dailySummary: adminProcedure
     .input(z.object({ date: DateSchema }))
     .query(async ({ ctx: { db }, input: { date } }): Promise<DailySummary> => {
       const startOfDay = new Date(`${date}T00:00:00`);
@@ -325,7 +325,7 @@ export const browsingRouter = createTRPCRouter({
   /**
    * List all URL patterns in the browsing history omit list
    */
-  listOmitPatterns: publicProcedure.query(async ({ ctx: { db } }): Promise<string[]> => {
+  listOmitPatterns: adminProcedure.query(async ({ ctx: { db } }): Promise<string[]> => {
     const rows = await db.query.browsingHistoryOmitList.findMany({
       columns: { pattern: true },
       orderBy: { pattern: 'asc' },
@@ -338,7 +338,7 @@ export const browsingRouter = createTRPCRouter({
    *
    * Patterns use SQL LIKE syntax (% for wildcard, _ for single character)
    */
-  upsertOmitPattern: publicProcedure
+  upsertOmitPattern: adminProcedure
     .input(BrowsingHistoryOmitListInsertSchema)
     .mutation(async ({ ctx: { db }, input }) => {
       const now = new Date();
@@ -356,7 +356,7 @@ export const browsingRouter = createTRPCRouter({
   /**
    * Delete patterns from the browsing history omit list
    */
-  deleteOmitPatterns: publicProcedure
+  deleteOmitPatterns: adminProcedure
     .input(z.array(z.string().min(1)))
     .mutation(async ({ ctx: { db }, input }) => {
       if (input.length === 0) {

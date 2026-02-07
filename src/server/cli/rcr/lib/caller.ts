@@ -22,6 +22,7 @@ export function createCLICaller() {
   // Create a minimal context for CLI usage (no real HTTP headers needed)
   const ctx = createTRPCContext({
     headers: new Headers(),
+    isAdmin: true,
   });
 
   return createCaller(ctx);

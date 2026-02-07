@@ -1,9 +1,9 @@
 import { TRPCError } from '@trpc/server';
 import { embedRecordById } from '@/server/services/embed-records';
 import { IdParamSchema } from '@/shared/types/api';
-import { publicProcedure } from '../../init';
+import { adminProcedure } from '../../init';
 
-export const embed = publicProcedure
+export const embed = adminProcedure
   .input(IdParamSchema)
   .mutation(async ({ ctx: { db }, input: { id } }) => {
     const result = await embedRecordById(id);

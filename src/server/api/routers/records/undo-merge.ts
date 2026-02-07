@@ -9,7 +9,7 @@ import {
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { publicProcedure } from '../../init';
+import { adminProcedure } from '../../init';
 import { type IntegrationTableName, integrationTableMap } from './merge';
 
 const IntegrationTableNameSchema = z.enum(
@@ -40,7 +40,7 @@ const MergeSnapshotSchema = z.object({
   ),
 });
 
-export const undoMerge = publicProcedure
+export const undoMerge = adminProcedure
   .input(z.object({ snapshot: MergeSnapshotSchema }))
   .mutation(async ({ ctx: { db }, input: { snapshot } }) => {
     const { sourceRecord, targetRecord } = snapshot;

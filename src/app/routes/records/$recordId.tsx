@@ -190,6 +190,8 @@ function RouteComponent() {
   );
   const { recordId } = Route.useParams();
   const { data: tree, isError: treeError, isLoading: treeLoading } = useRecordTree(recordId);
+  const { data: session } = trpc.admin.session.useQuery();
+  const isAdmin = session?.isAdmin ?? false;
   const bulkUpdate = useBulkUpdate();
   const deleteMutation = useDeleteRecords();
 
@@ -349,7 +351,7 @@ function RouteComponent() {
               node.isStructural ? 'card shrink-0 last:mb-8' : 'card-compact shrink-0 last:mb-8'
             }
           >
-            {node.id === recordId ? (
+            {node.id === recordId && isAdmin ? (
               <RecordForm
                 recordId={node.id}
                 onFinalize={handleFinalize}
@@ -367,8 +369,8 @@ function RouteComponent() {
         ))}
       </ul>
       <div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto bg-c-container p-4">
-        <RelationsList id={recordId} />
-        <SimilarRecords id={recordId} />
+        <RelationsList id={recordId} isAdmin={isAdmin} />
+        <SimilarRecords id={recordId} isAdmin={isAdmin} />
       </div>
     </div>
   );

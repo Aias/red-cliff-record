@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { PlusCircleIcon, SearchIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useRecordSearch } from '@/app/lib/hooks/use-record-search';
+import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
 import {
   Command,
@@ -25,6 +26,8 @@ export const SiteSearch = () => {
   const [commandOpen, setCommandOpen] = useState(false);
 
   const createRecordMutation = useUpsertRecord();
+  const { data: session } = trpc.admin.session.useQuery();
+  const isAdmin = session?.isAdmin ?? false;
 
   const {
     textResults,
@@ -39,6 +42,7 @@ export const SiteSearch = () => {
     minQueryLength: 2,
     textLimit: 10,
     vectorLimit: 5,
+    enableVectorSearch: isAdmin,
   });
 
   const handleInputChange = (search: string) => {
@@ -123,8 +127,8 @@ export const SiteSearch = () => {
                 </CommandGroup>
               )}
 
-              {/* Similarity Search Section */}
-              {shouldSearch && (
+              {/* Similarity Search Section (admin only — costs OpenAI embedding per query) */}
+              {shouldSearch && isAdmin && (
                 <CommandGroup heading="Similar Records">
                   {vectorFetching ? (
                     <CommandItem disabled className="flex items-center justify-center">
@@ -146,19 +150,21 @@ export const SiteSearch = () => {
 
               {shouldSearch && <CommandSeparator alwaysRender />}
 
-              <CommandItem
-                disabled={inputValue.length === 0 || isLoading}
-                key="create-record"
-                onSelect={() => {
-                  createRecordMutation.mutate(
-                    { type: 'artifact', title: inputValue },
-                    { onSuccess: (newRecord) => handleSelectResult(newRecord.id) }
-                  );
-                }}
-                className="px-3 py-2"
-              >
-                <PlusCircleIcon /> Create New Record
-              </CommandItem>
+              {isAdmin && (
+                <CommandItem
+                  disabled={inputValue.length === 0 || isLoading}
+                  key="create-record"
+                  onSelect={() => {
+                    createRecordMutation.mutate(
+                      { type: 'artifact', title: inputValue },
+                      { onSuccess: (newRecord) => handleSelectResult(newRecord.id) }
+                    );
+                  }}
+                  className="px-3 py-2"
+                >
+                  <PlusCircleIcon /> Create New Record
+                </CommandItem>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>

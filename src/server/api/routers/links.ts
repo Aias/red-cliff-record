@@ -12,7 +12,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { IdSchema, type DbId } from '@/shared/types/api';
 import type { RecordLinks, RecordLinksMap } from '@/shared/types/domain';
-import { createTRPCRouter, publicProcedure } from '../init';
+import { adminProcedure, createTRPCRouter, publicProcedure } from '../init';
 
 export const linksRouter = createTRPCRouter({
   /**
@@ -139,7 +139,7 @@ export const linksRouter = createTRPCRouter({
    *
    * Used by: Relationship creation/editing, record linking interfaces
    */
-  upsert: publicProcedure.input(LinkInsertSchema).mutation(async ({ ctx: { db }, input }) => {
+  upsert: adminProcedure.input(LinkInsertSchema).mutation(async ({ ctx: { db }, input }) => {
     /* 1 ─ lookup predicate from const */
     const predicateDef = PREDICATES[input.predicate];
 
@@ -226,7 +226,7 @@ export const linksRouter = createTRPCRouter({
    *
    * Used by: Relationship management, bulk operations, cleanup processes
    */
-  delete: publicProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
+  delete: adminProcedure.input(z.array(IdSchema)).mutation(async ({ ctx: { db }, input }) => {
     if (input.length === 0) {
       return []; // Return empty array if input is empty
     }

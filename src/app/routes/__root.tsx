@@ -19,7 +19,13 @@ export interface RouterAppContext {
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-  loader: () => getTheme(),
+  loader: async ({ context: { trpc, queryClient } }) => {
+    const [theme] = await Promise.all([
+      getTheme(),
+      queryClient.ensureQueryData(trpc.admin.session.queryOptions()),
+    ]);
+    return theme;
+  },
   head: () => ({
     meta: [
       {

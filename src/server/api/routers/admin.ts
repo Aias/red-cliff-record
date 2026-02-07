@@ -1,10 +1,22 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { createEmbedding } from '@/lib/server/create-embedding';
-import { createTRPCRouter, publicProcedure } from '../init';
+import { isAuthConfigured } from '@/server/lib/auth';
+import {
+  adminProcedure,
+  createAdminRateLimitedProcedure,
+  createTRPCRouter,
+  publicProcedure,
+} from '../init';
+
+const embeddingProcedure = createAdminRateLimitedProcedure({ windowMs: 60_000, maxRequests: 200 });
 
 export const adminRouter = createTRPCRouter({
-  createEmbedding: publicProcedure.input(z.string()).mutation(async ({ input }) => {
+  session: publicProcedure.query(({ ctx }) => ({
+    isAdmin: ctx.isAdmin,
+    authEnabled: isAuthConfigured(),
+  })),
+  createEmbedding: embeddingProcedure.input(z.string()).mutation(async ({ input }) => {
     try {
       const embedding = await createEmbedding(input);
 
@@ -21,7 +33,7 @@ export const adminRouter = createTRPCRouter({
       });
     }
   }),
-  testError: publicProcedure.mutation(() => {
+  testError: adminProcedure.mutation(() => {
     throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Test error',

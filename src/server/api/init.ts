@@ -1,9 +1,11 @@
 import { PREDICATES } from '@hozo';
-import { initTRPC } from '@trpc/server';
+import { TRPCError, initTRPC } from '@trpc/server';
 import DataLoader from 'dataloader';
 import superjson from 'superjson';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/connections/postgres';
+import { getCookie, isAdminUser, isAuthConfigured, parseSessionCookie } from '@/server/lib/auth';
+import { createRateLimiter } from '@/server/lib/rate-limit';
 import type { RecordGet } from '@/shared/types/domain';
 
 /** Predicate slugs for creation and containment types */
@@ -11,13 +13,14 @@ const creationContainmentPredicates = Object.values(PREDICATES)
   .filter((p) => p.type === 'creation' || p.type === 'containment')
   .map((p) => p.slug);
 
-function createRecordLoader() {
+function createRecordLoader(isAdmin: boolean) {
   return new DataLoader<number, RecordGet>(async (ids) => {
     const rows = await db.query.records.findMany({
       where: {
         id: {
           in: ids as number[],
         },
+        ...(isAdmin ? {} : { isPrivate: false }),
       },
       columns: {
         textEmbedding: false,
@@ -69,12 +72,34 @@ function createRecordLoader() {
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = (opts: { headers: Headers }) => {
+export const createTRPCContext = (opts: { headers: Headers; isAdmin?: boolean }) => {
+  const clientIp =
+    opts.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    opts.headers.get('x-real-ip') ??
+    'unknown';
+
+  // When isAdmin explicitly passed (e.g. CLI) → use that.
+  // When auth env vars missing → auth disabled → treat as admin.
+  // Otherwise → parse session cookie.
+  const isAdmin =
+    opts.isAdmin ??
+    (() => {
+      // In development, allow simulating non-admin via cookie
+      if (process.env.NODE_ENV === 'development') {
+        if (getCookie(opts.headers.get('cookie'), 'rcr_dev_role') === 'public') return false;
+      }
+      if (!isAuthConfigured()) return true;
+      const userId = parseSessionCookie(opts.headers.get('cookie'));
+      return userId !== null && isAdminUser(userId);
+    })();
+
   return {
     ...opts,
     db,
+    clientIp,
+    isAdmin,
     loaders: {
-      record: createRecordLoader(),
+      record: createRecordLoader(isAdmin),
     },
   };
 };
@@ -206,3 +231,50 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+/**
+ * Rate-limited procedure for expensive operations (OpenAI calls, uploads, bulk mutations).
+ * Default: 20 requests per 60s per IP+path. Override per-procedure via createRateLimitedProcedure.
+ */
+const defaultLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 100 });
+
+const rateLimitMiddleware = t.middleware(async ({ ctx, next, path }) => {
+  defaultLimiter(`${ctx.clientIp}:${path}`);
+  return next();
+});
+
+export const rateLimitedProcedure = t.procedure.use(timingMiddleware).use(rateLimitMiddleware);
+
+/**
+ * Create a rate-limited procedure with custom limits.
+ */
+export function createRateLimitedProcedure(opts: { windowMs: number; maxRequests: number }) {
+  const limiter = createRateLimiter(opts);
+  return t.procedure.use(timingMiddleware).use(
+    t.middleware(async ({ ctx, next, path }) => {
+      limiter(`${ctx.clientIp}:${path}`);
+      return next();
+    })
+  );
+}
+
+/**
+ * Admin-only procedure — throws UNAUTHORIZED if the request is not from an admin session.
+ */
+const authMiddleware = t.middleware(({ ctx, next }) => {
+  if (!ctx.isAdmin) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Admin access required' });
+  }
+  return next();
+});
+
+export const adminProcedure = publicProcedure.use(authMiddleware);
+
+export const adminRateLimitedProcedure = rateLimitedProcedure.use(authMiddleware);
+
+/**
+ * Create an admin-only rate-limited procedure with custom limits.
+ */
+export function createAdminRateLimitedProcedure(opts: { windowMs: number; maxRequests: number }) {
+  return createRateLimitedProcedure(opts).use(authMiddleware);
+}

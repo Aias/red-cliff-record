@@ -56,6 +56,8 @@ interface RecordSearchProps {
 function RecordSearch({ onSelect }: RecordSearchProps) {
   const [query, setQuery] = useState('');
   const createRecordMutation = useUpsertRecord();
+  const { data: session } = trpc.admin.session.useQuery();
+  const isAdmin = session?.isAdmin ?? false;
 
   const {
     textResults,
@@ -65,7 +67,13 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
     isLoading,
     hasResults,
     shouldSearch,
-  } = useRecordSearch(query, { debounceMs: 200, minQueryLength: 1, textLimit: 5, vectorLimit: 3 });
+  } = useRecordSearch(query, {
+    debounceMs: 200,
+    minQueryLength: 1,
+    textLimit: 5,
+    vectorLimit: 3,
+    enableVectorSearch: isAdmin,
+  });
 
   return (
     <Command shouldFilter={false} loop className="w-full" defaultValue="">
@@ -94,8 +102,8 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
           </CommandGroup>
         )}
 
-        {/* Similar Records (Vector Search) */}
-        {shouldSearch && (
+        {/* Similar Records (Vector Search) — admin only */}
+        {shouldSearch && isAdmin && (
           <CommandGroup heading="Similar Records">
             {vectorFetching ? (
               <CommandItem disabled className="flex items-center justify-center">
