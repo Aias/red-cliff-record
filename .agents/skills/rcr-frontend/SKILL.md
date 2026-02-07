@@ -1,6 +1,11 @@
+---
+name: rcr-frontend
+description: Component development rules specific to Red Cliff Record. Use when working with React components, Tailwind CSS styling, Radix/Shadcn primitives, icons, forms, or frontend code in this project. Triggers on component files, styling questions, design tokens, Tailwind v4, Shadcn, Radix, TanStack Forms, or Lucide icons.
+---
+
 # RCR Frontend
 
-Component development rules specific to Red Cliff Record. Supplements global `react-guidelines` and `frontend-html-css-guidelines` skills.
+Supplements global `react-guidelines` and `frontend-html-css-guidelines` skills.
 
 ## Component Organization
 

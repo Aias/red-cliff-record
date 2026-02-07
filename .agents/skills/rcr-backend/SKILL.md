@@ -1,6 +1,11 @@
+---
+name: rcr-backend
+description: Database, API, and integration conventions for Red Cliff Record. Use when working with Drizzle ORM, tRPC routers, database migrations, integration syncs, or media alt-text workflows in this project. Triggers on database queries, API routes, Drizzle v2, tRPC, Zod validation, integration work, or `rcr media` commands.
+---
+
 # RCR Backend
 
-Database, API, and integration conventions for Red Cliff Record. Supplements global `typescript-guidelines` skill.
+Supplements global `typescript-guidelines` skill.
 
 ## Drizzle ORM
 
