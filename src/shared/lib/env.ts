@@ -3,15 +3,15 @@ import { z } from 'zod';
 // Port configuration
 export const PortSchema = z.coerce.number().default(3000);
 
-// Base environment variables schema (without refinements, allows .pick())
-export const EnvSchemaBase = z.object({
-  // Node environment
+// Client-safe env vars (exposed to the browser bundle via Vite `define`)
+export const ClientEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-
-  // Public URLs
   PUBLIC_URL: z.string().optional(),
   PUBLIC_DEV_PORT: z.string().default('5173'),
+});
 
+// Server-only env vars (never exposed to client)
+export const ServerEnvSchema = z.object({
   // Database
   DATABASE_URL: z.string().optional(),
   DATABASE_URL_PROD: z.string().optional(),
@@ -36,6 +36,9 @@ export const EnvSchemaBase = z.object({
   READWISE_TOKEN: z.string(),
   OPENAI_API_KEY: z.string(),
 });
+
+// Base environment variables schema (without refinements, allows .pick())
+export const EnvSchemaBase = ClientEnvSchema.merge(ServerEnvSchema);
 
 // Full environment variables schema with refinements
 export const EnvSchema = EnvSchemaBase.refine(

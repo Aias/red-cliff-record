@@ -4,20 +4,14 @@ import viteReact from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import tsConfigPaths from 'vite-tsconfig-paths';
-import { EnvSchema, PortSchema } from './src/shared/lib/env';
+import { ClientEnvSchema, EnvSchema, PortSchema } from './src/shared/lib/env';
 
 export default defineConfig(({ mode }) => {
   // Load all environment variables
   const env = loadEnv(mode, process.cwd(), '');
 
-  // Parse and validate all env vars
-  const parsedEnv = EnvSchema.safeParse({
-    ...env,
-    NODE_ENV: mode,
-  });
-
-  // Create process.env object with all validated env vars
-  const processEnv = parsedEnv.success ? parsedEnv.data : {};
+  // Validate all env vars at build time (fails fast if server env is misconfigured)
+  EnvSchema.parse({ ...env, NODE_ENV: mode });
 
   return {
     build: {
@@ -28,8 +22,7 @@ export default defineConfig(({ mode }) => {
     },
     envPrefix: ['PUBLIC_', 'VITE_'],
     define: {
-      // Not good if you plan on deploying to a cloud environment rather than a local network.
-      'process.env': JSON.stringify(processEnv),
+      'process.env': JSON.stringify(ClientEnvSchema.parse({ ...env, NODE_ENV: mode })),
     },
     plugins: [
       tsConfigPaths({ projectDiscovery: 'lazy' }),
