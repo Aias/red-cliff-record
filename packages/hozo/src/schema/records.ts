@@ -79,7 +79,6 @@ export const RecordInsertSchema = createInsertSchema(records).extend({
   url: emptyStringToNull(z.url()).optional(),
   avatarUrl: emptyStringToNull(z.url()).optional(),
   rating: z.number().int().min(0).max(3).default(0),
-  textEmbedding: z.array(z.number()).nullable().optional(), // TODO: Revisit when Drizzle v1 is out of beta. This override shouldn't be necessary.
 });
 export type RecordInsert = typeof records.$inferInsert;
 
