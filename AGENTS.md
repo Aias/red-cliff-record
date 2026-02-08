@@ -10,7 +10,30 @@ Project overview, CLI reference, and setup: `README.md`. Integration guide: `INT
 
 ## `rcr` CLI
 
-Primary agent interface to the knowledge base. **Prefer `rcr` instead of direct DB queries or psql.** Run `rcr --help` for the full command reference; see the `rcr` skill for workflows.
+Primary agent interface to the knowledge base. **Prefer `rcr` for working with application data** (records, links, media, syncs). Run `rcr --help` for the full command reference; see the `rcr` skill for workflows.
+
+**Development/debugging: Use psql directly**
+For schema inspection, migration verification, and database structure work:
+```bash
+source .env  # Load DATABASE_URL, DATABASE_URL_DEV, etc.
+psql $DATABASE_URL -c "\dt table_name"
+psql $DATABASE_URL_DEV -c "\dt table_name"
+```
+
+## Database Migrations
+
+**CRITICAL: Never run `bun run db:migrate` directly.** It uses unclear environment fallbacks where `DATABASE_URL` typically points to production.
+
+**Migration workflow:**
+
+1. Schema changes → `bun run db:generate` generates migration files only (doesn't apply them)
+2. Apply to dev → `NODE_ENV=development bunx drizzle-kit migrate`
+3. Verify → Query both databases to confirm schema matches
+4. Apply to prod → `NODE_ENV=production bunx drizzle-kit migrate`
+
+**OR** keep dev synced with prod: `rcr db clone-prod-to-dev --yes`
+
+Always test migrations in dev before applying to production.
 
 ## Architecture
 

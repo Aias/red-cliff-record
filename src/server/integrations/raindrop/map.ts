@@ -2,11 +2,13 @@ import {
   media,
   raindropBookmarks,
   raindropBookmarkTags,
+  raindropHighlights,
   raindropImages,
   raindropTags,
   records,
   type MediaInsert,
   type RaindropBookmarkSelect,
+  type RaindropHighlightSelect,
   type RaindropImageSelect,
   type RaindropTagSelect,
   type RecordInsert,
@@ -379,4 +381,95 @@ export async function createRecordsFromRaindropTags() {
   }
 
   logger.complete(`Processed ${unmappedTags.length} Raindrop tags`);
+}
+
+export const mapRaindropHighlightToRecord = (
+  highlight: RaindropHighlightSelect & { bookmark: RaindropBookmarkSelect }
+): RecordInsert => {
+  // Combine text and note for the content
+  const content = highlight.note ? `${highlight.text}\n\n${highlight.note}` : highlight.text;
+
+  return {
+    id: highlight.recordId ?? undefined,
+    type: 'artifact',
+    content,
+    // Use parent bookmark's URL as base reference
+    url: highlight.bookmark.linkUrl,
+    sources: ['raindrop'],
+    isPrivate: false,
+    isCurated: false,
+    recordCreatedAt: highlight.recordCreatedAt,
+    recordUpdatedAt: highlight.recordUpdatedAt,
+    contentCreatedAt: highlight.contentCreatedAt,
+    contentUpdatedAt: highlight.contentUpdatedAt,
+  };
+};
+
+export async function createRecordsFromRaindropHighlights() {
+  logger.start('Creating records from Raindrop highlights');
+
+  const unmappedHighlights = await db.query.raindropHighlights.findMany({
+    where: {
+      recordId: {
+        isNull: true,
+      },
+      deletedAt: {
+        isNull: true,
+      },
+    },
+    with: {
+      bookmark: true,
+    },
+  });
+
+  if (unmappedHighlights.length === 0) {
+    logger.skip('No new or updated highlights to process');
+    return;
+  }
+
+  logger.info(`Found ${unmappedHighlights.length} unmapped Raindrop highlights`);
+
+  // Map to store the new record IDs keyed by highlight ID
+  const recordMap = new Map<string, number>();
+
+  for (const highlight of unmappedHighlights) {
+    const newRecordDefaults = mapRaindropHighlightToRecord(highlight);
+
+    const [newRecord] = await db
+      .insert(records)
+      .values(newRecordDefaults)
+      .returning({ id: records.id });
+
+    if (!newRecord) {
+      throw new Error('Failed to create record');
+    }
+
+    logger.info(
+      `Created record ${newRecord.id} for highlight ${highlight.text.slice(0, 30)}... (${highlight.id})`
+    );
+
+    await db
+      .update(raindropHighlights)
+      .set({ recordId: newRecord.id })
+      .where(eq(raindropHighlights.id, highlight.id));
+
+    recordMap.set(highlight.id, newRecord.id);
+  }
+
+  // Link highlight records to their parent bookmark records via contained_by
+  for (const highlight of unmappedHighlights) {
+    const childRecordId = recordMap.get(highlight.id);
+    const parentRecordId = highlight.bookmark.recordId;
+
+    if (childRecordId && parentRecordId) {
+      await linkRecords(childRecordId, parentRecordId, 'contained_by', db);
+      logger.info(`Linked highlight record ${childRecordId} to bookmark record ${parentRecordId}`);
+    } else {
+      logger.warn(
+        `Skipping linking for highlight ${highlight.id} due to missing record IDs (child: ${childRecordId}, parent: ${parentRecordId})`
+      );
+    }
+  }
+
+  logger.complete(`Processed ${unmappedHighlights.length} Raindrop highlights`);
 }

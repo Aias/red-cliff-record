@@ -1,10 +1,12 @@
 import {
   raindropBookmarks,
   raindropCollections,
+  raindropHighlights,
   raindropImages,
   RaindropTypeSchema,
   type RaindropBookmarkInsert,
   type RaindropCollectionInsert,
+  type RaindropHighlightInsert,
 } from '@hozo';
 import { db } from '@/server/db/connections/postgres';
 import { createDebugContext } from '../common/debug-output';
@@ -15,6 +17,7 @@ import {
   createMediaFromRaindropBookmarks,
   createRaindropTags,
   createRecordsFromRaindropBookmarks,
+  createRecordsFromRaindropHighlights,
   createRecordsFromRaindropTags,
 } from './map';
 import type { Raindrop } from './types';
@@ -337,6 +340,31 @@ async function processRaindrops(raindrops: Raindrop[], integrationRunId: number)
           }
         }
 
+        // Insert highlights if any
+        if (raindrop.highlights && raindrop.highlights.length > 0) {
+          for (const highlight of raindrop.highlights) {
+            const highlightData: RaindropHighlightInsert = {
+              id: highlight._id,
+              text: highlight.text,
+              note: highlight.note,
+              bookmarkId,
+              contentCreatedAt: highlight.created,
+              contentUpdatedAt: highlight.lastUpdate,
+            };
+
+            await tx
+              .insert(raindropHighlights)
+              .values(highlightData)
+              .onConflictDoUpdate({
+                target: raindropHighlights.id,
+                set: { ...highlightData, recordUpdatedAt: new Date() },
+              });
+          }
+          logger.info(
+            `Inserted ${raindrop.highlights.length} highlights for bookmark ${bookmarkId}`
+          );
+        }
+
         successCount++;
         if (successCount % 10 === 0) {
           logger.info(`Processed ${successCount} of ${raindrops.length} raindrops`);
@@ -368,6 +396,8 @@ async function createRelatedEntities(integrationRunId: number): Promise<void> {
   await createRecordsFromRaindropTags();
   // Create main records
   await createRecordsFromRaindropBookmarks();
+  // Create child records from highlights
+  await createRecordsFromRaindropHighlights();
 }
 
 /**

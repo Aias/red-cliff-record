@@ -178,3 +178,33 @@ export const RaindropImageInsertSchema = createInsertSchema(raindropImages).exte
   url: z.url(),
 });
 export type RaindropImageInsert = typeof raindropImages.$inferInsert;
+
+export const raindropHighlights = pgTable(
+  'raindrop_highlights',
+  {
+    id: text('id').primaryKey(),
+    text: text('text').notNull(),
+    note: text('note'),
+    bookmarkId: integer('bookmark_id')
+      .references(() => raindropBookmarks.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      })
+      .notNull(),
+    recordId: integer('record_id').references(() => records.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
+    deletedAt: timestamp('deleted_at', {
+      withTimezone: true,
+    }),
+    ...contentTimestamps,
+    ...databaseTimestamps,
+  },
+  (table) => [index().on(table.bookmarkId), index().on(table.recordId), index().on(table.deletedAt)]
+);
+
+export const RaindropHighlightSelectSchema = createSelectSchema(raindropHighlights);
+export type RaindropHighlightSelect = typeof raindropHighlights.$inferSelect;
+export const RaindropHighlightInsertSchema = createInsertSchema(raindropHighlights);
+export type RaindropHighlightInsert = typeof raindropHighlights.$inferInsert;

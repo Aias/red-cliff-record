@@ -23,6 +23,7 @@ import {
   raindropBookmarks,
   raindropBookmarkTags,
   raindropCollections,
+  raindropHighlights,
   raindropImages,
   raindropTags,
   readwiseAuthors,
@@ -59,6 +60,7 @@ export const relations = defineRelations(
     raindropBookmarks,
     raindropBookmarkTags,
     raindropCollections,
+    raindropHighlights,
     raindropImages,
     raindropTags,
     readwiseAuthors,
@@ -353,6 +355,10 @@ export const relations = defineRelations(
         from: r.raindropBookmarks.id,
         to: r.raindropImages.bookmarkId,
       }),
+      highlights: r.many.raindropHighlights({
+        from: r.raindropBookmarks.id,
+        to: r.raindropHighlights.bookmarkId,
+      }),
       tagRecords: r.many.raindropTags({
         from: r.raindropBookmarks.id.through(r.raindropBookmarkTags.bookmarkId),
         to: r.raindropTags.id.through(r.raindropBookmarkTags.tagId),
@@ -390,6 +396,17 @@ export const relations = defineRelations(
       raindrops: r.many.raindropBookmarks({
         from: r.raindropCollections.id,
         to: r.raindropBookmarks.collectionId,
+      }),
+    },
+    raindropHighlights: {
+      bookmark: r.one.raindropBookmarks({
+        from: r.raindropHighlights.bookmarkId,
+        to: r.raindropBookmarks.id,
+        optional: false,
+      }),
+      record: r.one.records({
+        from: r.raindropHighlights.recordId,
+        to: r.records.id,
       }),
     },
     raindropImages: {
@@ -490,6 +507,7 @@ export const relations = defineRelations(
       lightroomImages: r.many.lightroomImages(),
       raindropBookmarks: r.many.raindropBookmarks(),
       raindropCollections: r.many.raindropCollections(),
+      raindropHighlights: r.many.raindropHighlights(),
       raindropTags: r.many.raindropTags(),
       readwiseAuthors: r.many.readwiseAuthors(),
       readwiseDocuments: r.many.readwiseDocuments(),
