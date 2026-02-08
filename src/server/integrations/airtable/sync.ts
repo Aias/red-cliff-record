@@ -611,10 +611,14 @@ async function syncAirtableData(integrationRunId: number): Promise<number> {
  * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncAirtableDataWithIntegration(debug = false): Promise<void> {
-  const debugContext = createDebugContext('airtable', debug, {
-    creators: [] as unknown[],
-    spaces: [] as unknown[],
-    extracts: [] as unknown[],
+  const debugContext = createDebugContext<{
+    creators: unknown[];
+    spaces: unknown[];
+    extracts: unknown[];
+  }>('airtable', debug, {
+    creators: [],
+    spaces: [],
+    extracts: [],
   });
   try {
     if (debug) {

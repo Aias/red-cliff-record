@@ -267,8 +267,11 @@ export const mediaRouter = createTRPCRouter({
 
       return deletedMedia;
     } catch (error) {
-      console.error('Failed to delete media:', error);
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete media' });
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to delete media',
+        cause: error,
+      });
     }
   }),
 

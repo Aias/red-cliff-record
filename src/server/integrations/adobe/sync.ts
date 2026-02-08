@@ -178,7 +178,7 @@ async function processLightroomImage(
  * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncAdobeData(debug = false): Promise<void> {
-  const debugContext = createDebugContext('adobe', debug, [] as unknown[]);
+  const debugContext = createDebugContext<unknown[]>('adobe', debug, []);
   try {
     if (debug) {
       // Debug mode: fetch data and output to .temp/ only, skip database writes

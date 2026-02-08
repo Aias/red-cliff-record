@@ -96,10 +96,14 @@ async function fetchBrowserDataOnly(debugData: { arc: unknown[]; dia: unknown[] 
  * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncAllBrowserHistory(debug = false): Promise<void> {
-  const debugContext = createDebugContext('browser-history', debug, {
-    arc: [] as unknown[],
-    dia: [] as unknown[],
-  });
+  const debugContext = createDebugContext<{ arc: unknown[]; dia: unknown[] }>(
+    'browser-history',
+    debug,
+    {
+      arc: [],
+      dia: [],
+    }
+  );
   try {
     if (debug) {
       // Debug mode: fetch data and output to .temp/ only, skip database writes

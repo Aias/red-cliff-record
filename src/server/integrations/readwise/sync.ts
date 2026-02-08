@@ -349,7 +349,7 @@ async function syncReadwiseDocumentsInternal(integrationRunId: number): Promise<
  * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncReadwiseData(debug = false): Promise<void> {
-  const debugContext = createDebugContext('readwise', debug, [] as unknown[]);
+  const debugContext = createDebugContext<unknown[]>('readwise', debug, []);
   try {
     if (debug) {
       // Debug mode: fetch data and output to .temp/ only, skip database writes
