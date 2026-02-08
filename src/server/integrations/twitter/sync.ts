@@ -430,13 +430,19 @@ function processTweetData(
       integrationRunId,
     };
 
-    // Separate regular tweets from quote tweets
+    // Separate regular tweets from quote tweets, preferring versions with quotedTweetId.
+    // A tweet can appear twice: once as a nested quoted tweet (stripped of its own quote by
+    // Twitter's API) and once as a top-level bookmark (with the full quote reference).
     if (tweetWithRun.quotedTweetId) {
+      processedTweetsById.delete(tweetWithRun.id);
       if (!processedQuoteTweetsById.has(tweetWithRun.id)) {
         processedQuoteTweetsById.set(tweetWithRun.id, tweetWithRun);
       }
     } else {
-      if (!processedTweetsById.has(tweetWithRun.id)) {
+      if (
+        !processedQuoteTweetsById.has(tweetWithRun.id) &&
+        !processedTweetsById.has(tweetWithRun.id)
+      ) {
         processedTweetsById.set(tweetWithRun.id, tweetWithRun);
       }
     }
