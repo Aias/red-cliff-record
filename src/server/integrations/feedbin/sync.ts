@@ -753,10 +753,14 @@ async function fetchFeedbinDataOnly(debugData: {
  * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncFeedbinData(debug = false): Promise<void> {
-  const debugContext = createDebugContext('feedbin', debug, {
-    subscriptions: [] as unknown[],
-    entries: [] as unknown[],
-    icons: [] as unknown[],
+  const debugContext = createDebugContext<{
+    subscriptions: unknown[];
+    entries: unknown[];
+    icons: unknown[];
+  }>('feedbin', debug, {
+    subscriptions: [],
+    entries: [],
+    icons: [],
   });
   try {
     if (debug) {

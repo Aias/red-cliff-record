@@ -258,10 +258,10 @@ export const searchRouter = createTRPCRouter({
           return rest;
         });
       } catch (err) {
-        console.error(err);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Error searching for similar records',
+          cause: err,
         });
       }
     }),
@@ -361,10 +361,10 @@ export const searchRouter = createTRPCRouter({
           similarity: r.similarity,
         }));
       } catch (err) {
-        console.error(err);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Error searching for similar records',
+          cause: err,
         });
       }
     }),

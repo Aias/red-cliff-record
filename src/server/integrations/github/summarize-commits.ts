@@ -1,10 +1,4 @@
-import {
-  githubCommits,
-  GithubCommitTypeSchema,
-  type GithubCommitChangeSelect,
-  type GithubCommitSelect,
-  type GithubRepositorySelect,
-} from '@hozo';
+import { githubCommits, GithubCommitTypeSchema } from '@hozo';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import { z } from 'zod';
@@ -117,35 +111,15 @@ export const summarizeCommit = async (
   return summary;
 };
 
-type CommitWithRelations = GithubCommitSelect & {
-  repository: GithubRepositorySelect;
-  commitChanges: GithubCommitChangeSelect[];
-};
+type CommitWithRelations = Awaited<ReturnType<typeof getCommitsWithoutSummaries>>[number];
 
 const logger = createIntegrationLogger('github', 'summarize-commits');
 
 async function getCommitsWithoutSummaries() {
-  const commits = await db.query.githubCommits.findMany({
+  return db.query.githubCommits.findMany({
     with: {
-      repository: {
-        columns: {
-          fullName: true,
-          description: true,
-          language: true,
-          topics: true,
-          licenseName: true,
-        },
-      },
-      commitChanges: {
-        columns: {
-          filename: true,
-          status: true,
-          changes: true,
-          deletions: true,
-          additions: true,
-          patch: true,
-        },
-      },
+      repository: true,
+      commitChanges: true,
     },
     where: {
       summary: {
@@ -156,14 +130,17 @@ async function getCommitsWithoutSummaries() {
       committedAt: 'asc',
     },
   });
-
-  return commits as unknown as CommitWithRelations[];
 }
 
 async function processCommit(
   commit: CommitWithRelations
 ): Promise<{ success: boolean; sha: string }> {
   try {
+    if (!commit.repository) {
+      logger.error(`[${commit.sha.slice(0, 7)}] Skipped — no repository`);
+      return { success: false, sha: commit.sha };
+    }
+
     const summary = await summarizeCommit({
       message: commit.message,
       sha: commit.sha,

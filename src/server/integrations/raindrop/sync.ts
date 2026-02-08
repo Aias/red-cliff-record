@@ -407,10 +407,14 @@ async function fetchRaindropDataOnly(debugData: {
  * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncRaindropData(debug = false): Promise<void> {
-  const debugContext = createDebugContext('raindrop', debug, {
-    collections: [] as unknown[],
-    raindrops: [] as unknown[],
-  });
+  const debugContext = createDebugContext<{ collections: unknown[]; raindrops: unknown[] }>(
+    'raindrop',
+    debug,
+    {
+      collections: [],
+      raindrops: [],
+    }
+  );
   try {
     if (debug) {
       // Debug mode: fetch data and output to .temp/ only, skip database writes

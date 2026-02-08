@@ -668,7 +668,7 @@ async function createRelatedRecords(): Promise<void> {
  * @param debug - If true, fetches data and outputs to .temp/ without writing to database
  */
 async function syncTwitterData(debug = false): Promise<void> {
-  const debugContext = createDebugContext('twitter', debug, [] as unknown[]);
+  const debugContext = createDebugContext<unknown[]>('twitter', debug, []);
   try {
     if (debug) {
       // Debug mode: fetch and process data, output to .temp/ without database writes

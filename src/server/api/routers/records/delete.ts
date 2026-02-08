@@ -26,18 +26,21 @@ import { z } from 'zod';
 import { IdSchema } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
 
+/** Executes a soft-delete update and logs the count of affected rows. */
+async function softDelete(query: Promise<unknown[]>, label: string): Promise<number> {
+  const deleted = await query;
+  if (deleted.length > 0) {
+    console.log(`Soft-deleted ${deleted.length} ${label}${deleted.length !== 1 ? 's' : ''}`);
+  }
+  return deleted.length;
+}
+
 export const deleteRecords = publicProcedure
   .input(z.array(IdSchema))
   .mutation(async ({ ctx: { db }, input }): Promise<RecordSelect[]> => {
     const recordsToDelete = await db.query.records.findMany({
-      where: {
-        id: {
-          in: input,
-        },
-      },
-      with: {
-        media: true,
-      },
+      where: { id: { in: input } },
+      with: { media: true },
     });
     const linkedMediaIds = recordsToDelete.flatMap((r) => r.media.map((m) => m.id));
 
@@ -49,182 +52,171 @@ export const deleteRecords = publicProcedure
     try {
       const now = new Date();
 
-      // Update all associated tables with a soft delete. For each table with a recordId field, set deletedAt to now
+      // Soft-delete all associated integration rows
 
       // Airtable
-      const deletedAirtableCreators = await db
-        .update(airtableCreators)
-        .set({ deletedAt: now })
-        .where(inArray(airtableCreators.recordId, input))
-        .returning();
-      for (const creator of deletedAirtableCreators) {
-        console.log(`Deleted Airtable creator ${creator.name} (${creator.id})`);
-      }
+      await softDelete(
+        db
+          .update(airtableCreators)
+          .set({ deletedAt: now })
+          .where(inArray(airtableCreators.recordId, input))
+          .returning(),
+        'airtable creator'
+      );
+      await softDelete(
+        db
+          .update(airtableExtracts)
+          .set({ deletedAt: now })
+          .where(inArray(airtableExtracts.recordId, input))
+          .returning(),
+        'airtable extract'
+      );
+      await softDelete(
+        db
+          .update(airtableFormats)
+          .set({ deletedAt: now })
+          .where(inArray(airtableFormats.recordId, input))
+          .returning(),
+        'airtable format'
+      );
+      await softDelete(
+        db
+          .update(airtableSpaces)
+          .set({ deletedAt: now })
+          .where(inArray(airtableSpaces.recordId, input))
+          .returning(),
+        'airtable space'
+      );
+      await softDelete(
+        db
+          .update(airtableAttachments)
+          .set({ deletedAt: now })
+          .where(inArray(airtableAttachments.mediaId, linkedMediaIds))
+          .returning(),
+        'airtable attachment'
+      );
 
-      const deletedAirtableExtracts = await db
-        .update(airtableExtracts)
-        .set({ deletedAt: now })
-        .where(inArray(airtableExtracts.recordId, input))
-        .returning();
-      for (const extract of deletedAirtableExtracts) {
-        console.log(`Deleted Airtable extract ${extract.title} (${extract.id})`);
-      }
-
-      const deletedAirtableFormats = await db
-        .update(airtableFormats)
-        .set({ deletedAt: now })
-        .where(inArray(airtableFormats.recordId, input))
-        .returning();
-      for (const format of deletedAirtableFormats) {
-        console.log(`Deleted Airtable format ${format.name} (${format.id})`);
-      }
-
-      const deletedAirtableSpaces = await db
-        .update(airtableSpaces)
-        .set({ deletedAt: now })
-        .where(inArray(airtableSpaces.recordId, input))
-        .returning();
-      for (const space of deletedAirtableSpaces) {
-        console.log(`Deleted Airtable space ${space.name} (${space.id})`);
-      }
-
-      const deletedAirtableAttachments = await db
-        .update(airtableAttachments)
-        .set({ deletedAt: now })
-        .where(inArray(airtableAttachments.mediaId, linkedMediaIds))
-        .returning();
-      for (const attachment of deletedAirtableAttachments) {
-        console.log(`Deleted Airtable attachment ${attachment.filename} (${attachment.id})`);
-      }
-
-      // Github
-      const deletedGithubRepositories = await db
-        .update(githubRepositories)
-        .set({ deletedAt: now })
-        .where(inArray(githubRepositories.recordId, input))
-        .returning();
-      for (const repo of deletedGithubRepositories) {
-        console.log(`Deleted Github repository ${repo.name} (${repo.id})`);
-      }
-
-      const deletedGithubUsers = await db
-        .update(githubUsers)
-        .set({ deletedAt: now })
-        .where(inArray(githubUsers.recordId, input))
-        .returning();
-      for (const user of deletedGithubUsers) {
-        console.log(`Deleted Github user ${user.login} (${user.id})`);
-      }
+      // GitHub
+      await softDelete(
+        db
+          .update(githubRepositories)
+          .set({ deletedAt: now })
+          .where(inArray(githubRepositories.recordId, input))
+          .returning(),
+        'github repository'
+      );
+      await softDelete(
+        db
+          .update(githubUsers)
+          .set({ deletedAt: now })
+          .where(inArray(githubUsers.recordId, input))
+          .returning(),
+        'github user'
+      );
 
       // Lightroom
-      const deletedLightroomImages = await db
-        .update(lightroomImages)
-        .set({ deletedAt: now, mediaId: null })
-        .where(inArray(lightroomImages.recordId, input))
-        .returning();
-      for (const image of deletedLightroomImages) {
-        console.log(`Deleted Lightroom image ${image.fileName} (${image.id})`);
-      }
+      await softDelete(
+        db
+          .update(lightroomImages)
+          .set({ deletedAt: now, mediaId: null })
+          .where(inArray(lightroomImages.recordId, input))
+          .returning(),
+        'lightroom image'
+      );
 
       // Raindrop
-      const deletedRaindropBookmarks = await db
-        .update(raindropBookmarks)
-        .set({ deletedAt: now })
-        .where(inArray(raindropBookmarks.recordId, input))
-        .returning();
-      for (const bookmark of deletedRaindropBookmarks) {
-        console.log(`Deleted Raindrop bookmark ${bookmark.title} (${bookmark.id})`);
-      }
-
-      const deletedRaindropCollections = await db
-        .update(raindropCollections)
-        .set({ deletedAt: now })
-        .where(inArray(raindropCollections.recordId, input))
-        .returning();
-      for (const collection of deletedRaindropCollections) {
-        console.log(`Deleted Raindrop collection ${collection.title} (${collection.id})`);
-      }
-
-      const deletedRaindropTags = await db
-        .update(raindropTags)
-        .set({ deletedAt: now })
-        .where(inArray(raindropTags.recordId, input))
-        .returning();
-      for (const tag of deletedRaindropTags) {
-        console.log(`Deleted Raindrop tag ${tag.tag} (${tag.id})`);
-      }
-
-      const deletedRaindropImages = await db
-        .update(raindropImages)
-        .set({ deletedAt: now })
-        .where(inArray(raindropImages.mediaId, linkedMediaIds))
-        .returning();
-      for (const image of deletedRaindropImages) {
-        console.log(`Deleted Raindrop image ${image.url} (${image.id})`);
-      }
+      await softDelete(
+        db
+          .update(raindropBookmarks)
+          .set({ deletedAt: now })
+          .where(inArray(raindropBookmarks.recordId, input))
+          .returning(),
+        'raindrop bookmark'
+      );
+      await softDelete(
+        db
+          .update(raindropCollections)
+          .set({ deletedAt: now })
+          .where(inArray(raindropCollections.recordId, input))
+          .returning(),
+        'raindrop collection'
+      );
+      await softDelete(
+        db
+          .update(raindropTags)
+          .set({ deletedAt: now })
+          .where(inArray(raindropTags.recordId, input))
+          .returning(),
+        'raindrop tag'
+      );
+      await softDelete(
+        db
+          .update(raindropImages)
+          .set({ deletedAt: now })
+          .where(inArray(raindropImages.mediaId, linkedMediaIds))
+          .returning(),
+        'raindrop image'
+      );
 
       // Readwise
-      const deletedReadwiseAuthors = await db
-        .update(readwiseAuthors)
-        .set({ deletedAt: now })
-        .where(inArray(readwiseAuthors.recordId, input))
-        .returning();
-      for (const author of deletedReadwiseAuthors) {
-        console.log(`Deleted Readwise author ${author.name} (${author.id})`);
-      }
-
-      const deletedReadwiseDocuments = await db
-        .update(readwiseDocuments)
-        .set({ deletedAt: now })
-        .where(inArray(readwiseDocuments.recordId, input))
-        .returning();
-      for (const document of deletedReadwiseDocuments) {
-        console.log(`Deleted Readwise document ${document.title} (${document.id})`);
-      }
-
-      const deletedReadwiseTags = await db
-        .update(readwiseTags)
-        .set({ deletedAt: now })
-        .where(inArray(readwiseTags.recordId, input))
-        .returning();
-      for (const tag of deletedReadwiseTags) {
-        console.log(`Deleted Readwise tag ${tag.tag} (${tag.id})`);
-      }
+      await softDelete(
+        db
+          .update(readwiseAuthors)
+          .set({ deletedAt: now })
+          .where(inArray(readwiseAuthors.recordId, input))
+          .returning(),
+        'readwise author'
+      );
+      await softDelete(
+        db
+          .update(readwiseDocuments)
+          .set({ deletedAt: now })
+          .where(inArray(readwiseDocuments.recordId, input))
+          .returning(),
+        'readwise document'
+      );
+      await softDelete(
+        db
+          .update(readwiseTags)
+          .set({ deletedAt: now })
+          .where(inArray(readwiseTags.recordId, input))
+          .returning(),
+        'readwise tag'
+      );
 
       // Twitter
-      const deletedTwitterTweets = await db
-        .update(twitterTweets)
-        .set({ deletedAt: now })
-        .where(inArray(twitterTweets.recordId, input))
-        .returning();
-      for (const tweet of deletedTwitterTweets) {
-        console.log(`Deleted Twitter tweet ${tweet.text?.slice(0, 20)} (${tweet.id})`);
-      }
-
-      const deletedTwitterUsers = await db
-        .update(twitterUsers)
-        .set({ deletedAt: now })
-        .where(inArray(twitterUsers.recordId, input))
-        .returning();
-      for (const twUser of deletedTwitterUsers) {
-        console.log(`Deleted Twitter user ${twUser.username} (${twUser.id})`);
-      }
-
-      const deletedTwitterMedia = await db
-        .update(twitterMedia)
-        .set({ deletedAt: now })
-        .where(inArray(twitterMedia.mediaId, linkedMediaIds))
-        .returning();
-      for (const media of deletedTwitterMedia) {
-        console.log(`Deleted Twitter media ${media.mediaUrl} (${media.id})`);
-      }
+      await softDelete(
+        db
+          .update(twitterTweets)
+          .set({ deletedAt: now })
+          .where(inArray(twitterTweets.recordId, input))
+          .returning(),
+        'twitter tweet'
+      );
+      await softDelete(
+        db
+          .update(twitterUsers)
+          .set({ deletedAt: now })
+          .where(inArray(twitterUsers.recordId, input))
+          .returning(),
+        'twitter user'
+      );
+      await softDelete(
+        db
+          .update(twitterMedia)
+          .set({ deletedAt: now })
+          .where(inArray(twitterMedia.mediaId, linkedMediaIds))
+          .returning(),
+        'twitter media'
+      );
 
       // Delete the main records
-      const deletedRecords = await db.delete(records).where(inArray(records.id, input)).returning();
-
-      return deletedRecords;
+      return await db.delete(records).where(inArray(records.id, input)).returning();
     } catch (error) {
-      console.error(error);
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete records' });
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to delete records',
+        cause: error,
+      });
     }
   });

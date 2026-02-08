@@ -25,10 +25,14 @@ const logger = createIntegrationLogger('github', 'sync');
  * @throws Rethrows any errors from the integration steps
  */
 async function syncGitHubData(debug = false): Promise<void> {
-  const debugContext = createDebugContext('github', debug, {
-    stars: [] as unknown[],
-    commits: [] as unknown[],
-  });
+  const debugContext = createDebugContext<{ stars: unknown[]; commits: unknown[] }>(
+    'github',
+    debug,
+    {
+      stars: [],
+      commits: [],
+    }
+  );
   try {
     if (debug) {
       // Debug mode: fetch data and output to .temp/ only, skip database writes
