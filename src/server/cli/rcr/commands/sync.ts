@@ -5,6 +5,7 @@
  */
 
 import { z } from 'zod';
+import { checkDatabaseConnection } from '@/server/db/connections/postgres';
 import { syncLightroomImages } from '@/server/integrations/adobe/sync';
 import { syncClaudeHistory } from '@/server/integrations/agents/sync-claude';
 import { syncCodexHistory } from '@/server/integrations/agents/sync-codex';
@@ -73,6 +74,13 @@ export const run: CommandHandler = async (args, options) => {
 
   const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
   const { debug } = parsedOptions;
+
+  // Fail fast if the database is unreachable
+  try {
+    await checkDatabaseConnection();
+  } catch (e) {
+    throw createError('DATABASE_ERROR', e instanceof Error ? e.message : String(e));
+  }
 
   // Handle 'daily' as a special case that runs multiple syncs + enrichments
   if (integration === 'daily') {
