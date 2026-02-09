@@ -24,16 +24,15 @@
     "test": "bun test"
   },
   "dependencies": {
-    "drizzle-kit": "1.0.0-beta.12-a5629fb",
-    "drizzle-zod": "1.0.0-beta.12-a5629fb"
+    "drizzle-kit": "1.0.0-beta.15-859cf75"
   },
   "devDependencies": {
-    "drizzle-orm": "1.0.0-beta.12-a5629fb",
+    "drizzle-orm": "1.0.0-beta.15-859cf75",
     "tsup": "^8.5.1",
     "zod": "^4.1.12"
   },
   "peerDependencies": {
-    "drizzle-orm": "1.0.0-beta.12-a5629fb",
+    "drizzle-orm": "1.0.0-beta.15-859cf75",
     "zod": "^4.1.12"
   }
 }

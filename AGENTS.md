@@ -14,6 +14,7 @@ Primary agent interface to the knowledge base. **Prefer `rcr` for working with a
 
 **Development/debugging: Use psql directly**
 For schema inspection, migration verification, and database structure work:
+
 ```bash
 source .env  # Load DATABASE_URL, DATABASE_URL_DEV, etc.
 psql $DATABASE_URL -c "\dt table_name"
