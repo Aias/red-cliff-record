@@ -5,6 +5,7 @@
  */
 
 import { z } from 'zod';
+import { checkDatabaseConnection } from '@/server/db/connections/postgres';
 import { syncLightroomImages } from '@/server/integrations/adobe/sync';
 import { syncClaudeHistory } from '@/server/integrations/agents/sync-claude';
 import { syncCodexHistory } from '@/server/integrations/agents/sync-codex';
@@ -19,7 +20,6 @@ import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
-import { checkDatabaseConnection } from '@/server/db/connections/postgres';
 import { assertNever } from '@/shared/lib/type-utils';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createError } from '../lib/errors';
