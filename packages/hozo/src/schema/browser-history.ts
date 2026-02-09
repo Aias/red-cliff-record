@@ -9,7 +9,7 @@ import {
   timestamp,
   unique,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-orm/zod';
 import { z } from 'zod';
 import { databaseTimestamps, databaseTimestampsNonUpdatable, integrationRuns } from './operations';
 

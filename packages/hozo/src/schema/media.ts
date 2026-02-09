@@ -9,7 +9,7 @@ import {
   unique,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-orm/zod';
 import { z } from 'zod';
 import { mediaTypes } from './media.shared';
 import { databaseTimestamps } from './operations';
