@@ -19,6 +19,7 @@ import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
+import { checkDatabaseConnection } from '@/server/db/connections/postgres';
 import { assertNever } from '@/shared/lib/type-utils';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createError } from '../lib/errors';
@@ -73,6 +74,13 @@ export const run: CommandHandler = async (args, options) => {
 
   const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
   const { debug } = parsedOptions;
+
+  // Fail fast if the database is unreachable
+  try {
+    await checkDatabaseConnection();
+  } catch (e) {
+    throw createError('DATABASE_ERROR', e instanceof Error ? e.message : String(e));
+  }
 
   // Handle 'daily' as a special case that runs multiple syncs + enrichments
   if (integration === 'daily') {
