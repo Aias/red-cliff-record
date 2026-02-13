@@ -14,7 +14,7 @@ You can run integrations with the CLI instead of the per-integration scripts:
 
 ```bash
 rcr sync github
-rcr sync daily
+rcr sync
 ```
 
 Flags are strict (unknown options error). Use `--format=table` for human-readable output.
@@ -315,10 +315,10 @@ rcr sync twitter
 To sync all configured integrations at once:
 
 ```bash
-rcr sync daily
+rcr sync
 ```
 
-This runs: browsing, feedbin, raindrop, readwise, github, airtable, twitter, embeddings. Adobe is excluded because it's rarely updated.
+This runs: browsing, raindrop, readwise, github, airtable, twitter, then enrichments (avatars, alt-text, embeddings). Adobe, feedbin, and agents are excluded—run them individually if needed.
 
 ## Rate Limits and Best Practices
 
@@ -335,7 +335,7 @@ For production use, consider setting up a cron job:
 
 ```bash
 # Sync daily at 2 AM
-0 2 * * * cd /path/to/red-cliff-record && rcr sync daily
+0 2 * * * cd /path/to/red-cliff-record && rcr sync
 ```
 
 ## Debugging Integration Issues
