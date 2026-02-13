@@ -253,7 +253,7 @@ rcr sync twitter
 rcr sync agents                         # Claude, Codex, Cursor histories
 rcr sync avatars                        # Transfer avatars to R2
 rcr sync embeddings                     # Generate embeddings for records
-rcr sync daily                          # Run all daily syncs
+rcr sync                                # Run all daily syncs
 ```
 
 Notes:

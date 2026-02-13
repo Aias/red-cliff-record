@@ -36,41 +36,25 @@ const IntegrationNameSchema = z.enum([
   'browsing',
   'twitter',
   'agents',
-  'daily',
 ]);
 type IntegrationName = z.infer<typeof IntegrationNameSchema>;
-type SingleIntegrationName = Exclude<IntegrationName, 'daily'>;
 const INTEGRATION_LIST = IntegrationNameSchema.options;
 
 /**
  * Run an integration sync
- * Usage: rcr sync <integration> [--debug]
+ * Usage: rcr sync [integration] [--debug]
  *
- * Available integrations:
- *   github, readwise, raindrop, airtable, adobe, feedbin,
- *   browsing, twitter, agents, daily (all daily syncs)
+ * With no arguments, runs all daily syncs (browsing, raindrop, readwise,
+ * github, airtable, twitter) followed by enrichments.
  *
- * After syncing, enrichments (avatars, alt-text, embeddings) are run automatically.
+ * With an integration name, runs that single sync followed by enrichments.
+ * Available: github, readwise, raindrop, airtable, adobe, feedbin,
+ *   browsing, twitter, agents
+ *
  * Use `rcr enrich` to run enrichments separately.
  */
 export const run: CommandHandler = async (args, options) => {
   const rawIntegration = args[0]?.toLowerCase();
-
-  if (!rawIntegration) {
-    throw createError(
-      'VALIDATION_ERROR',
-      `Integration name required. Available: ${INTEGRATION_LIST.join(', ')}`
-    );
-  }
-
-  const integrationResult = IntegrationNameSchema.safeParse(rawIntegration);
-  if (!integrationResult.success) {
-    throw createError(
-      'VALIDATION_ERROR',
-      `Unknown integration: ${rawIntegration}. Available: ${INTEGRATION_LIST.join(', ')}`
-    );
-  }
-  const integration = integrationResult.data;
 
   const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
   const { debug } = parsedOptions;
@@ -82,10 +66,19 @@ export const run: CommandHandler = async (args, options) => {
     throw createError('DATABASE_ERROR', e instanceof Error ? e.message : String(e));
   }
 
-  // Handle 'daily' as a special case that runs multiple syncs + enrichments
-  if (integration === 'daily') {
+  // No argument: run all daily syncs + enrichments
+  if (!rawIntegration) {
     return runDailySync({ debug });
   }
+
+  const integrationResult = IntegrationNameSchema.safeParse(rawIntegration);
+  if (!integrationResult.success) {
+    throw createError(
+      'VALIDATION_ERROR',
+      `Unknown integration: ${rawIntegration}. Available: ${INTEGRATION_LIST.join(', ')}`
+    );
+  }
+  const integration = integrationResult.data;
 
   // Run the single sync, then enrichments
   const startTime = performance.now();
@@ -108,7 +101,6 @@ export { run as feedbin };
 export { run as browsing };
 export { run as twitter };
 export { run as agents };
-export { run as daily };
 
 interface SyncOptions {
   debug: boolean;
@@ -121,7 +113,7 @@ async function runEnrichments(debug: boolean) {
   await runEmbedRecordsIntegration();
 }
 
-async function runSingleSync(integration: SingleIntegrationName, options: SyncOptions) {
+async function runSingleSync(integration: IntegrationName, options: SyncOptions) {
   const { debug } = options;
   const startTime = performance.now();
 
@@ -207,7 +199,7 @@ async function runSingleSync(integration: SingleIntegrationName, options: SyncOp
 }
 
 async function runDailySync(options: SyncOptions) {
-  const dailyIntegrations: SingleIntegrationName[] = [
+  const dailyIntegrations: IntegrationName[] = [
     'browsing',
     'raindrop',
     'readwise',

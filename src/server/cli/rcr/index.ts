@@ -171,8 +171,8 @@ Commands:
   github daily <date>           Get daily commit summary (YYYY-MM-DD)
   github get <id>               Get commit details with file changes
 
-  sync <integration>            Run a sync (github, readwise, etc.) + enrich
-  sync daily                    Run all daily syncs + enrich
+  sync                          Run all daily syncs + enrich
+  sync <integration>            Run a single sync (github, readwise, etc.) + enrich
 
   enrich [enrichment]           Run enrichments (avatars, alt-text, embeddings)
   enrich avatars                Upload external avatar URLs to R2
@@ -281,14 +281,15 @@ async function main(): Promise<void> {
     }
   }
 
-  // Special case: "sync <integration>" - pass integration name as first arg
-  if (command === 'sync' && subcommand) {
+  // Special case: "sync [integration]" - pass integration name as first arg (or none for all)
+  if (command === 'sync') {
     try {
       const handler = cmds.sync?.run;
       if (!handler) {
         throw new Error('Sync handler not found');
       }
-      const result = withDuration(await handler([subcommand, ...args], rawOptions), startTime);
+      const syncArgs = subcommand ? [subcommand, ...args] : args;
+      const result = withDuration(await handler(syncArgs, rawOptions), startTime);
       console.log(formatOutput(result, baseOptions.format, baseOptions.raw));
       process.exit(0);
     } catch (error) {
