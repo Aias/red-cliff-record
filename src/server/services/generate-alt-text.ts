@@ -62,7 +62,7 @@ Respond with only the alt text, no preamble or commentary.`;
 /**
  * Supported image formats for vision API
  */
-const SUPPORTED_FORMATS = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
+const SUPPORTED_FORMATS = ['jpeg', 'jpg', 'png', 'gif', 'webp', 'avif', 'heif'];
 
 export interface GenerateAltTextOptions {
   /** Regenerate even if altText already exists */
@@ -393,6 +393,7 @@ async function generateMissingAltText(
   const imagesWithoutAltText = await db.query.media.findMany({
     where: {
       type: 'image',
+      format: { in: SUPPORTED_FORMATS },
       altText: { isNull: true },
       OR: [{ altTextGeneratedAt: { isNull: true } }, { altTextGeneratedAt: { lt: cooldownDate } }],
     },
