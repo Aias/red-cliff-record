@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { PlusCircleIcon, SearchIcon } from 'lucide-react';
 import { useState } from 'react';
 import { trpc } from '@/app/trpc';
@@ -24,6 +24,10 @@ const MIN_QUERY_LENGTH = 2;
 
 export const SiteSearch = () => {
   const navigate = useNavigate();
+  const searchQ = useRouterState({
+    select: (s) =>
+      s.location.pathname === '/search' ? (s.location.search as { q?: string }).q : undefined,
+  });
   const [inputValue, setInputValue] = useState('');
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandValue, setCommandValue] = useState('');
@@ -33,16 +37,20 @@ export const SiteSearch = () => {
   const debouncedQuery = useDebounce(inputValue, 300);
   const shouldSearch = debouncedQuery.length >= MIN_QUERY_LENGTH;
 
-  const { data, isFetching } = trpc.records.search.useQuery(
-    { query: debouncedQuery, limit: 10 },
-    {
-      enabled: shouldSearch,
-      trpc: { context: { skipBatch: true } },
-    }
+  const trigram = trpc.records.search.useQuery(
+    { query: debouncedQuery, strategy: 'trigram', limit: 10 },
+    { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+  );
+  const vector = trpc.records.search.useQuery(
+    { query: debouncedQuery, strategy: 'vector', limit: 10 },
+    { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
 
-  const results = data?.items ?? [];
-  const hasResults = results.length > 0;
+  const trigramResults = trigram.data?.items ?? [];
+  const trigramIds = new Set(trigramResults.map((r) => r.id));
+  const vectorResults = (vector.data?.items ?? []).filter((r) => !trigramIds.has(r.id));
+  const hasResults = trigramResults.length > 0 || vectorResults.length > 0;
+  const isSearching = trigram.isFetching && !trigram.data;
 
   const handleInputChange = (search: string) => {
     setInputValue(search);
@@ -63,7 +71,7 @@ export const SiteSearch = () => {
     if (!trimmed) return;
     setCommandOpen(false);
     setInputValue('');
-    void navigate({ to: '/records', search: { q: trimmed } });
+    void navigate({ to: '/search', search: { q: trimmed } });
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -86,24 +94,32 @@ export const SiteSearch = () => {
 
   return (
     <>
-      <Popover open={commandOpen} onOpenChange={setCommandOpen}>
+      <Popover
+        open={commandOpen}
+        onOpenChange={(open) => {
+          setCommandOpen(open);
+          if (open && searchQ) setInputValue(searchQ);
+        }}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             className={cn(
-              'relative inline-flex justify-start gap-4 rounded-md text-sm font-normal text-c-primary shadow-none'
+              'relative inline-flex w-full min-w-0 justify-start gap-3 rounded-md text-sm font-normal text-c-primary shadow-none'
             )}
             role="combobox"
             aria-expanded={commandOpen}
           >
             <SearchIcon className="text-c-hint" />
-            <span>Search records...</span>
-            <kbd className="pointer-events-none inline-flex items-center gap-1 rounded border border-c-border bg-c-mist px-1.5 font-mono font-medium text-c-secondary select-none">
+            <span className="min-w-0 flex-1 truncate text-start">
+              {searchQ || 'Search records...'}
+            </span>
+            <kbd className="pointer-events-none ml-auto inline-flex items-center gap-1 rounded border border-c-border bg-c-mist px-1.5 font-mono font-medium text-c-secondary select-none">
               <span className="text-xs text-c-hint">⌘</span>K
             </kbd>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-150 overflow-auto p-0" align="end">
+        <PopoverContent className="w-150 overflow-auto p-0" align="center">
           <Command shouldFilter={false} loop value={commandValue} onValueChange={setCommandValue}>
             <CommandInput
               placeholder="Search records..."
@@ -116,35 +132,57 @@ export const SiteSearch = () => {
               <CommandEmpty>
                 {!shouldSearch
                   ? 'Type to search...'
-                  : !isFetching && !hasResults
-                    ? 'No results found.'
-                    : ''}
+                  : isSearching
+                    ? ''
+                    : !hasResults
+                      ? 'No results found.'
+                      : ''}
               </CommandEmpty>
 
-              {shouldSearch && (
-                <CommandGroup heading="Search Results">
-                  {isFetching ? (
-                    <CommandItem disabled className="flex items-center justify-center">
-                      <Spinner className="size-4" />
+              {shouldSearch && isSearching && (
+                <CommandItem disabled className="flex items-center justify-center">
+                  <Spinner className="size-4" />
+                </CommandItem>
+              )}
+
+              {trigramResults.length > 0 && (
+                <CommandGroup heading="Text Matches">
+                  {trigramResults.map((record) => (
+                    <CommandItem
+                      key={record.id}
+                      value={`${record.title || 'Untitled'}--${record.id}`}
+                      onSelect={() => handleSelectResult(record.id)}
+                    >
+                      <SearchResultItem result={record} />
                     </CommandItem>
-                  ) : (
-                    results.map((record) => (
-                      <CommandItem
-                        key={record.id}
-                        value={`${record.title || 'Untitled'}--${record.id}`}
-                        onSelect={() => handleSelectResult(record.id)}
-                      >
-                        <SearchResultItem result={record} />
-                      </CommandItem>
-                    ))
-                  )}
+                  ))}
                 </CommandGroup>
+              )}
+
+              {vectorResults.length > 0 && (
+                <CommandGroup heading="Similar">
+                  {vectorResults.map((record) => (
+                    <CommandItem
+                      key={record.id}
+                      value={`${record.title || 'Untitled'}--${record.id}`}
+                      onSelect={() => handleSelectResult(record.id)}
+                    >
+                      <SearchResultItem result={record} />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {vector.isFetching && !vector.data && trigramResults.length > 0 && (
+                <CommandItem disabled className="flex items-center justify-center">
+                  <Spinner className="size-4" />
+                </CommandItem>
               )}
 
               {shouldSearch && <CommandSeparator alwaysRender />}
 
               <CommandItem
-                disabled={inputValue.length === 0 || isFetching}
+                disabled={inputValue.length === 0 || trigram.isFetching}
                 key="create-record"
                 onSelect={() => {
                   createRecordMutation.mutate(

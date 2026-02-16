@@ -60,16 +60,20 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
   const debouncedQuery = useDebounce(query, 200);
   const shouldSearch = debouncedQuery.length >= 1;
 
-  const { data, isFetching } = trpc.records.search.useQuery(
-    { query: debouncedQuery, limit: 8 },
-    {
-      enabled: shouldSearch,
-      trpc: { context: { skipBatch: true } },
-    }
+  const trigram = trpc.records.search.useQuery(
+    { query: debouncedQuery, strategy: 'trigram', limit: 8 },
+    { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+  );
+  const vector = trpc.records.search.useQuery(
+    { query: debouncedQuery, strategy: 'vector', limit: 8 },
+    { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
 
-  const results = data?.items ?? [];
-  const hasResults = results.length > 0;
+  const trigramResults = trigram.data?.items ?? [];
+  const trigramIds = new Set(trigramResults.map((r) => r.id));
+  const vectorResults = (vector.data?.items ?? []).filter((r) => !trigramIds.has(r.id));
+  const hasResults = trigramResults.length > 0 || vectorResults.length > 0;
+  const isSearching = trigram.isFetching && !trigram.data;
 
   return (
     <Command shouldFilter={false} loop className="w-full" defaultValue="">
@@ -77,33 +81,53 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
       <CommandList>
         <CommandItem value="-" className="hidden" />
 
-        {shouldSearch && (
-          <CommandGroup heading="Search Results">
-            {isFetching ? (
-              <CommandItem disabled className="flex items-center justify-center">
-                <Spinner className="size-4" />
+        {shouldSearch && isSearching && (
+          <CommandItem disabled className="flex items-center justify-center">
+            <Spinner className="size-4" />
+          </CommandItem>
+        )}
+
+        {trigramResults.length > 0 && (
+          <CommandGroup heading="Text Matches">
+            {trigramResults.map((result) => (
+              <CommandItem
+                key={result.id}
+                value={`${result.title ?? 'Untitled'}--${result.id}`}
+                onSelect={() => onSelect(result.id)}
+              >
+                <SearchResultItem result={result} />
               </CommandItem>
-            ) : (
-              results.map((result) => (
-                <CommandItem
-                  key={result.id}
-                  value={`${result.title ?? 'Untitled'}--${result.id}`}
-                  onSelect={() => onSelect(result.id)}
-                >
-                  <SearchResultItem result={result} />
-                </CommandItem>
-              ))
-            )}
+            ))}
           </CommandGroup>
         )}
 
-        {!isFetching && !hasResults && shouldSearch && (
+        {vectorResults.length > 0 && (
+          <CommandGroup heading="Similar">
+            {vectorResults.map((result) => (
+              <CommandItem
+                key={result.id}
+                value={`${result.title ?? 'Untitled'}--${result.id}`}
+                onSelect={() => onSelect(result.id)}
+              >
+                <SearchResultItem result={result} />
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {vector.isFetching && !vector.data && trigramResults.length > 0 && (
+          <CommandItem disabled className="flex items-center justify-center">
+            <Spinner className="size-4" />
+          </CommandItem>
+        )}
+
+        {!isSearching && !hasResults && shouldSearch && (
           <CommandItem disabled>No results</CommandItem>
         )}
 
         <CommandSeparator alwaysRender />
         <CommandItem
-          disabled={query.length === 0 || isFetching}
+          disabled={query.length === 0 || trigram.isFetching}
           key="create-record"
           onSelect={() => {
             createRecordMutation.mutate(

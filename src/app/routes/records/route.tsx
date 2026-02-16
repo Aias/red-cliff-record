@@ -1,6 +1,5 @@
 import { createFileRoute, Link, Outlet, useMatches } from '@tanstack/react-router';
 import { useCallback } from 'react';
-import { z } from 'zod';
 import { trpc } from '@/app/trpc';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
@@ -10,15 +9,13 @@ import { RecordsGrid } from './-components/records-grid';
 
 export const Route = createFileRoute('/records')({
   component: RouteComponent,
-  validateSearch: z.object({ q: z.string().optional() }),
 });
 
 function RouteComponent() {
   const navigate = Route.useNavigate();
-  const { q } = Route.useSearch();
   const { state: filtersState } = useRecordFilters();
   const { data: recordsList } = trpc.records.search.useQuery(
-    { query: q, ...filtersState, offset: 0 },
+    { ...filtersState, offset: 0 },
     { placeholderData: (prev) => prev }
   );
   const matches = useMatches();
@@ -106,7 +103,7 @@ function RouteComponent() {
           <Outlet />
         </>
       ) : (
-        <RecordsGrid q={q} />
+        <RecordsGrid />
       )}
     </main>
   );

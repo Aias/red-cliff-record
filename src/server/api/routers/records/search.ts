@@ -2,7 +2,7 @@ import { containmentPredicateSlugs, PREDICATES } from '@hozo';
 import { cosineDistance } from 'drizzle-orm';
 import type { z } from 'zod';
 import { createEmbedding } from '@/lib/server/create-embedding';
-import { SIMILARITY_THRESHOLD } from '@/server/lib/constants';
+import { TRIGRAM_DISTANCE_THRESHOLD } from '@/server/lib/constants';
 import { HybridSearchInputSchema, type RecordFiltersSchema } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
 
@@ -130,7 +130,6 @@ export const search = publicProcedure
     const filterWhere = buildFilterWhere(filters);
 
     if (!query) {
-      // Non-search: filtered list with full row data
       const items = await db.query.records.findMany({
         columns: searchColumns,
         with: { outgoingLinks: outgoingLinksWith, media: mediaWith },
@@ -146,34 +145,37 @@ export const search = publicProcedure
       return { items };
     }
 
-    // Hybrid search: trigram + vector → RRF merge
-    // Start both concurrently — both promises created before either is awaited
-    const trigramPromise = db.query.records.findMany({
-      columns: searchColumns,
-      with: { outgoingLinks: outgoingLinksWith, media: mediaWith },
-      where: {
-        ...filterWhere,
-        RAW: (records, { sql }) =>
-          sql`(
-            ${records.title} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-            ${records.content} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-            ${records.summary} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-            ${records.abbreviation} <-> ${query} < ${SIMILARITY_THRESHOLD}
-          )`,
-      },
-      orderBy: (records, { sql }) => [
-        sql`LEAST(
-          ${records.title} <-> ${query},
-          ${records.content} <-> ${query},
-          ${records.summary} <-> ${query},
-          ${records.abbreviation} <-> ${query}
-        )`,
-      ],
-      limit: SEARCH_CAP,
-    });
+    const { strategy } = input;
 
-    const vectorPromise = createEmbedding(query).then((vector) =>
+    const findTrigram = () =>
       db.query.records.findMany({
+        columns: searchColumns,
+        with: { outgoingLinks: outgoingLinksWith, media: mediaWith },
+        where: {
+          ...filterWhere,
+          RAW: (records, { sql }) =>
+            sql`(
+              ${records.title} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
+              ${records.content} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
+              ${records.summary} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
+              ${records.abbreviation} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD}
+            )`,
+        },
+        orderBy: (records, { sql, asc }) => [
+          sql`LEAST(
+            ${records.title} <-> ${query},
+            ${records.content} <-> ${query},
+            ${records.summary} <-> ${query},
+            ${records.abbreviation} <-> ${query}
+          )`,
+          asc(sql`length(${records.title})`),
+        ],
+        limit: strategy === 'hybrid' ? SEARCH_CAP : limit,
+      });
+
+    const findVector = async () => {
+      const vector = await createEmbedding(query);
+      return db.query.records.findMany({
         columns: searchColumns,
         with: { outgoingLinks: outgoingLinksWith, media: mediaWith },
         where: {
@@ -181,17 +183,33 @@ export const search = publicProcedure
           textEmbedding: NOT_NULL,
         },
         orderBy: (records) => [cosineDistance(records.textEmbedding, vector)],
-        limit: SEARCH_CAP,
-      })
-    );
+        limit: strategy === 'hybrid' ? SEARCH_CAP : limit,
+      });
+    };
+
+    if (strategy === 'trigram') {
+      return { items: (await findTrigram()).slice(0, limit) };
+    }
+
+    if (strategy === 'vector') {
+      try {
+        return { items: (await findVector()).slice(0, limit) };
+      } catch {
+        return { items: [] };
+      }
+    }
+
+    // Hybrid: run both concurrently, merge with RRF
+    const trigramPromise = findTrigram();
+    const vectorPromise = findVector();
 
     const trigramResults = await trigramPromise;
     let vectorResults: typeof trigramResults = [];
     try {
       vectorResults = await vectorPromise;
     } catch {
-      // Vector search failed (embedding API error), continue with text-only results
+      // Vector search failed — continue with text-only results
     }
 
-    return { items: rrfMerge(trigramResults, vectorResults).slice(0, SEARCH_CAP) };
+    return { items: rrfMerge(trigramResults, vectorResults).slice(0, limit) };
   });

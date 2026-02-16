@@ -9,7 +9,11 @@ import { TRPCError } from '@trpc/server';
 import { cosineDistance, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createEmbedding } from '@/lib/server/create-embedding';
-import { similarity, SIMILARITY_THRESHOLD } from '@/server/lib/constants';
+import {
+  similarity,
+  SIMILARITY_THRESHOLD,
+  TRIGRAM_DISTANCE_THRESHOLD,
+} from '@/server/lib/constants';
 import { seriateRecordsByEmbedding } from '@/server/lib/seriation';
 import { IdSchema, SearchRecordsInputSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
@@ -76,10 +80,10 @@ export const searchRouter = createTRPCRouter({
         where: {
           RAW: (records, { sql }) =>
             sql`(
-						${records.title} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-						${records.content} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-						${records.summary} <-> ${query} < ${SIMILARITY_THRESHOLD} OR
-						${records.abbreviation} <-> ${query} < ${SIMILARITY_THRESHOLD}
+						${records.title} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
+						${records.content} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
+						${records.summary} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
+						${records.abbreviation} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD}
 					)`,
           type: recordType,
         },

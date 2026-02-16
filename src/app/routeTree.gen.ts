@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as RecordsRouteRouteImport } from './routes/records/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
 
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecordsRouteRoute = RecordsRouteRouteImport.update({
   id: '/records',
   path: '/records',
@@ -38,12 +44,14 @@ const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
+  '/search': typeof SearchRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
+  '/search': typeof SearchRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
@@ -51,25 +59,40 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/records': typeof RecordsRouteRouteWithChildren
+  '/search': typeof SearchRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/records' | '/records/$recordId' | '/api/trpc/$'
+  fullPaths: '/' | '/records' | '/search' | '/records/$recordId' | '/api/trpc/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/records' | '/records/$recordId' | '/api/trpc/$'
-  id: '__root__' | '/' | '/records' | '/records/$recordId' | '/api/trpc/$'
+  to: '/' | '/records' | '/search' | '/records/$recordId' | '/api/trpc/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/records'
+    | '/search'
+    | '/records/$recordId'
+    | '/api/trpc/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RecordsRouteRoute: typeof RecordsRouteRouteWithChildren
+  SearchRoute: typeof SearchRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/records': {
       id: '/records'
       path: '/records'
@@ -116,6 +139,7 @@ const RecordsRouteRouteWithChildren = RecordsRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RecordsRouteRoute: RecordsRouteRouteWithChildren,
+  SearchRoute: SearchRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }
 export const routeTree = rootRouteImport

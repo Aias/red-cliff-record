@@ -74,8 +74,11 @@ export const SearchRecordsInputSchema = z.object({
 
 export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
 
+export const SearchStrategySchema = z.enum(['hybrid', 'trigram', 'vector']);
+
 export const HybridSearchInputSchema = z.object({
   query: z.string().optional(),
+  strategy: SearchStrategySchema.optional().default('hybrid'),
   filters: RecordFiltersSchema.optional().default({}),
   limit: LimitSchema.optional().default(DEFAULT_LIMIT),
   offset: OffsetSchema.optional().default(0),

@@ -1,7 +1,7 @@
 import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations.shared';
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
-import { Link, useNavigate } from '@tanstack/react-router';
-import { ChevronDownIcon, SearchIcon, StarIcon } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { ChevronDownIcon, StarIcon } from 'lucide-react';
 import { useState } from 'react';
 import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
@@ -94,11 +94,10 @@ function RecordRow({ record }: { record: SearchItem }) {
   );
 }
 
-export const RecordsGrid = ({ q }: { q?: string }) => {
-  const navigate = useNavigate();
+export const RecordsGrid = () => {
   const { state, setFilters, setLimit, reset } = useRecordFilters();
   const { data } = trpc.records.search.useQuery(
-    { query: q, ...state, offset: 0 },
+    { ...state, offset: 0 },
     { placeholderData: (prev) => prev }
   );
 
@@ -107,27 +106,12 @@ export const RecordsGrid = ({ q }: { q?: string }) => {
     limit,
   } = state;
 
-  // Derive search input from URL query param
-  const [searchInput, setSearchInput] = useState(q ?? '');
-  const [prevQ, setPrevQ] = useState(q);
-  if (q !== prevQ) {
-    setPrevQ(q);
-    setSearchInput(q ?? '');
-  }
-
   const [limitInput, setLimitInput] = useState(limit?.toString() ?? '');
 
   const curatedValue = isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No';
   const privateValue = isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No';
   const hasParentValue = hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No';
   const hasMediaValue = hasMedia === undefined ? 'All' : hasMedia ? 'Yes' : 'No';
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const trimmed = searchInput.trim();
-      void navigate({ to: '/records', search: trimmed ? { q: trimmed } : {} });
-    }
-  };
 
   const handleTypeToggle = (recordType: RecordType) => {
     setFilters((prev) => {
@@ -205,21 +189,6 @@ export const RecordsGrid = ({ q }: { q?: string }) => {
           </button>
         </div>
         <hr />
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="search">Search</Label>
-          <div className="relative">
-            <SearchIcon className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-c-hint" />
-            <Input
-              id="search"
-              type="text"
-              placeholder="Search records..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              className="pl-8"
-            />
-          </div>
-        </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="types">Types</Label>
           <DropdownMenu>
