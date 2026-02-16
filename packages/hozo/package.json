@@ -1,6 +1,6 @@
 {
-  "name": "@hozo",
-  "version": "0.2.0",
+  "name": "@aias/hozo",
+  "version": "0.3.0",
   "description": "Shared schema, relations, and validation for Red Cliff Record",
   "license": "MIT",
   "files": [
@@ -17,16 +17,18 @@
     },
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bunx --bun tsup src/index.ts --dts --format esm --sourcemap --clean",
     "dev:watch": "bun run build --watch",
     "lint": "oxlint --fix --type-aware . && tsgo --noEmit",
+    "prepublishOnly": "bun run build",
     "test": "bun test"
   },
-  "dependencies": {
-    "drizzle-kit": "1.0.0-beta.15-859cf75"
-  },
   "devDependencies": {
+    "drizzle-kit": "1.0.0-beta.15-859cf75",
     "drizzle-orm": "1.0.0-beta.15-859cf75",
     "tsup": "^8.5.1",
     "zod": "^4.1.12"
