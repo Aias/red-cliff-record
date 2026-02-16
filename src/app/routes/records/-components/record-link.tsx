@@ -114,7 +114,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
                   side="left"
                   sideOffset={12}
                 >
-                  <RecordDisplay recordId={id} compact />
+                  <RecordDisplay recordId={id} compact className="p-3" />
                 </HoverCardContent>
               </HoverCard>
             ) : (

@@ -87,7 +87,7 @@ export const RecordDisplay = memo(function RecordDisplay({
       </header>
 
       {recordMedia.length > 0 && (
-        <figure className="flex flex-col gap-1">
+        <figure className="flex flex-col gap-1.5">
           <MediaGrid media={recordMedia} />
           {mediaCaption && (
             <Markdown as="figcaption" className="text-xs text-c-secondary">
@@ -98,15 +98,15 @@ export const RecordDisplay = memo(function RecordDisplay({
       )}
 
       {summary && (
-        <Markdown className={cn('text-c-display', compact && 'line-clamp-2')}>{summary}</Markdown>
+        <Markdown className={cn('text-c-display', compact && 'line-clamp-3')}>{summary}</Markdown>
       )}
 
       {content && (
-        <Markdown className={cn('text-c-primary', compact && 'line-clamp-4')}>{content}</Markdown>
+        <Markdown className={cn('text-c-primary', compact && 'line-clamp-6')}>{content}</Markdown>
       )}
 
       {notes && (
-        <Markdown className={cn('font-mono text-xs text-c-secondary', compact && 'line-clamp-2')}>
+        <Markdown className={cn('font-mono text-xs text-c-secondary', compact && 'line-clamp-3')}>
           {notes}
         </Markdown>
       )}

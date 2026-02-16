@@ -52,7 +52,7 @@ export function Markdown({ children, className, as = 'div' }: MarkdownProps) {
   }, [children]);
 
   return React.createElement(as, {
-    className: cn('prose', className),
+    className: cn('prose text-[length:inherit] leading-[inherit]', className),
     dangerouslySetInnerHTML: { __html: html },
   });
 }

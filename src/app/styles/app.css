@@ -236,8 +236,6 @@
 /* Typography plugin customization with project color tokens */
 @layer utilities {
   .prose {
-    font-size: inherit;
-    line-height: inherit;
     --tw-prose-body: var(--color-c-primary);
     --tw-prose-headings: var(--color-c-display);
     --tw-prose-lead: var(--color-c-secondary);
