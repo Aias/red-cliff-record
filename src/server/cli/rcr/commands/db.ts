@@ -52,6 +52,7 @@ async function runDbManager(args: string[]): Promise<void> {
   const proc = spawn({
     cmd: ['bash', dbManagerPath, ...args],
     cwd: projectRoot,
+    stdin: 'inherit',
     stdout: 'inherit',
     stderr: 'inherit',
   });

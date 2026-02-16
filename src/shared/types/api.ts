@@ -36,9 +36,6 @@ export const OrderCriteriaSchema = z.object({
 
 export const RecordFiltersSchema = z.object({
   types: z.array(RecordTypeSchema).optional(),
-  title: z.string().nullable().optional(),
-  text: z.string().nullable().optional(),
-  url: z.string().nullable().optional(),
   hasParent: z.boolean().optional(),
   hasTitle: z.boolean().optional(),
   minRating: z.number().int().gte(0).optional(),
@@ -75,4 +72,13 @@ export const SearchRecordsInputSchema = z.object({
   limit: LimitSchema.optional().default(10),
 });
 
-export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
+const SearchStrategySchema = z.enum(['hybrid', 'trigram', 'vector']);
+
+export const HybridSearchInputSchema = z.object({
+  query: z.string().optional(),
+  strategy: SearchStrategySchema.optional().default('hybrid'),
+  filters: RecordFiltersSchema.optional().default({}),
+  limit: LimitSchema.optional().default(DEFAULT_LIMIT),
+  offset: OffsetSchema.optional().default(0),
+  orderBy: OrderBySchema.optional().default([{ field: 'recordCreatedAt', direction: 'desc' }]),
+});

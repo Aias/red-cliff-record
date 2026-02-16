@@ -2,6 +2,7 @@ import { PREDICATES, type Predicate, type PredicateSlug } from '@hozo';
 import { useQueries } from '@tanstack/react-query';
 import { trpc } from '@/app/trpc';
 import type { DbId, ListRecordsInput } from '@/shared/types/api';
+import type { RecordGet } from '@/shared/types/domain';
 
 export function useRecord(id: DbId) {
   return trpc.records.get.useQuery({ id });
@@ -42,4 +43,39 @@ export function useLinksMap(ids: DbId[]) {
 /** Returns predicates keyed by slug (static data, no network request) */
 export function usePredicateMap(): Record<PredicateSlug, Predicate> {
   return PREDICATES;
+}
+
+/** Derive creator and parent titles from a record's outgoing links */
+export function getRecordTitleFallbacks(outgoingLinks: RecordGet['outgoingLinks']) {
+  let creatorTitle: string | null | undefined;
+  let parentTitle: string | null | undefined;
+  for (const edge of outgoingLinks ?? []) {
+    const kind = PREDICATES[edge.predicate]?.type;
+    if (kind === 'creation' && !creatorTitle) creatorTitle = edge.target.title;
+    if (kind === 'containment' && !parentTitle) parentTitle = edge.target.title;
+    if (creatorTitle && parentTitle) break;
+  }
+  return { creatorTitle, parentTitle };
+}
+
+/** Unified preview text fallback chain */
+export function getRecordPreview(
+  record: Pick<RecordGet, 'summary' | 'content' | 'notes' | 'url'>
+): string | null {
+  return record.summary ?? record.content ?? record.notes ?? record.url ?? null;
+}
+
+/** Resolve the first displayable media item (first media attachment or avatar fallback) */
+export function getRecordThumbnailMedia(
+  record: Pick<RecordGet, 'media' | 'avatarUrl'>
+): { type: 'image' | 'video'; url: string; altText: string | null } | null {
+  const first = record.media?.[0];
+  if (first)
+    return {
+      type: first.type === 'video' ? 'video' : 'image',
+      url: first.url,
+      altText: first.altText,
+    };
+  if (record.avatarUrl) return { type: 'image', url: record.avatarUrl, altText: null };
+  return null;
 }

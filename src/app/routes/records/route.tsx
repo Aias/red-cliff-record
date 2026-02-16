@@ -14,7 +14,7 @@ export const Route = createFileRoute('/records')({
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const { state: filtersState } = useRecordFilters();
-  const { data: recordsList } = trpc.records.list.useQuery(
+  const { data: recordsList } = trpc.records.search.useQuery(
     { ...filtersState, offset: 0 },
     { placeholderData: (prev) => prev }
   );

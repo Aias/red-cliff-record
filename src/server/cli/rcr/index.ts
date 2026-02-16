@@ -10,7 +10,7 @@
  *
  * Commands:
  *   records   Manage records (get, list, create, update, delete, merge, embed, tree)
- *   search    Search records (text, semantic, similar)
+ *   search    Search records (hybrid, text, semantic, similar)
  *   links     Manage links (list, create, delete, predicates)
  *   sync      Run integration syncs
  *
@@ -153,9 +153,9 @@ Commands:
   media update <id> <json>          Update media metadata (alt text, etc.)
   media generate-alt <id...>        Generate alt text using OpenAI vision [--force]
 
-  search <query>                Semantic search (default)
-  search semantic <query>       Semantic vector search
+  search <query>                Hybrid search (default)
   search text <query>           Full-text trigram search
+  search semantic <query>       Semantic vector search
   search similar <id...>        Find records similar to given ID(s)
 
   links list <id> [--predicate=...] [--direction=...]  List/filter links
@@ -191,9 +191,6 @@ Commands:
 Records List Filters:
   --type=<types>          Record types (comma-separated: entity,concept,artifact)
   --source=<sources>      Integration sources (comma-separated: readwise,github,...)
-  --title=<text>          Title contains text (case-insensitive)
-  --text=<text>           Content/summary/notes contains text
-  --url=<text>            URL contains text
   --has-title[=BOOL]      Filter by title presence (true/false)
   --curated[=BOOL]        Filter by curated status (true/false)
   --private[=BOOL]        Filter by private status (true/false)
@@ -256,7 +253,7 @@ async function main(): Promise<void> {
   // Load command modules
   const cmds = await loadCommands();
 
-  // Special case: "search <query>" without subcommand means semantic search
+  // Special case: "search <query>" without subcommand means hybrid search
   if (
     command === 'search' &&
     subcommand &&
@@ -264,12 +261,12 @@ async function main(): Promise<void> {
     subcommand !== 'similar' &&
     !(subcommand === 'semantic' && args.length > 0)
   ) {
-    // Treat subcommand as the query for semantic search
+    // Treat subcommand as the query for hybrid search
     const query = [subcommand, ...args].join(' ');
     try {
-      const handler = cmds.search?.semantic;
+      const handler = cmds.search?.hybrid;
       if (!handler) {
-        throw new Error('Semantic search handler not found');
+        throw new Error('Hybrid search handler not found');
       }
       const result = withDuration(await handler([query], rawOptions), startTime);
       console.log(formatOutput(result, baseOptions.format, baseOptions.raw));

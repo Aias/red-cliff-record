@@ -1,8 +1,8 @@
 import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations.shared';
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { Link } from '@tanstack/react-router';
-import { ChevronDownIcon } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { ChevronDownIcon, StarIcon } from 'lucide-react';
+import { useState } from 'react';
 import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Checkbox } from '@/components/checkbox';
@@ -21,19 +21,38 @@ import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
-import { useRecord } from '@/lib/hooks/record-queries';
+import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
+import { SourceLogos } from './record-parts';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 
-const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
-  const { data: record } = useRecord(id);
+function formatDate(dateValue: Date | string) {
+  const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+  const hours24 = date.getHours();
+  const minutes = date.getMinutes();
+  const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
+  const ampm = hours24 >= 12 ? 'PM' : 'AM';
+  return `${date.toLocaleDateString()} ${hours12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+}
 
-  if (!record) return null;
+function RecordRow({ recordId }: { recordId: DbId }) {
+  const { data: record } = useRecord(recordId);
 
-  const title = record.title || record.summary || record.content || 'Untitled Record';
-  const ratingStars = record.rating && record.rating >= 1 ? '⭐'.repeat(record.rating) : '';
+  if (!record) {
+    return (
+      <TableRow>
+        <TableCell colSpan={5}>
+          <div className="h-4 w-48 animate-pulse rounded bg-c-mist" />
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  const { creatorTitle, parentTitle } = getRecordTitleFallbacks(record.outgoingLinks);
+  const label =
+    record.title || creatorTitle || parentTitle || record.summary || record.content || 'Untitled';
 
   return (
     <TableRow>
@@ -46,18 +65,29 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
             <Link
               to="/records/$recordId"
               params={{ recordId: record.id }}
-              className="block w-full truncate"
+              className="flex w-full items-center gap-2 truncate"
             >
-              {ratingStars && <span className="mr-2">{ratingStars}</span>}
-              {title}
+              <span className="truncate">{label}</span>
+              {record.abbreviation && (
+                <span className="shrink-0 text-c-hint">({record.abbreviation})</span>
+              )}
+              {record.sense && <span className="shrink-0 text-c-hint italic">{record.sense}</span>}
+              {record.rating >= 1 && (
+                <ol
+                  className="flex shrink-0 gap-0.5 opacity-75"
+                  aria-label={`${record.rating} star rating`}
+                >
+                  {Array.from({ length: record.rating }, (_, i) => (
+                    <li key={i}>
+                      <StarIcon className="size-[0.875em] fill-current" />
+                    </li>
+                  ))}
+                </ol>
+              )}
             </Link>
           </TooltipTrigger>
           <TooltipContent className="max-w-96">
-            <div
-              className="line-clamp-3" // Line clamp only works on elements without block padding, otherwise the clipped text will show through on the padding area
-            >
-              {title}
-            </div>
+            <div className="line-clamp-3">{label}</div>
           </TooltipContent>
         </Tooltip>
       </TableCell>
@@ -69,167 +99,74 @@ const RecordRow = memo(function RecordRow({ id }: { id: DbId }) {
         )}
       </TableCell>
       <TableCell className="text-sm whitespace-nowrap">
-        {record.recordCreatedAt
-          ? (() => {
-              const date = new Date(record.recordCreatedAt);
-              const hours24 = date.getHours();
-              const minutes = date.getMinutes();
-              const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
-              const ampm = hours24 >= 12 ? 'PM' : 'AM';
-              return `${date.toLocaleDateString()} ${hours12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-            })()
-          : ''}
+        {record.recordCreatedAt ? formatDate(record.recordCreatedAt) : ''}
       </TableCell>
       <TableCell className="text-center">
-        <div className="flex justify-center gap-1">
-          {record.sources?.map((source) => (
-            <IntegrationLogo integration={source} key={source} className="size-4" />
-          ))}
-        </div>
+        <SourceLogos sources={record.sources} className="justify-center text-sm" />
       </TableCell>
     </TableRow>
   );
-});
+}
 
 export const RecordsGrid = () => {
   const { state, setFilters, setLimit, reset } = useRecordFilters();
-  const { data: queue } = trpc.records.list.useQuery(
+  const { data } = trpc.records.search.useQuery(
     { ...state, offset: 0 },
     { placeholderData: (prev) => prev }
   );
 
   const {
-    filters: { types, title, url, isCurated, isPrivate, sources, hasParent, text, hasMedia },
+    filters: { types, isCurated, isPrivate, sources, hasParent, hasMedia },
     limit,
   } = state;
 
-  // Memoize filter values
-  const filterValues = useMemo(
-    () => ({
-      curatedValue: isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No',
-      privateValue: isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No',
-      hasParentValue: hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No',
-      hasMediaValue: hasMedia === undefined ? 'All' : hasMedia ? 'Yes' : 'No',
-    }),
-    [isCurated, isPrivate, hasParent, hasMedia]
-  );
-
-  // State for input fields
-  const [titleInput, setTitleInput] = useState(title ?? '');
-  const [urlInput, setUrlInput] = useState(url ?? '');
-  const [textInput, setTextInput] = useState(text ?? '');
   const [limitInput, setLimitInput] = useState(limit?.toString() ?? '');
 
-  // Filter change handlers
-  const handleTitleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setTitleInput(value);
-      setFilters((prev) => ({ ...prev, title: value || undefined }));
-    },
-    [setFilters]
-  );
+  const curatedValue = isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No';
+  const privateValue = isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No';
+  const hasParentValue = hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No';
+  const hasMediaValue = hasMedia === undefined ? 'All' : hasMedia ? 'Yes' : 'No';
 
-  const handleUrlChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setUrlInput(value);
-      setFilters((prev) => ({ ...prev, url: value || undefined }));
-    },
-    [setFilters]
-  );
+  const handleTypeToggle = (recordType: RecordType) => {
+    setFilters((prev) => {
+      const currentTypes = prev.types ?? [];
+      const newTypes = currentTypes.includes(recordType)
+        ? currentTypes.filter((t) => t !== recordType)
+        : [...currentTypes, recordType];
+      return { ...prev, types: newTypes.length > 0 ? newTypes : undefined };
+    });
+  };
 
-  const handleTextChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setTextInput(value);
-      setFilters((prev) => ({ ...prev, text: value || undefined }));
-    },
-    [setFilters]
-  );
+  const handleSourceToggle = (source: IntegrationType) => {
+    setFilters((prev) => {
+      const currentSources = prev.sources ?? [];
+      const newSources = currentSources.includes(source)
+        ? currentSources.filter((s) => s !== source)
+        : [...currentSources, source];
+      return { ...prev, sources: newSources.length > 0 ? newSources : undefined };
+    });
+  };
 
-  const handleTypeToggle = useCallback(
-    (recordType: RecordType) => {
-      setFilters((prev) => {
-        const currentTypes = prev.types ?? [];
-        const newTypes = currentTypes.includes(recordType)
-          ? currentTypes.filter((t) => t !== recordType)
-          : [...currentTypes, recordType];
-        return { ...prev, types: newTypes.length > 0 ? newTypes : undefined };
-      });
-    },
-    [setFilters]
-  );
-
-  const handleSourceToggle = useCallback(
-    (source: IntegrationType) => {
-      setFilters((prev) => {
-        const currentSources = prev.sources ?? [];
-        const newSources = currentSources.includes(source)
-          ? currentSources.filter((s) => s !== source)
-          : [...currentSources, source];
-        return { ...prev, sources: newSources.length > 0 ? newSources : undefined };
-      });
-    },
-    [setFilters]
-  );
-
-  const handleCuratedChange = useCallback(
-    (value: string) => {
+  const toggleBooleanFilter =
+    (field: 'isCurated' | 'isPrivate' | 'hasParent' | 'hasMedia') => (value: string) => {
       setFilters((prev) => ({
         ...prev,
-        isCurated: value === 'All' ? undefined : value === 'Yes',
+        [field]: value === 'All' ? undefined : value === 'Yes',
       }));
-    },
-    [setFilters]
-  );
+    };
 
-  const handlePrivateChange = useCallback(
-    (value: string) => {
-      setFilters((prev) => ({
-        ...prev,
-        isPrivate: value === 'All' ? undefined : value === 'Yes',
-      }));
-    },
-    [setFilters]
-  );
-
-  const handleHasParentChange = useCallback(
-    (value: string) => {
-      setFilters((prev) => ({
-        ...prev,
-        hasParent: value === 'All' ? undefined : value === 'Yes',
-      }));
-    },
-    [setFilters]
-  );
-
-  const handleHasMediaChange = useCallback(
-    (value: string) => {
-      setFilters((prev) => ({
-        ...prev,
-        hasMedia: value === 'All' ? undefined : value === 'Yes',
-      }));
-    },
-    [setFilters]
-  );
-
-  const handleLimitChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      if (value === '' || /^\d+$/.test(value)) {
-        setLimitInput(value);
-        if (value) {
-          setLimit(parseInt(value, 10));
-        }
+  const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || /^\d+$/.test(value)) {
+      setLimitInput(value);
+      if (value) {
+        setLimit(parseInt(value, 10));
       }
-    },
-    [setLimit]
-  );
+    }
+  };
 
-  // Memoize the filter sidebar content
-  const FilterSidebar = useMemo(
-    () => (
+  return data ? (
+    <div className="flex h-full grow gap-4 overflow-hidden">
       <div className="-mx-4 flex min-w-48 flex-col gap-3 overflow-y-auto px-4 text-sm">
         <h3 className="mb-1 text-base">Record Filters</h3>
         <hr />
@@ -326,43 +263,12 @@ export const RecordsGrid = () => {
           </DropdownMenu>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            type="text"
-            placeholder="Filter by title"
-            value={titleInput}
-            onChange={handleTitleChange}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="text">Text</Label>
-          <Input
-            id="text"
-            type="text"
-            placeholder="Filter by text content"
-            value={textInput}
-            onChange={handleTextChange}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="url">URL</Label>
-          <Input
-            id="url"
-            type="text"
-            placeholder="Filter by URL"
-            value={urlInput}
-            onChange={handleUrlChange}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
           <Label htmlFor="curated">Is Curated?</Label>
           <ToggleGroup
             id="curated"
             type="single"
-            value={filterValues.curatedValue}
-            onValueChange={handleCuratedChange}
+            value={curatedValue}
+            onValueChange={toggleBooleanFilter('isCurated')}
             variant="outline"
             className="w-full"
           >
@@ -382,8 +288,8 @@ export const RecordsGrid = () => {
           <ToggleGroup
             id="hasParent"
             type="single"
-            value={filterValues.hasParentValue}
-            onValueChange={handleHasParentChange}
+            value={hasParentValue}
+            onValueChange={toggleBooleanFilter('hasParent')}
             variant="outline"
             className="w-full"
           >
@@ -403,8 +309,8 @@ export const RecordsGrid = () => {
           <ToggleGroup
             id="hasMedia"
             type="single"
-            value={filterValues.hasMediaValue}
-            onValueChange={handleHasMediaChange}
+            value={hasMediaValue}
+            onValueChange={toggleBooleanFilter('hasMedia')}
             variant="outline"
             className="w-full"
           >
@@ -424,8 +330,8 @@ export const RecordsGrid = () => {
           <ToggleGroup
             id="private"
             type="single"
-            value={filterValues.privateValue}
-            onValueChange={handlePrivateChange}
+            value={privateValue}
+            onValueChange={toggleBooleanFilter('isPrivate')}
             variant="outline"
             className="w-full"
           >
@@ -452,35 +358,8 @@ export const RecordsGrid = () => {
           />
         </div>
       </div>
-    ),
-    [
-      reset,
-      setFilters,
-      types,
-      handleTypeToggle,
-      sources,
-      handleSourceToggle,
-      titleInput,
-      handleTitleChange,
-      urlInput,
-      handleUrlChange,
-      textInput,
-      handleTextChange,
-      limitInput,
-      handleLimitChange,
-      filterValues,
-      handleCuratedChange,
-      handlePrivateChange,
-      handleHasParentChange,
-      handleHasMediaChange,
-    ]
-  );
-
-  return queue ? (
-    <div className="flex h-full grow gap-4 overflow-hidden">
-      {FilterSidebar}
       <div className="flex grow overflow-hidden rounded border border-c-divider bg-c-page text-xs">
-        <Table className={cn({ 'h-full': queue.ids.length === 0 })}>
+        <Table className={cn({ 'h-full': data.ids.length === 0 })}>
           <TableHeader className="sticky top-0 z-10 bg-c-page before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-c-divider">
             <TableRow className="sticky top-0 z-10 bg-c-mist">
               <TableHead className="sr-only text-center">Type</TableHead>
@@ -491,8 +370,8 @@ export const RecordsGrid = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {queue.ids.length > 0 ? (
-              queue.ids.map(({ id }) => <RecordRow key={id} id={id} />)
+            {data.ids.length > 0 ? (
+              data.ids.map(({ id }) => <RecordRow key={id} recordId={id} />)
             ) : (
               <TableRow>
                 <TableCell colSpan={5} className="pointer-events-none text-center">
@@ -505,7 +384,7 @@ export const RecordsGrid = () => {
       </div>
     </div>
   ) : (
-    <Placeholder>
+    <Placeholder className="grow">
       <Spinner />
     </Placeholder>
   );

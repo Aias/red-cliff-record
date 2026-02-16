@@ -54,18 +54,11 @@ export const records = pgTable(
   (table) => [
     index().on(table.type, table.title, table.url),
     index().on(table.slug),
-    index('idx_records_content_search').using(
-      'gin',
-      table.title.op('gin_trgm_ops'),
-      table.abbreviation.op('gin_trgm_ops'),
-      table.sense.op('gin_trgm_ops'),
-      table.url.op('gin_trgm_ops'),
-      table.summary.op('gin_trgm_ops'),
-      table.content.op('gin_trgm_ops'),
-      table.notes.op('gin_trgm_ops'),
-      table.mediaCaption.op('gin_trgm_ops')
-    ),
     index('idx_records_sources').using('gin', table.sources),
+    index('idx_records_title_trgm').using('gist', table.title.op('gist_trgm_ops')),
+    index('idx_records_content_trgm').using('gist', table.content.op('gist_trgm_ops')),
+    index('idx_records_summary_trgm').using('gist', table.summary.op('gist_trgm_ops')),
+    index('idx_records_abbreviation_trgm').using('gist', table.abbreviation.op('gist_trgm_ops')),
     index().on(table.recordCreatedAt),
     index().on(table.recordUpdatedAt),
     index().on(table.isCurated),

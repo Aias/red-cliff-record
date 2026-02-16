@@ -1,26 +1,9 @@
-import type { RelationsFieldFilter } from 'drizzle-orm';
+import { containmentPredicateSlugs } from '@hozo';
 import { ListRecordsInputSchema, type IdParamList } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
 
-/**
- * Build a filter condition for the title column based on hasTitle and title text search.
- * - hasTitle=false → filter for null titles only
- * - hasTitle=true + title text → filter for non-null titles matching text
- * - hasTitle=true → filter for non-null titles
- * - title text only → filter for titles matching text (implicitly excludes nulls via ilike)
- * - title=null (from API, not CLI) → filter for null titles (backwards compat)
- */
-function buildTitleFilter(
-  hasTitle: boolean | undefined,
-  title: string | null | undefined
-): RelationsFieldFilter<string> | undefined {
-  if (hasTitle === false) return { isNull: true };
-  if (hasTitle === true && title) return { isNotNull: true, ilike: `%${title}%` };
-  if (hasTitle === true) return { isNotNull: true };
-  if (title === null) return { isNull: true };
-  if (title) return { ilike: `%${title}%` };
-  return undefined;
-}
+const NOT_NULL = { isNotNull: true } as const;
+const IS_NULL = { isNull: true } as const;
 
 export const list = publicProcedure
   .input(ListRecordsInputSchema)
@@ -28,9 +11,6 @@ export const list = publicProcedure
     const {
       filters: {
         types,
-        title,
-        text,
-        url: domain,
         hasParent,
         hasTitle,
         minRating,
@@ -53,92 +33,28 @@ export const list = publicProcedure
       },
       where: {
         type: types?.length ? { in: types } : undefined,
-        title: buildTitleFilter(hasTitle, title),
-        OR: text
-          ? [
-              {
-                content: { ilike: `%${text}%` },
-              },
-              {
-                summary: { ilike: `%${text}%` },
-              },
-              {
-                notes: { ilike: `%${text}%` },
-              },
-              {
-                mediaCaption: { ilike: `%${text}%` },
-              },
-            ]
-          : undefined,
-        url:
-          domain === null
-            ? {
-                isNull: true,
-              }
-            : domain
-              ? {
-                  ilike: `%${domain}%`,
-                }
-              : undefined,
+        title: hasTitle === true ? NOT_NULL : hasTitle === false ? IS_NULL : undefined,
         isPrivate,
         isCurated,
         ...(hasParent === true
-          ? {
-              outgoingLinks: {
-                predicate: {
-                  in: ['contained_by', 'contains'],
-                },
-              },
-            }
+          ? { outgoingLinks: { predicate: { in: containmentPredicateSlugs } } }
           : hasParent === false
-            ? {
-                NOT: {
-                  outgoingLinks: {
-                    predicate: { in: ['contained_by', 'contains'] },
-                  },
-                },
-              }
+            ? { NOT: { outgoingLinks: { predicate: { in: containmentPredicateSlugs } } } }
             : {}),
         media: hasMedia,
-        reminderAt: hasReminder
-          ? {
-              isNotNull: true,
-            }
-          : {
-              isNull: true,
-            },
-        sources: sources?.length
-          ? {
-              arrayOverlaps: sources,
-            }
-          : undefined,
-        rating:
-          minRating || maxRating
-            ? {
-                gte: minRating,
-                lte: maxRating,
-              }
-            : undefined,
+        reminderAt: hasReminder === true ? NOT_NULL : hasReminder === false ? IS_NULL : undefined,
+        sources: sources?.length ? { arrayOverlaps: sources } : undefined,
+        rating: minRating || maxRating ? { gte: minRating, lte: maxRating } : undefined,
         textEmbedding:
-          hasEmbedding === true
-            ? {
-                isNotNull: true,
-              }
-            : hasEmbedding === false
-              ? {
-                  isNull: true,
-                }
-              : undefined,
+          hasEmbedding === true ? NOT_NULL : hasEmbedding === false ? IS_NULL : undefined,
       },
       limit,
       offset,
-      orderBy: (records, { asc, desc }) => {
-        // Map each order criteria to a sort expression
-        return orderBy.map(({ field, direction }) => {
-          const orderColumn = records[field];
-          return direction === 'asc' ? asc(orderColumn) : desc(orderColumn);
-        });
-      },
+      orderBy: (records, { asc, desc }) =>
+        orderBy.map(({ field, direction }) => {
+          const col = records[field];
+          return direction === 'asc' ? asc(col) : desc(col);
+        }),
     });
 
     return {

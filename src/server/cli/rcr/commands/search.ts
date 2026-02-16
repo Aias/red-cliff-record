@@ -21,6 +21,10 @@ import type { CommandHandler } from '../lib/types';
 
 const caller = createCLICaller();
 
+const SearchLimitOptionsSchema = BaseOptionsSchema.extend({
+  limit: LimitSchema.optional(),
+}).strict();
+
 const SearchTextOptionsSchema = BaseOptionsSchema.extend({
   limit: LimitSchema.optional(),
   type: RecordTypeSchema.optional(),
@@ -31,9 +35,25 @@ const SearchSemanticOptionsSchema = BaseOptionsSchema.extend({
   exclude: CommaSeparatedIdsSchema.optional(),
 }).strict();
 
-const SearchSimilarOptionsSchema = BaseOptionsSchema.extend({
-  limit: LimitSchema.optional(),
-}).strict();
+/**
+ * Hybrid search (trigram + vector with RRF merge)
+ * Usage: rcr search <query> [--limit=...]
+ */
+export const hybrid: CommandHandler = async (args, options) => {
+  const parsedOptions = parseOptions(SearchLimitOptionsSchema, options);
+  const query = args.join(' ');
+  if (!query) {
+    throw createError('VALIDATION_ERROR', 'Search query is required');
+  }
+
+  const limit = parsedOptions.limit ?? 20;
+
+  const { ids } = await caller.records.search({ query, limit });
+
+  const results = await Promise.all(ids.map(({ id }) => caller.records.get({ id })));
+
+  return success(results, { count: results.length, limit });
+};
 
 /**
  * Full-text trigram search
@@ -93,7 +113,7 @@ export const semantic: CommandHandler = async (args, options) => {
  * Usage: rcr search similar <id...> [--limit=...]
  */
 export const similar: CommandHandler = async (args, options) => {
-  const parsedOptions = parseOptions(SearchSimilarOptionsSchema, options);
+  const parsedOptions = parseOptions(SearchLimitOptionsSchema, options);
   const ids = parseIds(args);
   const limit = parsedOptions.limit ?? 20;
 

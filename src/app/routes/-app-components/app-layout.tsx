@@ -32,7 +32,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden">
-      <menu className="relative z-100 flex shrink-0 basis-auto items-center justify-between gap-4 border-b border-c-border surface px-4 py-2">
+      <menu className="relative z-100 grid shrink-0 basis-auto grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-c-border surface px-4 py-2">
         <li className="flex items-center gap-4">
           <Link
             to={'/'}
@@ -44,8 +44,10 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
           <Separator orientation="vertical" className="h-5! border-c-border" />
           <NavLink to={'/records'}>Index</NavLink>
         </li>
-        <li className="flex items-center gap-2">
+        <li className="flex w-full max-w-lg min-w-0 justify-self-center">
           <SiteSearch />
+        </li>
+        <li className="flex items-center justify-end gap-2">
           <KeyboardShortcutsHelp />
           <Button variant="ghost" onClick={toggleTheme} className="h-9 w-9 p-0">
             {currentTheme === 'light' ? (
