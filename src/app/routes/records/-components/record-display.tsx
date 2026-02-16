@@ -3,26 +3,26 @@ import { useNavigate } from '@tanstack/react-router';
 import { RectangleEllipsisIcon } from 'lucide-react';
 import { memo } from 'react';
 import { Avatar } from '@/components/avatar';
-import { IntegrationLogo } from '@/components/integration-logo';
 import { Markdown } from '@/components/markdown';
 import MediaGrid from '@/components/media-grid';
 import { Spinner } from '@/components/spinner';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
+import { getRecordTitle, SourceLogos } from './record-parts';
 import { recordTypeIcons } from './type-icons';
 
 interface RecordDisplayProps {
   recordId: DbId;
+  compact?: boolean;
   className?: string;
 }
 
-/**
- * Compact read-only display of a record.
- * Shows all record data in a typographically clean format.
- * Clicking the title navigates to edit that record.
- */
-export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) => {
+export const RecordDisplay = memo(function RecordDisplay({
+  recordId,
+  compact,
+  className,
+}: RecordDisplayProps) {
   const { data: record, isError } = useRecord(recordId);
   const navigate = useNavigate();
 
@@ -42,10 +42,10 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
   const {
     id,
     type,
-    title,
     abbreviation,
     sense,
     avatarUrl,
+    title,
     summary,
     content,
     notes,
@@ -55,24 +55,17 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
   } = record;
 
   const { creatorTitle } = getRecordTitleFallbacks(record.outgoingLinks);
-  const displayTitle = title ?? creatorTitle;
   const TypeIcon = recordTypeIcons[type].icon;
   const recordMedia = media ?? [];
-  const recordSources = sources ?? [];
-  const hasMedia = recordMedia.length > 0;
 
   return (
     <article
       className={cn('group flex cursor-pointer flex-col gap-[0.5lh] text-sm', className)}
       data-slot="record-display"
       onClick={() => {
-        void navigate({
-          to: '/records/$recordId',
-          params: { recordId: id },
-        });
+        void navigate({ to: '/records/$recordId', params: { recordId: id } });
       }}
     >
-      {/* Header */}
       <header className="flex flex-wrap items-center gap-2" data-slot="record-display-header">
         <TypeIcon className="size-[1lh] shrink-0 text-c-hint" />
 
@@ -81,28 +74,19 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
             to="/records/$recordId"
             params={{ recordId: id }}
             onClick={(e) => e.stopPropagation()}
-            data-has-title={Boolean(displayTitle)}
+            data-has-title={Boolean(title ?? creatorTitle)}
             className="font-semibold text-c-primary no-underline transition-colors duration-100 ease-in-out group-hover:text-c-accent hover:no-underline data-[has-title=false]:font-medium data-[has-title=false]:text-c-hint"
           >
-            {displayTitle ?? 'Untitled'}
+            {getRecordTitle(record)}
           </Link>
           {abbreviation && <span className="text-xs text-c-hint">({abbreviation})</span>}
-          {sense && <em className="text-xs text-c-secondary">{sense}</em>}
+          {sense && <em className="text-xs text-c-hint italic">{sense}</em>}
         </div>
-        {recordSources.length > 0 && (
-          <ul className="flex items-center gap-1.5 text-[0.875em] opacity-50">
-            {recordSources.map((source) => (
-              <li key={source}>
-                <IntegrationLogo integration={source} />
-              </li>
-            ))}
-          </ul>
-        )}
+        <SourceLogos sources={sources} className="text-[0.875em] opacity-50" />
         {avatarUrl && <Avatar src={avatarUrl} fallback={title?.charAt(0) ?? type.charAt(0)} />}
       </header>
 
-      {/* Media */}
-      {hasMedia && (
+      {recordMedia.length > 0 && (
         <figure className="flex flex-col gap-1">
           <MediaGrid media={recordMedia} />
           {mediaCaption && (
@@ -113,18 +97,19 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
         </figure>
       )}
 
-      {/* Summary */}
-      {summary && <Markdown className="line-clamp-2 text-c-display">{summary}</Markdown>}
+      {summary && (
+        <Markdown className={cn('text-c-display', compact && 'line-clamp-2')}>{summary}</Markdown>
+      )}
 
-      {/* Content */}
-      {content && <Markdown className="line-clamp-4 text-c-primary">{content}</Markdown>}
+      {content && (
+        <Markdown className={cn('text-c-primary', compact && 'line-clamp-4')}>{content}</Markdown>
+      )}
 
-      {/* Notes */}
       {notes && (
-        <Markdown className="line-clamp-2 font-mono text-xs text-c-secondary">{notes}</Markdown>
+        <Markdown className={cn('font-mono text-xs text-c-secondary', compact && 'line-clamp-2')}>
+          {notes}
+        </Markdown>
       )}
     </article>
   );
 });
-
-RecordDisplay.displayName = 'RecordDisplay';

@@ -25,6 +25,7 @@ import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
+import { SourceLogos } from './record-parts';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 
 function formatDate(dateValue: Date | string) {
@@ -67,6 +68,10 @@ function RecordRow({ recordId }: { recordId: DbId }) {
               className="flex w-full items-center gap-2 truncate"
             >
               <span className="truncate">{label}</span>
+              {record.abbreviation && (
+                <span className="shrink-0 text-c-hint">({record.abbreviation})</span>
+              )}
+              {record.sense && <span className="shrink-0 text-c-hint italic">{record.sense}</span>}
               {record.rating >= 1 && (
                 <ol
                   className="flex shrink-0 gap-0.5 opacity-75"
@@ -97,11 +102,7 @@ function RecordRow({ recordId }: { recordId: DbId }) {
         {record.recordCreatedAt ? formatDate(record.recordCreatedAt) : ''}
       </TableCell>
       <TableCell className="text-center">
-        <div className="flex justify-center gap-1">
-          {record.sources?.map((source) => (
-            <IntegrationLogo integration={source} key={source} className="size-4" />
-          ))}
-        </div>
+        <SourceLogos sources={record.sources} className="justify-center text-sm" />
       </TableCell>
     </TableRow>
   );

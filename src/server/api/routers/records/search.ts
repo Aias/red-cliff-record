@@ -94,30 +94,38 @@ export const search = publicProcedure
 
     const { strategy } = input;
 
-    const findTrigram = () =>
-      db.query.records.findMany({
-        columns: { id: true },
-        where: {
-          ...filterWhere,
-          RAW: (records, { sql }) =>
-            sql`(
-              ${records.title} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-              ${records.content} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-              ${records.summary} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-              ${records.abbreviation} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD}
+    const findTrigram = () => {
+      const effectiveLimit = strategy === 'hybrid' ? SEARCH_CAP : limit;
+      const similarityThreshold = String(1 - TRIGRAM_DISTANCE_THRESHOLD);
+      return db.transaction(async (tx) => {
+        await tx.execute(
+          sql`SELECT set_config('pg_trgm.similarity_threshold', ${similarityThreshold}, true)`
+        );
+        return tx.query.records.findMany({
+          columns: { id: true },
+          where: {
+            ...filterWhere,
+            RAW: (records, { sql }) =>
+              sql`(
+                ${records.title} % ${query} OR
+                ${records.content} % ${query} OR
+                ${records.summary} % ${query} OR
+                ${records.abbreviation} % ${query}
+              )`,
+          },
+          orderBy: (records, { sql, asc }) => [
+            sql`LEAST(
+              ${records.title} <-> ${query},
+              ${records.content} <-> ${query},
+              ${records.summary} <-> ${query},
+              ${records.abbreviation} <-> ${query}
             )`,
-        },
-        orderBy: (records, { sql, asc }) => [
-          sql`LEAST(
-            ${records.title} <-> ${query},
-            ${records.content} <-> ${query},
-            ${records.summary} <-> ${query},
-            ${records.abbreviation} <-> ${query}
-          )`,
-          asc(sql`length(${records.title})`),
-        ],
-        limit: strategy === 'hybrid' ? SEARCH_CAP : limit,
+            asc(sql`length(${records.title})`),
+          ],
+          limit: effectiveLimit,
+        });
       });
+    };
 
     const findVector = async () => {
       const vector = await createEmbedding(query);

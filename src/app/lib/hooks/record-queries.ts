@@ -57,3 +57,25 @@ export function getRecordTitleFallbacks(outgoingLinks: RecordGet['outgoingLinks'
   }
   return { creatorTitle, parentTitle };
 }
+
+/** Unified preview text fallback chain */
+export function getRecordPreview(
+  record: Pick<RecordGet, 'summary' | 'content' | 'notes' | 'url'>
+): string | null {
+  return record.summary ?? record.content ?? record.notes ?? record.url ?? null;
+}
+
+/** Resolve the first displayable media item (first media attachment or avatar fallback) */
+export function getRecordThumbnailMedia(
+  record: Pick<RecordGet, 'media' | 'avatarUrl'>
+): { type: 'image' | 'video'; url: string; altText: string | null } | null {
+  const first = record.media?.[0];
+  if (first)
+    return {
+      type: first.type === 'video' ? 'video' : 'image',
+      url: first.url,
+      altText: first.altText,
+    };
+  if (record.avatarUrl) return { type: 'image', url: record.avatarUrl, altText: null };
+  return null;
+}
