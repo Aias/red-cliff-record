@@ -23,10 +23,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { cn } from '@/lib/utils';
-import type { RouterOutputs } from '@/server/api/root';
+import type { SearchItem } from './search-result-item';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
-
-type SearchItem = RouterOutputs['records']['search']['items'][number];
 
 function formatDate(dateValue: Date | string) {
   const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
@@ -133,33 +131,13 @@ export const RecordsGrid = () => {
     });
   };
 
-  const handleCuratedChange = (value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      isCurated: value === 'All' ? undefined : value === 'Yes',
-    }));
-  };
-
-  const handlePrivateChange = (value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      isPrivate: value === 'All' ? undefined : value === 'Yes',
-    }));
-  };
-
-  const handleHasParentChange = (value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      hasParent: value === 'All' ? undefined : value === 'Yes',
-    }));
-  };
-
-  const handleHasMediaChange = (value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      hasMedia: value === 'All' ? undefined : value === 'Yes',
-    }));
-  };
+  const toggleBooleanFilter =
+    (field: 'isCurated' | 'isPrivate' | 'hasParent' | 'hasMedia') => (value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        [field]: value === 'All' ? undefined : value === 'Yes',
+      }));
+    };
 
   const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -274,7 +252,7 @@ export const RecordsGrid = () => {
             id="curated"
             type="single"
             value={curatedValue}
-            onValueChange={handleCuratedChange}
+            onValueChange={toggleBooleanFilter('isCurated')}
             variant="outline"
             className="w-full"
           >
@@ -295,7 +273,7 @@ export const RecordsGrid = () => {
             id="hasParent"
             type="single"
             value={hasParentValue}
-            onValueChange={handleHasParentChange}
+            onValueChange={toggleBooleanFilter('hasParent')}
             variant="outline"
             className="w-full"
           >
@@ -316,7 +294,7 @@ export const RecordsGrid = () => {
             id="hasMedia"
             type="single"
             value={hasMediaValue}
-            onValueChange={handleHasMediaChange}
+            onValueChange={toggleBooleanFilter('hasMedia')}
             variant="outline"
             className="w-full"
           >
@@ -337,7 +315,7 @@ export const RecordsGrid = () => {
             id="private"
             type="single"
             value={privateValue}
-            onValueChange={handlePrivateChange}
+            onValueChange={toggleBooleanFilter('isPrivate')}
             variant="outline"
             className="w-full"
           >

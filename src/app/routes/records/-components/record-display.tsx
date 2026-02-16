@@ -76,12 +76,7 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
     >
       {/* Header */}
       <header className="flex flex-wrap items-center gap-3" data-slot="record-display-header">
-        {avatarUrl && (
-          <Avatar
-            src={avatarUrl}
-            fallback={title?.charAt(0) ?? type.charAt(0)}
-          />
-        )}
+        {avatarUrl && <Avatar src={avatarUrl} fallback={title?.charAt(0) ?? type.charAt(0)} />}
 
         <div className="flex flex-1 flex-wrap items-baseline gap-2 text-pretty">
           <Link

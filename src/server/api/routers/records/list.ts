@@ -50,13 +50,11 @@ export const list = publicProcedure
       },
       limit,
       offset,
-      orderBy: (records, { asc, desc }) => {
-        // Map each order criteria to a sort expression
-        return orderBy.map(({ field, direction }) => {
-          const orderColumn = records[field];
-          return direction === 'asc' ? asc(orderColumn) : desc(orderColumn);
-        });
-      },
+      orderBy: (records, { asc, desc }) =>
+        orderBy.map(({ field, direction }) => {
+          const col = records[field];
+          return direction === 'asc' ? asc(col) : desc(col);
+        }),
     });
 
     return {

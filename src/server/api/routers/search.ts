@@ -28,7 +28,7 @@ const nonContainmentPredicates = Object.values(PREDICATES)
   .filter((p) => p.type !== 'containment')
   .map((p) => p.slug);
 
-export type SearchResult = {
+type SearchResult = {
   id: number;
   type: RecordType;
   title?: string | null;

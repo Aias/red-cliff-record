@@ -188,12 +188,12 @@ export const search = publicProcedure
     };
 
     if (strategy === 'trigram') {
-      return { items: (await findTrigram()).slice(0, limit) };
+      return { items: await findTrigram() };
     }
 
     if (strategy === 'vector') {
       try {
-        return { items: (await findVector()).slice(0, limit) };
+        return { items: await findVector() };
       } catch {
         return { items: [] };
       }

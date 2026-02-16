@@ -8,7 +8,7 @@ import type { RouterOutputs } from '@/server/api/root';
 import { toTitleCase } from '@/shared/lib/formatting';
 import { recordTypeIcons } from './type-icons';
 
-type SearchItem = RouterOutputs['records']['search']['items'][number];
+export type SearchItem = RouterOutputs['records']['search']['items'][number];
 
 export const SearchResultItem = memo(function SearchResultItem({ result }: { result: SearchItem }) {
   const predicates = usePredicateMap();

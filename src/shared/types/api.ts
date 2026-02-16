@@ -72,9 +72,7 @@ export const SearchRecordsInputSchema = z.object({
   limit: LimitSchema.optional().default(10),
 });
 
-export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
-
-export const SearchStrategySchema = z.enum(['hybrid', 'trigram', 'vector']);
+const SearchStrategySchema = z.enum(['hybrid', 'trigram', 'vector']);
 
 export const HybridSearchInputSchema = z.object({
   query: z.string().optional(),
@@ -84,5 +82,3 @@ export const HybridSearchInputSchema = z.object({
   offset: OffsetSchema.optional().default(0),
   orderBy: OrderBySchema.optional().default([{ field: 'recordCreatedAt', direction: 'desc' }]),
 });
-
-export type HybridSearchInput = z.infer<typeof HybridSearchInputSchema>;
