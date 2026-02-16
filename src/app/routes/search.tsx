@@ -35,7 +35,7 @@ function SearchPage() {
           {data.items.map((item) => (
             <div
               key={item.id}
-              className="mb-2 break-inside-avoid overflow-hidden rounded-lg border border-c-divider bg-c-page p-4 transition-colors hover:border-c-border"
+              className="mb-2 break-inside-avoid overflow-hidden rounded border border-c-divider bg-c-page p-3 transition-colors hover:border-c-border"
             >
               <RecordDisplay recordId={item.id} />
             </div>

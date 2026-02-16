@@ -65,7 +65,7 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 
   return (
     <article
-      className={cn('flex flex-col gap-3 text-sm', className)}
+      className={cn('flex flex-col gap-[0.5lh] text-sm', className)}
       data-slot="record-display"
       onClick={() => {
         void navigate({
@@ -80,16 +80,15 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
           <Avatar
             src={avatarUrl}
             fallback={title?.charAt(0) ?? type.charAt(0)}
-            className="size-6"
           />
         )}
 
-        <div className="flex flex-1 flex-wrap items-center gap-3">
+        <div className="flex flex-1 flex-wrap items-baseline gap-2 text-pretty">
           <Link
             to="/records/$recordId"
             params={{ recordId: id }}
             data-has-title={Boolean(title)}
-            className="text-base font-semibold text-c-primary underline-offset-4 hover:underline data-[has-title=false]:font-medium data-[has-title=false]:text-c-hint"
+            className="font-semibold text-c-primary underline-offset-4 hover:underline data-[has-title=false]:font-medium data-[has-title=false]:text-c-hint"
           >
             {title ?? 'Untitled'}
           </Link>
@@ -97,9 +96,9 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
           {sense && <em className="text-xs text-c-secondary">{sense}</em>}
         </div>
 
-        <TypeIcon className="size-4 shrink-0 text-c-hint" />
+        <TypeIcon className="size-[1lh] shrink-0 text-c-hint" />
         {recordSources.length > 0 && (
-          <ul className="flex items-center gap-2 text-xs text-c-secondary">
+          <ul className="flex items-center gap-1.5 text-[0.875em] opacity-50">
             {recordSources.map((source) => (
               <li key={source}>
                 <IntegrationLogo integration={source} />
@@ -127,18 +126,20 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
           <h4 className="text-xs font-semibold tracking-wide text-c-hint uppercase">
             Media caption
           </h4>
-          <Markdown className="text-sm text-c-primary">{mediaCaption}</Markdown>
+          <Markdown className="text-c-primary">{mediaCaption}</Markdown>
         </section>
       )}
 
       {/* Summary */}
-      {summary && <Markdown className="text-sm font-medium text-c-primary">{summary}</Markdown>}
+      {summary && <Markdown className="line-clamp-2 text-c-display">{summary}</Markdown>}
 
       {/* Content */}
-      {content && <Markdown className="text-sm text-c-primary">{content}</Markdown>}
+      {content && <Markdown className="line-clamp-4 text-c-primary">{content}</Markdown>}
 
       {/* Notes */}
-      {notes && <Markdown className="font-mono text-xs text-c-secondary">{notes}</Markdown>}
+      {notes && (
+        <Markdown className="line-clamp-2 font-mono text-xs text-c-secondary">{notes}</Markdown>
+      )}
     </article>
   );
 });
