@@ -230,13 +230,13 @@ export const PREDICATES = {
 export type PredicateSlug = keyof typeof PREDICATES;
 
 /** Array of all predicate slugs for validation */
-export const predicateSlugs = Object.keys(PREDICATES) as PredicateSlug[];
+export const predicateSlugs = Object.keys(PREDICATES);
 
 /** Array of canonical predicates (those that get stored in links table) */
 export const canonicalPredicates = Object.values(PREDICATES).filter((p) => p.canonical);
 
 /** Array of canonical predicate slugs */
-export const canonicalPredicateSlugs = canonicalPredicates.map((p) => p.slug) as PredicateSlug[];
+export const canonicalPredicateSlugs = canonicalPredicates.map((p) => p.slug);
 
 /**
  * Get the inverse predicate for a given slug.
@@ -265,7 +265,7 @@ export function isPredicateSlug(value: string): value is PredicateSlug {
 /** Predicate slugs for all containment relationships (structural and citation) */
 export const containmentPredicateSlugs = Object.values(PREDICATES)
   .filter((p) => p.type === 'containment')
-  .map((p) => p.slug) as PredicateSlug[];
+  .map((p) => p.slug);
 
 /** Predicate slugs for structural parent-child hierarchies only (excludes citation) */
 export const structuralContainmentSlugs: PredicateSlug[] = ['contained_by', 'contains'];

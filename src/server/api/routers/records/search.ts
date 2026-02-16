@@ -1,5 +1,4 @@
 import { containmentPredicateSlugs, PREDICATES } from '@hozo';
-import type { RelationsFieldFilter } from 'drizzle-orm';
 import { cosineDistance } from 'drizzle-orm';
 import type { z } from 'zod';
 import { createEmbedding } from '@/lib/server/create-embedding';
@@ -11,8 +10,8 @@ const SEARCH_CAP = 200;
 const RRF_K = 60;
 
 /** Typed filter literals — Drizzle requires `true` (not `boolean`) for isNull/isNotNull */
-const NOT_NULL: { isNotNull: true } = { isNotNull: true };
-const IS_NULL: { isNull: true } = { isNull: true };
+const NOT_NULL = { isNotNull: true } as const;
+const IS_NULL = { isNull: true } as const;
 
 /** Preserve literal `true` types for Drizzle column selection */
 function cols<T extends Record<string, true>>(c: T): T {
@@ -70,25 +69,10 @@ const mediaWith = {
   columns: cols({ id: true, type: true, url: true, altText: true }),
 } as const;
 
-function buildTitleFilter(
-  hasTitle: boolean | undefined,
-  title: string | null | undefined
-): RelationsFieldFilter<string> | undefined {
-  if (hasTitle === false) return IS_NULL;
-  if (hasTitle === true && title) return { ...NOT_NULL, ilike: `%${title}%` };
-  if (hasTitle === true) return NOT_NULL;
-  if (title === null) return IS_NULL;
-  if (title) return { ilike: `%${title}%` };
-  return undefined;
-}
-
 /** Build Drizzle where clause from sidebar filters */
 function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
   const {
     types,
-    title,
-    text,
-    url: domain,
     hasParent,
     hasTitle,
     minRating,
@@ -103,18 +87,7 @@ function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
 
   return {
     type: types?.length ? { in: types } : undefined,
-    title: buildTitleFilter(hasTitle, title),
-    ...(text
-      ? {
-          OR: [
-            { content: { ilike: `%${text}%` } },
-            { summary: { ilike: `%${text}%` } },
-            { notes: { ilike: `%${text}%` } },
-            { mediaCaption: { ilike: `%${text}%` } },
-          ],
-        }
-      : {}),
-    url: domain === null ? IS_NULL : domain ? { ilike: `%${domain}%` } : undefined,
+    title: hasTitle === true ? NOT_NULL : hasTitle === false ? IS_NULL : undefined,
     isPrivate,
     isCurated,
     ...(hasParent === true

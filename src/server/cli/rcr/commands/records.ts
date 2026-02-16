@@ -69,10 +69,6 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
   // Array filters (comma-separated)
   type: z.string().optional(), // Parsed as comma-separated, e.g., "entity,concept"
   source: z.string().optional(), // Parsed as comma-separated, e.g., "readwise,github"
-  // Text filters
-  title: RecordFiltersSchema.shape.title.unwrap().optional(),
-  text: RecordFiltersSchema.shape.text.unwrap().optional(),
-  url: RecordFiltersSchema.shape.url.unwrap().optional(),
   // Boolean filters (support =true/=false)
   curated: z.boolean().optional(),
   private: z.boolean().optional(),
@@ -93,9 +89,6 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
     filters: {
       types: parseCommaSeparated(opts.type, RecordTypeSchema),
       sources: parseCommaSeparated(opts.source, IntegrationTypeSchema),
-      title: opts.title,
-      text: opts.text,
-      url: opts.url,
       isCurated: opts.curated,
       isPrivate: opts.private,
       minRating: opts['rating-min'],

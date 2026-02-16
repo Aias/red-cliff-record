@@ -55,7 +55,10 @@ function RecordRow({ record }: { record: SearchItem }) {
             >
               <span className="truncate">{label}</span>
               {record.rating >= 1 && (
-                <ol className="flex shrink-0 gap-0.5 opacity-75" aria-label={`${record.rating} star rating`}>
+                <ol
+                  className="flex shrink-0 gap-0.5 opacity-75"
+                  aria-label={`${record.rating} star rating`}
+                >
                   {Array.from({ length: record.rating }, (_, i) => (
                     <li key={i}>
                       <StarIcon className="size-[0.875em] fill-current" />
@@ -100,7 +103,7 @@ export const RecordsGrid = ({ q }: { q?: string }) => {
   );
 
   const {
-    filters: { types, url, isCurated, isPrivate, sources, hasParent, hasMedia },
+    filters: { types, isCurated, isPrivate, sources, hasParent, hasMedia },
     limit,
   } = state;
 
@@ -112,7 +115,6 @@ export const RecordsGrid = ({ q }: { q?: string }) => {
     setSearchInput(q ?? '');
   }
 
-  const [urlInput, setUrlInput] = useState(url ?? '');
   const [limitInput, setLimitInput] = useState(limit?.toString() ?? '');
 
   const curatedValue = isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No';
@@ -125,12 +127,6 @@ export const RecordsGrid = ({ q }: { q?: string }) => {
       const trimmed = searchInput.trim();
       void navigate({ to: '/records', search: trimmed ? { q: trimmed } : {} });
     }
-  };
-
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setUrlInput(value);
-    setFilters((prev) => ({ ...prev, url: value || undefined }));
   };
 
   const handleTypeToggle = (recordType: RecordType) => {
@@ -303,17 +299,6 @@ export const RecordsGrid = ({ q }: { q?: string }) => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="url">URL</Label>
-          <Input
-            id="url"
-            type="text"
-            placeholder="Filter by URL"
-            value={urlInput}
-            onChange={handleUrlChange}
-          />
-        </div>
-
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="curated">Is Curated?</Label>
           <ToggleGroup

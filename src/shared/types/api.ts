@@ -36,9 +36,6 @@ export const OrderCriteriaSchema = z.object({
 
 export const RecordFiltersSchema = z.object({
   types: z.array(RecordTypeSchema).optional(),
-  title: z.string().nullable().optional(),
-  text: z.string().nullable().optional(),
-  url: z.string().nullable().optional(),
   hasParent: z.boolean().optional(),
   hasTitle: z.boolean().optional(),
   minRating: z.number().int().gte(0).optional(),
