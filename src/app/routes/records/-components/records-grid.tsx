@@ -1,7 +1,7 @@
 import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations.shared';
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ChevronDownIcon, SearchIcon } from 'lucide-react';
+import { ChevronDownIcon, SearchIcon, StarIcon } from 'lucide-react';
 import { useState } from 'react';
 import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
@@ -39,7 +39,6 @@ function formatDate(dateValue: Date | string) {
 
 function RecordRow({ record }: { record: SearchItem }) {
   const label = record.title || record.summary || record.content || 'Untitled Record';
-  const ratingStars = record.rating >= 1 ? '⭐'.repeat(record.rating) : '';
 
   return (
     <TableRow>
@@ -52,10 +51,18 @@ function RecordRow({ record }: { record: SearchItem }) {
             <Link
               to="/records/$recordId"
               params={{ recordId: record.id }}
-              className="block w-full truncate"
+              className="flex w-full items-center gap-2 truncate"
             >
-              {ratingStars && <span className="mr-2">{ratingStars}</span>}
-              {label}
+              <span className="truncate">{label}</span>
+              {record.rating >= 1 && (
+                <ol className="flex shrink-0 gap-0.5 opacity-75" aria-label={`${record.rating} star rating`}>
+                  {Array.from({ length: record.rating }, (_, i) => (
+                    <li key={i}>
+                      <StarIcon className="size-[0.875em] fill-current" />
+                    </li>
+                  ))}
+                </ol>
+              )}
             </Link>
           </TooltipTrigger>
           <TooltipContent className="max-w-96">
