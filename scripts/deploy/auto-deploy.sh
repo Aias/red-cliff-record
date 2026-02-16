@@ -73,7 +73,25 @@ while true; do
             log "Installing dependencies..."
             if bun install; then
                 log "Dependencies installed"
-                
+
+                # Backup production database before migration
+                log "Backing up production database..."
+                if ! "$REPO_DIR/src/server/db/db-manager.sh" -y backup prod; then
+                    log "ERROR: Production backup failed, aborting deploy"
+                    LAST_COMMIT=$REMOTE_COMMIT
+                    sleep $CHECK_INTERVAL
+                    continue
+                fi
+
+                # Run database migrations
+                log "Running database migrations..."
+                if ! NODE_ENV=production bunx drizzle-kit migrate; then
+                    log "ERROR: Migration failed, aborting deploy"
+                    LAST_COMMIT=$REMOTE_COMMIT
+                    sleep $CHECK_INTERVAL
+                    continue
+                fi
+
                 # Build the application
                 log "Building application..."
                 # Build hozo package first, then the main app

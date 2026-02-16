@@ -63,7 +63,7 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
 
   return (
     <article
-      className={cn('flex flex-col gap-[0.5lh] text-sm', className)}
+      className={cn('group flex cursor-pointer flex-col gap-[0.5lh] text-sm', className)}
       data-slot="record-display"
       onClick={() => {
         void navigate({
@@ -80,8 +80,9 @@ export const RecordDisplay = memo(({ recordId, className }: RecordDisplayProps) 
           <Link
             to="/records/$recordId"
             params={{ recordId: id }}
+            onClick={(e) => e.stopPropagation()}
             data-has-title={Boolean(displayTitle)}
-            className="font-semibold text-c-primary underline-offset-4 hover:underline data-[has-title=false]:font-medium data-[has-title=false]:text-c-hint"
+            className="font-semibold text-c-primary no-underline transition-colors duration-100 ease-in-out group-hover:text-c-accent hover:no-underline data-[has-title=false]:font-medium data-[has-title=false]:text-c-hint"
           >
             {displayTitle ?? 'Untitled'}
           </Link>

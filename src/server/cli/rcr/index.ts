@@ -191,9 +191,6 @@ Commands:
 Records List Filters:
   --type=<types>          Record types (comma-separated: entity,concept,artifact)
   --source=<sources>      Integration sources (comma-separated: readwise,github,...)
-  --title=<text>          Title contains text (case-insensitive)
-  --text=<text>           Content/summary/notes contains text
-  --url=<text>            URL contains text
   --has-title[=BOOL]      Filter by title presence (true/false)
   --curated[=BOOL]        Filter by curated status (true/false)
   --private[=BOOL]        Filter by private status (true/false)

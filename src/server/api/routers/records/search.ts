@@ -122,16 +122,18 @@ export const search = publicProcedure
     const findVector = async () => {
       const vector = await createEmbedding(query);
       const effectiveLimit = strategy === 'hybrid' ? SEARCH_CAP : limit;
-      // HNSW explores at most ef_search candidates (default 40), capping results below LIMIT
-      await db.execute(sql.raw(`SET hnsw.ef_search = ${effectiveLimit}`));
-      return db.query.records.findMany({
-        columns: { id: true },
-        where: {
-          ...filterWhere,
-          textEmbedding: NOT_NULL,
-        },
-        orderBy: (records) => [cosineDistance(records.textEmbedding, vector)],
-        limit: effectiveLimit,
+      return db.transaction(async (tx) => {
+        // Ensure ef_search is applied on the same session as the vector query.
+        await tx.execute(sql`SELECT set_config('hnsw.ef_search', ${String(effectiveLimit)}, true)`);
+        return tx.query.records.findMany({
+          columns: { id: true },
+          where: {
+            ...filterWhere,
+            textEmbedding: NOT_NULL,
+          },
+          orderBy: (records) => [cosineDistance(records.textEmbedding, vector)],
+          limit: effectiveLimit,
+        });
       });
     };
 
