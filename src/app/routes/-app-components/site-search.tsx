@@ -45,9 +45,9 @@ export const SiteSearch = () => {
     { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
 
-  const trigramResults = trigram.data?.items ?? [];
+  const trigramResults = trigram.data?.ids ?? [];
   const trigramIds = new Set(trigramResults.map((r) => r.id));
-  const vectorResults = (vector.data?.items ?? []).filter((r) => !trigramIds.has(r.id));
+  const vectorResults = (vector.data?.ids ?? []).filter((r) => !trigramIds.has(r.id));
   const hasResults = trigramResults.length > 0 || vectorResults.length > 0;
   const isSearching = trigram.isFetching && !trigram.data;
 
@@ -143,13 +143,9 @@ export const SiteSearch = () => {
 
             {trigramResults.length > 0 && (
               <CommandGroup heading="Text Matches">
-                {trigramResults.map((record) => (
-                  <CommandItem
-                    key={record.id}
-                    value={`${record.title || 'Untitled'}--${record.id}`}
-                    onSelect={() => handleSelectResult(record.id)}
-                  >
-                    <SearchResultItem result={record} />
+                {trigramResults.map(({ id }) => (
+                  <CommandItem key={id} value={String(id)} onSelect={() => handleSelectResult(id)}>
+                    <SearchResultItem id={id} />
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -157,13 +153,9 @@ export const SiteSearch = () => {
 
             {vectorResults.length > 0 && (
               <CommandGroup heading="Similar">
-                {vectorResults.map((record) => (
-                  <CommandItem
-                    key={record.id}
-                    value={`${record.title || 'Untitled'}--${record.id}`}
-                    onSelect={() => handleSelectResult(record.id)}
-                  >
-                    <SearchResultItem result={record} />
+                {vectorResults.map(({ id }) => (
+                  <CommandItem key={id} value={String(id)} onSelect={() => handleSelectResult(id)}>
+                    <SearchResultItem id={id} />
                   </CommandItem>
                 ))}
               </CommandGroup>

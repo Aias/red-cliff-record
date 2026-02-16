@@ -44,7 +44,7 @@ function RouteComponent() {
 
   // Open first record from list view
   const openFirstRecord = useCallback(() => {
-    const firstRecordId = recordsList?.items[0]?.id;
+    const firstRecordId = recordsList?.ids[0]?.id;
     if (firstRecordId) {
       void navigate({
         to: '/records/$recordId',
@@ -81,8 +81,7 @@ function RouteComponent() {
           <div className="flex min-w-60 shrink grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-c-divider bg-c-container py-3">
             <header className="flex items-center justify-between px-3">
               <h2 className="text-lg font-medium">
-                Records{' '}
-                <span className="text-sm text-c-secondary">({recordsList.items.length})</span>
+                Records <span className="text-sm text-c-secondary">({recordsList.ids.length})</span>
               </h2>
               <Link to="/records" className="text-sm">
                 Index
@@ -93,7 +92,7 @@ function RouteComponent() {
               onValueChange={handleValueChange}
               className="flex flex-col gap-1 overflow-y-auto px-3 text-xs"
             >
-              {recordsList.items.map(({ id }) => (
+              {recordsList.ids.map(({ id }) => (
                 <RadioCardsItem key={id} value={id.toString()} data-record-sidebar-id={id}>
                   <RecordLink id={id} className="w-full overflow-hidden" />
                 </RadioCardsItem>

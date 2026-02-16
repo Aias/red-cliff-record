@@ -21,9 +21,10 @@ import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
+import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { cn } from '@/lib/utils';
-import type { SearchItem } from './search-result-item';
+import type { DbId } from '@/shared/types/api';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 
 function formatDate(dateValue: Date | string) {
@@ -35,8 +36,22 @@ function formatDate(dateValue: Date | string) {
   return `${date.toLocaleDateString()} ${hours12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 }
 
-function RecordRow({ record }: { record: SearchItem }) {
-  const label = record.title || record.summary || record.content || 'Untitled Record';
+function RecordRow({ recordId }: { recordId: DbId }) {
+  const { data: record } = useRecord(recordId);
+
+  if (!record) {
+    return (
+      <TableRow>
+        <TableCell colSpan={5}>
+          <div className="h-4 w-48 animate-pulse rounded bg-c-mist" />
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  const { creatorTitle, parentTitle } = getRecordTitleFallbacks(record.outgoingLinks);
+  const label =
+    record.title || creatorTitle || parentTitle || record.summary || record.content || 'Untitled';
 
   return (
     <TableRow>
@@ -343,7 +358,7 @@ export const RecordsGrid = () => {
         </div>
       </div>
       <div className="flex grow overflow-hidden rounded border border-c-divider bg-c-page text-xs">
-        <Table className={cn({ 'h-full': data.items.length === 0 })}>
+        <Table className={cn({ 'h-full': data.ids.length === 0 })}>
           <TableHeader className="sticky top-0 z-10 bg-c-page before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-c-divider">
             <TableRow className="sticky top-0 z-10 bg-c-mist">
               <TableHead className="sr-only text-center">Type</TableHead>
@@ -354,8 +369,8 @@ export const RecordsGrid = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.items.length > 0 ? (
-              data.items.map((record) => <RecordRow key={record.id} record={record} />)
+            {data.ids.length > 0 ? (
+              data.ids.map(({ id }) => <RecordRow key={id} recordId={id} />)
             ) : (
               <TableRow>
                 <TableCell colSpan={5} className="pointer-events-none text-center">
@@ -368,7 +383,7 @@ export const RecordsGrid = () => {
       </div>
     </div>
   ) : (
-    <Placeholder>
+    <Placeholder className="grow">
       <Spinner />
     </Placeholder>
   );

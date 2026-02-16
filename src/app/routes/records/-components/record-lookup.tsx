@@ -69,9 +69,9 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
     { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
 
-  const trigramResults = trigram.data?.items ?? [];
+  const trigramResults = trigram.data?.ids ?? [];
   const trigramIds = new Set(trigramResults.map((r) => r.id));
-  const vectorResults = (vector.data?.items ?? []).filter((r) => !trigramIds.has(r.id));
+  const vectorResults = (vector.data?.ids ?? []).filter((r) => !trigramIds.has(r.id));
   const hasResults = trigramResults.length > 0 || vectorResults.length > 0;
   const isSearching = trigram.isFetching && !trigram.data;
 
@@ -89,13 +89,9 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 
         {trigramResults.length > 0 && (
           <CommandGroup heading="Text Matches">
-            {trigramResults.map((result) => (
-              <CommandItem
-                key={result.id}
-                value={`${result.title ?? 'Untitled'}--${result.id}`}
-                onSelect={() => onSelect(result.id)}
-              >
-                <SearchResultItem result={result} />
+            {trigramResults.map(({ id }) => (
+              <CommandItem key={id} value={String(id)} onSelect={() => onSelect(id)}>
+                <SearchResultItem id={id} />
               </CommandItem>
             ))}
           </CommandGroup>
@@ -103,13 +99,9 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
 
         {vectorResults.length > 0 && (
           <CommandGroup heading="Similar">
-            {vectorResults.map((result) => (
-              <CommandItem
-                key={result.id}
-                value={`${result.title ?? 'Untitled'}--${result.id}`}
-                onSelect={() => onSelect(result.id)}
-              >
-                <SearchResultItem result={result} />
+            {vectorResults.map(({ id }) => (
+              <CommandItem key={id} value={String(id)} onSelect={() => onSelect(id)}>
+                <SearchResultItem id={id} />
               </CommandItem>
             ))}
           </CommandGroup>

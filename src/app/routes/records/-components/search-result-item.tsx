@@ -1,17 +1,24 @@
-import type { MediaType } from '@hozo/schema/media';
 import { CornerDownRightIcon } from 'lucide-react';
 import { memo } from 'react';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
-import { usePredicateMap } from '@/lib/hooks/record-queries';
-import type { RouterOutputs } from '@/server/api/root';
+import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { toTitleCase } from '@/shared/lib/formatting';
+import type { DbId } from '@/shared/types/api';
 import { recordTypeIcons } from './type-icons';
 
-export type SearchItem = RouterOutputs['records']['search']['items'][number];
+export const SearchResultItem = memo(function SearchResultItem({ id }: { id: DbId }) {
+  const { data: record } = useRecord(id);
 
-export const SearchResultItem = memo(function SearchResultItem({ result }: { result: SearchItem }) {
-  const predicates = usePredicateMap();
+  if (!record) {
+    return (
+      <div className="flex w-full grow items-center gap-2">
+        <div className="size-[1lh] shrink-0 rounded bg-c-mist" />
+        <div className="h-[1lh] flex-1 rounded bg-c-mist" />
+      </div>
+    );
+  }
+
   const {
     type,
     title,
@@ -25,22 +32,9 @@ export const SearchResultItem = memo(function SearchResultItem({ result }: { res
     avatarUrl,
     mediaCaption,
     sources,
-  } = result;
+  } = record;
 
-  let creatorTitle: string | undefined | null;
-  let parentTitle: string | undefined | null;
-
-  for (const edge of outgoingLinks) {
-    const kind = predicates[edge.predicate]?.type;
-    if (kind === 'creation' && !creatorTitle) {
-      creatorTitle = edge.target.title;
-    }
-    if (kind === 'containment' && !parentTitle) {
-      parentTitle = edge.target.title;
-    }
-    if (creatorTitle && parentTitle) break;
-  }
-
+  const { creatorTitle, parentTitle } = getRecordTitleFallbacks(outgoingLinks);
   const preview = summary ?? content ?? url;
 
   const labelElement = (
@@ -64,15 +58,12 @@ export const SearchResultItem = memo(function SearchResultItem({ result }: { res
     </>
   );
 
-  let mediaItem: { type: MediaType; url: string; altText?: string | null } | null = null;
-  if (media?.[0]) {
-    mediaItem = media[0];
-  } else if (avatarUrl) {
-    mediaItem = { type: 'image', url: avatarUrl };
-  }
+  const recordMedia = media ?? [];
+  const firstMedia = recordMedia[0];
+  const mediaItem =
+    firstMedia ?? (avatarUrl ? { type: 'image' as const, url: avatarUrl, altText: null } : null);
 
   const TypeIcon = recordTypeIcons[type].icon;
-
   const thumbnailVideoLabel = mediaItem?.altText?.trim() || mediaCaption?.trim() || undefined;
 
   return (

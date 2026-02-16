@@ -1,9 +1,13 @@
-import { containmentPredicateSlugs, PREDICATES } from '@hozo';
-import { cosineDistance } from 'drizzle-orm';
+import { containmentPredicateSlugs } from '@hozo';
+import { cosineDistance, sql } from 'drizzle-orm';
 import type { z } from 'zod';
 import { createEmbedding } from '@/lib/server/create-embedding';
 import { TRIGRAM_DISTANCE_THRESHOLD } from '@/server/lib/constants';
-import { HybridSearchInputSchema, type RecordFiltersSchema } from '@/shared/types/api';
+import {
+  HybridSearchInputSchema,
+  type IdParamList,
+  type RecordFiltersSchema,
+} from '@/shared/types/api';
 import { publicProcedure } from '../../init';
 
 const SEARCH_CAP = 200;
@@ -12,62 +16,6 @@ const RRF_K = 60;
 /** Typed filter literals — Drizzle requires `true` (not `boolean`) for isNull/isNotNull */
 const NOT_NULL = { isNotNull: true } as const;
 const IS_NULL = { isNull: true } as const;
-
-/** Preserve literal `true` types for Drizzle column selection */
-function cols<T extends Record<string, true>>(c: T): T {
-  return c;
-}
-
-/** Predicate slugs for relevant link types in search results */
-const searchLinkPredicates = Object.values(PREDICATES)
-  .filter((p) => ['containment', 'creation', 'description', 'identity'].includes(p.type))
-  .map((p) => p.slug);
-
-/** Columns returned for search results (grid + cmd+K) */
-const searchColumns = cols({
-  id: true,
-  type: true,
-  title: true,
-  summary: true,
-  content: true,
-  sense: true,
-  abbreviation: true,
-  url: true,
-  avatarUrl: true,
-  mediaCaption: true,
-  rating: true,
-  recordCreatedAt: true,
-  recordUpdatedAt: true,
-  contentCreatedAt: true,
-  contentUpdatedAt: true,
-  sources: true,
-});
-
-/** Shared relation config for outgoing links in search results */
-const outgoingLinksWith = {
-  columns: cols({ id: true, predicate: true }),
-  with: {
-    target: {
-      columns: cols({
-        id: true,
-        type: true,
-        title: true,
-        abbreviation: true,
-        sense: true,
-        summary: true,
-        avatarUrl: true,
-      }),
-    },
-  },
-  where: {
-    predicate: { in: searchLinkPredicates },
-  },
-} as const;
-
-/** Shared relation config for media in search results */
-const mediaWith = {
-  columns: cols({ id: true, type: true, url: true, altText: true }),
-} as const;
 
 /** Build Drizzle where clause from sidebar filters */
 function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
@@ -125,14 +73,13 @@ function rrfMerge<T extends { id: number }>(...lists: T[][]): T[] {
 
 export const search = publicProcedure
   .input(HybridSearchInputSchema)
-  .query(async ({ ctx: { db }, input }) => {
+  .query(async ({ ctx: { db }, input }): Promise<IdParamList> => {
     const { query, filters, limit, offset, orderBy } = input;
     const filterWhere = buildFilterWhere(filters);
 
     if (!query) {
-      const items = await db.query.records.findMany({
-        columns: searchColumns,
-        with: { outgoingLinks: outgoingLinksWith, media: mediaWith },
+      const rows = await db.query.records.findMany({
+        columns: { id: true },
         where: filterWhere,
         limit,
         offset,
@@ -142,15 +89,14 @@ export const search = publicProcedure
             return direction === 'asc' ? asc(col) : desc(col);
           }),
       });
-      return { items };
+      return { ids: rows };
     }
 
     const { strategy } = input;
 
     const findTrigram = () =>
       db.query.records.findMany({
-        columns: searchColumns,
-        with: { outgoingLinks: outgoingLinksWith, media: mediaWith },
+        columns: { id: true },
         where: {
           ...filterWhere,
           RAW: (records, { sql }) =>
@@ -175,31 +121,32 @@ export const search = publicProcedure
 
     const findVector = async () => {
       const vector = await createEmbedding(query);
+      const effectiveLimit = strategy === 'hybrid' ? SEARCH_CAP : limit;
+      // HNSW explores at most ef_search candidates (default 40), capping results below LIMIT
+      await db.execute(sql.raw(`SET hnsw.ef_search = ${effectiveLimit}`));
       return db.query.records.findMany({
-        columns: searchColumns,
-        with: { outgoingLinks: outgoingLinksWith, media: mediaWith },
+        columns: { id: true },
         where: {
           ...filterWhere,
           textEmbedding: NOT_NULL,
         },
         orderBy: (records) => [cosineDistance(records.textEmbedding, vector)],
-        limit: strategy === 'hybrid' ? SEARCH_CAP : limit,
+        limit: effectiveLimit,
       });
     };
 
     if (strategy === 'trigram') {
-      return { items: await findTrigram() };
+      return { ids: await findTrigram() };
     }
 
     if (strategy === 'vector') {
       try {
-        return { items: await findVector() };
+        return { ids: await findVector() };
       } catch {
-        return { items: [] };
+        return { ids: [] };
       }
     }
 
-    // Hybrid: run both concurrently, merge with RRF
     const trigramPromise = findTrigram();
     const vectorPromise = findVector();
 
@@ -211,5 +158,5 @@ export const search = publicProcedure
       // Vector search failed — continue with text-only results
     }
 
-    return { items: rrfMerge(trigramResults, vectorResults).slice(0, limit) };
+    return { ids: rrfMerge(trigramResults, vectorResults).slice(0, limit) };
   });
