@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { PlusCircleIcon, SearchIcon } from 'lucide-react';
 import { useState } from 'react';
-import { useRecordSearch } from '@/app/lib/hooks/use-record-search';
+import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
 import {
   Command,
@@ -15,34 +15,38 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
+import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { cn } from '@/lib/utils';
 import { SearchResultItem } from '../records/-components/search-result-item';
+
+const MIN_QUERY_LENGTH = 2;
 
 export const SiteSearch = () => {
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
   const [commandOpen, setCommandOpen] = useState(false);
+  const [commandValue, setCommandValue] = useState('');
 
   const createRecordMutation = useUpsertRecord();
 
-  const {
-    textResults,
-    vectorResults,
-    textFetching,
-    vectorFetching,
-    isLoading,
-    hasResults,
-    shouldSearch,
-  } = useRecordSearch(inputValue, {
-    debounceMs: 300,
-    minQueryLength: 2,
-    textLimit: 10,
-    vectorLimit: 5,
-  });
+  const debouncedQuery = useDebounce(inputValue, 300);
+  const shouldSearch = debouncedQuery.length >= MIN_QUERY_LENGTH;
+
+  const { data, isFetching } = trpc.records.search.useQuery(
+    { query: debouncedQuery, limit: 10 },
+    {
+      enabled: shouldSearch,
+      trpc: { context: { skipBatch: true } },
+    }
+  );
+
+  const results = data?.items ?? [];
+  const hasResults = results.length > 0;
 
   const handleInputChange = (search: string) => {
     setInputValue(search);
+    setCommandValue('');
   };
 
   const handleSelectResult = (recordId: number) => {
@@ -54,7 +58,21 @@ export const SiteSearch = () => {
     });
   };
 
-  // Register keyboard shortcuts for opening the command menu
+  const handleNavigateToSearch = () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+    setCommandOpen(false);
+    setInputValue('');
+    void navigate({ to: '/records', search: { q: trimmed } });
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && (!commandValue || commandValue === '-')) {
+      e.preventDefault();
+      handleNavigateToSearch();
+    }
+  };
+
   useKeyboardShortcut('mod+k', () => setCommandOpen((open) => !open), {
     description: 'Open search',
     category: 'Navigation',
@@ -86,55 +104,34 @@ export const SiteSearch = () => {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-150 overflow-auto p-0" align="end">
-          <Command shouldFilter={false} loop defaultValue="">
+          <Command shouldFilter={false} loop value={commandValue} onValueChange={setCommandValue}>
             <CommandInput
               placeholder="Search records..."
               value={inputValue}
               onValueChange={handleInputChange}
+              onKeyDown={handleInputKeyDown}
             />
             <CommandList className="max-h-[75vh]">
               <CommandItem value="-" className="hidden" />
               <CommandEmpty>
                 {!shouldSearch
                   ? 'Type to search...'
-                  : !isLoading && !hasResults
+                  : !isFetching && !hasResults
                     ? 'No results found.'
                     : ''}
               </CommandEmpty>
 
-              {/* Text Search Section */}
               {shouldSearch && (
-                <CommandGroup heading="Text Search Results">
-                  {textFetching ? (
+                <CommandGroup heading="Search Results">
+                  {isFetching ? (
                     <CommandItem disabled className="flex items-center justify-center">
                       <Spinner className="size-4" />
                     </CommandItem>
                   ) : (
-                    textResults.map((record) => (
+                    results.map((record) => (
                       <CommandItem
-                        key={`text-${record.id}`}
-                        value={`${record.title || 'Untitled'}--${record.id}--text`}
-                        onSelect={() => handleSelectResult(record.id)}
-                      >
-                        <SearchResultItem result={record} />
-                      </CommandItem>
-                    ))
-                  )}
-                </CommandGroup>
-              )}
-
-              {/* Similarity Search Section */}
-              {shouldSearch && (
-                <CommandGroup heading="Similar Records">
-                  {vectorFetching ? (
-                    <CommandItem disabled className="flex items-center justify-center">
-                      <Spinner className="size-4" />
-                    </CommandItem>
-                  ) : (
-                    vectorResults.map((record) => (
-                      <CommandItem
-                        key={`vector-${record.id}`}
-                        value={`${record.title || 'Untitled'}--${record.id}--vector`}
+                        key={record.id}
+                        value={`${record.title || 'Untitled'}--${record.id}`}
                         onSelect={() => handleSelectResult(record.id)}
                       >
                         <SearchResultItem result={record} />
@@ -147,7 +144,7 @@ export const SiteSearch = () => {
               {shouldSearch && <CommandSeparator alwaysRender />}
 
               <CommandItem
-                disabled={inputValue.length === 0 || isLoading}
+                disabled={inputValue.length === 0 || isFetching}
                 key="create-record"
                 onSelect={() => {
                   createRecordMutation.mutate(

@@ -7,7 +7,6 @@ import {
 } from '@hozo';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useRecordSearch } from '@/app/lib/hooks/use-record-search';
 import { trpc } from '@/app/trpc';
 import { Badge } from '@/components/badge';
 import { Button, type ButtonProps } from '@/components/button';
@@ -28,6 +27,7 @@ import {
 import { Spinner } from '@/components/spinner';
 import { useUpsertLink } from '@/lib/hooks/link-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
+import { useDebounce } from '@/lib/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
 import type { LinkPartial } from '@/shared/types/domain';
@@ -57,15 +57,19 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
   const [query, setQuery] = useState('');
   const createRecordMutation = useUpsertRecord();
 
-  const {
-    textResults,
-    vectorResults,
-    textFetching,
-    vectorFetching,
-    isLoading,
-    hasResults,
-    shouldSearch,
-  } = useRecordSearch(query, { debounceMs: 200, minQueryLength: 1, textLimit: 5, vectorLimit: 3 });
+  const debouncedQuery = useDebounce(query, 200);
+  const shouldSearch = debouncedQuery.length >= 1;
+
+  const { data, isFetching } = trpc.records.search.useQuery(
+    { query: debouncedQuery, limit: 8 },
+    {
+      enabled: shouldSearch,
+      trpc: { context: { skipBatch: true } },
+    }
+  );
+
+  const results = data?.items ?? [];
+  const hasResults = results.length > 0;
 
   return (
     <Command shouldFilter={false} loop className="w-full" defaultValue="">
@@ -73,18 +77,17 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
       <CommandList>
         <CommandItem value="-" className="hidden" />
 
-        {/* Text Search Results */}
         {shouldSearch && (
-          <CommandGroup heading="Text Search Results">
-            {textFetching ? (
+          <CommandGroup heading="Search Results">
+            {isFetching ? (
               <CommandItem disabled className="flex items-center justify-center">
                 <Spinner className="size-4" />
               </CommandItem>
             ) : (
-              textResults.map((result) => (
+              results.map((result) => (
                 <CommandItem
-                  key={`text-${result.id}`}
-                  value={`${result.title ?? 'Untitled'}--${result.id}--text`}
+                  key={result.id}
+                  value={`${result.title ?? 'Untitled'}--${result.id}`}
                   onSelect={() => onSelect(result.id)}
                 >
                   <SearchResultItem result={result} />
@@ -94,34 +97,13 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
           </CommandGroup>
         )}
 
-        {/* Similar Records (Vector Search) */}
-        {shouldSearch && (
-          <CommandGroup heading="Similar Records">
-            {vectorFetching ? (
-              <CommandItem disabled className="flex items-center justify-center">
-                <Spinner className="size-4" />
-              </CommandItem>
-            ) : (
-              vectorResults.map((result) => (
-                <CommandItem
-                  key={`vector-${result.id}`}
-                  value={`${result.title ?? 'Untitled'}--${result.id}--vector`}
-                  onSelect={() => onSelect(result.id)}
-                >
-                  <SearchResultItem result={result} />
-                </CommandItem>
-              ))
-            )}
-          </CommandGroup>
-        )}
-
-        {!isLoading && !hasResults && shouldSearch && (
+        {!isFetching && !hasResults && shouldSearch && (
           <CommandItem disabled>No results</CommandItem>
         )}
 
         <CommandSeparator alwaysRender />
         <CommandItem
-          disabled={query.length === 0 || isLoading}
+          disabled={query.length === 0 || isFetching}
           key="create-record"
           onSelect={() => {
             createRecordMutation.mutate(

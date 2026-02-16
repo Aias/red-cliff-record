@@ -76,3 +76,13 @@ export const SearchRecordsInputSchema = z.object({
 });
 
 export type SearchRecordsInput = z.infer<typeof SearchRecordsInputSchema>;
+
+export const HybridSearchInputSchema = z.object({
+  query: z.string().optional(),
+  filters: RecordFiltersSchema.optional().default({}),
+  limit: LimitSchema.optional().default(DEFAULT_LIMIT),
+  offset: OffsetSchema.optional().default(0),
+  orderBy: OrderBySchema.optional().default([{ field: 'recordCreatedAt', direction: 'desc' }]),
+});
+
+export type HybridSearchInput = z.infer<typeof HybridSearchInputSchema>;

@@ -4,15 +4,13 @@ import { memo } from 'react';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
 import { usePredicateMap } from '@/lib/hooks/record-queries';
-import type { SearchResult } from '@/server/api/routers/search';
+import type { RouterOutputs } from '@/server/api/root';
 import { toTitleCase } from '@/shared/lib/formatting';
 import { recordTypeIcons } from './type-icons';
 
-export const SearchResultItem = memo(function SearchResultItem({
-  result,
-}: {
-  result: SearchResult;
-}) {
+type SearchItem = RouterOutputs['records']['search']['items'][number];
+
+export const SearchResultItem = memo(function SearchResultItem({ result }: { result: SearchItem }) {
   const predicates = usePredicateMap();
   const {
     type,

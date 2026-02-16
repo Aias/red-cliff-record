@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useMatches } from '@tanstack/react-router';
 import { useCallback } from 'react';
+import { z } from 'zod';
 import { trpc } from '@/app/trpc';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
@@ -9,13 +10,15 @@ import { RecordsGrid } from './-components/records-grid';
 
 export const Route = createFileRoute('/records')({
   component: RouteComponent,
+  validateSearch: z.object({ q: z.string().optional() }),
 });
 
 function RouteComponent() {
   const navigate = Route.useNavigate();
+  const { q } = Route.useSearch();
   const { state: filtersState } = useRecordFilters();
-  const { data: recordsList } = trpc.records.list.useQuery(
-    { ...filtersState, offset: 0 },
+  const { data: recordsList } = trpc.records.search.useQuery(
+    { query: q, ...filtersState, offset: 0 },
     { placeholderData: (prev) => prev }
   );
   const matches = useMatches();
@@ -44,7 +47,7 @@ function RouteComponent() {
 
   // Open first record from list view
   const openFirstRecord = useCallback(() => {
-    const firstRecordId = recordsList?.ids[0]?.id;
+    const firstRecordId = recordsList?.items[0]?.id;
     if (firstRecordId) {
       void navigate({
         to: '/records/$recordId',
@@ -81,7 +84,8 @@ function RouteComponent() {
           <div className="flex min-w-60 shrink grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-c-divider bg-c-container py-3">
             <header className="flex items-center justify-between px-3">
               <h2 className="text-lg font-medium">
-                Records <span className="text-sm text-c-secondary">({recordsList.ids.length})</span>
+                Records{' '}
+                <span className="text-sm text-c-secondary">({recordsList.items.length})</span>
               </h2>
               <Link to="/records" className="text-sm">
                 Index
@@ -92,7 +96,7 @@ function RouteComponent() {
               onValueChange={handleValueChange}
               className="flex flex-col gap-1 overflow-y-auto px-3 text-xs"
             >
-              {recordsList.ids.map(({ id }) => (
+              {recordsList.items.map(({ id }) => (
                 <RadioCardsItem key={id} value={id.toString()} data-record-sidebar-id={id}>
                   <RecordLink id={id} className="w-full overflow-hidden" />
                 </RadioCardsItem>
@@ -102,7 +106,7 @@ function RouteComponent() {
           <Outlet />
         </>
       ) : (
-        <RecordsGrid />
+        <RecordsGrid q={q} />
       )}
     </main>
   );
