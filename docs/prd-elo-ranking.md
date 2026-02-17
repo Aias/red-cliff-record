@@ -38,7 +38,25 @@ A **matchup** is a head-to-head comparison: the user sees two records of the sam
 
 After each matchup, both records' ELO scores are updated in place.
 
-## Three Modes of Ranking
+## Ranking Interactions
+
+### Contextual Matchups (Relations Sidebar)
+
+The **primary everyday interaction** with the ELO system. When viewing a record, the existing relations sidebar is expanded to include a small matchup section showing a few randomly selected opponents near the current record's ELO (same type). The user can tap one to declare a winner, and both records' scores update immediately.
+
+**Why this matters:** Most curation happens while you're already looking at a record — reading its content, editing its metadata, reviewing its links. Embedding matchups in that context means ranking is a natural side-effect of curation rather than a separate chore. New records and records being actively curated will naturally accumulate matchups and settle into the right rank without the user ever visiting a dedicated ranking page.
+
+**Behavior:**
+- Show 2–3 opponent cards in the sidebar, drawn from records with similar ELO (±200) and the same type.
+- Each card shows the opponent's title, avatar, and current ELO.
+- Tapping/clicking an opponent means "the record I'm viewing is more important than this one." The current record wins.
+- A "less important" action (or clicking the current record's side) means the opponent wins.
+- After a matchup, the defeated opponent is replaced with a new one, so the user can keep going or stop at any time.
+- If the current record has very few matchups, bias opponent selection toward well-established records (high matchup count) to anchor the new record faster.
+
+**UI location:** Below the existing relations/links in the sidebar, under a "Rank" or "Compare" heading.
+
+## Other Ranking Modes
 
 ### 1. Seed from Stars (Migration)
 
@@ -136,11 +154,12 @@ The `rating` column stays in the schema during migration but is no longer writte
 - Replace star display with ELO score badge (e.g., `1340`).
 - Color-code or tier-label based on percentile within the record type (optional, TBD).
 
-### Record Form/Detail
+### Record Detail / Relations Sidebar
 
 - Remove star slider.
-- Add "Rank this" button that launches settle mode.
 - Show current ELO score and matchup count.
+- Add contextual matchup section to the relations sidebar (2–3 opponent cards, inline win/loss actions).
+- "Rank this" button launches settle mode for more deliberate positioning.
 
 ### New: Arena Page
 
