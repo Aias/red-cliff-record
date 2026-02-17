@@ -53,6 +53,8 @@ export const OffsetSchema = z.number().int().gte(0);
 export const OrderBySchema = z.array(OrderCriteriaSchema);
 
 export const ListRecordsInputSchema = z.object({
+  searchQuery: z.string().optional(),
+  strategy: z.enum(['hybrid', 'trigram', 'vector']).optional(),
   filters: RecordFiltersSchema.optional().default({}),
   limit: LimitSchema.optional().default(DEFAULT_LIMIT),
   offset: OffsetSchema.optional().default(0),
@@ -70,15 +72,4 @@ export const SearchRecordsInputSchema = z.object({
     .optional()
     .default({}),
   limit: LimitSchema.optional().default(10),
-});
-
-const SearchStrategySchema = z.enum(['hybrid', 'trigram', 'vector']);
-
-export const HybridSearchInputSchema = z.object({
-  query: z.string().optional(),
-  strategy: SearchStrategySchema.optional().default('hybrid'),
-  filters: RecordFiltersSchema.optional().default({}),
-  limit: LimitSchema.optional().default(DEFAULT_LIMIT),
-  offset: OffsetSchema.optional().default(0),
-  orderBy: OrderBySchema.optional().default([{ field: 'recordCreatedAt', direction: 'desc' }]),
 });

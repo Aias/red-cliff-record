@@ -48,7 +48,7 @@ export const hybrid: CommandHandler = async (args, options) => {
 
   const limit = parsedOptions.limit ?? 20;
 
-  const { ids } = await caller.records.search({ query, limit });
+  const { ids } = await caller.records.list({ searchQuery: query, limit });
 
   const results = await Promise.all(ids.map(({ id }) => caller.records.get({ id })));
 

@@ -60,12 +60,12 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
   const debouncedQuery = useDebounce(query, 200);
   const shouldSearch = debouncedQuery.length >= 1;
 
-  const trigram = trpc.records.search.useQuery(
-    { query: debouncedQuery, strategy: 'trigram', limit: 8 },
+  const trigram = trpc.records.list.useQuery(
+    { searchQuery: debouncedQuery, strategy: 'trigram', limit: 8 },
     { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
-  const vector = trpc.records.search.useQuery(
-    { query: debouncedQuery, strategy: 'vector', limit: 8 },
+  const vector = trpc.records.list.useQuery(
+    { searchQuery: debouncedQuery, strategy: 'vector', limit: 8 },
     { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
 
