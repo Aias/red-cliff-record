@@ -36,12 +36,12 @@ export const SiteSearch = () => {
   const debouncedQuery = useDebounce(inputValue, 300);
   const shouldSearch = debouncedQuery.length >= MIN_QUERY_LENGTH;
 
-  const trigram = trpc.records.search.useQuery(
-    { query: debouncedQuery, strategy: 'trigram', limit: 10 },
+  const trigram = trpc.records.list.useQuery(
+    { searchQuery: debouncedQuery, strategy: 'trigram', limit: 10 },
     { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
-  const vector = trpc.records.search.useQuery(
-    { query: debouncedQuery, strategy: 'vector', limit: 10 },
+  const vector = trpc.records.list.useQuery(
+    { searchQuery: debouncedQuery, strategy: 'vector', limit: 10 },
     { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
 

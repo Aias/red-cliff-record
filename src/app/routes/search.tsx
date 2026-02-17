@@ -14,8 +14,8 @@ export const Route = createFileRoute('/search')({
 function SearchPage() {
   const { q } = Route.useSearch();
 
-  const { data } = trpc.records.search.useQuery(
-    { query: q || undefined, limit: 100 },
+  const { data } = trpc.records.list.useQuery(
+    { searchQuery: q || undefined, limit: 100 },
     { enabled: q.length > 0, placeholderData: (prev) => prev }
   );
 

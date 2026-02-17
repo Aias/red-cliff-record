@@ -128,17 +128,17 @@ export function useDeleteRecords() {
       });
 
       // Optimistically remove deleted records from all record lists
-      const listQueryKey = getQueryKey(trpc.records.list, undefined, 'query');
-      const listEntries = qc.getQueriesData<IdParamList>({ queryKey: listQueryKey });
-      const previousLists = listEntries.map(([key, data]) => [key, data] as const);
       const idSet = new Set(ids);
-      listEntries.forEach(([key, data]) => {
-        if (!data) return;
-        qc.setQueryData(key, {
-          ...data,
-          ids: data.ids.filter(({ id }) => !idSet.has(id)),
+      const removeFromLists = (queryKey: readonly unknown[]) => {
+        const entries = qc.getQueriesData<IdParamList>({ queryKey });
+        entries.forEach(([key, data]) => {
+          if (!data) return;
+          qc.setQueryData(key, { ...data, ids: data.ids.filter(({ id }) => !idSet.has(id)) });
         });
-      });
+        return entries.map(([key, data]) => [key, data] as const);
+      };
+
+      const previousLists = removeFromLists(getQueryKey(trpc.records.list, undefined, 'query'));
 
       return { previousRecords, previousLists };
     },
@@ -216,16 +216,16 @@ export function useMergeRecords() {
       }
 
       // Optimistically remove source record from all record lists
-      const listQueryKey = getQueryKey(trpc.records.list, undefined, 'query');
-      const listEntries = qc.getQueriesData<IdParamList>({ queryKey: listQueryKey });
-      const previousLists = listEntries.map(([key, data]) => [key, data] as const);
-      listEntries.forEach(([key, data]) => {
-        if (!data) return;
-        qc.setQueryData(key, {
-          ...data,
-          ids: data.ids.filter(({ id }) => id !== sourceId),
+      const removeFromLists = (queryKey: readonly unknown[]) => {
+        const entries = qc.getQueriesData<IdParamList>({ queryKey });
+        entries.forEach(([key, data]) => {
+          if (!data) return;
+          qc.setQueryData(key, { ...data, ids: data.ids.filter(({ id }) => id !== sourceId) });
         });
-      });
+        return entries.map(([key, data]) => [key, data] as const);
+      };
+
+      const previousLists = removeFromLists(getQueryKey(trpc.records.list, undefined, 'query'));
 
       return { previousSource, previousTarget, previousLists };
     },

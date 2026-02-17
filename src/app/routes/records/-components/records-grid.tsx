@@ -110,7 +110,7 @@ function RecordRow({ recordId }: { recordId: DbId }) {
 
 export const RecordsGrid = () => {
   const { state, setFilters, setLimit, reset } = useRecordFilters();
-  const { data } = trpc.records.search.useQuery(
+  const { data } = trpc.records.list.useQuery(
     { ...state, offset: 0 },
     { placeholderData: (prev) => prev }
   );
