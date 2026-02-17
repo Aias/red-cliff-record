@@ -190,8 +190,5 @@ Current integrations map external signals to the 0–3 star scale. Under ELO:
 - **Score display:** Raw numbers everywhere. No tier abstraction.
 - **Arena page:** Yes, build as a dedicated page.
 - **Cross-type comparison:** No. Each type is its own league.
-
-## Open Questions
-
-- **Decay:** Should ELO scores decay over time if a record hasn't been in a matchup recently? Could help surface stale rankings for re-evaluation.
-- **Bulk seeding UI:** For users with large existing collections, should there be a guided "seed session" that walks through the most impactful matchups first?
+- **Decay:** No score decay. Matchup selection biases toward records that haven't been compared recently to naturally surface stale rankings.
+- **Bulk seeding:** No dedicated UI. Seed from stars via migration table. Matchup selection prioritizes low-matchup-count records so they settle faster organically.
