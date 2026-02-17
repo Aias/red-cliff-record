@@ -18,7 +18,7 @@ Replace star ratings with an **ELO-based ranking system**, scoped per record typ
 
 - Each record gets an `eloScore` (integer, default 1200).
 - Scores are scoped by record type — an artifact's ELO is only meaningful relative to other artifacts.
-- Standard ELO formula with K-factor of 32 (configurable).
+- **Adaptive K-factor:** K=32 for records with <10 matchups, K=24 for 10–30, K=16 for 30+. New records move fast through the ranks; established records stabilize.
 - Scores are unbounded but will naturally cluster around 800–1600 in practice.
 
 ### Matchups
@@ -49,9 +49,8 @@ The **primary everyday interaction** with the ELO system. When viewing a record,
 **Behavior:**
 - Show 2–3 opponent cards in the sidebar, drawn from records with similar ELO (±200) and the same type.
 - Each card shows the opponent's title, avatar, and current ELO.
-- Tapping/clicking an opponent means "the record I'm viewing is more important than this one." The current record wins.
-- A "less important" action (or clicking the current record's side) means the opponent wins.
-- After a matchup, the defeated opponent is replaced with a new one, so the user can keep going or stop at any time.
+- Each opponent card has two buttons: **thumbs up** (current record wins) and **thumbs down** (opponent wins). Explicit, no ambiguity about which direction the comparison goes.
+- After a matchup, the resolved opponent is replaced with a new one, so the user can keep going or stop at any time.
 - If the current record has very few matchups, bias opponent selection toward well-established records (high matchup count) to anchor the new record faster.
 
 **UI location:** Below the existing relations/links in the sidebar, under a "Rank" or "Compare" heading.
@@ -151,8 +150,8 @@ The `rating` column stays in the schema during migration but is no longer writte
 
 ### Record Grid/List
 
-- Replace star display with ELO score badge (e.g., `1340`).
-- Color-code or tier-label based on percentile within the record type (optional, TBD).
+- Replace star display with raw ELO score (e.g., `1340`).
+- No tier abstraction — the number itself is the display.
 
 ### Record Detail / Relations Sidebar
 
@@ -184,10 +183,15 @@ Current integrations map external signals to the 0–3 star scale. Under ELO:
 5. Remove star-related UI and filters.
 6. Keep `rating` column for rollback safety; drop in a later migration.
 
+## Decisions
+
+- **K-factor:** Adaptive. K=32 (<10 matchups), K=24 (10–30), K=16 (30+).
+- **Sidebar interaction:** Thumbs up / thumbs down buttons on each opponent card. No ambiguity.
+- **Score display:** Raw numbers everywhere. No tier abstraction.
+- **Arena page:** Yes, build as a dedicated page.
+- **Cross-type comparison:** No. Each type is its own league.
+
 ## Open Questions
 
-- **K-factor tuning:** Start with K=32 (chess standard for new players). Should K decrease as a record accumulates matchups (stabilize rankings over time)?
-- **Cross-type comparison:** Should there ever be cross-type matchups (e.g., an entity vs an artifact)? Current proposal says no — each type is its own league.
 - **Decay:** Should ELO scores decay over time if a record hasn't been in a matchup recently? Could help surface stale rankings for re-evaluation.
 - **Bulk seeding UI:** For users with large existing collections, should there be a guided "seed session" that walks through the most impactful matchups first?
-- **Percentile tiers:** Should the UI show tier labels (S/A/B/C/D or similar) derived from ELO percentiles within each type?
