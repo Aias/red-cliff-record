@@ -82,13 +82,17 @@ export function clearBasket() {
   saveToStorage([]);
 }
 
+export function useInBasket(id: DbId) {
+  const ids = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return ids.includes(id);
+}
+
 export function useBasket() {
   const ids = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const add = useCallback((id: DbId) => addToBasket(id), []);
   const remove = useCallback((id: DbId) => removeFromBasket(id), []);
   const clear = useCallback(() => clearBasket(), []);
-  const has = useCallback((id: DbId) => ids.includes(id), [ids]);
 
-  return { ids, add, remove, clear, has, count: ids.length };
+  return { ids, add, remove, clear, count: ids.length };
 }

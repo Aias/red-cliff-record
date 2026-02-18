@@ -1,6 +1,6 @@
 import { ShoppingBasketIcon } from 'lucide-react';
 import { memo } from 'react';
-import { useBasket } from '@/lib/hooks/use-basket';
+import { useInBasket } from '@/lib/hooks/use-basket';
 import { getRecordPreview, getRecordThumbnailMedia, useRecord } from '@/lib/hooks/record-queries';
 import { toTitleCase } from '@/shared/lib/formatting';
 import type { DbId } from '@/shared/types/api';
@@ -9,7 +9,7 @@ import { recordTypeIcons } from './type-icons';
 
 export const SearchResultItem = memo(function SearchResultItem({ id }: { id: DbId }) {
   const { data: record } = useRecord(id);
-  const basket = useBasket();
+  const inBasket = useInBasket(id);
 
   if (!record) {
     return (
@@ -41,7 +41,7 @@ export const SearchResultItem = memo(function SearchResultItem({ id }: { id: DbI
         <div className="ml-2 line-clamp-1 shrink truncate text-c-secondary">{preview}</div>
       </div>
       {mediaItem && <RecordThumbnail media={mediaItem} size="sm" videoLabel={videoLabel} />}
-      {basket.has(id) && <ShoppingBasketIcon className="size-[1em] shrink-0 text-c-accent opacity-60" />}
+      {inBasket && <ShoppingBasketIcon className="size-[1em] shrink-0 text-c-accent opacity-60" />}
       <SourceLogos sources={record.sources} className="text-[0.75em] opacity-50" />
     </div>
   );

@@ -35,7 +35,7 @@ import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/components/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
-import { useBasket } from '@/lib/hooks/use-basket';
+import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-basket';
 import { useDeleteMedia } from '@/lib/hooks/media-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
@@ -141,7 +141,7 @@ export function RecordForm({
   const formData = record ?? defaultData;
   const isFormLoading = isLoading || !record;
 
-  const basket = useBasket();
+  const inBasket = useInBasket(recordId);
   const updateMutation = useUpsertRecord();
   const deleteMediaMutation = useDeleteMedia();
   const fetchFaviconMutation = trpc.records.fetchFavicon.useMutation();
@@ -255,16 +255,14 @@ export function RecordForm({
     allowInInput: true,
   });
 
-  const inBasket = basket.has(recordId);
-
   useKeyboardShortcut(
     'mod+b',
     () => {
       if (inBasket) {
-        basket.remove(recordId);
+        removeFromBasket(recordId);
         toast.success('Removed from basket');
       } else {
-        basket.add(recordId);
+        addToBasket(recordId);
         toast.success('Added to basket');
       }
     },
@@ -786,10 +784,10 @@ export function RecordForm({
               className={cn(inBasket && 'text-c-accent')}
               onClick={() => {
                 if (inBasket) {
-                  basket.remove(recordId);
+                  removeFromBasket(recordId);
                   toast.success('Removed from basket');
                 } else {
-                  basket.add(recordId);
+                  addToBasket(recordId);
                   toast.success('Added to basket');
                 }
               }}

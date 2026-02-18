@@ -21,7 +21,7 @@ import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
-import { useBasket } from '@/lib/hooks/use-basket';
+import { useInBasket } from '@/lib/hooks/use-basket';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { cn } from '@/lib/utils';
@@ -40,7 +40,7 @@ function formatDate(dateValue: Date | string) {
 
 function RecordRow({ recordId }: { recordId: DbId }) {
   const { data: record } = useRecord(recordId);
-  const basket = useBasket();
+  const inBasket = useInBasket(recordId);
 
   if (!record) {
     return (
@@ -86,7 +86,7 @@ function RecordRow({ recordId }: { recordId: DbId }) {
                   ))}
                 </ol>
               )}
-              {basket.has(record.id) && (
+              {inBasket && (
                 <ShoppingBasketIcon className="size-[0.875em] shrink-0 text-c-accent" />
               )}
             </Link>
