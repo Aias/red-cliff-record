@@ -76,7 +76,7 @@ export function MediaLightbox({ images, activeIndex, onClose, onIndexChange }: M
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
           onClick={onClose}
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+          className="data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
         />
         <DialogPrimitive.Content
           data-slot="dialog-content"
