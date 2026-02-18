@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { getQueryKey } from '@trpc/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
+import { removeManyFromBasket, replaceBasketId } from '@/lib/hooks/use-basket';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId, IdParamList } from '@/shared/types/api';
 import type { RecordGet } from '@/shared/types/domain';
@@ -143,6 +144,8 @@ export function useDeleteRecords() {
       return { previousRecords, previousLists };
     },
     onSuccess: (rows) => {
+      removeManyFromBasket(rows.map(({ id }) => id));
+
       // Cleanup is already done in onMutate, just ensure consistency
       rows.forEach(({ id }) => {
         qc.removeQueries({
@@ -230,6 +233,8 @@ export function useMergeRecords() {
       return { previousSource, previousTarget, previousLists };
     },
     onSuccess: ({ updatedRecord, deletedRecordId, touchedIds, snapshot }) => {
+      replaceBasketId(deletedRecordId, updatedRecord.id);
+
       void utils.records.get.invalidate({ id: updatedRecord.id });
       void utils.search.byRecordId.invalidate({ id: updatedRecord.id });
       void utils.records.tree.invalidate();

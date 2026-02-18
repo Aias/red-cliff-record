@@ -41,7 +41,7 @@ export const SearchResultItem = memo(function SearchResultItem({ id }: { id: DbI
         <div className="ml-2 line-clamp-1 shrink truncate text-c-secondary">{preview}</div>
       </div>
       {mediaItem && <RecordThumbnail media={mediaItem} size="sm" videoLabel={videoLabel} />}
-      {inBasket && <ShoppingBasketIcon className="size-[1em] shrink-0 text-c-accent opacity-60" />}
+      {inBasket && <ShoppingBasketIcon className="shrink-0 text-c-accent opacity-60" />}
       <SourceLogos sources={record.sources} className="text-[0.75em] opacity-50" />
     </div>
   );

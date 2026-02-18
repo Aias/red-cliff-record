@@ -1,99 +1,74 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import type { DbId } from '@/shared/types/api';
+import { createLocalStorageStore } from '../create-local-storage-store';
 
-const STORAGE_KEY = 'rcr:basket';
-
-// In-memory cache for current value (shared across all hook instances)
-let cachedIds: DbId[] = [];
-let initialized = false;
-
-// Set of listeners for useSyncExternalStore
-const listeners = new Set<() => void>();
-
-function notifyListeners() {
-  for (const listener of listeners) {
-    listener();
-  }
-}
-
-function parseStoredValue(raw: string | null): DbId[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((v): v is DbId => typeof v === 'number') : [];
-  } catch {
-    return [];
-  }
-}
-
-function loadFromStorage(): DbId[] {
-  if (typeof window === 'undefined') return [];
-  return parseStoredValue(localStorage.getItem(STORAGE_KEY));
-}
-
-function saveToStorage(ids: DbId[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-  cachedIds = ids;
-  notifyListeners();
-}
-
-function initialize() {
-  if (initialized || typeof window === 'undefined') return;
-  initialized = true;
-  cachedIds = loadFromStorage();
-
-  // Cross-tab sync
-  window.addEventListener('storage', (e) => {
-    if (e.key === STORAGE_KEY) {
-      cachedIds = parseStoredValue(e.newValue);
-      notifyListeners();
+const store = createLocalStorageStore<DbId[]>({
+  key: 'rcr:basket',
+  defaultValue: [],
+  parse(raw) {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((v): v is DbId => typeof v === 'number') : [];
+    } catch {
+      return [];
     }
-  });
-}
+  },
+});
 
-function subscribe(callback: () => void) {
-  initialize();
-  listeners.add(callback);
-  return () => listeners.delete(callback);
-}
-
-function getSnapshot(): DbId[] {
-  initialize();
-  return cachedIds;
-}
-
-function getServerSnapshot(): DbId[] {
-  return [];
+function setBasketIds(ids: DbId[]) {
+  const current = store.get();
+  if (current.length === ids.length && current.every((id, index) => id === ids[index])) return;
+  store.set(ids);
 }
 
 export function addToBasket(id: DbId) {
-  const current = getSnapshot();
+  const current = store.get();
   if (current.includes(id)) return;
-  saveToStorage([...current, id]);
+  setBasketIds([...current, id]);
 }
 
 export function removeFromBasket(id: DbId) {
-  const current = getSnapshot();
-  saveToStorage(current.filter((v) => v !== id));
+  setBasketIds(store.get().filter((v) => v !== id));
+}
+
+export function removeManyFromBasket(idsToRemove: Iterable<DbId>) {
+  const removalSet = new Set(idsToRemove);
+  if (removalSet.size === 0) return;
+  setBasketIds(store.get().filter((id) => !removalSet.has(id)));
+}
+
+export function replaceBasketId(sourceId: DbId, targetId: DbId) {
+  const current = store.get();
+  const deduped = new Set<DbId>();
+  const next: DbId[] = [];
+
+  for (const id of current) {
+    const resolvedId = id === sourceId ? targetId : id;
+    if (deduped.has(resolvedId)) continue;
+    deduped.add(resolvedId);
+    next.push(resolvedId);
+  }
+
+  setBasketIds(next);
 }
 
 export function clearBasket() {
-  saveToStorage([]);
+  setBasketIds([]);
 }
 
 export function useInBasket(id: DbId) {
   // Returns a primitive boolean so React can bail out via Object.is
   // when this specific ID's membership hasn't changed.
   return useSyncExternalStore(
-    subscribe,
-    () => getSnapshot().includes(id),
+    store.subscribe,
+    () => store.getSnapshot().includes(id),
     () => false
   );
 }
 
 export function useBasket() {
-  const ids = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const ids = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
 
   const add = useCallback((id: DbId) => addToBasket(id), []);
   const remove = useCallback((id: DbId) => removeFromBasket(id), []);
