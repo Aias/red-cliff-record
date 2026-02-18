@@ -31,6 +31,16 @@ export default defineConfig(({ mode }) => {
       tsConfigPaths({ projectDiscovery: 'lazy' }),
       tanstackStart({
         srcDirectory: './src/app',
+        importProtection: {
+          behavior: {
+            dev: 'mock',
+            build: 'error',
+          },
+          client: {
+            specifiers: [/^@\/server/],
+            files: ['**/src/server/**'],
+          },
+        },
       }),
       viteReact({
         babel: {
