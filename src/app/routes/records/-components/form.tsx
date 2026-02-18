@@ -1,7 +1,7 @@
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { GlobeIcon, Trash2Icon } from 'lucide-react';
+import { GlobeIcon, ShoppingBasketIcon, Trash2Icon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -35,6 +35,7 @@ import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/components/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
+import { useBasket } from '@/lib/hooks/use-basket';
 import { useDeleteMedia } from '@/lib/hooks/media-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
@@ -140,6 +141,7 @@ export function RecordForm({
   const formData = record ?? defaultData;
   const isFormLoading = isLoading || !record;
 
+  const basket = useBasket();
   const updateMutation = useUpsertRecord();
   const deleteMediaMutation = useDeleteMedia();
   const fetchFaviconMutation = trpc.records.fetchFavicon.useMutation();
@@ -252,6 +254,26 @@ export function RecordForm({
     category: 'Records',
     allowInInput: true,
   });
+
+  const inBasket = basket.has(recordId);
+
+  useKeyboardShortcut(
+    'mod+b',
+    () => {
+      if (inBasket) {
+        basket.remove(recordId);
+        toast.success('Removed from basket');
+      } else {
+        basket.add(recordId);
+        toast.success('Added to basket');
+      }
+    },
+    {
+      description: 'Toggle record in basket',
+      category: 'Records',
+      allowInInput: true,
+    }
+  );
 
   // Form-level paste handler for media uploads
   // Works regardless of whether MediaUpload component is visible
@@ -755,6 +777,28 @@ export function RecordForm({
         >
           {`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleString()}`}
         </Link>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              type="button"
+              className={cn(inBasket && 'text-c-accent')}
+              onClick={() => {
+                if (inBasket) {
+                  basket.remove(recordId);
+                  toast.success('Removed from basket');
+                } else {
+                  basket.add(recordId);
+                  toast.success('Added to basket');
+                }
+              }}
+            >
+              <ShoppingBasketIcon />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{inBasket ? 'Remove from basket' : 'Add to basket'}</TooltipContent>
+        </Tooltip>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button size="icon" variant="ghost" type="button">
