@@ -1,7 +1,7 @@
 import type { LinkOptions } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
-import { RectangleEllipsisIcon } from 'lucide-react';
+import { RectangleEllipsisIcon, ShoppingBasketIcon } from 'lucide-react';
 import { memo } from 'react';
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import {
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/hover-card';
 import { Spinner } from '@/components/spinner';
 import { getRecordPreview, getRecordThumbnailMedia, useRecord } from '@/lib/hooks/record-queries';
+import { useInBasket } from '@/lib/hooks/use-basket';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
 import { RecordDisplay } from './record-display';
@@ -36,6 +37,7 @@ interface RecordLinkProps {
 
 export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordLinkProps) => {
   const { data: record, isLoading, isError } = useRecord(id);
+  const inBasket = useInBasket(id);
 
   if (isLoading) return <Spinner />;
   if (isError || !record) {
@@ -125,6 +127,7 @@ export const RecordLink = memo(({ id, className, linkOptions, actions }: RecordL
             )}
           </div>
 
+          {inBasket && <ShoppingBasketIcon className="size-[0.875em] shrink-0 text-c-accent" />}
           <SourceLogos sources={record.sources} className="text-[0.875em] opacity-50" />
         </div>
 

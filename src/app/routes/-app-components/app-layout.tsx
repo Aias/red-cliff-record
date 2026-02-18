@@ -1,6 +1,7 @@
 import { Link, type LinkComponentProps } from '@tanstack/react-router';
 import { MoonIcon, MountainSnowIcon, SunIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
+import { Basket } from '@/components/basket';
 import { Button } from '@/components/button';
 import { KeyboardShortcutsHelp } from '@/components/keyboard-shortcuts-help';
 import { Separator } from '@/components/separator';
@@ -49,6 +50,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
         </li>
         <li className="flex items-center justify-end gap-2">
           <KeyboardShortcutsHelp />
+          <Basket />
           <Button variant="ghost" onClick={toggleTheme} className="h-9 w-9 p-0">
             {currentTheme === 'light' ? (
               <SunIcon className="h-5 w-5" />

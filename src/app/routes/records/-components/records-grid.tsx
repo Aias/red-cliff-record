@@ -1,7 +1,7 @@
 import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations.shared';
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { Link } from '@tanstack/react-router';
-import { ChevronDownIcon, StarIcon } from 'lucide-react';
+import { ChevronDownIcon, ShoppingBasketIcon, StarIcon } from 'lucide-react';
 import { useState } from 'react';
 import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
+import { useInBasket } from '@/lib/hooks/use-basket';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
@@ -39,6 +40,7 @@ function formatDate(dateValue: Date | string) {
 
 function RecordRow({ recordId }: { recordId: DbId }) {
   const { data: record } = useRecord(recordId);
+  const inBasket = useInBasket(recordId);
 
   if (!record) {
     return (
@@ -84,6 +86,7 @@ function RecordRow({ recordId }: { recordId: DbId }) {
                   ))}
                 </ol>
               )}
+              {inBasket && <ShoppingBasketIcon className="size-[0.875em] shrink-0 text-c-accent" />}
             </Link>
           </TooltipTrigger>
           <TooltipContent className="max-w-96">

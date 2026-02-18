@@ -1,12 +1,13 @@
 import { Link } from '@tanstack/react-router';
 import { useNavigate } from '@tanstack/react-router';
-import { RectangleEllipsisIcon } from 'lucide-react';
+import { RectangleEllipsisIcon, ShoppingBasketIcon } from 'lucide-react';
 import { memo } from 'react';
 import { Avatar } from '@/components/avatar';
 import { Markdown } from '@/components/markdown';
 import MediaGrid from '@/components/media-grid';
 import { Spinner } from '@/components/spinner';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
+import { useInBasket } from '@/lib/hooks/use-basket';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
 import { getRecordTitle, SourceLogos } from './record-parts';
@@ -24,6 +25,7 @@ export const RecordDisplay = memo(function RecordDisplay({
   className,
 }: RecordDisplayProps) {
   const { data: record, isError } = useRecord(recordId);
+  const inBasket = useInBasket(recordId);
   const navigate = useNavigate();
 
   if (!record) {
@@ -82,6 +84,7 @@ export const RecordDisplay = memo(function RecordDisplay({
           {abbreviation && <span className="text-xs text-c-hint">({abbreviation})</span>}
           {sense && <em className="text-xs text-c-hint italic">{sense}</em>}
         </div>
+        {inBasket && <ShoppingBasketIcon className="size-[0.875em] shrink-0 text-c-accent" />}
         <SourceLogos sources={sources} className="text-[0.875em] opacity-50" />
         {avatarUrl && <Avatar src={avatarUrl} fallback={title?.charAt(0) ?? type.charAt(0)} />}
       </header>
