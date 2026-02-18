@@ -18,9 +18,7 @@ export function Basket() {
   };
 
   const copyJson = async () => {
-    const records = await Promise.all(
-      basket.ids.map((id) => utils.records.get.ensureData({ id }))
-    );
+    const records = await Promise.all(basket.ids.map((id) => utils.records.get.ensureData({ id })));
     const text = JSON.stringify(records, null, 2);
     await navigator.clipboard.writeText(text);
     toast.success('Copied JSON to clipboard');
@@ -35,7 +33,7 @@ export function Basket() {
         >
           <ShoppingBasketIcon className="h-5 w-5" />
           {basket.count > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-c-main px-1 text-[10px] font-semibold leading-none text-c-main-contrast">
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-c-main px-1 text-[10px] leading-none font-semibold text-c-main-contrast">
               {basket.count}
             </span>
           )}
@@ -74,12 +72,7 @@ export function Basket() {
                 <ClipboardCopyIcon />
                 Copy IDs
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => void copyJson()}
-                className="text-xs"
-              >
+              <Button variant="ghost" size="sm" onClick={() => void copyJson()} className="text-xs">
                 <ClipboardCopyIcon />
                 Copy JSON
               </Button>

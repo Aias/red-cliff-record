@@ -1,7 +1,7 @@
 import { ShoppingBasketIcon } from 'lucide-react';
 import { memo } from 'react';
-import { useInBasket } from '@/lib/hooks/use-basket';
 import { getRecordPreview, getRecordThumbnailMedia, useRecord } from '@/lib/hooks/record-queries';
+import { useInBasket } from '@/lib/hooks/use-basket';
 import { toTitleCase } from '@/shared/lib/formatting';
 import type { DbId } from '@/shared/types/api';
 import { getRecordTitle, RecordThumbnail, SourceLogos } from './record-parts';

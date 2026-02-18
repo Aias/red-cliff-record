@@ -21,8 +21,8 @@ import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
-import { useInBasket } from '@/lib/hooks/use-basket';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
+import { useInBasket } from '@/lib/hooks/use-basket';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
@@ -86,9 +86,7 @@ function RecordRow({ recordId }: { recordId: DbId }) {
                   ))}
                 </ol>
               )}
-              {inBasket && (
-                <ShoppingBasketIcon className="size-[0.875em] shrink-0 text-c-accent" />
-              )}
+              {inBasket && <ShoppingBasketIcon className="size-[0.875em] shrink-0 text-c-accent" />}
             </Link>
           </TooltipTrigger>
           <TooltipContent className="max-w-96">
