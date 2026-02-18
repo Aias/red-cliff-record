@@ -8,6 +8,7 @@ BACKUP_DIR="$HOME/Documents/Red Cliff Record/Backups"
 CLEAN_RESTORE=false
 DATA_ONLY=false
 DRY_RUN=false
+RESTORE_FILE=""
 SKIP_CONFIRM=false
 
 # Parse connection details from .env
@@ -54,21 +55,26 @@ print_usage() {
     echo "  -b, --backup-dir DIR   Backup directory (default: ~/Documents/Red Cliff Record/Backups)"
     echo "  -c, --clean            Clean restore (drop & recreate database)"
     echo "  -D, --data-only        Backup/Restore data only (public schema only, excludes migration history)"
+    echo "  -f, --file PATH        Restore from a specific backup file instead of auto-discovering"
     echo "  -n, --dry-run          Print commands without executing them"
     echo "  -y, --yes              Skip confirmation prompts"
     echo "  -h, --help             Show this help message"
     echo
+    echo "Backup files are named by environment: prod-{timestamp}.dump, dev-data-{timestamp}.dump"
+    echo "Restore auto-discovers the most recent backup file unless --file is specified."
+    echo
     echo "Examples:"
-    echo "  $0 backup prod                # Backup from production database"
-    echo "  $0 backup dev                 # Backup from development database"
-    echo "  $0 restore dev                # Restore to development database"
-    echo "  $0 --dry-run restore dev      # Print restore commands without executing"
-    echo "  $0 -c restore dev             # Clean restore to dev (drop & recreate)"
-    echo "  $0 -D backup prod             # Backup data only from production"
-    echo "  $0 -D restore dev             # Restore data only to development"
-    echo "  $0 reset dev                  # Reset dev database (fresh start)"
-    echo "  $0 seed dev                   # Seed dev database with initial data"
-    echo "  $0 clone-prod-to-dev          # Clone production to development"
+    echo "  $0 backup prod                       # Backup from production database"
+    echo "  $0 backup dev                        # Backup from development database"
+    echo "  $0 restore dev                       # Restore most recent backup to dev"
+    echo "  $0 -f path/to/file.dump restore dev  # Restore specific file to dev"
+    echo "  $0 --dry-run restore dev             # Print restore commands without executing"
+    echo "  $0 -c restore dev                    # Clean restore to dev (drop & recreate)"
+    echo "  $0 -D backup prod                    # Backup data only from production"
+    echo "  $0 -D restore dev                    # Restore data only to development"
+    echo "  $0 reset dev                         # Reset dev database (fresh start)"
+    echo "  $0 seed dev                          # Seed dev database with initial data"
+    echo "  $0 clone-prod-to-dev                 # Clone production to development"
 }
 
 # Parse options
@@ -77,6 +83,7 @@ while [[ "$#" -gt 0 ]]; do
         -b|--backup-dir) BACKUP_DIR="$2"; shift ;;
         -c|--clean) CLEAN_RESTORE=true ;;
         -D|--data-only) DATA_ONLY=true ;;
+        -f|--file) RESTORE_FILE="$2"; shift ;;
         -n|--dry-run) DRY_RUN=true ;;
         -y|--yes) SKIP_CONFIRM=true ;;
         -h|--help) print_usage; exit 0 ;;
@@ -155,10 +162,10 @@ do_backup() {
 
     if [ "$DATA_ONLY" = true ]; then
         echo "Preparing data-only backup..."
-        backup_file="$BACKUP_DIR/${DATABASE_NAME}-data-${date}.dump"
+        backup_file="$BACKUP_DIR/${source}-data-${date}.dump"
         dump_args+=(--data-only --schema=public)
     else
-        backup_file="$BACKUP_DIR/${DATABASE_NAME}-${date}.dump"
+        backup_file="$BACKUP_DIR/${source}-${date}.dump"
         dump_args+=(--schema=public --schema=drizzle)
     fi
 
@@ -227,7 +234,7 @@ do_clean_setup() {
     # Set up search path to include extensions schema for vector operations
     echo "Setting up search path for vector operations..."
     run_cmd psql "$db_url" -c "ALTER DATABASE \"$db_name\" SET search_path TO public, extensions;"
-    
+
     echo "Clean setup completed"
 }
 
@@ -239,29 +246,30 @@ do_restore() {
 
     set_target "$target"
 
-    # Find the most recent backup file based on type
-    if [ "$DATA_ONLY" = true ]; then
-        dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}"-data-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
-    else
-        dump_file=$(ls "$BACKUP_DIR"/"${DATABASE_NAME}"-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
-    fi
-
-    if [ -z "$dump_file" ] || [ ! -f "$dump_file" ]; then
-        if [ "$DRY_RUN" = true ]; then
-            if [ "$DATA_ONLY" = true ]; then
-                dump_file="$BACKUP_DIR/${DATABASE_NAME}-data-DRYRUN.dump"
-            else
-                dump_file="$BACKUP_DIR/${DATABASE_NAME}-DRYRUN.dump"
-            fi
-            echo "Dry run: no matching backup file found, using placeholder: $dump_file"
-        else
-            echo "No suitable backup files found in: $BACKUP_DIR"
-            if [ "$DATA_ONLY" = true ]; then
-                echo "Looking for files matching pattern: ${DATABASE_NAME}-data-*.dump"
-            else
-                echo "Looking for files matching pattern: ${DATABASE_NAME}-*.dump"
-            fi
+    if [ -n "$RESTORE_FILE" ]; then
+        # Use explicitly specified file
+        dump_file="$RESTORE_FILE"
+        if [ ! -f "$dump_file" ] && [ "$DRY_RUN" = false ]; then
+            echo "Error: Specified backup file not found: $dump_file"
             exit 1
+        fi
+    else
+        # Auto-discover the most recent backup file
+        if [ "$DATA_ONLY" = true ]; then
+            dump_file=$(ls "$BACKUP_DIR"/*-data-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
+        else
+            # Exclude data-only backups from full restore discovery
+            dump_file=$(ls "$BACKUP_DIR"/*-[0-9]*.dump 2>/dev/null | grep -v -- '-data-' | sort -r | head -n1)
+        fi
+
+        if [ -z "$dump_file" ] || [ ! -f "$dump_file" ]; then
+            if [ "$DRY_RUN" = true ]; then
+                dump_file="$BACKUP_DIR/DRYRUN.dump"
+                echo "Dry run: no matching backup file found, using placeholder: $dump_file"
+            else
+                echo "No suitable backup files found in: $BACKUP_DIR"
+                exit 1
+            fi
         fi
     fi
 
@@ -395,7 +403,7 @@ do_clone_prod_to_dev() {
     fi
 
     echo "[1/4] Backing up production database (schema + data)..."
-    BACKUP_FILE="$BACKUP_DIR/${PROD_DB}-clone-source-$(date +%Y%m%d_%H%M%S).dump"
+    BACKUP_FILE="$BACKUP_DIR/prod-$(date +%Y-%m-%d-%H-%M-%S).dump"
     ensure_backup_dir
     pg_dump "$PROD_URL" --format=custom --schema=public --schema=drizzle --verbose > "$BACKUP_FILE"
 

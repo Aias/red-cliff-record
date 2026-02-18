@@ -185,13 +185,49 @@ Current integrations map external signals to the 0–3 star scale. Under ELO:
 - **New records from integrations** get the default ELO (1200). External importance signals (Readwise stars, Raindrop important flag, Airtable michelin stars, Adobe ratings) are mapped to seed ELOs using the same star→ELO table from the migration.
 - **ELO is always user-sovereign.** Integration re-syncs never overwrite ELO scores, regardless of whether the record has matchup history. Once created, ELO is controlled exclusively through matchups.
 
-## Migration Plan
+## Implementation Phases
 
-1. Add `eloScore` and `eloMatchups` columns to `records`.
-2. Backfill `eloScore` from existing `rating` values using the seed table (below). Set `eloMatchups` to 3 for all seeded records to slightly dampen initial volatility while still allowing fast movement.
-3. Create `elo_matchups` table.
-4. Update application code: queries, mutations, UI.
-5. Remove star-related UI, filters, and CLI flags. Drop the `rating` column.
+### Phase 1: Schema + migration
+
+- [ ] Add `eloScore` and `eloMatchups` columns to `records`
+- [ ] Create `elo_matchups` table
+- [ ] Backfill `eloScore` from existing `rating` values using the seed table
+- [ ] Set `eloMatchups` to 3 for all seeded records
+
+### Phase 2: ELO calculation + tRPC endpoints
+
+- [ ] ELO math (expected score, score update with asymmetric K)
+- [ ] `elo.submitMatchup` mutation (win/loss/draw, server-side cross-type validation)
+- [ ] `elo.getMatchup` query (random pair + optional `focusRecordId` for focused burst)
+- [ ] `elo.getLeaderboard` query (paginated, optional `minMatchups` filter)
+
+### Phase 3: Replace star references in existing UI/API
+
+- [ ] Swap `rating` for `eloScore` in record grid/list display
+- [ ] Swap `rating` for `eloScore` in record detail
+- [ ] Update CLI `rcr records list` flags (`--elo-min/max`, `--order=elo:desc`)
+- [ ] Remove star slider from record detail
+
+### Phase 4: Sidebar matchups
+
+- [ ] Opponent selection query (±200 ELO, widen if sparse, bias toward established for new records)
+- [ ] Collapsible matchup section in relations sidebar
+- [ ] Opponent cards with thumbs up/down, skip, refresh
+- [ ] Score delta animation
+- [ ] "Rank this" button launching focused burst
+
+### Phase 5: Arena page
+
+- [ ] Dedicated page with record type selector
+- [ ] Matchup card UI (scores hidden pre-pick, draw/skip buttons)
+- [ ] Optional filters (date range, tags, subtype — reset per session)
+- [ ] Search-to-focus (lock one side for focused burst)
+- [ ] Session stats
+
+### Phase 6: Cleanup
+
+- [ ] Drop `rating` column
+- [ ] Remove any remaining star references from integrations/CLI
 
 ### Seed Table
 

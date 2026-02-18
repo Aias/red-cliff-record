@@ -23,18 +23,18 @@ psql $DATABASE_URL_DEV -c "\dt table_name"
 
 ## Database Migrations
 
-**CRITICAL: Never run `bun run db:migrate` directly.** It uses unclear environment fallbacks where `DATABASE_URL` typically points to production.
+**CRITICAL: Never run migrations.** The agent must never execute migration commands (`bun run db:migrate`, `bunx drizzle-kit migrate`, or any equivalent), even against dev. Always provide the commands for the user to run and verify.
+
+**Production migrations run automatically** as part of the deploy pipeline when a PR is merged to main. Never run migrations against prod in a development context.
 
 **Migration workflow:**
 
-1. Schema changes → `bun run db:generate` generates migration files only (doesn't apply them)
-2. Apply to dev → `NODE_ENV=development bunx drizzle-kit migrate`
-3. Verify → Query both databases to confirm schema matches
-4. Apply to prod → `NODE_ENV=production bunx drizzle-kit migrate`
+1. Schema changes → `bun run db:generate` generates migration files only (safe for agent to run)
+2. **User applies to dev** → `NODE_ENV=development bunx drizzle-kit migrate`
+3. **User verifies** → Query dev database to confirm schema is correct
+4. PR merged → deploy script auto-runs migration against prod
 
 **OR** keep dev synced with prod: `rcr db clone-prod-to-dev --yes`
-
-Always test migrations in dev before applying to production.
 
 ## Architecture
 
