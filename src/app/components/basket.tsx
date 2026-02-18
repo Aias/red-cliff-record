@@ -4,7 +4,7 @@ import { trpc } from '@/app/trpc';
 import { removeManyFromBasket, useBasket } from '@/lib/hooks/use-basket';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
-import { SearchResultItem } from '../routes/records/-components/search-result-item';
+import { RecordLink } from '../routes/records/-components/record-link';
 import { Button } from './button';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Separator } from './separator';
@@ -14,6 +14,27 @@ function isNotFoundError(error: unknown): boolean {
   const { data } = error;
   if (!data || typeof data !== 'object' || !('code' in data)) return false;
   return data.code === 'NOT_FOUND';
+}
+
+function BasketItem({ id, onRemove }: { id: DbId; onRemove: (id: DbId) => void }) {
+  const handleRemove = () => onRemove(id);
+
+  return (
+    <div className="group flex items-center gap-1 px-3 py-2 text-sm">
+      <div className="min-w-0 flex-1">
+        <RecordLink id={id} />
+      </div>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+        onClick={handleRemove}
+      >
+        <XIcon />
+        <span className="sr-only">Remove</span>
+      </Button>
+    </div>
+  );
 }
 
 export function Basket() {
@@ -94,35 +115,20 @@ export function Basket() {
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className={cn(basket.count > 0 && 'text-c-accent')}>
           <ShoppingBasketIcon />
-          {basket.count > 0 && (
-            <span className="text-[10px] leading-none font-semibold">{basket.count}</span>
-          )}
+          {basket.count > 0 && <span>{basket.count}</span>}
           <span className="sr-only">Basket ({basket.count})</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
+      <PopoverContent align="end" className="w-120 p-0">
         {basket.count === 0 ? (
           <p className="p-4 text-center text-sm text-c-secondary">No items in basket</p>
         ) : (
           <>
-            <ul className="max-h-80 overflow-y-auto">
+            <ul className="max-h-120 overflow-y-auto">
               {basket.ids.map((id, i) => (
                 <li key={id}>
                   {i > 0 && <Separator />}
-                  <div className="group flex items-center gap-1 px-3 py-2 text-sm">
-                    <div className="min-w-0 flex-1">
-                      <SearchResultItem id={id} />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={() => basket.remove(id)}
-                    >
-                      <XIcon />
-                      <span className="sr-only">Remove</span>
-                    </Button>
-                  </div>
+                  <BasketItem key={id} id={id} onRemove={basket.remove} />
                 </li>
               ))}
             </ul>

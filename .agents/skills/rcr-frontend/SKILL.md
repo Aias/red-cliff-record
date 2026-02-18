@@ -47,6 +47,11 @@ The `Button` component handles sizing, text, and icon dimensions internally. Nev
 ## Tailwind Shorthand
 
 - When width and height are equal, use `size-x` instead of `w-x h-x`
+- No custom/arbitrary text sizes (`text-[10px]`, `text-[13px]`, etc.) — use design system tokens (`text-xs`, `text-sm`, etc.) unless there's a specific constraint preventing it
+
+## Event Handlers
+
+- No inline arrow functions in JSX `onClick`/`onChange` props — extract to a named handler or a component with its own handler
 
 ## Forms
 
