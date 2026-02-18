@@ -83,8 +83,13 @@ export function clearBasket() {
 }
 
 export function useInBasket(id: DbId) {
-  const ids = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  return ids.includes(id);
+  // Returns a primitive boolean so React can bail out via Object.is
+  // when this specific ID's membership hasn't changed.
+  return useSyncExternalStore(
+    subscribe,
+    () => getSnapshot().includes(id),
+    () => false
+  );
 }
 
 export function useBasket() {
