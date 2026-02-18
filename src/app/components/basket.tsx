@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import { useBasket } from '@/lib/hooks/use-basket';
 import { cn } from '@/lib/utils';
-import { SearchResultItem } from '@/routes/records/-components/search-result-item';
+import { SearchResultItem } from '../routes/records/-components/search-result-item';
 import { Button } from './button';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Separator } from './separator';
