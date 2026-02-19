@@ -33,6 +33,7 @@ import { Separator } from '@/components/separator';
 import { Slider } from '@/components/slider';
 import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/components/table';
+import { Toggle } from '@/components/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { useDeleteMedia } from '@/lib/hooks/media-mutations';
@@ -777,23 +778,22 @@ export function RecordForm({
         </Link>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="ghost"
-              type="button"
-              className={cn(inBasket && 'text-c-accent')}
-              onClick={() => {
-                if (inBasket) {
-                  removeFromBasket(recordId);
-                  toast.success('Removed from basket');
-                } else {
-                  addToBasket(recordId);
-                  toast.success('Added to basket');
-                }
-              }}
-            >
-              <ShoppingBasketIcon />
-            </Button>
+            <span className="inline-flex">
+              <Toggle
+                pressed={inBasket}
+                onPressedChange={(pressed) => {
+                  if (pressed) {
+                    addToBasket(recordId);
+                    toast.success('Added to basket');
+                  } else {
+                    removeFromBasket(recordId);
+                    toast.success('Removed from basket');
+                  }
+                }}
+              >
+                <ShoppingBasketIcon />
+              </Toggle>
+            </span>
           </TooltipTrigger>
           <TooltipContent>{inBasket ? 'Remove from basket' : 'Add to basket'}</TooltipContent>
         </Tooltip>

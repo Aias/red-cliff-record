@@ -84,7 +84,7 @@ export const RecordDisplay = memo(function RecordDisplay({
           {abbreviation && <span className="text-xs text-c-hint">({abbreviation})</span>}
           {sense && <em className="text-xs text-c-hint italic">{sense}</em>}
         </div>
-        {inBasket && <ShoppingBasketIcon className="size-[0.875em] shrink-0 text-c-accent" />}
+        {inBasket && <ShoppingBasketIcon className="text-c-accent" />}
         <SourceLogos sources={sources} className="text-[0.875em] opacity-50" />
         {avatarUrl && <Avatar src={avatarUrl} fallback={title?.charAt(0) ?? type.charAt(0)} />}
       </header>
