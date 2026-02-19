@@ -86,7 +86,7 @@ function RecordRow({ recordId }: { recordId: DbId }) {
                   ))}
                 </ol>
               )}
-              {inBasket && <ShoppingBasketIcon className="size-[0.875em] shrink-0 text-c-accent" />}
+              {inBasket && <ShoppingBasketIcon className="text-c-accent" />}
             </Link>
           </TooltipTrigger>
           <TooltipContent className="max-w-96">

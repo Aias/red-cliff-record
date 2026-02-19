@@ -20,14 +20,14 @@ function BasketItem({ id, onRemove }: { id: DbId; onRemove: (id: DbId) => void }
   const handleRemove = () => onRemove(id);
 
   return (
-    <div className="group flex items-center gap-1 px-3 py-2 text-sm">
+    <div className="group flex items-center gap-3 px-3 py-2 text-xs">
       <div className="min-w-0 flex-1">
         <RecordLink id={id} />
       </div>
       <Button
         variant="ghost"
         size="icon-sm"
-        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+        className="shrink-0 opacity-25 transition-opacity group-hover:opacity-100"
         onClick={handleRemove}
       >
         <XIcon />
@@ -113,10 +113,10 @@ export function Basket() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className={cn(basket.count > 0 && 'text-c-accent')}>
+        <Button variant="ghost" className={cn(basket.count > 0 && 'text-c-accent')}>
           <ShoppingBasketIcon />
           {basket.count > 0 && <span>{basket.count}</span>}
-          <span className="sr-only">Basket ({basket.count})</span>
+          <span className="sr-only">items in basket</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-120 p-0">

@@ -48,15 +48,11 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
         <li className="flex w-full max-w-lg min-w-0 justify-self-center">
           <SiteSearch />
         </li>
-        <li className="flex items-center justify-end gap-2">
-          <KeyboardShortcutsHelp />
+        <li className="flex items-center justify-end gap-1">
           <Basket />
-          <Button variant="ghost" onClick={toggleTheme} className="h-9 w-9 p-0">
-            {currentTheme === 'light' ? (
-              <SunIcon className="h-5 w-5" />
-            ) : (
-              <MoonIcon className="h-5 w-5" />
-            )}
+          <KeyboardShortcutsHelp />
+          <Button variant="ghost" onClick={toggleTheme} size="icon">
+            {currentTheme === 'light' ? <SunIcon /> : <MoonIcon />}
             <span className="sr-only">Toggle theme</span>
           </Button>
         </li>
