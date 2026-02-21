@@ -217,21 +217,8 @@ export const seed: CommandHandler = async (args, options) => {
  * Show database status and record counts
  * Usage: rcr db status [prod|dev]
  */
-export const status: CommandHandler = async (args, options) => {
+export const status: CommandHandler = async (_args, options) => {
   parseOptions(BaseOptionsSchema.strict(), options);
-
-  const locationArg = args[0];
-  if (locationArg) {
-    const locationResult = LocationSchema.safeParse(locationArg);
-    if (!locationResult.success) {
-      throw createError(
-        'VALIDATION_ERROR',
-        `Invalid environment: ${locationArg}. Must be 'prod' or 'dev'`
-      );
-    }
-    // Note: Status always uses the current connection based on NODE_ENV
-    // The argument is parsed but not used yet
-  }
 
   // Query counts from database in parallel (sequential queries hang in CLI context)
   const [[recordCount], [linkCount]] = await Promise.all([
@@ -239,7 +226,6 @@ export const status: CommandHandler = async (args, options) => {
     db.select({ count: count() }).from(links),
   ]);
 
-  // Determine which database we're connected to based on NODE_ENV
   const nodeEnv = process.env.NODE_ENV || 'development';
   const connectedTo = nodeEnv === 'production' ? 'prod' : 'dev';
 
@@ -249,7 +235,7 @@ export const status: CommandHandler = async (args, options) => {
     counts: {
       records: recordCount?.count ?? 0,
       links: linkCount?.count ?? 0,
-      predicates: Object.keys(PREDICATES).length, // Now static from code
+      predicates: Object.keys(PREDICATES).length,
     },
   });
 };

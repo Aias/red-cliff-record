@@ -184,7 +184,7 @@ Commands:
   db restore <prod|dev>         Restore database [--clean] [--data-only] [--dry-run|-n]
   db reset [dev]                Reset dev database (drop & recreate)
   db seed [dev]                 Seed dev database with predicates
-  db status [prod|dev]          Show connection info and record counts
+  db status                     Show connection info and record counts
   db clone-prod-to-dev          Clone production to development [--dry-run|-n] [--yes|-y]
 
   fetch url <url>               Fetch URL as clean markdown [--content-only]
