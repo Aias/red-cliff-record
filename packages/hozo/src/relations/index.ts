@@ -10,6 +10,7 @@ import {
   airtableSpaces,
   browsingHistory,
   browsingHistoryOmitList,
+  eloMatchups,
   feedEntries,
   feeds,
   githubCommitChanges,
@@ -48,6 +49,7 @@ export const relations = defineRelations(
     airtableSpaces,
     browsingHistory,
     browsingHistoryOmitList,
+    eloMatchups,
     feeds,
     feedEntries,
     githubCommitChanges,
@@ -202,6 +204,22 @@ export const relations = defineRelations(
       integrationRun: r.one.integrationRuns({
         from: r.browsingHistory.integrationRunId,
         to: r.integrationRuns.id,
+      }),
+    },
+    eloMatchups: {
+      recordA: r.one.records({
+        from: r.eloMatchups.recordAId,
+        to: r.records.id,
+        optional: false,
+      }),
+      recordB: r.one.records({
+        from: r.eloMatchups.recordBId,
+        to: r.records.id,
+        optional: false,
+      }),
+      winner: r.one.records({
+        from: r.eloMatchups.winnerId,
+        to: r.records.id,
       }),
     },
     feeds: {
@@ -496,6 +514,14 @@ export const relations = defineRelations(
       incomingLinks: r.many.links({
         from: r.records.id,
         to: r.links.targetId,
+      }),
+      eloMatchupsAsA: r.many.eloMatchups({
+        from: r.records.id,
+        to: r.eloMatchups.recordAId,
+      }),
+      eloMatchupsAsB: r.many.eloMatchups({
+        from: r.records.id,
+        to: r.eloMatchups.recordBId,
       }),
       media: r.many.media(),
       airtableCreators: r.many.airtableCreators(),

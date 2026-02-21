@@ -16,6 +16,7 @@ import type { ParsedArgs, RawCLIOptions, ResultValue } from './types';
 export const BaseOptionsSchema = z.object({
   format: z.enum(['json', 'table']).default('json'),
   help: z.boolean().default(false),
+  version: z.boolean().default(false),
   debug: z.boolean().default(false),
   raw: z.boolean().default(false), // Output just data without {data, meta} wrapper
   dev: z.boolean().default(false), // Use development database
@@ -52,6 +53,8 @@ function parseOptionValue(value: string): string | number | boolean {
   return value;
 }
 
+const SHORT_OPTIONS_WITH_VALUES = new Set(['f']);
+
 export function parseArgs(argv: string[]): ParsedArgs {
   const options: RawCLIOptions = {};
   const positional: string[] = [];
@@ -65,6 +68,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     if (arg === '--help' || arg === '-h') {
       options.help = true;
+    } else if (arg === '--version' || arg === '-v') {
+      options.version = true;
     } else if (arg.startsWith('--')) {
       // Handle --key=value or --key value
       const eqIndex = arg.indexOf('=');
@@ -84,11 +89,28 @@ export function parseArgs(argv: string[]): ParsedArgs {
           options[key] = true;
         }
       }
+    } else if (arg.startsWith('-') && arg.length > 3 && !arg.startsWith('--') && arg[2] === '=') {
+      // Handle short option assignment: -k=value
+      const key = arg[1];
+      const value = arg.slice(3);
+      if (key) {
+        options[key] = parseOptionValue(value);
+      }
     } else if (arg.startsWith('-') && arg.length === 2) {
       // Short flags like -v, -q
       const key = arg.slice(1);
       if (key === 'h') {
         options.help = true;
+      } else if (key === 'v') {
+        options.version = true;
+      } else if (SHORT_OPTIONS_WITH_VALUES.has(key)) {
+        const nextArg = argv[i + 1];
+        if (nextArg && !nextArg.startsWith('-')) {
+          options[key] = parseOptionValue(nextArg);
+          i++; // Skip the value
+        } else {
+          options[key] = true;
+        }
       } else {
         options[key] = true;
       }

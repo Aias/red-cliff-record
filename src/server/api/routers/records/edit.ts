@@ -11,19 +11,21 @@ const BulkUpdateDataSchema = RecordInsertSchema.omit({
   id: true,
   slug: true,
   sources: true,
+  eloScore: true,
   textEmbedding: true,
 }).partial();
 
 export const upsert = publicProcedure
   .input(RecordInsertSchema)
   .mutation(async ({ ctx: { db, loaders }, input }): Promise<RecordGet> => {
+    const { eloScore: _, ...updateFields } = input;
     const [result] = await db
       .insert(records)
       .values(input)
       .onConflictDoUpdate({
         target: records.id,
         set: {
-          ...input,
+          ...updateFields,
           recordUpdatedAt: new Date(),
           textEmbedding: null, // Changes require recalculating the embedding.
         },

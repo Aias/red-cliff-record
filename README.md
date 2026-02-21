@@ -294,27 +294,30 @@ bun run db:migrate   # Run migrations
 
 ### Database Management
 
-All backup/restore operations go through `db-manager.sh`:
+All backup/restore operations go through `db-manager.sh` (or the `rcr db` CLI wrapper):
 
 ```bash
-./src/server/db/db-manager.sh backup <local|remote>    # Backup
-./src/server/db/db-manager.sh restore <local|remote>   # Restore
-./src/server/db/db-manager.sh seed local               # Seed predicates + core records
-./src/server/db/db-manager.sh reset local              # Drop & recreate DB with extensions
-./src/server/db/db-manager.sh clone-prod-to-dev        # Clone production → development
+rcr db backup <prod|dev>              # Backup (creates prod-{timestamp}.dump or dev-{timestamp}.dump)
+rcr db restore <prod|dev>             # Restore most recent backup
+rcr db restore dev --file path.dump   # Restore a specific backup file
+rcr db seed dev                       # Seed predicates + core records
+rcr db reset dev                      # Drop & recreate DB with extensions
+rcr db clone-prod-to-dev              # Clone production → development
 ```
 
-Flags: `--dry-run` (`-n`) prints commands without executing. `-D` operates on data only (no schema). `-c` does a clean restore (drop & recreate first). Restores terminate existing connections before running `pg_restore`.
+Flags: `--dry-run` (`-n`) prints commands without executing. `-D` operates on data only (no schema). `-c` does a clean restore (drop & recreate first). `--file` (`-f`) restores from a specific file instead of auto-discovering. Restores terminate existing connections before running `pg_restore`.
+
+Backup files are named by environment label (`prod-`, `dev-`), not database name. Restore auto-discovers the most recent `.dump` file in the backup directory.
 
 **Reset workflow** (squash migrations while preserving data):
 
-1. `./src/server/db/db-manager.sh -D backup local`
-2. `./src/server/db/db-manager.sh reset local`
+1. `rcr db backup dev --data-only`
+2. `rcr db reset dev`
 3. `rm -rf migrations/main/*` (optional)
 4. `bun run db:generate` (if step 3 was done)
-5. `bun run db:migrate`
-6. `./src/server/db/db-manager.sh seed local`
-7. `./src/server/db/db-manager.sh -D restore local`
+5. `NODE_ENV=development bunx drizzle-kit migrate`
+6. `rcr db seed dev`
+7. `rcr db restore dev --data-only`
 
 ## Troubleshooting
 

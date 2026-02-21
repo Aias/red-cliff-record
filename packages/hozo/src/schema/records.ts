@@ -16,6 +16,7 @@ import { emptyStringToNull } from '../utils/formatting';
 import {
   contentTimestamps,
   databaseTimestamps,
+  databaseTimestampsNonUpdatable,
   integrationTypeEnum,
   textEmbeddingColumns,
 } from './operations';
@@ -43,6 +44,7 @@ export const records = pgTable(
     notes: text('notes'),
     mediaCaption: text('media_caption'),
     rating: smallint('rating').notNull().default(0),
+    eloScore: integer('elo_score').notNull().default(1200),
     isPrivate: boolean('is_private').notNull().default(false),
     isCurated: boolean('is_curated').notNull().default(false),
     reminderAt: timestamp('reminder_at', { withTimezone: true }),
@@ -62,6 +64,7 @@ export const records = pgTable(
     index().on(table.recordCreatedAt),
     index().on(table.recordUpdatedAt),
     index().on(table.isCurated),
+    index().on(table.type, table.eloScore),
     index().using('hnsw', table.textEmbedding.op('vector_cosine_ops')),
   ]
 );
@@ -110,3 +113,29 @@ export const LinkInsertSchema = createInsertSchema(links).extend({
   predicate: z.enum(predicateSlugs as [PredicateSlug, ...PredicateSlug[]]),
 });
 export type LinkInsert = z.infer<typeof LinkInsertSchema>;
+
+export const eloMatchups = pgTable(
+  'elo_matchups',
+  {
+    id: serial('id').primaryKey(),
+    recordAId: integer('record_a_id')
+      .references(() => records.id, { onDelete: 'cascade' })
+      .notNull(),
+    recordBId: integer('record_b_id')
+      .references(() => records.id, { onDelete: 'cascade' })
+      .notNull(),
+    winnerId: integer('winner_id').references(() => records.id, { onDelete: 'set null' }),
+    recordType: recordTypeEnum('record_type').notNull(),
+    ...databaseTimestampsNonUpdatable,
+  },
+  (table) => [
+    index().on(table.recordAId),
+    index().on(table.recordBId),
+    index().on(table.recordType),
+  ]
+);
+
+export const EloMatchupSelectSchema = createSelectSchema(eloMatchups);
+export type EloMatchupSelect = typeof eloMatchups.$inferSelect;
+export const EloMatchupInsertSchema = createInsertSchema(eloMatchups);
+export type EloMatchupInsert = typeof eloMatchups.$inferInsert;

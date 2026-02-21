@@ -36,8 +36,11 @@ Canonical guide: `INTEGRATIONS.md`.
 
 Canonical operations: `README.md` and `src/server/db/db-manager.sh`.
 
-- `bun run db:migrate` / `bun run db:studio` for migrations and inspection
-- Never run destructive operations or migrations without explicit user permission
+- `bun run db:generate` to generate migration files (safe for agent)
+- `bun run db:studio` for database inspection
+- Never run migrations (`bun run db:migrate`, `bunx drizzle-kit migrate`) — always provide the command for the user to run
+- Never run destructive operations without explicit user permission
+- Backups are named by environment (`prod-{timestamp}.dump`, `dev-{timestamp}.dump`), not database name
 
 ## Agent Workflow: Media Alt Text
 

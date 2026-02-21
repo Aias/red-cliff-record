@@ -42,7 +42,11 @@ const RestoreOptionsSchema = BaseOptionsSchema.extend({
   clean: z.boolean().optional(),
   'data-only': z.boolean().optional(),
   'dry-run': z.boolean().optional(),
+  file: z.string().optional(),
+  f: z.string().optional(),
   n: z.boolean().optional(),
+  yes: z.boolean().optional(),
+  y: z.boolean().optional(),
 }).strict();
 
 /**
@@ -142,6 +146,15 @@ export const restore: CommandHandler = async (args, options) => {
 
   if (dryRun) {
     shellArgs.push('--dry-run');
+  }
+
+  const file = parsedOptions.file ?? parsedOptions.f;
+  if (file) {
+    shellArgs.push('--file', file);
+  }
+
+  if (parsedOptions.yes ?? parsedOptions.y) {
+    shellArgs.push('--yes');
   }
 
   shellArgs.push('restore', location);
