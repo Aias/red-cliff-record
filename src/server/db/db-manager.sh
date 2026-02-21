@@ -256,18 +256,26 @@ do_restore() {
     else
         # Auto-discover the most recent backup file
         if [ "$DATA_ONLY" = true ]; then
-            dump_file=$(ls "$BACKUP_DIR"/*-data-[0-9]*.dump 2>/dev/null | sort -r | head -n1)
+            dump_file=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "${target}-data-[0-9]*.dump" -print 2>/dev/null | LC_ALL=C sort -r | head -n1 || true)
         else
-            # Exclude data-only backups from full restore discovery
-            dump_file=$(ls "$BACKUP_DIR"/*-[0-9]*.dump 2>/dev/null | grep -v -- '-data-' | sort -r | head -n1)
+            dump_file=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "${target}-[0-9]*.dump" ! -name "${target}-data-*.dump" -print 2>/dev/null | LC_ALL=C sort -r | head -n1 || true)
         fi
 
         if [ -z "$dump_file" ] || [ ! -f "$dump_file" ]; then
             if [ "$DRY_RUN" = true ]; then
-                dump_file="$BACKUP_DIR/DRYRUN.dump"
+                if [ "$DATA_ONLY" = true ]; then
+                    dump_file="$BACKUP_DIR/${target}-data-DRYRUN.dump"
+                else
+                    dump_file="$BACKUP_DIR/${target}-DRYRUN.dump"
+                fi
                 echo "Dry run: no matching backup file found, using placeholder: $dump_file"
             else
                 echo "No suitable backup files found in: $BACKUP_DIR"
+                if [ "$DATA_ONLY" = true ]; then
+                    echo "Expected pattern: ${target}-data-*.dump"
+                else
+                    echo "Expected pattern: ${target}-*.dump (excluding ${target}-data-*.dump)"
+                fi
                 exit 1
             fi
         fi
