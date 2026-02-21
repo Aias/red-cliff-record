@@ -14,7 +14,7 @@ import {
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { mapUrl } from '@/server/lib/url-utils';
-import { runConcurrentPool } from '@/shared/lib/async-pool';
+import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { bulkInsertLinks, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 
@@ -101,12 +101,7 @@ export async function createReadwiseAuthors() {
       processed++;
     },
   });
-  const authorFailures = authorResults.filter((r) => !r.ok);
-  if (authorFailures.length > 0) {
-    throw new Error(
-      `Readwise author creation failed for ${authorFailures.length}/${documentsWithoutAuthors.length} documents`
-    );
-  }
+  throwPoolFailures(authorResults, 'Readwise author creation', documentsWithoutAuthors.length);
 
   logger.complete(
     `Processed ${processed} of ${documentsWithoutAuthors.length} documents without authors`
@@ -191,12 +186,7 @@ export async function createRecordsFromReadwiseAuthors() {
       processed++;
     },
   });
-  const recordFromAuthorFailures = recordFromAuthorResults.filter((r) => !r.ok);
-  if (recordFromAuthorFailures.length > 0) {
-    throw new Error(
-      `Readwise author→record mapping failed for ${recordFromAuthorFailures.length}/${authors.length} authors`
-    );
-  }
+  throwPoolFailures(recordFromAuthorResults, 'Readwise author→record mapping', authors.length);
 
   logger.complete(`Processed ${processed} of ${authors.length} Readwise authors`);
 }
@@ -298,12 +288,7 @@ export async function createReadwiseTags(integrationRunId?: number) {
       insertedCount++;
     },
   });
-  const documentTagFailures = documentTagResults.filter((r) => !r.ok);
-  if (documentTagFailures.length > 0) {
-    throw new Error(
-      `Readwise document-tag linking failed for ${documentTagFailures.length}/${documentTagPairs.length} pairs`
-    );
-  }
+  throwPoolFailures(documentTagResults, 'Readwise document-tag linking', documentTagPairs.length);
 
   logger.info(`Inserted ${insertedCount} document tags`);
 
@@ -403,12 +388,7 @@ export async function createRecordsFromReadwiseTags() {
       processed++;
     },
   });
-  const tagFailures = tagResults.filter((r) => !r.ok);
-  if (tagFailures.length > 0) {
-    throw new Error(
-      `Readwise tag→record mapping failed for ${tagFailures.length}/${tags.length} tags`
-    );
-  }
+  throwPoolFailures(tagResults, 'Readwise tag→record mapping', tags.length);
 
   // Step 2: Link documents to tags (can also run in parallel)
   // Build flat list of document-tag links
@@ -440,12 +420,7 @@ export async function createRecordsFromReadwiseTags() {
         await linkRecords(link.documentRecordId, link.tagRecordId, 'tagged_with', db);
       },
     });
-    const tagLinkFailures = tagLinkResults.filter((r) => !r.ok);
-    if (tagLinkFailures.length > 0) {
-      throw new Error(
-        `Readwise tag linking failed for ${tagLinkFailures.length}/${documentTagLinks.length} links`
-      );
-    }
+    throwPoolFailures(tagLinkResults, 'Readwise tag linking', documentTagLinks.length);
   }
 
   logger.complete(`Processed ${processed} of ${tags.length} Readwise tags`);
@@ -598,12 +573,7 @@ export async function createRecordsFromReadwiseDocuments() {
       logger.info(`Linked readwise document ${doc.id} to record ${insertedRecord.id}`);
     },
   });
-  const documentFailures = documentResults.filter((r) => !r.ok);
-  if (documentFailures.length > 0) {
-    throw new Error(
-      `Readwise document→record mapping failed for ${documentFailures.length}/${documents.length} documents`
-    );
-  }
+  throwPoolFailures(documentResults, 'Readwise document→record mapping', documents.length);
 
   // Step 2: Update the parent-child relationships (can run in parallel after Step 1).
   const documentsWithParents = documents.filter((doc) => doc.parentId && recordMap.has(doc.id));
@@ -636,12 +606,11 @@ export async function createRecordsFromReadwiseDocuments() {
       }
     },
   });
-  const parentLinkFailures = parentLinkResults.filter((r) => !r.ok);
-  if (parentLinkFailures.length > 0) {
-    throw new Error(
-      `Readwise parent-child linking failed for ${parentLinkFailures.length}/${documentsWithParents.length} documents`
-    );
-  }
+  throwPoolFailures(
+    parentLinkResults,
+    'Readwise parent-child linking',
+    documentsWithParents.length
+  );
 
   // Step 3: Link records to index entries via recordCreators (for authors) and recordCategories (for tags).
   // Build a map for authors.

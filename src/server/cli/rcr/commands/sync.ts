@@ -45,7 +45,7 @@ const INTEGRATION_LIST = IntegrationNameSchema.options;
  * Usage: rcr sync [integration] [--debug]
  *
  * With no arguments, runs all daily syncs (browsing, raindrop, readwise,
- * github, airtable, twitter) followed by enrichments.
+ * airtable, twitter, github) followed by enrichments.
  *
  * With an integration name, runs that single sync followed by enrichments.
  * Available: github, readwise, raindrop, airtable, adobe, feedbin,
@@ -203,9 +203,9 @@ async function runDailySync(options: SyncOptions) {
     'browsing',
     'raindrop',
     'readwise',
-    'github',
     'airtable',
     'twitter',
+    'github',
   ];
 
   const results: Array<{ step: string; success: boolean; error?: string }> = [];
