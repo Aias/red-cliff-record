@@ -136,3 +136,23 @@ export async function runConcurrentPool<T, R>(
 
   return results;
 }
+
+/**
+ * Inspect pool results for failures and throw an aggregate error if any exist.
+ * The thrown error includes the message from the first underlying failure as
+ * its `cause`, so callers see the real root cause (e.g. a Postgres error)
+ * instead of only a count.
+ */
+export function throwPoolFailures<R>(
+  results: Array<ConcurrentPoolItemResult<R>>,
+  label: string,
+  total: number
+): void {
+  const failures = results.filter((r) => !r.ok);
+  const first = failures[0];
+  if (!first) return;
+
+  throw new Error(`${label} failed for ${failures.length}/${total} items: ${first.error.message}`, {
+    cause: first.error,
+  });
+}
