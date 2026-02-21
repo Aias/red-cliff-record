@@ -33,6 +33,7 @@ function markPlugin(md: MarkdownIt) {
 
 const md = new MarkdownItLib({
   html: false,
+  breaks: true,
   linkify: true,
   typographer: true,
 }).use(markPlugin);
