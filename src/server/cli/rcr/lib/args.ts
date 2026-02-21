@@ -16,6 +16,7 @@ import type { ParsedArgs, RawCLIOptions, ResultValue } from './types';
 export const BaseOptionsSchema = z.object({
   format: z.enum(['json', 'table']).default('json'),
   help: z.boolean().default(false),
+  version: z.boolean().default(false),
   debug: z.boolean().default(false),
   raw: z.boolean().default(false), // Output just data without {data, meta} wrapper
   dev: z.boolean().default(false), // Use development database
@@ -65,6 +66,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     if (arg === '--help' || arg === '-h') {
       options.help = true;
+    } else if (arg === '--version' || arg === '-v') {
+      options.version = true;
     } else if (arg.startsWith('--')) {
       // Handle --key=value or --key value
       const eqIndex = arg.indexOf('=');
@@ -89,6 +92,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
       const key = arg.slice(1);
       if (key === 'h') {
         options.help = true;
+      } else if (key === 'v') {
+        options.version = true;
       } else {
         options[key] = true;
       }

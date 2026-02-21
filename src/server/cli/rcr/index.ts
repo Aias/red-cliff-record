@@ -16,6 +16,7 @@
  *
  * Options:
  *   --format=json|table  Output format (default: json)
+ *   --version, -v        Show version
  *   --help, -h           Show help
  *   --debug              Enable debug output
  */
@@ -209,6 +210,7 @@ Global Options:
   --offset=N              Offset for pagination
   --dev                   Use development database (DATABASE_URL_DEV)
   --debug                 Enable debug output
+  --version, -v           Show version
   --help, -h              Show this help
 
 Boolean filters accept: --flag (true), --flag=true, --flag=false
@@ -242,6 +244,16 @@ async function main(): Promise<void> {
     const normalizedError = error instanceof Error ? error : String(error);
     await Bun.write(Bun.stderr, formatError(normalizedError, 'json') + '\n');
     process.exit(1);
+  }
+
+  // Handle version
+  if (baseOptions.version) {
+    const scriptPath = fileURLToPath(import.meta.url);
+    const realScriptPath = realpathSync(scriptPath);
+    const projectRoot = resolve(dirname(realScriptPath), '../../../..');
+    const pkg = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf-8'));
+    console.log(pkg.version);
+    process.exit(0);
   }
 
   // Handle help

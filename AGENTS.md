@@ -8,6 +8,10 @@ Project overview, CLI reference, and setup: `README.md`. Integration guide: `INT
 - Never start the dev server or build; the user runs those manually.
 - `bunx` for package execution.
 
+## Release Checklist
+
+- Bump `version` in `package.json` before opening PRs.
+
 ## `rcr` CLI
 
 Primary agent interface to the knowledge base. **Prefer `rcr` for working with application data** (records, links, media, syncs). Run `rcr --help` for the full command reference; see the `rcr` skill for workflows.
