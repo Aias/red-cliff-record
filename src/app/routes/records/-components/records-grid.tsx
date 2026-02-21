@@ -54,7 +54,7 @@ function RecordRow({ recordId }: { recordId: DbId }) {
 
   const { creatorTitle, parentTitle } = getRecordTitleFallbacks(record.outgoingLinks);
   const label =
-    record.title || creatorTitle || parentTitle || record.summary || record.content || 'Untitled';
+    record.title || record.summary || record.content || creatorTitle || parentTitle || 'Untitled';
 
   return (
     <TableRow>
