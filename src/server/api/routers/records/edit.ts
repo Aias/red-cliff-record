@@ -2,6 +2,8 @@ import { RecordInsertSchema, records } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { embedRecordsByIds } from '@/server/services/embed-records';
+import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
 import { IdSchema, type DbId } from '@/shared/types/api';
 import type { RecordGet } from '@/shared/types/domain';
 import { publicProcedure } from '../../init';
@@ -70,15 +72,24 @@ export const bulkUpdate = publicProcedure
       });
     }
 
+    const embeddingFields = new Set<string>(EMBEDDING_RECORD_FIELDS);
+    const affectsEmbedding = Object.keys(updateData).some((k) => embeddingFields.has(k));
+
     const updated = await db
       .update(records)
       .set({
         ...updateData,
         recordUpdatedAt: new Date(),
-        textEmbedding: null,
+        ...(affectsEmbedding ? { textEmbedding: null } : {}),
       })
       .where(inArray(records.id, ids))
       .returning({ id: records.id });
+
+    if (affectsEmbedding) {
+      embedRecordsByIds(updated.map((r) => r.id)).catch((error) => {
+        console.warn('Failed to regenerate embeddings after bulk update:', error);
+      });
+    }
 
     if (updated.length !== ids.length) {
       const updatedIds = new Set(updated.map((r) => r.id));
