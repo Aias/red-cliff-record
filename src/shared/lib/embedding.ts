@@ -1,6 +1,31 @@
 import { PREDICATES, type RecordSelect } from '@hozo';
 import type { FullRecord } from '@/shared/types/domain';
 
+/**
+ * Record columns that contribute to embedding text.
+ * Constrained to real column names via `satisfies`. Used by `bulkUpdate`
+ * to decide whether an update should invalidate the embedding.
+ */
+export const EMBEDDING_RECORD_FIELDS = [
+  'title',
+  'abbreviation',
+  'sense',
+  'content',
+  'summary',
+  'notes',
+  'mediaCaption',
+  'url',
+] as const satisfies readonly (keyof RecordSelect)[];
+
+type EmbeddingRecordFields = (typeof EMBEDDING_RECORD_FIELDS)[number];
+
+/** Record data needed for embedding — record columns + relations. */
+type EmbeddingRecord = Pick<RecordSelect, EmbeddingRecordFields> & {
+  outgoingLinks: FullRecord['outgoingLinks'];
+  incomingLinks: FullRecord['incomingLinks'];
+  media: FullRecord['media'];
+};
+
 const truncateText = (text: string, maxLength: number = 200) => {
   if (text.length <= maxLength) {
     return text;
@@ -71,7 +96,7 @@ const joinList = (items: string[], threshold = 4): string => {
  * Structure prioritizes semantic content first, then relationships and metadata.
  * This ordering helps embedding models weight substance over structural metadata.
  */
-export const createRecordEmbeddingText = (record: FullRecord) => {
+export const createRecordEmbeddingText = (record: EmbeddingRecord) => {
   const { title, content, summary, notes, mediaCaption, outgoingLinks, incomingLinks, media, url } =
     record;
 
