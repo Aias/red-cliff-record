@@ -215,6 +215,20 @@ export const PREDICATES = {
     inverseSlug: 'related_to', // self-inverse
     canonical: true,
   },
+  counters: {
+    slug: 'counters',
+    name: 'counters',
+    type: 'association',
+    inverseSlug: 'countered_by',
+    canonical: true,
+  },
+  countered_by: {
+    slug: 'countered_by',
+    name: 'countered by',
+    type: 'association',
+    inverseSlug: 'counters',
+    canonical: false,
+  },
 
   /* ───────────  Identity  ─────────── */
   same_as: {
