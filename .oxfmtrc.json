@@ -5,14 +5,14 @@
   "singleQuote": true,
   "trailingComma": "es5",
   "printWidth": 100,
-  "experimentalTailwindcss": {
+  "tailwindcss": {
     "stylesheet": "./src/app/styles/app.css",
     "attributes": ["class", "className"],
     "functions": ["clsx", "cn"],
     "preserveDuplicates": false,
     "preserveWhitespace": false
   },
-  "experimentalSortImports": {
+  "sortImports": {
     "newlinesBetween": false,
     "groups": [
       ["side_effect"],
@@ -24,7 +24,7 @@
       ["index", "type-index"]
     ]
   },
-  "experimentalSortPackageJson": {
+  "sortPackageJson": {
     "sortScripts": true
   },
   "embeddedLanguageFormatting": "auto",
