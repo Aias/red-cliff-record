@@ -13,8 +13,9 @@ import {
   similarity,
   SIMILARITY_THRESHOLD,
   TRIGRAM_DISTANCE_THRESHOLD,
+  trigramDistance,
+  WORD_SIMILARITY_DISTANCE_THRESHOLD,
 } from '@/server/lib/constants';
-import { seriateRecordsByEmbedding } from '@/server/lib/seriation';
 import { IdSchema, SearchRecordsInputSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
@@ -81,20 +82,19 @@ export const searchRouter = createTRPCRouter({
           RAW: (records, { sql }) =>
             sql`(
 						${records.title} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
+						${query} <<-> ${records.title} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD} OR
+						${records.abbreviation} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
+						${query} <<-> ${records.abbreviation} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD} OR
 						${records.content} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
+						(POSITION(' ' IN ${query}) > 0 AND ${query} <<-> ${records.content} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD}) OR
 						${records.summary} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-						${records.abbreviation} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD}
+						(POSITION(' ' IN ${query}) > 0 AND ${query} <<-> ${records.summary} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD})
 					)`,
           type: recordType,
         },
         limit,
-        orderBy: (records, { desc, sql }) => [
-          sql`LEAST(
-					${records.title} <-> ${query},
-					${records.content} <-> ${query},
-					${records.summary} <-> ${query},
-					${records.abbreviation} <-> ${query}
-				)`,
+        orderBy: (records, { desc }) => [
+          trigramDistance(records, query),
           desc(records.recordUpdatedAt),
         ],
         columns: {
@@ -161,105 +161,22 @@ export const searchRouter = createTRPCRouter({
         exclude: z.number().array().optional(),
       })
     )
-    .query(async ({ ctx: { db }, input }): Promise<SearchResult[]> => {
+    .query(async ({ ctx: { db }, input }) => {
       try {
         const { query, limit, exclude } = input;
-
         const vector = await createEmbedding(query);
 
-        const results = await db.query.records.findMany({
-          columns: {
-            id: true,
-            type: true,
-            title: true,
-            content: true,
-            summary: true,
-            sense: true,
-            abbreviation: true,
-            url: true,
-            avatarUrl: true,
-            mediaCaption: true,
-            rating: true,
-            recordUpdatedAt: true,
-            recordCreatedAt: true,
-            contentCreatedAt: true,
-            contentUpdatedAt: true,
-            sources: true,
-            textEmbedding: true,
-          },
-          with: {
-            outgoingLinks: {
-              columns: {
-                id: true,
-                predicate: true,
-              },
-              with: {
-                target: {
-                  columns: {
-                    id: true,
-                    type: true,
-                    title: true,
-                    abbreviation: true,
-                    sense: true,
-                    summary: true,
-                    avatarUrl: true,
-                  },
-                },
-              },
-              where: {
-                predicate: {
-                  in: searchLinkPredicates,
-                },
-              },
-            },
-            media: {
-              columns: {
-                id: true,
-                type: true,
-                url: true,
-                altText: true,
-              },
-            },
-          },
-          extras: {
-            similarity: (t) => similarity(t.textEmbedding, vector),
-          },
+        return await db.query.records.findMany({
+          columns: { id: true },
           where: {
             AND: [
               { textEmbedding: { isNotNull: true } },
               exclude?.length ? { id: { notIn: exclude } } : {},
               { isPrivate: false },
-              {
-                OR: [
-                  {
-                    outgoingLinks: {
-                      predicate: {
-                        in: nonContainmentPredicates,
-                      },
-                    },
-                  },
-                  {
-                    incomingLinks: {
-                      id: {
-                        isNotNull: true,
-                      },
-                    },
-                  },
-                ],
-              },
             ],
           },
-          orderBy: (t, { desc }) => [desc(sql`similarity`), desc(t.recordUpdatedAt)],
+          orderBy: (t) => [cosineDistance(t.textEmbedding, vector)],
           limit,
-        });
-
-        // Apply seriation to reorder results
-        const seriated = seriateRecordsByEmbedding(results);
-
-        // Return results without the textEmbedding field
-        return seriated.map((r) => {
-          const { textEmbedding: _textEmbedding, ...rest } = r;
-          return rest;
         });
       } catch (err) {
         throw new TRPCError({
@@ -315,11 +232,8 @@ export const searchRouter = createTRPCRouter({
           ...incomingLinks.map((l) => l.sourceId),
         ];
 
-        const results = await db.query.records.findMany({
-          columns: {
-            id: true,
-            textEmbedding: true,
-          },
+        return await db.query.records.findMany({
+          columns: { id: true },
           extras: {
             similarity: (t) => similarity(t.textEmbedding, textEmbedding),
           },
@@ -355,15 +269,6 @@ export const searchRouter = createTRPCRouter({
           orderBy: (t, { desc }) => [desc(sql`similarity`), desc(t.recordUpdatedAt)],
           limit,
         });
-
-        // Apply seriation to reorder results
-        const seriated = seriateRecordsByEmbedding(results);
-
-        // Return only id and similarity without the textEmbedding field
-        return seriated.map((r) => ({
-          id: r.id,
-          similarity: r.similarity,
-        }));
       } catch (err) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',

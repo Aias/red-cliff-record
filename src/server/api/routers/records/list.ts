@@ -2,7 +2,11 @@ import { containmentPredicateSlugs } from '@hozo';
 import { cosineDistance, sql } from 'drizzle-orm';
 import type { z } from 'zod';
 import { createEmbedding } from '@/lib/server/create-embedding';
-import { TRIGRAM_DISTANCE_THRESHOLD } from '@/server/lib/constants';
+import {
+  TRIGRAM_DISTANCE_THRESHOLD,
+  trigramDistance,
+  WORD_SIMILARITY_THRESHOLD,
+} from '@/server/lib/constants';
 import {
   ListRecordsInputSchema,
   type IdParamList,
@@ -98,9 +102,13 @@ export const list = publicProcedure
     const runTrigramSearch = async () => {
       const effectiveLimit = strategy === 'hybrid' ? SEARCH_CAP : limit;
       const similarityThreshold = String(1 - TRIGRAM_DISTANCE_THRESHOLD);
+      const wordSimilarityThreshold = String(WORD_SIMILARITY_THRESHOLD);
       return db.transaction(async (tx) => {
         await tx.execute(
           sql`SELECT set_config('pg_trgm.similarity_threshold', ${similarityThreshold}, true)`
+        );
+        await tx.execute(
+          sql`SELECT set_config('pg_trgm.word_similarity_threshold', ${wordSimilarityThreshold}, true)`
         );
         return tx.query.records.findMany({
           columns: { id: true },
@@ -108,19 +116,16 @@ export const list = publicProcedure
             ...filterWhere,
             RAW: (records, { sql }) =>
               sql`(
-                ${records.title} % ${searchQuery} OR
+                ${records.title} % ${searchQuery} OR ${searchQuery} <% ${records.title} OR
+                ${records.abbreviation} % ${searchQuery} OR ${searchQuery} <% ${records.abbreviation} OR
                 ${records.content} % ${searchQuery} OR
+                (POSITION(' ' IN ${searchQuery}) > 0 AND ${searchQuery} <% ${records.content}) OR
                 ${records.summary} % ${searchQuery} OR
-                ${records.abbreviation} % ${searchQuery}
+                (POSITION(' ' IN ${searchQuery}) > 0 AND ${searchQuery} <% ${records.summary})
               )`,
           },
-          orderBy: (records, { sql, asc }) => [
-            sql`LEAST(
-              ${records.title} <-> ${searchQuery},
-              ${records.content} <-> ${searchQuery},
-              ${records.summary} <-> ${searchQuery},
-              ${records.abbreviation} <-> ${searchQuery}
-            )`,
+          orderBy: (records, { asc }) => [
+            trigramDistance(records, searchQuery),
             asc(sql`length(${records.title})`),
           ],
           limit: effectiveLimit,

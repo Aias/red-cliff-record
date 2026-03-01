@@ -93,11 +93,13 @@ export const semantic: CommandHandler = async (args, options) => {
   const exclude = parsedOptions.exclude;
 
   try {
-    const results = await caller.search.byVector({
+    const ids = await caller.search.byVector({
       query,
       limit,
       exclude,
     });
+
+    const results = await Promise.all(ids.map(({ id }) => caller.records.get({ id })));
 
     return success(results, { count: results.length, limit });
   } catch (e) {
