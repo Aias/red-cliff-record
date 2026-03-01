@@ -3,7 +3,7 @@
  *
  * Runs enrichment operations on existing records:
  * - avatars: Upload external avatar URLs to R2
- * - alt-text: Generate alt text for images using OpenAI vision
+ * - alt-text: Generate alt text for image/video media using OpenAI vision
  * - embeddings: Generate text embeddings for records
  */
 
@@ -31,13 +31,13 @@ const EnrichOptionsSchema = BaseOptionsSchema.extend({
  *
  * Available enrichments:
  *   avatars     Upload external avatar URLs to R2
- *   alt-text    Generate alt text for images using OpenAI vision
+ *   alt-text    Generate alt text for image/video media using OpenAI vision
  *   embeddings  Generate text embeddings for records
  *
  * If no enrichment is specified, runs all three in order.
  *
  * Options:
- *   --limit=N   For alt-text: max images to process (default: 100)
+ *   --limit=N   For alt-text: max media items to process (default: 100)
  */
 export const run: CommandHandler = async (args, options) => {
   const parsedOptions = parseOptions(EnrichOptionsSchema, options);

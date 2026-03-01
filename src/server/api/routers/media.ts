@@ -182,9 +182,9 @@ export const mediaRouter = createTRPCRouter({
         });
       }
 
-      // 5. Fire-and-forget alt text generation for images
+      // 5. Fire-and-forget alt text generation for images/videos
       // Don't await - this is best-effort and should never slow down or fail uploads
-      if (newMedia.type === 'image') {
+      if (newMedia.type === 'image' || newMedia.type === 'video') {
         generateAltText([newMedia.id]).catch((error) => {
           console.warn(`Failed to generate alt text for media ${newMedia.id}:`, error);
         });

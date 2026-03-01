@@ -177,7 +177,7 @@ Commands:
 
   enrich [enrichment]           Run enrichments (avatars, alt-text, embeddings)
   enrich avatars                Upload external avatar URLs to R2
-  enrich alt-text               Generate alt text for images [--limit=N]
+  enrich alt-text               Generate alt text for image/video media [--limit=N]
   enrich embeddings             Generate text embeddings for records
 
   db backup <prod|dev>          Backup database [--data-only] [--dry-run|-n]
