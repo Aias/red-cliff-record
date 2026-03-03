@@ -5,7 +5,7 @@
   "singleQuote": true,
   "trailingComma": "es5",
   "printWidth": 100,
-  "tailwindcss": {
+  "sortTailwindcss": {
     "stylesheet": "./src/app/styles/app.css",
     "attributes": ["class", "className"],
     "functions": ["clsx", "cn"],

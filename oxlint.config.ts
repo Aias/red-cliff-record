@@ -2,6 +2,9 @@ import { defineConfig } from 'oxlint';
 
 export default defineConfig({
   plugins: ['typescript', 'import'],
+  options: {
+    typeAware: true,
+  },
   rules: {
     'no-unused-vars': 'warn',
     '@typescript-eslint/no-unused-vars': [
@@ -12,7 +15,7 @@ export default defineConfig({
     '@typescript-eslint/ban-ts-comment': 'warn',
     'import/order': 'warn',
 
-    // Type-aware rules (require --type-aware flag)
+    // Type-aware rules
     'typescript/await-thenable': 'warn',
     'typescript/no-floating-promises': 'warn',
     'typescript/no-misused-promises': 'warn',
