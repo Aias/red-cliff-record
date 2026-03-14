@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -72,18 +72,19 @@
     "superjson": "^2.2.6",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
-    "vite": "^7.3.1",
+    "vite": "^8.0.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@octokit/types": "^16.0.0",
+    "@rolldown/plugin-babel": "^0.2.1",
     "@types/markdown-it": "^14.1.2",
     "@types/mime-types": "^3.0.1",
     "@types/node": "25.3.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "7.0.0-dev.20260308.1",
-    "@vitejs/plugin-react": "^5.1.4",
+    "@vitejs/plugin-react": "^6.0.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "drizzle-kit": "1.0.0-beta.15-859cf75",
     "oxfmt": "0.36.0",
@@ -99,7 +100,6 @@
   },
   "trustedDependencies": [
     "@parcel/watcher",
-    "@tailwindcss/oxide",
-    "esbuild"
+    "@tailwindcss/oxide"
   ]
 }
