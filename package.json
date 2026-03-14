@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -91,8 +91,7 @@
     "oxlint-tsgolint": "0.16.0",
     "pg": "8.20.0",
     "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3",
-    "vite-tsconfig-paths": "^6.1.1"
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=24"

@@ -2,7 +2,6 @@ import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
-import tsConfigPaths from 'vite-tsconfig-paths';
 import { ClientEnvSchema, EnvSchema, PortSchema } from './src/shared/lib/env';
 
 export default defineConfig(({ mode }) => {
@@ -13,8 +12,12 @@ export default defineConfig(({ mode }) => {
   EnvSchema.parse({ ...env, NODE_ENV: mode });
 
   return {
+    devtools: true,
     build: {
       sourcemap: true,
+    },
+    resolve: {
+      tsconfigPaths: true,
     },
     server: {
       port: PortSchema.parse(env.PUBLIC_DEV_PORT),
@@ -27,7 +30,6 @@ export default defineConfig(({ mode }) => {
       ])
     ),
     plugins: [
-      tsConfigPaths({ projectDiscovery: 'lazy' }),
       tanstackStart({
         srcDirectory: './src/app',
       }),
