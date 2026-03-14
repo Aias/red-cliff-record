@@ -1,7 +1,6 @@
-import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
-import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react';
+import viteReact from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import tsConfigPaths from 'vite-tsconfig-paths';
 import { ClientEnvSchema, EnvSchema, PortSchema } from './src/shared/lib/env';
@@ -32,8 +31,11 @@ export default defineConfig(({ mode }) => {
       tanstackStart({
         srcDirectory: './src/app',
       }),
-      viteReact(),
-      babel({ presets: [reactCompilerPreset({ target: '19' })] }),
+      viteReact({
+        babel: {
+          plugins: [['babel-plugin-react-compiler', { target: '19' }]],
+        },
+      }),
       tailwindcss(),
     ],
   };
