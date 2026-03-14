@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -72,7 +72,7 @@
     "superjson": "^2.2.6",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
-    "vite": "^7.3.1",
+    "vite": "^8.0.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -99,7 +99,6 @@
   },
   "trustedDependencies": [
     "@parcel/watcher",
-    "@tailwindcss/oxide",
-    "esbuild"
+    "@tailwindcss/oxide"
   ]
 }
