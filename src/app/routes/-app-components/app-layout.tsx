@@ -1,13 +1,14 @@
 import { Link, type LinkComponentProps } from '@tanstack/react-router';
-import { MoonIcon, MountainSnowIcon, SunIcon } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { MoonIcon, MountainSnowIcon, SearchIcon, SunIcon } from 'lucide-react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Basket } from '@/components/basket';
 import { Button } from '@/components/button';
 import { KeyboardShortcutsHelp } from '@/components/keyboard-shortcuts-help';
 import { Separator } from '@/components/separator';
 import { setTheme } from '@/lib/server/theme';
 import { cn } from '@/lib/utils';
-import { SiteSearch } from './site-search';
+
+const SiteSearch = lazy(() => import('./site-search').then((m) => ({ default: m.SiteSearch })));
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -46,7 +47,20 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
           <NavLink to={'/records'}>Index</NavLink>
         </li>
         <li className="flex w-full max-w-lg min-w-0 justify-self-center">
-          <SiteSearch />
+          <Suspense
+            fallback={
+              <Button
+                variant="outline"
+                className="relative inline-flex w-full min-w-0 justify-start gap-3 rounded-md text-sm font-normal text-c-primary shadow-none"
+                disabled
+              >
+                <SearchIcon className="text-c-hint" />
+                <span className="min-w-0 flex-1 truncate text-start">Search records...</span>
+              </Button>
+            }
+          >
+            <SiteSearch />
+          </Suspense>
         </li>
         <li className="flex items-center justify-end gap-1">
           <Basket />
