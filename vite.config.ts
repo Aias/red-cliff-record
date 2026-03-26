@@ -26,6 +26,9 @@ export default defineConfig(({ mode }) => {
         JSON.stringify(value),
       ])
     ),
+    ssr: {
+      external: ['bun'],
+    },
     resolve: {
       tsconfigPaths: true,
     },

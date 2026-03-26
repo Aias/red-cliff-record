@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     /* Base Options: */
-    "esModuleInterop": true,
     "skipLibCheck": true,
     "target": "ESNext",
     "allowJs": true,
@@ -20,7 +19,7 @@
 
     /* Bundled projects */
     "noEmit": true,
-    "lib": ["dom", "dom.iterable", "ESNext"],
+    "lib": ["dom", "ESNext"],
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "Bundler",

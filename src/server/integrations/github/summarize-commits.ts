@@ -102,7 +102,7 @@ export const summarizeCommit = async (
         strict: true,
       },
     },
-    input: [{ role: 'user', content: JSON.stringify(commit) }],
+    input: [{ type: 'message', role: 'user', content: JSON.stringify(commit) }],
   });
 
   const summaryJson = JSON.parse(response.output_text);

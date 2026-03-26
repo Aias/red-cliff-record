@@ -485,6 +485,7 @@ export function RecordForm({
                                       type="button"
                                       size="icon"
                                       variant="ghost"
+                                      aria-label="Fetch favicon as avatar"
                                       onClick={() => {
                                         void fetchFaviconMutation
                                           .mutateAsync({ url })
@@ -782,6 +783,7 @@ export function RecordForm({
             <span className="inline-flex">
               <Toggle
                 pressed={inBasket}
+                aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
                 onPressedChange={(pressed) => {
                   if (pressed) {
                     addToBasket(recordId);
@@ -800,7 +802,7 @@ export function RecordForm({
         </Tooltip>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button size="icon" variant="ghost" type="button">
+            <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
               <Trash2Icon />
             </Button>
           </AlertDialogTrigger>

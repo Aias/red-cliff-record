@@ -12,6 +12,7 @@ export const ExternalLink = ({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      aria-label={children ? undefined : 'Open in new tab'}
       className={cn('group', className)}
       {...props}
     >
