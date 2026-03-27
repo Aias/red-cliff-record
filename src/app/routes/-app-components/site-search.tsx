@@ -102,20 +102,25 @@ export const SiteSearch = () => {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="relative inline-flex w-full min-w-0 justify-start gap-3 rounded-md text-sm font-normal text-c-primary shadow-none"
+          className="@container relative inline-flex w-full min-w-0 justify-start gap-3 rounded-md text-sm font-normal text-c-primary shadow-none contain-inline-size"
           role="combobox"
           aria-expanded={commandOpen}
         >
-          <SearchIcon className="text-c-hint" />
+          <SearchIcon className="text-c-hint @max-[10rem]:sr-only" />
           <span className="min-w-0 flex-1 truncate text-start">
             {searchQ || 'Search records...'}
           </span>
-          <kbd className="pointer-events-none ml-auto inline-flex items-center gap-1 rounded border border-c-border bg-c-mist px-1.5 font-mono font-medium text-c-secondary select-none">
+          <kbd className="pointer-events-none ml-auto inline-flex items-center gap-1 rounded border border-c-border bg-c-mist px-1.5 font-mono font-medium text-c-secondary select-none @max-[14rem]:sr-only">
             <span className="text-xs text-c-hint">⌘</span>K
           </kbd>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-150 overflow-auto p-0" align="center">
+      <PopoverContent
+        className="w-150 max-w-[calc(100vw-1rem)] overflow-auto p-0"
+        align="center"
+        collisionPadding={8}
+        sideOffset={16}
+      >
         <Command shouldFilter={false} loop value={commandValue} onValueChange={setCommandValue}>
           <CommandInput
             placeholder="Search records..."

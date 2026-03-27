@@ -170,7 +170,7 @@ export const RecordsGrid = () => {
 
   return data ? (
     <div className="flex h-full grow gap-4 overflow-hidden">
-      <div className="-mx-4 flex min-w-48 flex-col gap-3 overflow-y-auto px-4 text-sm">
+      <div className="-mx-4 flex min-w-48 flex-col gap-3 overflow-y-auto px-4 text-sm @max-[40rem]:hidden">
         <h3 className="mb-1 text-base">Record Filters</h3>
         <hr />
         <div className="flex flex-col gap-1.5">

@@ -75,10 +75,12 @@ function RouteComponent() {
   });
 
   return (
-    <main className={`flex basis-full overflow-hidden ${!isRecordSelected ? 'p-3' : ''}`}>
+    <main
+      className={`@container flex basis-full overflow-hidden contain-inline-size ${!isRecordSelected ? 'p-3' : ''}`}
+    >
       {isRecordSelected && recordsList ? (
         <>
-          <div className="flex min-w-60 shrink grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-c-divider bg-c-container py-3">
+          <div className="flex min-w-60 shrink grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-c-divider bg-c-container py-3 @max-[40rem]:hidden">
             <header className="flex items-center justify-between px-3">
               <h2 className="text-lg font-medium">
                 Records <span className="text-sm text-c-secondary">({recordsList.ids.length})</span>

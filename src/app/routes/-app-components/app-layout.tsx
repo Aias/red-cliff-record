@@ -34,14 +34,14 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden">
-      <menu className="relative z-100 grid shrink-0 basis-auto grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-c-border surface px-4 py-2">
+      <menu className="@container relative z-100 grid shrink-0 basis-auto grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-c-border surface px-4 py-2 contain-inline-size">
         <li className="flex items-center gap-4">
           <Link
             to={'/'}
             className="flex shrink-0 cursor-pointer items-center gap-2 rounded bg-c-main px-3.5 py-1.5 font-mono text-sm font-medium tracking-normal text-c-main-contrast no-underline transition-colors hover:bg-c-main-active hover:no-underline"
           >
             <MountainSnowIcon className="opacity-75" />
-            <span>Red Cliff Record</span>
+            <span className="@max-[40rem]:sr-only">Red Cliff Record</span>
           </Link>
           <Separator orientation="vertical" className="h-5! border-c-border" />
           <NavLink to={'/records'}>Index</NavLink>
@@ -64,7 +64,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
         </li>
         <li className="flex items-center justify-end gap-1">
           <Basket />
-          <KeyboardShortcutsHelp />
+          <KeyboardShortcutsHelp className="@max-[40rem]:sr-only" />
           <Button variant="ghost" onClick={toggleTheme} size="icon">
             {currentTheme === 'light' ? <SunIcon /> : <MoonIcon />}
             <span className="sr-only">Toggle theme</span>

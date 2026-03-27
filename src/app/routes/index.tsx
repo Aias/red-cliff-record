@@ -19,7 +19,7 @@ function Home() {
   });
 
   return (
-    <main className="relative flex basis-full flex-col items-center gap-4 overflow-y-auto p-1">
+    <main className="@container relative flex basis-full flex-col items-center gap-4 overflow-y-auto p-1 contain-inline-size">
       {isLoading && (
         <Spinner className="absolute top-1/2 left-1/2 size-8 -translate-x-1/2 -translate-y-1/2" />
       )}
@@ -27,7 +27,7 @@ function Home() {
       {!isLoading && !isError && records.length === 0 && (
         <p className="text-c-hint">No records with media found.</p>
       )}
-      <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] gap-0.25">
+      <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(min(100%,12rem),1fr))] gap-0.25">
         {records.map((record) => {
           const item = record.media?.[0]; // Get only the first media item
           if (!item) return null; // Skip if no media

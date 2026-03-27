@@ -26,7 +26,7 @@ interface ShortcutGroup {
 /**
  * Dialog that displays all registered keyboard shortcuts grouped by category
  */
-export function KeyboardShortcutsHelp() {
+export function KeyboardShortcutsHelp({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const shortcuts = useRegisteredShortcuts();
 
@@ -73,7 +73,7 @@ export function KeyboardShortcutsHelp() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Keyboard shortcuts">
+        <Button variant="ghost" size="icon" aria-label="Keyboard shortcuts" className={className}>
           <KeyboardIcon />
         </Button>
       </DialogTrigger>
