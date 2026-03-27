@@ -11,45 +11,27 @@ LOG_FILE="$REPO_DIR/logs/auto-deploy.log"
 # Ensure log directory exists
 mkdir -p "$(dirname "$LOG_FILE")"
 
-# Initialize fnm to ensure correct Node version
-export PATH="/Users/nicktrombley/.local/share/fnm:$PATH"
-eval "$(fnm env --use-on-cd)"
+# Source shell profile so version-managed tools (bun, node, pm2) are on PATH.
+# Non-interactive shells (like those spawned by PM2) don't load these automatically.
+for f in "$HOME/.profile" "$HOME/.bash_profile" "$HOME/.bashrc"; do
+    [ -f "$f" ] && source "$f" 2>/dev/null
+done
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-# Check if PM2 is available
-check_pm2() {
-    if ! command -v pm2 &> /dev/null; then
-        log "ERROR: PM2 not found! Node version may have changed."
-        log "Current Node version: $(node -v)"
-        log "Current Node path: $(which node)"
-        log "Please run: npm install -g pm2 && pm2 resurrect"
-        return 1
-    fi
-    return 0
-}
-
-log "Starting auto-deployment monitor for $REPO_DIR"
-
-# Initial setup
 cd "$REPO_DIR" || exit 1
 
-# Use the Node version from .nvmrc
-if [ -f "$REPO_DIR/.nvmrc" ]; then
-    log "Using Node version from .nvmrc: $(cat .nvmrc)"
-    fnm use
-fi
+# Verify required tools are available
+for cmd in git bun pm2; do
+    if ! command -v "$cmd" &>/dev/null; then
+        log "FATAL: $cmd not found on PATH. Exiting."
+        exit 1
+    fi
+done
 
-log "Node version: $(node -v)"
-log "PM2 location: $(which pm2 2>&1 || echo 'NOT FOUND')"
-
-# Verify PM2 is available at startup
-if ! check_pm2; then
-    log "FATAL: PM2 check failed at startup. Exiting."
-    exit 1
-fi
+log "Starting auto-deployment monitor for $REPO_DIR"
 
 LAST_COMMIT=$(git rev-parse HEAD)
 
@@ -98,17 +80,13 @@ while true; do
                 if bun run build; then
                     log "Build successful"
                     
-                    # Restart the server using PM2
+                    # Restart the server via PM2
                     log "Restarting PM2 process..."
-                    if check_pm2; then
-                        if pm2 restart red-cliff-record; then
-                            log "PM2 restart successful"
-                        else
-                            log "WARNING: PM2 restart failed, trying reload..."
-                            pm2 reload red-cliff-record
-                        fi
+                    if pm2 restart red-cliff-record; then
+                        log "PM2 restart successful"
                     else
-                        log "ERROR: Cannot restart - PM2 not available"
+                        log "WARNING: PM2 restart failed, trying reload..."
+                        pm2 reload red-cliff-record
                     fi
                     
                     log "Deployment complete!"

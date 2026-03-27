@@ -330,7 +330,7 @@ Backup files are named by environment label (`prod-`, `dev-`), not database name
 ### Build Errors
 
 - Clear cache: `rm -rf node_modules bun.lock dist && bun install`
-- Check Node version: Should be v24+ as specified in `.nvmrc`
+- Check Node version: Should be v24+ as specified in `.node-version`
 - Run lint and type check: `bun run lint`
 
 ### Integration Sync Failures
