@@ -1,7 +1,7 @@
 import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations.shared';
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { Link } from '@tanstack/react-router';
-import { ChevronDownIcon, ShoppingBasketIcon, StarIcon } from 'lucide-react';
+import { ChevronDownIcon, ShoppingBasketIcon } from 'lucide-react';
 import { useState } from 'react';
 import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
@@ -45,7 +45,7 @@ function RecordRow({ recordId }: { recordId: DbId }) {
   if (!record) {
     return (
       <TableRow>
-        <TableCell colSpan={5}>
+        <TableCell colSpan={6}>
           <div className="h-4 w-48 animate-pulse rounded bg-c-mist" />
         </TableCell>
       </TableRow>
@@ -74,18 +74,6 @@ function RecordRow({ recordId }: { recordId: DbId }) {
                 <span className="shrink-0 text-c-hint">({record.abbreviation})</span>
               )}
               {record.sense && <span className="shrink-0 text-c-hint italic">{record.sense}</span>}
-              {record.rating >= 1 && (
-                <ol
-                  className="flex shrink-0 gap-0.5 opacity-75"
-                  aria-label={`${record.rating} star rating`}
-                >
-                  {Array.from({ length: record.rating }, (_, i) => (
-                    <li key={i}>
-                      <StarIcon className="size-[0.875em] fill-current" />
-                    </li>
-                  ))}
-                </ol>
-              )}
               {inBasket && <ShoppingBasketIcon className="text-c-accent" />}
             </Link>
           </TooltipTrigger>
@@ -103,6 +91,9 @@ function RecordRow({ recordId }: { recordId: DbId }) {
       </TableCell>
       <TableCell className="text-sm whitespace-nowrap">
         {record.recordCreatedAt ? formatDate(record.recordCreatedAt) : ''}
+      </TableCell>
+      <TableCell className="text-end text-c-hint tabular-nums">
+        {record.eloScore !== 1200 && record.eloScore}
       </TableCell>
       <TableCell className="text-center">
         <SourceLogos sources={record.sources} className="justify-center text-sm" />
@@ -369,6 +360,7 @@ export const RecordsGrid = () => {
               <TableHead>Record</TableHead>
               <TableHead>URL</TableHead>
               <TableHead>Created</TableHead>
+              <TableHead className="w-16 text-end">ELO</TableHead>
               <TableHead className="text-center">Sources</TableHead>
             </TableRow>
           </TableHeader>
@@ -377,7 +369,7 @@ export const RecordsGrid = () => {
               data.ids.map(({ id }) => <RecordRow key={id} recordId={id} />)
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="pointer-events-none text-center">
+                <TableCell colSpan={6} className="pointer-events-none text-center">
                   No records found
                 </TableCell>
               </TableRow>

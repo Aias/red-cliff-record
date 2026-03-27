@@ -30,7 +30,6 @@ import { MediaUpload } from '@/components/media-upload';
 import { MetadataList } from '@/components/metadata-list';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { Separator } from '@/components/separator';
-import { Slider } from '@/components/slider';
 import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/components/table';
 import { Toggle } from '@/components/toggle';
@@ -415,33 +414,6 @@ export function RecordForm({
             )}
           </form.Field>
         </div>
-
-        <form.Field name="rating">
-          {(field) => (
-            <div className="mx-5 mb-1.5 flex flex-col gap-3">
-              <div className="flex items-center justify-between text-xs text-c-secondary">
-                <Label htmlFor="rating" className="inline-flex w-0 justify-center">
-                  Rating
-                </Label>
-                <span className="inline-flex w-0 justify-center text-[0.875em]">⭐</span>
-                <span className="inline-flex w-0 justify-center text-[0.875em]">⭐⭐</span>
-                <span className="inline-flex w-0 justify-center text-[0.875em]">⭐⭐⭐</span>
-              </div>
-              <Slider
-                id="rating"
-                min={0}
-                max={3}
-                step={1}
-                value={[field.state.value ?? 0]}
-                onValueChange={(values) => {
-                  field.handleChange(values[0] ?? 0);
-                  debouncedSave();
-                }}
-                disabled={isFormLoading}
-              />
-            </div>
-          )}
-        </form.Field>
 
         <div className="rounded-md border border-c-divider">
           <Table>
