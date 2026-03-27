@@ -1,7 +1,15 @@
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { GlobeIcon, ShoppingBasketIcon, Trash2Icon } from 'lucide-react';
+import {
+  BadgeCheckIcon,
+  BadgeIcon,
+  EyeIcon,
+  EyeOffIcon,
+  GlobeIcon,
+  ShoppingBasketIcon,
+  Trash2Icon,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -18,7 +26,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/alert-dialog';
 import { Avatar } from '@/components/avatar';
-import { BooleanSwitch } from '@/components/boolean-switch';
 import { Button } from '@/components/button';
 import { DynamicTextarea } from '@/components/dynamic-textarea';
 import { ExternalLink } from '@/components/external-link';
@@ -370,7 +377,7 @@ export function RecordForm({
           </form.Field>
         </h1>
 
-        <div className="@container">
+        <div className="@container flex items-center gap-2">
           <form.Field name="type">
             {(field) => (
               <ToggleGroup
@@ -383,7 +390,7 @@ export function RecordForm({
                   }
                 }}
                 variant="outline"
-                className="w-full"
+                className="grow"
                 disabled={isFormLoading}
               >
                 {RecordTypeSchema.options.map((type) => {
@@ -411,6 +418,52 @@ export function RecordForm({
                   );
                 })}
               </ToggleGroup>
+            )}
+          </form.Field>
+          <form.Field name="isCurated">
+            {(field) => (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Toggle
+                      variant="outline"
+                      pressed={field.state.value}
+                      aria-label={field.state.value ? 'Curated' : 'Not curated'}
+                      onPressedChange={(pressed) => {
+                        field.handleChange(pressed);
+                        debouncedSave();
+                      }}
+                      disabled={isFormLoading}
+                    >
+                      {field.state.value ? <BadgeCheckIcon /> : <BadgeIcon />}
+                    </Toggle>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{field.state.value ? 'Curated' : 'Not curated'}</TooltipContent>
+              </Tooltip>
+            )}
+          </form.Field>
+          <form.Field name="isPrivate">
+            {(field) => (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Toggle
+                      variant="outline"
+                      pressed={field.state.value}
+                      aria-label={field.state.value ? 'Private' : 'Public'}
+                      onPressedChange={(pressed) => {
+                        field.handleChange(pressed);
+                        debouncedSave();
+                      }}
+                      disabled={isFormLoading}
+                    >
+                      {field.state.value ? <EyeOffIcon /> : <EyeIcon />}
+                    </Toggle>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{field.state.value ? 'Private' : 'Public'}</TooltipContent>
+              </Tooltip>
             )}
           </form.Field>
         </div>
@@ -601,39 +654,6 @@ export function RecordForm({
       </div>
 
       <div className="mt-4 flex flex-col gap-3">
-        <div className="flex gap-4">
-          <h2 className="grow">Content</h2>
-          <form.Field name="isPrivate">
-            {(field) => (
-              <BooleanSwitch
-                label="Is Private"
-                id="isPrivate"
-                value={field.state.value}
-                handleChange={(value) => {
-                  field.handleChange(value);
-                  debouncedSave();
-                }}
-                switchProps={{ disabled: isFormLoading }}
-              />
-            )}
-          </form.Field>
-
-          <form.Field name="isCurated">
-            {(field) => (
-              <BooleanSwitch
-                label="Is Curated"
-                id="isCurated"
-                value={field.state.value}
-                handleChange={(value) => {
-                  field.handleChange(value);
-                  debouncedSave();
-                }}
-                switchProps={{ disabled: isFormLoading }}
-              />
-            )}
-          </form.Field>
-        </div>
-
         <form.Field name="summary">
           {(field) => (
             <div className="flex flex-col gap-1.5">
@@ -748,51 +768,53 @@ export function RecordForm({
           params={{ recordId }}
           className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
         >
-          {`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleString()}`}
+          {`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleDateString()} ${formData.recordCreatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
         </Link>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">
-              <Toggle
-                pressed={inBasket}
-                aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
-                onPressedChange={(pressed) => {
-                  if (pressed) {
-                    addToBasket(recordId);
-                    toast.success('Added to basket');
-                  } else {
-                    removeFromBasket(recordId);
-                    toast.success('Removed from basket');
-                  }
-                }}
-              >
-                <ShoppingBasketIcon />
-              </Toggle>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{inBasket ? 'Remove from basket' : 'Add to basket'}</TooltipContent>
-        </Tooltip>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
-              <Trash2Icon />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete this record.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <Button variant="destructive" asChild>
-                <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <Toggle
+                  pressed={inBasket}
+                  aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
+                  onPressedChange={(pressed) => {
+                    if (pressed) {
+                      addToBasket(recordId);
+                      toast.success('Added to basket');
+                    } else {
+                      removeFromBasket(recordId);
+                      toast.success('Removed from basket');
+                    }
+                  }}
+                >
+                  <ShoppingBasketIcon />
+                </Toggle>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{inBasket ? 'Remove from basket' : 'Add to basket'}</TooltipContent>
+          </Tooltip>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
+                <Trash2Icon />
               </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this record.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <Button variant="destructive" asChild>
+                  <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </form>
   );
