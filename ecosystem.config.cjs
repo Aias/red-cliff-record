@@ -4,8 +4,8 @@ module.exports = {
       // Main application
       name: 'red-cliff-record',
       script: 'bun',
-      args: 'run start', // Use 'start' script which runs server.ts, assuming build is handled separately or pre-start
-      cwd: './',
+      args: 'run start',
+      cwd: __dirname,
       env: {
         NODE_ENV: 'production',
         // Environment variables will be loaded from .env file
@@ -27,7 +27,7 @@ module.exports = {
       // Auto-deployment monitor
       name: 'red-cliff-deploy',
       script: './scripts/deploy/auto-deploy.sh',
-      cwd: './',
+      cwd: __dirname,
       interpreter: '/bin/bash',
       autorestart: true,
       watch: false,
