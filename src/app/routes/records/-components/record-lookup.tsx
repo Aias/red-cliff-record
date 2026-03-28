@@ -117,7 +117,8 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
           <CommandItem disabled>No results</CommandItem>
         )}
 
-        <CommandSeparator alwaysRender />
+        {shouldSearch && <CommandSeparator alwaysRender />}
+
         <CommandItem
           disabled={query.length === 0 || trigram.isFetching}
           key="create-record"

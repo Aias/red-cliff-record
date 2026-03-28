@@ -3,7 +3,7 @@ import React, { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 export type AvatarProps = React.ComponentPropsWithRef<typeof AvatarPrimitive.Root> & {
-  src?: string | undefined;
+  src?: string | undefined | null;
   fallback?: ReactNode;
   rounded?: boolean;
 };
@@ -18,7 +18,7 @@ const Avatar = ({ className, rounded = false, src, fallback, ...props }: AvatarP
     tabIndex={-1}
     {...props}
   >
-    <AvatarImage src={src} />
+    <AvatarImage src={src ?? undefined} />
     {fallback && <AvatarFallback>{fallback}</AvatarFallback>}
   </AvatarPrimitive.Root>
 );
