@@ -92,9 +92,9 @@ export const RelationsList = ({ id }: RelationsListProps) => {
         <RelationshipSelector
           sourceId={id}
           label={
-            <span>
+            <>
               <PlusIcon /> Add
-            </span>
+            </>
           }
           buttonProps={{
             ref: addRelationshipButtonRef,

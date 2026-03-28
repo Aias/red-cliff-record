@@ -18,6 +18,7 @@ import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
 import { ExternalLink } from '@/components/external-link';
 import { Input } from '@/components/input';
+import { IntegrationLogo } from '@/components/integration-logo';
 import { Label } from '@/components/label';
 import { MetadataList } from '@/components/metadata-list';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
@@ -54,13 +55,13 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
   }
 
   return (
-    <div className={cn('flex items-center', className)} {...props}>
+    <div className={cn('flex items-center gap-2.5', className)} {...props}>
       <Popover>
         <PopoverTrigger asChild>
           <Avatar
             src={record.avatarUrl}
             fallback={(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
-            className="mr-2 cursor-pointer"
+            className="cursor-pointer"
           />
         </PopoverTrigger>
         <PopoverContent className="flex min-w-84 flex-col gap-3">
@@ -72,11 +73,18 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
       <Link
         to="/records/$recordId"
         params={{ recordId }}
-        className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
+        className="truncate text-sm text-c-hint capitalize"
       >
-        {`${record.type} #${record.id}, ${record.recordCreatedAt.toLocaleDateString()} ${record.recordCreatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+        {`${record.type} #${record.id}, ${record.recordCreatedAt.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: '2-digit' })} ${record.recordCreatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
       </Link>
-      <div className="flex items-center gap-1">
+      {record.sources && (
+        <div className="mr-auto flex items-center gap-1">
+          {record.sources.map((source) => (
+            <IntegrationLogo key={source} integration={source} className="text-xs opacity-50" />
+          ))}
+        </div>
+      )}
+      <div className="flex items-center gap-0.5">
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex">

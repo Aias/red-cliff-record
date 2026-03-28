@@ -8,7 +8,6 @@ import { z } from 'zod';
 import { DynamicTextarea } from '@/components/dynamic-textarea';
 import { ExternalLink } from '@/components/external-link';
 import { GhostInput } from '@/components/ghost-input';
-import { IntegrationLogo } from '@/components/integration-logo';
 import { Label } from '@/components/label';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
@@ -116,10 +115,24 @@ export function RecordForm({
   const form = useForm({
     defaultValues: formData,
     onSubmit: async ({ value }) => {
-      const { title, url, abbreviation, sense, summary, content, notes, mediaCaption, ...rest } =
-        value;
+      const {
+        type,
+        isCurated,
+        isPrivate,
+        title,
+        url,
+        abbreviation,
+        sense,
+        summary,
+        content,
+        notes,
+        mediaCaption,
+      } = value;
       await updateMutation.mutateAsync({
-        ...rest,
+        id: recordId,
+        type,
+        isCurated,
+        isPrivate,
         title: title || null,
         url: url || null,
         abbreviation: abbreviation || null,
@@ -301,24 +314,13 @@ export function RecordForm({
                   }}
                   onBlur={() => debouncedSave()}
                   readOnly={isFormLoading}
-                  className="text-c-display"
+                  className="text-c-display placeholder:font-medium"
                 />
                 {field.state.meta.errors && (
                   <p className="text-sm text-c-destructive">
                     {field.state.meta.errors.map(getErrorMessage).join(', ')}
                   </p>
                 )}
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="sources">
-            {(field) => (
-              <div className="flex items-center gap-2">
-                {field.state.value &&
-                  field.state.value.length > 0 &&
-                  field.state.value.map((source) => (
-                    <IntegrationLogo key={source} integration={source} className="text-base" />
-                  ))}
               </div>
             )}
           </form.Field>
@@ -559,7 +561,7 @@ export function RecordForm({
         <form.Field name="media">
           {(field) =>
             field.state.value && field.state.value.length > 0 ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col rounded-md border border-c-divider/75">
                 <MediaGrid
                   media={field.state.value}
                   onDelete={(media) => deleteMediaMutation.mutate([media.id])}
@@ -567,19 +569,22 @@ export function RecordForm({
 
                 <form.Field name="mediaCaption">
                   {(captionField) => (
-                    <div className="flex flex-col gap-1">
-                      <Label htmlFor="mediaCaption">Caption</Label>
+                    <div className="flex flex-col border-t border-c-divider/75">
+                      <Label htmlFor="mediaCaption" className="sr-only">
+                        Caption
+                      </Label>
                       <DynamicTextarea
                         ref={mediaCaptionRef}
                         id="mediaCaption"
                         value={captionField.state.value ?? ''}
-                        placeholder="Media caption"
+                        placeholder="Add a caption..."
                         onChange={(e) => {
                           captionField.handleChange(e.target.value);
                           debouncedSave();
                         }}
                         onBlur={() => debouncedSave()}
                         disabled={isFormLoading}
+                        className="border-none shadow-none placeholder:text-c-hint focus-visible:ring-0"
                       />
                     </div>
                   )}
@@ -591,22 +596,23 @@ export function RecordForm({
           }
         </form.Field>
 
-        <Separator />
-
         <form.Field name="notes">
           {(field) => (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes" className="sr-only">
+                Notes
+              </Label>
               <DynamicTextarea
                 id="notes"
                 value={field.state.value ?? ''}
-                placeholder="Additional notes"
+                placeholder="Add notes..."
                 onChange={(e) => {
                   field.handleChange(e.target.value);
                   debouncedSave();
                 }}
                 onBlur={() => debouncedSave()}
                 disabled={isFormLoading}
+                className="m-0 border-none p-0 text-c-secondary shadow-none placeholder:italic focus-visible:ring-0"
               />
             </div>
           )}

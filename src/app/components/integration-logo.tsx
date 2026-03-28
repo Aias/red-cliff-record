@@ -1,5 +1,6 @@
 import type { IntegrationType } from '@hozo/schema/operations';
 import { memo } from 'react';
+import { cn } from '@/lib/utils';
 import { assertNever } from '@/shared/lib/type-utils';
 import { AdobeLogo } from './logos/adobe';
 import { AirtableLogo } from './logos/airtable';
@@ -55,7 +56,7 @@ export const IntegrationLogo = memo(function IntegrationLogo({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className={className}>
+        <div className={cn('inline-grid place-items-center', className)}>
           <LogoComponent service={service} />
         </div>
       </TooltipTrigger>
