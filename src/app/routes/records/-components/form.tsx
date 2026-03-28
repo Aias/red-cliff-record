@@ -1,42 +1,16 @@
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
-import { Link, useRouterState } from '@tanstack/react-router';
-import {
-  BadgeCheckIcon,
-  BadgeIcon,
-  EyeIcon,
-  EyeOffIcon,
-  GlobeIcon,
-  ShoppingBasketIcon,
-  Trash2Icon,
-} from 'lucide-react';
+import { useRouterState } from '@tanstack/react-router';
+import { BadgeCheckIcon, BadgeIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trpc } from '@/app/trpc';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/alert-dialog';
-import { Avatar } from '@/components/avatar';
-import { Button } from '@/components/button';
 import { DynamicTextarea } from '@/components/dynamic-textarea';
 import { ExternalLink } from '@/components/external-link';
 import { GhostInput } from '@/components/ghost-input';
-import { IntegrationLogo } from '@/components/integration-logo';
 import { Label } from '@/components/label';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
-import { MetadataList } from '@/components/metadata-list';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
-import { Separator } from '@/components/separator';
 import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/components/table';
 import { Toggle } from '@/components/toggle';
@@ -51,12 +25,13 @@ import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-short
 import { validateRecord } from '@/lib/server/validate-record';
 import { cn } from '@/lib/utils';
 import type { RecordGet } from '@/shared/types/domain';
+import { Metabar } from './record-metabar';
 import { recordTypeIcons } from './type-icons';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
   recordId: number;
   onFinalize: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -71,24 +46,6 @@ function getErrorMessage(error: unknown): string {
   }
   return String(error);
 }
-
-const MetadataSection = ({ record }: { record: RecordGet }) => {
-  return (
-    <div className="flex flex-col gap-3">
-      <h2>Record Metadata</h2>
-      <MetadataList
-        metadata={{
-          ID: record.id,
-          Slug: record.slug,
-          Created: record.recordCreatedAt,
-          Updated: record.recordUpdatedAt,
-          'Content Created': record.contentCreatedAt,
-          'Content Updated': record.contentUpdatedAt,
-        }}
-      />
-    </div>
-  );
-};
 
 const defaultData: RecordGet = {
   id: 0,
@@ -152,29 +109,31 @@ export function RecordForm({
   const inBasket = useInBasket(recordId);
   const updateMutation = useUpsertRecord();
   const deleteMediaMutation = useDeleteMedia();
-  const fetchFaviconMutation = trpc.records.fetchFavicon.useMutation();
   const { uploadFile, isUploading } = useRecordUpload(recordId);
 
   const form = useForm({
     defaultValues: formData,
     onSubmit: async ({ value }) => {
       const {
+        type,
+        isCurated,
+        isPrivate,
         title,
         url,
-        avatarUrl,
         abbreviation,
         sense,
         summary,
         content,
         notes,
         mediaCaption,
-        ...rest
       } = value;
       await updateMutation.mutateAsync({
-        ...rest,
+        id: recordId,
+        type,
+        isCurated,
+        isPrivate,
         title: title || null,
         url: url || null,
-        avatarUrl: avatarUrl || null,
         abbreviation: abbreviation || null,
         sense: sense || null,
         summary: summary || null,
@@ -354,24 +313,13 @@ export function RecordForm({
                   }}
                   onBlur={() => debouncedSave()}
                   readOnly={isFormLoading}
-                  className="text-c-display"
+                  className="text-c-display placeholder:font-medium"
                 />
                 {field.state.meta.errors && (
                   <p className="text-sm text-c-destructive">
                     {field.state.meta.errors.map(getErrorMessage).join(', ')}
                   </p>
                 )}
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="sources">
-            {(field) => (
-              <div className="flex items-center gap-2">
-                {field.state.value &&
-                  field.state.value.length > 0 &&
-                  field.state.value.map((source) => (
-                    <IntegrationLogo key={source} integration={source} className="text-base" />
-                  ))}
               </div>
             )}
           </form.Field>
@@ -499,89 +447,6 @@ export function RecordForm({
                             onBlur={() => debouncedSave()}
                             readOnly={isFormLoading}
                           />
-                          {(() => {
-                            const url = field.state.value;
-                            if (!url) return null;
-                            return (
-                              <>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      aria-label="Fetch favicon as avatar"
-                                      onClick={() => {
-                                        void fetchFaviconMutation
-                                          .mutateAsync({ url })
-                                          .then((result) => {
-                                            form.setFieldValue('avatarUrl', result.avatarUrl);
-                                            debouncedSave();
-                                          })
-                                          .catch((error) => {
-                                            const message =
-                                              error instanceof Error
-                                                ? error.message
-                                                : 'Unknown error';
-                                            toast.error(`Failed to fetch favicon: ${message}`);
-                                          });
-                                      }}
-                                      disabled={fetchFaviconMutation.isPending || isFormLoading}
-                                      className="size-fit cursor-pointer p-0"
-                                    >
-                                      {fetchFaviconMutation.isPending ? (
-                                        <Spinner className="size-[1em]" />
-                                      ) : (
-                                        <GlobeIcon className="size-[1em]" />
-                                      )}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Fetch favicon as avatar</TooltipContent>
-                                </Tooltip>
-                                <ExternalLink href={url} children={null} />
-                              </>
-                            );
-                          })()}
-                        </div>
-                        {field.state.meta.errors && (
-                          <p className="text-sm text-c-destructive">
-                            {field.state.meta.errors.map(getErrorMessage).join(', ')}
-                          </p>
-                        )}
-                      </>
-                    )}
-                  </form.Field>
-                </TableCell>
-              </TableRow>
-
-              <TableRow>
-                <TableCell className="w-20">
-                  <Label className="flex w-full" htmlFor="avatarUrl">
-                    Avatar URL
-                  </Label>
-                </TableCell>
-                <TableCell>
-                  <form.Field
-                    name="avatarUrl"
-                    validators={{
-                      onChange: z.url().or(z.string().length(0)).nullable(),
-                    }}
-                  >
-                    {(field) => (
-                      <>
-                        <div className="flex items-center gap-1">
-                          <GhostInput
-                            id="avatarUrl"
-                            className="w-full text-c-display"
-                            value={field.state.value ?? ''}
-                            placeholder="https://example.com/image.jpg"
-                            onChange={(e) => {
-                              field.handleChange(e.target.value);
-                              debouncedSave();
-                            }}
-                            onBlur={() => debouncedSave()}
-                            readOnly={isFormLoading}
-                          />
                           {field.state.value && (
                             <ExternalLink href={field.state.value} children={null} />
                           )}
@@ -695,7 +560,7 @@ export function RecordForm({
         <form.Field name="media">
           {(field) =>
             field.state.value && field.state.value.length > 0 ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col rounded-md border border-c-divider/75">
                 <MediaGrid
                   media={field.state.value}
                   onDelete={(media) => deleteMediaMutation.mutate([media.id])}
@@ -703,19 +568,22 @@ export function RecordForm({
 
                 <form.Field name="mediaCaption">
                   {(captionField) => (
-                    <div className="flex flex-col gap-1">
-                      <Label htmlFor="mediaCaption">Caption</Label>
+                    <div className="flex flex-col border-t border-c-divider/75">
+                      <Label htmlFor="mediaCaption" className="sr-only">
+                        Caption
+                      </Label>
                       <DynamicTextarea
                         ref={mediaCaptionRef}
                         id="mediaCaption"
                         value={captionField.state.value ?? ''}
-                        placeholder="Media caption"
+                        placeholder="Add a caption..."
                         onChange={(e) => {
                           captionField.handleChange(e.target.value);
                           debouncedSave();
                         }}
                         onBlur={() => debouncedSave()}
                         disabled={isFormLoading}
+                        className="border-none shadow-none placeholder:text-c-hint focus-visible:ring-0"
                       />
                     </div>
                   )}
@@ -727,95 +595,33 @@ export function RecordForm({
           }
         </form.Field>
 
-        <Separator />
-
         <form.Field name="notes">
           {(field) => (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes" className="sr-only">
+                Notes
+              </Label>
               <DynamicTextarea
                 id="notes"
                 value={field.state.value ?? ''}
-                placeholder="Additional notes"
+                placeholder="Add notes..."
                 onChange={(e) => {
                   field.handleChange(e.target.value);
                   debouncedSave();
                 }}
                 onBlur={() => debouncedSave()}
                 disabled={isFormLoading}
+                className="m-0 border-none p-0 text-c-secondary shadow-none placeholder:italic focus-visible:ring-0"
               />
             </div>
           )}
         </form.Field>
       </div>
-      <div className="order-first -mt-1 mb-3 flex items-center border-b border-c-divider pb-1">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Avatar
-              src={form.getFieldValue('avatarUrl') ?? undefined}
-              fallback={(
-                form.getFieldValue('title')?.charAt(0) ?? form.getFieldValue('type').charAt(0)
-              ).toUpperCase()}
-              className="mr-2 cursor-pointer"
-            />
-          </PopoverTrigger>
-          <PopoverContent className="min-w-84">
-            <MetadataSection record={formData} />
-          </PopoverContent>
-        </Popover>
-        <Link
-          to="/records/$recordId"
-          params={{ recordId }}
-          className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
-        >
-          {`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleDateString()} ${formData.recordCreatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
-        </Link>
-        <div className="flex items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <Toggle
-                  pressed={inBasket}
-                  aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
-                  onPressedChange={(pressed) => {
-                    if (pressed) {
-                      addToBasket(recordId);
-                      toast.success('Added to basket');
-                    } else {
-                      removeFromBasket(recordId);
-                      toast.success('Removed from basket');
-                    }
-                  }}
-                >
-                  <ShoppingBasketIcon />
-                </Toggle>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>{inBasket ? 'Remove from basket' : 'Add to basket'}</TooltipContent>
-          </Tooltip>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
-                <Trash2Icon />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete this record.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <Button variant="destructive" asChild>
-                  <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
+      <Metabar
+        recordId={recordId}
+        className="order-first -mt-1 mb-3 border-b border-c-divider pb-1"
+        onDelete={onDelete}
+      />
     </form>
   );
 }

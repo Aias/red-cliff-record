@@ -29,6 +29,9 @@ export default defineConfig(({ mode }) => {
     ssr: {
       external: ['bun'],
     },
+    optimizeDeps: {
+      exclude: ['bun'],
+    },
     resolve: {
       tsconfigPaths: true,
     },

@@ -60,7 +60,7 @@
     --font-family-sans:
       'IBM Plex Sans', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
     --font-family-mono:
-      'Berkeley Mono Variable', 'Berkeley Mono' ui-monospace, SFMono-Regular, 'Menlo', monospace,
+      'Berkeley Mono Variable', 'Berkeley Mono', ui-monospace, SFMono-Regular, 'Menlo', monospace,
       'Apple Color Emoji', 'Segoe UI Emoji';
     --font-family-serif: ui-serif, 'Georgia', Cambria, 'Times New Roman', Times, serif;
 
@@ -188,7 +188,7 @@
 }
 
 @utility card-compact {
-  @apply relative block overflow-hidden rounded-md border border-c-divider/50 bg-c-container px-3 py-2 text-sm;
+  @apply relative block overflow-hidden rounded-md border border-c-divider surface px-3 py-2 text-sm;
 }
 
 @utility icon {
