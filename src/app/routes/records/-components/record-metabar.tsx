@@ -1,9 +1,12 @@
 import { Link } from '@tanstack/react-router';
-import { ShoppingBasketIcon, Trash2Icon } from 'lucide-react';
-import { type ComponentProps, useCallback } from 'react';
+import { GlobeIcon, ShoppingBasketIcon, Trash2Icon } from 'lucide-react';
+import { type ComponentProps, useCallback, useState } from 'react';
 import { toast } from 'sonner';
+import { trpc } from '@/app/trpc';
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -11,14 +14,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/alert-dialog';
-import { AlertDialogCancel, AlertDialogAction } from '@/components/alert-dialog';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
+import { ExternalLink } from '@/components/external-link';
+import { Input } from '@/components/input';
+import { Label } from '@/components/label';
 import { MetadataList } from '@/components/metadata-list';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
+import { Separator } from '@/components/separator';
+import { Spinner } from '@/components/spinner';
 import { Toggle } from '@/components/toggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
-import { useDeleteRecords } from '@/lib/hooks/record-mutations';
+import { useDeleteRecords, useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-basket';
 import { cn } from '@/lib/utils';
@@ -56,7 +63,9 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
             className="mr-2 cursor-pointer"
           />
         </PopoverTrigger>
-        <PopoverContent className="min-w-84">
+        <PopoverContent className="flex min-w-84 flex-col gap-3">
+          <AvatarSection record={record} />
+          <Separator />
           <MetadataSection record={record} />
         </PopoverContent>
       </Popover>
@@ -112,6 +121,79 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
           </AlertDialogContent>
         </AlertDialog>
       </div>
+    </div>
+  );
+};
+
+const AvatarSection = ({ record }: { record: RecordGet }) => {
+  const recordId = record.id;
+  const [localUrl, setLocalUrl] = useState(record.avatarUrl ?? '');
+  const [prevUrl, setPrevUrl] = useState(record.avatarUrl);
+
+  if (record.avatarUrl !== prevUrl) {
+    setPrevUrl(record.avatarUrl);
+    setLocalUrl(record.avatarUrl ?? '');
+  }
+
+  const upsertMutation = useUpsertRecord();
+  const { mutate: fetchFavicon, isPending: isFetchingFavicon } =
+    trpc.records.fetchFavicon.useMutation();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalUrl(e.target.value);
+  };
+
+  const handleBlur = () => {
+    const normalized = localUrl.trim() || null;
+    if (normalized === record.avatarUrl) return;
+    upsertMutation.mutate({ id: record.id, avatarUrl: normalized });
+  };
+
+  const handleFetchFavicon = () => {
+    if (!record.url) return;
+    fetchFavicon(
+      { url: record.url },
+      {
+        onSuccess: ({ avatarUrl }) => {
+          setLocalUrl(avatarUrl);
+          upsertMutation.mutate({ id: record.id, avatarUrl: avatarUrl });
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor={`avatar-url-${recordId}`}>Avatar URL</Label>
+      <div className="flex items-center gap-2">
+        <Input
+          id={`avatar-url-${recordId}`}
+          value={localUrl}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="https://example.com/image.png"
+        />
+        {localUrl && <ExternalLink href={localUrl} children={null} />}
+      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!record.url || isFetchingFavicon}
+            onClick={handleFetchFavicon}
+          >
+            {isFetchingFavicon ? <Spinner /> : <GlobeIcon />}
+            Fetch favicon
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {record.url
+            ? 'Fetch the favicon from the record URL'
+            : 'Add a URL to the record to fetch its favicon'}
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 };

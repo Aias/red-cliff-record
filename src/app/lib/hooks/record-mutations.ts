@@ -4,6 +4,7 @@ import { getQueryKey } from '@trpc/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import { removeManyFromBasket, replaceBasketId } from '@/lib/hooks/use-basket';
+import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId, IdParamList } from '@/shared/types/api';
 import type { RecordGet } from '@/shared/types/domain';
@@ -71,13 +72,21 @@ export function useUpsertRecord() {
       }
       return { previous };
     },
-    onSuccess: (row) => {
+    onSuccess: (row, input) => {
       /* patch point cache */
       utils.records.get.setData({ id: row.id }, row);
 
       /* refresh ID tables & search index */
       void utils.records.list.invalidate();
-      embedMutation.mutate({ id: row.id });
+
+      const isNewRecord = input.id === undefined;
+      const embeddingFields = new Set<string>(EMBEDDING_RECORD_FIELDS);
+      const affectsEmbedding =
+        isNewRecord ||
+        Object.entries(input).some(([k, v]) => v !== undefined && embeddingFields.has(k));
+      if (affectsEmbedding) {
+        embedMutation.mutate({ id: row.id });
+      }
     },
     onError: (err, input, ctx) => {
       if (input.id !== undefined && ctx?.previous) {

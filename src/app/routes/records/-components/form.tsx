@@ -1,12 +1,10 @@
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
 import { useRouterState } from '@tanstack/react-router';
-import { BadgeCheckIcon, BadgeIcon, EyeIcon, EyeOffIcon, GlobeIcon } from 'lucide-react';
+import { BadgeCheckIcon, BadgeIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trpc } from '@/app/trpc';
-import { Button } from '@/components/button';
 import { DynamicTextarea } from '@/components/dynamic-textarea';
 import { ExternalLink } from '@/components/external-link';
 import { GhostInput } from '@/components/ghost-input';
@@ -113,29 +111,17 @@ export function RecordForm({
   const inBasket = useInBasket(recordId);
   const updateMutation = useUpsertRecord();
   const deleteMediaMutation = useDeleteMedia();
-  const fetchFaviconMutation = trpc.records.fetchFavicon.useMutation();
   const { uploadFile, isUploading } = useRecordUpload(recordId);
 
   const form = useForm({
     defaultValues: formData,
     onSubmit: async ({ value }) => {
-      const {
-        title,
-        url,
-        avatarUrl,
-        abbreviation,
-        sense,
-        summary,
-        content,
-        notes,
-        mediaCaption,
-        ...rest
-      } = value;
+      const { title, url, abbreviation, sense, summary, content, notes, mediaCaption, ...rest } =
+        value;
       await updateMutation.mutateAsync({
         ...rest,
         title: title || null,
         url: url || null,
-        avatarUrl: avatarUrl || null,
         abbreviation: abbreviation || null,
         sense: sense || null,
         summary: summary || null,
@@ -453,89 +439,6 @@ export function RecordForm({
                             className="w-full text-c-display"
                             value={field.state.value ?? ''}
                             placeholder="https://example.com"
-                            onChange={(e) => {
-                              field.handleChange(e.target.value);
-                              debouncedSave();
-                            }}
-                            onBlur={() => debouncedSave()}
-                            readOnly={isFormLoading}
-                          />
-                          {(() => {
-                            const url = field.state.value;
-                            if (!url) return null;
-                            return (
-                              <>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      aria-label="Fetch favicon as avatar"
-                                      onClick={() => {
-                                        void fetchFaviconMutation
-                                          .mutateAsync({ url })
-                                          .then((result) => {
-                                            form.setFieldValue('avatarUrl', result.avatarUrl);
-                                            debouncedSave();
-                                          })
-                                          .catch((error) => {
-                                            const message =
-                                              error instanceof Error
-                                                ? error.message
-                                                : 'Unknown error';
-                                            toast.error(`Failed to fetch favicon: ${message}`);
-                                          });
-                                      }}
-                                      disabled={fetchFaviconMutation.isPending || isFormLoading}
-                                      className="size-fit cursor-pointer p-0"
-                                    >
-                                      {fetchFaviconMutation.isPending ? (
-                                        <Spinner className="size-[1em]" />
-                                      ) : (
-                                        <GlobeIcon className="size-[1em]" />
-                                      )}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Fetch favicon as avatar</TooltipContent>
-                                </Tooltip>
-                                <ExternalLink href={url} children={null} />
-                              </>
-                            );
-                          })()}
-                        </div>
-                        {field.state.meta.errors && (
-                          <p className="text-sm text-c-destructive">
-                            {field.state.meta.errors.map(getErrorMessage).join(', ')}
-                          </p>
-                        )}
-                      </>
-                    )}
-                  </form.Field>
-                </TableCell>
-              </TableRow>
-
-              <TableRow>
-                <TableCell className="w-20">
-                  <Label className="flex w-full" htmlFor="avatarUrl">
-                    Avatar URL
-                  </Label>
-                </TableCell>
-                <TableCell>
-                  <form.Field
-                    name="avatarUrl"
-                    validators={{
-                      onChange: z.url().or(z.string().length(0)).nullable(),
-                    }}
-                  >
-                    {(field) => (
-                      <>
-                        <div className="flex items-center gap-1">
-                          <GhostInput
-                            id="avatarUrl"
-                            className="w-full text-c-display"
-                            value={field.state.value ?? ''}
-                            placeholder="https://example.com/image.jpg"
                             onChange={(e) => {
                               field.handleChange(e.target.value);
                               debouncedSave();

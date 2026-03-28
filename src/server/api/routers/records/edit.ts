@@ -20,7 +20,13 @@ const BulkUpdateDataSchema = RecordInsertSchema.omit({
 export const upsert = publicProcedure
   .input(RecordInsertSchema)
   .mutation(async ({ ctx: { db, loaders }, input }): Promise<RecordGet> => {
-    const { eloScore: _, ...updateFields } = input;
+    const updateFields = Object.fromEntries(
+      Object.entries(input).filter(([, v]) => v !== undefined)
+    );
+
+    const embeddingFields = new Set<string>(EMBEDDING_RECORD_FIELDS);
+    const affectsEmbedding = Object.keys(updateFields).some((k) => embeddingFields.has(k));
+
     const [result] = await db
       .insert(records)
       .values(input)
@@ -29,7 +35,7 @@ export const upsert = publicProcedure
         set: {
           ...updateFields,
           recordUpdatedAt: new Date(),
-          textEmbedding: null, // Changes require recalculating the embedding.
+          ...(affectsEmbedding ? { textEmbedding: null } : {}),
         },
       })
       .returning({
