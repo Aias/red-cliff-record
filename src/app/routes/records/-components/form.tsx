@@ -1,31 +1,11 @@
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
-import { Link, useRouterState } from '@tanstack/react-router';
-import {
-  BadgeCheckIcon,
-  BadgeIcon,
-  EyeIcon,
-  EyeOffIcon,
-  GlobeIcon,
-  ShoppingBasketIcon,
-  Trash2Icon,
-} from 'lucide-react';
+import { useRouterState } from '@tanstack/react-router';
+import { BadgeCheckIcon, BadgeIcon, EyeIcon, EyeOffIcon, GlobeIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { trpc } from '@/app/trpc';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/alert-dialog';
-import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
 import { DynamicTextarea } from '@/components/dynamic-textarea';
 import { ExternalLink } from '@/components/external-link';
@@ -34,8 +14,6 @@ import { IntegrationLogo } from '@/components/integration-logo';
 import { Label } from '@/components/label';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
-import { MetadataList } from '@/components/metadata-list';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { Separator } from '@/components/separator';
 import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/components/table';
@@ -51,12 +29,13 @@ import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-short
 import { validateRecord } from '@/lib/server/validate-record';
 import { cn } from '@/lib/utils';
 import type { RecordGet } from '@/shared/types/domain';
+import { Metabar } from './record-metabar';
 import { recordTypeIcons } from './type-icons';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
   recordId: number;
   onFinalize: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -71,24 +50,6 @@ function getErrorMessage(error: unknown): string {
   }
   return String(error);
 }
-
-const MetadataSection = ({ record }: { record: RecordGet }) => {
-  return (
-    <div className="flex flex-col gap-3">
-      <h2>Record Metadata</h2>
-      <MetadataList
-        metadata={{
-          ID: record.id,
-          Slug: record.slug,
-          Created: record.recordCreatedAt,
-          Updated: record.recordUpdatedAt,
-          'Content Created': record.contentCreatedAt,
-          'Content Updated': record.contentUpdatedAt,
-        }}
-      />
-    </div>
-  );
-};
 
 const defaultData: RecordGet = {
   id: 0,
@@ -748,74 +709,11 @@ export function RecordForm({
           )}
         </form.Field>
       </div>
-      <div className="order-first -mt-1 mb-3 flex items-center border-b border-c-divider pb-1">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Avatar
-              src={form.getFieldValue('avatarUrl') ?? undefined}
-              fallback={(
-                form.getFieldValue('title')?.charAt(0) ?? form.getFieldValue('type').charAt(0)
-              ).toUpperCase()}
-              className="mr-2 cursor-pointer"
-            />
-          </PopoverTrigger>
-          <PopoverContent className="min-w-84">
-            <MetadataSection record={formData} />
-          </PopoverContent>
-        </Popover>
-        <Link
-          to="/records/$recordId"
-          params={{ recordId }}
-          className="mr-auto truncate font-mono text-sm text-c-secondary capitalize"
-        >
-          {`${formData.type} #${formData.id}, ${formData.recordCreatedAt.toLocaleDateString()} ${formData.recordCreatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
-        </Link>
-        <div className="flex items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <Toggle
-                  pressed={inBasket}
-                  aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
-                  onPressedChange={(pressed) => {
-                    if (pressed) {
-                      addToBasket(recordId);
-                      toast.success('Added to basket');
-                    } else {
-                      removeFromBasket(recordId);
-                      toast.success('Removed from basket');
-                    }
-                  }}
-                >
-                  <ShoppingBasketIcon />
-                </Toggle>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>{inBasket ? 'Remove from basket' : 'Add to basket'}</TooltipContent>
-          </Tooltip>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
-                <Trash2Icon />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete this record.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <Button variant="destructive" asChild>
-                  <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
+      <Metabar
+        recordId={recordId}
+        className="order-first -mt-1 mb-3 border-b border-c-divider pb-1"
+        onDelete={onDelete}
+      />
     </form>
   );
 }
