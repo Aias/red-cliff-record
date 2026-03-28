@@ -11,7 +11,6 @@ import { GhostInput } from '@/components/ghost-input';
 import { Label } from '@/components/label';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
-import { Separator } from '@/components/separator';
 import { Spinner } from '@/components/spinner';
 import { Table, TableBody, TableCell, TableRow } from '@/components/table';
 import { Toggle } from '@/components/toggle';
