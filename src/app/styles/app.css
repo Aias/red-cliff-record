@@ -10,7 +10,8 @@
 @source '../';
 
 @custom-variant data-checked (&[data-state~="checked"]);
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, [data-color-scheme='dark'] *));
+@custom-variant chromatic (&:is(.chromatic *, [data-chroma='chromatic'] *));
 
 @theme {
   --font-sans: var(--font-family-sans);
@@ -22,37 +23,35 @@
   --radius-lg: 8px;
   --radius-xl: 12px;
 
-  --color-c-fg: var(--c-fg);
-  --color-c-bg: var(--c-bg);
+  --color-c-display: var(--display);
+  --color-c-primary: var(--primary);
+  --color-c-secondary: var(--secondary);
+  --color-c-symbol: var(--symbol);
+  --color-c-hint: var(--hint);
+  --color-c-accent: var(--accent);
 
-  --color-c-app: var(--c-neutral-elevation-core);
-  --color-c-page: var(--c-neutral-elevation-hill);
-  --color-c-container: var(--c-neutral-elevation-ground);
-  --color-c-float: var(--c-neutral-elevation-peak);
+  --color-c-background: var(--background);
+  --color-c-paper: var(--paper);
+  --color-c-container: var(--container);
+  --color-c-float: var(--float);
 
-  --color-c-display: var(--c-neutral-display);
-  --color-c-primary: var(--c-neutral-primary);
-  --color-c-secondary: var(--c-neutral-secondary);
-  --color-c-hint: var(--c-neutral-hint);
-  --color-c-symbol: var(--c-neutral-symbol);
+  --color-c-divider: var(--divider);
+  --color-c-border: var(--border);
+  --color-c-boundary: var(--boundary);
+  --color-c-edge: var(--edge);
+  --color-c-ring: var(--ring);
 
-  --color-c-accent: var(--c-theme-accent);
-  --color-c-accent-active: var(--c-theme-primary);
+  --color-c-mist: var(--mist);
+  --color-c-splash: var(--splash);
+  --color-c-flood: var(--flood);
+  --color-c-sink: var(--sink);
 
-  --color-c-main: var(--c-theme-main);
-  --color-c-main-active: var(--c-theme-main-active);
-  --color-c-main-contrast: var(--c-theme-main-contrast);
+  --color-c-main: var(--main);
+  --color-c-main-active: var(--main-active);
+  --color-c-main-contrast: var(--main-contrast);
 
-  --color-c-mist: var(--c-neutral-mist);
-  --color-c-splash: var(--c-neutral-splash);
-  --color-c-flood: var(--c-neutral-flood);
-
-  --color-c-divider: var(--c-neutral-divider);
-  --color-c-border: var(--c-neutral-border);
-  --color-c-focus: var(--c-theme-main);
-
-  --color-c-destructive: oklch(50.42% 0.165 28);
-  --color-c-destructive-contrast: var(--white);
+  --color-c-link: var(--link);
+  --color-c-link-active: var(--link-active);
 }
 
 @layer components {
@@ -74,25 +73,27 @@
   }
 
   * {
-    @apply border-c-divider outline-c-focus/50;
+    @apply border-c-divider outline-c-main/50;
   }
 
   html {
-    accent-color: var(--color-c-main);
     scrollbar-width: thin;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     font-synthesis: none;
     font-variant-ligatures: common-ligatures;
     font-variant-numeric: tabular-nums;
+    @apply h-viewport w-viewport bg-c-background text-c-primary accent-c-main;
+
+    /* Disable color transitions during theme changes */
+    &[data-theme-transitioning] :where(*, *::before, *::after) {
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+    }
   }
 
-  /* Disable color transitions during theme changes */
-  html.theme-transitioning *,
-  html.theme-transitioning *::before,
-  html.theme-transitioning *::after {
-    transition-duration: 0s !important;
-    transition-delay: 0s !important;
+  body {
+    @apply size-full bg-c-background;
   }
 
   h1,
@@ -128,7 +129,7 @@
 
   pre,
   code {
-    font-family: var(--font-family-mono);
+    @apply font-mono;
   }
 
   b,
@@ -138,19 +139,17 @@
 
   ::marker,
   mark {
-    color: var(--color-c-accent);
-    background-color: var(--color-c-mist);
+    @apply bg-c-mist text-c-accent;
   }
 
   a:where(:any-link, button),
   .link {
-    @apply font-medium text-c-accent hover:text-c-accent-active hover:underline;
+    @apply font-medium text-c-link decoration-c-link/50 hover:text-c-link-active hover:underline hover:decoration-c-link-active/75;
     text-decoration-line: none;
     text-decoration-style: solid;
     text-decoration-thickness: clamp(1px, 0.05em, 2px);
     text-underline-offset: calc(0.025em + 2px);
     text-decoration-skip-ink: auto;
-    text-decoration-color: var(--c-theme-divider);
 
     &:has(.icon, .lucide) {
       @apply inline-flex items-center gap-1;
@@ -179,16 +178,12 @@
   @apply w-[100dvw];
 }
 
-@utility surface {
-  @apply bg-c-page;
-}
-
 @utility card {
-  @apply relative block overflow-hidden rounded-md border border-c-divider surface p-4;
+  @apply relative block overflow-hidden rounded-md border border-c-divider bg-c-paper p-4;
 }
 
 @utility card-compact {
-  @apply relative block overflow-hidden rounded-md border border-c-divider surface px-3 py-2 text-sm;
+  @apply relative block overflow-hidden rounded-md border border-c-divider bg-c-paper px-3 py-2 text-sm;
 }
 
 @utility icon {
@@ -206,7 +201,7 @@
 }
 
 @utility checkbox {
-  @apply size-[1em] overflow-hidden rounded-xs border border-c-border text-[1.125em] focus-visible:ring-1 focus-visible:ring-c-focus focus-visible:outline-none;
+  @apply size-[1em] overflow-hidden rounded-xs border border-c-border text-[1.125em] focus-visible:ring-1 focus-visible:ring-c-ring focus-visible:outline-none;
   &:checked,
   &[data-state~='checked'] {
     @apply border-c-main bg-c-main text-c-main-contrast;
@@ -229,7 +224,7 @@
   }
   &:is(.selected, [data-status='active'], :has([data-status='active'])):hover,
   &:is(.selected, [data-status='active'], :has([data-status='active'])):active {
-    @apply border-c-focus bg-c-flood;
+    @apply border-c-ring bg-c-flood;
   }
 }
 
@@ -249,7 +244,7 @@
     --tw-prose-captions: var(--color-c-secondary);
     --tw-prose-code: var(--color-c-primary);
     --tw-prose-pre-code: var(--color-c-secondary);
-    --tw-prose-pre-bg: var(--color-c-page);
+    --tw-prose-pre-bg: var(--color-c-paper);
     --tw-prose-th-borders: var(--color-c-border);
     --tw-prose-td-borders: var(--color-c-divider);
   }

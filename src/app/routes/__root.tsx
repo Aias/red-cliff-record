@@ -121,11 +121,16 @@ function RootDocument({
     }
   }, []);
   return (
-    <html className={cn('h-viewport w-full', appearance, isTransitioning && 'theme-transitioning')}>
+    <html
+      data-palette="gold"
+      data-chroma="neutral"
+      data-color-scheme={appearance}
+      data-theme-transitioning={isTransitioning || undefined}
+    >
       <head>
         <HeadContent />
       </head>
-      <body className="size-full bg-c-app text-c-primary">
+      <body>
         {children}
         <Toaster />
         <Scripts />

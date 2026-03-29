@@ -38,7 +38,7 @@ function SearchPage() {
           columnWidth={320}
           gap={8}
           renderItem={(item) => (
-            <div className="overflow-hidden rounded border border-c-divider bg-c-page p-3 transition-colors hover:border-c-border">
+            <div className="overflow-hidden rounded border border-c-divider bg-c-paper p-3 transition-colors hover:border-c-border">
               <RecordDisplay recordId={item.id} compact />
             </div>
           )}

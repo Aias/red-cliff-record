@@ -352,9 +352,9 @@ export const RecordsGrid = () => {
           />
         </div>
       </div>
-      <div className="flex grow overflow-hidden rounded border border-c-divider bg-c-page text-xs">
+      <div className="flex grow overflow-hidden rounded border border-c-divider bg-c-paper text-xs">
         <Table className={cn({ 'h-full': data.ids.length === 0 })}>
-          <TableHeader className="sticky top-0 z-10 bg-c-page before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-c-divider">
+          <TableHeader className="sticky top-0 z-10 bg-c-container before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-c-divider">
             <TableRow className="sticky top-0 z-10 bg-c-mist">
               <TableHead className="sr-only text-center">Type</TableHead>
               <TableHead>Record</TableHead>

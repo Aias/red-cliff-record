@@ -34,7 +34,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden">
-      <menu className="@container relative z-100 grid shrink-0 basis-auto grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-c-border surface px-4 py-2 contain-inline-size">
+      <menu className="@container relative z-100 grid shrink-0 basis-auto grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-c-border bg-c-container px-4 py-2 contain-inline-size">
         <li className="flex items-center gap-4">
           <Link
             to={'/'}

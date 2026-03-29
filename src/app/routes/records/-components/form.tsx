@@ -294,7 +294,7 @@ export function RecordForm({
       {...props}
     >
       {isFormLoading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-c-app/50 backdrop-blur-sm">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-c-container/50 backdrop-blur-sm">
           <Spinner />
         </div>
       )}
@@ -316,7 +316,11 @@ export function RecordForm({
                   className="text-c-display placeholder:font-medium"
                 />
                 {field.state.meta.errors && (
-                  <p className="text-sm text-c-destructive">
+                  <p
+                    data-chroma="chromatic" // TODO: CLR-DESTRUCTIVE
+                    data-palette="tomato"
+                    className="text-sm"
+                  >
                     {field.state.meta.errors.map(getErrorMessage).join(', ')}
                   </p>
                 )}
@@ -452,7 +456,11 @@ export function RecordForm({
                           )}
                         </div>
                         {field.state.meta.errors && (
-                          <p className="text-sm text-c-destructive">
+                          <p
+                            data-chroma="chromatic" // TODO: CLR-DESTRUCTIVE
+                            data-palette="tomato"
+                            className="text-sm"
+                          >
                             {field.state.meta.errors.map(getErrorMessage).join(', ')}
                           </p>
                         )}
@@ -560,10 +568,11 @@ export function RecordForm({
         <form.Field name="media">
           {(field) =>
             field.state.value && field.state.value.length > 0 ? (
-              <div className="flex flex-col rounded-md border border-c-divider/75">
+              <div className="flex flex-col overflow-clip rounded-md border border-c-divider/75">
                 <MediaGrid
                   media={field.state.value}
                   onDelete={(media) => deleteMediaMutation.mutate([media.id])}
+                  className="rounded-none"
                 />
 
                 <form.Field name="mediaCaption">
