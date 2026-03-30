@@ -24,16 +24,13 @@ function Home() {
       css={{
         containerType: 'inline-size',
         position: 'relative',
-        flexBasis: 'full',
-        flexGrow: 0,
-        flexShrink: 0,
+        flex: '1',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         gap: '1',
         overflowY: 'auto',
         padding: '1',
-        debug: true,
       }}
     >
       {isLoading && records.length === 0 && (

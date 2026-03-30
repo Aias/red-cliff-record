@@ -9,4 +9,18 @@ export const globalStyles = defineGlobalStyles({
     fontVariantLigatures: 'common-ligatures',
     fontVariantNumeric: 'tabular-nums',
   },
+  ':root': {
+    colorScheme: 'light dark',
+    '--chroma': '0%',
+    colorPalette: 'sand',
+  },
+  '[data-palette="sand"]': {
+    colorPalette: 'sand',
+  },
+  '[data-palette="sage"]': {
+    colorPalette: 'sage',
+  },
+  '[data-palette="mauve"]': {
+    colorPalette: 'mauve',
+  },
 });

@@ -1,11 +1,5 @@
 @import './palette.css';
 
-@property --chroma {
-  syntax: '<percentage>';
-  inherits: true;
-  initial-value: 0%;
-}
-
 :root {
   --black: black;
   --white: white;

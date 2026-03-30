@@ -1,5 +1,6 @@
 import { defineConfig } from '@pandacss/dev';
 import { easings, durations } from '@/app/styles/animations';
+import { colors, semanticColors } from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
 import { spacing, sizes } from '@/app/styles/dimensions';
 import { globalStyles } from '@/app/styles/globals';
@@ -25,15 +26,38 @@ export default defineConfig({
 
   presets: [conditionsPreset],
   globalCss: globalStyles,
+  globalVars: {
+    extend: {
+      '--chroma': {
+        syntax: '<percentage>',
+        inherits: true,
+        initialValue: '0%',
+      },
+    },
+  },
+  staticCss: {
+    css: [
+      {
+        properties: { colorPalette: ['sand', 'sage', 'mauve'] },
+      },
+    ],
+  },
   theme: {
+    colorPalette: {
+      include: ['sand', 'sage', 'mauve'],
+    },
     extend: {
       tokens: {
+        colors: colors,
         durations: durations,
         easings: easings,
         fonts: fontFamilies,
         radii: radii,
         sizes: sizes,
         spacing: spacing,
+      },
+      semanticTokens: {
+        colors: semanticColors,
       },
     },
   },
