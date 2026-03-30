@@ -26,7 +26,8 @@
   --white-a12: rgba(255, 255, 255, 0.95);
 }
 
-[data-palette='gold'] {
+[data-palette='gold'],
+[data-palette='artifact'] {
   --clr-1: light-dark(#fdfdfc, #121211);
   --clr-2: light-dark(#faf9f2, #1b1a17);
   --clr-3: light-dark(#f2f0e7, #24231f);
@@ -447,7 +448,8 @@
 [data-palette='orange'],
 [data-palette='brown'],
 [data-palette='bronze'],
-[data-palette='gold'] {
+[data-palette='gold'],
+[data-palette='artifact'] {
   --neu-1: light-dark(#fdfdfc, #111110);
   --neu-2: light-dark(#f9f9f8, #191918);
   --neu-3: light-dark(#f1f0ef, #222221);

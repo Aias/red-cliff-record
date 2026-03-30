@@ -12,15 +12,30 @@ export const globalStyles = defineGlobalStyles({
   ':root': {
     colorScheme: 'light dark',
     '--chroma': '0%',
-    colorPalette: 'sand',
+    colorPalette: 'artifact',
   },
-  '[data-palette="sand"]': {
-    colorPalette: 'sand',
+  '[data-palette="artifact"]': {
+    colorPalette: 'artifact',
   },
-  '[data-palette="sage"]': {
-    colorPalette: 'sage',
+  '[data-palette="entity"]': {
+    colorPalette: 'entity',
   },
-  '[data-palette="mauve"]': {
-    colorPalette: 'mauve',
+  '[data-palette="concept"]': {
+    colorPalette: 'concept',
+  },
+  '[data-palette="error"]': {
+    colorPalette: 'error',
+  },
+  '[data-palette="success"]': {
+    colorPalette: 'success',
+  },
+  '[data-palette="info"]': {
+    colorPalette: 'info',
+  },
+  '[data-chroma="chromatic"]': {
+    '--chroma': '100%',
+  },
+  '[data-chroma="neutral"]': {
+    '--chroma': '0%',
   },
 });

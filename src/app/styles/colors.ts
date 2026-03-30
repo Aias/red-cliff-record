@@ -1,10 +1,103 @@
 import { defineSemanticTokens, defineTokens } from '@pandacss/dev';
-import { sand, sandDark, sage, sageDark, mauve, mauveDark } from '@radix-ui/colors';
+import {
+  sand,
+  sandDark,
+  sage,
+  sageDark,
+  mauve,
+  mauveDark,
+  amber,
+  amberDark,
+  grass,
+  grassDark,
+  olive,
+  oliveDark,
+  teal,
+  tealDark,
+  iris,
+  irisDark,
+  tomato,
+  tomatoDark,
+  gold,
+  goldDark,
+  bronze,
+  bronzeDark,
+  gray,
+  grayDark,
+  brown,
+  brownDark,
+  slate,
+  slateDark,
+  // blackA,
+  // whiteA,
+} from '@radix-ui/colors';
 
+const WHITE = 'oklch(1 0 0)';
+const BLACK = 'oklch(0 0 0)';
+
+type NeutralPaletteName = 'mauve' | 'slate' | 'sage' | 'olive' | 'sand' | 'gray';
+type ChromaticPaletteName =
+  | 'tomato'
+  | 'red'
+  | 'ruby'
+  | 'crimson'
+  | 'pink'
+  | 'plum'
+  | 'purple'
+  | 'violet'
+  | 'iris'
+  | 'indigo'
+  | 'blue'
+  | 'sky'
+  | 'cyan'
+  | 'mint'
+  | 'teal'
+  | 'jade'
+  | 'green'
+  | 'grass'
+  | 'lime'
+  | 'yellow'
+  | 'amber'
+  | 'orange'
+  | 'brown'
+  | 'gold'
+  | 'bronze';
+
+const neutralAssociations: Record<ChromaticPaletteName, NeutralPaletteName> = {
+  tomato: 'mauve',
+  red: 'mauve',
+  ruby: 'mauve',
+  crimson: 'mauve',
+  pink: 'mauve',
+  plum: 'mauve',
+  purple: 'mauve',
+  violet: 'mauve',
+  iris: 'slate',
+  indigo: 'slate',
+  blue: 'slate',
+  sky: 'slate',
+  cyan: 'slate',
+  mint: 'sage',
+  teal: 'sage',
+  jade: 'sage',
+  green: 'sage',
+  grass: 'olive',
+  lime: 'olive',
+  yellow: 'sand',
+  amber: 'sand',
+  orange: 'sand',
+  brown: 'sand',
+  gold: 'sand',
+  bronze: 'sand',
+};
+
+// type SemanticPaletteName = 'artifact' | 'entity' | 'concept' | 'error' | 'success' | 'info';
+
+type ForegroundColor = 'white' | 'black';
 type LightDarkColorString = `light-dark(${string}, ${string})`;
 type ScaleStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 type RadixScale = Record<string, string>;
-type ColorToken = { value: LightDarkColorString };
+type ColorToken = { value: string };
 
 type PaletteScale = {
   1: LightDarkColorString;
@@ -19,6 +112,31 @@ type PaletteScale = {
   10: LightDarkColorString;
   11: LightDarkColorString;
   12: LightDarkColorString;
+  contrast: string;
+};
+
+type SemanticPaletteScale = {
+  display: string;
+  primary: string;
+  secondary: string;
+  muted: string;
+  symbol: string;
+  accent: string;
+  accentActive: string;
+  background: string;
+  surface: string;
+  container: string;
+  float: string;
+  divider: string;
+  border: string;
+  edge: string;
+  focus: string;
+  mist: string;
+  splash: string;
+  flood: string;
+  main: string;
+  mainActive: string;
+  mainContrast: string;
 };
 
 const lightDark = (light: string, dark: string): LightDarkColorString =>
@@ -34,7 +152,11 @@ const getRadixScaleStep = (scale: RadixScale, step: ScaleStep): string => {
   return match[1];
 };
 
-export const zipRadixScale = (lightScale: RadixScale, darkScale: RadixScale): PaletteScale => ({
+export const zipRadixScale = (
+  lightScale: RadixScale,
+  darkScale: RadixScale,
+  foregroundColor?: ForegroundColor
+): PaletteScale => ({
   1: lightDark(getRadixScaleStep(lightScale, 1), getRadixScaleStep(darkScale, 1)),
   2: lightDark(getRadixScaleStep(lightScale, 2), getRadixScaleStep(darkScale, 2)),
   3: lightDark(getRadixScaleStep(lightScale, 3), getRadixScaleStep(darkScale, 3)),
@@ -47,9 +169,12 @@ export const zipRadixScale = (lightScale: RadixScale, darkScale: RadixScale): Pa
   10: lightDark(getRadixScaleStep(lightScale, 10), getRadixScaleStep(darkScale, 10)),
   11: lightDark(getRadixScaleStep(lightScale, 11), getRadixScaleStep(darkScale, 11)),
   12: lightDark(getRadixScaleStep(lightScale, 12), getRadixScaleStep(darkScale, 12)),
+  contrast: foregroundColor === 'black' ? BLACK : WHITE, // Default to white contrast text for most palettes. Only Sky, Mint, Lime, Yellow, and Amber are designed for dark foreground text.
 });
 
-const toColorTokens = (scale: PaletteScale): Record<ScaleStep, ColorToken> => ({
+const toColorTokens = (
+  scale: PaletteScale
+): Record<ScaleStep, ColorToken> & { contrast: { value: string } } => ({
   1: { value: scale[1] },
   2: { value: scale[2] },
   3: { value: scale[3] },
@@ -62,18 +187,140 @@ const toColorTokens = (scale: PaletteScale): Record<ScaleStep, ColorToken> => ({
   10: { value: scale[10] },
   11: { value: scale[11] },
   12: { value: scale[12] },
+  contrast: { value: scale.contrast },
 });
+
+type SemanticPalettePair = { neutral: SemanticPaletteScale; chromatic: SemanticPaletteScale };
+const toSemanticPalettePair = (chromaticScale: ChromaticPaletteName): SemanticPalettePair => {
+  const associatedNeutral = neutralAssociations[chromaticScale];
+  const neu = associatedNeutral;
+  const clr = chromaticScale;
+  return {
+    neutral: {
+      display: `color-mix(in oklch, {colors.${neu}.12}, {colors.modeContrast})`,
+      primary: `{colors.${neu}.12}`,
+      secondary: `{colors.${neu}.11}`,
+      muted: `color-mix(in oklch, {colors.${neu}.9}, {colors.${clr}.10})`,
+      symbol: `color-mix(in oklch, {colors.${neu}.9} 75%, {colors.${clr}.11})`,
+      accent: `color-mix(in oklch, {colors.${neu}.11}, {colors.${clr}.11})`,
+      accentActive: `color-mix(in oklch, {colors.${neu}.12}, {colors.${clr}.11})`,
+      background: `light-dark({colors.${neu}.2}, {colors.${neu}.1})`,
+      surface: `light-dark({colors.${neu}.1}, {colors.${neu}.2})`,
+      container: `{colors.${neu}.3}`,
+      float: `light-dark(${WHITE}, {colors.${neu}.3})`,
+      divider: `light-dark({colors.${neu}.6}, {colors.${neu}.5})`,
+      border: `light-dark({colors.${neu}.7}, {colors.${neu}.6})`,
+      edge: `light-dark({colors.${neu}.8}, {colors.${neu}.7})`,
+      focus: `color-mix(in oklch, {colors.${neu}.9} 75%, {colors.${clr}.9})`,
+      mist: `color-mix(in oklch, {colors.${neu}.9} 3%, transparent)`,
+      splash: `color-mix(in oklch, {colors.${neu}.9} 6%, transparent)`,
+      flood: `color-mix(in oklch, {colors.${neu}.9} 9%, transparent)`,
+      main: `{colors.${neu}.9}`,
+      mainActive: `{colors.${neu}.10}`,
+      mainContrast: `{colors.${neu}.contrast}`,
+    },
+    chromatic: {
+      display: `light-dark({colors.${clr}.12}, color-mix(in oklch, {colors.${clr}.12}, {colors.modeContrast}))`,
+      primary: `light-dark(color-mix(in oklch, {colors.${clr}.11}, {colors.${neu}.12}), {colors.${clr}.12})`,
+      secondary: `light-dark(color-mix(in oklch, {colors.${clr}.9}, {colors.${neu}.12}), color-mix(in oklch, {colors.${clr}.12}, {colors.${neu}.9}))`,
+      muted: `color-mix(in oklch, {colors.${clr}.9} 75%, {colors.${neu}.9})`,
+      symbol: `color-mix(in oklch, {colors.${clr}.11} 75%, {colors.${neu}.10})`,
+      accent: `{colors.${clr}.11}`,
+      accentActive: `color-mix(in oklch, {colors.${clr}.12}, {colors.${clr}.11})`,
+      background: `light-dark(color-mix(in oklch, {colors.${clr}.1}, {colors.${clr}.2}), {colors.${clr}.1})`,
+      surface: `light-dark(color-mix(in oklch, {colors.${clr}.2}, {colors.${clr}.3}), {colors.${clr}.2})`,
+      container: `light-dark(color-mix(in oklch, {colors.${clr}.3}, {colors.${clr}.4}), {colors.${clr}.3})`,
+      float: `light-dark(color-mix(in oklch, {colors.${clr}.3}, {colors.${clr}.4}), {colors.${clr}.3})`,
+      divider: `light-dark({colors.${clr}.6}, {colors.${clr}.4})`,
+      border: `light-dark({colors.${clr}.7}, {colors.${clr}.5})`,
+      edge: `light-dark({colors.${clr}.8}, {colors.${clr}.6})`,
+      focus: `light-dark({colors.${clr}.9}, {colors.${clr}.8})`,
+      mist: `color-mix(in oklch, {colors.${clr}.9} 3%, transparent)`,
+      splash: `color-mix(in oklch, {colors.${clr}.9} 6%, transparent)`,
+      flood: `color-mix(in oklch, {colors.${clr}.9} 9%, transparent)`,
+      main: `{colors.${clr}.9}`,
+      mainActive: `{colors.${clr}.10}`,
+      mainContrast: `{colors.${clr}.contrast}`,
+    },
+  };
+};
+
+const toSemanticPalette = (semanticPair: SemanticPalettePair): SemanticPaletteScale => {
+  return {
+    display: `color-mix(in oklch, ${semanticPair.neutral.display}, ${semanticPair.chromatic.display} var(--chroma))`,
+    primary: `color-mix(in oklch, ${semanticPair.neutral.primary}, ${semanticPair.chromatic.primary} var(--chroma))`,
+    secondary: `color-mix(in oklch, ${semanticPair.neutral.secondary}, ${semanticPair.chromatic.secondary} var(--chroma))`,
+    muted: `color-mix(in oklch, ${semanticPair.neutral.muted}, ${semanticPair.chromatic.muted} var(--chroma))`,
+    symbol: `color-mix(in oklch, ${semanticPair.neutral.symbol}, ${semanticPair.chromatic.symbol} var(--chroma))`,
+    accent: `color-mix(in oklch, ${semanticPair.neutral.accent}, ${semanticPair.chromatic.accent} var(--chroma))`,
+    accentActive: `color-mix(in oklch, ${semanticPair.neutral.accentActive}, ${semanticPair.chromatic.accentActive} var(--chroma))`,
+    background: `color-mix(in oklch, ${semanticPair.neutral.background}, ${semanticPair.chromatic.background} var(--chroma))`,
+    surface: `color-mix(in oklch, ${semanticPair.neutral.surface}, ${semanticPair.chromatic.surface} var(--chroma))`,
+    container: `color-mix(in oklch, ${semanticPair.neutral.container}, ${semanticPair.chromatic.container} var(--chroma))`,
+    float: `color-mix(in oklch, ${semanticPair.neutral.float}, ${semanticPair.chromatic.float} var(--chroma))`,
+    divider: `color-mix(in oklch, ${semanticPair.neutral.divider}, ${semanticPair.chromatic.divider} var(--chroma))`,
+    border: `color-mix(in oklch, ${semanticPair.neutral.border}, ${semanticPair.chromatic.border} var(--chroma))`,
+    edge: `color-mix(in oklch, ${semanticPair.neutral.edge}, ${semanticPair.chromatic.edge} var(--chroma))`,
+    focus: `color-mix(in oklch, ${semanticPair.neutral.focus}, ${semanticPair.chromatic.focus} var(--chroma))`,
+    mist: `color-mix(in oklch, ${semanticPair.neutral.mist}, ${semanticPair.chromatic.mist} var(--chroma))`,
+    splash: `color-mix(in oklch, ${semanticPair.neutral.splash}, ${semanticPair.chromatic.splash} var(--chroma))`,
+    flood: `color-mix(in oklch, ${semanticPair.neutral.flood}, ${semanticPair.chromatic.flood} var(--chroma))`,
+    main: `color-mix(in oklch, ${semanticPair.neutral.main}, ${semanticPair.chromatic.main} var(--chroma))`,
+    mainActive: `color-mix(in oklch, ${semanticPair.neutral.mainActive}, ${semanticPair.chromatic.mainActive} var(--chroma))`,
+    mainContrast: `color-mix(in oklch, ${semanticPair.neutral.mainContrast}, ${semanticPair.chromatic.mainContrast} var(--chroma))`,
+  };
+};
+
+const semanticPaletteToTokens = (
+  semanticPalette: SemanticPaletteScale
+): Record<keyof SemanticPaletteScale, ColorToken> => {
+  return Object.fromEntries(
+    Object.entries(semanticPalette).map(([key, value]) => [key, { value }])
+  ) as Record<keyof SemanticPaletteScale, ColorToken>;
+};
+
+const mauveScale = zipRadixScale(mauve, mauveDark);
+const tomatoScale = zipRadixScale(tomato, tomatoDark);
+const sandScale = zipRadixScale(sand, sandDark);
+const sageScale = zipRadixScale(sage, sageDark);
+const slateScale = zipRadixScale(slate, slateDark);
+const oliveScale = zipRadixScale(olive, oliveDark);
+const tealScale = zipRadixScale(teal, tealDark);
+const irisScale = zipRadixScale(iris, irisDark);
+const amberScale = zipRadixScale(amber, amberDark, 'black');
+const grassScale = zipRadixScale(grass, grassDark);
+const goldScale = zipRadixScale(gold, goldDark);
+const bronzeScale = zipRadixScale(bronze, bronzeDark);
+const brownScale = zipRadixScale(brown, brownDark);
+const grayScale = zipRadixScale(gray, grayDark);
 
 export const colors = defineTokens.colors({
   transparent: { value: 'transparent' },
   currentColor: { value: 'currentColor' },
-  white: { value: 'white' },
-  black: { value: 'black' },
-  sand: toColorTokens(zipRadixScale(sand, sandDark)),
-  sage: toColorTokens(zipRadixScale(sage, sageDark)),
-  mauve: toColorTokens(zipRadixScale(mauve, mauveDark)),
+  white: { value: WHITE },
+  black: { value: BLACK },
+  modeContrast: { value: lightDark(BLACK, WHITE) },
+  mauve: toColorTokens(mauveScale),
+  tomato: toColorTokens(tomatoScale),
+  sand: toColorTokens(sandScale),
+  sage: toColorTokens(sageScale),
+  slate: toColorTokens(slateScale),
+  olive: toColorTokens(oliveScale),
+  teal: toColorTokens(tealScale),
+  iris: toColorTokens(irisScale),
+  amber: toColorTokens(amberScale),
+  grass: toColorTokens(grassScale),
+  gold: toColorTokens(goldScale),
+  bronze: toColorTokens(bronzeScale),
+  brown: toColorTokens(brownScale),
+  gray: toColorTokens(grayScale),
 });
 
 export const semanticColors = defineSemanticTokens.colors({
-  modeContrast: { value: 'light-dark({colors.black}, {colors.white})' },
+  artifact: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('gold'))),
+  entity: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('bronze'))),
+  concept: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('amber'))),
+  error: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('tomato'))),
+  success: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('grass'))),
+  info: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('iris'))),
 });

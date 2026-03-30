@@ -74,7 +74,19 @@ export const translateCenterUtility = defineUtility({
   },
 });
 
+export const chromaticUtility = defineUtility({
+  className: 'chromatic',
+  values: { type: 'boolean' },
+  transform: (value) => {
+    if (!value) return {};
+    return {
+      '--chroma': '100%',
+    };
+  },
+});
+
 export const utilities = {
   debug: debugUtility,
   translateCenter: translateCenterUtility,
+  chromatic: chromaticUtility,
 };

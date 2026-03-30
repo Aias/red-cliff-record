@@ -2,6 +2,7 @@ import { defineConfig } from '@pandacss/dev';
 import { easings, durations } from '@/app/styles/animations';
 import { colors, semanticColors } from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
+import { PREFIX } from '@/app/styles/constants';
 import { spacing, sizes } from '@/app/styles/dimensions';
 import { globalStyles } from '@/app/styles/globals';
 import { utilities } from '@/app/styles/plugins';
@@ -12,8 +13,8 @@ export default defineConfig({
   preflight: true,
   jsxFramework: 'react',
   prefix: {
-    className: 'rcr',
-    cssVar: 'rcr',
+    className: PREFIX,
+    cssVar: PREFIX,
   },
 
   include: ['./src/**/*.{js,jsx,ts,tsx}'],
@@ -38,13 +39,13 @@ export default defineConfig({
   staticCss: {
     css: [
       {
-        properties: { colorPalette: ['sand', 'sage', 'mauve'] },
+        properties: { colorPalette: ['artifact', 'entity', 'concept', 'error', 'success', 'info'] },
       },
     ],
   },
   theme: {
     colorPalette: {
-      include: ['sand', 'sage', 'mauve'],
+      include: ['artifact', 'entity', 'concept', 'error', 'success', 'info'],
     },
     extend: {
       tokens: {
