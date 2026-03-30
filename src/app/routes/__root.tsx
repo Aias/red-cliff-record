@@ -7,7 +7,7 @@ import { TooltipProvider } from '@/components/tooltip';
 import { KeyboardShortcutProvider } from '@/lib/keyboard-shortcuts/context';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getTheme, type Theme } from '@/lib/server/theme';
-import { cn } from '@/lib/utils';
+import pandaStylesUrl from '../styled-system/styles.css?url';
 import stylesUrl from '../styles/app.css?url';
 import { AppLayout } from './-app-components/app-layout';
 import { DefaultCatchBoundary } from './-app-components/catch-boundary';
@@ -36,6 +36,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
     ],
     links: [
       { rel: 'stylesheet', href: stylesUrl },
+      { rel: 'stylesheet', href: pandaStylesUrl },
       {
         rel: 'apple-touch-icon',
         sizes: '180x180',
@@ -131,7 +132,7 @@ function RootDocument({
         <HeadContent />
       </head>
       <body>
-        {children}
+        <div className="root">{children}</div>
         <Toaster />
         <Scripts />
       </body>

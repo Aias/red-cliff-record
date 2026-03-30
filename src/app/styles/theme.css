@@ -1,7 +1,7 @@
 @import './palette.css';
 
 @property --chroma {
-  syntax: '<number>';
+  syntax: '<percentage>';
   inherits: true;
   initial-value: 0%;
 }

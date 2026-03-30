@@ -1,12 +1,13 @@
-import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { styled } from '@/styled-system/jsx';
+import type { ComponentProps } from '@/styled-system/types';
 
 // An internal copy of the Radix Spinner component
 // https://www.radix-ui.com/themes/docs/components/spinner
 
-type SpinnerProps = React.ComponentPropsWithRef<'span'>;
+type SpinnerProps = ComponentProps<typeof styled.span>;
 
-const Spinner = React.memo(({ className = '', ...props }: SpinnerProps) => {
+const Spinner = ({ className = '', ...props }: SpinnerProps) => {
   // Duration of the spinner animation in seconds.
   const duration = 0.8;
 
@@ -31,14 +32,14 @@ const Spinner = React.memo(({ className = '', ...props }: SpinnerProps) => {
   });
 
   return (
-    <span
+    <styled.span
       {...props}
       className={cn('relative inline-block size-[1em] text-current opacity-75', className)}
     >
       {leaves}
-    </span>
+    </styled.span>
   );
-});
+};
 
 Spinner.displayName = 'Spinner';
 
