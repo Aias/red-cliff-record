@@ -6,7 +6,7 @@
  * quad → cubic → quart → quint → expo → circ
  */
 
-import { defineTokens } from '@pandacss/dev';
+import { defineKeyframes, defineTokens } from '@pandacss/dev';
 
 /** Curve intensity levels, ordered from weakest to strongest acceleration */
 export type CurveIntensity = 'quad' | 'cubic' | 'quart' | 'quint' | 'expo' | 'circ';
@@ -76,6 +76,7 @@ export const easings = defineTokens.easings({
     expo: { value: getEasing('ease-in-out', 'expo') },
     circ: { value: getEasing('ease-in-out', 'circ') },
   },
+  linear: { value: 'linear' },
 });
 
 export const durations = defineTokens.durations({
@@ -89,4 +90,15 @@ export const durations = defineTokens.durations({
   350: { value: '350ms' },
   400: { value: '400ms' },
   500: { value: '500ms' },
+});
+
+export const keyframes = defineKeyframes({
+  spinnerLeafFade: {
+    from: {
+      opacity: 1,
+    },
+    to: {
+      opacity: 0.25,
+    },
+  },
 });

@@ -14,7 +14,6 @@ export const Route = createFileRoute('/search')({
 
 function SearchPage() {
   const { q } = Route.useSearch();
-
   const { data } = trpc.records.list.useQuery(
     { searchQuery: q || undefined, limit: 100 },
     { enabled: q.length > 0, placeholderData: (prev) => prev }
@@ -49,9 +48,22 @@ function SearchPage() {
           columnWidth={320}
           gap={8}
           renderItem={(item) => (
-            <div className="overflow-hidden rounded border border-c-divider bg-c-paper p-3 transition-colors hover:border-c-border">
+            <styled.div
+              css={{
+                overflow: 'hidden',
+                borderRadius: 'md',
+                borderWidth: '1px',
+                borderColor: 'divider',
+                _hover: {
+                  borderColor: 'border',
+                },
+                backgroundColor: 'surface',
+                padding: '3',
+                transition: 'colors',
+              }}
+            >
               <RecordDisplay recordId={item.id} compact />
-            </div>
+            </styled.div>
           )}
         />
       )}

@@ -21,4 +21,6 @@ export const spacing = defineTokens.spacing({
 
 export const sizes = defineTokens.sizes({
   ...SHARED_TOKENS,
+  em: { value: '1em' },
+  full: { value: '100%' },
 });

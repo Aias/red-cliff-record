@@ -43,6 +43,12 @@ export async function createEmbedding(text: string, maxRetries = 5): Promise<num
 
       // Check if it's a rate limit error
       if (error instanceof Error && 'status' in error && error.status === 429) {
+        const isQuotaExhausted =
+          error.message.includes('exceeded your current quota') ||
+          error.message.includes('check your plan and billing details');
+        if (isQuotaExhausted) {
+          break;
+        }
         if (attempt < maxRetries) {
           // Extract wait time from error message if available
           let waitTime = Math.pow(2, attempt) * 1000; // Default exponential backoff: 1s, 2s, 4s, 8s, 16s

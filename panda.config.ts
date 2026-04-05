@@ -1,5 +1,5 @@
 import { defineConfig } from '@pandacss/dev';
-import { easings, durations } from '@/app/styles/animations';
+import { easings, durations, keyframes } from '@/app/styles/animations';
 import { colors, semanticColors } from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
 import { PREFIX } from '@/app/styles/constants';
@@ -61,6 +61,7 @@ export default defineConfig({
         colors: semanticColors,
       },
     },
+    keyframes: keyframes,
   },
   utilities: utilities,
 });

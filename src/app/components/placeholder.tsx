@@ -1,20 +1,17 @@
-import { cn } from '@/lib/utils';
+import { styled } from '@/styled-system/jsx';
 
-export const Placeholder = ({
-  children,
-  className = '',
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => {
-  return (
-    <div
-      className={cn(
-        'flex shrink-0 flex-col items-center justify-center gap-2 rounded-sm border border-c-divider bg-c-mist p-4',
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
-};
+export const Placeholder = styled('div', {
+  base: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    gap: '2',
+    padding: '4',
+    borderRadius: 'sm',
+    borderWidth: '1px',
+    borderColor: 'divider',
+    backgroundColor: 'mist',
+  },
+});
