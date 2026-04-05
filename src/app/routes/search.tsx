@@ -4,6 +4,7 @@ import { trpc } from '@/app/trpc';
 import { Masonry } from '@/components/masonry';
 import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
+import { styled } from '@/styled-system/jsx';
 import { RecordDisplay } from './records/-components/record-display';
 
 export const Route = createFileRoute('/search')({
@@ -20,7 +21,17 @@ function SearchPage() {
   );
 
   return (
-    <main className="flex basis-full flex-col gap-4 overflow-y-auto p-4">
+    <styled.main
+      css={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4',
+        overflowY: 'auto',
+        padding: '4',
+        flexBasis: 'full',
+        color: 'display',
+      }}
+    >
       {!q && <Placeholder>Type a query and press Enter to search.</Placeholder>}
 
       {q && !data && (
@@ -44,6 +55,6 @@ function SearchPage() {
           )}
         />
       )}
-    </main>
+    </styled.main>
   );
 }
