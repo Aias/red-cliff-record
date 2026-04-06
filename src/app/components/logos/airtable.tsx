@@ -1,8 +1,8 @@
-import { cn } from '@/app/lib/utils';
+import { Svg, type SvgProps } from './svg';
 
-export const AirtableLogo = ({ className }: { className?: string }) => {
+export const AirtableLogo = (props: SvgProps) => {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 101 101" className={cn('icon', className)}>
+    <Svg viewBox="0 0 101 101" {...props}>
       <title>Airtable</title>
       <g clipPath="url(#a)">
         <path
@@ -37,6 +37,6 @@ export const AirtableLogo = ({ className }: { className?: string }) => {
           />
         </clipPath>
       </defs>
-    </svg>
+    </Svg>
   );
 };

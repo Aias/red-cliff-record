@@ -1,8 +1,7 @@
-import { cn } from '@/app/lib/utils';
-
-export const ReadwiseLogo = ({ className }: { className?: string }) => {
+import { Svg, type SvgProps } from './svg';
+export const ReadwiseLogo = (props: SvgProps) => {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={cn('icon', className)}>
+    <Svg viewBox="0 0 100 100" {...props}>
       <title>Readwise</title>
       <g clipPath="url(#a)">
         <path fill="#fff" d="M100 0H0v100h100V0Z" style={{ fill: '#fff', fillOpacity: 1 }} />
@@ -34,6 +33,6 @@ export const ReadwiseLogo = ({ className }: { className?: string }) => {
           <path fill="#fff" d="M0 0h100v100H0z" style={{ fill: '#fff', fillOpacity: 1 }} />
         </clipPath>
       </defs>
-    </svg>
+    </Svg>
   );
 };

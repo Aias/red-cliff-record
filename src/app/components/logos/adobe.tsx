@@ -1,8 +1,8 @@
-import { cn } from '@/app/lib/utils';
+import { Svg, type SvgProps } from './svg';
 
-export const AdobeLogo = ({ className }: { className?: string }) => {
+export const AdobeLogo = (props: SvgProps) => {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={cn('icon', className)}>
+    <Svg viewBox="0 0 100 100" {...props}>
       <title>Adobe</title>
       <mask
         id="a"
@@ -25,6 +25,6 @@ export const AdobeLogo = ({ className }: { className?: string }) => {
           style={{ fill: '#eb1000', fillOpacity: 1 }}
         />
       </g>
-    </svg>
+    </Svg>
   );
 };
