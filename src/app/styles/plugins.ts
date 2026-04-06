@@ -177,6 +177,34 @@ export const chromaticUtility = defineUtility({
   },
 });
 
+// Usage: `className={css({ mode: 'inverted' })}`
+export const modeUtility = defineUtility({
+  className: 'mode',
+  values: ['normal', 'inverted', 'always-light', 'always-dark'],
+  transform: (value) => {
+    switch (value) {
+      case 'inverted':
+        return {
+          colorScheme: 'var(--inverse-color-scheme)',
+        };
+      case 'always-light':
+        return {
+          colorScheme: 'light',
+        };
+      case 'always-dark':
+        return {
+          colorScheme: 'dark',
+        };
+      case 'normal':
+        return {
+          colorScheme: 'inherit',
+        };
+      default:
+        return undefined;
+    }
+  },
+});
+
 export const utilities: Record<string, PropertyConfig> = {
   animateIn: animateInUtility,
   animateOut: animateOutUtility,
@@ -191,4 +219,5 @@ export const utilities: Record<string, PropertyConfig> = {
   debug: debugUtility,
   translateCenter: translateCenterUtility,
   chromatic: chromaticUtility,
+  mode: modeUtility,
 };

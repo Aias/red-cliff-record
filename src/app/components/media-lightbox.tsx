@@ -2,6 +2,8 @@ import type { MediaSelect } from '@hozo/schema/media';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import type React from 'react';
 import { useCallback, useMemo, useRef } from 'react';
+import { cn } from '@/app/lib/utils';
+import { css } from '@/styled-system/css';
 
 type LightboxImage = Pick<MediaSelect, 'altText' | 'id' | 'url'>;
 
@@ -76,7 +78,13 @@ export function MediaLightbox({ images, activeIndex, onClose, onIndexChange }: M
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
           onClick={onClose}
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+          className={cn(
+            'fixed inset-0 z-50 bg-black/80 backdrop-blur-sm',
+            css({
+              _open: { animateIn: true, fadeIn: 0 },
+              _closed: { animateOut: true, fadeOut: 0 },
+            })
+          )}
         />
         <DialogPrimitive.Content
           data-slot="dialog-content"

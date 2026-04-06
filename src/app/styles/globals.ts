@@ -32,10 +32,18 @@ export const globalStyles = defineGlobalStyles({
   '[data-palette="info"]': {
     colorPalette: 'info',
   },
-  '[data-chroma="chromatic"]': {
+  '[data-chroma="chromatic"], .chromatic': {
     '--chroma': '100%',
   },
-  '[data-chroma="neutral"]': {
+  '[data-chroma="neutral"], .neutral': {
     '--chroma': '0%',
+  },
+  '[data-color-scheme="dark"], .dark': {
+    colorScheme: 'dark',
+    '--inverse-color-scheme': 'light',
+  },
+  '[data-color-scheme="light"], .light': {
+    colorScheme: 'light',
+    '--inverse-color-scheme': 'dark',
   },
 });
