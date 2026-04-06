@@ -1,4 +1,5 @@
 import { defineConfig } from '@pandacss/dev';
+import { alertDialogRecipe } from '@/app/components/alert-dialog/alert-dialog.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
 import { colors, semanticColors } from '@/app/styles/colors';
@@ -84,6 +85,9 @@ export default defineConfig({
     },
     recipes: {
       button: buttonRecipe,
+    },
+    slotRecipes: {
+      alertDialog: alertDialogRecipe,
     },
   },
   utilities: utilities,

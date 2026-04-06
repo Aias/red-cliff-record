@@ -92,21 +92,8 @@ export const RelationsList = ({ id }: RelationsListProps) => {
         <h3 className="mb-2">
           Relations <span className="text-sm text-c-secondary">({totalLinks})</span>
         </h3>
-        <RelationshipSelector
+        <RelationshipSelector.Root
           sourceId={id}
-          label={
-            <>
-              <PlusIcon /> Add
-            </>
-          }
-          buttonProps={{
-            ref: addRelationshipButtonRef,
-            size: 'sm',
-            variant: 'outline',
-            css: {
-              height: '[1.5lh]',
-            },
-          }}
           buildActions={({ sourceId, targetId }) => {
             return [
               {
@@ -130,7 +117,18 @@ export const RelationsList = ({ id }: RelationsListProps) => {
               },
             ];
           }}
-        />
+        >
+          <RelationshipSelector.Trigger
+            ref={addRelationshipButtonRef}
+            variant="soft"
+            css={{
+              height: '[1.5lh]',
+            }}
+          >
+            <PlusIcon /> Add
+          </RelationshipSelector.Trigger>
+          <RelationshipSelector.Content />
+        </RelationshipSelector.Root>
       </header>
       {outgoingLinks.length > 0 && (
         <>
@@ -143,16 +141,10 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                 key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
                 className="flex items-center gap-2"
               >
-                <RelationshipSelector
-                  label={predicates[link.predicate]?.name ?? 'Unknown'}
+                <RelationshipSelector.Root
                   sourceId={link.sourceId}
                   initialTargetId={link.targetId}
                   link={link}
-                  buttonProps={{
-                    css: {
-                      width: '32',
-                    },
-                  }}
                   buildActions={({ sourceId, targetId }) => {
                     return [
                       {
@@ -187,7 +179,16 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                       },
                     ];
                   }}
-                />
+                >
+                  <RelationshipSelector.Trigger
+                    css={{
+                      width: '28',
+                    }}
+                  >
+                    {predicates[link.predicate]?.name ?? 'Unknown'}
+                  </RelationshipSelector.Trigger>
+                  <RelationshipSelector.Content />
+                </RelationshipSelector.Root>
                 <RecordLink
                   id={link.targetId}
                   linkOptions={{
@@ -216,22 +217,11 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                 key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
                 className="flex items-center gap-2"
               >
-                <RelationshipSelector
-                  label={(() => {
-                    const inv = predicates[link.predicate]?.inverseSlug;
-                    return inv
-                      ? (PREDICATES[inv as keyof typeof PREDICATES]?.name ?? 'Unknown')
-                      : (predicates[link.predicate]?.name ?? 'Unknown');
-                  })()}
+                <RelationshipSelector.Root
                   sourceId={link.targetId}
                   initialTargetId={link.sourceId}
                   incoming
                   link={link}
-                  buttonProps={{
-                    css: {
-                      width: '32',
-                    },
-                  }}
                   buildActions={() => {
                     return [
                       {
@@ -266,7 +256,21 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                       },
                     ];
                   }}
-                />
+                >
+                  <RelationshipSelector.Trigger
+                    css={{
+                      width: '28',
+                    }}
+                  >
+                    {(() => {
+                      const inv = predicates[link.predicate]?.inverseSlug;
+                      return inv
+                        ? (PREDICATES[inv as keyof typeof PREDICATES]?.name ?? 'Unknown')
+                        : (predicates[link.predicate]?.name ?? 'Unknown');
+                    })()}
+                  </RelationshipSelector.Trigger>
+                  <RelationshipSelector.Content />
+                </RelationshipSelector.Root>
                 <RecordLink
                   id={link.sourceId}
                   linkOptions={{
@@ -311,21 +315,9 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
         <ul>
           {similarRecords.map((record) => (
             <li key={record.id} className="mb-2 flex items-center gap-4">
-              <RelationshipSelector
+              <RelationshipSelector.Root
                 sourceId={id}
                 initialTargetId={record.id}
-                label={`${Math.round(record.similarity * 100)}%`}
-                buttonProps={{
-                  size: 'sm',
-                  variant: 'outline',
-                  css: {
-                    height: '[1.5lh]',
-                    fontFamily: 'mono',
-                    fontSize: 'xs',
-                    color: 'secondary',
-                  },
-                }}
-                popoverProps={{ side: 'left' }}
                 buildActions={({ sourceId, targetId }) => {
                   return [
                     {
@@ -349,7 +341,19 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
                     },
                   ];
                 }}
-              />
+              >
+                <RelationshipSelector.Trigger
+                  css={{
+                    height: '[1.5lh]',
+                    fontFamily: 'mono',
+                    fontSize: 'xs',
+                    color: 'secondary',
+                  }}
+                >
+                  {`${Math.round(record.similarity * 100)}%`}
+                </RelationshipSelector.Trigger>
+                <RelationshipSelector.Content side="left" />
+              </RelationshipSelector.Root>
               <RecordLink
                 id={record.id}
                 className="flex-1"

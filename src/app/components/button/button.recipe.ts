@@ -17,6 +17,7 @@ export const buttonRecipe = defineRecipe({
     fontWeight: 'medium',
     transition: 'all',
     userSelect: 'none',
+    cursor: 'pointer',
     _disabled: {
       pointerEvents: 'none',
       opacity: '50%',
@@ -48,6 +49,7 @@ export const buttonRecipe = defineRecipe({
       soft: {
         backgroundColor: 'colorPalette.splash',
         color: 'colorPalette.primary',
+        borderColor: 'colorPalette.divider/50',
         boxShadow: 'xs',
         _childIcon: {
           color: 'colorPalette.symbol',
@@ -66,7 +68,7 @@ export const buttonRecipe = defineRecipe({
           color: 'colorPalette.symbol',
         },
         _hover: {
-          backgroundColor: 'colorPalette.splash',
+          backgroundColor: 'colorPalette.mist',
           color: 'colorPalette.accentActive',
         },
       },
@@ -77,7 +79,7 @@ export const buttonRecipe = defineRecipe({
           color: 'colorPalette.symbol',
         },
         _hover: {
-          backgroundColor: 'colorPalette.splash',
+          backgroundColor: 'colorPalette.mist',
           color: 'colorPalette.display',
           _childIcon: {
             color: 'colorPalette.primary',

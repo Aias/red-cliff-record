@@ -6,7 +6,15 @@ import {
   type PredicateSlug,
 } from '@hozo';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { trpc } from '@/app/trpc';
 import { Badge } from '@/components/badge';
 import { Button, type ButtonProps } from '@/components/button';
@@ -30,7 +38,7 @@ import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
-import type { LinkPartial } from '@/shared/types/domain';
+import type { LinkPartial, RecordGet } from '@/shared/types/domain';
 import { css } from '@/styled-system/css';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
@@ -192,47 +200,63 @@ function PredicateCombobox({
   );
 }
 
-/* --------------------------------------------------------------------------
- * RelationshipSelector –– exported component.
- * buildActions now only receives a **defined** targetId – we invoke it
- * only after the user has selected a record.
- * -------------------------------------------------------------------------- */
-interface RelationshipSelectorProps {
-  label?: ReactNode;
+interface RelationshipSelectorRootProps {
+  children: ReactNode;
   sourceId: number;
-  /** Explicitly set target ID to skip record search. */
   initialTargetId?: number;
-  /** Existing link information, if editing. */
   link?: LinkPartial | null;
-  /** Called after any predicate or action completes. */
   onComplete?: (sourceId: number, targetId: number, predicate: PredicateSlug) => void;
-  buttonProps?: ButtonProps;
-  popoverProps?: PopoverContentProps;
-  /** Optional extra‑action builder; receives runtime context. */
   buildActions?: (ctx: {
     sourceId: number;
-    /** Selected record – guaranteed non‑null */
     targetId: number;
     link: LinkPartial | null;
   }) => RelationshipAction[];
-  /**
-   * Show predicates from the opposite direction. Used for incoming
-   * relations so the dropdown displays the inverse labels.
-   */
   incoming?: boolean;
 }
 
-export function RelationshipSelector({
+type RelationshipSelectorTriggerProps = ButtonProps & {
+  children?: ReactNode;
+};
+
+type RelationshipSelectorContextValue = {
+  actions: RelationshipAction[];
+  altPressed: boolean;
+  currentPredicateName?: string;
+  displayPredicates: Predicate[];
+  incoming: boolean;
+  handlePredicateSelect: (selectedPredicate: PredicateSlug) => void;
+  handleRecordSelect: (id: DbId) => void;
+  targetId: number | null;
+  targetRecord?: RecordGet;
+};
+
+const RelationshipSelectorContext = createContext<RelationshipSelectorContextValue | null>(null);
+
+const defaultRelationshipSelectorTriggerCss = css.raw({
+  fontWeight: 'medium',
+  textTransform: 'capitalize',
+  boxShadow: 'none',
+});
+
+function useRelationshipSelectorContext() {
+  const context = useContext(RelationshipSelectorContext);
+  if (!context) {
+    throw new Error(
+      'RelationshipSelector compound components must be used within RelationshipSelector.Root.'
+    );
+  }
+  return context;
+}
+
+function RelationshipSelectorRoot({
+  children,
   sourceId,
   initialTargetId,
   link = null,
-  label,
   incoming = false,
   onComplete,
   buildActions,
-  buttonProps: { css: buttonCss, ...buttonProps } = {},
-  popoverProps: { className: popoverClassName, ...popoverProps } = {},
-}: RelationshipSelectorProps) {
+}: RelationshipSelectorRootProps) {
   const initialTarget = initialTargetId ?? link?.targetId ?? null;
   const [targetId, setTargetId] = useState<number | null>(initialTarget);
   const [predicate, setPredicate] = useState<PredicateSlug | null>(link?.predicate ?? null);
@@ -323,71 +347,114 @@ export function RelationshipSelector({
     () => (predicate ? PREDICATES[predicate]?.name : undefined),
     [predicate]
   );
+  const contextValue: RelationshipSelectorContextValue = {
+    actions,
+    altPressed,
+    currentPredicateName,
+    displayPredicates,
+    incoming,
+    handlePredicateSelect,
+    handleRecordSelect,
+    targetId,
+    targetRecord,
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          size="sm"
-          variant="outline"
-          {...buttonProps}
-          css={css.raw(
-            {
-              fontWeight: 'medium',
-              textTransform: 'capitalize',
-              boxShadow: 'none',
-            },
-            buttonCss
-          )}
-        >
-          {label ?? (link && currentPredicateName ? currentPredicateName : 'Add relationship')}
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent
-        className={cn(
-          'w-[33vw] max-w-140 min-w-120 p-0',
-          targetId && 'w-60 min-w-60',
-          popoverClassName
-        )}
-        side="left"
-        align="start"
-        avoidCollisions
-        collisionPadding={8}
-        {...popoverProps}
-      >
-        {!targetId && <RecordSearch onSelect={handleRecordSelect} />}
-
-        {targetId && (
-          <>
-            <Badge
-              css={{
-                margin: '1',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '2',
-                overflow: 'hidden',
-                borderWidth: '1px',
-                borderColor: 'divider',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {altPressed ? <ArrowLeftIcon /> : <ArrowRightIcon />}
-              <span className="flex-1 truncate text-center">
-                {targetRecord ? targetRecord.title || targetRecord.id : <Spinner />}
-              </span>
-              {targetRecord && <RecordTypeIcon type={targetRecord.type} />}
-            </Badge>
-            <PredicateCombobox
-              predicates={displayPredicates}
-              includeNonCanonical={incoming}
-              onPredicateSelect={handlePredicateSelect}
-              actions={actions}
-            />
-          </>
-        )}
-      </PopoverContent>
-    </Popover>
+    <RelationshipSelectorContext.Provider value={contextValue}>
+      <Popover open={open} onOpenChange={setOpen}>
+        {children}
+      </Popover>
+    </RelationshipSelectorContext.Provider>
   );
 }
+
+function RelationshipSelectorTrigger({
+  children,
+  css: cssProp,
+  size = 'sm',
+  variant = 'outline',
+  ...props
+}: RelationshipSelectorTriggerProps) {
+  const { currentPredicateName } = useRelationshipSelectorContext();
+
+  return (
+    <PopoverTrigger asChild>
+      <Button
+        size={size}
+        variant={variant}
+        {...props}
+        css={css.raw(defaultRelationshipSelectorTriggerCss, cssProp)}
+      >
+        {children ?? currentPredicateName ?? 'Add relationship'}
+      </Button>
+    </PopoverTrigger>
+  );
+}
+
+function RelationshipSelectorContent({
+  className,
+  side = 'left',
+  align = 'start',
+  avoidCollisions = true,
+  collisionPadding = 8,
+  ...props
+}: PopoverContentProps) {
+  const {
+    actions,
+    altPressed,
+    displayPredicates,
+    incoming,
+    handlePredicateSelect,
+    handleRecordSelect,
+    targetId,
+    targetRecord,
+  } = useRelationshipSelectorContext();
+
+  return (
+    <PopoverContent
+      className={cn('w-[33vw] max-w-140 min-w-120 p-0', targetId && 'w-60 min-w-60', className)}
+      side={side}
+      align={align}
+      avoidCollisions={avoidCollisions}
+      collisionPadding={collisionPadding}
+      {...props}
+    >
+      {!targetId && <RecordSearch onSelect={handleRecordSelect} />}
+      {targetId && (
+        <>
+          <Badge
+            css={{
+              margin: '1',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '2',
+              overflow: 'hidden',
+              borderWidth: '1px',
+              borderColor: 'divider',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {altPressed ? <ArrowLeftIcon /> : <ArrowRightIcon />}
+            <span className="flex-1 truncate text-center">
+              {targetRecord ? targetRecord.title || targetRecord.id : <Spinner />}
+            </span>
+            {targetRecord && <RecordTypeIcon type={targetRecord.type} />}
+          </Badge>
+          <PredicateCombobox
+            predicates={displayPredicates}
+            includeNonCanonical={incoming}
+            onPredicateSelect={handlePredicateSelect}
+            actions={actions}
+          />
+        </>
+      )}
+    </PopoverContent>
+  );
+}
+
+export const RelationshipSelector = {
+  Root: RelationshipSelectorRoot,
+  Trigger: RelationshipSelectorTrigger,
+  Content: RelationshipSelectorContent,
+};
