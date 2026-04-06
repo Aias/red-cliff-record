@@ -1,7 +1,7 @@
 import { defineConfig } from 'oxlint';
 
 export default defineConfig({
-  plugins: ['typescript', 'import'],
+  plugins: ['typescript', 'import', 'react'],
   options: {
     typeAware: true,
   },
@@ -13,8 +13,6 @@ export default defineConfig({
     ],
     '@typescript-eslint/consistent-type-imports': 'warn',
     '@typescript-eslint/ban-ts-comment': 'warn',
-    'import/order': 'warn',
-
     // Type-aware rules
     'typescript/await-thenable': 'warn',
     'typescript/no-floating-promises': 'warn',
@@ -35,6 +33,21 @@ export default defineConfig({
     'typescript/no-unnecessary-template-expression': 'warn',
     'typescript/restrict-plus-operands': 'warn',
     'typescript/unbound-method': 'off',
+    // 'typescript/no-unnecessary-condition': 'warn',
+    // 'typescript/switch-exhaustiveness-check': 'warn',
+    // 'typescript/no-unsafe-enum-comparison': 'warn',
+    // 'typescript/only-throw-error': 'warn',
+
+    // React
+    'react/jsx-key': 'warn',
+    'react/rules-of-hooks': 'error',
+    'react/self-closing-comp': 'warn',
+    'react/jsx-no-useless-fragment': 'warn',
+
+    // General
+    'eslint/eqeqeq': 'warn',
+    'eslint/prefer-const': 'warn',
+    'import/no-duplicates': 'warn',
   },
   ignorePatterns: [
     '**/build/**',

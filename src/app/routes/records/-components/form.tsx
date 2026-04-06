@@ -452,7 +452,7 @@ export function RecordForm({
                             readOnly={isFormLoading}
                           />
                           {field.state.value && (
-                            <ExternalLink href={field.state.value} children={null} />
+                            <ExternalLink href={field.state.value}>{null}</ExternalLink>
                           )}
                         </div>
                         {field.state.meta.errors && (

@@ -1,7 +1,7 @@
 import { PREDICATES, type PredicateType } from '@hozo';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { trpc } from '@/app/trpc';
 import { Spinner } from '@/components/spinner';
 import { useDeleteLinks } from '@/lib/hooks/link-mutations';
@@ -45,20 +45,23 @@ export const RelationsList = ({ id }: RelationsListProps) => {
     allowInInput: true,
   });
 
-  const sortLinks = (links: LinkPartial[]): LinkPartial[] => {
-    return [...links].sort((a, b) => {
-      const typeA = predicates[a.predicate]?.type;
-      const typeB = predicates[b.predicate]?.type;
-      const orderA = typeA ? PREDICATE_TYPE_ORDER.indexOf(typeA) : PREDICATE_TYPE_ORDER.length;
-      const orderB = typeB ? PREDICATE_TYPE_ORDER.indexOf(typeB) : PREDICATE_TYPE_ORDER.length;
+  const sortLinks = useCallback(
+    (links: LinkPartial[]): LinkPartial[] => {
+      return [...links].sort((a, b) => {
+        const typeA = predicates[a.predicate]?.type;
+        const typeB = predicates[b.predicate]?.type;
+        const orderA = typeA ? PREDICATE_TYPE_ORDER.indexOf(typeA) : PREDICATE_TYPE_ORDER.length;
+        const orderB = typeB ? PREDICATE_TYPE_ORDER.indexOf(typeB) : PREDICATE_TYPE_ORDER.length;
 
-      // Sort by predicate type priority first
-      if (orderA !== orderB) return orderA - orderB;
+        // Sort by predicate type priority first
+        if (orderA !== orderB) return orderA - orderB;
 
-      // Then by recordUpdatedAt descending (most recent first)
-      return b.recordUpdatedAt.getTime() - a.recordUpdatedAt.getTime();
-    });
-  };
+        // Then by recordUpdatedAt descending (most recent first)
+        return b.recordUpdatedAt.getTime() - a.recordUpdatedAt.getTime();
+      });
+    },
+    [predicates]
+  );
 
   const outgoingLinks = useMemo(
     () =>
@@ -67,7 +70,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
           (link) => predicates[link.predicate]?.type !== 'containment'
         ) ?? []
       ),
-    [recordLinks, predicates]
+    [recordLinks, predicates, sortLinks]
   );
   const incomingLinks = useMemo(
     () =>
@@ -76,7 +79,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
           (link) => predicates[link.predicate]?.type !== 'containment'
         ) ?? []
       ),
-    [recordLinks, predicates]
+    [recordLinks, predicates, sortLinks]
   );
   const totalLinks = useMemo(
     () => outgoingLinks.length + incomingLinks.length,

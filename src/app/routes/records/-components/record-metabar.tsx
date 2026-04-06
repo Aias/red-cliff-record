@@ -38,7 +38,7 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
     } else {
       deleteMutation.mutate([recordId]);
     }
-  }, [deleteMutation, recordId]);
+  }, [deleteMutation, recordId, onDelete]);
 
   if (!record) {
     return null;
@@ -178,7 +178,7 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
           onBlur={handleBlur}
           placeholder="https://example.com/image.png"
         />
-        {localUrl && <ExternalLink href={localUrl} children={null} />}
+        {localUrl && <ExternalLink href={localUrl}>{null}</ExternalLink>}
       </div>
       <Tooltip>
         <TooltipTrigger asChild>

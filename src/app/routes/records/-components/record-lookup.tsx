@@ -250,7 +250,7 @@ export function RelationshipSelector({
   }, [incoming]);
   const { data: targetRecord } = trpc.records.get.useQuery(
     { id: targetId! },
-    { enabled: targetId != null }
+    { enabled: targetId !== null }
   );
 
   /* --------------------------------------------------
@@ -288,7 +288,7 @@ export function RelationshipSelector({
   }, []);
 
   const actions = useMemo<RelationshipAction[]>(() => {
-    if (!buildActions || targetId == null) return [];
+    if (!buildActions || targetId === null) return [];
     return buildActions({ sourceId, targetId, link });
   }, [buildActions, sourceId, targetId, link]);
 

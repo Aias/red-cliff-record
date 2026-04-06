@@ -26,7 +26,7 @@ async function ensureTempDirectory(): Promise<string> {
 }
 
 function hasDebugContent(value: unknown, seen: Set<unknown> = new Set()): boolean {
-  if (value == null) {
+  if (value === null) {
     return false;
   }
 

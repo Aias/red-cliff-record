@@ -1,5 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { Link } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
 import { useRecordList } from '@/lib/hooks/record-queries';

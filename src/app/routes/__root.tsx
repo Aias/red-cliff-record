@@ -1,5 +1,11 @@
 import { type QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  Outlet,
+  Scripts,
+  type ErrorComponentProps,
+} from '@tanstack/react-router';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { ServerHelpers } from '@/app/trpc';
 import { Toaster } from '@/components/sonner';
@@ -11,7 +17,7 @@ import pandaStylesUrl from '../styled-system/styles.css?url';
 import stylesUrl from '../styles/app.css?url';
 import { AppLayout } from './-app-components/app-layout';
 import { DefaultCatchBoundary } from './-app-components/catch-boundary';
-import { NotFound } from './-app-components/not-found';
+import { NotFound as NotFoundComponent } from './-app-components/not-found';
 
 export interface RouterAppContext {
   queryClient: QueryClient;
@@ -59,16 +65,18 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
     ],
   }),
   component: RootComponent,
-  errorComponent: (props) => {
-    const { theme: initialTheme } = Route.useLoaderData();
-    return (
-      <RootDocument appearance={initialTheme} isTransitioning={false}>
-        <DefaultCatchBoundary {...props} />
-      </RootDocument>
-    );
-  },
-  notFoundComponent: () => <NotFound />,
+  errorComponent: ErrorComponent,
+  notFoundComponent: NotFoundComponent,
 });
+
+function ErrorComponent(props: ErrorComponentProps) {
+  const { theme: initialTheme } = Route.useLoaderData();
+  return (
+    <RootDocument appearance={initialTheme} isTransitioning={false}>
+      <DefaultCatchBoundary {...props} />
+    </RootDocument>
+  );
+}
 
 function RootComponent() {
   const { theme: initialTheme } = Route.useLoaderData();

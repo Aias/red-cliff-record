@@ -11,8 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-orm/zod';
 import { media } from './media';
-import { contentTimestamps, databaseTimestamps } from './operations';
-import { integrationRuns } from './operations';
+import { contentTimestamps, databaseTimestamps, integrationRuns } from './operations';
 import { records } from './records';
 
 export const airtableExtracts = pgTable(

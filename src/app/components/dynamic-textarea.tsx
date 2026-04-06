@@ -54,7 +54,7 @@ const DynamicTextarea = ({
     if ('value' in props) {
       adjustHeight();
     }
-  }, [props.value, adjustHeight]);
+  }, [props, adjustHeight]);
 
   // For uncontrolled components, watch for changes in defaultValue and update the value manually.
   useEffect(() => {
@@ -64,7 +64,7 @@ const DynamicTextarea = ({
         adjustHeight();
       }
     }
-  }, [props.defaultValue, adjustHeight]);
+  }, [props, adjustHeight]);
 
   // Use a ResizeObserver to adjust the height if layout or font loading affects the content.
   useEffect(() => {
