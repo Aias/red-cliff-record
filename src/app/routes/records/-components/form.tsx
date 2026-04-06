@@ -594,7 +594,13 @@ export function RecordForm({
                         }}
                         onBlur={() => debouncedSave()}
                         disabled={isFormLoading}
-                        className="border-none shadow-none placeholder:text-c-hint focus-visible:ring-0"
+                        css={{
+                          border: 'none',
+                          boxShadow: 'none',
+                          _focusVisible: {
+                            outlineWidth: '0',
+                          },
+                        }}
                       />
                     </div>
                   )}
@@ -622,7 +628,19 @@ export function RecordForm({
                 }}
                 onBlur={() => debouncedSave()}
                 disabled={isFormLoading}
-                className="m-0 border-none p-0 text-c-secondary shadow-none placeholder:italic focus-visible:ring-0"
+                css={{
+                  margin: '0',
+                  padding: '0',
+                  border: 'none',
+                  color: 'secondary',
+                  boxShadow: 'none',
+                  _placeholder: {
+                    fontStyle: 'italic',
+                  },
+                  _focusVisible: {
+                    outlineWidth: '0',
+                  },
+                }}
               />
             </div>
           )}

@@ -1,6 +1,7 @@
 import { defineTokens } from '@pandacss/dev';
 
 export const borders = defineTokens.borders({
+  none: { value: 'none' },
   divider: {
     DEFAULT: { value: '1px solid {colors.divider}' },
     thin: { value: '0.5px solid {colors.divider}' },
