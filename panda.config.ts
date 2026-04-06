@@ -7,7 +7,8 @@ import { spacing, sizes } from '@/app/styles/dimensions';
 import { globalStyles } from '@/app/styles/globals';
 import { utilities } from '@/app/styles/plugins';
 import { radii } from '@/app/styles/radii';
-import { fontFamilies } from '@/app/styles/typography';
+import { shadows } from '@/app/styles/shadows';
+import { fontFamilies, fontSizes, lineHeights, textStyles } from '@/app/styles/typography';
 
 export default defineConfig({
   preflight: true,
@@ -53,7 +54,10 @@ export default defineConfig({
         durations: durations,
         easings: easings,
         fonts: fontFamilies,
+        fontSizes: fontSizes,
+        lineHeights: lineHeights,
         radii: radii,
+        shadows: shadows,
         sizes: sizes,
         spacing: spacing,
       },
@@ -62,6 +66,14 @@ export default defineConfig({
       },
     },
     keyframes: keyframes,
+    textStyles: textStyles,
+    breakpoints: {
+      sm: '40rem',
+      md: '48rem',
+      lg: '64rem',
+      xl: '80rem',
+      '2xl': '96rem',
+    },
   },
   utilities: utilities,
 });

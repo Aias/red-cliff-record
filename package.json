@@ -21,7 +21,7 @@
   "type": "module",
   "scripts": {
     "build": "bunx --bun vite build",
-    "check": "bun run lint && bun run type-check && bun run format",
+    "check": "bun run lint && bun run typecheck && bun run format",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
@@ -35,8 +35,8 @@
     "prepare": "panda codegen",
     "rcr": "bun src/server/cli/rcr/index.ts",
     "start": "bun run server.ts",
-    "type-check": "tsgo --noEmit",
-    "type-check:watch": "tsgo --noEmit --watch"
+    "typecheck": "tsgo --noEmit",
+    "typecheck:watch": "tsgo --noEmit --watch"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

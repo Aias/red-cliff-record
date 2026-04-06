@@ -94,11 +94,28 @@ export const durations = defineTokens.durations({
 
 export const keyframes = defineKeyframes({
   spinnerLeafFade: {
+    from: { opacity: 1 },
+    to: { opacity: 0.25 },
+  },
+  /**
+   * Composable enter/exit animation system.
+   *
+   * `enter` and `exit` keyframes read CSS custom properties with identity fallbacks,
+   * so only the axes you opt into actually animate. Pair with the `animateIn`/`animateOut`
+   * utilities and modifier utilities (`fadeIn`, `zoomIn`, `slideInX`, etc.) in plugins.ts.
+   */
+  enter: {
     from: {
-      opacity: 1,
+      opacity: 'var(--rcr-enter-opacity, 1)',
+      transform:
+        'translate3d(var(--rcr-enter-translate-x, 0), var(--rcr-enter-translate-y, 0), 0) scale3d(var(--rcr-enter-scale, 1), var(--rcr-enter-scale, 1), var(--rcr-enter-scale, 1))',
     },
+  },
+  exit: {
     to: {
-      opacity: 0.25,
+      opacity: 'var(--rcr-exit-opacity, 1)',
+      transform:
+        'translate3d(var(--rcr-exit-translate-x, 0), var(--rcr-exit-translate-y, 0), 0) scale3d(var(--rcr-exit-scale, 1), var(--rcr-exit-scale, 1), var(--rcr-exit-scale, 1))',
     },
   },
 });

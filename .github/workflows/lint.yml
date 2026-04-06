@@ -25,4 +25,4 @@ jobs:
       # 4 – Check formatting, lint, and types
       - run: bun run format:check
       - run: bun run lint:check
-      - run: bun run type-check
+      - run: bun run typecheck

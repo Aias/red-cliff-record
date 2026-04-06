@@ -1,4 +1,96 @@
+import type { PropertyConfig } from '@pandacss/dev';
 import { defineUtility } from '@pandacss/dev';
+
+// ---------------------------------------------------------------------------
+// Composable enter/exit animation utilities
+//
+// Mirrors the tailwindcss-animate pattern: `animateIn`/`animateOut` set the
+// animation name and initialize CSS custom properties; modifier utilities
+// (`fadeIn`, `zoomIn`, `slideInX`, …) set individual properties that the
+// `enter`/`exit` keyframes (in animations.ts) read.
+// ---------------------------------------------------------------------------
+
+const enterVarDefaults = {
+  '--rcr-enter-opacity': 'initial',
+  '--rcr-enter-scale': 'initial',
+  '--rcr-enter-translate-x': 'initial',
+  '--rcr-enter-translate-y': 'initial',
+};
+
+const exitVarDefaults = {
+  '--rcr-exit-opacity': 'initial',
+  '--rcr-exit-scale': 'initial',
+  '--rcr-exit-translate-x': 'initial',
+  '--rcr-exit-translate-y': 'initial',
+};
+
+const animateInUtility = defineUtility({
+  className: 'animate-in',
+  values: { type: 'boolean' },
+  transform: (value) => {
+    if (!value) return {};
+    return { animationName: 'enter', animationDuration: '150ms', ...enterVarDefaults };
+  },
+});
+
+const animateOutUtility = defineUtility({
+  className: 'animate-out',
+  values: { type: 'boolean' },
+  transform: (value) => {
+    if (!value) return {};
+    return { animationName: 'exit', animationDuration: '150ms', ...exitVarDefaults };
+  },
+});
+
+const fadeInUtility = defineUtility({
+  className: 'fade-in',
+  values: { type: 'number' },
+  transform: (value) => ({ '--rcr-enter-opacity': String(value) }),
+});
+
+const fadeOutUtility = defineUtility({
+  className: 'fade-out',
+  values: { type: 'number' },
+  transform: (value) => ({ '--rcr-exit-opacity': String(value) }),
+});
+
+const zoomInUtility = defineUtility({
+  className: 'zoom-in',
+  values: { type: 'number' },
+  transform: (value) => ({ '--rcr-enter-scale': String(value) }),
+});
+
+const zoomOutUtility = defineUtility({
+  className: 'zoom-out',
+  values: { type: 'number' },
+  transform: (value) => ({ '--rcr-exit-scale': String(value) }),
+});
+
+const slideInXUtility = defineUtility({
+  className: 'slide-in-x',
+  values: { type: 'string' },
+  transform: (value) => ({ '--rcr-enter-translate-x': value }),
+});
+
+const slideInYUtility = defineUtility({
+  className: 'slide-in-y',
+  values: { type: 'string' },
+  transform: (value) => ({ '--rcr-enter-translate-y': value }),
+});
+
+const slideOutXUtility = defineUtility({
+  className: 'slide-out-x',
+  values: { type: 'string' },
+  transform: (value) => ({ '--rcr-exit-translate-x': value }),
+});
+
+const slideOutYUtility = defineUtility({
+  className: 'slide-out-y',
+  values: { type: 'string' },
+  transform: (value) => ({ '--rcr-exit-translate-y': value }),
+});
+
+// ---------------------------------------------------------------------------
 
 export const debugUtility = defineUtility({
   className: 'debug',
@@ -85,7 +177,17 @@ export const chromaticUtility = defineUtility({
   },
 });
 
-export const utilities = {
+export const utilities: Record<string, PropertyConfig> = {
+  animateIn: animateInUtility,
+  animateOut: animateOutUtility,
+  fadeIn: fadeInUtility,
+  fadeOut: fadeOutUtility,
+  zoomIn: zoomInUtility,
+  zoomOut: zoomOutUtility,
+  slideInX: slideInXUtility,
+  slideInY: slideInYUtility,
+  slideOutX: slideOutXUtility,
+  slideOutY: slideOutYUtility,
   debug: debugUtility,
   translateCenter: translateCenterUtility,
   chromatic: chromaticUtility,
