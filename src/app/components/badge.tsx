@@ -15,6 +15,8 @@ export const Badge = styled('span', {
     fontWeight: 'medium',
     transition: 'colors',
     fontSize: '[0.875em]',
+    borderWidth: '1px',
+    borderColor: 'transparent',
     paddingInline: '[0.5em]',
     paddingBlock: '[0.21em]',
     borderRadius: '[0.25em]',

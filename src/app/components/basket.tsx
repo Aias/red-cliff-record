@@ -2,7 +2,6 @@ import { ClipboardCopyIcon, ShoppingBasketIcon, Trash2Icon, XIcon } from 'lucide
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import { removeManyFromBasket, useBasket } from '@/lib/hooks/use-basket';
-import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
 import { RecordLink } from '../routes/records/-components/record-link';
 import { Button } from './button';
@@ -27,7 +26,14 @@ function BasketItem({ id, onRemove }: { id: DbId; onRemove: (id: DbId) => void }
       <Button
         variant="ghost"
         size="icon-sm"
-        className="shrink-0 opacity-25 transition-opacity group-hover:opacity-100"
+        css={{
+          flexShrink: '0',
+          opacity: '25%',
+          transition: 'opacity',
+          _groupHover: {
+            opacity: '100%',
+          },
+        }}
         onClick={handleRemove}
       >
         <XIcon />
@@ -113,7 +119,7 @@ export function Basket() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" className={cn(basket.count > 0 && 'text-c-accent')}>
+        <Button variant="ghost" css={basket.count > 0 ? { color: 'accent' } : undefined}>
           <ShoppingBasketIcon />
           {basket.count > 0 && <span>{basket.count}</span>}
           <span className="sr-only">items in basket</span>

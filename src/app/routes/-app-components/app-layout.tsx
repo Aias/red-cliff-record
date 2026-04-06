@@ -51,10 +51,22 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
             fallback={
               <Button
                 variant="outline"
-                className="relative inline-flex w-full min-w-0 justify-start gap-3 rounded-md text-sm font-normal text-c-primary shadow-none"
+                css={{
+                  position: 'relative',
+                  width: 'full',
+                  minWidth: '0',
+                  justifyContent: 'flex-start',
+                  gap: '3',
+                  fontWeight: 'normal',
+                  color: 'primary',
+                  boxShadow: 'none',
+                  _childIcon: {
+                    color: 'muted',
+                  },
+                }}
                 disabled
               >
-                <SearchIcon className="text-c-hint" />
+                <SearchIcon />
                 <span className="min-w-0 flex-1 truncate text-start">Search records...</span>
               </Button>
             }
@@ -64,7 +76,13 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
         </li>
         <li className="flex items-center justify-end gap-1">
           <Basket />
-          <KeyboardShortcutsHelp className="@max-[40rem]:sr-only" />
+          <KeyboardShortcutsHelp
+            buttonCss={{
+              '@container (max-width: 40rem)': {
+                srOnly: true,
+              },
+            }}
+          />
           <Button variant="ghost" onClick={toggleTheme} size="icon">
             {currentTheme === 'light' ? <SunIcon /> : <MoonIcon />}
             <span className="sr-only">Toggle theme</span>

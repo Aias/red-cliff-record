@@ -102,11 +102,25 @@ export const SiteSearch = () => {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="@container relative inline-flex w-full min-w-0 justify-start gap-3 rounded-md text-sm font-normal text-c-primary shadow-none contain-inline-size"
+          css={{
+            containerType: 'inline-size',
+            position: 'relative',
+            width: 'full',
+            minWidth: '0',
+            justifyContent: 'flex-start',
+            gap: '3',
+            contain: 'inline-size',
+            fontWeight: 'normal',
+            color: 'primary',
+            boxShadow: 'none',
+            _childIcon: {
+              color: 'muted',
+            },
+          }}
           role="combobox"
           aria-expanded={commandOpen}
         >
-          <SearchIcon className="text-c-hint @max-[10rem]:sr-only" />
+          <SearchIcon className="@max-[10rem]:sr-only" />
           <span className="min-w-0 flex-1 truncate text-start">
             {searchQ || 'Search records...'}
           </span>

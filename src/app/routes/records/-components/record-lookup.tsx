@@ -31,6 +31,7 @@ import { useDebounce } from '@/lib/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
 import type { LinkPartial } from '@/shared/types/domain';
+import { css } from '@/styled-system/css';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
 
@@ -229,7 +230,7 @@ export function RelationshipSelector({
   incoming = false,
   onComplete,
   buildActions,
-  buttonProps: { className: buttonClassName, ...buttonProps } = {},
+  buttonProps: { css: buttonCss, ...buttonProps } = {},
   popoverProps: { className: popoverClassName, ...popoverProps } = {},
 }: RelationshipSelectorProps) {
   const initialTarget = initialTargetId ?? link?.targetId ?? null;
@@ -330,7 +331,14 @@ export function RelationshipSelector({
           size="sm"
           variant="outline"
           {...buttonProps}
-          className={cn('font-medium capitalize shadow-none', buttonClassName)}
+          css={css.raw(
+            {
+              fontWeight: 'medium',
+              textTransform: 'capitalize',
+              boxShadow: 'none',
+            },
+            buttonCss
+          )}
         >
           {label ?? (link && currentPredicateName ? currentPredicateName : 'Add relationship')}
         </Button>

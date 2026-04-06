@@ -103,7 +103,9 @@ export const RelationsList = ({ id }: RelationsListProps) => {
             ref: addRelationshipButtonRef,
             size: 'sm',
             variant: 'outline',
-            className: 'h-[1.5lh]',
+            css: {
+              height: '[1.5lh]',
+            },
           }}
           buildActions={({ sourceId, targetId }) => {
             return [
@@ -147,7 +149,9 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                   initialTargetId={link.targetId}
                   link={link}
                   buttonProps={{
-                    className: 'w-30',
+                    css: {
+                      width: '32',
+                    },
                   }}
                   buildActions={({ sourceId, targetId }) => {
                     return [
@@ -224,7 +228,9 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                   incoming
                   link={link}
                   buttonProps={{
-                    className: 'w-30',
+                    css: {
+                      width: '32',
+                    },
                   }}
                   buildActions={() => {
                     return [
@@ -312,7 +318,12 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
                 buttonProps={{
                   size: 'sm',
                   variant: 'outline',
-                  className: 'h-[1.5lh] font-mono text-xs text-c-secondary',
+                  css: {
+                    height: '[1.5lh]',
+                    fontFamily: 'mono',
+                    fontSize: 'xs',
+                    color: 'secondary',
+                  },
                 }}
                 popoverProps={{ side: 'left' }}
                 buildActions={({ sourceId, targetId }) => {
