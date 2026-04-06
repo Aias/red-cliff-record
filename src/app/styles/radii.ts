@@ -5,4 +5,8 @@ export const radii = defineTokens.radii({
   md: { value: '0.25rem' },
   lg: { value: '0.5rem' },
   xl: { value: '0.75rem' },
+  '2xl': { value: '1rem' },
+  inherit: { value: 'inherit' },
+  full: { value: 'calc(Infinity * 1px)' },
+  none: { value: '0' },
 });

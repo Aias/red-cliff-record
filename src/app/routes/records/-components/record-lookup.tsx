@@ -352,7 +352,19 @@ export function RelationshipSelector({
 
         {targetId && (
           <>
-            <Badge className="m-1 flex items-center justify-center gap-2 overflow-hidden border border-c-divider whitespace-nowrap">
+            <Badge
+              css={{
+                margin: '1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2',
+                overflow: 'hidden',
+                borderWidth: '1px',
+                borderColor: 'divider',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {altPressed ? <ArrowLeftIcon /> : <ArrowRightIcon />}
               <span className="flex-1 truncate text-center">
                 {targetRecord ? targetRecord.title || targetRecord.id : <Spinner />}

@@ -13,6 +13,16 @@ export const fontFamilies = defineTokens.fonts({
   },
 });
 
+export const fontWeights = defineTokens.fontWeights({
+  thin: { value: '100' },
+  extralight: { value: '200' },
+  light: { value: '300' },
+  normal: { value: '400' },
+  medium: { value: '500' },
+  semibold: { value: '600' },
+  bold: { value: '700' },
+});
+
 /** Matches Tailwind v4 default font-size scale. */
 export const fontSizes = defineTokens.fontSizes({
   xs: { value: '0.75rem' },
