@@ -1,9 +1,7 @@
-import { Slot } from '@radix-ui/react-slot';
-import { cva, cx } from '@/styled-system/css';
-import { styled } from '@/styled-system/jsx';
-import type { ComponentProps, RecipeVariantProps } from '@/styled-system/types';
+import { defineRecipe } from '@pandacss/dev';
 
-const buttonVariants = cva({
+export const buttonRecipe = defineRecipe({
+  className: 'button',
   base: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -75,7 +73,6 @@ const buttonVariants = cva({
       ghost: {
         backgroundColor: 'transparent',
         color: 'colorPalette.primary',
-        boxShadow: 'xs',
         _childIcon: {
           color: 'colorPalette.symbol',
         },
@@ -121,17 +118,3 @@ const buttonVariants = cva({
     size: 'default',
   },
 });
-
-export type ButtonProps = RecipeVariantProps<typeof buttonVariants> &
-  ComponentProps<typeof styled.button> & { asChild?: boolean };
-
-export const Button = ({ className, variant, size, asChild = false, ...props }: ButtonProps) => {
-  const Comp = asChild ? Slot : styled.button;
-  const buttonCss = buttonVariants({ variant, size });
-
-  return (
-    <Comp data-slot="button" className={cx(buttonCss, className)} {...props}>
-      {props.children}
-    </Comp>
-  );
-};

@@ -10,9 +10,7 @@ export function NotFound() {
           <Button variant="solid" onClick={() => window.history.back()}>
             Go back
           </Button>
-          <Button variant="soft" asChild>
-            <Link to="/">Start Over</Link>
-          </Button>
+          <Button variant="soft" render={<Link to="/">Start Over</Link>} />
         </nav>
       </section>
     </main>

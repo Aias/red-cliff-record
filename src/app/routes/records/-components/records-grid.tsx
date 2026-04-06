@@ -180,17 +180,26 @@ export const RecordsGrid = () => {
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="types">Types</Label>
           <DropdownMenu>
-            <Button variant="outline" className="w-full justify-between" asChild>
-              <DropdownMenuTrigger id="types">
-                <span className={types?.length ? '' : 'text-c-secondary'}>
-                  {types?.length
-                    ? types.length === RecordTypeSchema.options.length
-                      ? 'All Types'
-                      : `${types.length} selected`
-                    : 'All Types'}
-                </span>
-                <ChevronDownIcon className="size-4 opacity-50" />
-              </DropdownMenuTrigger>
+            <Button
+              variant="outline"
+              css={{
+                width: 'full',
+                justifyContent: 'space-between',
+                _childIcon: {
+                  boxSize: '4',
+                  opacity: '50%',
+                },
+              }}
+              render={<DropdownMenuTrigger id="types" />}
+            >
+              <span className={types?.length ? '' : 'text-c-secondary'}>
+                {types?.length
+                  ? types.length === RecordTypeSchema.options.length
+                    ? 'All Types'
+                    : `${types.length} selected`
+                  : 'All Types'}
+              </span>
+              <ChevronDownIcon />
             </Button>
             <DropdownMenuContent align="start" className="w-48">
               {RecordTypeSchema.options.map((recordType) => {
@@ -216,18 +225,27 @@ export const RecordsGrid = () => {
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="sources">Sources</Label>
           <DropdownMenu>
-            <Button variant="outline" className="w-full justify-between" asChild>
-              <DropdownMenuTrigger id="sources">
-                <span className={sources?.length ? '' : 'text-c-secondary'}>
-                  {sources?.length
-                    ? sources.length ===
-                      ['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].length
-                      ? 'All Sources'
-                      : `${sources.length} selected`
-                    : 'All Sources'}
-                </span>
-                <ChevronDownIcon className="size-4 opacity-50" />
-              </DropdownMenuTrigger>
+            <Button
+              variant="outline"
+              css={{
+                width: 'full',
+                justifyContent: 'space-between',
+                _childIcon: {
+                  boxSize: '4',
+                  opacity: '50%',
+                },
+              }}
+              render={<DropdownMenuTrigger id="sources" />}
+            >
+              <span className={sources?.length ? '' : 'text-c-secondary'}>
+                {sources?.length
+                  ? sources.length ===
+                    ['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].length
+                    ? 'All Sources'
+                    : `${sources.length} selected`
+                  : 'All Sources'}
+              </span>
+              <ChevronDownIcon />
             </Button>
             <DropdownMenuContent align="start" className="w-48">
               {IntegrationTypeSchema.options

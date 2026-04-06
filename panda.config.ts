@@ -1,4 +1,5 @@
 import { defineConfig } from '@pandacss/dev';
+import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
 import { colors, semanticColors } from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
@@ -80,6 +81,9 @@ export default defineConfig({
       lg: '64rem',
       xl: '80rem',
       '2xl': '96rem',
+    },
+    recipes: {
+      button: buttonRecipe,
     },
   },
   utilities: utilities,
