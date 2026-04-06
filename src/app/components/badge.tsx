@@ -12,6 +12,7 @@ export const Badge = styled('span', {
     display: 'inline-flex',
     alignItems: 'center',
     whiteSpace: 'nowrap',
+    flexShrink: '0',
     fontWeight: 'medium',
     transition: 'colors',
     fontSize: '[0.875em]',

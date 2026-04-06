@@ -97,6 +97,9 @@ export const keyframes = defineKeyframes({
     from: { opacity: 1 },
     to: { opacity: 0.25 },
   },
+  pulse: {
+    '50%': { opacity: 0.5 },
+  },
   /**
    * Composable enter/exit animation system.
    *

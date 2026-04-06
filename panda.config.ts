@@ -1,7 +1,9 @@
 import { defineConfig } from '@pandacss/dev';
 import { alertDialogRecipe } from '@/app/components/alert-dialog/alert-dialog.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
+import { tableRecipe } from '@/app/components/table/table.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
+import { borders } from '@/app/styles/borders';
 import { colors, semanticColors } from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
 import { PREFIX } from '@/app/styles/constants';
@@ -58,6 +60,7 @@ export default defineConfig({
     },
     extend: {
       tokens: {
+        borders: borders,
         colors: colors,
         durations: durations,
         easings: easings,
@@ -88,6 +91,7 @@ export default defineConfig({
     },
     slotRecipes: {
       alertDialog: alertDialogRecipe,
+      table: tableRecipe,
     },
   },
   utilities: utilities,

@@ -1,4 +1,4 @@
-import { defineSlotRecipe } from '@pandacss/dev';
+import { defineSlotRecipe } from '@/app/styles/define-recipe';
 
 export const alertDialogRecipe = defineSlotRecipe({
   className: 'alertDialog',
