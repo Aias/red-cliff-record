@@ -9,7 +9,8 @@ export const buttonRecipe = defineRecipe({
     gap: '2',
     whiteSpace: 'nowrap',
     flexShrink: '0',
-    outline: 'none',
+    outlineStyle: 'none',
+    letterSpacing: '1%',
     borderRadius: 'md',
     borderWidth: '1px',
     borderColor: 'transparent',
@@ -33,6 +34,7 @@ export const buttonRecipe = defineRecipe({
       borderColor: 'colorPalette.focus',
       outlineColor: 'colorPalette.focus/50',
       outlineOffset: '0.5',
+      outlineStyle: 'solid',
       outlineWidth: '2px',
     },
   },
@@ -74,13 +76,13 @@ export const buttonRecipe = defineRecipe({
       },
       ghost: {
         backgroundColor: 'transparent',
-        color: 'colorPalette.primary',
+        color: 'colorPalette.accent',
         _childIcon: {
           color: 'colorPalette.symbol',
         },
         _hover: {
           backgroundColor: 'colorPalette.mist',
-          color: 'colorPalette.display',
+          color: 'colorPalette.accentActive',
           _childIcon: {
             color: 'colorPalette.primary',
           },

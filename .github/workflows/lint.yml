@@ -22,7 +22,8 @@ jobs:
       # 3 – Install dependencies
       - run: bun install
 
-      # 4 – Check formatting, lint, and types
+      # 4 – Generate styles, then check formatting, lint, and types
+      - run: bun run codegen:styles
       - run: bun run format:check
       - run: bun run lint:check
       - run: bun run typecheck

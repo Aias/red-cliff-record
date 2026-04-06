@@ -86,6 +86,9 @@ export default defineConfig({
       xl: '80rem',
       '2xl': '96rem',
     },
+    containerSizes: {
+      sm: '40rem',
+    },
     recipes: {
       button: buttonRecipe,
     },

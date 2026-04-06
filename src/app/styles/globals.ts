@@ -72,7 +72,7 @@ export const globalStyles = defineGlobalStyles({
     backgroundColor: '{colors.mist}',
     color: '{colors.accent}',
   },
-  'a:where(:any-link, button), .link': {
+  'a:any-link:not(.button, .rcr-button), .link': {
     fontWeight: 'medium',
     color: '{colors.accent}',
     textDecoration: 'underline',
@@ -91,6 +91,14 @@ export const globalStyles = defineGlobalStyles({
       gap: '{spacing.1}',
       alignItems: 'center',
     },
+  },
+  '.icon, .lucide': {
+    display: 'inline-flex',
+    aspectRatio: '1',
+    boxSize: '1em',
+    flexShrink: '0',
+    lineHeight: '1',
+    color: 'currentColor',
   },
   'input[type="text"]::-webkit-calendar-picker-indicator': {
     display:
