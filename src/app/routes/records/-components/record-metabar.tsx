@@ -117,7 +117,7 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
                   <Button variant="outline">Cancel</Button>
                 </AlertDialog.Cancel>
                 <AlertDialog.Action asChild>
-                  <Button data-palette="error" variant="default" onClick={handleDelete}>
+                  <Button data-palette="error" variant="solid" onClick={handleDelete}>
                     Continue
                   </Button>
                 </AlertDialog.Action>

@@ -1,53 +1,137 @@
 import { Slot } from '@radix-ui/react-slot';
-import { cva, type VariantProps } from 'class-variance-authority';
-import * as React from 'react';
-import { cn } from '@/app/lib/utils';
+import { cva, cx } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
+import type { ComponentProps, RecipeVariantProps } from '@/styled-system/types';
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-[1.15em] shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-c-focus focus-visible:ring-c-focus/50 focus-visible:ring-[3px] aria-invalid:ring-c-destructive/20 dark:aria-invalid:ring-c-destructive/40 aria-invalid:border-c-destructive",
-  {
-    variants: {
-      variant: {
-        default: 'bg-c-main text-c-main-contrast shadow-xs hover:bg-c-main/90',
-        destructive:
-          'bg-c-destructive text-white shadow-xs hover:bg-c-destructive/90 focus-visible:ring-c-destructive/20 dark:focus-visible:ring-c-destructive/40 dark:bg-c-destructive/60',
-        outline:
-          'border bg-c-app shadow-xs hover:bg-c-splash hover:text-c-display dark:bg-c-border/30 dark:border-c-border dark:hover:bg-c-border/50',
-        secondary: 'bg-c-splash text-c-accent shadow-xs hover:bg-c-flood',
-        ghost:
-          'hover:bg-c-splash hover:text-c-display dark:hover:bg-c-splash text-c-primary [&_svg]:text-c-symbol hover:[&_svg]:text-c-display',
-        link: 'text-c-main underline-offset-4 hover:underline',
+const buttonVariants = cva({
+  base: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '2',
+    whiteSpace: 'nowrap',
+    flexShrink: '0',
+    outline: 'none',
+    borderRadius: 'md',
+    borderWidth: '1px',
+    borderColor: 'transparent',
+    fontSize: 'sm',
+    fontWeight: 'medium',
+    transition: 'all',
+    userSelect: 'none',
+    _disabled: {
+      pointerEvents: 'none',
+      opacity: '50%',
+    },
+    _childIcon: {
+      flexShrink: '0',
+      boxSize: '[1.15em]',
+    },
+    _invalid: {
+      colorPalette: 'error',
+    },
+    _focusVisible: {
+      borderColor: 'colorPalette.focus',
+      outlineColor: 'colorPalette.focus/50',
+      outlineOffset: '0.5',
+      outlineWidth: '2px',
+    },
+  },
+  variants: {
+    variant: {
+      solid: {
+        backgroundColor: 'colorPalette.main',
+        color: 'colorPalette.mainContrast',
+        boxShadow: 'xs',
+        _hover: {
+          backgroundColor: 'colorPalette.mainActive',
+        },
       },
-      size: {
-        default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-        sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-xs',
-        icon: 'size-9',
-        'icon-sm': 'size-6',
+      soft: {
+        backgroundColor: 'colorPalette.splash',
+        color: 'colorPalette.primary',
+        boxShadow: 'xs',
+        _childIcon: {
+          color: 'colorPalette.symbol',
+        },
+        _hover: {
+          backgroundColor: 'colorPalette.flood',
+          color: 'colorPalette.display',
+        },
+      },
+      outline: {
+        borderColor: 'colorPalette.border',
+        backgroundColor: 'transparent',
+        boxShadow: 'xs',
+        color: 'colorPalette.accent',
+        _childIcon: {
+          color: 'colorPalette.symbol',
+        },
+        _hover: {
+          backgroundColor: 'colorPalette.splash',
+          color: 'colorPalette.accentActive',
+        },
+      },
+      ghost: {
+        backgroundColor: 'transparent',
+        color: 'colorPalette.primary',
+        boxShadow: 'xs',
+        _childIcon: {
+          color: 'colorPalette.symbol',
+        },
+        _hover: {
+          backgroundColor: 'colorPalette.splash',
+          color: 'colorPalette.display',
+          _childIcon: {
+            color: 'colorPalette.primary',
+          },
+        },
       },
     },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
+    size: {
+      default: {
+        height: '9',
+        paddingInline: '4',
+        paddingBlock: '2',
+        '&:has(svg)': {
+          paddingInline: '3',
+        },
+      },
+      sm: {
+        height: '8',
+        paddingInline: '3',
+        paddingBlock: '0',
+        borderRadius: 'md',
+        gap: '1.5',
+        fontSize: 'xs',
+        '&:has(svg)': {
+          paddingInline: '2.5',
+        },
+      },
+      icon: {
+        boxSize: '9',
+      },
+      'icon-sm': {
+        boxSize: '6',
+      },
     },
-  }
-);
+  },
+  defaultVariants: {
+    variant: 'solid',
+    size: 'default',
+  },
+});
 
-export interface ButtonProps extends React.ComponentProps<'button'> {
-  variant?: VariantProps<typeof buttonVariants>['variant'];
-  size?: VariantProps<typeof buttonVariants>['size'];
-  asChild?: boolean;
-}
+export type ButtonProps = RecipeVariantProps<typeof buttonVariants> &
+  ComponentProps<typeof styled.button> & { asChild?: boolean };
 
-function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
-  const Comp = asChild ? Slot : 'button';
+export const Button = ({ className, variant, size, asChild = false, ...props }: ButtonProps) => {
+  const Comp = asChild ? Slot : styled.button;
+  const buttonCss = buttonVariants({ variant, size });
 
   return (
-    <Comp
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
+    <Comp data-slot="button" className={cx(buttonCss, className)} {...props}>
+      {props.children}
+    </Comp>
   );
-}
-
-export { Button, buttonVariants };
+};
