@@ -106,7 +106,6 @@ export const globalStyles = defineGlobalStyles({
   },
   ':root': {
     colorScheme: 'light dark',
-    '--chroma': '0%',
     colorPalette: 'artifact',
   },
   '[data-palette="artifact"]': {
@@ -126,12 +125,6 @@ export const globalStyles = defineGlobalStyles({
   },
   '[data-palette="info"]': {
     colorPalette: 'info',
-  },
-  '[data-chroma="chromatic"], .chromatic': {
-    '--chroma': '100%',
-  },
-  '[data-chroma="neutral"], .neutral': {
-    '--chroma': '0%',
   },
   '[data-color-scheme="dark"], .dark': {
     colorScheme: 'dark',

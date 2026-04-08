@@ -10,7 +10,7 @@
 
 @custom-variant data-checked (&[data-state~="checked"]);
 @custom-variant dark (&:is(.dark *, [data-color-scheme='dark'] *));
-@custom-variant chromatic (&:is(.chromatic *, [data-chroma='chromatic'] *));
+@custom-variant chromatic (&:is([data-chromatic], [data-chromatic] *));
 
 @theme {
   --font-sans: var(--font-family-sans);

@@ -316,11 +316,7 @@ export function RecordForm({
                   className="text-c-display placeholder:font-medium"
                 />
                 {field.state.meta.errors && (
-                  <p
-                    data-chroma="chromatic" // TODO: CLR-DESTRUCTIVE
-                    data-palette="tomato"
-                    className="text-sm"
-                  >
+                  <p data-chromatic data-palette="tomato" className="text-sm">
                     {field.state.meta.errors.map(getErrorMessage).join(', ')}
                   </p>
                 )}
@@ -458,7 +454,7 @@ export function RecordForm({
                           </div>
                           {field.state.meta.errors && (
                             <p
-                              data-chroma="chromatic" // TODO: CLR-DESTRUCTIVE
+                              data-chromatic="" // TODO: CLR-DESTRUCTIVE
                               data-palette="tomato"
                               className="text-sm"
                             >

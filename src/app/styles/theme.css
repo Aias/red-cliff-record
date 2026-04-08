@@ -4,7 +4,6 @@
   --black: black;
   --white: white;
   color-scheme: light dark;
-  --chroma: 0%;
   --mode-contrast: light-dark(var(--black), var(--white));
 }
 
@@ -25,16 +24,6 @@
 .dark,
 [data-color-scheme='dark'] {
   color-scheme: dark;
-}
-
-.neutral,
-[data-chroma='neutral'] {
-  --chroma: 0%;
-}
-
-.chromatic,
-[data-chroma='chromatic'] {
-  --chroma: 100%;
 }
 
 :where(
@@ -80,16 +69,7 @@
   --clr-contrast: var(--black);
 }
 
-:where(
-  :root,
-  .dark,
-  .light,
-  [data-color-scheme],
-  .neutral,
-  .chromatic,
-  [data-chroma],
-  [data-palette]
-) {
+:where(:root, .dark, .light, [data-color-scheme], [data-chromatic], [data-palette]) {
   /* Neutral */
   --display-neutral: color-mix(in oklch, var(--neu-a12), var(--mode-contrast));
   --primary-neutral: var(--neu-a12);
@@ -146,39 +126,27 @@
   --sink-chromatic: light-dark(var(--mist-chromatic), var(--black-a4));
 
   /* Final Tokens */
-  --display: color-mix(in oklch, var(--display-neutral), var(--display-chromatic) var(--chroma));
-  --primary: color-mix(in oklch, var(--primary-neutral), var(--primary-chromatic) var(--chroma));
-  --secondary: color-mix(
-    in oklch,
-    var(--secondary-neutral),
-    var(--secondary-chromatic) var(--chroma)
-  );
-  --symbol: color-mix(in oklch, var(--symbol-neutral), var(--symbol-chromatic) var(--chroma));
-  --hint: color-mix(in oklch, var(--hint-neutral), var(--hint-chromatic) var(--chroma));
-  --accent: color-mix(in oklch, var(--accent-neutral), var(--accent-chromatic) var(--chroma));
+  --display: var(--display-neutral);
+  --primary: var(--primary-neutral);
+  --secondary: var(--secondary-neutral);
+  --symbol: var(--symbol-neutral);
+  --hint: var(--hint-neutral);
+  --accent: var(--accent-neutral);
 
-  --background: color-mix(
-    in oklch,
-    var(--background-neutral),
-    var(--background-chromatic) var(--chroma)
-  );
-  --paper: color-mix(in oklch, var(--paper-neutral), var(--paper-chromatic) var(--chroma));
-  --container: color-mix(
-    in oklch,
-    var(--container-neutral),
-    var(--container-chromatic) var(--chroma)
-  );
-  --float: color-mix(in oklch, var(--float-neutral), var(--float-chromatic) var(--chroma));
+  --background: var(--background-neutral);
+  --paper: var(--paper-neutral);
+  --container: var(--container-neutral);
+  --float: var(--float-neutral);
 
-  --divider: color-mix(in oklch, var(--divider-neutral), var(--divider-chromatic) var(--chroma));
-  --border: color-mix(in oklch, var(--border-neutral), var(--border-chromatic) var(--chroma));
-  --boundary: color-mix(in oklch, var(--boundary-neutral), var(--boundary-chromatic) var(--chroma));
-  --edge: color-mix(in oklch, var(--edge-neutral), var(--edge-chromatic) var(--chroma));
+  --divider: var(--divider-neutral);
+  --border: var(--border-neutral);
+  --boundary: var(--boundary-neutral);
+  --edge: var(--edge-neutral);
 
-  --mist: color-mix(in oklch, var(--mist-neutral), var(--mist-chromatic) var(--chroma));
-  --splash: color-mix(in oklch, var(--splash-neutral), var(--splash-chromatic) var(--chroma));
-  --flood: color-mix(in oklch, var(--flood-neutral), var(--flood-chromatic) var(--chroma));
-  --sink: color-mix(in oklch, var(--sink-neutral), var(--sink-chromatic) var(--chroma));
+  --mist: var(--mist-neutral);
+  --splash: var(--splash-neutral);
+  --flood: var(--flood-neutral);
+  --sink: var(--sink-neutral);
 
   --main: var(--clr-9);
   --main-active: var(--clr-10);
@@ -186,4 +154,28 @@
   --link: var(--clr-11);
   --link-active: var(--clr-12);
   --ring: var(--clr-9);
+}
+
+[data-chromatic] {
+  --display: var(--display-chromatic);
+  --primary: var(--primary-chromatic);
+  --secondary: var(--secondary-chromatic);
+  --symbol: var(--symbol-chromatic);
+  --hint: var(--hint-chromatic);
+  --accent: var(--accent-chromatic);
+
+  --background: var(--background-chromatic);
+  --paper: var(--paper-chromatic);
+  --container: var(--container-chromatic);
+  --float: var(--float-chromatic);
+
+  --divider: var(--divider-chromatic);
+  --border: var(--border-chromatic);
+  --boundary: var(--boundary-chromatic);
+  --edge: var(--edge-chromatic);
+
+  --mist: var(--mist-chromatic);
+  --splash: var(--splash-chromatic);
+  --flood: var(--flood-chromatic);
+  --sink: var(--sink-chromatic);
 }

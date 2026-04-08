@@ -331,11 +331,7 @@ function RouteComponent() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
-          <div
-            data-chroma="chromatic" // TODO: CLR-DESTRUCTIVE
-            data-palette="tomato"
-            className="mb-2 text-c-accent"
-          >
+          <div data-chromatic data-palette="tomato" className="mb-2 text-c-accent">
             Record not found
           </div>
           <div className="text-sm text-c-hint">This record may have been deleted or moved.</div>

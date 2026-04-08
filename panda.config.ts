@@ -39,15 +39,6 @@ export default defineConfig({
 
   presets: [conditionsPreset],
   globalCss: globalStyles,
-  globalVars: {
-    extend: {
-      '--chroma': {
-        syntax: '<percentage>',
-        inherits: true,
-        initialValue: '0%',
-      },
-    },
-  },
   staticCss: {
     css: [
       {

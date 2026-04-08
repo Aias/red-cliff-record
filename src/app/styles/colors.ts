@@ -99,6 +99,7 @@ type LightDarkColorString = `light-dark(${string}, ${string})`;
 type ScaleStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 type RadixScale = Record<string, string>;
 type ColorToken = { value: string };
+type ConditionalSemanticColorValue = { base: string; _chromatic: string };
 
 type PaletteScale = {
   1: LightDarkColorString;
@@ -246,38 +247,58 @@ const toSemanticPalettePair = (chromaticScale: ChromaticPaletteName): SemanticPa
   };
 };
 
-const toSemanticPalette = (semanticPair: SemanticPalettePair): SemanticPaletteScale => {
+const toSemanticPalette = (
+  semanticPair: SemanticPalettePair
+): Record<keyof SemanticPaletteScale, ConditionalSemanticColorValue> => {
   return {
-    display: `color-mix(in oklch, ${semanticPair.neutral.display}, ${semanticPair.chromatic.display} var(--chroma))`,
-    primary: `color-mix(in oklch, ${semanticPair.neutral.primary}, ${semanticPair.chromatic.primary} var(--chroma))`,
-    secondary: `color-mix(in oklch, ${semanticPair.neutral.secondary}, ${semanticPair.chromatic.secondary} var(--chroma))`,
-    muted: `color-mix(in oklch, ${semanticPair.neutral.muted}, ${semanticPair.chromatic.muted} var(--chroma))`,
-    symbol: `color-mix(in oklch, ${semanticPair.neutral.symbol}, ${semanticPair.chromatic.symbol} var(--chroma))`,
-    accent: `color-mix(in oklch, ${semanticPair.neutral.accent}, ${semanticPair.chromatic.accent} var(--chroma))`,
-    accentActive: `color-mix(in oklch, ${semanticPair.neutral.accentActive}, ${semanticPair.chromatic.accentActive} var(--chroma))`,
-    background: `color-mix(in oklch, ${semanticPair.neutral.background}, ${semanticPair.chromatic.background} var(--chroma))`,
-    surface: `color-mix(in oklch, ${semanticPair.neutral.surface}, ${semanticPair.chromatic.surface} var(--chroma))`,
-    container: `color-mix(in oklch, ${semanticPair.neutral.container}, ${semanticPair.chromatic.container} var(--chroma))`,
-    float: `color-mix(in oklch, ${semanticPair.neutral.float}, ${semanticPair.chromatic.float} var(--chroma))`,
-    divider: `color-mix(in oklch, ${semanticPair.neutral.divider}, ${semanticPair.chromatic.divider} var(--chroma))`,
-    border: `color-mix(in oklch, ${semanticPair.neutral.border}, ${semanticPair.chromatic.border} var(--chroma))`,
-    edge: `color-mix(in oklch, ${semanticPair.neutral.edge}, ${semanticPair.chromatic.edge} var(--chroma))`,
-    focus: `color-mix(in oklch, ${semanticPair.neutral.focus}, ${semanticPair.chromatic.focus} var(--chroma))`,
-    mist: `color-mix(in oklch, ${semanticPair.neutral.mist}, ${semanticPair.chromatic.mist} var(--chroma))`,
-    splash: `color-mix(in oklch, ${semanticPair.neutral.splash}, ${semanticPair.chromatic.splash} var(--chroma))`,
-    flood: `color-mix(in oklch, ${semanticPair.neutral.flood}, ${semanticPair.chromatic.flood} var(--chroma))`,
-    main: `color-mix(in oklch, ${semanticPair.neutral.main}, ${semanticPair.chromatic.main} var(--chroma))`,
-    mainActive: `color-mix(in oklch, ${semanticPair.neutral.mainActive}, ${semanticPair.chromatic.mainActive} var(--chroma))`,
-    mainContrast: `color-mix(in oklch, ${semanticPair.neutral.mainContrast}, ${semanticPair.chromatic.mainContrast} var(--chroma))`,
+    display: { base: semanticPair.neutral.display, _chromatic: semanticPair.chromatic.display },
+    primary: { base: semanticPair.neutral.primary, _chromatic: semanticPair.chromatic.primary },
+    secondary: {
+      base: semanticPair.neutral.secondary,
+      _chromatic: semanticPair.chromatic.secondary,
+    },
+    muted: { base: semanticPair.neutral.muted, _chromatic: semanticPair.chromatic.muted },
+    symbol: { base: semanticPair.neutral.symbol, _chromatic: semanticPair.chromatic.symbol },
+    accent: { base: semanticPair.neutral.accent, _chromatic: semanticPair.chromatic.accent },
+    accentActive: {
+      base: semanticPair.neutral.accentActive,
+      _chromatic: semanticPair.chromatic.accentActive,
+    },
+    background: {
+      base: semanticPair.neutral.background,
+      _chromatic: semanticPair.chromatic.background,
+    },
+    surface: { base: semanticPair.neutral.surface, _chromatic: semanticPair.chromatic.surface },
+    container: {
+      base: semanticPair.neutral.container,
+      _chromatic: semanticPair.chromatic.container,
+    },
+    float: { base: semanticPair.neutral.float, _chromatic: semanticPair.chromatic.float },
+    divider: { base: semanticPair.neutral.divider, _chromatic: semanticPair.chromatic.divider },
+    border: { base: semanticPair.neutral.border, _chromatic: semanticPair.chromatic.border },
+    edge: { base: semanticPair.neutral.edge, _chromatic: semanticPair.chromatic.edge },
+    focus: { base: semanticPair.neutral.focus, _chromatic: semanticPair.chromatic.focus },
+    mist: { base: semanticPair.neutral.mist, _chromatic: semanticPair.chromatic.mist },
+    splash: { base: semanticPair.neutral.splash, _chromatic: semanticPair.chromatic.splash },
+    flood: { base: semanticPair.neutral.flood, _chromatic: semanticPair.chromatic.flood },
+    main: { base: semanticPair.neutral.main, _chromatic: semanticPair.chromatic.main },
+    mainActive: {
+      base: semanticPair.neutral.mainActive,
+      _chromatic: semanticPair.chromatic.mainActive,
+    },
+    mainContrast: {
+      base: semanticPair.neutral.mainContrast,
+      _chromatic: semanticPair.chromatic.mainContrast,
+    },
   };
 };
 
 const semanticPaletteToTokens = (
-  semanticPalette: SemanticPaletteScale
-): Record<keyof SemanticPaletteScale, ColorToken> => {
+  semanticPalette: Record<keyof SemanticPaletteScale, ConditionalSemanticColorValue>
+): Record<keyof SemanticPaletteScale, { value: ConditionalSemanticColorValue }> => {
   return Object.fromEntries(
     Object.entries(semanticPalette).map(([key, value]) => [key, { value }])
-  ) as Record<keyof SemanticPaletteScale, ColorToken>;
+  ) as Record<keyof SemanticPaletteScale, { value: ConditionalSemanticColorValue }>;
 };
 
 const mauveScale = zipRadixScale(mauve, mauveDark);

@@ -166,17 +166,6 @@ export const translateCenterUtility = defineUtility({
   },
 });
 
-export const chromaticUtility = defineUtility({
-  className: 'chromatic',
-  values: { type: 'boolean' },
-  transform: (value) => {
-    if (!value) return {};
-    return {
-      '--chroma': '100%',
-    };
-  },
-});
-
 // Usage: `className={css({ mode: 'inverted' })}`
 export const modeUtility = defineUtility({
   className: 'mode',
@@ -218,6 +207,5 @@ export const utilities: Record<string, PropertyConfig> = {
   slideOutY: slideOutYUtility,
   debug: debugUtility,
   translateCenter: translateCenterUtility,
-  chromatic: chromaticUtility,
   mode: modeUtility,
 };

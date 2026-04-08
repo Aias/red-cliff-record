@@ -26,8 +26,8 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
         <li className="flex items-center gap-3">
           <LinkButton
             variant="solid"
+            data-chromatic
             css={{
-              chromatic: true,
               _childIcon: {
                 opacity: '75%',
               },

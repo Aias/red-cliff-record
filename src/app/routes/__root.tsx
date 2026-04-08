@@ -132,7 +132,6 @@ function RootDocument({
   return (
     <html
       data-palette="artifact"
-      data-chroma="neutral"
       data-color-scheme={appearance}
       data-theme-transitioning={isTransitioning || undefined}
     >
