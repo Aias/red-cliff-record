@@ -257,7 +257,6 @@ const toConditionalSemanticTokens = (
     ])
   ) as Record<keyof SemanticPaletteScale, { value: ConditionalSemanticColorValue }>;
 };
-};
 
 const mauveScale = zipRadixScale(mauve, mauveDark);
 const tomatoScale = zipRadixScale(tomato, tomatoDark);

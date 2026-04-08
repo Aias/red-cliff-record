@@ -126,6 +126,16 @@ export const globalStyles = defineGlobalStyles({
   '[data-palette="info"]': {
     colorPalette: 'info',
   },
+  // Re-declare colorPalette at chroma boundaries so the colorPalette var()
+  // references re-resolve with the _chromatic condition's overridden values.
+  // Without this, colorPalette mapping resolves at the [data-palette] level
+  // and chroma changes below it don't propagate through the indirection.
+  ...Object.fromEntries(
+    (['artifact', 'entity', 'concept', 'error', 'success', 'info'] as const).map((palette) => [
+      `:where([data-palette="${palette}"]) :where([data-chromatic]), :where([data-palette="${palette}"]):where([data-chromatic])`,
+      { colorPalette: palette },
+    ])
+  ),
   '[data-color-scheme="dark"], .dark': {
     colorScheme: 'dark',
     '--inverse-color-scheme': 'light',
