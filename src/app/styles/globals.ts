@@ -1,4 +1,5 @@
 import { defineGlobalStyles } from '@pandacss/dev';
+import { neutralLayerStyleValue } from '@/app/styles/colors';
 
 export const globalStyles = defineGlobalStyles({
   html: {
@@ -126,6 +127,9 @@ export const globalStyles = defineGlobalStyles({
   '[data-palette="info"]': {
     colorPalette: 'info',
   },
+  // When palette changes via data attribute, reset generic tokens to neutral.
+  // Uses :where() for zero specificity so layerStyle classes can override.
+  ':where([data-palette])': neutralLayerStyleValue,
   '[data-color-scheme="dark"], .dark': {
     colorScheme: 'dark',
     '--inverse-color-scheme': 'light',

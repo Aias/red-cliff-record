@@ -5,7 +5,12 @@ import { textareaRecipe } from '@/app/components/field/textarea.recipe';
 import { tableRecipe } from '@/app/components/table/table.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
 import { borders } from '@/app/styles/borders';
-import { colors, semanticColors } from '@/app/styles/colors';
+import {
+  colors,
+  semanticColors,
+  chromaticLayerStyleValue,
+  neutralLayerStyleValue,
+} from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
 import { PREFIX } from '@/app/styles/constants';
 import { spacing, sizes } from '@/app/styles/dimensions';
@@ -42,7 +47,10 @@ export default defineConfig({
   staticCss: {
     css: [
       {
-        properties: { colorPalette: ['artifact', 'entity', 'concept', 'error', 'success', 'info'] },
+        properties: {
+          colorPalette: ['artifact', 'entity', 'concept', 'error', 'success', 'info'],
+          layerStyle: ['chromatic', 'neutral'],
+        },
       },
     ],
   },
@@ -71,6 +79,10 @@ export default defineConfig({
     },
     keyframes: keyframes,
     textStyles: textStyles,
+    layerStyles: {
+      chromatic: { value: chromaticLayerStyleValue },
+      neutral: { value: neutralLayerStyleValue },
+    },
     breakpoints: {
       sm: '40rem',
       md: '48rem',
