@@ -99,7 +99,30 @@ type LightDarkColorString = `light-dark(${string}, ${string})`;
 type ScaleStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 type RadixScale = Record<string, string>;
 type ColorToken = { value: string };
-type ConditionalSemanticColorValue = { base: string; _chromatic: string };
+// Maps camelCase token keys to their kebab-case CSS variable suffixes
+const SEMANTIC_CSS_NAMES: Record<keyof SemanticPaletteScale, string> = {
+  display: 'display',
+  primary: 'primary',
+  secondary: 'secondary',
+  muted: 'muted',
+  symbol: 'symbol',
+  accent: 'accent',
+  accentActive: 'accent-active',
+  background: 'background',
+  surface: 'surface',
+  container: 'container',
+  float: 'float',
+  divider: 'divider',
+  border: 'border',
+  edge: 'edge',
+  focus: 'focus',
+  mist: 'mist',
+  splash: 'splash',
+  flood: 'flood',
+  main: 'main',
+  mainActive: 'main-active',
+  mainContrast: 'main-contrast',
+};
 
 type PaletteScale = {
   1: LightDarkColorString;
@@ -247,16 +270,38 @@ const toSemanticPalettePair = (chromaticScale: ChromaticPaletteName): SemanticPa
   };
 };
 
-const toConditionalSemanticTokens = (
-  pair: SemanticPalettePair
-): Record<keyof SemanticPaletteScale, { value: ConditionalSemanticColorValue }> => {
-  return Object.fromEntries(
-    (Object.keys(pair.neutral) as (keyof SemanticPaletteScale)[]).map((key) => [
-      key,
-      { value: { base: pair.neutral[key], _chromatic: pair.chromatic[key] } },
+const toSemanticPaletteTokens = (pair: SemanticPalettePair) => {
+  const keys = Object.keys(pair.neutral) as (keyof SemanticPaletteScale)[];
+  // Neutral tokens at top level: artifact.primary → --rcr-colors-artifact-primary
+  const neutralTokens = Object.fromEntries(keys.map((k) => [k, { value: pair.neutral[k] }]));
+  // Chromatic tokens flattened with prefix: artifact.chromaticPrimary → --rcr-colors-artifact-chromatic-primary
+  // Both are mapped by colorPalette to --rcr-colors-color-palette-* and --rcr-colors-color-palette-chromatic-*
+  const chromaticTokens = Object.fromEntries(
+    keys.map((k) => [
+      `chromatic${k.charAt(0).toUpperCase()}${k.slice(1)}`,
+      { value: pair.chromatic[k] },
     ])
-  ) as Record<keyof SemanticPaletteScale, { value: ConditionalSemanticColorValue }>;
+  );
+  return { ...neutralTokens, ...chromaticTokens };
 };
+
+// Generate layerStyle values that override generic token CSS vars
+type CssVarMap = Record<`--${string}`, string>;
+const cssNames = Object.values(SEMANTIC_CSS_NAMES);
+
+export const chromaticLayerStyleValue: CssVarMap = Object.fromEntries(
+  cssNames.map((name) => [
+    `--${PREFIX}-colors-${name}`,
+    `var(--${PREFIX}-colors-color-palette-chromatic-${name})`,
+  ])
+);
+
+export const neutralLayerStyleValue: CssVarMap = Object.fromEntries(
+  cssNames.map((name) => [
+    `--${PREFIX}-colors-${name}`,
+    `var(--${PREFIX}-colors-color-palette-${name})`,
+  ])
+);
 
 const mauveScale = zipRadixScale(mauve, mauveDark);
 const tomatoScale = zipRadixScale(tomato, tomatoDark);
@@ -296,12 +341,12 @@ export const colors = defineTokens.colors({
 });
 
 export const semanticColors = defineSemanticTokens.colors({
-  artifact: toConditionalSemanticTokens(toSemanticPalettePair('gold')),
-  entity: toConditionalSemanticTokens(toSemanticPalettePair('bronze')),
-  concept: toConditionalSemanticTokens(toSemanticPalettePair('amber')),
-  error: toConditionalSemanticTokens(toSemanticPalettePair('tomato')),
-  success: toConditionalSemanticTokens(toSemanticPalettePair('grass')),
-  info: toConditionalSemanticTokens(toSemanticPalettePair('iris')),
+  artifact: toSemanticPaletteTokens(toSemanticPalettePair('gold')),
+  entity: toSemanticPaletteTokens(toSemanticPalettePair('bronze')),
+  concept: toSemanticPaletteTokens(toSemanticPalettePair('amber')),
+  error: toSemanticPaletteTokens(toSemanticPalettePair('tomato')),
+  success: toSemanticPaletteTokens(toSemanticPalettePair('grass')),
+  info: toSemanticPaletteTokens(toSemanticPalettePair('iris')),
   display: { value: `var(--${PREFIX}-colors-color-palette-display)` },
   primary: { value: `var(--${PREFIX}-colors-color-palette-primary)` },
   secondary: { value: `var(--${PREFIX}-colors-color-palette-secondary)` },
