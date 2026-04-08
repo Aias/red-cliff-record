@@ -247,58 +247,16 @@ const toSemanticPalettePair = (chromaticScale: ChromaticPaletteName): SemanticPa
   };
 };
 
-const toSemanticPalette = (
-  semanticPair: SemanticPalettePair
-): Record<keyof SemanticPaletteScale, ConditionalSemanticColorValue> => {
-  return {
-    display: { base: semanticPair.neutral.display, _chromatic: semanticPair.chromatic.display },
-    primary: { base: semanticPair.neutral.primary, _chromatic: semanticPair.chromatic.primary },
-    secondary: {
-      base: semanticPair.neutral.secondary,
-      _chromatic: semanticPair.chromatic.secondary,
-    },
-    muted: { base: semanticPair.neutral.muted, _chromatic: semanticPair.chromatic.muted },
-    symbol: { base: semanticPair.neutral.symbol, _chromatic: semanticPair.chromatic.symbol },
-    accent: { base: semanticPair.neutral.accent, _chromatic: semanticPair.chromatic.accent },
-    accentActive: {
-      base: semanticPair.neutral.accentActive,
-      _chromatic: semanticPair.chromatic.accentActive,
-    },
-    background: {
-      base: semanticPair.neutral.background,
-      _chromatic: semanticPair.chromatic.background,
-    },
-    surface: { base: semanticPair.neutral.surface, _chromatic: semanticPair.chromatic.surface },
-    container: {
-      base: semanticPair.neutral.container,
-      _chromatic: semanticPair.chromatic.container,
-    },
-    float: { base: semanticPair.neutral.float, _chromatic: semanticPair.chromatic.float },
-    divider: { base: semanticPair.neutral.divider, _chromatic: semanticPair.chromatic.divider },
-    border: { base: semanticPair.neutral.border, _chromatic: semanticPair.chromatic.border },
-    edge: { base: semanticPair.neutral.edge, _chromatic: semanticPair.chromatic.edge },
-    focus: { base: semanticPair.neutral.focus, _chromatic: semanticPair.chromatic.focus },
-    mist: { base: semanticPair.neutral.mist, _chromatic: semanticPair.chromatic.mist },
-    splash: { base: semanticPair.neutral.splash, _chromatic: semanticPair.chromatic.splash },
-    flood: { base: semanticPair.neutral.flood, _chromatic: semanticPair.chromatic.flood },
-    main: { base: semanticPair.neutral.main, _chromatic: semanticPair.chromatic.main },
-    mainActive: {
-      base: semanticPair.neutral.mainActive,
-      _chromatic: semanticPair.chromatic.mainActive,
-    },
-    mainContrast: {
-      base: semanticPair.neutral.mainContrast,
-      _chromatic: semanticPair.chromatic.mainContrast,
-    },
-  };
-};
-
-const semanticPaletteToTokens = (
-  semanticPalette: Record<keyof SemanticPaletteScale, ConditionalSemanticColorValue>
+const toConditionalSemanticTokens = (
+  pair: SemanticPalettePair
 ): Record<keyof SemanticPaletteScale, { value: ConditionalSemanticColorValue }> => {
   return Object.fromEntries(
-    Object.entries(semanticPalette).map(([key, value]) => [key, { value }])
+    (Object.keys(pair.neutral) as (keyof SemanticPaletteScale)[]).map((key) => [
+      key,
+      { value: { base: pair.neutral[key], _chromatic: pair.chromatic[key] } },
+    ])
   ) as Record<keyof SemanticPaletteScale, { value: ConditionalSemanticColorValue }>;
+};
 };
 
 const mauveScale = zipRadixScale(mauve, mauveDark);
@@ -339,12 +297,12 @@ export const colors = defineTokens.colors({
 });
 
 export const semanticColors = defineSemanticTokens.colors({
-  artifact: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('gold'))),
-  entity: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('bronze'))),
-  concept: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('amber'))),
-  error: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('tomato'))),
-  success: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('grass'))),
-  info: semanticPaletteToTokens(toSemanticPalette(toSemanticPalettePair('iris'))),
+  artifact: toConditionalSemanticTokens(toSemanticPalettePair('gold')),
+  entity: toConditionalSemanticTokens(toSemanticPalettePair('bronze')),
+  concept: toConditionalSemanticTokens(toSemanticPalettePair('amber')),
+  error: toConditionalSemanticTokens(toSemanticPalettePair('tomato')),
+  success: toConditionalSemanticTokens(toSemanticPalettePair('grass')),
+  info: toConditionalSemanticTokens(toSemanticPalettePair('iris')),
   display: { value: `var(--${PREFIX}-colors-color-palette-display)` },
   primary: { value: `var(--${PREFIX}-colors-color-palette-primary)` },
   secondary: { value: `var(--${PREFIX}-colors-color-palette-secondary)` },
