@@ -285,14 +285,19 @@ const toSemanticPaletteTokens = (pair: SemanticPalettePair) => {
   return { ...neutralTokens, ...chromaticTokens };
 };
 
-// Generate layerStyle values that override generic token CSS vars
+// Generate layerStyle values that override CSS vars at both levels:
+// 1. --rcr-colors-color-palette-* (for recipes using colorPalette.primary etc.)
+// 2. --rcr-colors-* (for components using colors.primary generic tokens)
 type CssVarMap = Record<`--${string}`, string>;
 const cssNames = Object.values(SEMANTIC_CSS_NAMES);
 
 export const chromaticLayerStyleValue: CssVarMap = Object.fromEntries(
-  cssNames.map((name) => [
-    `--${PREFIX}-colors-${name}`,
-    `var(--${PREFIX}-colors-color-palette-chromatic-${name})`,
+  cssNames.flatMap((name) => [
+    [
+      `--${PREFIX}-colors-color-palette-${name}`,
+      `var(--${PREFIX}-colors-color-palette-chromatic-${name})`,
+    ],
+    [`--${PREFIX}-colors-${name}`, `var(--${PREFIX}-colors-color-palette-chromatic-${name})`],
   ])
 );
 
