@@ -1,5 +1,6 @@
 import type { PropertyConfig } from '@pandacss/dev';
 import { defineUtility } from '@pandacss/dev';
+import { paletteVarMap } from '@/app/styles/colors';
 
 // ---------------------------------------------------------------------------
 // Composable enter/exit animation utilities
@@ -194,6 +195,16 @@ export const modeUtility = defineUtility({
   },
 });
 
+// Sets colorPalette AND re-declares generic tokens so color: 'main' etc.
+// respond to local palette changes without needing colorPalette.* references.
+// Sets all colorPalette variable mappings AND re-declares generic tokens,
+// so color: 'main' responds to local palette changes without colorPalette.* refs.
+export const paletteUtility = defineUtility({
+  className: 'palette',
+  values: ['artifact', 'entity', 'concept', 'error', 'success', 'info'],
+  transform: (value) => paletteVarMap(value),
+});
+
 export const utilities: Record<string, PropertyConfig> = {
   animateIn: animateInUtility,
   animateOut: animateOutUtility,
@@ -208,4 +219,5 @@ export const utilities: Record<string, PropertyConfig> = {
   debug: debugUtility,
   translateCenter: translateCenterUtility,
   mode: modeUtility,
+  palette: paletteUtility,
 };

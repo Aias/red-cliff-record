@@ -50,6 +50,7 @@ export default defineConfig({
         properties: {
           colorPalette: ['artifact', 'entity', 'concept', 'error', 'success', 'info'],
           layerStyle: ['chromatic', 'neutral'],
+          palette: ['artifact', 'entity', 'concept', 'error', 'success', 'info'],
         },
       },
     ],

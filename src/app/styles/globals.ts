@@ -1,5 +1,5 @@
 import { defineGlobalStyles } from '@pandacss/dev';
-import { neutralLayerStyleValue } from '@/app/styles/colors';
+import { paletteVarMap } from '@/app/styles/colors';
 
 export const globalStyles = defineGlobalStyles({
   html: {
@@ -107,29 +107,14 @@ export const globalStyles = defineGlobalStyles({
   },
   ':root': {
     colorScheme: 'light dark',
-    colorPalette: 'artifact',
+    ...paletteVarMap('artifact'),
   },
-  '[data-palette="artifact"]': {
-    colorPalette: 'artifact',
-  },
-  '[data-palette="entity"]': {
-    colorPalette: 'entity',
-  },
-  '[data-palette="concept"]': {
-    colorPalette: 'concept',
-  },
-  '[data-palette="error"]': {
-    colorPalette: 'error',
-  },
-  '[data-palette="success"]': {
-    colorPalette: 'success',
-  },
-  '[data-palette="info"]': {
-    colorPalette: 'info',
-  },
-  // When palette changes via data attribute, reset generic tokens to neutral.
-  // Uses :where() for zero specificity so layerStyle classes can override.
-  ':where([data-palette])': neutralLayerStyleValue,
+  '[data-palette="artifact"]': paletteVarMap('artifact'),
+  '[data-palette="entity"]': paletteVarMap('entity'),
+  '[data-palette="concept"]': paletteVarMap('concept'),
+  '[data-palette="error"]': paletteVarMap('error'),
+  '[data-palette="success"]': paletteVarMap('success'),
+  '[data-palette="info"]': paletteVarMap('info'),
   '[data-color-scheme="dark"], .dark': {
     colorScheme: 'dark',
     '--inverse-color-scheme': 'light',

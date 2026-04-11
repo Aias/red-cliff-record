@@ -308,6 +308,23 @@ export const neutralLayerStyleValue: CssVarMap = Object.fromEntries(
   ])
 );
 
+// Generate the full variable map for a palette: colorPalette mappings + generic token re-declarations.
+// Used by the `palette` utility to make `color: 'main'` respond to local palette changes.
+export const paletteVarMap = (palette: string): CssVarMap =>
+  Object.fromEntries(
+    cssNames.flatMap((name) => [
+      // Map color-palette-* to this palette's neutral tokens
+      [`--${PREFIX}-colors-color-palette-${name}`, `var(--${PREFIX}-colors-${palette}-${name})`],
+      // Map color-palette-chromatic-* to this palette's chromatic tokens
+      [
+        `--${PREFIX}-colors-color-palette-chromatic-${name}`,
+        `var(--${PREFIX}-colors-${palette}-chromatic-${name})`,
+      ],
+      // Re-declare generic tokens to point to color-palette (neutral by default)
+      [`--${PREFIX}-colors-${name}`, `var(--${PREFIX}-colors-color-palette-${name})`],
+    ])
+  );
+
 const mauveScale = zipRadixScale(mauve, mauveDark);
 const tomatoScale = zipRadixScale(tomato, tomatoDark);
 const sandScale = zipRadixScale(sand, sandDark);
