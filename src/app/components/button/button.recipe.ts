@@ -31,8 +31,8 @@ export const buttonRecipe = defineRecipe({
       colorPalette: 'error',
     },
     _focusVisible: {
-      borderColor: 'colorPalette.focus',
-      outlineColor: 'colorPalette.focus/50',
+      borderColor: 'focus',
+      outlineColor: 'focus/50',
       outlineOffset: '0.5',
       outlineStyle: 'solid',
       outlineWidth: '2px',
@@ -41,50 +41,50 @@ export const buttonRecipe = defineRecipe({
   variants: {
     variant: {
       solid: {
-        backgroundColor: 'colorPalette.main',
-        color: 'colorPalette.mainContrast',
+        backgroundColor: 'main',
+        color: 'mainContrast',
         boxShadow: 'xs',
         _hover: {
-          backgroundColor: 'colorPalette.mainActive',
+          backgroundColor: 'mainActive',
         },
       },
       soft: {
-        backgroundColor: 'colorPalette.splash',
-        color: 'colorPalette.primary',
-        borderColor: 'colorPalette.divider/50',
+        backgroundColor: 'splash',
+        color: 'primary',
+        borderColor: 'divider/50',
         boxShadow: 'xs',
         _childIcon: {
-          color: 'colorPalette.symbol',
+          color: 'symbol',
         },
         _hover: {
-          backgroundColor: 'colorPalette.flood',
-          color: 'colorPalette.display',
+          backgroundColor: 'flood',
+          color: 'display',
         },
       },
       outline: {
-        borderColor: 'colorPalette.border',
+        borderColor: 'border',
         backgroundColor: 'transparent',
         boxShadow: 'xs',
-        color: 'colorPalette.accent',
+        color: 'accent',
         _childIcon: {
-          color: 'colorPalette.symbol',
+          color: 'symbol',
         },
         _hover: {
-          backgroundColor: 'colorPalette.mist',
-          color: 'colorPalette.accentActive',
+          backgroundColor: 'mist',
+          color: 'accentActive',
         },
       },
       ghost: {
         backgroundColor: 'transparent',
-        color: 'colorPalette.accent',
+        color: 'accent',
         _childIcon: {
-          color: 'colorPalette.symbol',
+          color: 'symbol',
         },
         _hover: {
-          backgroundColor: 'colorPalette.mist',
-          color: 'colorPalette.accentActive',
+          backgroundColor: 'mist',
+          color: 'accentActive',
           _childIcon: {
-            color: 'colorPalette.primary',
+            color: 'primary',
           },
         },
       },
