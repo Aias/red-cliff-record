@@ -48,7 +48,6 @@ export default defineConfig({
     css: [
       {
         properties: {
-          colorPalette: ['artifact', 'entity', 'concept', 'error', 'success', 'info'],
           layerStyle: ['chromatic', 'neutral'],
           palette: ['artifact', 'entity', 'concept', 'error', 'success', 'info'],
         },
@@ -56,9 +55,6 @@ export default defineConfig({
     ],
   },
   theme: {
-    colorPalette: {
-      include: ['artifact', 'entity', 'concept', 'error', 'success', 'info'],
-    },
     extend: {
       tokens: {
         borders: borders,
