@@ -1,5 +1,4 @@
 import { defineGlobalStyles } from '@pandacss/dev';
-import { paletteVarMap } from '@/app/styles/colors';
 
 export const globalStyles = defineGlobalStyles({
   html: {
@@ -107,14 +106,7 @@ export const globalStyles = defineGlobalStyles({
   },
   ':root': {
     colorScheme: 'light dark',
-    ...paletteVarMap('artifact'),
   },
-  '[data-palette="artifact"]': paletteVarMap('artifact'),
-  '[data-palette="entity"]': paletteVarMap('entity'),
-  '[data-palette="concept"]': paletteVarMap('concept'),
-  '[data-palette="error"]': paletteVarMap('error'),
-  '[data-palette="success"]': paletteVarMap('success'),
-  '[data-palette="info"]': paletteVarMap('info'),
   '[data-color-scheme="dark"], .dark': {
     colorScheme: 'dark',
     '--inverse-color-scheme': 'light',

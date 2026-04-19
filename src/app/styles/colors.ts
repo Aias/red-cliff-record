@@ -99,30 +99,6 @@ type LightDarkColorString = `light-dark(${string}, ${string})`;
 type ScaleStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 type RadixScale = Record<string, string>;
 type ColorToken = { value: string };
-// Maps camelCase token keys to their kebab-case CSS variable suffixes
-const SEMANTIC_CSS_NAMES: Record<keyof SemanticPaletteScale, string> = {
-  display: 'display',
-  primary: 'primary',
-  secondary: 'secondary',
-  muted: 'muted',
-  symbol: 'symbol',
-  accent: 'accent',
-  accentActive: 'accent-active',
-  background: 'background',
-  surface: 'surface',
-  container: 'container',
-  float: 'float',
-  divider: 'divider',
-  border: 'border',
-  edge: 'edge',
-  focus: 'focus',
-  mist: 'mist',
-  splash: 'splash',
-  flood: 'flood',
-  main: 'main',
-  mainActive: 'main-active',
-  mainContrast: 'main-contrast',
-};
 
 type PaletteScale = {
   1: LightDarkColorString;
@@ -272,58 +248,19 @@ const toSemanticPalettePair = (chromaticScale: ChromaticPaletteName): SemanticPa
 
 const toSemanticPaletteTokens = (pair: SemanticPalettePair) => {
   const keys = Object.keys(pair.neutral) as (keyof SemanticPaletteScale)[];
-  // Neutral tokens at top level: artifact.primary → --rcr-colors-artifact-primary
-  const neutralTokens = Object.fromEntries(keys.map((k) => [k, { value: pair.neutral[k] }]));
-  // Chromatic tokens flattened with prefix: artifact.chromaticPrimary → --rcr-colors-artifact-chromatic-primary
-  // Both are mapped by colorPalette to --rcr-colors-color-palette-* and --rcr-colors-color-palette-chromatic-*
-  const chromaticTokens = Object.fromEntries(
-    keys.map((k) => [
-      `chromatic${k.charAt(0).toUpperCase()}${k.slice(1)}`,
-      { value: pair.chromatic[k] },
-    ])
+  return keys.reduce(
+    (tokens, key) => {
+      tokens[key] = {
+        value: {
+          base: pair.neutral[key],
+          _chromatic: pair.chromatic[key],
+        },
+      };
+      return tokens;
+    },
+    {} as Record<keyof SemanticPaletteScale, { value: { base: string; _chromatic: string } }>
   );
-  return { ...neutralTokens, ...chromaticTokens };
 };
-
-// Generate layerStyle values that override CSS vars at both levels:
-// 1. --rcr-colors-color-palette-* (for recipes using colorPalette.primary etc.)
-// 2. --rcr-colors-* (for components using colors.primary generic tokens)
-type CssVarMap = Record<`--${string}`, string>;
-const cssNames = Object.values(SEMANTIC_CSS_NAMES);
-
-export const chromaticLayerStyleValue: CssVarMap = Object.fromEntries(
-  cssNames.flatMap((name) => [
-    [
-      `--${PREFIX}-colors-color-palette-${name}`,
-      `var(--${PREFIX}-colors-color-palette-chromatic-${name})`,
-    ],
-    [`--${PREFIX}-colors-${name}`, `var(--${PREFIX}-colors-color-palette-chromatic-${name})`],
-  ])
-);
-
-export const neutralLayerStyleValue: CssVarMap = Object.fromEntries(
-  cssNames.map((name) => [
-    `--${PREFIX}-colors-${name}`,
-    `var(--${PREFIX}-colors-color-palette-${name})`,
-  ])
-);
-
-// Generate the full variable map for a palette: colorPalette mappings + generic token re-declarations.
-// Used by the `palette` utility to make `color: 'main'` respond to local palette changes.
-export const paletteVarMap = (palette: string): CssVarMap =>
-  Object.fromEntries(
-    cssNames.flatMap((name) => [
-      // Map color-palette-* to this palette's neutral tokens
-      [`--${PREFIX}-colors-color-palette-${name}`, `var(--${PREFIX}-colors-${palette}-${name})`],
-      // Map color-palette-chromatic-* to this palette's chromatic tokens
-      [
-        `--${PREFIX}-colors-color-palette-chromatic-${name}`,
-        `var(--${PREFIX}-colors-${palette}-chromatic-${name})`,
-      ],
-      // Re-declare generic tokens to point to color-palette (neutral by default)
-      [`--${PREFIX}-colors-${name}`, `var(--${PREFIX}-colors-color-palette-${name})`],
-    ])
-  );
 
 const mauveScale = zipRadixScale(mauve, mauveDark);
 const tomatoScale = zipRadixScale(tomato, tomatoDark);

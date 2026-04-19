@@ -28,6 +28,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
             variant="solid"
             data-chromatic
             css={{
+              layerStyle: 'chromatic',
               _childIcon: {
                 opacity: '75%',
               },

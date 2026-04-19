@@ -5,12 +5,7 @@ import { textareaRecipe } from '@/app/components/field/textarea.recipe';
 import { tableRecipe } from '@/app/components/table/table.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
 import { borders } from '@/app/styles/borders';
-import {
-  colors,
-  semanticColors,
-  chromaticLayerStyleValue,
-  neutralLayerStyleValue,
-} from '@/app/styles/colors';
+import { colors, semanticColors } from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
 import { PREFIX } from '@/app/styles/constants';
 import { spacing, sizes } from '@/app/styles/dimensions';
@@ -33,7 +28,6 @@ export default defineConfig({
     className: PREFIX,
     cssVar: PREFIX,
   },
-
   include: ['./src/**/*.{js,jsx,ts,tsx}'],
   outdir: 'src/app/styled-system',
 
@@ -77,8 +71,9 @@ export default defineConfig({
     keyframes: keyframes,
     textStyles: textStyles,
     layerStyles: {
-      chromatic: { value: chromaticLayerStyleValue },
-      neutral: { value: neutralLayerStyleValue },
+      // Empty declarations, only for autocomplete and class name generation
+      chromatic: { value: {} },
+      neutral: { value: {} },
     },
     breakpoints: {
       sm: '40rem',

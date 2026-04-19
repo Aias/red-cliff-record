@@ -13,6 +13,7 @@ import { TooltipProvider } from '@/components/tooltip';
 import { KeyboardShortcutProvider } from '@/lib/keyboard-shortcuts/context';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getTheme, type Theme } from '@/lib/server/theme';
+import { css } from '@/styled-system/css';
 import pandaStylesUrl from '../styled-system/styles.css?url';
 import stylesUrl from '../styles/app.css?url';
 import { AppLayout } from './-app-components/app-layout';
@@ -131,6 +132,10 @@ function RootDocument({
   }, []);
   return (
     <html
+      className={css({
+        colorPalette: 'artifact',
+        layerStyle: 'neutral',
+      })}
       data-palette="artifact"
       data-color-scheme={appearance}
       data-theme-transitioning={isTransitioning || undefined}
