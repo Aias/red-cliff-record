@@ -32,6 +32,7 @@ export const readwiseCategories = [
   'epub',
   'tweet',
   'video',
+  'podcast',
 ] as const;
 export const ReadwiseCategorySchema = z.enum(readwiseCategories);
 export type ReadwiseCategory = z.infer<typeof ReadwiseCategorySchema>;
