@@ -1,8 +1,8 @@
-import { cn } from '@/app/lib/utils';
+import { Svg, type SvgProps } from './svg';
 
-export const ArcLogo = ({ className }: { className?: string }) => {
+export const ArcLogo = (props: SvgProps) => {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={cn('icon', className)}>
+    <Svg viewBox="0 0 100 100" {...props}>
       <title>Arc</title>
       <g clipPath="url(#a)">
         <path
@@ -46,6 +46,6 @@ export const ArcLogo = ({ className }: { className?: string }) => {
           <path fill="#fff" d="M0 0h100v100H0z" style={{ fill: '#fff', fillOpacity: 1 }} />
         </clipPath>
       </defs>
-    </svg>
+    </Svg>
   );
 };

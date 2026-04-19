@@ -18,14 +18,14 @@ import { IntegrationLogo } from '@/components/integration-logo';
 import { Label } from '@/components/label';
 import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/table';
+import { Table } from '@/components/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
-import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
+import { styled } from '@/styled-system/jsx';
 import { SourceLogos } from './record-parts';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 
@@ -44,11 +44,22 @@ function RecordRow({ recordId }: { recordId: DbId }) {
 
   if (!record) {
     return (
-      <TableRow>
-        <TableCell colSpan={6}>
-          <div className="h-4 w-48 animate-pulse rounded bg-c-mist" />
-        </TableCell>
-      </TableRow>
+      <Table.Row>
+        <Table.Cell colSpan={6}>
+          <styled.div
+            css={{
+              width: '48',
+              height: '4',
+              borderRadius: 'md',
+              backgroundColor: 'mist',
+              animationName: 'pulse',
+              animationDuration: '[2s]',
+              animationTimingFunction: '[cubic-bezier(0.4,0,0.6,1)]',
+              animationIterationCount: 'infinite',
+            }}
+          />
+        </Table.Cell>
+      </Table.Row>
     );
   }
 
@@ -57,11 +68,11 @@ function RecordRow({ recordId }: { recordId: DbId }) {
     record.title || record.summary || record.content || creatorTitle || parentTitle || 'Untitled';
 
   return (
-    <TableRow>
-      <TableCell className="text-center text-sm">
+    <Table.Row>
+      <Table.Cell css={{ textAlign: 'center', textStyle: 'sm', color: 'symbol' }}>
         <RecordTypeIcon type={record.type} />
-      </TableCell>
-      <TableCell className="max-w-60 truncate whitespace-nowrap">
+      </Table.Cell>
+      <Table.Cell css={{ maxWidth: '60', whiteSpace: 'nowrap', truncate: true }}>
         <Tooltip delayDuration={1000} disableHoverableContent>
           <TooltipTrigger asChild>
             <Link
@@ -81,24 +92,31 @@ function RecordRow({ recordId }: { recordId: DbId }) {
             <div className="line-clamp-3">{label}</div>
           </TooltipContent>
         </Tooltip>
-      </TableCell>
-      <TableCell className="whitespace-nowrap">
+      </Table.Cell>
+      <Table.Cell css={{ whiteSpace: 'nowrap' }}>
         {record.url ? (
           <ExternalLink href={record.url}>{new URL(record.url).hostname}</ExternalLink>
         ) : (
           ''
         )}
-      </TableCell>
-      <TableCell className="text-sm whitespace-nowrap">
+      </Table.Cell>
+      <Table.Cell css={{ textStyle: 'sm', whiteSpace: 'nowrap' }}>
         {record.recordCreatedAt ? formatDate(record.recordCreatedAt) : ''}
-      </TableCell>
-      <TableCell className="text-end text-c-hint tabular-nums">
+      </Table.Cell>
+      <Table.Cell
+        css={{
+          textAlign: 'end',
+          textStyle: 'sm',
+          color: 'muted',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
         {record.eloScore !== 1200 && record.eloScore}
-      </TableCell>
-      <TableCell className="text-center">
+      </Table.Cell>
+      <Table.Cell css={{ textAlign: 'center' }}>
         <SourceLogos sources={record.sources} className="justify-center text-sm" />
-      </TableCell>
-    </TableRow>
+      </Table.Cell>
+    </Table.Row>
   );
 }
 
@@ -180,17 +198,26 @@ export const RecordsGrid = () => {
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="types">Types</Label>
           <DropdownMenu>
-            <Button variant="outline" className="w-full justify-between" asChild>
-              <DropdownMenuTrigger id="types">
-                <span className={types?.length ? '' : 'text-c-secondary'}>
-                  {types?.length
-                    ? types.length === RecordTypeSchema.options.length
-                      ? 'All Types'
-                      : `${types.length} selected`
-                    : 'All Types'}
-                </span>
-                <ChevronDownIcon className="size-4 opacity-50" />
-              </DropdownMenuTrigger>
+            <Button
+              variant="outline"
+              css={{
+                width: 'full',
+                justifyContent: 'space-between',
+                _childIcon: {
+                  boxSize: '4',
+                  opacity: '50%',
+                },
+              }}
+              render={<DropdownMenuTrigger id="types" />}
+            >
+              <span className={types?.length ? '' : 'text-c-secondary'}>
+                {types?.length
+                  ? types.length === RecordTypeSchema.options.length
+                    ? 'All Types'
+                    : `${types.length} selected`
+                  : 'All Types'}
+              </span>
+              <ChevronDownIcon />
             </Button>
             <DropdownMenuContent align="start" className="w-48">
               {RecordTypeSchema.options.map((recordType) => {
@@ -216,18 +243,27 @@ export const RecordsGrid = () => {
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="sources">Sources</Label>
           <DropdownMenu>
-            <Button variant="outline" className="w-full justify-between" asChild>
-              <DropdownMenuTrigger id="sources">
-                <span className={sources?.length ? '' : 'text-c-secondary'}>
-                  {sources?.length
-                    ? sources.length ===
-                      ['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].length
-                      ? 'All Sources'
-                      : `${sources.length} selected`
-                    : 'All Sources'}
-                </span>
-                <ChevronDownIcon className="size-4 opacity-50" />
-              </DropdownMenuTrigger>
+            <Button
+              variant="outline"
+              css={{
+                width: 'full',
+                justifyContent: 'space-between',
+                _childIcon: {
+                  boxSize: '4',
+                  opacity: '50%',
+                },
+              }}
+              render={<DropdownMenuTrigger id="sources" />}
+            >
+              <span className={sources?.length ? '' : 'text-c-secondary'}>
+                {sources?.length
+                  ? sources.length ===
+                    ['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].length
+                    ? 'All Sources'
+                    : `${sources.length} selected`
+                  : 'All Sources'}
+              </span>
+              <ChevronDownIcon />
             </Button>
             <DropdownMenuContent align="start" className="w-48">
               {IntegrationTypeSchema.options
@@ -352,31 +388,63 @@ export const RecordsGrid = () => {
           />
         </div>
       </div>
-      <div className="flex grow overflow-hidden rounded border border-c-divider bg-c-page text-xs">
-        <Table className={cn({ 'h-full': data.ids.length === 0 })}>
-          <TableHeader className="sticky top-0 z-10 bg-c-page before:absolute before:right-0 before:bottom-0 before:left-0 before:h-[0.5px] before:bg-c-divider">
-            <TableRow className="sticky top-0 z-10 bg-c-mist">
-              <TableHead className="sr-only text-center">Type</TableHead>
-              <TableHead>Record</TableHead>
-              <TableHead>URL</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="w-16 text-end">ELO</TableHead>
-              <TableHead className="text-center">Sources</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <Table.Root
+        data-empty={data.ids.length === 0}
+        css={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'full',
+          flexBasis: 'full',
+          overflow: 'auto',
+          borderRadius: 'md',
+          borderWidth: '1px',
+          borderColor: 'divider',
+          backgroundColor: 'surface',
+          textStyle: 'sm',
+          '&[data-empty="true"]': {
+            height: 'full',
+          },
+        }}
+      >
+        <Table.Table>
+          <Table.Header
+            css={{
+              position: 'sticky',
+              top: '0',
+              zIndex: '10',
+              backgroundColor: 'container',
+              _before: {
+                content: '""',
+                position: 'absolute',
+                insetInline: '0',
+                insetBlockEnd: '0',
+                height: '[0.5px]',
+                backgroundColor: 'divider',
+              },
+            }}
+          >
+            <Table.Row>
+              <Table.Head css={{ srOnly: true, textAlign: 'center' }}>Type</Table.Head>
+              <Table.Head>Record</Table.Head>
+              <Table.Head>URL</Table.Head>
+              <Table.Head>Created</Table.Head>
+              <Table.Head css={{ width: '16', textAlign: 'end' }}>ELO</Table.Head>
+              <Table.Head css={{ textAlign: 'center' }}>Sources</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
             {data.ids.length > 0 ? (
               data.ids.map(({ id }) => <RecordRow key={id} recordId={id} />)
             ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="pointer-events-none text-center">
+              <Table.Row>
+                <Table.Cell colSpan={6} css={{ pointerEvents: 'none', textAlign: 'center' }}>
                   No records found
-                </TableCell>
-              </TableRow>
+                </Table.Cell>
+              </Table.Row>
             )}
-          </TableBody>
-        </Table>
-      </div>
+          </Table.Body>
+        </Table.Table>
+      </Table.Root>
     </div>
   ) : (
     <Placeholder className="grow">

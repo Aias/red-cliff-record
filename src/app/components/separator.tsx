@@ -1,25 +1,38 @@
-import { Separator as SeparatorPrimitive } from 'radix-ui';
-import * as React from 'react';
-import { cn } from '@/app/lib/utils';
+import { Separator as BaseSeparator } from '@base-ui/react';
+import { styled } from '@/styled-system/jsx';
 
-function Separator({
-  className,
-  orientation = 'horizontal',
-  decorative = true,
-  ...props
-}: React.ComponentProps<typeof SeparatorPrimitive.Root>) {
-  return (
-    <SeparatorPrimitive.Root
-      data-slot="separator"
-      decorative={decorative}
-      orientation={orientation}
-      className={cn(
-        'shrink-0 bg-c-divider data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px',
-        className
-      )}
-      {...props}
-    />
-  );
-}
-
-export { Separator };
+export const Separator = styled(
+  BaseSeparator,
+  {
+    base: {
+      flexShrink: '0',
+      _horizontal: {
+        height: 'px',
+        width: 'full',
+      },
+      _vertical: {
+        height: 'full',
+        width: 'px',
+      },
+    },
+    variants: {
+      salience: {
+        divider: {
+          backgroundColor: 'divider',
+        },
+        border: {
+          backgroundColor: 'border',
+        },
+        edge: {
+          backgroundColor: 'edge',
+        },
+      },
+    },
+  },
+  {
+    defaultProps: {
+      orientation: 'horizontal',
+      salience: 'divider',
+    },
+  }
+);

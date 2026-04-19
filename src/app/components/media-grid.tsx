@@ -32,7 +32,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 
   return (
     <div
-      className={`relative grid aspect-3/2 w-full gap-px overflow-hidden rounded-md bg-c-app ${className}`}
+      className={`relative grid aspect-3/2 w-full gap-px overflow-hidden rounded-md bg-c-container ${className}`}
       style={{
         gridTemplateColumns: getGridColumns(count),
         gridTemplateRows: getGridRows(count),
@@ -50,7 +50,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
         return (
           <div
             key={item.id}
-            className="group relative cursor-pointer overflow-hidden focus-visible:outline-2 focus-visible:outline-c-focus"
+            className="group relative cursor-pointer overflow-hidden focus-visible:outline-2 focus-visible:outline-c-ring"
             style={{ gridArea: getGridArea(count, index) }}
             role={isImage ? 'button' : undefined}
             tabIndex={isImage ? 0 : -1}
@@ -92,7 +92,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
 
             {/* Toolbar */}
             {onDelete && (
-              <div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-c-page opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
+              <div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-c-background opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
                 <Button
                   type="button"
                   size="icon"

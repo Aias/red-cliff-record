@@ -1,5 +1,11 @@
 import { type QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  Outlet,
+  Scripts,
+  type ErrorComponentProps,
+} from '@tanstack/react-router';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { ServerHelpers } from '@/app/trpc';
 import { Toaster } from '@/components/sonner';
@@ -7,11 +13,12 @@ import { TooltipProvider } from '@/components/tooltip';
 import { KeyboardShortcutProvider } from '@/lib/keyboard-shortcuts/context';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getTheme, type Theme } from '@/lib/server/theme';
-import { cn } from '@/lib/utils';
+import { css } from '@/styled-system/css';
+import pandaStylesUrl from '../styled-system/styles.css?url';
 import stylesUrl from '../styles/app.css?url';
 import { AppLayout } from './-app-components/app-layout';
 import { DefaultCatchBoundary } from './-app-components/catch-boundary';
-import { NotFound } from './-app-components/not-found';
+import { NotFound as NotFoundComponent } from './-app-components/not-found';
 
 export interface RouterAppContext {
   queryClient: QueryClient;
@@ -36,6 +43,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
     ],
     links: [
       { rel: 'stylesheet', href: stylesUrl },
+      { rel: 'stylesheet', href: pandaStylesUrl },
       {
         rel: 'apple-touch-icon',
         sizes: '180x180',
@@ -58,16 +66,18 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
     ],
   }),
   component: RootComponent,
-  errorComponent: (props) => {
-    const { theme: initialTheme } = Route.useLoaderData();
-    return (
-      <RootDocument appearance={initialTheme} isTransitioning={false}>
-        <DefaultCatchBoundary {...props} />
-      </RootDocument>
-    );
-  },
-  notFoundComponent: () => <NotFound />,
+  errorComponent: ErrorComponent,
+  notFoundComponent: NotFoundComponent,
 });
+
+function ErrorComponent(props: ErrorComponentProps) {
+  const { theme: initialTheme } = Route.useLoaderData();
+  return (
+    <RootDocument appearance={initialTheme} isTransitioning={false}>
+      <DefaultCatchBoundary {...props} />
+    </RootDocument>
+  );
+}
 
 function RootComponent() {
   const { theme: initialTheme } = Route.useLoaderData();
@@ -121,12 +131,20 @@ function RootDocument({
     }
   }, []);
   return (
-    <html className={cn('h-viewport w-full', appearance, isTransitioning && 'theme-transitioning')}>
+    <html
+      className={css({
+        colorPalette: 'artifact',
+        layerStyle: 'neutral',
+      })}
+      data-palette="artifact"
+      data-color-scheme={appearance}
+      data-theme-transitioning={isTransitioning || undefined}
+    >
       <head>
         <HeadContent />
       </head>
-      <body className="size-full bg-c-app text-c-primary">
-        {children}
+      <body>
+        <div className="root">{children}</div>
         <Toaster />
         <Scripts />
       </body>

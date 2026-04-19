@@ -1,4 +1,5 @@
 import { cn } from '@/app/lib/utils';
+import { css } from '@/styled-system/css';
 
 export const XLogo = ({ className }: { className?: string }) => {
   return (
@@ -10,7 +11,7 @@ export const XLogo = ({ className }: { className?: string }) => {
     >
       <title>X</title>
       <path
-        className="fill-c-fg"
+        className={css({ fill: 'modeContrast' })}
         d="M59.264 42.321 95.672 0h-8.628L55.431 36.747 30.18 0H1.06L39.24 55.568 1.06 99.948h8.628l33.384-38.805 26.665 38.806h29.122L59.261 42.32h.002ZM47.446 56.058l-3.868-5.534L12.796 6.495H26.05l24.84 35.533 3.869 5.533 32.29 46.188H73.796l-26.35-37.69v-.001Z"
       />
     </svg>

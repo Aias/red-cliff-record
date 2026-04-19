@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { Link } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
 import { useRecordList } from '@/lib/hooks/record-queries';
+import { styled } from '@/styled-system/jsx';
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -19,9 +19,23 @@ function Home() {
   });
 
   return (
-    <main className="@container relative flex basis-full flex-col items-center gap-4 overflow-y-auto p-1 contain-inline-size">
-      {isLoading && (
-        <Spinner className="absolute top-1/2 left-1/2 size-8 -translate-x-1/2 -translate-y-1/2" />
+    <styled.main
+      css={{
+        containerType: 'inline-size',
+        position: 'relative',
+        flex: '1',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '1',
+        overflowY: 'auto',
+        padding: '1',
+      }}
+    >
+      {isLoading && records.length === 0 && (
+        <Spinner
+          css={{ boxSize: '8', position: 'absolute', inset: '[50%]', translateCenter: 'xy' }}
+        />
       )}
       {isError && <p className="text-c-destructive">Error loading records.</p>}
       {!isLoading && !isError && records.length === 0 && (
@@ -37,7 +51,7 @@ function Home() {
               key={item.id}
               to="/records/$recordId"
               params={{ recordId: record.id }}
-              className="relative block aspect-3/2 overflow-hidden rounded-sm border border-c-divider bg-c-app focus-visible:ring-2 focus-visible:ring-c-focus focus-visible:ring-offset-2 focus-visible:outline-none"
+              className="relative block aspect-3/2 overflow-hidden rounded-sm border border-c-divider bg-c-paper focus-visible:ring-2 focus-visible:ring-c-ring focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               {/* Gradient from bottom 50% with semi-transparent black */}
               <div className="pointer-events-none absolute inset-x-0 top-1/2 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent opacity-75" />
@@ -72,6 +86,6 @@ function Home() {
           );
         })}
       </div>
-    </main>
+    </styled.main>
   );
 }

@@ -166,7 +166,7 @@ export const MediaUpload = ({
       // Make the div focusable and apply focus ring styles directly to it
       tabIndex={0}
       className={cn(
-        'flex h-24 w-full flex-col items-center justify-center gap-0.5 rounded-sm border border-dashed border-c-divider bg-c-mist p-4 text-center transition-colors duration-200 focus:ring-2 focus:ring-c-focus focus:ring-offset-2 focus:outline-none',
+        'flex h-24 w-full flex-col items-center justify-center gap-0.5 rounded-sm border border-dashed border-c-divider bg-c-mist p-4 text-center transition-colors duration-200 focus:ring-2 focus:ring-c-ring focus:ring-offset-2 focus:outline-none',
         isDragging && !isLoading ? 'border-c-main bg-c-main/10' : '', // Only show drag state if not loading
         error ? 'border-c-destructive' : '',
         isLoading ? 'cursor-not-allowed opacity-50' : '', // Apply disabled styles when loading
@@ -191,7 +191,7 @@ export const MediaUpload = ({
         accept="image/*,video/*" // Accept both image and video files
       />
       <Button type="button" variant="ghost" size="sm" onClick={handleClick} disabled={isLoading}>
-        <UploadIcon className="mr-2 h-4 w-4" />
+        <UploadIcon />
         Upload Media
       </Button>
       <p className="flex items-center gap-1 text-sm text-c-secondary">

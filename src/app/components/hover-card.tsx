@@ -1,6 +1,7 @@
 import { HoverCard as HoverCardPrimitive } from 'radix-ui';
 import * as React from 'react';
 import { cn } from '@/app/lib/utils';
+import { css } from '@/styled-system/css';
 
 export type HoverCardProps = React.ComponentProps<typeof HoverCardPrimitive.Root>;
 
@@ -29,7 +30,15 @@ function HoverCardContent({
         align={align}
         sideOffset={sideOffset}
         className={cn(
-          'z-50 w-64 origin-(--radix-hover-card-content-transform-origin) rounded-md border bg-c-float p-4 text-c-primary shadow-md outline-hidden data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+          'z-50 w-64 origin-(--radix-hover-card-content-transform-origin) rounded-md border bg-c-float p-4 text-c-primary shadow-md outline-hidden',
+          css({
+            _open: { animateIn: true, fadeIn: 0, zoomIn: 0.95 },
+            _closed: { animateOut: true, fadeOut: 0, zoomOut: 0.95 },
+            '&[data-side=bottom]': { slideInY: '-0.5rem' },
+            '&[data-side=top]': { slideInY: '0.5rem' },
+            '&[data-side=left]': { slideInX: '-0.5rem' },
+            '&[data-side=right]': { slideInX: '0.5rem' },
+          }),
           className
         )}
         {...props}

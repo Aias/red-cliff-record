@@ -4,6 +4,7 @@ import { trpc } from '@/app/trpc';
 import { Masonry } from '@/components/masonry';
 import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
+import { styled } from '@/styled-system/jsx';
 import { RecordDisplay } from './records/-components/record-display';
 
 export const Route = createFileRoute('/search')({
@@ -13,14 +14,23 @@ export const Route = createFileRoute('/search')({
 
 function SearchPage() {
   const { q } = Route.useSearch();
-
   const { data } = trpc.records.list.useQuery(
     { searchQuery: q || undefined, limit: 100 },
     { enabled: q.length > 0, placeholderData: (prev) => prev }
   );
 
   return (
-    <main className="flex basis-full flex-col gap-4 overflow-y-auto p-4">
+    <styled.main
+      css={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4',
+        overflowY: 'auto',
+        padding: '4',
+        flexBasis: 'full',
+        color: 'display',
+      }}
+    >
       {!q && <Placeholder>Type a query and press Enter to search.</Placeholder>}
 
       {q && !data && (
@@ -38,12 +48,25 @@ function SearchPage() {
           columnWidth={320}
           gap={8}
           renderItem={(item) => (
-            <div className="overflow-hidden rounded border border-c-divider bg-c-page p-3 transition-colors hover:border-c-border">
+            <styled.div
+              css={{
+                overflow: 'hidden',
+                borderRadius: 'md',
+                borderWidth: '1px',
+                borderColor: 'divider',
+                _hover: {
+                  borderColor: 'border',
+                },
+                backgroundColor: 'surface',
+                padding: '3',
+                transition: 'colors',
+              }}
+            >
               <RecordDisplay recordId={item.id} compact />
-            </div>
+            </styled.div>
           )}
         />
       )}
-    </main>
+    </styled.main>
   );
 }

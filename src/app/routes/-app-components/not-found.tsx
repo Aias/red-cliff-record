@@ -7,12 +7,10 @@ export function NotFound() {
       <section className="flex flex-col items-center gap-4">
         <p className="text-c-secondary">The page you are looking for does not exist.</p>
         <nav className="flex flex-wrap items-center gap-2">
-          <Button variant="default" onClick={() => window.history.back()}>
+          <Button variant="solid" onClick={() => window.history.back()}>
             Go back
           </Button>
-          <Button variant="secondary" asChild>
-            <Link to="/">Start Over</Link>
-          </Button>
+          <Button variant="soft" render={<Link to="/">Start Over</Link>} />
         </nav>
       </section>
     </main>

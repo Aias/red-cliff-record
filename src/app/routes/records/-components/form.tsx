@@ -12,7 +12,7 @@ import { Label } from '@/components/label';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
 import { Spinner } from '@/components/spinner';
-import { Table, TableBody, TableCell, TableRow } from '@/components/table';
+import { Table } from '@/components/table';
 import { Toggle } from '@/components/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
@@ -294,7 +294,7 @@ export function RecordForm({
       {...props}
     >
       {isFormLoading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-c-app/50 backdrop-blur-sm">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-c-container/50 backdrop-blur-sm">
           <Spinner />
         </div>
       )}
@@ -316,7 +316,7 @@ export function RecordForm({
                   className="text-c-display placeholder:font-medium"
                 />
                 {field.state.meta.errors && (
-                  <p className="text-sm text-c-destructive">
+                  <p data-chromatic data-palette="tomato" className="text-sm">
                     {field.state.meta.errors.map(getErrorMessage).join(', ')}
                   </p>
                 )}
@@ -417,104 +417,110 @@ export function RecordForm({
         </div>
 
         <div className="rounded-md border border-c-divider">
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell className="w-20">
-                  <Label className="flex w-full" htmlFor="url">
-                    URL
-                  </Label>
-                </TableCell>
-                <TableCell>
-                  <form.Field
-                    name="url"
-                    validators={{
-                      onChange: z.url().or(z.string().length(0)).nullable(),
-                    }}
-                  >
-                    {(field) => (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <GhostInput
-                            id="url"
-                            className="w-full text-c-display"
-                            value={field.state.value ?? ''}
-                            placeholder="https://example.com"
-                            onChange={(e) => {
-                              field.handleChange(e.target.value);
-                              debouncedSave();
-                            }}
-                            onBlur={() => debouncedSave()}
-                            readOnly={isFormLoading}
-                          />
-                          {field.state.value && (
-                            <ExternalLink href={field.state.value} children={null} />
+          <Table.Root>
+            <Table.Table>
+              <Table.Body css={{ '& td:first-child': { width: '20' } }}>
+                <Table.Row>
+                  <Table.Cell>
+                    <Label className="flex w-full" htmlFor="url">
+                      URL
+                    </Label>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <form.Field
+                      name="url"
+                      validators={{
+                        onChange: z.url().or(z.string().length(0)).nullable(),
+                      }}
+                    >
+                      {(field) => (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <GhostInput
+                              id="url"
+                              className="w-full text-c-display"
+                              value={field.state.value ?? ''}
+                              placeholder="https://example.com"
+                              onChange={(e) => {
+                                field.handleChange(e.target.value);
+                                debouncedSave();
+                              }}
+                              onBlur={() => debouncedSave()}
+                              readOnly={isFormLoading}
+                            />
+                            {field.state.value && (
+                              <ExternalLink href={field.state.value}>{null}</ExternalLink>
+                            )}
+                          </div>
+                          {field.state.meta.errors && (
+                            <p
+                              data-chromatic="" // TODO: CLR-DESTRUCTIVE
+                              data-palette="tomato"
+                              className="text-sm"
+                            >
+                              {field.state.meta.errors.map(getErrorMessage).join(', ')}
+                            </p>
                           )}
-                        </div>
-                        {field.state.meta.errors && (
-                          <p className="text-sm text-c-destructive">
-                            {field.state.meta.errors.map(getErrorMessage).join(', ')}
-                          </p>
-                        )}
-                      </>
-                    )}
-                  </form.Field>
-                </TableCell>
-              </TableRow>
+                        </>
+                      )}
+                    </form.Field>
+                  </Table.Cell>
+                </Table.Row>
 
-              <TableRow>
-                <TableCell className="w-20">
-                  <Label className="flex w-full" htmlFor="abbreviation">
-                    Abbreviation
-                  </Label>
-                </TableCell>
-                <TableCell>
-                  <form.Field name="abbreviation">
-                    {(field) => (
-                      <GhostInput
-                        id="abbreviation"
-                        className="w-full text-c-display"
-                        value={field.state.value ?? ''}
-                        placeholder="Short form"
-                        onChange={(e) => {
-                          field.handleChange(e.target.value);
-                          debouncedSave();
-                        }}
-                        onBlur={() => debouncedSave()}
-                        readOnly={isFormLoading}
-                      />
-                    )}
-                  </form.Field>
-                </TableCell>
-              </TableRow>
+                <Table.Row>
+                  <Table.Cell>
+                    <Label className="flex w-full" htmlFor="abbreviation">
+                      Abbreviation
+                    </Label>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <form.Field name="abbreviation">
+                      {(field) => (
+                        <GhostInput
+                          id="abbreviation"
+                          className="w-full text-c-display"
+                          value={field.state.value ?? ''}
+                          placeholder="Short form"
+                          onChange={(e) => {
+                            field.handleChange(e.target.value);
+                            debouncedSave();
+                          }}
+                          onBlur={() => debouncedSave()}
+                          readOnly={isFormLoading}
+                        />
+                      )}
+                    </form.Field>
+                  </Table.Cell>
+                </Table.Row>
 
-              <TableRow>
-                <TableCell className="w-20">
-                  <Label className="flex w-full" htmlFor="sense">
-                    Sense
-                  </Label>
-                </TableCell>
-                <TableCell>
-                  <form.Field name="sense">
-                    {(field) => (
-                      <GhostInput
-                        id="sense"
-                        className="w-full text-c-display"
-                        value={field.state.value ?? ''}
-                        placeholder="Meaning or definition"
-                        onChange={(e) => {
-                          field.handleChange(e.target.value);
-                          debouncedSave();
-                        }}
-                        onBlur={() => debouncedSave()}
-                        readOnly={isFormLoading}
-                      />
-                    )}
-                  </form.Field>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                <Table.Row>
+                  <Table.Cell>
+                    <Label className="flex w-full" htmlFor="sense">
+                      Sense
+                    </Label>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <form.Field name="sense">
+                      {(field) => (
+                        <GhostInput
+                          id="sense"
+                          className="w-full text-c-display"
+                          value={field.state.value ?? ''}
+                          placeholder="Meaning or definition"
+                          onChange={(e) => {
+                            field.handleChange(e.target.value);
+                            debouncedSave();
+                          }}
+                          onBlur={() => debouncedSave()}
+                          readOnly={isFormLoading}
+                        />
+                      )}
+                    </form.Field>
+                  </Table.Cell>
+                </Table.Row>
+              </Table.Body>
+            </Table.Table>
+          </Table.Root>
         </div>
       </div>
 
@@ -560,10 +566,11 @@ export function RecordForm({
         <form.Field name="media">
           {(field) =>
             field.state.value && field.state.value.length > 0 ? (
-              <div className="flex flex-col rounded-md border border-c-divider/75">
+              <div className="flex flex-col overflow-clip rounded-md border border-c-divider/75">
                 <MediaGrid
                   media={field.state.value}
                   onDelete={(media) => deleteMediaMutation.mutate([media.id])}
+                  className="rounded-none"
                 />
 
                 <form.Field name="mediaCaption">
@@ -583,7 +590,13 @@ export function RecordForm({
                         }}
                         onBlur={() => debouncedSave()}
                         disabled={isFormLoading}
-                        className="border-none shadow-none placeholder:text-c-hint focus-visible:ring-0"
+                        css={{
+                          border: 'none',
+                          boxShadow: 'none',
+                          _focusVisible: {
+                            outlineWidth: '0',
+                          },
+                        }}
                       />
                     </div>
                   )}
@@ -611,7 +624,19 @@ export function RecordForm({
                 }}
                 onBlur={() => debouncedSave()}
                 disabled={isFormLoading}
-                className="m-0 border-none p-0 text-c-secondary shadow-none placeholder:italic focus-visible:ring-0"
+                css={{
+                  margin: '0',
+                  padding: '0',
+                  border: 'none',
+                  color: 'secondary',
+                  boxShadow: 'none',
+                  _placeholder: {
+                    fontStyle: 'italic',
+                  },
+                  _focusVisible: {
+                    outlineWidth: '0',
+                  },
+                }}
               />
             </div>
           )}

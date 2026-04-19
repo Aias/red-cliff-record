@@ -10,8 +10,7 @@ import {
 import { createInsertSchema, createSelectSchema } from 'drizzle-orm/zod';
 import { z } from 'zod';
 import { media } from './media';
-import { contentTimestamps, databaseTimestamps } from './operations';
-import { integrationRuns } from './operations';
+import { contentTimestamps, databaseTimestamps, integrationRuns } from './operations';
 import { records } from './records';
 
 export const twitterTweets = pgTable(

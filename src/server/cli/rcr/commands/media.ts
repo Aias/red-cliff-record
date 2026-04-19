@@ -182,11 +182,10 @@ export const create: CommandHandler = async (args, options) => {
     throw createError('VALIDATION_ERROR', 'Missing --file or --url.');
   }
 
-  let fileBuffer: Buffer;
   let fileName = name ?? '';
   let fileType = type ?? '';
 
-  fileBuffer = await readFile(file);
+  const fileBuffer = await readFile(file);
   if (!fileName) fileName = basename(file);
   if (!fileType) {
     const detectedType = lookup(fileName);

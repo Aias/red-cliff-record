@@ -15,8 +15,8 @@ import {
   contentTimestampsNonUpdatable,
   databaseTimestamps,
   databaseTimestampsNonUpdatable,
+  integrationRuns,
 } from './operations';
-import { integrationRuns } from './operations';
 import { records } from './records';
 
 const githubStats = {

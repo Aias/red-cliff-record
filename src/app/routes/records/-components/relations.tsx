@@ -1,7 +1,7 @@
 import { PREDICATES, type PredicateType } from '@hozo';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { trpc } from '@/app/trpc';
 import { Spinner } from '@/components/spinner';
 import { useDeleteLinks } from '@/lib/hooks/link-mutations';
@@ -45,20 +45,23 @@ export const RelationsList = ({ id }: RelationsListProps) => {
     allowInInput: true,
   });
 
-  const sortLinks = (links: LinkPartial[]): LinkPartial[] => {
-    return [...links].sort((a, b) => {
-      const typeA = predicates[a.predicate]?.type;
-      const typeB = predicates[b.predicate]?.type;
-      const orderA = typeA ? PREDICATE_TYPE_ORDER.indexOf(typeA) : PREDICATE_TYPE_ORDER.length;
-      const orderB = typeB ? PREDICATE_TYPE_ORDER.indexOf(typeB) : PREDICATE_TYPE_ORDER.length;
+  const sortLinks = useCallback(
+    (links: LinkPartial[]): LinkPartial[] => {
+      return [...links].sort((a, b) => {
+        const typeA = predicates[a.predicate]?.type;
+        const typeB = predicates[b.predicate]?.type;
+        const orderA = typeA ? PREDICATE_TYPE_ORDER.indexOf(typeA) : PREDICATE_TYPE_ORDER.length;
+        const orderB = typeB ? PREDICATE_TYPE_ORDER.indexOf(typeB) : PREDICATE_TYPE_ORDER.length;
 
-      // Sort by predicate type priority first
-      if (orderA !== orderB) return orderA - orderB;
+        // Sort by predicate type priority first
+        if (orderA !== orderB) return orderA - orderB;
 
-      // Then by recordUpdatedAt descending (most recent first)
-      return b.recordUpdatedAt.getTime() - a.recordUpdatedAt.getTime();
-    });
-  };
+        // Then by recordUpdatedAt descending (most recent first)
+        return b.recordUpdatedAt.getTime() - a.recordUpdatedAt.getTime();
+      });
+    },
+    [predicates]
+  );
 
   const outgoingLinks = useMemo(
     () =>
@@ -67,7 +70,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
           (link) => predicates[link.predicate]?.type !== 'containment'
         ) ?? []
       ),
-    [recordLinks, predicates]
+    [recordLinks, predicates, sortLinks]
   );
   const incomingLinks = useMemo(
     () =>
@@ -76,7 +79,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
           (link) => predicates[link.predicate]?.type !== 'containment'
         ) ?? []
       ),
-    [recordLinks, predicates]
+    [recordLinks, predicates, sortLinks]
   );
   const totalLinks = useMemo(
     () => outgoingLinks.length + incomingLinks.length,
@@ -89,19 +92,8 @@ export const RelationsList = ({ id }: RelationsListProps) => {
         <h3 className="mb-2">
           Relations <span className="text-sm text-c-secondary">({totalLinks})</span>
         </h3>
-        <RelationshipSelector
+        <RelationshipSelector.Root
           sourceId={id}
-          label={
-            <>
-              <PlusIcon /> Add
-            </>
-          }
-          buttonProps={{
-            ref: addRelationshipButtonRef,
-            size: 'sm',
-            variant: 'outline',
-            className: 'h-[1.5lh]',
-          }}
           buildActions={({ sourceId, targetId }) => {
             return [
               {
@@ -125,7 +117,18 @@ export const RelationsList = ({ id }: RelationsListProps) => {
               },
             ];
           }}
-        />
+        >
+          <RelationshipSelector.Trigger
+            ref={addRelationshipButtonRef}
+            variant="soft"
+            css={{
+              height: '[1.5lh]',
+            }}
+          >
+            <PlusIcon /> Add
+          </RelationshipSelector.Trigger>
+          <RelationshipSelector.Content />
+        </RelationshipSelector.Root>
       </header>
       {outgoingLinks.length > 0 && (
         <>
@@ -138,14 +141,10 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                 key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
                 className="flex items-center gap-2"
               >
-                <RelationshipSelector
-                  label={predicates[link.predicate]?.name ?? 'Unknown'}
+                <RelationshipSelector.Root
                   sourceId={link.sourceId}
                   initialTargetId={link.targetId}
                   link={link}
-                  buttonProps={{
-                    className: 'w-30',
-                  }}
                   buildActions={({ sourceId, targetId }) => {
                     return [
                       {
@@ -180,7 +179,16 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                       },
                     ];
                   }}
-                />
+                >
+                  <RelationshipSelector.Trigger
+                    css={{
+                      width: '28',
+                    }}
+                  >
+                    {predicates[link.predicate]?.name ?? 'Unknown'}
+                  </RelationshipSelector.Trigger>
+                  <RelationshipSelector.Content />
+                </RelationshipSelector.Root>
                 <RecordLink
                   id={link.targetId}
                   linkOptions={{
@@ -209,20 +217,11 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                 key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
                 className="flex items-center gap-2"
               >
-                <RelationshipSelector
-                  label={(() => {
-                    const inv = predicates[link.predicate]?.inverseSlug;
-                    return inv
-                      ? (PREDICATES[inv as keyof typeof PREDICATES]?.name ?? 'Unknown')
-                      : (predicates[link.predicate]?.name ?? 'Unknown');
-                  })()}
+                <RelationshipSelector.Root
                   sourceId={link.targetId}
                   initialTargetId={link.sourceId}
                   incoming
                   link={link}
-                  buttonProps={{
-                    className: 'w-30',
-                  }}
                   buildActions={() => {
                     return [
                       {
@@ -257,7 +256,21 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                       },
                     ];
                   }}
-                />
+                >
+                  <RelationshipSelector.Trigger
+                    css={{
+                      width: '28',
+                    }}
+                  >
+                    {(() => {
+                      const inv = predicates[link.predicate]?.inverseSlug;
+                      return inv
+                        ? (PREDICATES[inv as keyof typeof PREDICATES]?.name ?? 'Unknown')
+                        : (predicates[link.predicate]?.name ?? 'Unknown');
+                    })()}
+                  </RelationshipSelector.Trigger>
+                  <RelationshipSelector.Content />
+                </RelationshipSelector.Root>
                 <RecordLink
                   id={link.sourceId}
                   linkOptions={{
@@ -302,16 +315,9 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
         <ul>
           {similarRecords.map((record) => (
             <li key={record.id} className="mb-2 flex items-center gap-4">
-              <RelationshipSelector
+              <RelationshipSelector.Root
                 sourceId={id}
                 initialTargetId={record.id}
-                label={`${Math.round(record.similarity * 100)}%`}
-                buttonProps={{
-                  size: 'sm',
-                  variant: 'outline',
-                  className: 'h-[1.5lh] font-mono text-xs text-c-secondary',
-                }}
-                popoverProps={{ side: 'left' }}
                 buildActions={({ sourceId, targetId }) => {
                   return [
                     {
@@ -335,7 +341,19 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
                     },
                   ];
                 }}
-              />
+              >
+                <RelationshipSelector.Trigger
+                  css={{
+                    height: '[1.5lh]',
+                    fontFamily: 'mono',
+                    fontSize: 'xs',
+                    color: 'secondary',
+                  }}
+                >
+                  {`${Math.round(record.similarity * 100)}%`}
+                </RelationshipSelector.Trigger>
+                <RelationshipSelector.Content side="left" />
+              </RelationshipSelector.Root>
               <RecordLink
                 id={record.id}
                 className="flex-1"

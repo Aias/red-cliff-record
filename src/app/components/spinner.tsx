@@ -1,12 +1,13 @@
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
+import type { ComponentProps } from '@/styled-system/types';
 
 // An internal copy of the Radix Spinner component
 // https://www.radix-ui.com/themes/docs/components/spinner
 
-type SpinnerProps = React.ComponentPropsWithRef<'span'>;
+type SpinnerProps = ComponentProps<typeof styled.span>;
 
-const Spinner = React.memo(({ className = '', ...props }: SpinnerProps) => {
+const Spinner = ({ css: cssProp, ...props }: SpinnerProps) => {
   // Duration of the spinner animation in seconds.
   const duration = 0.8;
 
@@ -17,28 +18,52 @@ const Spinner = React.memo(({ className = '', ...props }: SpinnerProps) => {
     // then increments from there.
     const delay = -((8 - i) / 8) * duration;
     return (
-      <span
+      <styled.span
         key={i}
-        className="absolute top-0 left-[calc(50%-12.5%/2)] h-full w-[12.5%] animate-[spinnerLeafFade_0.8s_linear_infinite]"
-        style={{
-          transform: `rotate(${rotation}deg)`,
-          animationDelay: `${delay}s`,
-        }}
+        css={css.raw(
+          {
+            position: 'absolute',
+            top: '0',
+            left: '[calc(50% - 12.5% / 2)]',
+            height: 'full',
+            width: '[12.5%]',
+            animationName: 'spinnerLeafFade',
+            animationDuration: '[0.8s]',
+            animationTimingFunction: 'linear',
+            animationIterationCount: 'infinite',
+          },
+          cssProp
+        )}
+        style={{ transform: `rotate(${rotation}deg)`, animationDelay: `${delay}s` }}
       >
-        <span className="block h-[30%] w-full rounded bg-current" />
-      </span>
+        <styled.span
+          css={{
+            display: 'block',
+            height: '[30%]',
+            width: 'full',
+            borderRadius: 'sm',
+            backgroundColor: 'currentColor',
+          }}
+        />
+      </styled.span>
     );
   });
 
   return (
-    <span
+    <styled.span
+      css={{
+        position: 'relative',
+        display: 'inline-block',
+        boxSize: 'em',
+        color: 'currentColor',
+        opacity: '0.75',
+      }}
       {...props}
-      className={cn('relative inline-block size-[1em] text-current opacity-75', className)}
     >
       {leaves}
-    </span>
+    </styled.span>
   );
-});
+};
 
 Spinner.displayName = 'Spinner';
 

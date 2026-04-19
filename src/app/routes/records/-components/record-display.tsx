@@ -1,5 +1,4 @@
-import { Link } from '@tanstack/react-router';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { RectangleEllipsisIcon, ShoppingBasketIcon } from 'lucide-react';
 import { memo } from 'react';
 import { Avatar } from '@/components/avatar';

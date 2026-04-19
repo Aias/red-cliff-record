@@ -1,6 +1,6 @@
 import { LayoutGroup, motion, MotionConfig } from 'motion/react';
 import { useEffect, useReducer, useRef, useState, type ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import { styled } from '@/styled-system/jsx';
 
 interface MasonryProps<T> {
   items: T[];
@@ -105,10 +105,11 @@ export function Masonry<T>({
   return (
     <MotionConfig reducedMotion="user">
       <LayoutGroup>
-        <div
+        <styled.div
           ref={containerRef}
           data-slot="masonry"
-          className={cn('relative mb-4 shrink-0', className)}
+          css={{ position: 'relative', marginBlockEnd: '4', flexShrink: 0 }}
+          className={className}
           style={{
             height: containerWidth > 0 ? height : undefined,
             visibility: containerWidth > 0 ? undefined : 'hidden',
@@ -134,7 +135,7 @@ export function Masonry<T>({
               </motion.div>
             );
           })}
-        </div>
+        </styled.div>
       </LayoutGroup>
     </MotionConfig>
   );

@@ -5,6 +5,7 @@ import {
   useKeyboardShortcut,
   useRegisteredShortcuts,
 } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
+import type { SystemStyleObject } from '@/styled-system/types';
 import { Button } from './button';
 import {
   Dialog,
@@ -26,7 +27,7 @@ interface ShortcutGroup {
 /**
  * Dialog that displays all registered keyboard shortcuts grouped by category
  */
-export function KeyboardShortcutsHelp({ className }: { className?: string }) {
+export function KeyboardShortcutsHelp({ buttonCss }: { buttonCss?: SystemStyleObject }) {
   const [open, setOpen] = useState(false);
   const shortcuts = useRegisteredShortcuts();
 
@@ -73,7 +74,7 @@ export function KeyboardShortcutsHelp({ className }: { className?: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Keyboard shortcuts" className={className}>
+        <Button variant="ghost" size="icon" aria-label="Keyboard shortcuts" css={buttonCss}>
           <KeyboardIcon />
         </Button>
       </DialogTrigger>

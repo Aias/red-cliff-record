@@ -1,6 +1,7 @@
 import { Tooltip as TooltipPrimitive } from 'radix-ui';
 import * as React from 'react';
 import { cn } from '@/app/lib/utils';
+import { css } from '@/styled-system/css';
 
 function TooltipProvider({
   delayDuration = 0,
@@ -35,7 +36,17 @@ function TooltipContent({
         data-slot="tooltip-content"
         sideOffset={sideOffset}
         className={cn(
-          'z-50 w-fit max-w-[50vw] origin-(--radix-tooltip-content-transform-origin) rounded-md bg-c-primary px-3 py-1.5 text-xs text-c-main-contrast animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 dark:border dark:border-c-border dark:bg-c-float dark:text-c-primary',
+          'z-50 w-fit max-w-[50vw] origin-(--radix-tooltip-content-transform-origin) rounded-md bg-c-primary px-3 py-1.5 text-xs text-c-main-contrast dark:border dark:border-c-border dark:bg-c-float dark:text-c-primary',
+          css({
+            animateIn: true,
+            fadeIn: 0,
+            zoomIn: 0.95,
+            _closed: { animateOut: true, fadeOut: 0, zoomOut: 0.95 },
+            '&[data-side=bottom]': { slideInY: '-0.5rem' },
+            '&[data-side=top]': { slideInY: '0.5rem' },
+            '&[data-side=left]': { slideInX: '-0.5rem' },
+            '&[data-side=right]': { slideInX: '0.5rem' },
+          }),
           className
         )}
         {...props}

@@ -16,3 +16,7 @@ dist
 # Logs
 logs
 *.log
+
+## Panda
+styled-system
+styled-system-studio

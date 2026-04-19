@@ -3,17 +3,7 @@ import { GlobeIcon, ShoppingBasketIcon, Trash2Icon } from 'lucide-react';
 import { type ComponentProps, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/alert-dialog';
+import { AlertDialog } from '@/components/alert-dialog';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
 import { ExternalLink } from '@/components/external-link';
@@ -48,7 +38,7 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
     } else {
       deleteMutation.mutate([recordId]);
     }
-  }, [deleteMutation, recordId]);
+  }, [deleteMutation, recordId, onDelete]);
 
   if (!record) {
     return null;
@@ -107,27 +97,34 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
           </TooltipTrigger>
           <TooltipContent>{inBasket ? 'Remove from basket' : 'Add to basket'}</TooltipContent>
         </Tooltip>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
+        <AlertDialog.Root>
+          <AlertDialog.Trigger asChild>
             <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
               <Trash2Icon />
             </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete this record.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <Button variant="destructive" asChild>
-                <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          </AlertDialog.Trigger>
+          <AlertDialog.Portal>
+            <AlertDialog.Overlay />
+            <AlertDialog.Content>
+              <AlertDialog.Header>
+                <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+                <AlertDialog.Description>
+                  This action cannot be undone. This will permanently delete this record.
+                </AlertDialog.Description>
+              </AlertDialog.Header>
+              <AlertDialog.Footer>
+                <AlertDialog.Cancel asChild>
+                  <Button variant="outline">Cancel</Button>
+                </AlertDialog.Cancel>
+                <AlertDialog.Action asChild>
+                  <Button data-palette="error" variant="solid" onClick={handleDelete}>
+                    Continue
+                  </Button>
+                </AlertDialog.Action>
+              </AlertDialog.Footer>
+            </AlertDialog.Content>
+          </AlertDialog.Portal>
+        </AlertDialog.Root>
       </div>
     </div>
   );
@@ -181,7 +178,7 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
           onBlur={handleBlur}
           placeholder="https://example.com/image.png"
         />
-        {localUrl && <ExternalLink href={localUrl} children={null} />}
+        {localUrl && <ExternalLink href={localUrl}>{null}</ExternalLink>}
       </div>
       <Tooltip>
         <TooltipTrigger asChild>

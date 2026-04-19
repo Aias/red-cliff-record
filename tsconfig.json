@@ -42,6 +42,7 @@
       "@/shared/*": ["./src/shared/*"],
       "@/shared/types/*": ["./src/shared/types/*"],
       "@/server/*": ["./src/server/*"],
+      "@/styled-system/*": ["./src/app/styled-system/*"],
       "@/*": ["./src/*"]
     }
   },

@@ -15,24 +15,20 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
     <div className="flex max-w-lg flex-col items-center justify-center gap-4 p-4">
       <ErrorComponent error={error} />
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="default" onClick={() => void router.invalidate()}>
+        <Button variant="solid" onClick={() => void router.invalidate()}>
           Try Again
         </Button>
         {isRoot ? (
-          <Button asChild>
-            <Link to="/">Home</Link>
-          </Button>
+          <Button render={<Link to="/">Home</Link>} />
         ) : (
           <Button
-            variant="default"
-            asChild
+            variant="solid"
             onClick={(e) => {
               e.preventDefault();
               window.history.back();
             }}
-          >
-            <Link to="/">Go Back</Link>
-          </Button>
+            render={<Link to="/">Go Back</Link>}
+          />
         )}
       </div>
     </div>
