@@ -20,9 +20,8 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "bun run codegen:styles && bunx --bun vite build",
+    "build": "bun run stylegen && bunx --bun vite build",
     "check": "bun run lint && bun run typecheck && bun run format",
-    "codegen:styles": "panda codegen",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
@@ -35,9 +34,10 @@
     "format:check": "oxfmt --check",
     "lint": "oxlint --fix .",
     "lint:check": "oxlint .",
-    "prepare": "bun run codegen:styles",
+    "prepare": "bun run stylegen",
     "rcr": "bun src/server/cli/rcr/index.ts",
     "start": "bun run server.ts",
+    "stylegen": "panda codegen && panda cssgen",
     "typecheck": "tsgo --noEmit",
     "typecheck:watch": "tsgo --noEmit --watch"
   },
