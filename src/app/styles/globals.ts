@@ -1,6 +1,29 @@
 import { defineGlobalStyles } from '@pandacss/dev';
+import { semanticColorNames, semanticPaletteNames } from './colors';
+import { PREFIX } from './constants';
+
+const toCssVarName = (value: string) =>
+  value.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+
+const paletteAliasScopes = Object.fromEntries(
+  semanticPaletteNames.map((palette) => [
+    `@scope (.${PREFIX}-color-palette_${palette})`,
+    {
+      ':scope, :scope *': Object.fromEntries(
+        semanticColorNames.map((token) => {
+          const cssVarName = toCssVarName(token);
+          return [
+            `--${PREFIX}-colors-${cssVarName}`,
+            `var(--${PREFIX}-colors-${palette}-${cssVarName})`,
+          ];
+        })
+      ),
+    },
+  ])
+);
 
 export const globalStyles = defineGlobalStyles({
+  ...paletteAliasScopes,
   html: {
     '--global-font-body': 'fonts.sans',
     '--global-font-mono': 'fonts.mono',

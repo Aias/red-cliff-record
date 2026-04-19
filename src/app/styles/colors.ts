@@ -140,6 +140,40 @@ type SemanticPaletteScale = {
   mainContrast: string;
 };
 
+export const semanticPaletteNames = [
+  'artifact',
+  'entity',
+  'concept',
+  'error',
+  'success',
+  'info',
+] as const;
+export type SemanticPaletteName = (typeof semanticPaletteNames)[number];
+
+export const semanticColorNames = [
+  'display',
+  'primary',
+  'secondary',
+  'muted',
+  'symbol',
+  'accent',
+  'accentActive',
+  'background',
+  'surface',
+  'container',
+  'float',
+  'divider',
+  'border',
+  'edge',
+  'focus',
+  'mist',
+  'splash',
+  'flood',
+  'main',
+  'mainActive',
+  'mainContrast',
+] as const satisfies readonly (keyof SemanticPaletteScale)[];
+
 const lightDark = (light: string, dark: string): LightDarkColorString =>
   `light-dark(${light}, ${dark})`;
 
