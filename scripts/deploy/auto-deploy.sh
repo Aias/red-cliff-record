@@ -6,10 +6,6 @@
 REPO_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 BRANCH="main"
 CHECK_INTERVAL=60  # Check every 60 seconds
-LOG_FILE="$REPO_DIR/logs/auto-deploy.log"
-
-# Ensure log directory exists
-mkdir -p "$(dirname "$LOG_FILE")"
 
 # Source shell profile so version-managed tools (bun, node, pm2) are on PATH.
 # Non-interactive shells (like those spawned by PM2) don't load these automatically.
@@ -18,7 +14,7 @@ for f in "$HOME/.profile" "$HOME/.bash_profile" "$HOME/.bashrc"; do
 done
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
 cd "$REPO_DIR" || exit 1
@@ -96,6 +92,14 @@ while true; do
                 fi
             else
                 log "ERROR: Failed to install dependencies"
+            fi
+        else
+            log "ERROR: Git pull failed"
+        fi
+    fi
+    
+    sleep $CHECK_INTERVAL
+donecies"
             fi
         else
             log "ERROR: Git pull failed"

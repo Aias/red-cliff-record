@@ -7,6 +7,14 @@ echo "Setting up PM2 for Red Cliff Record..."
 # Create logs directory
 mkdir -p logs
 
+# Install and configure pm2-logrotate so log files don't grow unbounded.
+# PM2 does NOT rotate logs by default; this module is required.
+pm2 install pm2-logrotate
+pm2 set pm2-logrotate:max_size 10M
+pm2 set pm2-logrotate:retain 7
+pm2 set pm2-logrotate:compress true
+pm2 set pm2-logrotate:rotateInterval '0 0 * * *'
+
 # Start both the app and auto-deploy monitor
 pm2 start ecosystem.config.cjs
 

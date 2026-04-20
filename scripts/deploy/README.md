@@ -56,25 +56,29 @@ The `ecosystem.config.cjs` file in the root directory manages both:
 
 ### Logging
 
-Logs are automatically rotated and stored in the `logs/` directory. PM2 handles log rotation automatically.
+Logs live in the `logs/` directory.
 
 **Log Files:**
 
-- `errors.log` - Application errors
-- `output.log` - Application stdout
-- `combined.log` - Merged stdout and stderr for the app
-- `deploy-error.log` - Deployment script errors
-- `deploy-out.log` - Deployment script stdout
-- `deploy-combined.log` - Merged logs for deployment script
+- `errors.log` — Application errors
+- `output.log` — Application stdout
+- `combined.log` — Merged stdout and stderr for the app
+- `deploy-error.log` — Deployment script errors
+- `deploy-out.log` — Deployment script stdout
+- `deploy-combined.log` — Merged logs for deployment script
 
 ### Log Rotation
 
-PM2 has built-in log rotation that automatically rotates logs when they reach:
+PM2 does **not** rotate logs on its own. Rotation is handled by the `pm2-logrotate` module, which `setup-pm2.sh` installs and configures:
 
-- 10MB in size (configurable)
-- Or after 7 days (configurable)
+- `max_size`: 10M — rotate a file once it crosses 10MB
+- `retain`: 7 — keep the last 7 rotated files per stream
+- `compress`: true — gzip rotated files
+- `rotateInterval`: daily at midnight
 
-You can manually rotate logs with:
+Tune these with `pm2 set pm2-logrotate:<key> <value>`. Verify with `pm2 conf pm2-logrotate`.
+
+Force an immediate rotation for testing:
 
 ```bash
 pm2 reloadLogs
