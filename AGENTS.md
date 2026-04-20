@@ -53,8 +53,6 @@ psql $DATABASE_URL_DEV -c "\dt table_name"
 
 **Boundary rule:** client never imports server; server never imports client; both may import shared.
 
-Theme tokens: `src/app/styles/theme.css` (`c-*` color variables). Check `src/app/styles/app.css` for the full token list.
-
 ## Gotchas
 
 - **React Compiler is enabled** (`babel-plugin-react-compiler`). Don't add manual `useMemo`/`useCallback` for optimization — the compiler handles it.

@@ -7,12 +7,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      # 1 – Install Node.js 22+ (required for oxlint.config.ts)
-      - uses: actions/setup-node@v4
+      # 1 – Install Node.js 24 (required for oxlint.config.ts)
+      - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: '24'
 
       # 2 – Install Bun
       - uses: oven-sh/setup-bun@v2
@@ -23,7 +23,7 @@ jobs:
       - run: bun install
 
       # 4 – Generate styles, then check formatting, lint, and types
-      - run: bun run codegen:styles
+      - run: bun run stylegen
       - run: bun run format:check
       - run: bun run lint:check
       - run: bun run typecheck
