@@ -92,7 +92,7 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
             <IntegrationLogo
               key={source}
               integration={source}
-              className={css({ textStyle: 'xs', opacity: '50%' })}
+              css={{ textStyle: 'xs', opacity: '50%' }}
             />
           ))}
         </styled.div>

@@ -1,6 +1,8 @@
 import type { IntegrationType } from '@hozo/schema/operations';
 import { memo } from 'react';
 import { assertNever } from '@/shared/lib/type-utils';
+import { styled } from '@/styled-system/jsx';
+import type { ComponentProps } from '@/styled-system/types';
 import { AdobeLogo } from './logos/adobe';
 import { AirtableLogo } from './logos/airtable';
 import { ArcLogo } from './logos/arc';
@@ -10,33 +12,33 @@ import { ReadwiseLogo } from './logos/readwise';
 import { XLogo } from './logos/x';
 import { Tooltip } from './tooltip';
 
-interface IntegrationLogoProps {
+const LogoWrapper = styled('div', {
+  base: {
+    display: 'inline-grid',
+    placeItems: 'center',
+  },
+});
+
+interface IntegrationLogoProps extends ComponentProps<typeof LogoWrapper> {
   integration: IntegrationType;
-  className?: string;
 }
 
-const LogoComponent = ({
-  service,
-  className,
-}: {
-  service: IntegrationType;
-  className?: string;
-}) => {
+const LogoComponent = ({ service }: { service: IntegrationType }) => {
   switch (service) {
     case 'lightroom':
-      return <AdobeLogo className={className} />;
+      return <AdobeLogo />;
     case 'airtable':
-      return <AirtableLogo className={className} />;
+      return <AirtableLogo />;
     case 'browser_history':
-      return <ArcLogo className={className} />;
+      return <ArcLogo />;
     case 'github':
-      return <GithubLogo className={className} />;
+      return <GithubLogo />;
     case 'raindrop':
-      return <RaindropLogo className={className} />;
+      return <RaindropLogo />;
     case 'readwise':
-      return <ReadwiseLogo className={className} />;
+      return <ReadwiseLogo />;
     case 'twitter':
-      return <XLogo className={className} />;
+      return <XLogo />;
     case 'ai_chat':
     case 'crawler':
     case 'embeddings':
@@ -50,18 +52,16 @@ const LogoComponent = ({
 
 export const IntegrationLogo = memo(function IntegrationLogo({
   integration: service,
-  className,
+  ...props
 }: IntegrationLogoProps) {
   return (
     <Tooltip.Root>
-      <Tooltip.Trigger asChild css={{ display: 'inline-grid', placeItems: 'center' }}>
-        <div className={className}>
+      <Tooltip.Trigger asChild>
+        <LogoWrapper {...props}>
           <LogoComponent service={service} />
-        </div>
+        </LogoWrapper>
       </Tooltip.Trigger>
-      <Tooltip.Content>
-        <span className="capitalize">{service}</span>
-      </Tooltip.Content>
+      <Tooltip.Content css={{ textTransform: 'capitalize' }}>{service}</Tooltip.Content>
     </Tooltip.Root>
   );
 });

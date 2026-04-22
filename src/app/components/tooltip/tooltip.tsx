@@ -36,7 +36,7 @@ export const Content = ({
   sideOffset = 0,
   children,
   ...props
-}: ComponentProps<typeof Tooltip.Content>) => {
+}: ComponentProps<typeof StyledContent>) => {
   return (
     <Portal>
       <StyledContent sideOffset={sideOffset} {...props}>

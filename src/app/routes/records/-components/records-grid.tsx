@@ -328,14 +328,7 @@ export const RecordsGrid = () => {
                         handleSourceToggle(source);
                       }}
                     >
-                      <IntegrationLogo
-                        integration={source}
-                        className={css({
-                          display: 'grid',
-                          boxSize: '4',
-                          placeItems: 'center',
-                        })}
-                      />
+                      <IntegrationLogo integration={source} css={{ boxSize: '4' }} />
                       <styled.span css={{ flex: '1', textTransform: 'capitalize' }}>
                         {source}
                       </styled.span>
