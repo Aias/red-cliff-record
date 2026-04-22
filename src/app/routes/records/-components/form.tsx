@@ -392,7 +392,7 @@ export function RecordForm({
                             css={{
                               display: 'none',
                               textTransform: 'capitalize',
-                              '@container (min-width: 480px)': { display: 'inline' },
+                              '@container (min-width: 30rem)': { display: 'inline' },
                             }}
                           >
                             {type}
