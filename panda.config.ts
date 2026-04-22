@@ -3,7 +3,9 @@ import { alertDialogRecipe } from '@/app/components/alert-dialog/alert-dialog.re
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { textareaRecipe } from '@/app/components/field/textarea.recipe';
 import { tableRecipe } from '@/app/components/table/table.recipe';
+import { tooltipRecipe } from '@/app/components/tooltip/tooltip.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
+import { blurs } from '@/app/styles/blurs';
 import { borders } from '@/app/styles/borders';
 import { colors, semanticColors } from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
@@ -51,6 +53,7 @@ export default defineConfig({
   theme: {
     extend: {
       tokens: {
+        blurs: blurs,
         borders: borders,
         colors: colors,
         durations: durations,
@@ -92,6 +95,7 @@ export default defineConfig({
     slotRecipes: {
       alertDialog: alertDialogRecipe,
       table: tableRecipe,
+      tooltip: tooltipRecipe,
     },
   },
   utilities: utilities,

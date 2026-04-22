@@ -8,7 +8,7 @@ import { Spinner } from '@/components/spinner';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
 import type { DbId } from '@/shared/types/api';
-import { sva } from '@/styled-system/css';
+import { cx, sva } from '@/styled-system/css';
 import { createStyleContext } from '@/styled-system/jsx';
 import { getRecordTitle, SourceLogos } from './record-parts';
 import { recordTypeIcons } from './type-icons';
@@ -63,7 +63,7 @@ const recordDisplay = sva({
       flexWrap: 'wrap',
       alignItems: 'baseline',
       gap: '2',
-      textWrap: '[pretty]',
+      textWrapStyle: 'pretty',
     },
     title: {
       fontWeight: 'semibold',
@@ -72,7 +72,7 @@ const recordDisplay = sva({
       transitionProperty: 'colors',
       transitionDuration: '100',
       transitionTimingFunction: 'easeInOut.cubic',
-      '[data-scope="recordDisplay"]:hover &': { color: 'accent' },
+      _groupHover: { color: 'accent' },
       '&[data-has-title="false"]': { fontWeight: 'medium', color: 'muted' },
     },
     abbreviation: { textStyle: 'xs', color: 'muted' },
@@ -163,7 +163,7 @@ export const RecordDisplay = memo(function RecordDisplay({
   return (
     <Root
       compact={compact}
-      className={className}
+      className={cx('group', className)}
       onClick={() => {
         void navigate({ to: '/records/$recordId', params: { recordId: id } });
       }}

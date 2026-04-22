@@ -15,7 +15,7 @@ import { Spinner } from '@/components/spinner';
 import { Table } from '@/components/table';
 import { Toggle } from '@/components/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
+import { Tooltip } from '@/components/tooltip';
 import { useDeleteMedia } from '@/lib/hooks/media-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
@@ -374,8 +374,8 @@ export function RecordForm({
                 {RecordTypeSchema.options.map((type) => {
                   const { icon: Icon, description } = recordTypeIcons[type];
                   return (
-                    <Tooltip key={type}>
-                      <TooltipTrigger asChild>
+                    <Tooltip.Root key={type}>
+                      <Tooltip.Trigger asChild>
                         <ToggleGroupItem
                           value={type}
                           aria-label={type}
@@ -398,8 +398,8 @@ export function RecordForm({
                             {type}
                           </styled.span>
                         </ToggleGroupItem>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
+                      </Tooltip.Trigger>
+                      <Tooltip.Content side="bottom">
                         <p>
                           <styled.strong
                             css={{ marginInlineEnd: '1', textTransform: 'capitalize' }}
@@ -408,8 +408,8 @@ export function RecordForm({
                           </styled.strong>
                           {description}
                         </p>
-                      </TooltipContent>
-                    </Tooltip>
+                      </Tooltip.Content>
+                    </Tooltip.Root>
                   );
                 })}
               </ToggleGroup>
@@ -417,8 +417,8 @@ export function RecordForm({
           </form.Field>
           <form.Field name="isCurated">
             {(field) => (
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
                   <styled.span css={{ display: 'inline-flex' }}>
                     <Toggle
                       variant="outline"
@@ -433,15 +433,15 @@ export function RecordForm({
                       {field.state.value ? <BadgeCheckIcon /> : <BadgeIcon />}
                     </Toggle>
                   </styled.span>
-                </TooltipTrigger>
-                <TooltipContent>{field.state.value ? 'Curated' : 'Not curated'}</TooltipContent>
-              </Tooltip>
+                </Tooltip.Trigger>
+                <Tooltip.Content>{field.state.value ? 'Curated' : 'Not curated'}</Tooltip.Content>
+              </Tooltip.Root>
             )}
           </form.Field>
           <form.Field name="isPrivate">
             {(field) => (
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
                   <styled.span css={{ display: 'inline-flex' }}>
                     <Toggle
                       variant="outline"
@@ -456,9 +456,9 @@ export function RecordForm({
                       {field.state.value ? <EyeOffIcon /> : <EyeIcon />}
                     </Toggle>
                   </styled.span>
-                </TooltipTrigger>
-                <TooltipContent>{field.state.value ? 'Private' : 'Public'}</TooltipContent>
-              </Tooltip>
+                </Tooltip.Trigger>
+                <Tooltip.Content>{field.state.value ? 'Private' : 'Public'}</Tooltip.Content>
+              </Tooltip.Root>
             )}
           </form.Field>
         </styled.div>

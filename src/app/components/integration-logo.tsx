@@ -9,7 +9,7 @@ import { GithubLogo } from './logos/github';
 import { RaindropLogo } from './logos/raindrop';
 import { ReadwiseLogo } from './logos/readwise';
 import { XLogo } from './logos/x';
-import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
+import { Tooltip } from './tooltip';
 
 interface IntegrationLogoProps {
   integration: IntegrationType;
@@ -54,15 +54,15 @@ export const IntegrationLogo = memo(function IntegrationLogo({
   className,
 }: IntegrationLogoProps) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
         <div className={cn('inline-grid place-items-center', className)}>
           <LogoComponent service={service} />
         </div>
-      </TooltipTrigger>
-      <TooltipContent>
+      </Tooltip.Trigger>
+      <Tooltip.Content>
         <span className="capitalize">{service}</span>
-      </TooltipContent>
-    </Tooltip>
+      </Tooltip.Content>
+    </Tooltip.Root>
   );
 });

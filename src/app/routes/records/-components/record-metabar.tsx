@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { Separator } from '@/components/separator';
 import { Spinner } from '@/components/spinner';
 import { Toggle } from '@/components/toggle';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
+import { Tooltip } from '@/components/tooltip';
 import { useDeleteRecords, useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-basket';
@@ -86,7 +86,7 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
       </Link>
       {record.sources && (
         <styled.div
-          css={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: '1' }}
+          css={{ marginInlineEnd: 'auto', display: 'flex', alignItems: 'center', gap: '1' }}
         >
           {record.sources.map((source) => (
             <IntegrationLogo
@@ -98,8 +98,8 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
         </styled.div>
       )}
       <styled.div css={{ display: 'flex', alignItems: 'center', gap: '0.5' }}>
-        <Tooltip>
-          <TooltipTrigger asChild>
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>
             <styled.span css={{ display: 'inline-flex' }}>
               <Toggle
                 pressed={inBasket}
@@ -117,9 +117,9 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
                 <ShoppingBasketIcon />
               </Toggle>
             </styled.span>
-          </TooltipTrigger>
-          <TooltipContent>{inBasket ? 'Remove from basket' : 'Add to basket'}</TooltipContent>
-        </Tooltip>
+          </Tooltip.Trigger>
+          <Tooltip.Content>{inBasket ? 'Remove from basket' : 'Add to basket'}</Tooltip.Content>
+        </Tooltip.Root>
         <AlertDialog.Root>
           <AlertDialog.Trigger asChild>
             <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
@@ -207,8 +207,8 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
         />
         {localUrl && <ExternalLink href={localUrl}>{null}</ExternalLink>}
       </styled.div>
-      <Tooltip>
-        <TooltipTrigger asChild>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
           <Button
             type="button"
             variant="outline"
@@ -219,13 +219,13 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
             {isFetchingFavicon ? <Spinner /> : <GlobeIcon />}
             Fetch favicon
           </Button>
-        </TooltipTrigger>
-        <TooltipContent>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
           {record.url
             ? 'Fetch the favicon from the record URL'
             : 'Add a URL to the record to fetch its favicon'}
-        </TooltipContent>
-      </Tooltip>
+        </Tooltip.Content>
+      </Tooltip.Root>
     </styled.div>
   );
 };

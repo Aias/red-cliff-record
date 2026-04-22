@@ -20,7 +20,7 @@ import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
 import { Table } from '@/components/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
+import { Tooltip } from '@/components/tooltip';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
@@ -74,8 +74,8 @@ function RecordRow({ recordId }: { recordId: DbId }) {
         <RecordTypeIcon type={record.type} />
       </Table.Cell>
       <Table.Cell css={{ maxWidth: '60', whiteSpace: 'nowrap', truncate: true }}>
-        <Tooltip delayDuration={1000} disableHoverableContent>
-          <TooltipTrigger asChild>
+        <Tooltip.Root delayDuration={1000} disableHoverableContent>
+          <Tooltip.Trigger asChild>
             <Link
               to="/records/$recordId"
               params={{ recordId: record.id }}
@@ -100,11 +100,11 @@ function RecordRow({ recordId }: { recordId: DbId }) {
               )}
               {inBasket && <ShoppingBasketIcon className={css({ color: 'accent' })} />}
             </Link>
-          </TooltipTrigger>
-          <TooltipContent className={css({ maxWidth: '96' })}>
+          </Tooltip.Trigger>
+          <Tooltip.Content className={css({ maxWidth: '96' })}>
             <styled.div css={{ lineClamp: '3' }}>{label}</styled.div>
-          </TooltipContent>
-        </Tooltip>
+          </Tooltip.Content>
+        </Tooltip.Root>
       </Table.Cell>
       <Table.Cell css={{ whiteSpace: 'nowrap' }}>
         {record.url ? (
