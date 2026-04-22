@@ -29,6 +29,7 @@ const ADDITIONAL_TOKENS = {
   full: { value: '100%' },
   em: { value: '1em' },
   px: { value: '1px' },
+  lh: { value: '1lh' },
 };
 
 export const spacing = defineTokens.spacing({

@@ -25,6 +25,7 @@ import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import type { DbId } from '@/shared/types/api';
+import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { SourceLogos } from './record-parts';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
@@ -78,18 +79,30 @@ function RecordRow({ recordId }: { recordId: DbId }) {
             <Link
               to="/records/$recordId"
               params={{ recordId: record.id }}
-              className="flex w-full items-center gap-2 truncate"
+              className={css({
+                display: 'flex',
+                width: 'full',
+                alignItems: 'center',
+                gap: '2',
+                truncate: true,
+              })}
             >
-              <span className="truncate">{label}</span>
+              <styled.span css={{ truncate: true }}>{label}</styled.span>
               {record.abbreviation && (
-                <span className="shrink-0 text-c-hint">({record.abbreviation})</span>
+                <styled.span css={{ flexShrink: '0', color: 'muted' }}>
+                  ({record.abbreviation})
+                </styled.span>
               )}
-              {record.sense && <span className="shrink-0 text-c-hint italic">{record.sense}</span>}
-              {inBasket && <ShoppingBasketIcon className="text-c-accent" />}
+              {record.sense && (
+                <styled.span css={{ flexShrink: '0', color: 'muted', fontStyle: 'italic' }}>
+                  {record.sense}
+                </styled.span>
+              )}
+              {inBasket && <ShoppingBasketIcon className={css({ color: 'accent' })} />}
             </Link>
           </TooltipTrigger>
-          <TooltipContent className="max-w-96">
-            <div className="line-clamp-3">{label}</div>
+          <TooltipContent className={css({ maxWidth: '96' })}>
+            <styled.div css={{ lineClamp: '3' }}>{label}</styled.div>
           </TooltipContent>
         </Tooltip>
       </Table.Cell>
@@ -114,7 +127,10 @@ function RecordRow({ recordId }: { recordId: DbId }) {
         {record.eloScore !== 1200 && record.eloScore}
       </Table.Cell>
       <Table.Cell css={{ textAlign: 'center' }}>
-        <SourceLogos sources={record.sources} className="justify-center text-sm" />
+        <SourceLogos
+          sources={record.sources}
+          className={css({ justifyContent: 'center', textStyle: 'sm' })}
+        />
       </Table.Cell>
     </Table.Row>
   );
@@ -178,24 +194,48 @@ export const RecordsGrid = () => {
   };
 
   return data ? (
-    <div className="flex h-full grow gap-4 overflow-hidden">
-      <div className="-mx-4 flex min-w-48 flex-col gap-3 overflow-y-auto px-4 text-sm @max-[40rem]:hidden">
-        <h3 className="mb-1 text-base">Record Filters</h3>
+    <styled.div
+      css={{
+        display: 'flex',
+        height: 'full',
+        flexGrow: '1',
+        gap: '4',
+        overflow: 'hidden',
+      }}
+    >
+      <styled.div
+        css={{
+          marginInline: '-4',
+          display: 'flex',
+          minWidth: '48',
+          flexDirection: 'column',
+          gap: '3',
+          overflowY: 'auto',
+          paddingInline: '4',
+          textStyle: 'sm',
+          '@container (max-width: 40rem)': { display: 'none' },
+        }}
+      >
+        <styled.h3 css={{ marginBlockEnd: '1', textStyle: 'base' }}>Record Filters</styled.h3>
         <hr />
-        <div className="flex flex-col gap-1.5">
-          <button type="button" onClick={reset} className="text-start hover:underline">
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
+          <styled.button
+            type="button"
+            onClick={reset}
+            css={{ textAlign: 'start', _hover: { textDecoration: 'underline' } }}
+          >
             Reset to Defaults
-          </button>
-          <button
+          </styled.button>
+          <styled.button
             type="button"
             onClick={() => setFilters({ isCurated: false, hasParent: false })}
-            className="text-start hover:underline"
+            css={{ textAlign: 'start', _hover: { textDecoration: 'underline' } }}
           >
             Curation Queue
-          </button>
-        </div>
+          </styled.button>
+        </styled.div>
         <hr />
-        <div className="flex flex-col gap-1.5">
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="types">Types</Label>
           <DropdownMenu>
             <Button
@@ -210,16 +250,19 @@ export const RecordsGrid = () => {
               }}
               render={<DropdownMenuTrigger id="types" />}
             >
-              <span className={types?.length ? '' : 'text-c-secondary'}>
+              <styled.span
+                data-placeholder={!types?.length || undefined}
+                css={{ '&[data-placeholder]': { color: 'secondary' } }}
+              >
                 {types?.length
                   ? types.length === RecordTypeSchema.options.length
                     ? 'All Types'
                     : `${types.length} selected`
                   : 'All Types'}
-              </span>
+              </styled.span>
               <ChevronDownIcon />
             </Button>
-            <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuContent align="start" className={css({ width: '48' })}>
               {RecordTypeSchema.options.map((recordType) => {
                 const isSelected = types?.includes(recordType) ?? false;
                 const { icon: Icon } = recordTypeIcons[recordType];
@@ -232,15 +275,17 @@ export const RecordsGrid = () => {
                     }}
                   >
                     <Icon />
-                    <span className="flex-1 capitalize">{recordType}</span>
+                    <styled.span css={{ flex: '1', textTransform: 'capitalize' }}>
+                      {recordType}
+                    </styled.span>
                     <Checkbox checked={isSelected} />
                   </DropdownMenuItem>
                 );
               })}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-        <div className="flex flex-col gap-1.5">
+        </styled.div>
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="sources">Sources</Label>
           <DropdownMenu>
             <Button
@@ -255,17 +300,20 @@ export const RecordsGrid = () => {
               }}
               render={<DropdownMenuTrigger id="sources" />}
             >
-              <span className={sources?.length ? '' : 'text-c-secondary'}>
+              <styled.span
+                data-placeholder={!sources?.length || undefined}
+                css={{ '&[data-placeholder]': { color: 'secondary' } }}
+              >
                 {sources?.length
                   ? sources.length ===
                     ['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].length
                     ? 'All Sources'
                     : `${sources.length} selected`
                   : 'All Sources'}
-              </span>
+              </styled.span>
               <ChevronDownIcon />
             </Button>
-            <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuContent align="start" className={css({ width: '48' })}>
               {IntegrationTypeSchema.options
                 .filter((s) =>
                   ['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].includes(s)
@@ -282,17 +330,23 @@ export const RecordsGrid = () => {
                     >
                       <IntegrationLogo
                         integration={source}
-                        className="grid size-4 place-items-center"
+                        className={css({
+                          display: 'grid',
+                          boxSize: '4',
+                          placeItems: 'center',
+                        })}
                       />
-                      <span className="flex-1 capitalize">{source}</span>
+                      <styled.span css={{ flex: '1', textTransform: 'capitalize' }}>
+                        {source}
+                      </styled.span>
                       <Checkbox checked={isSelected} />
                     </DropdownMenuItem>
                   );
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-        <div className="flex flex-col gap-1.5">
+        </styled.div>
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="curated">Is Curated?</Label>
           <ToggleGroup
             id="curated"
@@ -300,20 +354,20 @@ export const RecordsGrid = () => {
             value={curatedValue}
             onValueChange={toggleBooleanFilter('isCurated')}
             variant="outline"
-            className="w-full"
+            className={css({ width: 'full' })}
           >
-            <ToggleGroupItem value="All" className="flex-1">
+            <ToggleGroupItem value="All" className={css({ flex: '1' })}>
               All
             </ToggleGroupItem>
-            <ToggleGroupItem value="Yes" className="flex-1">
+            <ToggleGroupItem value="Yes" className={css({ flex: '1' })}>
               Yes
             </ToggleGroupItem>
-            <ToggleGroupItem value="No" className="flex-1">
+            <ToggleGroupItem value="No" className={css({ flex: '1' })}>
               No
             </ToggleGroupItem>
           </ToggleGroup>
-        </div>
-        <div className="flex flex-col gap-1.5">
+        </styled.div>
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="hasParent">Has Parent?</Label>
           <ToggleGroup
             id="hasParent"
@@ -321,20 +375,20 @@ export const RecordsGrid = () => {
             value={hasParentValue}
             onValueChange={toggleBooleanFilter('hasParent')}
             variant="outline"
-            className="w-full"
+            className={css({ width: 'full' })}
           >
-            <ToggleGroupItem value="All" className="flex-1">
+            <ToggleGroupItem value="All" className={css({ flex: '1' })}>
               All
             </ToggleGroupItem>
-            <ToggleGroupItem value="Yes" className="flex-1">
+            <ToggleGroupItem value="Yes" className={css({ flex: '1' })}>
               Yes
             </ToggleGroupItem>
-            <ToggleGroupItem value="No" className="flex-1">
+            <ToggleGroupItem value="No" className={css({ flex: '1' })}>
               No
             </ToggleGroupItem>
           </ToggleGroup>
-        </div>
-        <div className="flex flex-col gap-1.5">
+        </styled.div>
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="hasMedia">Has Media?</Label>
           <ToggleGroup
             id="hasMedia"
@@ -342,20 +396,20 @@ export const RecordsGrid = () => {
             value={hasMediaValue}
             onValueChange={toggleBooleanFilter('hasMedia')}
             variant="outline"
-            className="w-full"
+            className={css({ width: 'full' })}
           >
-            <ToggleGroupItem value="All" className="flex-1">
+            <ToggleGroupItem value="All" className={css({ flex: '1' })}>
               All
             </ToggleGroupItem>
-            <ToggleGroupItem value="Yes" className="flex-1">
+            <ToggleGroupItem value="Yes" className={css({ flex: '1' })}>
               Yes
             </ToggleGroupItem>
-            <ToggleGroupItem value="No" className="flex-1">
+            <ToggleGroupItem value="No" className={css({ flex: '1' })}>
               No
             </ToggleGroupItem>
           </ToggleGroup>
-        </div>
-        <div className="flex flex-col gap-1.5">
+        </styled.div>
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="private">Is Private?</Label>
           <ToggleGroup
             id="private"
@@ -363,20 +417,20 @@ export const RecordsGrid = () => {
             value={privateValue}
             onValueChange={toggleBooleanFilter('isPrivate')}
             variant="outline"
-            className="w-full"
+            className={css({ width: 'full' })}
           >
-            <ToggleGroupItem value="All" className="flex-1">
+            <ToggleGroupItem value="All" className={css({ flex: '1' })}>
               All
             </ToggleGroupItem>
-            <ToggleGroupItem value="Yes" className="flex-1">
+            <ToggleGroupItem value="Yes" className={css({ flex: '1' })}>
               Yes
             </ToggleGroupItem>
-            <ToggleGroupItem value="No" className="flex-1">
+            <ToggleGroupItem value="No" className={css({ flex: '1' })}>
               No
             </ToggleGroupItem>
           </ToggleGroup>
-        </div>
-        <div className="flex flex-col gap-1.5">
+        </styled.div>
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="limit">Results Limit</Label>
           <Input
             id="limit"
@@ -386,8 +440,8 @@ export const RecordsGrid = () => {
             value={limitInput}
             onChange={handleLimitChange}
           />
-        </div>
-      </div>
+        </styled.div>
+      </styled.div>
       <Table.Root
         data-empty={data.ids.length === 0}
         css={{
@@ -445,9 +499,9 @@ export const RecordsGrid = () => {
           </Table.Body>
         </Table.Table>
       </Table.Root>
-    </div>
+    </styled.div>
   ) : (
-    <Placeholder className="grow">
+    <Placeholder css={{ flexGrow: '1' }}>
       <Spinner />
     </Placeholder>
   );

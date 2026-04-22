@@ -26,6 +26,7 @@ function SearchPage() {
         flexDirection: 'column',
         gap: '4',
         overflowY: 'auto',
+        scrollbarWidth: '[thin]',
         padding: '4',
         flexBasis: 'full',
         color: 'display',

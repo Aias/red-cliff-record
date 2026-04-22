@@ -345,7 +345,7 @@ function RouteComponent() {
   }
 
   return (
-    <styled.div css={{ display: 'flex', flex: '1', overflowX: 'auto' }}>
+    <styled.div css={{ display: 'flex', flex: '1', overflowX: 'auto', scrollbarWidth: '[thin]' }}>
       <styled.ul
         css={{
           display: 'flex',
@@ -356,6 +356,7 @@ function RouteComponent() {
           flexDirection: 'column',
           gap: '2',
           overflowY: 'auto',
+          scrollbarWidth: '[thin]',
           borderInlineEnd: 'divider',
           backgroundColor: 'container',
           padding: '3',
@@ -396,6 +397,7 @@ function RouteComponent() {
           flexDirection: 'column',
           gap: '4',
           overflowY: 'auto',
+          scrollbarWidth: '[thin]',
           padding: '4',
           '@container (max-width: 40rem)': { minWidth: 'screenW' },
         }}

@@ -30,6 +30,7 @@ function Home() {
         alignItems: 'center',
         gap: '1',
         overflowY: 'auto',
+        scrollbarWidth: '[thin]',
         padding: '1',
       }}
     >

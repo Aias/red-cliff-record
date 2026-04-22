@@ -23,8 +23,9 @@ import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-bask
 import { useRecordUpload } from '@/lib/hooks/use-record-upload';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { validateRecord } from '@/lib/server/validate-record';
-import { cn } from '@/lib/utils';
 import type { RecordGet } from '@/shared/types/domain';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 import { Metabar } from './record-metabar';
 import { recordTypeIcons } from './type-icons';
 
@@ -269,7 +270,7 @@ export function RecordForm({
   if (isError) return <div>Error loading record</div>;
 
   return (
-    <form
+    <styled.form
       ref={formRef}
       key={recordId}
       onSubmit={(e) => {
@@ -290,19 +291,32 @@ export function RecordForm({
         }
       }}
       onPaste={handlePaste}
-      className={cn('relative flex flex-col', className)}
+      className={className}
+      css={{ position: 'relative', display: 'flex', flexDirection: 'column' }}
       {...props}
     >
       {isFormLoading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-c-container/50 backdrop-blur-sm">
+        <styled.div
+          css={{
+            position: 'absolute',
+            inset: '0',
+            zIndex: '10',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 'lg',
+            backgroundColor: 'container/50',
+            backdropBlur: 'sm',
+          }}
+        >
           <Spinner />
-        </div>
+        </styled.div>
       )}
-      <div className="flex flex-col gap-4">
-        <h1 className="flex items-center gap-3">
+      <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '4' }}>
+        <styled.h1 css={{ display: 'flex', alignItems: 'center', gap: '3' }}>
           <form.Field name="title">
             {(field) => (
-              <div className="grow">
+              <styled.div css={{ flexGrow: '1' }}>
                 <GhostInput
                   ref={titleInputRef}
                   value={field.state.value ?? ''}
@@ -313,19 +327,35 @@ export function RecordForm({
                   }}
                   onBlur={() => debouncedSave()}
                   readOnly={isFormLoading}
-                  className="text-c-display placeholder:font-medium"
+                  className={css({
+                    color: 'display',
+                    _placeholder: { fontWeight: 'medium' },
+                  })}
                 />
                 {field.state.meta.errors && (
-                  <p data-chromatic data-palette="tomato" className="text-sm">
+                  <styled.p
+                    css={{
+                      colorPalette: 'error',
+                      layerStyle: 'chromatic',
+                      textStyle: 'sm',
+                    }}
+                  >
                     {field.state.meta.errors.map(getErrorMessage).join(', ')}
-                  </p>
+                  </styled.p>
                 )}
-              </div>
+              </styled.div>
             )}
           </form.Field>
-        </h1>
+        </styled.h1>
 
-        <div className="@container flex items-center gap-2">
+        <styled.div
+          css={{
+            containerType: 'inline-size',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+          }}
+        >
           <form.Field name="type">
             {(field) => (
               <ToggleGroup
@@ -338,7 +368,7 @@ export function RecordForm({
                   }
                 }}
                 variant="outline"
-                className="grow"
+                className={css({ flexGrow: '1' })}
                 disabled={isFormLoading}
               >
                 {RecordTypeSchema.options.map((type) => {
@@ -350,15 +380,32 @@ export function RecordForm({
                           value={type}
                           aria-label={type}
                           data-state={field.state.value === type ? 'on' : 'off'}
-                          className="flex grow items-center gap-1"
+                          className={css({
+                            display: 'flex',
+                            flexGrow: '1',
+                            alignItems: 'center',
+                            gap: '1',
+                          })}
                         >
                           <Icon />
-                          <span className="hidden capitalize @[480px]:inline">{type}</span>
+                          <styled.span
+                            css={{
+                              display: 'none',
+                              textTransform: 'capitalize',
+                              '@container (min-width: 480px)': { display: 'inline' },
+                            }}
+                          >
+                            {type}
+                          </styled.span>
                         </ToggleGroupItem>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
                         <p>
-                          <strong className="mr-1 capitalize">{type}</strong>
+                          <styled.strong
+                            css={{ marginInlineEnd: '1', textTransform: 'capitalize' }}
+                          >
+                            {type}
+                          </styled.strong>
                           {description}
                         </p>
                       </TooltipContent>
@@ -372,7 +419,7 @@ export function RecordForm({
             {(field) => (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex">
+                  <styled.span css={{ display: 'inline-flex' }}>
                     <Toggle
                       variant="outline"
                       pressed={field.state.value}
@@ -385,7 +432,7 @@ export function RecordForm({
                     >
                       {field.state.value ? <BadgeCheckIcon /> : <BadgeIcon />}
                     </Toggle>
-                  </span>
+                  </styled.span>
                 </TooltipTrigger>
                 <TooltipContent>{field.state.value ? 'Curated' : 'Not curated'}</TooltipContent>
               </Tooltip>
@@ -395,7 +442,7 @@ export function RecordForm({
             {(field) => (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex">
+                  <styled.span css={{ display: 'inline-flex' }}>
                     <Toggle
                       variant="outline"
                       pressed={field.state.value}
@@ -408,21 +455,21 @@ export function RecordForm({
                     >
                       {field.state.value ? <EyeOffIcon /> : <EyeIcon />}
                     </Toggle>
-                  </span>
+                  </styled.span>
                 </TooltipTrigger>
                 <TooltipContent>{field.state.value ? 'Private' : 'Public'}</TooltipContent>
               </Tooltip>
             )}
           </form.Field>
-        </div>
+        </styled.div>
 
-        <div className="rounded-md border border-c-divider">
+        <styled.div css={{ borderRadius: 'md', border: 'divider' }}>
           <Table.Root>
             <Table.Table>
               <Table.Body css={{ '& td:first-child': { width: '20' } }}>
                 <Table.Row>
                   <Table.Cell>
-                    <Label className="flex w-full" htmlFor="url">
+                    <Label className={css({ display: 'flex', width: 'full' })} htmlFor="url">
                       URL
                     </Label>
                   </Table.Cell>
@@ -435,10 +482,10 @@ export function RecordForm({
                     >
                       {(field) => (
                         <>
-                          <div className="flex items-center gap-2">
+                          <styled.div css={{ display: 'flex', alignItems: 'center', gap: '2' }}>
                             <GhostInput
                               id="url"
-                              className="w-full text-c-display"
+                              className={css({ width: 'full', color: 'display' })}
                               value={field.state.value ?? ''}
                               placeholder="https://example.com"
                               onChange={(e) => {
@@ -451,15 +498,17 @@ export function RecordForm({
                             {field.state.value && (
                               <ExternalLink href={field.state.value}>{null}</ExternalLink>
                             )}
-                          </div>
+                          </styled.div>
                           {field.state.meta.errors && (
-                            <p
-                              data-chromatic="" // TODO: CLR-DESTRUCTIVE
-                              data-palette="tomato"
-                              className="text-sm"
+                            <styled.p
+                              css={{
+                                colorPalette: 'error',
+                                layerStyle: 'chromatic',
+                                textStyle: 'sm',
+                              }}
                             >
                               {field.state.meta.errors.map(getErrorMessage).join(', ')}
-                            </p>
+                            </styled.p>
                           )}
                         </>
                       )}
@@ -469,7 +518,10 @@ export function RecordForm({
 
                 <Table.Row>
                   <Table.Cell>
-                    <Label className="flex w-full" htmlFor="abbreviation">
+                    <Label
+                      className={css({ display: 'flex', width: 'full' })}
+                      htmlFor="abbreviation"
+                    >
                       Abbreviation
                     </Label>
                   </Table.Cell>
@@ -478,7 +530,7 @@ export function RecordForm({
                       {(field) => (
                         <GhostInput
                           id="abbreviation"
-                          className="w-full text-c-display"
+                          className={css({ width: 'full', color: 'display' })}
                           value={field.state.value ?? ''}
                           placeholder="Short form"
                           onChange={(e) => {
@@ -495,7 +547,7 @@ export function RecordForm({
 
                 <Table.Row>
                   <Table.Cell>
-                    <Label className="flex w-full" htmlFor="sense">
+                    <Label className={css({ display: 'flex', width: 'full' })} htmlFor="sense">
                       Sense
                     </Label>
                   </Table.Cell>
@@ -504,7 +556,7 @@ export function RecordForm({
                       {(field) => (
                         <GhostInput
                           id="sense"
-                          className="w-full text-c-display"
+                          className={css({ width: 'full', color: 'display' })}
                           value={field.state.value ?? ''}
                           placeholder="Meaning or definition"
                           onChange={(e) => {
@@ -521,13 +573,15 @@ export function RecordForm({
               </Table.Body>
             </Table.Table>
           </Table.Root>
-        </div>
-      </div>
+        </styled.div>
+      </styled.div>
 
-      <div className="mt-4 flex flex-col gap-3">
+      <styled.div
+        css={{ marginBlockStart: '4', display: 'flex', flexDirection: 'column', gap: '3' }}
+      >
         <form.Field name="summary">
           {(field) => (
-            <div className="flex flex-col gap-1.5">
+            <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
               <Label htmlFor="summary">Summary</Label>
               <DynamicTextarea
                 id="summary"
@@ -540,13 +594,13 @@ export function RecordForm({
                 onBlur={() => debouncedSave()}
                 disabled={isFormLoading}
               />
-            </div>
+            </styled.div>
           )}
         </form.Field>
 
         <form.Field name="content">
           {(field) => (
-            <div className="flex flex-col gap-1.5">
+            <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
               <Label htmlFor="content">Content</Label>
               <DynamicTextarea
                 id="content"
@@ -559,24 +613,40 @@ export function RecordForm({
                 onBlur={() => debouncedSave()}
                 disabled={isFormLoading}
               />
-            </div>
+            </styled.div>
           )}
         </form.Field>
 
         <form.Field name="media">
           {(field) =>
             field.state.value && field.state.value.length > 0 ? (
-              <div className="flex flex-col overflow-clip rounded-md border border-c-divider/75">
+              <styled.div
+                css={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'clip',
+                  borderRadius: 'md',
+                  borderWidth: '1px',
+                  borderColor: 'divider/75',
+                }}
+              >
                 <MediaGrid
                   media={field.state.value}
                   onDelete={(media) => deleteMediaMutation.mutate([media.id])}
-                  className="rounded-none"
+                  className={css({ borderRadius: 'none' })}
                 />
 
                 <form.Field name="mediaCaption">
                   {(captionField) => (
-                    <div className="flex flex-col border-t border-c-divider/75">
-                      <Label htmlFor="mediaCaption" className="sr-only">
+                    <styled.div
+                      css={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        borderBlockStartWidth: '1px',
+                        borderBlockStartColor: 'divider/75',
+                      }}
+                    >
+                      <Label htmlFor="mediaCaption" className={css({ srOnly: true })}>
                         Caption
                       </Label>
                       <DynamicTextarea
@@ -598,10 +668,10 @@ export function RecordForm({
                           },
                         }}
                       />
-                    </div>
+                    </styled.div>
                   )}
                 </form.Field>
-              </div>
+              </styled.div>
             ) : (
               <MediaUpload ref={mediaUploadRef} onUpload={uploadFile} />
             )
@@ -610,8 +680,8 @@ export function RecordForm({
 
         <form.Field name="notes">
           {(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="notes" className="sr-only">
+            <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
+              <Label htmlFor="notes" className={css({ srOnly: true })}>
                 Notes
               </Label>
               <DynamicTextarea
@@ -638,15 +708,22 @@ export function RecordForm({
                   },
                 }}
               />
-            </div>
+            </styled.div>
           )}
         </form.Field>
-      </div>
+      </styled.div>
       <Metabar
         recordId={recordId}
-        className="order-first -mt-1 mb-3 border-b border-c-divider pb-1"
+        className={css({
+          order: '[calc(-infinity)]',
+          marginBlockStart: '-1',
+          marginBlockEnd: '3',
+          borderBlockEndWidth: '1px',
+          borderBlockEndColor: 'divider',
+          paddingBlockEnd: '1',
+        })}
         onDelete={onDelete}
       />
-    </form>
+    </styled.form>
   );
 }
