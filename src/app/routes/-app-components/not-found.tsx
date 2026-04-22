@@ -1,18 +1,25 @@
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/button';
+import { styled } from '@/styled-system/jsx';
 
 export function NotFound() {
   return (
-    <main className="flex items-center justify-center p-4">
-      <section className="flex flex-col items-center gap-4">
-        <p className="text-c-secondary">The page you are looking for does not exist.</p>
-        <nav className="flex flex-wrap items-center gap-2">
+    <styled.main
+      css={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4' }}
+    >
+      <styled.section
+        css={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4' }}
+      >
+        <styled.p css={{ color: 'secondary' }}>
+          The page you are looking for does not exist.
+        </styled.p>
+        <styled.nav css={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2' }}>
           <Button variant="solid" onClick={() => window.history.back()}>
             Go back
           </Button>
           <Button variant="soft" render={<Link to="/">Start Over</Link>} />
-        </nav>
-      </section>
-    </main>
+        </styled.nav>
+      </styled.section>
+    </styled.main>
   );
 }

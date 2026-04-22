@@ -1,6 +1,7 @@
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { ErrorComponent, Link, rootRouteId, useMatch, useRouter } from '@tanstack/react-router';
 import { Button } from '@/components/button';
+import { styled } from '@/styled-system/jsx';
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
   const router = useRouter();
@@ -12,9 +13,19 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
   console.error('DefaultCatchBoundary Error:', error);
 
   return (
-    <div className="flex max-w-lg flex-col items-center justify-center gap-4 p-4">
+    <styled.div
+      css={{
+        display: 'flex',
+        maxWidth: '128',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '4',
+        padding: '4',
+      }}
+    >
       <ErrorComponent error={error} />
-      <div className="flex flex-wrap items-center gap-2">
+      <styled.div css={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2' }}>
         <Button variant="solid" onClick={() => void router.invalidate()}>
           Try Again
         </Button>
@@ -30,7 +41,7 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
             render={<Link to="/">Go Back</Link>}
           />
         )}
-      </div>
-    </div>
+      </styled.div>
+    </styled.div>
   );
 }

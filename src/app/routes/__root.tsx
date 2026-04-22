@@ -14,6 +14,7 @@ import { KeyboardShortcutProvider } from '@/lib/keyboard-shortcuts/context';
 import { seo, SITE_NAME } from '@/lib/seo';
 import { getTheme, type Theme } from '@/lib/server/theme';
 import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 import pandaStylesUrl from '../styled-system/styles.css?url';
 import stylesUrl from '../styles/app.css?url';
 import { AppLayout } from './-app-components/app-layout';
@@ -150,7 +151,7 @@ function RootDocument({
         <HeadContent />
       </head>
       <body>
-        <div className="root">{children}</div>
+        <styled.div css={{ isolation: 'isolate', boxSize: 'full' }}>{children}</styled.div>
         <Toaster />
         <Scripts />
       </body>

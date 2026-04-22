@@ -20,20 +20,18 @@ const Spinner = ({ css: cssProp, ...props }: SpinnerProps) => {
     return (
       <styled.span
         key={i}
-        css={css.raw(
-          {
-            position: 'absolute',
-            top: '0',
-            left: '[calc(50% - 12.5% / 2)]',
-            height: 'full',
-            width: '[12.5%]',
-            animationName: 'spinnerLeafFade',
-            animationDuration: '[0.8s]',
-            animationTimingFunction: 'linear',
-            animationIterationCount: 'infinite',
-          },
-          cssProp
-        )}
+        css={{
+          '--leaf-width': '12.5%',
+          position: 'absolute',
+          top: '0',
+          left: '[calc(50% - var(--leaf-width) / 2)]',
+          height: 'full',
+          width: 'var(--leaf-width)',
+          animationName: 'spinnerLeafFade',
+          animationDuration: '[800ms]',
+          animationTimingFunction: 'linear',
+          animationIterationCount: 'infinite',
+        }}
         style={{ transform: `rotate(${rotation}deg)`, animationDelay: `${delay}s` }}
       >
         <styled.span
@@ -51,13 +49,16 @@ const Spinner = ({ css: cssProp, ...props }: SpinnerProps) => {
 
   return (
     <styled.span
-      css={{
-        position: 'relative',
-        display: 'inline-block',
-        boxSize: 'em',
-        color: 'currentColor',
-        opacity: '0.75',
-      }}
+      css={css.raw(
+        {
+          position: 'relative',
+          display: 'inline-block',
+          boxSize: 'em',
+          color: 'currentColor',
+          opacity: '0.75',
+        },
+        cssProp
+      )}
       {...props}
     >
       {leaves}

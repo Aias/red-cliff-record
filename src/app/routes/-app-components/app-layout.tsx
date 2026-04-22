@@ -4,6 +4,7 @@ import { Basket } from '@/components/basket';
 import { Button, LinkButton } from '@/components/button';
 import { KeyboardShortcutsHelp } from '@/components/keyboard-shortcuts-help';
 import { setTheme } from '@/lib/server/theme';
+import { styled } from '@/styled-system/jsx';
 
 const SiteSearch = lazy(() => import('./site-search').then((m) => ({ default: m.SiteSearch })));
 
@@ -21,9 +22,33 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden">
-      <menu className="@container relative z-100 grid shrink-0 basis-auto grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-c-border bg-c-container px-4 py-2 contain-inline-size">
-        <li className="flex items-center gap-3">
+    <styled.div
+      css={{
+        position: 'fixed',
+        inset: '0',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      <styled.menu
+        css={{
+          position: 'relative',
+          zIndex: '[100]',
+          display: 'grid',
+          gridTemplateColumns: '[auto 1fr auto]',
+          alignItems: 'center',
+          flexShrink: '0',
+          flexBasis: 'auto',
+          gap: '4',
+          paddingInline: '4',
+          paddingBlock: '2',
+          borderBlockEnd: 'border',
+          backgroundColor: 'container',
+          containerType: 'inline-size',
+        }}
+      >
+        <styled.li css={{ display: 'flex', alignItems: 'center', gap: '3' }}>
           <LinkButton
             variant="solid"
             css={{
@@ -31,7 +56,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
               _childIcon: {
                 opacity: '75%',
               },
-              '& .label': {
+              '& [data-slot="label"]': {
                 srOnly: true,
                 '@/sm': {
                   srOnly: false,
@@ -41,13 +66,21 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
             to="/"
           >
             <MountainSnowIcon />
-            <span className="label">Red Cliff Record</span>
+            <span data-slot="label">Red Cliff Record</span>
           </LinkButton>
           <LinkButton variant="ghost" to="/records">
             Index
           </LinkButton>
-        </li>
-        <li className="flex w-full max-w-lg min-w-0 justify-self-center">
+        </styled.li>
+        <styled.li
+          css={{
+            display: 'flex',
+            width: 'full',
+            maxWidth: '128',
+            minWidth: '0',
+            justifySelf: 'center',
+          }}
+        >
           <Suspense
             fallback={
               <Button
@@ -68,14 +101,18 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
                 disabled
               >
                 <SearchIcon />
-                <span className="min-w-0 flex-1 truncate text-start">Search records...</span>
+                <styled.span css={{ minWidth: '0', flex: '1', truncate: true, textAlign: 'start' }}>
+                  Search records...
+                </styled.span>
               </Button>
             }
           >
             <SiteSearch />
           </Suspense>
-        </li>
-        <li className="flex items-center justify-end gap-1">
+        </styled.li>
+        <styled.li
+          css={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '1' }}
+        >
           <Basket />
           <KeyboardShortcutsHelp
             buttonCss={{
@@ -86,12 +123,12 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
           />
           <Button variant="ghost" onClick={toggleTheme} size="icon">
             {currentTheme === 'light' ? <SunIcon /> : <MoonIcon />}
-            <span className="sr-only">Toggle theme</span>
+            <styled.span css={{ srOnly: true }}>Toggle theme</styled.span>
           </Button>
-        </li>
-      </menu>
+        </styled.li>
+      </styled.menu>
 
       {children}
-    </div>
+    </styled.div>
   );
 };

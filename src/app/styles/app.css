@@ -71,22 +71,6 @@
   }
 }
 
-@utility h-viewport {
-  @apply h-[100dvh];
-}
-
-@utility w-viewport {
-  @apply w-[100dvw];
-}
-
-@utility card {
-  @apply relative block overflow-hidden rounded-md border border-c-divider bg-c-paper p-4;
-}
-
-@utility card-compact {
-  @apply relative block overflow-hidden rounded-md border border-c-divider bg-c-paper px-3 py-2 text-sm;
-}
-
 @utility code {
   @apply rounded-sm bg-c-splash px-1.25 font-mono text-[0.875em];
 }

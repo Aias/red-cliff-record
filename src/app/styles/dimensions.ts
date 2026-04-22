@@ -2,7 +2,8 @@ import { defineTokens } from '@pandacss/dev';
 
 const SHARED_DIMENSIONS = [
   0, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 20,
-  24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 72, 80, 96,
+  24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 72, 80, 96, 112, 128, 144, 160, 192, 224, 256, 288,
+  320,
 ];
 
 const BASE = '0.25rem';
@@ -39,4 +40,7 @@ export const sizes = defineTokens.sizes({
   ...SHARED_TOKENS,
   ...ADDITIONAL_TOKENS,
   prose: { value: '65ch' },
+  auto: { value: 'auto' },
+  screenW: { value: '100dvw' },
+  screenH: { value: '100dvh' },
 });

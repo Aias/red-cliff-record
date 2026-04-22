@@ -16,6 +16,7 @@ Supplements global `react-best-practices` and `code-quality` skills.
   - Replace `radix-ui` primitives with `@base-ui/react` equivalents.
   - Remove now-unused imports (`cn`, `css` from `@/styled-system/css` if no longer needed, `radix-ui`, `lucide-react` sizing props).
 - Do not introduce new Tailwind utilities or Radix imports, even as a bridge. If Panda lacks something you need, ask — don't fall back to Tailwind.
+- When translating legacy Tailwind to Panda, see `references/tailwind-to-panda.md` for the token mapping tables (colors, radius, sizes), idiom translations, and the bracket-literal decision tree.
 
 ## Component organization
 
