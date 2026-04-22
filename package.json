@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -37,7 +37,7 @@
     "prepare": "bun run stylegen",
     "rcr": "bun src/server/cli/rcr/index.ts",
     "start": "bun run server.ts",
-    "stylegen": "panda codegen && panda cssgen",
+    "stylegen": "rm -rf src/app/styled-system && panda codegen && panda cssgen",
     "typecheck": "tsgo --noEmit",
     "typecheck:watch": "tsgo --noEmit --watch"
   },
