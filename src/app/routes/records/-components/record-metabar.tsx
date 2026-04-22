@@ -15,12 +15,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { Separator } from '@/components/separator';
 import { Spinner } from '@/components/spinner';
 import { Toggle } from '@/components/toggle';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
+import { Tooltip } from '@/components/tooltip';
 import { useDeleteRecords, useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useRecord } from '@/lib/hooks/record-queries';
 import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-basket';
-import { cn } from '@/lib/utils';
 import type { RecordGet } from '@/shared/types/domain';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 
 type MetabarProps = ComponentProps<'div'> & {
   recordId: number;
@@ -45,16 +46,27 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
   }
 
   return (
-    <div className={cn('flex items-center gap-2.5', className)} {...props}>
+    <styled.div
+      className={className}
+      css={{ display: 'flex', alignItems: 'center', gap: '2.5' }}
+      {...props}
+    >
       <Popover>
         <PopoverTrigger asChild>
           <Avatar
             src={record.avatarUrl}
             fallback={(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
-            className="cursor-pointer"
+            className={css({ cursor: 'pointer' })}
           />
         </PopoverTrigger>
-        <PopoverContent className="flex min-w-84 flex-col gap-3">
+        <PopoverContent
+          className={css({
+            display: 'flex',
+            minWidth: '80',
+            flexDirection: 'column',
+            gap: '3',
+          })}
+        >
           <AvatarSection record={record} />
           <Separator />
           <MetadataSection record={record} />
@@ -63,21 +75,32 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
       <Link
         to="/records/$recordId"
         params={{ recordId }}
-        className="truncate text-sm text-c-hint capitalize"
+        className={css({
+          truncate: true,
+          textStyle: 'sm',
+          color: 'muted',
+          textTransform: 'capitalize',
+        })}
       >
         {`${record.type} #${record.id}, ${record.recordCreatedAt.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: '2-digit' })} ${record.recordCreatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
       </Link>
       {record.sources && (
-        <div className="mr-auto flex items-center gap-1">
+        <styled.div
+          css={{ marginInlineEnd: 'auto', display: 'flex', alignItems: 'center', gap: '1' }}
+        >
           {record.sources.map((source) => (
-            <IntegrationLogo key={source} integration={source} className="text-xs opacity-50" />
+            <IntegrationLogo
+              key={source}
+              integration={source}
+              className={css({ textStyle: 'xs', opacity: '50%' })}
+            />
           ))}
-        </div>
+        </styled.div>
       )}
-      <div className="flex items-center gap-0.5">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">
+      <styled.div css={{ display: 'flex', alignItems: 'center', gap: '0.5' }}>
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>
+            <styled.span css={{ display: 'inline-flex' }}>
               <Toggle
                 pressed={inBasket}
                 aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
@@ -93,10 +116,10 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
               >
                 <ShoppingBasketIcon />
               </Toggle>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{inBasket ? 'Remove from basket' : 'Add to basket'}</TooltipContent>
-        </Tooltip>
+            </styled.span>
+          </Tooltip.Trigger>
+          <Tooltip.Content>{inBasket ? 'Remove from basket' : 'Add to basket'}</Tooltip.Content>
+        </Tooltip.Root>
         <AlertDialog.Root>
           <AlertDialog.Trigger asChild>
             <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
@@ -117,7 +140,11 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
                   <Button variant="outline">Cancel</Button>
                 </AlertDialog.Cancel>
                 <AlertDialog.Action asChild>
-                  <Button data-palette="error" variant="solid" onClick={handleDelete}>
+                  <Button
+                    variant="solid"
+                    css={{ colorPalette: 'error', layerStyle: 'chromatic' }}
+                    onClick={handleDelete}
+                  >
                     Continue
                   </Button>
                 </AlertDialog.Action>
@@ -125,8 +152,8 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
             </AlertDialog.Content>
           </AlertDialog.Portal>
         </AlertDialog.Root>
-      </div>
-    </div>
+      </styled.div>
+    </styled.div>
   );
 };
 
@@ -168,9 +195,9 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '2' }}>
       <Label htmlFor={`avatar-url-${recordId}`}>Avatar URL</Label>
-      <div className="flex items-center gap-2">
+      <styled.div css={{ display: 'flex', alignItems: 'center', gap: '2' }}>
         <Input
           id={`avatar-url-${recordId}`}
           value={localUrl}
@@ -179,9 +206,9 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
           placeholder="https://example.com/image.png"
         />
         {localUrl && <ExternalLink href={localUrl}>{null}</ExternalLink>}
-      </div>
-      <Tooltip>
-        <TooltipTrigger asChild>
+      </styled.div>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
           <Button
             type="button"
             variant="outline"
@@ -192,20 +219,20 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
             {isFetchingFavicon ? <Spinner /> : <GlobeIcon />}
             Fetch favicon
           </Button>
-        </TooltipTrigger>
-        <TooltipContent>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
           {record.url
             ? 'Fetch the favicon from the record URL'
             : 'Add a URL to the record to fetch its favicon'}
-        </TooltipContent>
-      </Tooltip>
-    </div>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    </styled.div>
   );
 };
 
 const MetadataSection = ({ record }: { record: RecordGet }) => {
   return (
-    <div className="flex flex-col gap-3">
+    <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '3' }}>
       <h2>Record Metadata</h2>
       <MetadataList
         metadata={{
@@ -217,6 +244,6 @@ const MetadataSection = ({ record }: { record: RecordGet }) => {
           'Content Updated': record.contentUpdatedAt,
         }}
       />
-    </div>
+    </styled.div>
   );
 };

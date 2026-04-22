@@ -4,6 +4,8 @@ import { trpc } from '@/app/trpc';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 import { RecordLink } from './-components/record-link';
 import { RecordsGrid } from './-components/records-grid';
 
@@ -75,37 +77,78 @@ function RouteComponent() {
   });
 
   return (
-    <main
-      className={`@container flex basis-full overflow-hidden bg-c-background contain-inline-size ${!isRecordSelected ? 'p-3' : ''}`}
+    <styled.main
+      data-record-selected={isRecordSelected || undefined}
+      css={{
+        display: 'flex',
+        flexBasis: 'full',
+        overflow: 'hidden',
+        backgroundColor: 'background',
+        containerType: 'inline-size',
+        padding: '3',
+        '&[data-record-selected]': { padding: '0' },
+      }}
     >
       {isRecordSelected && recordsList ? (
         <>
-          <div className="flex min-w-60 shrink grow-0 basis-72 flex-col gap-2 overflow-hidden border-r border-c-divider py-3 @max-[40rem]:hidden">
-            <header className="flex items-center justify-between px-3">
-              <h2 className="text-lg font-medium">
-                Records <span className="text-sm text-c-secondary">({recordsList.ids.length})</span>
-              </h2>
-              <Link to="/records" className="text-sm">
+          <styled.div
+            css={{
+              display: 'flex',
+              minWidth: '60',
+              flexShrink: '1',
+              flexGrow: '0',
+              flexBasis: '72',
+              flexDirection: 'column',
+              gap: '2',
+              overflow: 'hidden',
+              borderInlineEnd: 'divider',
+              paddingBlock: '3',
+              '@container (max-width: 40rem)': { display: 'none' },
+            }}
+          >
+            <styled.header
+              css={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingInline: '3',
+              }}
+            >
+              <styled.h2 css={{ textStyle: 'lg', fontWeight: 'medium' }}>
+                Records{' '}
+                <styled.span css={{ textStyle: 'sm', color: 'secondary' }}>
+                  ({recordsList.ids.length})
+                </styled.span>
+              </styled.h2>
+              <Link to="/records" className={css({ textStyle: 'sm' })}>
                 Index
               </Link>
-            </header>
+            </styled.header>
             <RadioCards
               value={currentRecordId?.toString()}
               onValueChange={handleValueChange}
-              className="flex flex-col gap-1 overflow-y-auto px-3 text-xs"
+              className={css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1',
+                overflowY: 'auto',
+                scrollbarWidth: '[thin]',
+                paddingInline: '3',
+                textStyle: 'xs',
+              })}
             >
               {recordsList.ids.map(({ id }) => (
                 <RadioCardsItem key={id} value={id.toString()} data-record-sidebar-id={id}>
-                  <RecordLink id={id} className="w-full overflow-hidden" />
+                  <RecordLink id={id} className={css({ width: 'full', overflow: 'hidden' })} />
                 </RadioCardsItem>
               ))}
             </RadioCards>
-          </div>
+          </styled.div>
           <Outlet />
         </>
       ) : (
         <RecordsGrid />
       )}
-    </main>
+    </styled.main>
   );
 }

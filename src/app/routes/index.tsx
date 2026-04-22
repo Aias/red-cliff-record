@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { LazyVideo } from '@/components/lazy-video';
 import { Spinner } from '@/components/spinner';
 import { useRecordList } from '@/lib/hooks/record-queries';
+import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 
 export const Route = createFileRoute('/')({
@@ -29,63 +30,118 @@ function Home() {
         alignItems: 'center',
         gap: '1',
         overflowY: 'auto',
+        scrollbarWidth: '[thin]',
         padding: '1',
       }}
     >
       {isLoading && records.length === 0 && (
         <Spinner
-          css={{ boxSize: '8', position: 'absolute', inset: '[50%]', translateCenter: 'xy' }}
+          css={{ boxSize: '6', position: 'absolute', inset: '1/2', translateCenter: 'xy' }}
         />
       )}
-      {isError && <p className="text-c-destructive">Error loading records.</p>}
-      {!isLoading && !isError && records.length === 0 && (
-        <p className="text-c-hint">No records with media found.</p>
+      {isError && (
+        <styled.p css={{ colorPalette: 'error', layerStyle: 'chromatic', color: 'accent' }}>
+          Error loading records.
+        </styled.p>
       )}
-      <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(min(100%,12rem),1fr))] gap-0.25">
+      {!isLoading && !isError && records.length === 0 && (
+        <styled.p css={{ color: 'muted' }}>No records with media found.</styled.p>
+      )}
+      <styled.div
+        css={{
+          display: 'grid',
+          width: 'full',
+          gridTemplateColumns: '[repeat(auto-fill, minmax(min(100%, 12rem), 1fr))]',
+          gap: '0.25',
+        }}
+      >
         {records.map((record) => {
-          const item = record.media?.[0]; // Get only the first media item
-          if (!item) return null; // Skip if no media
+          const item = record.media?.[0];
+          if (!item) return null;
 
           return (
             <Link
               key={item.id}
               to="/records/$recordId"
               params={{ recordId: record.id }}
-              className="relative block aspect-3/2 overflow-hidden rounded-sm border border-c-divider bg-c-paper focus-visible:ring-2 focus-visible:ring-c-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+              className={css({
+                position: 'relative',
+                display: 'block',
+                aspectRatio: '3/2',
+                overflow: 'hidden',
+                borderRadius: 'sm',
+                border: 'divider',
+                backgroundColor: 'surface',
+                _focusVisible: {
+                  outlineColor: 'focus',
+                  outlineStyle: 'solid',
+                  outlineWidth: '2px',
+                  outlineOffset: '0.5',
+                },
+              })}
             >
-              {/* Gradient from bottom 50% with semi-transparent black */}
-              <div className="pointer-events-none absolute inset-x-0 top-1/2 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent opacity-75" />
+              <styled.div
+                css={{
+                  pointerEvents: 'none',
+                  position: 'absolute',
+                  insetInline: '0',
+                  insetBlockStart: '1/2',
+                  insetBlockEnd: '0',
+                  zIndex: '10',
+                  backgroundImage: '[linear-gradient(to top, oklch(0 0 0 / 0.8), transparent)]',
+                  opacity: '75%',
+                }}
+              />
               {item.type === 'video' ? (
                 <LazyVideo
                   src={item.url}
                   aria-label={item.altText || record.title || `Video for record ${record.id}`}
-                  className="absolute inset-0 size-full object-cover"
+                  className={css({
+                    position: 'absolute',
+                    inset: '0',
+                    boxSize: 'full',
+                    objectFit: 'cover',
+                  })}
                   muted
                   loop
                   playsInline
                   autoPlay
                 />
               ) : (
-                <img
+                <styled.img
                   src={item.url}
                   alt={item.altText || record.title || `Media for record ${record.id}`}
-                  className="absolute inset-0 size-full object-cover"
+                  css={{
+                    position: 'absolute',
+                    inset: '0',
+                    boxSize: 'full',
+                    objectFit: 'cover',
+                  }}
                   loading="lazy"
                   decoding="async"
                 />
               )}
               {record.title && (
-                <div
-                  className="absolute right-0 bottom-0 left-0 z-20 truncate p-2 text-xs text-white"
-                  style={{ textShadow: '0 0 4px rgba(0, 0, 0)' }} // Use rgba for black shadow
+                <styled.div
+                  css={{
+                    position: 'absolute',
+                    insetInline: '0',
+                    insetBlockEnd: '0',
+                    zIndex: '20',
+                    truncate: true,
+                    padding: '2',
+                    textStyle: 'xs',
+                    color: 'white',
+                    textShadow: '[0 0 4px {colors.black}]',
+                  }}
                 >
                   {record.title}
-                </div>
+                </styled.div>
               )}
             </Link>
           );
         })}
-      </div>
+      </styled.div>
     </styled.main>
   );
 }

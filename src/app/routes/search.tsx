@@ -26,6 +26,7 @@ function SearchPage() {
         flexDirection: 'column',
         gap: '4',
         overflowY: 'auto',
+        scrollbarWidth: '[thin]',
         padding: '4',
         flexBasis: 'full',
         color: 'display',
@@ -34,7 +35,7 @@ function SearchPage() {
       {!q && <Placeholder>Type a query and press Enter to search.</Placeholder>}
 
       {q && !data && (
-        <Placeholder className="grow">
+        <Placeholder css={{ flexGrow: '1' }}>
           <Spinner />
         </Placeholder>
       )}

@@ -17,6 +17,8 @@ import { Spinner } from '@/components/spinner';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 import { SearchResultItem } from '../records/-components/search-result-item';
 
 const MIN_QUERY_LENGTH = 2;
@@ -120,17 +122,39 @@ export const SiteSearch = () => {
           role="combobox"
           aria-expanded={commandOpen}
         >
-          <SearchIcon className="@max-[10rem]:sr-only" />
-          <span className="min-w-0 flex-1 truncate text-start">
+          <SearchIcon className={css({ '@container (max-width: 10rem)': { srOnly: true } })} />
+          <styled.span css={{ minWidth: '0', flex: '1', truncate: true, textAlign: 'start' }}>
             {searchQ || 'Search records...'}
-          </span>
-          <kbd className="pointer-events-none ml-auto inline-flex items-center gap-1 rounded border border-c-border bg-c-mist px-1.5 font-mono font-medium text-c-secondary select-none @max-[14rem]:sr-only">
-            <span className="text-xs text-c-hint">⌘</span>K
-          </kbd>
+          </styled.span>
+          <styled.kbd
+            css={{
+              pointerEvents: 'none',
+              marginInlineStart: 'auto',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '1',
+              borderRadius: 'md',
+              border: 'border',
+              backgroundColor: 'mist',
+              paddingInline: '1.5',
+              fontFamily: 'mono',
+              fontWeight: 'medium',
+              color: 'secondary',
+              userSelect: 'none',
+              '@container (max-width: 14rem)': { srOnly: true },
+            }}
+          >
+            <styled.span css={{ textStyle: 'xs', color: 'muted' }}>⌘</styled.span>K
+          </styled.kbd>
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-150 max-w-[calc(100vw-1rem)] overflow-auto p-0"
+        className={css({
+          width: '160',
+          maxWidth: '[calc({sizes.screenW} - 1rem)]',
+          overflow: 'auto',
+          padding: '0',
+        })}
         align="center"
         collisionPadding={8}
         sideOffset={16}
@@ -142,8 +166,8 @@ export const SiteSearch = () => {
             onValueChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
           />
-          <CommandList className="max-h-[75vh]">
-            <CommandItem value="-" className="hidden" />
+          <CommandList className={css({ maxHeight: '[75vh]' })}>
+            <CommandItem value="-" className={css({ display: 'none' })} />
             <CommandEmpty>
               {!shouldSearch
                 ? 'Type to search...'
@@ -155,8 +179,11 @@ export const SiteSearch = () => {
             </CommandEmpty>
 
             {shouldSearch && isSearching && (
-              <CommandItem disabled className="flex items-center justify-center">
-                <Spinner className="size-4" />
+              <CommandItem
+                disabled
+                className={css({ display: 'flex', alignItems: 'center', justifyContent: 'center' })}
+              >
+                <Spinner css={{ boxSize: '4' }} />
               </CommandItem>
             )}
 
@@ -181,8 +208,11 @@ export const SiteSearch = () => {
             )}
 
             {vector.isFetching && !vector.data && trigramResults.length > 0 && (
-              <CommandItem disabled className="flex items-center justify-center">
-                <Spinner className="size-4" />
+              <CommandItem
+                disabled
+                className={css({ display: 'flex', alignItems: 'center', justifyContent: 'center' })}
+              >
+                <Spinner css={{ boxSize: '4' }} />
               </CommandItem>
             )}
 
@@ -197,7 +227,7 @@ export const SiteSearch = () => {
                   { onSuccess: (newRecord) => handleSelectResult(newRecord.id) }
                 );
               }}
-              className="px-3 py-2"
+              className={css({ paddingInline: '3', paddingBlock: '2' })}
             >
               <PlusCircleIcon /> Create New Record
             </CommandItem>

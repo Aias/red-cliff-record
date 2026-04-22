@@ -37,8 +37,8 @@ export const globalStyles = defineGlobalStyles({
     fontSynthesis: 'none',
     fontVariantLigatures: 'common-ligatures',
     fontVariantNumeric: 'tabular-nums',
-    height: '100dvh',
-    width: '100dvw',
+    height: '{sizes.screenH}',
+    width: '{sizes.screenW}',
     backgroundColor: '{colors.background}',
     color: '{colors.primary}',
     accentColor: '{colors.accent}',
@@ -51,10 +51,6 @@ export const globalStyles = defineGlobalStyles({
     position: 'relative',
     boxSize: '{sizes.full}',
     backgroundColor: '{colors.background}',
-  },
-  '.root': {
-    isolation: 'isolate',
-    boxSize: '{sizes.full}',
   },
   'h1, .h1': {
     textStyle: '2xl',

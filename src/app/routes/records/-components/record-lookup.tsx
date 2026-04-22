@@ -36,10 +36,10 @@ import { Spinner } from '@/components/spinner';
 import { useUpsertLink } from '@/lib/hooks/link-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useDebounce } from '@/lib/hooks/use-debounce';
-import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
 import type { LinkPartial, RecordGet } from '@/shared/types/domain';
-import { css } from '@/styled-system/css';
+import { css, cx } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
 
@@ -85,14 +85,17 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
   const isSearching = trigram.isFetching && !trigram.data;
 
   return (
-    <Command shouldFilter={false} loop className="w-full" defaultValue="">
+    <Command shouldFilter={false} loop className={css({ width: 'full' })} defaultValue="">
       <CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
       <CommandList>
-        <CommandItem value="-" className="hidden" />
+        <CommandItem value="-" className={css({ display: 'none' })} />
 
         {shouldSearch && isSearching && (
-          <CommandItem disabled className="flex items-center justify-center">
-            <Spinner className="size-4" />
+          <CommandItem
+            disabled
+            className={css({ display: 'flex', alignItems: 'center', justifyContent: 'center' })}
+          >
+            <Spinner css={{ boxSize: '4' }} />
           </CommandItem>
         )}
 
@@ -117,8 +120,11 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
         )}
 
         {vector.isFetching && !vector.data && trigramResults.length > 0 && (
-          <CommandItem disabled className="flex items-center justify-center">
-            <Spinner className="size-4" />
+          <CommandItem
+            disabled
+            className={css({ display: 'flex', alignItems: 'center', justifyContent: 'center' })}
+          >
+            <Spinner css={{ boxSize: '4' }} />
           </CommandItem>
         )}
 
@@ -137,7 +143,7 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
               { onSuccess: (newRecord) => onSelect(newRecord.id) }
             );
           }}
-          className="px-3 py-2"
+          className={css({ paddingInline: '3', paddingBlock: '2' })}
         >
           <PlusCircleIcon /> Create New Record
         </CommandItem>
@@ -164,21 +170,21 @@ function PredicateCombobox({
   includeNonCanonical = false,
 }: PredicateComboboxProps) {
   return (
-    <Command className="w-full" defaultValue="">
+    <Command className={css({ width: 'full' })} defaultValue="">
       <CommandInput autoFocus placeholder="Select relation type…" />
       <CommandList>
-        <CommandItem value="-" className="hidden" />
+        <CommandItem value="-" className={css({ display: 'none' })} />
         <CommandGroup heading="Predicates">
           {predicates
             .filter((p) => includeNonCanonical || p.canonical)
             .map((p) => (
               <CommandItem
-                className="flex gap-2 capitalize"
+                className={css({ display: 'flex', gap: '2', textTransform: 'capitalize' })}
                 key={p.slug}
                 onSelect={() => onPredicateSelect(p.slug as PredicateSlug)}
               >
-                <span className="font-medium">{p.name}</span>
-                <span className="text-c-hint">{p.type}</span>
+                <styled.span css={{ fontWeight: 'medium' }}>{p.name}</styled.span>
+                <styled.span css={{ color: 'muted' }}>{p.type}</styled.span>
               </CommandItem>
             ))}
         </CommandGroup>
@@ -412,7 +418,17 @@ function RelationshipSelectorContent({
 
   return (
     <PopoverContent
-      className={cn('w-[33vw] max-w-140 min-w-120 p-0', targetId && 'w-60 min-w-60', className)}
+      data-has-target={targetId ? '' : undefined}
+      className={cx(
+        css({
+          width: '[33vw]',
+          maxWidth: '144',
+          minWidth: '128',
+          padding: '0',
+          '&[data-has-target]': { width: '60', minWidth: '60' },
+        }),
+        className
+      )}
       side={side}
       align={align}
       avoidCollisions={avoidCollisions}
@@ -436,9 +452,9 @@ function RelationshipSelectorContent({
             }}
           >
             {altPressed ? <ArrowLeftIcon /> : <ArrowRightIcon />}
-            <span className="flex-1 truncate text-center">
+            <styled.span css={{ flex: '1', truncate: true, textAlign: 'center' }}>
               {targetRecord ? targetRecord.title || targetRecord.id : <Spinner />}
-            </span>
+            </styled.span>
             {targetRecord && <RecordTypeIcon type={targetRecord.type} />}
           </Badge>
           <PredicateCombobox

@@ -5,8 +5,9 @@ import { memo } from 'react';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
 import { getRecordTitleFallbacks } from '@/lib/hooks/record-queries';
-import { cn } from '@/lib/utils';
 import type { RecordGet } from '@/shared/types/domain';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 
 /* ─── SourceLogos ─────────────────────────────────────────────── */
 
@@ -18,13 +19,13 @@ interface SourceLogosProps {
 export const SourceLogos = memo(function SourceLogos({ sources, className }: SourceLogosProps) {
   if (!sources?.length) return null;
   return (
-    <ul className={cn('flex items-center gap-1.5', className)}>
+    <styled.ul className={className} css={{ display: 'flex', alignItems: 'center', gap: '1.5' }}>
       {sources.map((s) => (
         <li key={s}>
           <IntegrationLogo integration={s} />
         </li>
       ))}
-    </ul>
+    </styled.ul>
   );
 });
 
@@ -38,6 +39,13 @@ interface RecordThumbnailProps {
   className?: string;
 }
 
+const mediaFillCss = css({
+  position: 'absolute',
+  inset: '0',
+  boxSize: 'full',
+  objectFit: 'cover',
+});
+
 export const RecordThumbnail = memo(function RecordThumbnail({
   media,
   size = 'sm',
@@ -46,18 +54,27 @@ export const RecordThumbnail = memo(function RecordThumbnail({
   className,
 }: RecordThumbnailProps) {
   return (
-    <div
-      className={cn(
-        'relative aspect-3/2 shrink-0 self-center overflow-hidden rounded-md border border-c-divider bg-c-mist',
-        size === 'sm' ? 'h-lh' : 'h-[2lh]',
-        className
-      )}
+    <styled.div
+      data-size={size}
+      className={className}
+      css={{
+        position: 'relative',
+        aspectRatio: '3/2',
+        flexShrink: '0',
+        alignSelf: 'center',
+        overflow: 'hidden',
+        borderRadius: 'md',
+        border: 'divider',
+        backgroundColor: 'mist',
+        height: 'lh',
+        '&[data-size="md"]': { height: '[2lh]' },
+      }}
     >
       {media.type === 'image' ? (
         <img
           src={media.url}
           alt={media.altText ?? ''}
-          className="absolute inset-0 size-full object-cover"
+          className={mediaFillCss}
           loading="lazy"
           decoding="async"
         />
@@ -65,14 +82,14 @@ export const RecordThumbnail = memo(function RecordThumbnail({
         <LazyVideo
           src={media.url}
           aria-label={videoLabel}
-          className="absolute inset-0 size-full object-cover"
+          className={mediaFillCss}
           autoPlay={autoPlay}
           playsInline
           muted={autoPlay}
           loop={autoPlay}
         />
       )}
-    </div>
+    </styled.div>
   );
 });
 
@@ -90,7 +107,12 @@ export function getRecordTitle(
     (parentTitle ? (
       <>
         <CornerDownRightIcon
-          className="relative -top-0.25 mr-0.75 text-c-hint"
+          className={css({
+            position: 'relative',
+            insetBlockStart: '-0.25',
+            marginInlineEnd: '0.75',
+            color: 'muted',
+          })}
           aria-label="Child of"
         />
         {parentTitle}

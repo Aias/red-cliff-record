@@ -7,10 +7,111 @@ import MediaGrid from '@/components/media-grid';
 import { Spinner } from '@/components/spinner';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
-import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
+import { cx, sva } from '@/styled-system/css';
+import { createStyleContext } from '@/styled-system/jsx';
 import { getRecordTitle, SourceLogos } from './record-parts';
 import { recordTypeIcons } from './type-icons';
+
+const recordDisplay = sva({
+  slots: [
+    'root',
+    'errorState',
+    'loadingState',
+    'header',
+    'typeIcon',
+    'titleGroup',
+    'title',
+    'abbreviation',
+    'sense',
+    'basketIcon',
+    'sources',
+    'mediaFigure',
+    'mediaCaption',
+    'summary',
+    'content',
+    'notes',
+  ],
+  base: {
+    root: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '[0.5lh]',
+      cursor: 'pointer',
+      textStyle: 'sm',
+    },
+    errorState: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2',
+      paddingBlock: '4',
+      color: 'muted',
+      fontStyle: 'italic',
+      _childIcon: { boxSize: '4' },
+    },
+    loadingState: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingBlock: '6',
+    },
+    header: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2' },
+    typeIcon: { boxSize: 'lh', flexShrink: '0', color: 'muted' },
+    titleGroup: {
+      display: 'flex',
+      flex: '1',
+      flexWrap: 'wrap',
+      alignItems: 'baseline',
+      gap: '2',
+      textWrapStyle: 'pretty',
+    },
+    title: {
+      fontWeight: 'semibold',
+      color: 'primary',
+      textDecoration: 'none',
+      transitionProperty: 'colors',
+      transitionDuration: '100',
+      transitionTimingFunction: 'easeInOut.cubic',
+      _groupHover: { color: 'accent' },
+      '&[data-has-title="false"]': { fontWeight: 'medium', color: 'muted' },
+    },
+    abbreviation: { textStyle: 'xs', color: 'muted' },
+    sense: { textStyle: 'xs', color: 'muted', fontStyle: 'italic' },
+    basketIcon: { color: 'accent' },
+    sources: { fontSize: '[0.875em]', opacity: '50%' },
+    mediaFigure: { display: 'flex', flexDirection: 'column', gap: '1.5' },
+    mediaCaption: { textStyle: 'xs', color: 'secondary' },
+    summary: { color: 'display' },
+    content: { color: 'primary' },
+    notes: { fontFamily: 'mono', textStyle: 'xs', color: 'secondary' },
+  },
+  variants: {
+    compact: {
+      true: {
+        summary: { lineClamp: '3' },
+        content: { lineClamp: '6' },
+        notes: { lineClamp: '3' },
+      },
+    },
+  },
+});
+
+const { withProvider, withContext } = createStyleContext(recordDisplay);
+
+const Root = withProvider('article', 'root');
+const ErrorState = withProvider('div', 'errorState');
+const LoadingState = withProvider('div', 'loadingState');
+const Header = withContext('header', 'header');
+const TitleGroup = withContext('div', 'titleGroup');
+const Abbreviation = withContext('span', 'abbreviation');
+const Sense = withContext('em', 'sense');
+const BasketIcon = withContext(ShoppingBasketIcon, 'basketIcon');
+const Sources = withContext(SourceLogos, 'sources');
+const MediaFigure = withContext('figure', 'mediaFigure');
+const MediaCaption = withContext(Markdown, 'mediaCaption');
+const Summary = withContext(Markdown, 'summary');
+const Content = withContext(Markdown, 'content');
+const Notes = withContext(Markdown, 'notes');
 
 interface RecordDisplayProps {
   recordId: DbId;
@@ -29,14 +130,14 @@ export const RecordDisplay = memo(function RecordDisplay({
 
   if (!record) {
     return isError ? (
-      <div className={cn('flex items-center gap-2 py-4 text-c-hint italic', className)}>
-        <RectangleEllipsisIcon className="size-4" />
+      <ErrorState className={className}>
+        <RectangleEllipsisIcon />
         <span>Record not found (ID: {recordId})</span>
-      </div>
+      </ErrorState>
     ) : (
-      <div className={cn('flex items-center justify-center py-6', className)}>
+      <LoadingState className={className}>
         <Spinner />
-      </div>
+      </LoadingState>
     );
   }
 
@@ -54,64 +155,49 @@ export const RecordDisplay = memo(function RecordDisplay({
     sources,
     media,
   } = record;
-
   const { creatorTitle } = getRecordTitleFallbacks(record.outgoingLinks);
   const TypeIcon = recordTypeIcons[type].icon;
   const recordMedia = media ?? [];
+  const slotClasses = recordDisplay({ compact });
 
   return (
-    <article
-      className={cn('group flex cursor-pointer flex-col gap-[0.5lh] text-sm', className)}
-      data-slot="record-display"
+    <Root
+      compact={compact}
+      className={cx('group', className)}
       onClick={() => {
         void navigate({ to: '/records/$recordId', params: { recordId: id } });
       }}
     >
-      <header className="flex flex-wrap items-center gap-2" data-slot="record-display-header">
-        <TypeIcon className="size-[1lh] shrink-0 text-c-hint" />
-
-        <div className="flex flex-1 flex-wrap items-baseline gap-2 text-pretty">
+      <Header>
+        <TypeIcon className={slotClasses.typeIcon} />
+        <TitleGroup>
           <Link
             to="/records/$recordId"
             params={{ recordId: id }}
             onClick={(e) => e.stopPropagation()}
             data-has-title={Boolean(title ?? creatorTitle)}
-            className="font-semibold text-c-primary no-underline transition-colors duration-100 ease-in-out group-hover:text-c-accent hover:no-underline data-[has-title=false]:font-medium data-[has-title=false]:text-c-hint"
+            className={slotClasses.title}
           >
             {getRecordTitle(record)}
           </Link>
-          {abbreviation && <span className="text-xs text-c-hint">({abbreviation})</span>}
-          {sense && <em className="text-xs text-c-hint italic">{sense}</em>}
-        </div>
-        {inBasket && <ShoppingBasketIcon className="text-c-accent" />}
-        <SourceLogos sources={sources} className="text-[0.875em] opacity-50" />
+          {abbreviation && <Abbreviation>({abbreviation})</Abbreviation>}
+          {sense && <Sense>{sense}</Sense>}
+        </TitleGroup>
+        {inBasket && <BasketIcon />}
+        <Sources sources={sources} />
         {avatarUrl && <Avatar src={avatarUrl} fallback={title?.charAt(0) ?? type.charAt(0)} />}
-      </header>
+      </Header>
 
       {recordMedia.length > 0 && (
-        <figure className="flex flex-col gap-1.5">
+        <MediaFigure>
           <MediaGrid media={recordMedia} />
-          {mediaCaption && (
-            <Markdown as="figcaption" className="text-xs text-c-secondary">
-              {mediaCaption}
-            </Markdown>
-          )}
-        </figure>
+          {mediaCaption && <MediaCaption as="figcaption">{mediaCaption}</MediaCaption>}
+        </MediaFigure>
       )}
 
-      {summary && (
-        <Markdown className={cn('text-c-display', compact && 'line-clamp-3')}>{summary}</Markdown>
-      )}
-
-      {content && (
-        <Markdown className={cn('text-c-primary', compact && 'line-clamp-6')}>{content}</Markdown>
-      )}
-
-      {notes && (
-        <Markdown className={cn('font-mono text-xs text-c-secondary', compact && 'line-clamp-3')}>
-          {notes}
-        </Markdown>
-      )}
-    </article>
+      {summary && <Summary>{summary}</Summary>}
+      {content && <Content>{content}</Content>}
+      {notes && <Notes>{notes}</Notes>}
+    </Root>
   );
 });

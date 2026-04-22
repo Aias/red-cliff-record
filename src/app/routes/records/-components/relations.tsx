@@ -8,10 +8,11 @@ import { useDeleteLinks } from '@/lib/hooks/link-mutations';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
-import { cn } from '@/lib/utils';
 import { exhaustive } from '@/shared/lib/type-utils';
 import type { DbId } from '@/shared/types/api';
 import type { LinkPartial } from '@/shared/types/domain';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 
@@ -88,10 +89,18 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 
   return (
     <section>
-      <header className="flex items-center justify-between overflow-hidden">
-        <h3 className="mb-2">
-          Relations <span className="text-sm text-c-secondary">({totalLinks})</span>
-        </h3>
+      <styled.header
+        css={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          overflow: 'hidden',
+        }}
+      >
+        <styled.h3 css={{ marginBlockEnd: '2' }}>
+          Relations{' '}
+          <styled.span css={{ textStyle: 'sm', color: 'secondary' }}>({totalLinks})</styled.span>
+        </styled.h3>
         <RelationshipSelector.Root
           sourceId={id}
           buildActions={({ sourceId, targetId }) => {
@@ -129,17 +138,30 @@ export const RelationsList = ({ id }: RelationsListProps) => {
           </RelationshipSelector.Trigger>
           <RelationshipSelector.Content />
         </RelationshipSelector.Root>
-      </header>
+      </styled.header>
       {outgoingLinks.length > 0 && (
         <>
-          <h4 className="mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-c-secondary uppercase">
-            <ArrowRightIcon className="size-4 text-c-hint" /> Outgoing
-          </h4>
-          <ul className="flex flex-col gap-2 text-xs">
+          <styled.h4
+            css={{
+              marginBlockEnd: '2',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+              fontFamily: 'mono',
+              textStyle: 'sm',
+              fontWeight: 'semibold',
+              color: 'secondary',
+              textTransform: 'uppercase',
+              _childIcon: { boxSize: '4', color: 'muted' },
+            }}
+          >
+            <ArrowRightIcon /> Outgoing
+          </styled.h4>
+          <styled.ul css={{ display: 'flex', flexDirection: 'column', gap: '2', textStyle: 'xs' }}>
             {outgoingLinks.map((link) => (
-              <li
+              <styled.li
                 key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
-                className="flex items-center gap-2"
+                css={{ display: 'flex', alignItems: 'center', gap: '2' }}
               >
                 <RelationshipSelector.Root
                   sourceId={link.sourceId}
@@ -196,26 +218,36 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                     params: { recordId: link.targetId },
                   }}
                 />
-              </li>
+              </styled.li>
             ))}
-          </ul>
+          </styled.ul>
         </>
       )}
       {incomingLinks.length > 0 && (
         <>
-          <h4
-            className={cn(
-              'mb-2 flex items-center gap-2 font-mono text-sm font-semibold text-c-hint uppercase',
-              outgoingLinks.length > 0 && 'mt-3'
-            )}
+          <styled.h4
+            data-after-outgoing={outgoingLinks.length > 0 || undefined}
+            css={{
+              marginBlockEnd: '2',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+              fontFamily: 'mono',
+              textStyle: 'sm',
+              fontWeight: 'semibold',
+              color: 'muted',
+              textTransform: 'uppercase',
+              _childIcon: { boxSize: '4' },
+              '&[data-after-outgoing]': { marginBlockStart: '3' },
+            }}
           >
-            <ArrowLeftIcon className="h-4 w-4" /> Incoming
-          </h4>
-          <ul className="flex flex-col gap-2 text-xs">
+            <ArrowLeftIcon /> Incoming
+          </styled.h4>
+          <styled.ul css={{ display: 'flex', flexDirection: 'column', gap: '2', textStyle: 'xs' }}>
             {incomingLinks.map((link) => (
-              <li
+              <styled.li
                 key={`${link.sourceId}-${link.targetId}-${link.predicate}`}
-                className="flex items-center gap-2"
+                css={{ display: 'flex', alignItems: 'center', gap: '2' }}
               >
                 <RelationshipSelector.Root
                   sourceId={link.targetId}
@@ -278,9 +310,9 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                     params: { recordId: link.sourceId },
                   }}
                 />
-              </li>
+              </styled.li>
             ))}
-          </ul>
+          </styled.ul>
         </>
       )}
     </section>
@@ -307,14 +339,17 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
   );
 
   return (
-    <section className="text-xs">
-      <h3 className="mb-2">Similar Records</h3>
+    <styled.section css={{ textStyle: 'xs' }}>
+      <styled.h3 css={{ marginBlockEnd: '2' }}>Similar Records</styled.h3>
       {isLoading ? (
         <Spinner />
       ) : similarRecords && similarRecords.length > 0 ? (
         <ul>
           {similarRecords.map((record) => (
-            <li key={record.id} className="mb-2 flex items-center gap-4">
+            <styled.li
+              key={record.id}
+              css={{ marginBlockEnd: '2', display: 'flex', alignItems: 'center', gap: '4' }}
+            >
               <RelationshipSelector.Root
                 sourceId={id}
                 initialTargetId={record.id}
@@ -356,18 +391,18 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
               </RelationshipSelector.Root>
               <RecordLink
                 id={record.id}
-                className="flex-1"
+                className={css({ flex: '1' })}
                 linkOptions={{
                   to: '/records/$recordId',
                   params: { recordId: record.id },
                 }}
               />
-            </li>
+            </styled.li>
           ))}
         </ul>
       ) : (
         <p>No similar records found.</p>
       )}
-    </section>
+    </styled.section>
   );
 };

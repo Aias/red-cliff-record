@@ -6,8 +6,9 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/hove
 import { Spinner } from '@/components/spinner';
 import { getRecordPreview, getRecordThumbnailMedia, useRecord } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
-import { cn } from '@/lib/utils';
 import type { DbId } from '@/shared/types/api';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 import { RecordDisplay } from './record-display';
 import { getRecordTitle, RecordThumbnail, SourceLogos } from './record-parts';
 import { recordTypeIcons } from './type-icons';
@@ -25,10 +26,20 @@ export const RecordLink = memo(({ id, className, linkOptions }: RecordLinkProps)
   if (isLoading) return <Spinner />;
   if (isError || !record) {
     return (
-      <div className="flex items-center gap-2 text-c-hint italic opacity-75">
-        <RectangleEllipsisIcon className="size-4" />
+      <styled.div
+        css={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '2',
+          color: 'muted',
+          fontStyle: 'italic',
+          opacity: '75%',
+          _childIcon: { boxSize: '4' },
+        }}
+      >
+        <RectangleEllipsisIcon />
         <span>Record not found (ID: {id})</span>
-      </div>
+      </styled.div>
     );
   }
 
@@ -40,54 +51,109 @@ export const RecordLink = memo(({ id, className, linkOptions }: RecordLinkProps)
   const labelElement = (
     <>
       <span>{getRecordTitle(record)}</span>
-      {record.abbreviation && <span className="ml-1 text-c-hint">({record.abbreviation})</span>}
+      {record.abbreviation && (
+        <styled.span css={{ marginInlineStart: '1', color: 'muted' }}>
+          ({record.abbreviation})
+        </styled.span>
+      )}
     </>
   );
 
   return (
-    <div className={cn('flex grow gap-3 overflow-hidden break-all', className)}>
-      <div className="flex shrink basis-full flex-col gap-[0.25em] overflow-hidden">
-        <div className="flex items-center gap-1.25 overflow-hidden">
-          <TypeIcon className="size-[1lh] shrink-0 text-c-hint" />
+    <styled.div
+      className={className}
+      css={{
+        display: 'flex',
+        flexGrow: '1',
+        gap: '3',
+        overflow: 'hidden',
+        wordBreak: 'break-all',
+      }}
+    >
+      <styled.div
+        css={{
+          display: 'flex',
+          flexShrink: '1',
+          flexBasis: 'full',
+          flexDirection: 'column',
+          gap: '[0.25em]',
+          overflow: 'hidden',
+        }}
+      >
+        <styled.div css={{ display: 'flex', alignItems: 'center', gap: '1', overflow: 'hidden' }}>
+          <TypeIcon className={css({ boxSize: 'lh', flexShrink: '0', color: 'muted' })} />
 
-          <div className="flex grow items-center gap-1 overflow-hidden">
+          <styled.div
+            css={{
+              display: 'flex',
+              flexGrow: '1',
+              alignItems: 'center',
+              gap: '1',
+              overflow: 'hidden',
+            }}
+          >
             {linkOptions ? (
               <HoverCard openDelay={300} closeDelay={100}>
                 <HoverCardTrigger asChild>
                   <Link
-                    className="mr-auto min-w-0 truncate focus-visible:underline"
+                    className={css({
+                      marginInlineEnd: 'auto',
+                      minWidth: '0',
+                      truncate: true,
+                      _focusVisible: { textDecoration: 'underline' },
+                    })}
                     {...linkOptions}
                   >
                     {labelElement}
                   </Link>
                 </HoverCardTrigger>
                 <HoverCardContent
-                  className="w-96 overflow-hidden p-0"
+                  className={css({ width: '96', overflow: 'hidden', padding: '0' })}
                   align="center"
                   side="left"
                   sideOffset={12}
                 >
-                  <RecordDisplay recordId={id} compact className="p-3" />
+                  <RecordDisplay recordId={id} compact className={css({ padding: '3' })} />
                 </HoverCardContent>
               </HoverCard>
             ) : (
-              <strong className="mr-auto min-w-0 flex-1 truncate">{labelElement}</strong>
+              <styled.strong
+                css={{ marginInlineEnd: 'auto', minWidth: '0', flex: '1', truncate: true }}
+              >
+                {labelElement}
+              </styled.strong>
             )}
             {record.sense && (
-              <span className="shrink truncate text-c-hint italic">{record.sense}</span>
+              <styled.span
+                css={{ flexShrink: '1', truncate: true, color: 'muted', fontStyle: 'italic' }}
+              >
+                {record.sense}
+              </styled.span>
             )}
-          </div>
+          </styled.div>
 
-          {inBasket && <ShoppingBasketIcon className="text-c-accent" />}
-          <SourceLogos sources={record.sources} className="text-[0.875em] opacity-50" />
-        </div>
+          {inBasket && <ShoppingBasketIcon className={css({ color: 'accent' })} />}
+          <SourceLogos
+            sources={record.sources}
+            className={css({ fontSize: '[0.875em]', opacity: '50%' })}
+          />
+        </styled.div>
 
-        <p className="line-clamp-1 text-[0.925em] break-all text-c-secondary">{preview}</p>
-      </div>
+        <styled.p
+          css={{
+            lineClamp: '1',
+            fontSize: '[0.925em]',
+            wordBreak: 'break-all',
+            color: 'secondary',
+          }}
+        >
+          {preview}
+        </styled.p>
+      </styled.div>
 
       {mediaItem && (
         <RecordThumbnail media={mediaItem} size="md" videoLabel={videoLabel} autoPlay />
       )}
-    </div>
+    </styled.div>
   );
 });

@@ -2,6 +2,7 @@ import { isStructuralContainment, type PredicateSlug } from '@hozo';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo } from 'react';
 import { trpc } from '@/app/trpc';
+import { Card } from '@/components/card';
 import { Spinner } from '@/components/spinner';
 import { useBulkUpdate, useDeleteRecords } from '@/lib/hooks/record-mutations';
 import { useRecordTree } from '@/lib/hooks/record-queries';
@@ -9,6 +10,7 @@ import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import type { FamilyTree } from '@/server/api/routers/records/tree';
 import { CoercedIdSchema, type DbId } from '@/shared/types/api';
+import { styled } from '@/styled-system/jsx';
 import { RecordForm } from './-components/form';
 import { RecordDisplay } from './-components/record-display';
 import { RecordLink } from './-components/record-link';
@@ -317,39 +319,57 @@ function RouteComponent() {
     category: 'Records',
   });
 
-  // Show loading state while tree is loading
   if (treeLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <styled.div
+        css={{ display: 'flex', flex: '1', alignItems: 'center', justifyContent: 'center' }}
+      >
         <Spinner />
-      </div>
+      </styled.div>
     );
   }
 
-  // Show error state if tree failed and we couldn't navigate away
   if (treeError) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center">
-          <div data-chromatic data-palette="tomato" className="mb-2 text-c-accent">
-            Record not found
-          </div>
-          <div className="text-sm text-c-hint">This record may have been deleted or moved.</div>
-        </div>
-      </div>
+      <styled.div
+        css={{ display: 'flex', flex: '1', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <styled.div css={{ textAlign: 'center', colorPalette: 'error', layerStyle: 'chromatic' }}>
+          <styled.div css={{ marginBlockEnd: '2', color: 'accent' }}>Record not found</styled.div>
+          <styled.div css={{ textStyle: 'sm', color: 'muted' }}>
+            This record may have been deleted or moved.
+          </styled.div>
+        </styled.div>
+      </styled.div>
     );
   }
 
   return (
-    <div className="flex flex-1 overflow-x-auto">
-      <ul className="flex max-w-166 min-w-108 shrink basis-1/2 flex-col gap-2 overflow-y-auto border-r border-c-divider bg-c-container p-3 @max-[40rem]:min-w-screen">
+    <styled.div css={{ display: 'flex', flex: '1', overflowX: 'auto', scrollbarWidth: '[thin]' }}>
+      <styled.ul
+        css={{
+          display: 'flex',
+          maxWidth: '160',
+          minWidth: '112',
+          flexShrink: '1',
+          flexBasis: '1/2',
+          flexDirection: 'column',
+          gap: '2',
+          overflowY: 'auto',
+          scrollbarWidth: '[thin]',
+          borderInlineEnd: 'divider',
+          backgroundColor: 'container',
+          padding: '3',
+          '@container (max-width: 40rem)': { minWidth: 'screenW' },
+        }}
+      >
         {nodes.map((node) => (
-          <li
+          <Card
             key={node.id}
+            as="li"
+            compact={!node.isStructural}
             data-record-id={node.id}
-            className={
-              node.isStructural ? 'card shrink-0 last:mb-8' : 'card-compact shrink-0 last:mb-8'
-            }
+            css={{ flexShrink: '0', _last: { marginBlockEnd: '8' } }}
           >
             {node.id === recordId ? (
               <RecordForm
@@ -365,13 +385,26 @@ function RouteComponent() {
                 linkOptions={{ to: '/records/$recordId', params: { recordId: node.id } }}
               />
             )}
-          </li>
+          </Card>
         ))}
-      </ul>
-      <div className="flex max-w-160 min-w-100 flex-1 flex-col gap-4 overflow-y-auto p-4 @max-[40rem]:min-w-screen">
+      </styled.ul>
+      <styled.div
+        css={{
+          display: 'flex',
+          maxWidth: '160',
+          minWidth: '96',
+          flex: '1',
+          flexDirection: 'column',
+          gap: '4',
+          overflowY: 'auto',
+          scrollbarWidth: '[thin]',
+          padding: '4',
+          '@container (max-width: 40rem)': { minWidth: 'screenW' },
+        }}
+      >
         <RelationsList id={recordId} />
         <SimilarRecords id={recordId} />
-      </div>
-    </div>
+      </styled.div>
+    </styled.div>
   );
 }
