@@ -99,25 +99,27 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
       )}
       <styled.div css={{ display: 'flex', alignItems: 'center', gap: '0.5' }}>
         <Tooltip.Root>
-          <Tooltip.Trigger asChild>
-            <styled.span css={{ display: 'inline-flex' }}>
-              <Toggle
-                pressed={inBasket}
-                aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
-                onPressedChange={(pressed) => {
-                  if (pressed) {
-                    addToBasket(recordId);
-                    toast.success('Added to basket');
-                  } else {
-                    removeFromBasket(recordId);
-                    toast.success('Removed from basket');
-                  }
-                }}
-              >
-                <ShoppingBasketIcon />
-              </Toggle>
-            </styled.span>
-          </Tooltip.Trigger>
+          <Tooltip.Trigger
+            render={
+              <styled.span css={{ display: 'inline-flex' }}>
+                <Toggle
+                  pressed={inBasket}
+                  aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
+                  onPressedChange={(pressed) => {
+                    if (pressed) {
+                      addToBasket(recordId);
+                      toast.success('Added to basket');
+                    } else {
+                      removeFromBasket(recordId);
+                      toast.success('Removed from basket');
+                    }
+                  }}
+                >
+                  <ShoppingBasketIcon />
+                </Toggle>
+              </styled.span>
+            }
+          />
           <Tooltip.Content>{inBasket ? 'Remove from basket' : 'Add to basket'}</Tooltip.Content>
         </Tooltip.Root>
         <AlertDialog.Root>
@@ -208,18 +210,20 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
         {localUrl && <ExternalLink href={localUrl}>{null}</ExternalLink>}
       </styled.div>
       <Tooltip.Root>
-        <Tooltip.Trigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={!record.url || isFetchingFavicon}
-            onClick={handleFetchFavicon}
-          >
-            {isFetchingFavicon ? <Spinner /> : <GlobeIcon />}
-            Fetch favicon
-          </Button>
-        </Tooltip.Trigger>
+        <Tooltip.Trigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!record.url || isFetchingFavicon}
+              onClick={handleFetchFavicon}
+            >
+              {isFetchingFavicon ? <Spinner /> : <GlobeIcon />}
+              Fetch favicon
+            </Button>
+          }
+        />
         <Tooltip.Content>
           {record.url
             ? 'Fetch the favicon from the record URL'

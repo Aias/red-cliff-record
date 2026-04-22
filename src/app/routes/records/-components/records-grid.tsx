@@ -74,33 +74,36 @@ function RecordRow({ recordId }: { recordId: DbId }) {
         <RecordTypeIcon type={record.type} />
       </Table.Cell>
       <Table.Cell css={{ maxWidth: '60', whiteSpace: 'nowrap', truncate: true }}>
-        <Tooltip.Root delayDuration={1000} disableHoverableContent>
-          <Tooltip.Trigger asChild>
-            <Link
-              to="/records/$recordId"
-              params={{ recordId: record.id }}
-              className={css({
-                display: 'flex',
-                width: 'full',
-                alignItems: 'center',
-                gap: '2',
-                truncate: true,
-              })}
-            >
-              <styled.span css={{ truncate: true }}>{label}</styled.span>
-              {record.abbreviation && (
-                <styled.span css={{ flexShrink: '0', color: 'muted' }}>
-                  ({record.abbreviation})
-                </styled.span>
-              )}
-              {record.sense && (
-                <styled.span css={{ flexShrink: '0', color: 'muted', fontStyle: 'italic' }}>
-                  {record.sense}
-                </styled.span>
-              )}
-              {inBasket && <ShoppingBasketIcon className={css({ color: 'accent' })} />}
-            </Link>
-          </Tooltip.Trigger>
+        <Tooltip.Root disableHoverablePopup>
+          <Tooltip.Trigger
+            delay={1000}
+            render={
+              <Link
+                to="/records/$recordId"
+                params={{ recordId: record.id }}
+                className={css({
+                  display: 'flex',
+                  width: 'full',
+                  alignItems: 'center',
+                  gap: '2',
+                  truncate: true,
+                })}
+              >
+                <styled.span css={{ truncate: true }}>{label}</styled.span>
+                {record.abbreviation && (
+                  <styled.span css={{ flexShrink: '0', color: 'muted' }}>
+                    ({record.abbreviation})
+                  </styled.span>
+                )}
+                {record.sense && (
+                  <styled.span css={{ flexShrink: '0', color: 'muted', fontStyle: 'italic' }}>
+                    {record.sense}
+                  </styled.span>
+                )}
+                {inBasket && <ShoppingBasketIcon className={css({ color: 'accent' })} />}
+              </Link>
+            }
+          />
           <Tooltip.Content className={css({ maxWidth: '96' })}>
             <styled.div css={{ lineClamp: '3' }}>{label}</styled.div>
           </Tooltip.Content>

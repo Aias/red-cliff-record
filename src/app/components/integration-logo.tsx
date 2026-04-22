@@ -56,11 +56,13 @@ export const IntegrationLogo = memo(function IntegrationLogo({
 }: IntegrationLogoProps) {
   return (
     <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <LogoWrapper {...props}>
-          <LogoComponent service={service} />
-        </LogoWrapper>
-      </Tooltip.Trigger>
+      <Tooltip.Trigger
+        render={
+          <LogoWrapper {...props}>
+            <LogoComponent service={service} />
+          </LogoWrapper>
+        }
+      />
       <Tooltip.Content css={{ textTransform: 'capitalize' }}>{service}</Tooltip.Content>
     </Tooltip.Root>
   );

@@ -375,30 +375,32 @@ export function RecordForm({
                   const { icon: Icon, description } = recordTypeIcons[type];
                   return (
                     <Tooltip.Root key={type}>
-                      <Tooltip.Trigger asChild>
-                        <ToggleGroupItem
-                          value={type}
-                          aria-label={type}
-                          data-state={field.state.value === type ? 'on' : 'off'}
-                          className={css({
-                            display: 'flex',
-                            flexGrow: '1',
-                            alignItems: 'center',
-                            gap: '1',
-                          })}
-                        >
-                          <Icon />
-                          <styled.span
-                            css={{
-                              display: 'none',
-                              textTransform: 'capitalize',
-                              '@container (min-width: 30rem)': { display: 'inline' },
-                            }}
+                      <Tooltip.Trigger
+                        render={
+                          <ToggleGroupItem
+                            value={type}
+                            aria-label={type}
+                            data-state={field.state.value === type ? 'on' : 'off'}
+                            className={css({
+                              display: 'flex',
+                              flexGrow: '1',
+                              alignItems: 'center',
+                              gap: '1',
+                            })}
                           >
-                            {type}
-                          </styled.span>
-                        </ToggleGroupItem>
-                      </Tooltip.Trigger>
+                            <Icon />
+                            <styled.span
+                              css={{
+                                display: 'none',
+                                textTransform: 'capitalize',
+                                '@container (min-width: 30rem)': { display: 'inline' },
+                              }}
+                            >
+                              {type}
+                            </styled.span>
+                          </ToggleGroupItem>
+                        }
+                      />
                       <Tooltip.Content side="bottom">
                         <p>
                           <styled.strong
@@ -418,22 +420,24 @@ export function RecordForm({
           <form.Field name="isCurated">
             {(field) => (
               <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <styled.span css={{ display: 'inline-flex' }}>
-                    <Toggle
-                      variant="outline"
-                      pressed={field.state.value}
-                      aria-label={field.state.value ? 'Curated' : 'Not curated'}
-                      onPressedChange={(pressed) => {
-                        field.handleChange(pressed);
-                        debouncedSave();
-                      }}
-                      disabled={isFormLoading}
-                    >
-                      {field.state.value ? <BadgeCheckIcon /> : <BadgeIcon />}
-                    </Toggle>
-                  </styled.span>
-                </Tooltip.Trigger>
+                <Tooltip.Trigger
+                  render={
+                    <styled.span css={{ display: 'inline-flex' }}>
+                      <Toggle
+                        variant="outline"
+                        pressed={field.state.value}
+                        aria-label={field.state.value ? 'Curated' : 'Not curated'}
+                        onPressedChange={(pressed) => {
+                          field.handleChange(pressed);
+                          debouncedSave();
+                        }}
+                        disabled={isFormLoading}
+                      >
+                        {field.state.value ? <BadgeCheckIcon /> : <BadgeIcon />}
+                      </Toggle>
+                    </styled.span>
+                  }
+                />
                 <Tooltip.Content>{field.state.value ? 'Curated' : 'Not curated'}</Tooltip.Content>
               </Tooltip.Root>
             )}
@@ -441,22 +445,24 @@ export function RecordForm({
           <form.Field name="isPrivate">
             {(field) => (
               <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <styled.span css={{ display: 'inline-flex' }}>
-                    <Toggle
-                      variant="outline"
-                      pressed={field.state.value}
-                      aria-label={field.state.value ? 'Private' : 'Public'}
-                      onPressedChange={(pressed) => {
-                        field.handleChange(pressed);
-                        debouncedSave();
-                      }}
-                      disabled={isFormLoading}
-                    >
-                      {field.state.value ? <EyeOffIcon /> : <EyeIcon />}
-                    </Toggle>
-                  </styled.span>
-                </Tooltip.Trigger>
+                <Tooltip.Trigger
+                  render={
+                    <styled.span css={{ display: 'inline-flex' }}>
+                      <Toggle
+                        variant="outline"
+                        pressed={field.state.value}
+                        aria-label={field.state.value ? 'Private' : 'Public'}
+                        onPressedChange={(pressed) => {
+                          field.handleChange(pressed);
+                          debouncedSave();
+                        }}
+                        disabled={isFormLoading}
+                      >
+                        {field.state.value ? <EyeOffIcon /> : <EyeIcon />}
+                      </Toggle>
+                    </styled.span>
+                  }
+                />
                 <Tooltip.Content>{field.state.value ? 'Private' : 'Public'}</Tooltip.Content>
               </Tooltip.Root>
             )}

@@ -19,9 +19,7 @@ export const RecordTypeIcon = memo(({ type, ...props }: RecordTypeIconProps) => 
   const { icon: Icon, description } = recordTypeIcons[type];
   return (
     <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <Icon {...props} />
-      </Tooltip.Trigger>
+      <Tooltip.Trigger render={<Icon {...props} />} />
       <Tooltip.Content>{description}</Tooltip.Content>
     </Tooltip.Root>
   );
