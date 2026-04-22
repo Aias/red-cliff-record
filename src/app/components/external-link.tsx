@@ -1,23 +1,41 @@
 import { ExternalLinkIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { styled } from '@/styled-system/jsx';
+import type { ComponentProps } from '@/styled-system/types';
+
+const Anchor = styled(
+  'a',
+  {
+    base: {
+      _childIcon: {
+        transitionProperty: '[opacity]',
+        transitionDuration: '150',
+        transitionTimingFunction: 'easeOut.quad',
+        opacity: '50%',
+      },
+      _hover: {
+        _childIcon: {
+          opacity: '100%',
+        },
+      },
+    },
+  },
+  {
+    defaultProps: {
+      target: '_blank',
+      rel: 'noopener noreferrer',
+    },
+  }
+);
 
 export const ExternalLink = ({
   href,
   children = 'Open',
-  className,
   ...props
-}: { href: string; children?: React.ReactNode } & React.ComponentProps<'a'>) => {
+}: ComponentProps<typeof styled.a>) => {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={children ? undefined : 'Open in new tab'}
-      className={cn('group', className)}
-      {...props}
-    >
+    <Anchor href={href} aria-label={children ? undefined : 'Open in new tab'} {...props}>
       {children}
-      <ExternalLinkIcon className="opacity-50 group-hover:opacity-100" />
-    </a>
+      <ExternalLinkIcon />
+    </Anchor>
   );
 };
