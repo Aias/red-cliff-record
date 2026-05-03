@@ -156,7 +156,7 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
     }
 
     const buffer = await response.arrayBuffer();
-    const metadata = getImageMetadata(buffer);
+    const metadata = await getImageMetadata(buffer);
 
     return {
       mediaType,
