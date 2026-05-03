@@ -5,6 +5,7 @@
     "rootDir": "./src",
     "composite": false,
     "incremental": false,
+    "ignoreDeprecations": "6.0",
     "declaration": true,
     "declarationMap": true,
     "module": "ESNext",

@@ -30,7 +30,7 @@ export default defineConfig({
     className: PREFIX,
     cssVar: PREFIX,
   },
-  include: ['./src/**/*.{js,jsx,ts,tsx}'],
+  include: ['./src/app/**/*.{js,jsx,ts,tsx}'],
   outdir: 'src/app/styled-system',
 
   strictPropertyValues: true,
