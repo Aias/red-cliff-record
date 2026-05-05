@@ -1,4 +1,4 @@
-import { relations, schema } from '@hozo';
+import { relations } from '@hozo';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/bun-sql';
 import { getDatabaseUrl } from '@/server/lib/db-url';
@@ -9,8 +9,8 @@ const createDb = () =>
       url: getDatabaseUrl(),
       connectionTimeout: 5,
     },
-    schema,
     relations,
+    jit: true,
   });
 type Database = ReturnType<typeof createDb>;
 
