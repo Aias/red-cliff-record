@@ -18,9 +18,10 @@ const ALT_TEXT_WORKER_TIMEOUT_MS = 180_000;
 const COMMAND_TIMEOUT_MS = 45_000;
 const IMAGE_DIRECT_INPUT_MAX_BYTES = 8 * 1024 * 1024;
 const IMAGE_DOWNSAMPLE_MAX_DIMENSION = 2048;
-const IMAGE_DOWNSAMPLE_JPEG_QUALITY = 6;
+const IMAGE_DOWNSAMPLE_JPEG_QUALITY = 85;
 const VIDEO_FRAME_MAX_DIMENSION = 1600;
-const VIDEO_FRAME_JPEG_QUALITY = 6;
+// ffmpeg -q:v qscale for mjpeg (2 best, 31 worst); roughly equivalent to JPEG quality ~85.
+const VIDEO_FRAME_FFMPEG_QSCALE = 6;
 const VIDEO_FRAME_FRACTIONS = [0, 0.5, 0.9];
 const ALT_TEXT_MEDIA_TYPES: Array<'image' | 'video'> = ['image', 'video'];
 const OPENAI_DIRECT_IMAGE_FORMATS = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
@@ -312,15 +313,6 @@ async function runCommand(
   }
 }
 
-function sanitizeExtension(value: string): string {
-  const normalized = value.trim().toLowerCase();
-  if (/^[a-z0-9]+$/.test(normalized)) {
-    return normalized;
-  }
-
-  return 'bin';
-}
-
 async function rasterizeSvgToPng(
   svgBytes: Uint8Array,
   signal?: AbortSignal
@@ -384,54 +376,36 @@ async function fetchBinary(url: string, signal?: AbortSignal): Promise<BinaryFet
 
 async function downsampleImageToJpeg(
   imageBytes: Uint8Array,
-  inputFormat: string,
   signal?: AbortSignal
 ): Promise<DownsampleImageResult> {
-  const tempDir = await mkdtemp(join(tmpdir(), 'rcr-alt-text-image-'));
-  const inputPath = join(tempDir, `input.${sanitizeExtension(inputFormat)}`);
-  const outputPath = join(tempDir, 'output.jpg');
+  if (signal?.aborted) {
+    return { ok: false, error: timeoutErrorMessage() };
+  }
 
   try {
-    await writeFile(inputPath, imageBytes);
+    const bytes = await new Bun.Image(imageBytes)
+      .resize(IMAGE_DOWNSAMPLE_MAX_DIMENSION, IMAGE_DOWNSAMPLE_MAX_DIMENSION, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: IMAGE_DOWNSAMPLE_JPEG_QUALITY })
+      .bytes();
 
-    const downsampleResult = await runCommand(
-      [
-        'ffmpeg',
-        '-hide_banner',
-        '-loglevel',
-        'error',
-        '-y',
-        '-i',
-        inputPath,
-        '-frames:v',
-        '1',
-        '-vf',
-        `scale=${IMAGE_DOWNSAMPLE_MAX_DIMENSION}:${IMAGE_DOWNSAMPLE_MAX_DIMENSION}:force_original_aspect_ratio=decrease`,
-        '-q:v',
-        `${IMAGE_DOWNSAMPLE_JPEG_QUALITY}`,
-        outputPath,
-      ],
-      { signal, timeoutMs: COMMAND_TIMEOUT_MS }
-    );
-
-    if (!downsampleResult.ok) {
-      return { ok: false, error: downsampleResult.error };
+    if (signal?.aborted) {
+      return { ok: false, error: timeoutErrorMessage() };
     }
 
-    const outputBytes = await readFile(outputPath);
-    if (outputBytes.byteLength === 0) {
+    if (bytes.byteLength === 0) {
       return { ok: false, error: 'Downsampled image is empty' };
     }
 
-    return { ok: true, bytes: new Uint8Array(outputBytes) };
+    return { ok: true, bytes };
   } catch (error) {
     if (signal?.aborted) {
       return { ok: false, error: timeoutErrorMessage() };
     }
 
     return { ok: false, error: toErrorMessage(error) };
-  } finally {
-    await rm(tempDir, { force: true, recursive: true });
   }
 }
 
@@ -483,7 +457,7 @@ async function prepareImageForVision(
       };
     }
 
-    const downsampled = await downsampleImageToJpeg(rasterized.bytes, 'png', signal);
+    const downsampled = await downsampleImageToJpeg(rasterized.bytes, signal);
     if (!downsampled.ok) {
       return { ok: false, error: `Image downsample failed: ${downsampled.error}` };
     }
@@ -513,7 +487,7 @@ async function prepareImageForVision(
     };
   }
 
-  const downsampled = await downsampleImageToJpeg(fetched.bytes, mediaItem.format, signal);
+  const downsampled = await downsampleImageToJpeg(fetched.bytes, signal);
   if (!downsampled.ok) {
     const formatIsDirect = OPENAI_DIRECT_IMAGE_FORMATS.includes(mediaItem.format.toLowerCase());
     const exceedsByteLimit = fetched.bytes.byteLength > IMAGE_DIRECT_INPUT_MAX_BYTES;
@@ -642,7 +616,7 @@ async function extractVideoFramesForVision(
           '-vf',
           `scale=${VIDEO_FRAME_MAX_DIMENSION}:${VIDEO_FRAME_MAX_DIMENSION}:force_original_aspect_ratio=decrease`,
           '-q:v',
-          `${VIDEO_FRAME_JPEG_QUALITY}`,
+          `${VIDEO_FRAME_FFMPEG_QSCALE}`,
           outputPath,
         ],
         { signal, timeoutMs: COMMAND_TIMEOUT_MS }
