@@ -20,7 +20,8 @@ const IMAGE_DIRECT_INPUT_MAX_BYTES = 8 * 1024 * 1024;
 const IMAGE_DOWNSAMPLE_MAX_DIMENSION = 2048;
 const IMAGE_DOWNSAMPLE_JPEG_QUALITY = 85;
 const VIDEO_FRAME_MAX_DIMENSION = 1600;
-const VIDEO_FRAME_JPEG_QUALITY = 6;
+// ffmpeg -q:v qscale for mjpeg (2 best, 31 worst); roughly equivalent to JPEG quality ~85.
+const VIDEO_FRAME_FFMPEG_QSCALE = 6;
 const VIDEO_FRAME_FRACTIONS = [0, 0.5, 0.9];
 const ALT_TEXT_MEDIA_TYPES: Array<'image' | 'video'> = ['image', 'video'];
 const OPENAI_DIRECT_IMAGE_FORMATS = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
@@ -615,7 +616,7 @@ async function extractVideoFramesForVision(
           '-vf',
           `scale=${VIDEO_FRAME_MAX_DIMENSION}:${VIDEO_FRAME_MAX_DIMENSION}:force_original_aspect_ratio=decrease`,
           '-q:v',
-          `${VIDEO_FRAME_JPEG_QUALITY}`,
+          `${VIDEO_FRAME_FFMPEG_QSCALE}`,
           outputPath,
         ],
         { signal, timeoutMs: COMMAND_TIMEOUT_MS }
