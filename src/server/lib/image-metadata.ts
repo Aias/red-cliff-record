@@ -11,9 +11,7 @@ const SVG_HEIGHT_PATTERN = /height\s*=\s*["']?([\d.]+)(?:px)?["']?/i;
 const SVG_VIEWBOX_PATTERN = /viewBox\s*=\s*["']?([\d.\s]+)["']?/i;
 
 // Bun.Image only handles raster formats; SVG needs a separate path.
-function readSvgDimensions(
-  buffer: ArrayBuffer
-): { width: number; height: number } | null {
+function readSvgDimensions(buffer: ArrayBuffer): { width: number; height: number } | null {
   const head = Math.min(buffer.byteLength, 2048);
   const text = new TextDecoder().decode(buffer.slice(0, head));
   const tagMatch = SVG_TAG_PATTERN.exec(text);
