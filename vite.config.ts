@@ -15,6 +15,12 @@ export default defineConfig(({ mode }) => {
   return {
     build: {
       sourcemap: true,
+      rolldownOptions: {
+        checks: {
+          // Panda is-valid-prop.mjs — harmless misplaced @__PURE__ (chakra-ui/panda#2063)
+          invalidAnnotation: false,
+        },
+      },
     },
     server: {
       port: PortSchema.parse(env.PUBLIC_DEV_PORT),
