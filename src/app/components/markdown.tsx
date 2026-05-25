@@ -1,7 +1,7 @@
 import type MarkdownIt from 'markdown-it';
 import MarkdownItLib from 'markdown-it';
-import React, { useMemo } from 'react';
-import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
+import { Prose, type ProseProps } from './prose';
 
 /** Plugin to parse ==highlighted text== as <mark> elements */
 function markPlugin(md: MarkdownIt) {
@@ -32,28 +32,25 @@ function markPlugin(md: MarkdownIt) {
 }
 
 const md = new MarkdownItLib({
-  html: false,
+  html: true,
   breaks: true,
   linkify: true,
   typographer: true,
 }).use(markPlugin);
 
-interface MarkdownProps {
+export type MarkdownProps = Omit<ProseProps, 'children' | 'as' | 'dangerouslySetInnerHTML'> & {
   children: string;
-  className?: string;
-  as?: React.ElementType;
-}
+};
 
 /**
- * Renders markdown content as HTML.
+ * Renders markdown content as HTML through {@link Prose}.
+ *
+ * Panda props (`css`, recipe variants) and Base UI's `render` prop both flow to `Prose`,
+ * which is `styled(PolymorphicDiv, prose)` — so the rendered root tag is swappable
+ * while keeping prose styles and the `css` pipeline intact.
  */
-export function Markdown({ children, className, as = 'div' }: MarkdownProps) {
-  const html = useMemo(() => {
-    return md.render(children);
-  }, [children]);
+export function Markdown({ children, ...props }: MarkdownProps) {
+  const html = useMemo(() => md.render(children), [children]);
 
-  return React.createElement(as, {
-    className: cn('prose text-[length:inherit] leading-[inherit]', className),
-    dangerouslySetInnerHTML: { __html: html },
-  });
+  return <Prose {...props} data-slot="markdown" dangerouslySetInnerHTML={{ __html: html }} />;
 }

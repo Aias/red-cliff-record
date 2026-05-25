@@ -2,6 +2,7 @@ import { defineConfig } from '@pandacss/dev';
 import { alertDialogRecipe } from '@/app/components/alert-dialog/alert-dialog.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { textareaRecipe } from '@/app/components/field/textarea.recipe';
+import { proseRecipe } from '@/app/components/prose/prose.recipe';
 import { tableRecipe } from '@/app/components/table/table.recipe';
 import { tooltipRecipe } from '@/app/components/tooltip/tooltip.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
@@ -90,6 +91,7 @@ export default defineConfig({
     },
     recipes: {
       button: buttonRecipe,
+      prose: proseRecipe,
       textarea: textareaRecipe,
     },
     slotRecipes: {

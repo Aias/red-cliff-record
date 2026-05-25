@@ -191,7 +191,7 @@ export const RecordDisplay = memo(function RecordDisplay({
       {recordMedia.length > 0 && (
         <MediaFigure>
           <MediaGrid media={recordMedia} />
-          {mediaCaption && <MediaCaption as="figcaption">{mediaCaption}</MediaCaption>}
+          {mediaCaption && <MediaCaption render={<figcaption />}>{mediaCaption}</MediaCaption>}
         </MediaFigure>
       )}
 
