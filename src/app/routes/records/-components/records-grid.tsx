@@ -5,11 +5,10 @@ import { ChevronDownIcon, ShoppingBasketIcon } from 'lucide-react';
 import { useState } from 'react';
 import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
-import { Checkbox } from '@/components/checkbox';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/dropdown-menu';
 import { ExternalLink } from '@/components/external-link';
@@ -270,19 +269,19 @@ export const RecordsGrid = () => {
                 const isSelected = types?.includes(recordType) ?? false;
                 const { icon: Icon } = recordTypeIcons[recordType];
                 return (
-                  <DropdownMenuItem
+                  <DropdownMenuCheckboxItem
                     key={recordType}
+                    checked={isSelected}
                     onSelect={(e) => {
                       e.preventDefault();
                       handleTypeToggle(recordType);
                     }}
                   >
-                    <Icon />
                     <styled.span css={{ flex: '1', textTransform: 'capitalize' }}>
                       {recordType}
                     </styled.span>
-                    <Checkbox checked={isSelected} />
-                  </DropdownMenuItem>
+                    <Icon className={css({ boxSize: '4', flexShrink: '0', color: 'muted' })} />
+                  </DropdownMenuCheckboxItem>
                 );
               })}
             </DropdownMenuContent>
@@ -324,19 +323,22 @@ export const RecordsGrid = () => {
                 .map((source) => {
                   const isSelected = sources?.includes(source) ?? false;
                   return (
-                    <DropdownMenuItem
+                    <DropdownMenuCheckboxItem
                       key={source}
+                      checked={isSelected}
                       onSelect={(e) => {
                         e.preventDefault();
                         handleSourceToggle(source);
                       }}
                     >
-                      <IntegrationLogo integration={source} css={{ boxSize: '4' }} />
                       <styled.span css={{ flex: '1', textTransform: 'capitalize' }}>
                         {source}
                       </styled.span>
-                      <Checkbox checked={isSelected} />
-                    </DropdownMenuItem>
+                      <IntegrationLogo
+                        integration={source}
+                        css={{ boxSize: '4', flexShrink: '0' }}
+                      />
+                    </DropdownMenuCheckboxItem>
                   );
                 })}
             </DropdownMenuContent>
