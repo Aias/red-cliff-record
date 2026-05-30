@@ -59,6 +59,27 @@ Also: `screenW` = `100dvw`, `screenH` = `100dvh`, `auto` = `auto`, `prose` = `65
 
 For off-scale values (e.g. `max-w-166`), pick the closest token rather than a bracket literal. If the same off-scale value recurs in multiple places, extend `SHARED_DIMENSIONS` in `dimensions.ts` and regenerate with `bun run stylegen`.
 
+## Focus rings, outlines, and px → token
+
+Tailwind ring utilities translate to Panda outline properties (the project's idiomatic focus treatment — see `button.recipe.ts`):
+
+| Tailwind                          | Panda                                                              |
+| --------------------------------- | ------------------------------------------------------------------ |
+| `ring-2`                          | `outlineWidth: '2px'` (px literal — there's no narrow-width token) |
+| `ring-c-ring`                     | `outlineColor: 'focus'`                                            |
+| `ring-offset-2`                   | `outlineOffset: '0.5'`                                             |
+| `outline-hidden` / `outline-none` | `outlineStyle: 'none'`                                             |
+
+The trap: `outlineOffset` (and anything that resolves to a **spacing token**) maps to the 0.25rem scale, so `px ÷ 4 = token`. A 2px offset is `outlineOffset: '0.5'`, **not** `'2'` (that's `0.5rem` = 8px — off by 4×). `ring-offset-2` is 2px → `'0.5'`. `outlineWidth` is the exception: it takes a px literal (`'2px'`).
+
+## Transitions — spell out the longhands
+
+Never use the `transition` shorthand. Write `transitionProperty` / `transitionDuration` / `transitionTimingFunction` separately. `transitionProperty` usually needs a bracket literal (`'[opacity]'`, `'[color, box-shadow]'`) — only `common`/`colors`/`size`/`position`/`background` are predefined values; `transitionDuration` and `transitionTimingFunction` take tokens. A bare Tailwind `transition-opacity` (no explicit duration/easing) → `transitionProperty: '[opacity]'`, `transitionDuration: '150'`, `transitionTimingFunction: 'easeOut.cubic'`. Full easing/duration guidance is in `SKILL.md` → Animations.
+
+## Breakpoints — min-width, identical to Tailwind
+
+Panda's `sm`/`md`/`lg`/`xl`/`2xl` conditions are **min-width** (mobile-first), exactly like Tailwind's `sm:`/`md:` prefixes (`sm` = `40rem` in both). So `sm:max-w-lg` → `sm: { maxWidth: '128' }` — same breakpoint, same direction. Do **not** substitute `smDown` (which is `max-width: 39.99rem`, the opposite) when translating a Tailwind `sm:` class. Reach for `smDown`/`mdDown` only when the source genuinely used a `max-*`/down-level query.
+
 ## Blurs — dedicated utilities, token scale in `src/app/styles/blurs.ts`
 
 Panda ships `blur` and `backdropBlur` as composable style props that pull from the `blurs` token category and compose correctly with other filters (same mechanism Tailwind uses with its `--tw-backdrop-*` vars). Reach for these over `filter: 'blur(...)'` or `backdropFilter: 'blur(...)'` — the dedicated utilities preserve the filter chain.
@@ -156,7 +177,7 @@ Using `sva` with a single `root` slot works but is strictly more machinery than 
 
 ## Bracket literals — try without first
 
-Panda's strict types will tell you whether a value is acceptable without an escape hatch. Always try the value directly first; only reach for brackets when TypeScript rejects it.
+Panda's strict types will tell you whether a value is acceptable without an escape hatch. Always try the value directly first; only reach for brackets when TypeScript rejects it. And when a **token** matches the value, the token always wins over a bracket literal — `maxWidth: '128'`, never `'[32rem]'` — even if a neighboring recipe still uses the bracket form. Fix bracket-where-a-token-exists in place the moment you encounter it.
 
 Values that look arbitrary but usually work as-is:
 
@@ -211,6 +232,21 @@ If the component is already a `styled()` component (check `components/spinner.ts
 <Spinner css={{ boxSize: '4' }} />
 <Placeholder css={{ flexGrow: '1' }}>...</Placeholder>
 ```
+
+## Component prop types — from Panda, not React
+
+When typing props for a design-system component that composes Panda-styled primitives (`styled()`, `withContext`, recipe-bound), import `ComponentProps` / `ComponentPropsWithRef` from `@/styled-system/types`, **not** from `react`:
+
+```tsx
+// Good — Panda's type includes the css prop, recipe variants, and unstyled
+import type { ComponentProps } from '@/styled-system/types';
+export function Content(props: ComponentProps<typeof StyledContent>) { ... }
+
+// Avoid for Panda components — React's type drops css/variants/unstyled
+import type { ComponentProps } from 'react';
+```
+
+React's `ComponentProps` is correct for non-Panda components elsewhere in the app (plain elements, third-party components). The rule is scoped to design-system components that compose Panda-styled primitives.
 
 ## TanStack `<Link>` and other non-Panda elements
 

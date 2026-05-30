@@ -53,11 +53,12 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
     >
       <Popover>
         <PopoverTrigger asChild>
-          <Avatar
-            src={record.avatarUrl}
-            fallback={(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
-            className={css({ cursor: 'pointer' })}
-          />
+          <Avatar.Root className={css({ cursor: 'pointer' })}>
+            <Avatar.Image src={record.avatarUrl ?? undefined} />
+            <Avatar.Fallback>
+              {(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
+            </Avatar.Fallback>
+          </Avatar.Root>
         </PopoverTrigger>
         <PopoverContent
           className={css({

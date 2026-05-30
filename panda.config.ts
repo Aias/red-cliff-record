@@ -1,8 +1,12 @@
 import { defineConfig } from '@pandacss/dev';
 import { alertDialogRecipe } from '@/app/components/alert-dialog/alert-dialog.recipe';
+import { avatarRecipe } from '@/app/components/avatar/avatar.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
+import { cardRecipe } from '@/app/components/card/card.recipe';
 import { textareaRecipe } from '@/app/components/field/textarea.recipe';
+import { placeholderRecipe } from '@/app/components/placeholder/placeholder.recipe';
 import { proseRecipe } from '@/app/components/prose/prose.recipe';
+import { separatorRecipe } from '@/app/components/separator/separator.recipe';
 import { tableRecipe } from '@/app/components/table/table.recipe';
 import { tooltipRecipe } from '@/app/components/tooltip/tooltip.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
@@ -91,11 +95,15 @@ export default defineConfig({
     },
     recipes: {
       button: buttonRecipe,
+      card: cardRecipe,
+      placeholder: placeholderRecipe,
       prose: proseRecipe,
+      separator: separatorRecipe,
       textarea: textareaRecipe,
     },
     slotRecipes: {
       alertDialog: alertDialogRecipe,
+      avatar: avatarRecipe,
       table: tableRecipe,
       tooltip: tooltipRecipe,
     },
