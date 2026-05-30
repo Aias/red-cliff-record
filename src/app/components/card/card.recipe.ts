@@ -1,6 +1,7 @@
-import { styled } from '@/styled-system/jsx';
+import { defineRecipe } from '@/app/styles/define-recipe';
 
-export const Card = styled('div', {
+export const cardRecipe = defineRecipe({
+  className: 'card',
   base: {
     position: 'relative',
     display: 'block',
