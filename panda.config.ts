@@ -1,5 +1,6 @@
 import { defineConfig } from '@pandacss/dev';
 import { alertDialogRecipe } from '@/app/components/alert-dialog/alert-dialog.recipe';
+import { avatarRecipe } from '@/app/components/avatar/avatar.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { textareaRecipe } from '@/app/components/field/textarea.recipe';
 import { proseRecipe } from '@/app/components/prose/prose.recipe';
@@ -96,6 +97,7 @@ export default defineConfig({
     },
     slotRecipes: {
       alertDialog: alertDialogRecipe,
+      avatar: avatarRecipe,
       table: tableRecipe,
       tooltip: tooltipRecipe,
     },

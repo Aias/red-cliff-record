@@ -185,7 +185,12 @@ export const RecordDisplay = memo(function RecordDisplay({
         </TitleGroup>
         {inBasket && <BasketIcon />}
         <Sources sources={sources} />
-        {avatarUrl && <Avatar src={avatarUrl} fallback={title?.charAt(0) ?? type.charAt(0)} />}
+        {avatarUrl && (
+          <Avatar.Root>
+            <Avatar.Image src={avatarUrl} />
+            <Avatar.Fallback>{title?.charAt(0) ?? type.charAt(0)}</Avatar.Fallback>
+          </Avatar.Root>
+        )}
       </Header>
 
       {recordMedia.length > 0 && (
