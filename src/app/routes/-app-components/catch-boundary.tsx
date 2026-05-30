@@ -33,6 +33,7 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
           <Button render={<Link to="/">Home</Link>} />
         ) : (
           <Button
+            nativeButton={false}
             variant="solid"
             onClick={(e) => {
               e.preventDefault();

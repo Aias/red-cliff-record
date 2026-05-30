@@ -36,6 +36,8 @@ Supplements global `react-best-practices` and `code-quality` skills.
 
 `jsxStyleProps: 'minimal'` is set in `panda.config.ts`, so individual style props (`<styled.div bg="red">`) are **not** available — always use the `css` prop.
 
+**Prop types come from Panda, not React.** When typing a design-system component that composes Panda-styled primitives (`styled()`, `withContext`, recipe-bound), import `ComponentProps` / `ComponentPropsWithRef` from `@/styled-system/types`, not from `react` — the Panda types include the `css` prop, recipe variants, and `unstyled`. React's `ComponentProps` is fine for non-Panda components elsewhere in the app.
+
 ## Panda fundamentals
 
 - **`strictTokens: true`** and **`strictPropertyValues: true`** — every value must be a defined token or a bracket-escaped literal. If TS errors on a color/spacing value, either use a token or confirm a bracket literal is truly unavoidable.
@@ -92,11 +94,13 @@ Inside a recipe, gate a palette swap on a variant or condition — e.g. `_invali
 
 ### Text styles
 
-Use `textStyle` tokens (`xs`, `sm`, `base`, `lg`, `xl`, `2xl`, ..., `9xl`) instead of pairing `fontSize` + `lineHeight` manually. They match Tailwind v4's `text-*` scale by design so visual parity during migration is easy.
+Use `textStyle` tokens (`xs`, `sm`, `base`, `lg`, `xl`, `2xl`, ..., `9xl`) instead of pairing `fontSize` + `lineHeight` manually. They match Tailwind v4's `text-*` scale by design, so map `text-{size}` → `textStyle: '{size}'` **first**, then override `fontSize` / `lineHeight` / `fontWeight` **only** where the original diverges from that textStyle's bundled values. Never set a bare `fontSize` when a matching textStyle exists.
 
 ```tsx
 <styled.h2 css={{ textStyle: 'xl', fontWeight: 'medium' }}>Section</styled.h2>
 ```
+
+So `text-lg leading-none font-semibold` → `{ textStyle: 'lg', lineHeight: 'none', fontWeight: 'semibold' }` (textStyle for the size, then the two divergences), and a bare `text-sm` → `{ textStyle: 'sm' }`. Don't avoid `textStyle` just because you need to override its line-height — set it and override.
 
 Headings `h1`–`h6` already get default text styles from `src/app/styles/globals.ts`; only override when the default is wrong for the context.
 
@@ -106,18 +110,21 @@ Numeric tokens are `0.25rem` multiples: `0, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 
 
 ## Custom conditions and utilities
 
-| Condition    | Selector                                        | Use for                                                                       |
-| ------------ | ----------------------------------------------- | ----------------------------------------------------------------------------- |
-| `_dark`      | `:where([data-color-scheme="dark"], .dark) &`   | Color-scheme-scoped overrides                                                 |
-| `_light`     | `:where([data-color-scheme="light"], .light) &` | Color-scheme-scoped overrides                                                 |
-| `_neutral`   | `&[data-neutral]` (+ scope variants)            | Triggered by `layerStyle: 'neutral'` (or `data-neutral` as escape hatch).     |
-| `_chromatic` | `&[data-chromatic]` (+ scope variants)          | Triggered by `layerStyle: 'chromatic'` (or `data-chromatic` as escape hatch). |
-| `_childIcon` | `& :where(svg, .icon, .lucide)`                 | Size/color icons inside a container. Prefer over `& svg`.                     |
+| Condition                                               | Selector                                        | Use for                                                                                                                                                                     |
+| ------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_dark`                                                 | `:where([data-color-scheme="dark"], .dark) &`   | Color-scheme-scoped overrides                                                                                                                                               |
+| `_light`                                                | `:where([data-color-scheme="light"], .light) &` | Color-scheme-scoped overrides                                                                                                                                               |
+| `_neutral`                                              | `&[data-neutral]` (+ scope variants)            | Triggered by `layerStyle: 'neutral'` (or `data-neutral` as escape hatch).                                                                                                   |
+| `_chromatic`                                            | `&[data-chromatic]` (+ scope variants)          | Triggered by `layerStyle: 'chromatic'` (or `data-chromatic` as escape hatch).                                                                                               |
+| `_childIcon`                                            | `& :where(svg, .icon, .lucide)`                 | Size/color icons inside a container. Prefer over `& svg`.                                                                                                                   |
+| `_sideBottom` / `_sideTop` / `_sideLeft` / `_sideRight` | `&[data-side=<side>]`                           | Radix/popper-positioned content (popover, dropdown, hover-card) — directional slide-in animation per placement. Use these instead of raw `'&[data-side=bottom]'` selectors. |
+
+Reach for a defined condition over a raw `[data-*]` selector — but **first check Panda's built-ins so you don't duplicate one**: `_vertical` / `_horizontal` (`[data-orientation]`), `_open` / `_closed` (`[data-state]`), `_hover`, `_focusVisible`, `_disabled`, `_invalid`, `_placeholder`, and the `_group*` / `_peer*` families all ship out of the box. Only when Panda has nothing (e.g. the project's `_side*`, `_chromatic` / `_neutral`) add it to `styles/conditions.ts` (and `bun run stylegen`) rather than inlining the attribute selector in a recipe.
 
 Useful utilities (full list in `src/app/styles/plugins.ts`):
 
 - `animateIn` / `animateOut` + modifiers `fadeIn`, `zoomIn`, `slideInX`, `slideInY` (and `*Out` variants) — compose enter/exit animations with the `enter`/`exit` keyframes.
-- `translateCenter: 'x' | 'y' | 'xy'` — short for `translate: '-50% ...'`. Use for centered overlays.
+- `translateCenter: 'x' | 'y' | 'xy'` — short for `translate: '-50% ...'`. Use for centered overlays **instead of** a raw `translate: '[-50% 0]'` / `'[0 -50%]'` / `'[-50% -50%]'` literal. (A centering offset combined with an extra nudge — e.g. `translate: '[0 calc(-50% - 2px)]'` for an arrow — still needs a bracket literal; `translateCenter` only covers the pure ±50% cases.)
 - `mode: 'normal' | 'inverted' | 'light' | 'dark'` — flip or pin color scheme. `mode: 'inverted'` is the idiomatic way to punch out a dark island on a light page.
 - `debug: true` — visual outline for layout debugging; remove before committing.
 
@@ -157,6 +164,19 @@ export const Content = withContext(AlertDialogPrimitive.Popup, 'content');
 // ...
 ```
 
+### Slot-component file conventions
+
+Model: `dialog` / `alert-dialog`.
+
+- **Slots** = every slot the original component exposed or rendered (`*Trigger`/`*Content`/`*Close`/… plus `root`), even ones unused in the app; don't invent slots the original never had. `root` is mandatory — bind it with `withProvider`, or `withRootProvider` when the root renders no DOM (e.g. a Radix context-only root).
+- **Bind every rendered slot** with `withContext`, and **compose with the bound slots** — a `Content` that needs a portal renders `<Portal>`, never `<Primitive.Portal>`.
+- **Portal is internal by default.** A composed `Content` includes the `Portal` (portal-by-default, like Base UI), so bind `Portal` as a non-exported `const` and render it inside `Content`. Don't export it — an exported `Portal` lets a consumer double-wrap (`<X.Portal><X.Content/></X.Portal>`) into nested portals. Export `Portal` only for the manual-composition pattern where `Content` is a bare slot and the consumer writes `<Portal><Overlay/><Content/></Portal>` themselves (e.g. `alert-dialog`).
+- **No blanket `data-slot`.** Target a subcomponent via its generated `.rcr-<recipe>__<slot>` class (the recipe `className` is unprefixed; the selector carries the `rcr-` prefix). Add a `data-slot` only where something genuinely needs that hook.
+- **`unstyled` prop** drops a slot's recipe styles so you can restyle it via `css` in a specific composition.
+- **Shared style chunks** → a `SystemStyleObject`-typed const (`import type { SystemStyleObject } from '@/styled-system/types'`) spread into the slots. Never `as const`.
+- **One slot for identical-styled primitives.** If two primitives carry identical, never-diverging slot styles (e.g. a select's scroll-up vs scroll-down buttons), bind both to a single slot (`withContext(ScrollUpButton, 'scrollButton')` + `withContext(ScrollDownButton, 'scrollButton')`) rather than defining two slots that share a copied chunk. Duplicating a chunk across slots that are never independently overridden is a smell — collapse to one slot; split only when they genuinely differ.
+- **Naming:** a slot wrapped by a composed component is the internal `Styled<Slot>` (not exported); its public composed function takes the plain name. Directly-used slots are plain exported consts. Keep it uniform within the file.
+
 ### When to reach for a recipe
 
 - Reused across the app → recipe in the component folder, registered in `panda.config.ts`.
@@ -179,10 +199,9 @@ export const Content = withContext(AlertDialogPrimitive.Popup, 'content');
 ## Icons
 
 - Lucide icons, imported with the `Icon` suffix: `import { HomeIcon } from 'lucide-react'` — not `Home`.
-- **Never set the `size` prop on a Lucide icon.** Control size via CSS:
-  - `_childIcon` on the parent container (`_childIcon: { boxSize: '4' }`).
-  - The parent `styled()` component (recipes already do this — see Button's `_childIcon` rule).
-  - A direct `css={{ boxSize: '4' }}` on the icon when it needs to differ from siblings.
+- **Never set the `size` prop on a Lucide icon, and almost never style an icon directly.** An icon should be styled by its PARENT via `_childIcon` — it should not carry its own `className`/`css`. Control size/color via:
+  - `_childIcon` on the parent container, `styled()` component, or recipe (`_childIcon: { boxSize: '4' }`) — the default, strongly preferred.
+  - A direct `css={{ boxSize: '4' }}` on the icon ONLY as a last resort, when there is genuinely no parent-based way to target it.
 - Icons inherit `color: currentColor` and `boxSize: '1em'` from `globals.ts` by default — they scale with surrounding text. Only override when you need something different.
 - Use `<Spinner />` from `@/components/spinner` for loading states.
 
@@ -215,11 +234,15 @@ Typical defaults: `easeOut.cubic` for medium overlays (popovers, dialogs), `ease
 
 Durations are raw ms tokens: `durations.0`, `50`, `100`, `150`, `200`, `250`, `300`, `350`, `400`, `500`. Pick a cadence that scales with element size — ~150ms for tooltips, ~250ms for popovers/dialogs, ~350ms for drawers.
 
+**Never use the `transition` shorthand.** Always spell out the three longhands so each value is explicit and tokenized:
+
 ```ts
-transitionProperty: 'opacity, transform',
+transitionProperty: '[opacity, transform]',
 transitionDuration: '250',
 transitionTimingFunction: 'easeOut.cubic',
 ```
+
+`transitionProperty` usually needs a bracket literal (`'[opacity]'`, `'[color, box-shadow]'`) — only `common`, `colors`, `size`, `position`, `background` are predefined values. `transitionDuration` and `transitionTimingFunction` take tokens (no escape). When a Tailwind `transition-*` class carries no explicit duration/easing, default to `'150'` + `'easeOut.cubic'` unless the element's size/role calls for another curve.
 
 Curves, tokens, and the helpers that build them (`easingCurves`, `curveToCSS`, `getEasing`) all live in `src/app/styles/animations.ts`.
 
