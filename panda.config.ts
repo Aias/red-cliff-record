@@ -30,6 +30,7 @@ import {
   lineHeights,
   textStyles,
 } from '@/app/styles/typography';
+import { scrollAreaRecipe } from '@/components/scroll-area/scroll-area.recipe';
 
 export default defineConfig({
   preflight: true,
@@ -111,6 +112,7 @@ export default defineConfig({
     slotRecipes: {
       alertDialog: alertDialogRecipe,
       avatar: avatarRecipe,
+      scrollArea: scrollAreaRecipe,
       table: tableRecipe,
       tooltip: tooltipRecipe,
     },
