@@ -1,34 +1,23 @@
-import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip';
+import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
 import { createStyleContext } from '@/styled-system/jsx';
 import { tooltip } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
 const { withProvider, withContext } = createStyleContext(tooltip);
 
-export function Provider({ delay = 300, ...props }: TooltipPrimitive.Provider.Props) {
-  return <TooltipPrimitive.Provider data-slot="tooltip-provider" delay={delay} {...props} />;
+export function Provider({ delay = 300, ...props }: BaseTooltip.Provider.Props) {
+  return <BaseTooltip.Provider delay={delay} {...props} />;
 }
 
-export function Root(props: TooltipPrimitive.Root.Props) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
-}
+export const Root = withProvider(BaseTooltip.Root, 'root');
+export const Trigger = withContext(BaseTooltip.Trigger, 'trigger');
 
-export function Trigger(props: TooltipPrimitive.Trigger.Props) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
-}
-
-const StyledPositioner = withProvider(TooltipPrimitive.Positioner, 'positioner', {
-  defaultProps: { 'data-slot': 'tooltip-positioner' },
-});
-const StyledPopup = withContext(TooltipPrimitive.Popup, 'popup', {
-  defaultProps: { 'data-slot': 'tooltip-content' },
-});
-const StyledArrow = withContext(TooltipPrimitive.Arrow, 'arrow', {
-  defaultProps: { 'data-slot': 'tooltip-arrow' },
-});
+const StyledPositioner = withContext(BaseTooltip.Positioner, 'positioner');
+const StyledPopup = withContext(BaseTooltip.Popup, 'popup');
+const StyledArrow = withContext(BaseTooltip.Arrow, 'arrow');
 
 type PositionerProps = Pick<
-  TooltipPrimitive.Positioner.Props,
+  BaseTooltip.Positioner.Props,
   | 'anchor'
   | 'positionMethod'
   | 'side'
@@ -60,7 +49,7 @@ export function Content({
   ...props
 }: ComponentProps<typeof StyledPopup> & PositionerProps) {
   return (
-    <TooltipPrimitive.Portal>
+    <BaseTooltip.Portal>
       <StyledPositioner
         anchor={anchor}
         positionMethod={positionMethod}
@@ -80,6 +69,6 @@ export function Content({
           <StyledArrow />
         </StyledPopup>
       </StyledPositioner>
-    </TooltipPrimitive.Portal>
+    </BaseTooltip.Portal>
   );
 }

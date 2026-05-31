@@ -1,4 +1,4 @@
-import { Separator as BaseSeparator } from '@base-ui/react';
+import { Separator as BaseSeparator } from '@base-ui/react/separator';
 import { styled } from '@/styled-system/jsx';
 import { separator } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';

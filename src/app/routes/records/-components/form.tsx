@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { DynamicTextarea } from '@/components/dynamic-textarea';
 import { ExternalLink } from '@/components/external-link';
-import { GhostInput } from '@/components/ghost-input';
+import { GhostInput } from '@/components/input';
 import { Label } from '@/components/label';
 import MediaGrid from '@/components/media-grid';
 import { MediaUpload } from '@/components/media-upload';
@@ -318,6 +318,7 @@ export function RecordForm({
             {(field) => (
               <styled.div css={{ flexGrow: '1' }}>
                 <GhostInput
+                  aria-label="Record title"
                   ref={titleInputRef}
                   value={field.state.value ?? ''}
                   placeholder="Untitled Record"

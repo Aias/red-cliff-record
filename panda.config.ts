@@ -1,9 +1,12 @@
 import { defineConfig } from '@pandacss/dev';
 import { alertDialogRecipe } from '@/app/components/alert-dialog/alert-dialog.recipe';
 import { avatarRecipe } from '@/app/components/avatar/avatar.recipe';
+import { badgeRecipe } from '@/app/components/badge/badge.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { cardRecipe } from '@/app/components/card/card.recipe';
 import { textareaRecipe } from '@/app/components/field/textarea.recipe';
+import { inputRecipe, ghostInputRecipe } from '@/app/components/input/input.recipe';
+import { labelRecipe } from '@/app/components/label/label.recipe';
 import { placeholderRecipe } from '@/app/components/placeholder/placeholder.recipe';
 import { proseRecipe } from '@/app/components/prose/prose.recipe';
 import { separatorRecipe } from '@/app/components/separator/separator.recipe';
@@ -27,6 +30,7 @@ import {
   lineHeights,
   textStyles,
 } from '@/app/styles/typography';
+import { scrollAreaRecipe } from '@/components/scroll-area/scroll-area.recipe';
 
 export default defineConfig({
   preflight: true,
@@ -94,8 +98,12 @@ export default defineConfig({
       sm: '40rem',
     },
     recipes: {
+      badge: badgeRecipe,
       button: buttonRecipe,
       card: cardRecipe,
+      input: inputRecipe,
+      ghostInput: ghostInputRecipe,
+      label: labelRecipe,
       placeholder: placeholderRecipe,
       prose: proseRecipe,
       separator: separatorRecipe,
@@ -104,6 +112,7 @@ export default defineConfig({
     slotRecipes: {
       alertDialog: alertDialogRecipe,
       avatar: avatarRecipe,
+      scrollArea: scrollAreaRecipe,
       table: tableRecipe,
       tooltip: tooltipRecipe,
     },
