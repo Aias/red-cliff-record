@@ -6,6 +6,7 @@ import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { cardRecipe } from '@/app/components/card/card.recipe';
 import { textareaRecipe } from '@/app/components/field/textarea.recipe';
 import { inputRecipe, ghostInputRecipe } from '@/app/components/input/input.recipe';
+import { labelRecipe } from '@/app/components/label/label.recipe';
 import { placeholderRecipe } from '@/app/components/placeholder/placeholder.recipe';
 import { proseRecipe } from '@/app/components/prose/prose.recipe';
 import { separatorRecipe } from '@/app/components/separator/separator.recipe';
@@ -101,6 +102,7 @@ export default defineConfig({
       card: cardRecipe,
       input: inputRecipe,
       ghostInput: ghostInputRecipe,
+      label: labelRecipe,
       placeholder: placeholderRecipe,
       prose: proseRecipe,
       separator: separatorRecipe,
