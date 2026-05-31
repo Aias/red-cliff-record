@@ -5,6 +5,8 @@ import {
   useKeyboardShortcut,
   useRegisteredShortcuts,
 } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 import type { SystemStyleObject } from '@/styled-system/types';
 import { Button } from './button';
 import {
@@ -78,34 +80,76 @@ export function KeyboardShortcutsHelp({ buttonCss }: { buttonCss?: SystemStyleOb
           <KeyboardIcon />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+      <DialogContent
+        className={css({
+          maxHeight: '[85vh]',
+          overflowY: 'auto',
+        })}
+      >
         <DialogHeader>
           <DialogTitle>Keyboard Shortcuts</DialogTitle>
           <DialogDescription>Quick actions available throughout the application</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-6 pt-4">
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '4' }}>
           {groups.map((group) => (
             <section key={group.category}>
-              <h3 className="mb-3 text-sm font-medium text-c-secondary">{group.category}</h3>
-              <div className="flex flex-col gap-2">
+              <styled.h3
+                css={{
+                  marginBlockEnd: '2',
+                  textStyle: 'sm',
+                  fontWeight: 'medium',
+                  color: 'secondary',
+                }}
+              >
+                {group.category}
+              </styled.h3>
+              <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '2' }}>
                 {group.shortcuts.map((shortcut) => (
-                  <div
+                  <styled.div
                     key={shortcut.keys}
-                    className="flex items-center justify-between rounded-md border border-c-divider px-3 py-2"
+                    css={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderRadius: 'md',
+                      border: 'divider',
+
+                      paddingBlock: '2',
+                      paddingInlineStart: '3',
+                      paddingInlineEnd: '2',
+                      textStyle: 'sm',
+                    }}
                   >
-                    <span className="text-sm">{shortcut.description}</span>
-                    <kbd className="inline-flex items-center gap-1 rounded border border-c-border bg-c-mist px-2 py-1 font-mono text-xs text-c-secondary">
+                    <span>{shortcut.description}</span>
+                    <styled.kbd
+                      css={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5',
+                        borderRadius: 'md',
+                        border: 'border',
+                        backgroundColor: 'splash',
+                        paddingInline: '2',
+                        paddingBlock: '0.5',
+                        fontFamily: 'mono',
+                        fontWeight: 'medium',
+                        color: 'accent',
+                        letterSpacing: '0.15ch',
+                      }}
+                    >
                       {formatShortcut(shortcut.keys)}
-                    </kbd>
-                  </div>
+                    </styled.kbd>
+                  </styled.div>
                 ))}
-              </div>
+              </styled.div>
             </section>
           ))}
           {groups.length === 0 && (
-            <p className="text-center text-sm text-c-hint">No keyboard shortcuts registered</p>
+            <styled.p css={{ textAlign: 'center', textStyle: 'sm', color: 'muted' }}>
+              No keyboard shortcuts registered
+            </styled.p>
           )}
-        </div>
+        </styled.div>
       </DialogContent>
     </Dialog>
   );
