@@ -14,7 +14,7 @@ export const badgeRecipe = defineRecipe({
     borderColor: 'transparent',
     paddingInline: '[0.5em]',
     paddingBlock: '[0.21em]',
-    borderRadius: '[0.25em]',
+    borderRadius: 'sm',
   },
   variants: {
     variant: {
