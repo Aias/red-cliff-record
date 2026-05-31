@@ -126,25 +126,24 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
           <Tooltip.Content>{inBasket ? 'Remove from basket' : 'Add to basket'}</Tooltip.Content>
         </Tooltip.Root>
         <AlertDialog.Root>
-          <AlertDialog.Trigger asChild>
-            <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
-              <Trash2Icon />
-            </Button>
-          </AlertDialog.Trigger>
-          <AlertDialog.Portal>
-            <AlertDialog.Overlay />
-            <AlertDialog.Content>
-              <AlertDialog.Header>
-                <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
-                <AlertDialog.Description>
-                  This action cannot be undone. This will permanently delete this record.
-                </AlertDialog.Description>
-              </AlertDialog.Header>
-              <AlertDialog.Footer>
-                <AlertDialog.Cancel asChild>
-                  <Button variant="outline">Cancel</Button>
-                </AlertDialog.Cancel>
-                <AlertDialog.Action asChild>
+          <AlertDialog.Trigger
+            render={
+              <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
+                <Trash2Icon />
+              </Button>
+            }
+          />
+          <AlertDialog.Content>
+            <AlertDialog.Header>
+              <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+              <AlertDialog.Description>
+                This action cannot be undone. This will permanently delete this record.
+              </AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+              <AlertDialog.Close render={<Button variant="outline">Cancel</Button>} />
+              <AlertDialog.Close
+                render={
                   <Button
                     variant="solid"
                     css={{ colorPalette: 'error', layerStyle: 'chromatic' }}
@@ -152,10 +151,10 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
                   >
                     Continue
                   </Button>
-                </AlertDialog.Action>
-              </AlertDialog.Footer>
-            </AlertDialog.Content>
-          </AlertDialog.Portal>
+                }
+              />
+            </AlertDialog.Footer>
+          </AlertDialog.Content>
         </AlertDialog.Root>
       </styled.div>
     </styled.div>
