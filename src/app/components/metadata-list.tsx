@@ -1,20 +1,11 @@
 import { CopyIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
-import { css, cx } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
-import {
-  DataListItem,
-  DataListLabel,
-  DataListRoot,
-  DataListValue,
-  type DataListRootProps,
-} from './data-list';
+import { DataList } from './data-list';
 import { ExternalLink } from './external-link';
 
-interface MetadataListProps extends DataListRootProps {
-  metadata: Record<string, unknown>;
-}
+type MetadataListProps = { metadata: Record<string, unknown> } & DataList.RootProps;
 
 const urlSchema = z.url();
 
@@ -68,18 +59,11 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
   };
 
   return (
-    <DataListRoot {...props}>
+    <DataList.Root {...props}>
       {Object.entries(metadata).map(([key, value]) => (
-        <DataListItem key={key}>
-          <DataListLabel>{key}</DataListLabel>
-          <DataListValue
-            className={cx(
-              'group',
-              css({
-                position: 'relative',
-              })
-            )}
-          >
+        <DataList.Item key={key}>
+          <DataList.Label>{key}</DataList.Label>
+          <DataList.Value className="group" css={{ position: 'relative' }}>
             {value === null || value === undefined ? (
               <styled.span css={{ color: 'muted' }}>—</styled.span>
             ) : (
@@ -108,7 +92,6 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
                   </styled.div>
                 ) : (
                   <styled.span
-                    data-slot="copy-icon"
                     css={{
                       position: 'absolute',
                       insetInlineEnd: '0',
@@ -116,6 +99,7 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
                       translateCenter: 'y',
                       color: 'muted',
                       opacity: 0,
+                      pointerEvents: 'none', // Clicks pass through to the value text
                       transitionProperty: '[opacity]',
                       transitionDuration: '150',
                       transitionTimingFunction: 'easeOut.quad',
@@ -129,9 +113,9 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
                 )}
               </styled.div>
             )}
-          </DataListValue>
-        </DataListItem>
+          </DataList.Value>
+        </DataList.Item>
       ))}
-    </DataListRoot>
+    </DataList.Root>
   );
 };

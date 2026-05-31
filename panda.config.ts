@@ -4,6 +4,8 @@ import { avatarRecipe } from '@/app/components/avatar/avatar.recipe';
 import { badgeRecipe } from '@/app/components/badge/badge.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { cardRecipe } from '@/app/components/card/card.recipe';
+import { commandRecipe } from '@/app/components/command/command.recipe';
+import { dataListRecipe } from '@/app/components/data-list/data-list.recipe';
 import { dialogRecipe } from '@/app/components/dialog/dialog.recipe';
 import { dropdownMenuRecipe } from '@/app/components/dropdown-menu/dropdown-menu.recipe';
 import { hoverCardRecipe } from '@/app/components/hover-card/hover-card.recipe';
@@ -116,6 +118,8 @@ export default defineConfig({
     slotRecipes: {
       alertDialog: alertDialogRecipe,
       avatar: avatarRecipe,
+      command: commandRecipe,
+      dataList: dataListRecipe,
       dialog: dialogRecipe,
       dropdownMenu: dropdownMenuRecipe,
       hoverCard: hoverCardRecipe,

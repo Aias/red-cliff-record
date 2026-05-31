@@ -3,15 +3,7 @@ import { PlusCircleIcon, SearchIcon } from 'lucide-react';
 import { useState } from 'react';
 import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from '@/components/command';
+import { Command } from '@/components/command';
 import { Popover } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
@@ -161,16 +153,21 @@ export const SiteSearch = () => {
         collisionPadding={8}
         sideOffset={16}
       >
-        <Command shouldFilter={false} loop value={commandValue} onValueChange={setCommandValue}>
-          <CommandInput
+        <Command.Root
+          shouldFilter={false}
+          loop
+          value={commandValue}
+          onValueChange={setCommandValue}
+        >
+          <Command.Input
             placeholder="Search records..."
             value={inputValue}
             onValueChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
           />
-          <CommandList className={css({ maxHeight: '[75vh]' })}>
-            <CommandItem value="-" className={css({ display: 'none' })} />
-            <CommandEmpty>
+          <Command.List css={{ maxHeight: '[75vh]' }}>
+            <Command.Item value="-" css={{ display: 'none' }} />
+            <Command.Empty>
               {!shouldSearch
                 ? 'Type to search...'
                 : isSearching
@@ -178,49 +175,49 @@ export const SiteSearch = () => {
                   : !hasResults
                     ? 'No results found.'
                     : ''}
-            </CommandEmpty>
+            </Command.Empty>
 
             {shouldSearch && isSearching && (
-              <CommandItem
+              <Command.Item
                 disabled
-                className={css({ display: 'flex', alignItems: 'center', justifyContent: 'center' })}
+                css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <Spinner css={{ boxSize: '4' }} />
-              </CommandItem>
+              </Command.Item>
             )}
 
             {trigramResults.length > 0 && (
-              <CommandGroup heading="Text Matches">
+              <Command.Group heading="Text Matches">
                 {trigramResults.map(({ id }) => (
-                  <CommandItem key={id} value={String(id)} onSelect={() => handleSelectResult(id)}>
+                  <Command.Item key={id} value={String(id)} onSelect={() => handleSelectResult(id)}>
                     <SearchResultItem id={id} />
-                  </CommandItem>
+                  </Command.Item>
                 ))}
-              </CommandGroup>
+              </Command.Group>
             )}
 
             {vectorResults.length > 0 && (
-              <CommandGroup heading="Similar">
+              <Command.Group heading="Similar">
                 {vectorResults.map(({ id }) => (
-                  <CommandItem key={id} value={String(id)} onSelect={() => handleSelectResult(id)}>
+                  <Command.Item key={id} value={String(id)} onSelect={() => handleSelectResult(id)}>
                     <SearchResultItem id={id} />
-                  </CommandItem>
+                  </Command.Item>
                 ))}
-              </CommandGroup>
+              </Command.Group>
             )}
 
             {vector.isFetching && !vector.data && trigramResults.length > 0 && (
-              <CommandItem
+              <Command.Item
                 disabled
-                className={css({ display: 'flex', alignItems: 'center', justifyContent: 'center' })}
+                css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <Spinner css={{ boxSize: '4' }} />
-              </CommandItem>
+              </Command.Item>
             )}
 
-            {shouldSearch && <CommandSeparator alwaysRender />}
+            {shouldSearch && <Command.Separator alwaysRender />}
 
-            <CommandItem
+            <Command.Item
               disabled={inputValue.length === 0 || trigram.isFetching}
               key="create-record"
               onSelect={() => {
@@ -229,12 +226,12 @@ export const SiteSearch = () => {
                   { onSuccess: (newRecord) => handleSelectResult(newRecord.id) }
                 );
               }}
-              className={css({ paddingInline: '3', paddingBlock: '2' })}
+              css={{ paddingInline: '3', paddingBlock: '2' }}
             >
               <PlusCircleIcon /> Create New Record
-            </CommandItem>
-          </CommandList>
-        </Command>
+            </Command.Item>
+          </Command.List>
+        </Command.Root>
       </Popover.Content>
     </Popover.Root>
   );

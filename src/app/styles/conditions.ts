@@ -5,6 +5,15 @@ export const conditionsPreset = definePreset({
   name: 'conditions',
   conditions: {
     extend: {
+      // Override Panda's built-in disabled/active/selected so a literal `data-*=false`
+      // does not trigger the condition. Libraries like cmdk render the boolean state on
+      // every item (`data-disabled="false"`, `data-selected="false"`), and the stock
+      // selectors match on attribute presence — flagging every item as disabled/selected.
+      // Presence (Radix's valueless `data-disabled`) and `=true` still match.
+      disabled:
+        '&:is(:disabled, [disabled], [data-disabled]:not([data-disabled=false]), [aria-disabled=true])',
+      active: '&:is(:active, [data-active]:not([data-active=false]))',
+      selected: '&:is([aria-selected=true], [data-selected]:not([data-selected=false]))',
       dark: ':where([data-color-scheme="dark"], [data-dark], .dark) &',
       light: ':where([data-color-scheme="light"], [data-light], .light) &',
       neutral: `&[data-neutral], &.${PREFIX}-layerStyle_neutral, :where([data-neutral], [data-chroma="neutral"], .neutral, .${PREFIX}-layerStyle_neutral) &`,

@@ -18,14 +18,7 @@ import {
 import { trpc } from '@/app/trpc';
 import { Badge } from '@/components/badge';
 import { Button, type ButtonProps } from '@/components/button';
-import {
-  Command,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from '@/components/command';
+import { Command } from '@/components/command';
 import { Popover } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
 import { useUpsertLink } from '@/lib/hooks/link-mutations';
@@ -81,56 +74,61 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
   const isSearching = trigram.isFetching && !trigram.data;
 
   return (
-    <Command shouldFilter={false} loop className={css({ width: 'full' })} defaultValue="">
-      <CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Find a record…" />
-      <CommandList>
-        <CommandItem value="-" className={css({ display: 'none' })} />
+    <Command.Root shouldFilter={false} loop css={{ width: 'full' }} defaultValue="">
+      <Command.Input
+        autoFocus
+        value={query}
+        onValueChange={setQuery}
+        placeholder="Find a record…"
+      />
+      <Command.List>
+        <Command.Item value="-" css={{ display: 'none' }} />
 
         {shouldSearch && isSearching && (
-          <CommandItem
+          <Command.Item
             disabled
-            className={css({ display: 'flex', alignItems: 'center', justifyContent: 'center' })}
+            css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <Spinner css={{ boxSize: '4' }} />
-          </CommandItem>
+          </Command.Item>
         )}
 
         {trigramResults.length > 0 && (
-          <CommandGroup heading="Text Matches">
+          <Command.Group heading="Text Matches">
             {trigramResults.map(({ id }) => (
-              <CommandItem key={id} value={String(id)} onSelect={() => onSelect(id)}>
+              <Command.Item key={id} value={String(id)} onSelect={() => onSelect(id)}>
                 <SearchResultItem id={id} />
-              </CommandItem>
+              </Command.Item>
             ))}
-          </CommandGroup>
+          </Command.Group>
         )}
 
         {vectorResults.length > 0 && (
-          <CommandGroup heading="Similar">
+          <Command.Group heading="Similar">
             {vectorResults.map(({ id }) => (
-              <CommandItem key={id} value={String(id)} onSelect={() => onSelect(id)}>
+              <Command.Item key={id} value={String(id)} onSelect={() => onSelect(id)}>
                 <SearchResultItem id={id} />
-              </CommandItem>
+              </Command.Item>
             ))}
-          </CommandGroup>
+          </Command.Group>
         )}
 
         {vector.isFetching && !vector.data && trigramResults.length > 0 && (
-          <CommandItem
+          <Command.Item
             disabled
-            className={css({ display: 'flex', alignItems: 'center', justifyContent: 'center' })}
+            css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <Spinner css={{ boxSize: '4' }} />
-          </CommandItem>
+          </Command.Item>
         )}
 
         {!isSearching && !hasResults && shouldSearch && (
-          <CommandItem disabled>No results</CommandItem>
+          <Command.Item disabled>No results</Command.Item>
         )}
 
-        {shouldSearch && <CommandSeparator alwaysRender />}
+        {shouldSearch && <Command.Separator alwaysRender />}
 
-        <CommandItem
+        <Command.Item
           disabled={query.length === 0 || trigram.isFetching}
           key="create-record"
           onSelect={() => {
@@ -139,12 +137,12 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
               { onSuccess: (newRecord) => onSelect(newRecord.id) }
             );
           }}
-          className={css({ paddingInline: '3', paddingBlock: '2' })}
+          css={{ paddingInline: '3', paddingBlock: '2' }}
         >
           <PlusCircleIcon /> Create New Record
-        </CommandItem>
-      </CommandList>
-    </Command>
+        </Command.Item>
+      </Command.List>
+    </Command.Root>
   );
 }
 
@@ -166,39 +164,39 @@ function PredicateCombobox({
   includeNonCanonical = false,
 }: PredicateComboboxProps) {
   return (
-    <Command className={css({ width: 'full' })} defaultValue="">
-      <CommandInput autoFocus placeholder="Select relation type…" />
-      <CommandList>
-        <CommandItem value="-" className={css({ display: 'none' })} />
-        <CommandGroup heading="Predicates">
+    <Command.Root css={{ width: 'full' }} defaultValue="">
+      <Command.Input autoFocus placeholder="Select relation type…" />
+      <Command.List>
+        <Command.Item value="-" css={{ display: 'none' }} />
+        <Command.Group heading="Predicates">
           {predicates
             .filter((p) => includeNonCanonical || p.canonical)
             .map((p) => (
-              <CommandItem
-                className={css({ display: 'flex', gap: '2', textTransform: 'capitalize' })}
+              <Command.Item
+                css={{ display: 'flex', gap: '2', textTransform: 'capitalize' }}
                 key={p.slug}
                 onSelect={() => onPredicateSelect(p.slug as PredicateSlug)}
               >
                 <styled.span css={{ fontWeight: 'medium' }}>{p.name}</styled.span>
                 <styled.span css={{ color: 'muted' }}>{p.type}</styled.span>
-              </CommandItem>
+              </Command.Item>
             ))}
-        </CommandGroup>
+        </Command.Group>
 
         {actions.length > 0 && (
           <>
-            <CommandSeparator />
-            <CommandGroup heading="Actions">
+            <Command.Separator />
+            <Command.Group heading="Actions">
               {actions.map((a) => (
-                <CommandItem key={a.key} onSelect={a.onSelect}>
+                <Command.Item key={a.key} onSelect={a.onSelect}>
                   {a.label}
-                </CommandItem>
+                </Command.Item>
               ))}
-            </CommandGroup>
+            </Command.Group>
           </>
         )}
-      </CommandList>
-    </Command>
+      </Command.List>
+    </Command.Root>
   );
 }
 
