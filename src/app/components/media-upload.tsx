@@ -240,14 +240,12 @@ export const MediaUpload = ({
           gap: '1',
           textStyle: 'sm',
           color: 'secondary',
-          colorPalette: 'error',
-          layerStyle: 'chromatic',
         }}
       >
         {isLoading && <Spinner css={{ boxSize: '3' }} />}
         <styled.span
           css={{
-            color: 'accent',
+            color: error ? 'accent' : 'currentColor',
           }}
         >
           {error ?? statusMessage}
