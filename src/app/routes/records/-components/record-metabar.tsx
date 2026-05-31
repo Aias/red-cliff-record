@@ -53,9 +53,8 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
     >
       <Popover.Root>
         <Popover.Trigger
-          nativeButton={false}
           render={
-            <Avatar.Root className={css({ cursor: 'pointer' })}>
+            <Avatar.Root render={<button type="button" />} css={{ cursor: 'pointer' }}>
               <Avatar.Image src={record.avatarUrl ?? undefined} />
               <Avatar.Fallback>
                 {(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
