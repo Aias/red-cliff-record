@@ -13,6 +13,7 @@ import { labelRecipe } from '@/app/components/label/label.recipe';
 import { placeholderRecipe } from '@/app/components/placeholder/placeholder.recipe';
 import { popoverRecipe } from '@/app/components/popover/popover.recipe';
 import { proseRecipe } from '@/app/components/prose/prose.recipe';
+import { radioCardsRecipe } from '@/app/components/radio-cards/radio-cards.recipe';
 import { separatorRecipe } from '@/app/components/separator/separator.recipe';
 import { tableRecipe } from '@/app/components/table/table.recipe';
 import { textareaRecipe } from '@/app/components/textarea/textarea.recipe';
@@ -122,6 +123,7 @@ export default defineConfig({
       dropdownMenu: dropdownMenuRecipe,
       hoverCard: hoverCardRecipe,
       popover: popoverRecipe,
+      radioCards: radioCardsRecipe,
       scrollArea: scrollAreaRecipe,
       table: tableRecipe,
       tooltip: tooltipRecipe,
