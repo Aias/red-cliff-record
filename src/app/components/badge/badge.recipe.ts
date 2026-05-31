@@ -1,13 +1,7 @@
-import { styled } from '@/styled-system/jsx';
+import { defineRecipe } from '@/app/styles/define-recipe';
 
-/**
- * The badgeVariants uses relative units (em) so that the padding and border-radius
- * scale with the font-size (which you can control with Tailwind’s text-[size] utilities).
- *
- * The four variants correspond to the Radix badge variants. Compound variants are used
- * to adjust the high-contrast settings based on the `highContrast` prop.
- */
-export const Badge = styled('span', {
+export const badgeRecipe = defineRecipe({
+  className: 'badge',
   base: {
     display: 'inline-flex',
     alignItems: 'center',

@@ -1,6 +1,7 @@
 import { defineConfig } from '@pandacss/dev';
 import { alertDialogRecipe } from '@/app/components/alert-dialog/alert-dialog.recipe';
 import { avatarRecipe } from '@/app/components/avatar/avatar.recipe';
+import { badgeRecipe } from '@/app/components/badge/badge.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { cardRecipe } from '@/app/components/card/card.recipe';
 import { textareaRecipe } from '@/app/components/field/textarea.recipe';
@@ -94,6 +95,7 @@ export default defineConfig({
       sm: '40rem',
     },
     recipes: {
+      badge: badgeRecipe,
       button: buttonRecipe,
       card: cardRecipe,
       placeholder: placeholderRecipe,
