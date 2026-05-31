@@ -5,6 +5,7 @@ import { badgeRecipe } from '@/app/components/badge/badge.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { cardRecipe } from '@/app/components/card/card.recipe';
 import { dialogRecipe } from '@/app/components/dialog/dialog.recipe';
+import { dropdownMenuRecipe } from '@/app/components/dropdown-menu/dropdown-menu.recipe';
 import { hoverCardRecipe } from '@/app/components/hover-card/hover-card.recipe';
 import { inputRecipe, ghostInputRecipe } from '@/app/components/input/input.recipe';
 import { labelRecipe } from '@/app/components/label/label.recipe';
@@ -116,6 +117,7 @@ export default defineConfig({
       alertDialog: alertDialogRecipe,
       avatar: avatarRecipe,
       dialog: dialogRecipe,
+      dropdownMenu: dropdownMenuRecipe,
       hoverCard: hoverCardRecipe,
       popover: popoverRecipe,
       scrollArea: scrollAreaRecipe,

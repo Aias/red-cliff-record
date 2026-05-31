@@ -53,6 +53,7 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
     >
       <Popover.Root>
         <Popover.Trigger
+          nativeButton={false}
           render={
             <Avatar.Root className={css({ cursor: 'pointer' })}>
               <Avatar.Image src={record.avatarUrl ?? undefined} />

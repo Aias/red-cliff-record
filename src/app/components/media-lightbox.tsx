@@ -1,9 +1,7 @@
 import type { MediaSelect } from '@hozo/schema/media';
-import { Dialog as DialogPrimitive } from 'radix-ui';
-import type React from 'react';
-import { useCallback, useMemo, useRef } from 'react';
-import { cn } from '@/app/lib/utils';
-import { css } from '@/styled-system/css';
+import { useCallback, useMemo, useRef, type KeyboardEvent } from 'react';
+import { styled } from '@/styled-system/jsx';
+import { Dialog } from './dialog';
 
 type LightboxImage = Pick<MediaSelect, 'altText' | 'id' | 'url'>;
 
@@ -58,7 +56,7 @@ export function MediaLightbox({ images, activeIndex, onClose, onIndexChange }: M
   }, [focusContent, goToIndex, safeIndex]);
 
   const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
+    (event: KeyboardEvent<HTMLDivElement>) => {
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
         handlePrevious();
@@ -74,49 +72,60 @@ export function MediaLightbox({ images, activeIndex, onClose, onIndexChange }: M
   if (safeIndex === null || !currentImage) return null;
 
   return (
-    <DialogPrimitive.Root open onOpenChange={(open) => (open ? null : onClose())}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay
-          onClick={onClose}
-          className={cn(
-            'fixed inset-0 z-50 bg-black/80 backdrop-blur-sm',
-            css({
-              _open: { animateIn: true, fadeIn: 0 },
-              _closed: { animateOut: true, fadeOut: 0 },
-            })
-          )}
-        />
-        <DialogPrimitive.Content
-          data-slot="dialog-content"
-          ref={contentRef}
-          tabIndex={0}
-          onKeyDown={handleKeyDown}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              onClose();
-            }
+    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Content
+        ref={contentRef}
+        tabIndex={0}
+        initialFocus={contentRef}
+        onKeyDown={handleKeyDown}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            onClose();
+          }
+        }}
+        showCloseButton={false}
+        css={{
+          width: '[100dvw]',
+          maxWidth: '[100dvw]',
+          height: '[100dvh]',
+          maxHeight: '[100dvh]',
+          border: 'none',
+          backgroundColor: 'transparent',
+          boxShadow: 'none',
+
+          padding: '8',
+        }}
+      >
+        <Dialog.Title css={{ srOnly: true }}>Record Attachments</Dialog.Title>
+        <Dialog.Description css={{ srOnly: true }}>
+          Full screen view of the image
+        </Dialog.Description>
+        <styled.figure
+          css={{
+            pointerEvents: 'none',
+            position: 'relative',
+            display: 'flex',
+            boxSize: 'full',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-          onOpenAutoFocus={(event) => {
-            event.preventDefault();
-            focusContent();
-          }}
-          className="fixed inset-0 z-50 flex h-screen w-screen items-center justify-center p-8 outline-hidden"
         >
-          <DialogPrimitive.Title className="sr-only">Record Attachments</DialogPrimitive.Title>
-          <DialogPrimitive.Description className="sr-only">
-            Full screen view of the image
-          </DialogPrimitive.Description>
-          <figure className="pointer-events-none relative flex h-full w-full items-center justify-center">
-            <img
-              src={currentImage.url}
-              alt={currentImage.altText ?? 'Record attachment'}
-              className="pointer-events-auto max-h-[calc(100vh-4rem)] max-w-[calc(100vw-4rem)] rounded-lg object-contain shadow-2xl"
-              loading="lazy"
-              decoding="async"
-            />
-          </figure>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+          <styled.img
+            src={currentImage.url}
+            alt={currentImage.altText ?? 'Record attachment'}
+            css={{
+              pointerEvents: 'auto',
+              maxHeight: '[calc(100vh - 4rem)]',
+              maxWidth: '[calc(100vw - 4rem)]',
+              borderRadius: 'lg',
+              objectFit: 'contain',
+              boxShadow: '2xl',
+            }}
+            loading="lazy"
+            decoding="async"
+          />
+        </styled.figure>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 }
