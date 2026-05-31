@@ -1,16 +1,22 @@
 import { defineConfig } from '@pandacss/dev';
-import { alertDialogRecipe } from '@/app/components/alert-dialog/alert-dialog.recipe';
 import { avatarRecipe } from '@/app/components/avatar/avatar.recipe';
 import { badgeRecipe } from '@/app/components/badge/badge.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { cardRecipe } from '@/app/components/card/card.recipe';
-import { textareaRecipe } from '@/app/components/field/textarea.recipe';
+import { commandRecipe } from '@/app/components/command/command.recipe';
+import { dataListRecipe } from '@/app/components/data-list/data-list.recipe';
+import { dialogRecipe } from '@/app/components/dialog/dialog.recipe';
+import { dropdownMenuRecipe } from '@/app/components/dropdown-menu/dropdown-menu.recipe';
+import { hoverCardRecipe } from '@/app/components/hover-card/hover-card.recipe';
 import { inputRecipe, ghostInputRecipe } from '@/app/components/input/input.recipe';
 import { labelRecipe } from '@/app/components/label/label.recipe';
 import { placeholderRecipe } from '@/app/components/placeholder/placeholder.recipe';
+import { popoverRecipe } from '@/app/components/popover/popover.recipe';
 import { proseRecipe } from '@/app/components/prose/prose.recipe';
+import { radioCardsRecipe } from '@/app/components/radio-cards/radio-cards.recipe';
 import { separatorRecipe } from '@/app/components/separator/separator.recipe';
 import { tableRecipe } from '@/app/components/table/table.recipe';
+import { textareaRecipe } from '@/app/components/textarea/textarea.recipe';
 import { tooltipRecipe } from '@/app/components/tooltip/tooltip.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
 import { blurs } from '@/app/styles/blurs';
@@ -110,8 +116,14 @@ export default defineConfig({
       textarea: textareaRecipe,
     },
     slotRecipes: {
-      alertDialog: alertDialogRecipe,
       avatar: avatarRecipe,
+      command: commandRecipe,
+      dataList: dataListRecipe,
+      dialog: dialogRecipe,
+      dropdownMenu: dropdownMenuRecipe,
+      hoverCard: hoverCardRecipe,
+      popover: popoverRecipe,
+      radioCards: radioCardsRecipe,
       scrollArea: scrollAreaRecipe,
       table: tableRecipe,
       tooltip: tooltipRecipe,

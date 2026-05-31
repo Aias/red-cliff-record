@@ -11,7 +11,7 @@ import { Input } from '@/components/input';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { Label } from '@/components/label';
 import { MetadataList } from '@/components/metadata-list';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
+import { Popover } from '@/components/popover';
 import { Separator } from '@/components/separator';
 import { Spinner } from '@/components/spinner';
 import { Toggle } from '@/components/toggle';
@@ -51,28 +51,30 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
       css={{ display: 'flex', alignItems: 'center', gap: '2.5' }}
       {...props}
     >
-      <Popover>
-        <PopoverTrigger asChild>
-          <Avatar.Root className={css({ cursor: 'pointer' })}>
-            <Avatar.Image src={record.avatarUrl ?? undefined} />
-            <Avatar.Fallback>
-              {(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
-            </Avatar.Fallback>
-          </Avatar.Root>
-        </PopoverTrigger>
-        <PopoverContent
-          className={css({
+      <Popover.Root>
+        <Popover.Trigger
+          render={
+            <Avatar.Root render={<button type="button" />} css={{ cursor: 'pointer' }}>
+              <Avatar.Image src={record.avatarUrl ?? undefined} />
+              <Avatar.Fallback>
+                {(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
+              </Avatar.Fallback>
+            </Avatar.Root>
+          }
+        />
+        <Popover.Content
+          css={{
             display: 'flex',
             minWidth: '80',
             flexDirection: 'column',
             gap: '3',
-          })}
+          }}
         >
           <AvatarSection record={record} />
           <Separator />
           <MetadataSection record={record} />
-        </PopoverContent>
-      </Popover>
+        </Popover.Content>
+      </Popover.Root>
       <Link
         to="/records/$recordId"
         params={{ recordId }}
@@ -124,25 +126,24 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
           <Tooltip.Content>{inBasket ? 'Remove from basket' : 'Add to basket'}</Tooltip.Content>
         </Tooltip.Root>
         <AlertDialog.Root>
-          <AlertDialog.Trigger asChild>
-            <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
-              <Trash2Icon />
-            </Button>
-          </AlertDialog.Trigger>
-          <AlertDialog.Portal>
-            <AlertDialog.Overlay />
-            <AlertDialog.Content>
-              <AlertDialog.Header>
-                <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
-                <AlertDialog.Description>
-                  This action cannot be undone. This will permanently delete this record.
-                </AlertDialog.Description>
-              </AlertDialog.Header>
-              <AlertDialog.Footer>
-                <AlertDialog.Cancel asChild>
-                  <Button variant="outline">Cancel</Button>
-                </AlertDialog.Cancel>
-                <AlertDialog.Action asChild>
+          <AlertDialog.Trigger
+            render={
+              <Button size="icon" variant="ghost" type="button" aria-label="Delete record">
+                <Trash2Icon />
+              </Button>
+            }
+          />
+          <AlertDialog.Content>
+            <AlertDialog.Header>
+              <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+              <AlertDialog.Description>
+                This action cannot be undone. This will permanently delete this record.
+              </AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+              <AlertDialog.Close render={<Button variant="outline">Cancel</Button>} />
+              <AlertDialog.Close
+                render={
                   <Button
                     variant="solid"
                     css={{ colorPalette: 'error', layerStyle: 'chromatic' }}
@@ -150,10 +151,10 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
                   >
                     Continue
                   </Button>
-                </AlertDialog.Action>
-              </AlertDialog.Footer>
-            </AlertDialog.Content>
-          </AlertDialog.Portal>
+                }
+              />
+            </AlertDialog.Footer>
+          </AlertDialog.Content>
         </AlertDialog.Root>
       </styled.div>
     </styled.div>

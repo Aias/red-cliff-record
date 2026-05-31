@@ -35,7 +35,7 @@ function RouteComponent() {
   const currentRecordId = getSelectedRecordId();
 
   const handleValueChange = useCallback(
-    (value: string) => {
+    (value: unknown) => {
       void navigate({
         to: '/records/$recordId',
         params: { recordId: Number(value) },
@@ -114,7 +114,10 @@ function RouteComponent() {
                 paddingInline: '3',
               }}
             >
-              <styled.h2 css={{ textStyle: 'lg', fontWeight: 'medium' }}>
+              <styled.h2
+                id="records-sidebar-heading"
+                css={{ textStyle: 'lg', fontWeight: 'medium' }}
+              >
                 Records{' '}
                 <styled.span css={{ textStyle: 'sm', color: 'secondary' }}>
                   ({recordsList.ids.length})
@@ -125,9 +128,10 @@ function RouteComponent() {
               </Link>
             </styled.header>
             <RadioCards
+              aria-labelledby="records-sidebar-heading"
               value={currentRecordId?.toString()}
               onValueChange={handleValueChange}
-              className={css({
+              css={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1',
@@ -135,7 +139,7 @@ function RouteComponent() {
                 scrollbarWidth: '[thin]',
                 paddingInline: '3',
                 textStyle: 'xs',
-              })}
+              }}
             >
               {recordsList.ids.map(({ id }) => (
                 <RadioCardsItem key={id} value={id.toString()} data-record-sidebar-id={id}>

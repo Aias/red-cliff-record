@@ -1,4 +1,3 @@
-import { LayoutGroup, motion, MotionConfig } from 'motion/react';
 import { useEffect, useReducer, useRef, useState, type ReactNode } from 'react';
 import { styled } from '@/styled-system/jsx';
 
@@ -103,40 +102,34 @@ export function Masonry<T>({
   );
 
   return (
-    <MotionConfig reducedMotion="user">
-      <LayoutGroup>
-        <styled.div
-          ref={containerRef}
-          data-slot="masonry"
-          css={{ position: 'relative', marginBlockEnd: '4', flexShrink: 0 }}
-          className={className}
-          style={{
-            height: containerWidth > 0 ? height : undefined,
-            visibility: containerWidth > 0 ? undefined : 'hidden',
-          }}
-        >
-          {items.map((item, i) => {
-            const key = keys[i] ?? '';
-            const pos = positions.get(key);
-            return (
-              <motion.div
-                key={key}
-                layout="position"
-                transition={{ layout: { duration: 0.1, ease: [0.4, 0, 0.2, 1] } }}
-                data-masonry-key={key}
-                style={{
-                  position: 'absolute',
-                  top: pos?.y ?? 0,
-                  left: pos?.x ?? 0,
-                  width: pos?.width ?? columnWidth,
-                }}
-              >
-                {renderItem(item)}
-              </motion.div>
-            );
-          })}
-        </styled.div>
-      </LayoutGroup>
-    </MotionConfig>
+    <styled.div
+      ref={containerRef}
+      data-slot="masonry"
+      css={{ position: 'relative', marginBlockEnd: '4', flexShrink: 0 }}
+      className={className}
+      style={{
+        height: containerWidth > 0 ? height : undefined,
+        visibility: containerWidth > 0 ? undefined : 'hidden',
+      }}
+    >
+      {items.map((item, i) => {
+        const key = keys[i] ?? '';
+        const pos = positions.get(key);
+        return (
+          <styled.div
+            key={key}
+            data-masonry-key={key}
+            style={{
+              position: 'absolute',
+              top: pos?.y ?? 0,
+              left: pos?.x ?? 0,
+              width: pos?.width ?? columnWidth,
+            }}
+          >
+            {renderItem(item)}
+          </styled.div>
+        );
+      })}
+    </styled.div>
   );
 }

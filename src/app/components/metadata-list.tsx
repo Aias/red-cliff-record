@@ -1,18 +1,11 @@
 import { CopyIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
-import {
-  DataListItem,
-  DataListLabel,
-  DataListRoot,
-  DataListValue,
-  type DataListRootProps,
-} from './data-list';
+import { styled } from '@/styled-system/jsx';
+import { DataList } from './data-list';
 import { ExternalLink } from './external-link';
 
-interface MetadataListProps extends DataListRootProps {
-  metadata: Record<string, unknown>;
-}
+type MetadataListProps = { metadata: Record<string, unknown> } & DataList.RootProps;
 
 const urlSchema = z.url();
 
@@ -36,9 +29,17 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
     if (Array.isArray(value)) return value.join(', ');
     if (typeof value === 'object') {
       return (
-        <pre className="block text-[0.875em] break-all whitespace-pre-wrap text-c-secondary">
+        <styled.pre
+          css={{
+            display: 'block',
+            fontSize: '[0.875em]',
+            wordBreak: 'break-all',
+            whiteSpace: 'pre-wrap',
+            color: 'secondary',
+          }}
+        >
           {JSON.stringify(value, null, 2)}
-        </pre>
+        </styled.pre>
       );
     }
 
@@ -58,31 +59,63 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
   };
 
   return (
-    <DataListRoot {...props}>
+    <DataList.Root {...props}>
       {Object.entries(metadata).map(([key, value]) => (
-        <DataListItem key={key}>
-          <DataListLabel>{key}</DataListLabel>
-          <DataListValue className="group relative">
+        <DataList.Item key={key}>
+          <DataList.Label>{key}</DataList.Label>
+          <DataList.Value className="group" css={{ position: 'relative' }}>
             {value === null || value === undefined ? (
-              <span className="text-c-hint">—</span>
+              <styled.span css={{ color: 'muted' }}>—</styled.span>
             ) : (
-              <div className="flex items-baseline gap-2">
-                <div className="flex-1" onClick={() => handleCopy(key, value)}>
+              <styled.div
+                css={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: '2',
+                }}
+              >
+                <styled.div css={{ flex: '1' }} onClick={() => handleCopy(key, value)}>
                   {formatValue(value)}
-                </div>
+                </styled.div>
                 {copiedKey === key ? (
-                  <div className="absolute top-0 right-0 text-xs text-c-hint">Copied!</div>
+                  <styled.div
+                    css={{
+                      position: 'absolute',
+                      insetBlockStart: '1/2',
+                      translateCenter: 'y',
+                      insetInlineEnd: '0',
+                      textStyle: 'xs',
+                      color: 'muted',
+                    }}
+                  >
+                    Copied!
+                  </styled.div>
                 ) : (
-                  <CopyIcon
-                    className="absolute right-0 text-c-hint opacity-0 transition-opacity group-hover:opacity-100"
-                    aria-label="Copy to clipboard"
-                  />
+                  <styled.span
+                    css={{
+                      position: 'absolute',
+                      insetInlineEnd: '0',
+                      insetBlockStart: '1/2',
+                      translateCenter: 'y',
+                      color: 'muted',
+                      opacity: 0,
+                      pointerEvents: 'none', // Clicks pass through to the value text
+                      transitionProperty: '[opacity]',
+                      transitionDuration: '150',
+                      transitionTimingFunction: 'easeOut.quad',
+                      _groupHover: {
+                        opacity: 1,
+                      },
+                    }}
+                  >
+                    <CopyIcon aria-label="Copy to clipboard" />
+                  </styled.span>
                 )}
-              </div>
+              </styled.div>
             )}
-          </DataListValue>
-        </DataListItem>
+          </DataList.Value>
+        </DataList.Item>
       ))}
-    </DataListRoot>
+    </DataList.Root>
   );
 };

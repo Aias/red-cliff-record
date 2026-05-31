@@ -1,13 +1,14 @@
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
+import { token } from '@/styled-system/tokens';
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       className="toaster group"
       style={{
-        '--normal-bg': 'var(--color-c-float)',
-        '--normal-text': 'var(--color-c-primary)',
-        '--normal-border': 'var(--color-c-border)',
+        '--normal-bg': token.var('colors.float'),
+        '--normal-text': token.var('colors.primary'),
+        '--normal-border': token.var('colors.border'),
       }}
       {...props}
     />

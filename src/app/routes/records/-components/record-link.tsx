@@ -2,13 +2,14 @@ import type { LinkOptions } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { RectangleEllipsisIcon, ShoppingBasketIcon } from 'lucide-react';
 import { memo } from 'react';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/hover-card';
+import { HoverCard } from '@/components/hover-card';
 import { Spinner } from '@/components/spinner';
 import { getRecordPreview, getRecordThumbnailMedia, useRecord } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
 import type { DbId } from '@/shared/types/api';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import type { SystemStyleObject } from '@/styled-system/types';
 import { RecordDisplay } from './record-display';
 import { getRecordTitle, RecordThumbnail, SourceLogos } from './record-parts';
 import { recordTypeIcons } from './type-icons';
@@ -17,9 +18,10 @@ interface RecordLinkProps {
   id: DbId;
   className?: string;
   linkOptions?: LinkOptions;
+  css?: SystemStyleObject;
 }
 
-export const RecordLink = memo(({ id, className, linkOptions }: RecordLinkProps) => {
+export const RecordLink = memo(({ id, className, linkOptions, css: cssProp }: RecordLinkProps) => {
   const { data: record, isLoading, isError } = useRecord(id);
   const inBasket = useInBasket(id);
 
@@ -27,15 +29,18 @@ export const RecordLink = memo(({ id, className, linkOptions }: RecordLinkProps)
   if (isError || !record) {
     return (
       <styled.div
-        css={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2',
-          color: 'muted',
-          fontStyle: 'italic',
-          opacity: '75%',
-          _childIcon: { boxSize: '4' },
-        }}
+        css={css.raw(
+          {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+            color: 'muted',
+            fontStyle: 'italic',
+            opacity: '75%',
+            _childIcon: { boxSize: '4' },
+          },
+          cssProp
+        )}
       >
         <RectangleEllipsisIcon />
         <span>Record not found (ID: {id})</span>
@@ -62,13 +67,16 @@ export const RecordLink = memo(({ id, className, linkOptions }: RecordLinkProps)
   return (
     <styled.div
       className={className}
-      css={{
-        display: 'flex',
-        flexGrow: '1',
-        gap: '3',
-        overflow: 'hidden',
-        wordBreak: 'break-all',
-      }}
+      css={css.raw(
+        {
+          display: 'flex',
+          flexGrow: '1',
+          gap: '3',
+          overflow: 'hidden',
+          wordBreak: 'break-all',
+        },
+        cssProp
+      )}
     >
       <styled.div
         css={{
@@ -93,29 +101,33 @@ export const RecordLink = memo(({ id, className, linkOptions }: RecordLinkProps)
             }}
           >
             {linkOptions ? (
-              <HoverCard openDelay={300} closeDelay={100}>
-                <HoverCardTrigger asChild>
-                  <Link
-                    className={css({
-                      marginInlineEnd: 'auto',
-                      minWidth: '0',
-                      truncate: true,
-                      _focusVisible: { textDecoration: 'underline' },
-                    })}
-                    {...linkOptions}
-                  >
-                    {labelElement}
-                  </Link>
-                </HoverCardTrigger>
-                <HoverCardContent
-                  className={css({ width: '96', overflow: 'hidden', padding: '0' })}
+              <HoverCard.Root>
+                <HoverCard.Trigger
+                  delay={300}
+                  closeDelay={100}
+                  render={
+                    <Link
+                      className={css({
+                        marginInlineEnd: 'auto',
+                        minWidth: '0',
+                        truncate: true,
+                        _focusVisible: { textDecoration: 'underline' },
+                      })}
+                      {...linkOptions}
+                    >
+                      {labelElement}
+                    </Link>
+                  }
+                />
+                <HoverCard.Content
+                  css={{ width: '96', overflow: 'hidden', padding: '0' }}
                   align="center"
                   side="left"
                   sideOffset={12}
                 >
                   <RecordDisplay recordId={id} compact className={css({ padding: '3' })} />
-                </HoverCardContent>
-              </HoverCard>
+                </HoverCard.Content>
+              </HoverCard.Root>
             ) : (
               <styled.strong
                 css={{ marginInlineEnd: 'auto', minWidth: '0', flex: '1', truncate: true }}

@@ -5,12 +5,7 @@ import { ChevronDownIcon, ShoppingBasketIcon } from 'lucide-react';
 import { useState } from 'react';
 import { trpc } from '@/app/trpc';
 import { Button } from '@/components/button';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/dropdown-menu';
+import { DropdownMenu } from '@/components/dropdown-menu';
 import { ExternalLink } from '@/components/external-link';
 import { Input } from '@/components/input';
 import { IntegrationLogo } from '@/components/integration-logo';
@@ -195,7 +190,14 @@ export const RecordsGrid = () => {
     }
   };
 
-  return data ? (
+  if (!data)
+    return (
+      <Placeholder css={{ flexGrow: '1', margin: '4' }}>
+        <Spinner />
+      </Placeholder>
+    );
+
+  return (
     <styled.div
       css={{
         display: 'flex',
@@ -239,7 +241,7 @@ export const RecordsGrid = () => {
         <hr />
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="types">Types</Label>
-          <DropdownMenu>
+          <DropdownMenu.Root>
             <Button
               variant="outline"
               css={{
@@ -250,7 +252,7 @@ export const RecordsGrid = () => {
                   opacity: '50%',
                 },
               }}
-              render={<DropdownMenuTrigger id="types" />}
+              render={<DropdownMenu.Trigger id="types" />}
             >
               <styled.span
                 data-placeholder={!types?.length || undefined}
@@ -264,32 +266,29 @@ export const RecordsGrid = () => {
               </styled.span>
               <ChevronDownIcon />
             </Button>
-            <DropdownMenuContent align="start" className={css({ width: '48' })}>
+            <DropdownMenu.Content align="start" css={{ width: '48' }}>
               {RecordTypeSchema.options.map((recordType) => {
                 const isSelected = types?.includes(recordType) ?? false;
                 const { icon: Icon } = recordTypeIcons[recordType];
                 return (
-                  <DropdownMenuCheckboxItem
+                  <DropdownMenu.CheckboxItem
                     key={recordType}
                     checked={isSelected}
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      handleTypeToggle(recordType);
-                    }}
+                    onCheckedChange={() => handleTypeToggle(recordType)}
                   >
                     <styled.span css={{ flex: '1', textTransform: 'capitalize' }}>
                       {recordType}
                     </styled.span>
                     <Icon className={css({ boxSize: '4', flexShrink: '0', color: 'muted' })} />
-                  </DropdownMenuCheckboxItem>
+                  </DropdownMenu.CheckboxItem>
                 );
               })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </styled.div>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="sources">Sources</Label>
-          <DropdownMenu>
+          <DropdownMenu.Root>
             <Button
               variant="outline"
               css={{
@@ -300,7 +299,7 @@ export const RecordsGrid = () => {
                   opacity: '50%',
                 },
               }}
-              render={<DropdownMenuTrigger id="sources" />}
+              render={<DropdownMenu.Trigger id="sources" />}
             >
               <styled.span
                 data-placeholder={!sources?.length || undefined}
@@ -315,7 +314,7 @@ export const RecordsGrid = () => {
               </styled.span>
               <ChevronDownIcon />
             </Button>
-            <DropdownMenuContent align="start" className={css({ width: '48' })}>
+            <DropdownMenu.Content align="start" css={{ width: '48' }}>
               {IntegrationTypeSchema.options
                 .filter((s) =>
                   ['airtable', 'github', 'lightroom', 'raindrop', 'readwise', 'twitter'].includes(s)
@@ -323,13 +322,10 @@ export const RecordsGrid = () => {
                 .map((source) => {
                   const isSelected = sources?.includes(source) ?? false;
                   return (
-                    <DropdownMenuCheckboxItem
+                    <DropdownMenu.CheckboxItem
                       key={source}
                       checked={isSelected}
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        handleSourceToggle(source);
-                      }}
+                      onCheckedChange={() => handleSourceToggle(source)}
                     >
                       <styled.span css={{ flex: '1', textTransform: 'capitalize' }}>
                         {source}
@@ -338,11 +334,11 @@ export const RecordsGrid = () => {
                         integration={source}
                         css={{ boxSize: '4', flexShrink: '0' }}
                       />
-                    </DropdownMenuCheckboxItem>
+                    </DropdownMenu.CheckboxItem>
                   );
                 })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </styled.div>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="curated">Is Curated?</Label>
@@ -498,9 +494,5 @@ export const RecordsGrid = () => {
         </Table.Table>
       </Table.Root>
     </styled.div>
-  ) : (
-    <Placeholder css={{ flexGrow: '1' }}>
-      <Spinner />
-    </Placeholder>
   );
 };

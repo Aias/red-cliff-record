@@ -1,0 +1,153 @@
+import { defineSlotRecipe } from '@/app/styles/define-recipe';
+import type { SystemStyleObject } from '@/styled-system/types';
+
+const itemBase: SystemStyleObject = {
+  position: 'relative',
+  display: 'flex',
+  cursor: 'default',
+  alignItems: 'center',
+  gap: '2',
+  borderRadius: 'sm',
+  paddingBlock: '1.5',
+  textStyle: 'sm',
+  outlineStyle: 'none',
+  userSelect: 'none',
+  _highlighted: {
+    backgroundColor: 'splash',
+    color: 'display',
+  },
+  _disabled: {
+    pointerEvents: 'none',
+    opacity: '50%',
+  },
+  _childIcon: {
+    boxSize: '4',
+    flexShrink: '0',
+    color: 'secondary',
+  },
+};
+
+export const dropdownMenuRecipe = defineSlotRecipe({
+  className: 'dropdownMenu',
+  slots: [
+    'root',
+    'trigger',
+    'positioner',
+    'popup',
+    'group',
+    'label',
+    'item',
+    'itemIndicator',
+    'checkboxItem',
+    'radioGroup',
+    'radioItem',
+    'separator',
+    'shortcut',
+    'subTrigger',
+  ],
+  base: {
+    root: {},
+    trigger: {},
+    group: {},
+    radioGroup: {},
+    positioner: {
+      isolation: 'isolate',
+      zIndex: '50',
+      outlineStyle: 'none',
+    },
+    popup: {
+      zIndex: '50',
+      maxHeight: 'var(--available-height)',
+      minWidth: '32',
+      transformOrigin: 'var(--transform-origin)',
+      overflowX: 'hidden',
+      overflowY: 'auto',
+      borderRadius: 'md',
+      border: 'divider',
+      backgroundColor: 'float',
+      padding: '1',
+      color: 'primary',
+      boxShadow: 'md',
+      _open: {
+        animateIn: true,
+        fadeIn: 0,
+        zoomIn: 0.95,
+      },
+      _closed: {
+        animateOut: true,
+        fadeOut: 0,
+        zoomOut: 0.95,
+      },
+      _sideBottom: { slideInY: '-0.5rem' },
+      _sideTop: { slideInY: '0.5rem' },
+      _sideLeft: { slideInX: '0.5rem' },
+      _sideRight: { slideInX: '-0.5rem' },
+    },
+    item: {
+      ...itemBase,
+      paddingInline: '2',
+      '&[data-inset]': { paddingInlineStart: '8' },
+      '&[data-variant=destructive]': {
+        colorPalette: 'error',
+        layerStyle: 'chromatic',
+        color: 'accent',
+        _highlighted: {
+          backgroundColor: 'splash',
+          color: 'accent',
+        },
+        _childIcon: {
+          color: 'accent',
+        },
+      },
+    },
+    checkboxItem: {
+      ...itemBase,
+      paddingBlock: '1.5',
+      paddingInlineStart: '8',
+      paddingInlineEnd: '2',
+    },
+    radioItem: {
+      ...itemBase,
+      paddingBlock: '1.5',
+      paddingInlineStart: '8',
+      paddingInlineEnd: '2',
+    },
+    itemIndicator: {
+      pointerEvents: 'none',
+      position: 'absolute',
+      insetInlineStart: '2',
+      display: 'flex',
+      boxSize: '3.5',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    label: {
+      paddingInline: '2',
+      paddingBlock: '1.5',
+      textStyle: 'sm',
+      fontWeight: 'medium',
+      '&[data-inset]': { paddingInlineStart: '8' },
+    },
+    subTrigger: {
+      ...itemBase,
+      paddingInline: '2',
+      '&[data-inset]': { paddingInlineStart: '8' },
+      '&[data-popup-open]': {
+        backgroundColor: 'splash',
+        color: 'display',
+      },
+    },
+    separator: {
+      marginInline: '-1',
+      marginBlock: '1',
+      height: 'px',
+      backgroundColor: 'divider',
+    },
+    shortcut: {
+      marginInlineStart: 'auto',
+      textStyle: 'xs',
+      letterSpacing: '0.1em',
+      color: 'secondary',
+    },
+  },
+});

@@ -1,27 +1,27 @@
 import { defineSlotRecipe } from '@/app/styles/define-recipe';
 
-export const alertDialogRecipe = defineSlotRecipe({
-  className: 'alertDialog',
+export const dialogRecipe = defineSlotRecipe({
+  className: 'dialog',
   slots: [
     'root',
     'trigger',
-    'portal',
-    'overlay',
-    'content',
+    'backdrop',
+    'popup',
     'header',
     'footer',
     'title',
     'description',
-    'action',
-    'cancel',
+    'close',
   ],
   base: {
-    overlay: {
+    backdrop: {
       position: 'fixed',
       inset: '0',
       zIndex: '50',
-      backgroundColor: 'black/50',
-      animationDuration: '200',
+      backgroundColor: 'black/30',
+      backdropBlur: '[1px]',
+      backdropFilter: 'auto',
+      animationDuration: '100',
       animationTimingFunction: 'easeOut.expo',
       _open: {
         animationName: 'enter',
@@ -32,7 +32,7 @@ export const alertDialogRecipe = defineSlotRecipe({
         fadeOut: 0,
       },
     },
-    content: {
+    popup: {
       position: 'fixed',
       insetBlockStart: '1/2',
       insetInlineStart: '1/2',
@@ -40,9 +40,9 @@ export const alertDialogRecipe = defineSlotRecipe({
       zIndex: '50',
       display: 'grid',
       width: 'full',
-      maxWidth: '[calc(100%-2rem)]',
+      maxWidth: '[calc(100% - 2rem)]',
       sm: {
-        maxWidth: '[32rem]',
+        maxWidth: '128',
       },
       gap: '4',
       borderRadius: 'lg',
@@ -83,12 +83,40 @@ export const alertDialogRecipe = defineSlotRecipe({
       },
     },
     title: {
-      fontSize: 'lg',
+      textStyle: 'lg',
+      lineHeight: 'none',
       fontWeight: 'semibold',
     },
     description: {
-      fontSize: 'sm',
+      textStyle: 'sm',
       color: 'secondary',
+    },
+    close: {
+      position: 'absolute',
+      insetBlockStart: '5',
+      insetInlineEnd: '5',
+      borderRadius: 'sm',
+      lineHeight: 'none',
+      opacity: '70%',
+      outlineStyle: 'none',
+      transitionProperty: '[opacity]',
+      transitionDuration: '150',
+      transitionTimingFunction: 'easeOut.cubic',
+      _childIcon: {
+        boxSize: '4',
+      },
+      _hover: {
+        opacity: '100%',
+      },
+      _focusVisible: {
+        outlineColor: 'focus/50',
+        outlineOffset: '0.5',
+        outlineStyle: 'solid',
+        outlineWidth: '2px',
+      },
+      _disabled: {
+        pointerEvents: 'none',
+      },
     },
   },
 });

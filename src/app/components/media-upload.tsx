@@ -1,10 +1,18 @@
 import { UploadIcon } from 'lucide-react';
-import * as React from 'react';
-import { useCallback, useRef, useState } from 'react';
+import {
+  useCallback,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ClipboardEvent,
+  type DragEvent,
+} from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/button';
-import { cn } from '@/lib/utils';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
+import type { ComponentProps } from '@/styled-system/types';
 import { Spinner } from './spinner';
 
 const mediaFileSchema = z
@@ -16,18 +24,17 @@ const mediaFileSchema = z
 
 type MediaUploadProps = {
   onUpload: (file: File) => void | Promise<void>;
-  className?: string;
   validationSchema?: z.ZodType<File>;
-} & React.ComponentPropsWithRef<'div'>;
+} & ComponentProps<typeof styled.div>;
 
 export const MediaUpload = ({
   onUpload,
-  className,
+  css: cssProp,
   validationSchema = mediaFileSchema,
   ...props
 }: MediaUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Add loading state
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>(
     'Drag file here, paste, or click to upload'
@@ -36,7 +43,7 @@ export const MediaUpload = ({
 
   const handleFile = useCallback(
     async (file: File | null) => {
-      if (isLoading) return; // Prevent handling if already loading
+      if (isLoading) return;
       setError(null);
       if (!file) {
         setStatusMessage('No file selected.');
@@ -44,15 +51,13 @@ export const MediaUpload = ({
       }
 
       setStatusMessage(`Processing ${file.name}...`);
-      setIsLoading(true); // Set loading state to true
+      setIsLoading(true);
 
       try {
         const validatedFile = validationSchema.parse(file);
         setStatusMessage(`Uploading ${validatedFile.name}...`);
         await onUpload(validatedFile);
         setStatusMessage('Upload successful!');
-        // Optionally reset after a delay
-        // setTimeout(() => setStatusMessage('Drag file here, paste, or click to upload'), 2000);
       } catch (err) {
         let errorMessage = 'Invalid file.';
         if (err instanceof z.ZodError) {
@@ -64,18 +69,17 @@ export const MediaUpload = ({
         setStatusMessage('Drag file here, paste, or click to upload');
         toast.error(errorMessage);
       } finally {
-        // Reset file input to allow uploading the same file again
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-        setIsLoading(false); // Set loading state to false
+        setIsLoading(false);
       }
     },
-    [onUpload, validationSchema, isLoading] // Include isLoading in dependencies
+    [onUpload, validationSchema, isLoading]
   );
 
   const handleDragEnter = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLDivElement>) => {
       if (isLoading) return;
       e.preventDefault();
       e.stopPropagation();
@@ -85,11 +89,10 @@ export const MediaUpload = ({
   );
 
   const handleDragLeave = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLDivElement>) => {
       if (isLoading) return;
       e.preventDefault();
       e.stopPropagation();
-      // Only set isDragging to false if the leave target is outside the component itself
       if (!e.currentTarget.contains(e.relatedTarget as Node) || e.relatedTarget === null) {
         setIsDragging(false);
         setStatusMessage('Drag file here, paste, or click to upload');
@@ -99,18 +102,18 @@ export const MediaUpload = ({
   );
 
   const handleDragOver = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLDivElement>) => {
       if (isLoading) return;
       e.preventDefault();
       e.stopPropagation();
-      setIsDragging(true); // Keep highlighting while dragging over
-      e.dataTransfer.dropEffect = 'copy'; // Indicate it's a copy operation
+      setIsDragging(true);
+      e.dataTransfer.dropEffect = 'copy';
     },
     [isLoading]
   );
 
   const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLDivElement>) => {
       if (isLoading) return;
       e.preventDefault();
       e.stopPropagation();
@@ -122,13 +125,12 @@ export const MediaUpload = ({
   );
 
   const handlePaste = useCallback(
-    (e: React.ClipboardEvent<HTMLDivElement>) => {
+    (e: ClipboardEvent<HTMLDivElement>) => {
       if (isLoading) return;
       setError(null);
       const items = e.clipboardData?.items;
 
       if (items) {
-        // Prioritize specific image/video types if needed, or handle generally
         for (const item of Array.from(items)) {
           if (
             item?.kind === 'file' &&
@@ -137,9 +139,9 @@ export const MediaUpload = ({
             const file = item.getAsFile();
             if (file) {
               e.preventDefault();
-              e.stopPropagation(); // Prevent form-level paste handler from also triggering
+              e.stopPropagation();
               void handleFile(file);
-              return; // Handle the first valid file found
+              return;
             }
           }
         }
@@ -154,7 +156,7 @@ export const MediaUpload = ({
   }, [isLoading]);
 
   const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0] ?? null;
       void handleFile(file);
     },
@@ -162,48 +164,95 @@ export const MediaUpload = ({
   );
 
   return (
-    <div
-      // Make the div focusable and apply focus ring styles directly to it
+    <styled.div
       tabIndex={0}
-      className={cn(
-        'flex h-24 w-full flex-col items-center justify-center gap-0.5 rounded-sm border border-dashed border-c-divider bg-c-mist p-4 text-center transition-colors duration-200 focus:ring-2 focus:ring-c-ring focus:ring-offset-2 focus:outline-none',
-        isDragging && !isLoading ? 'border-c-main bg-c-main/10' : '', // Only show drag state if not loading
-        error ? 'border-c-destructive' : '',
-        isLoading ? 'cursor-not-allowed opacity-50' : '', // Apply disabled styles when loading
-        className
+      css={css.raw(
+        {
+          display: 'flex',
+          height: '24',
+          width: 'full',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.5',
+          borderRadius: 'sm',
+          borderWidth: '1px',
+          borderStyle: 'dashed',
+          borderColor: 'divider',
+          backgroundColor: 'mist',
+          padding: '4',
+          textAlign: 'center',
+          transitionProperty: '[color, background-color, border-color]',
+          transitionDuration: '200',
+          transitionTimingFunction: 'easeOut.cubic',
+          outlineStyle: 'none',
+          _focusVisible: {
+            outlineWidth: '2px',
+            outlineColor: 'focus',
+            outlineOffset: '0.5',
+            outlineStyle: 'solid',
+          },
+          _dragging: {
+            borderColor: 'main',
+            backgroundColor: 'main/10',
+          },
+          '&[data-error]': {
+            layerStyle: 'chromatic',
+            colorPalette: 'error',
+            borderColor: 'accent',
+          },
+          _loading: {
+            cursor: 'loading',
+            pointerEvents: 'none',
+            opacity: '0.5',
+          },
+        },
+        cssProp
       )}
-      onDragEnter={isLoading ? undefined : handleDragEnter} // Disable event handlers when loading
+      data-dragging={isDragging && !isLoading ? '' : undefined}
+      data-error={error ? '' : undefined}
+      data-loading={isLoading ? '' : undefined}
+      onDragEnter={isLoading ? undefined : handleDragEnter}
       onDragLeave={isLoading ? undefined : handleDragLeave}
       onDragOver={isLoading ? undefined : handleDragOver}
       onDrop={isLoading ? undefined : handleDrop}
       onPaste={isLoading ? undefined : handlePaste}
       aria-label="Media upload zone"
-      aria-disabled={isLoading} // Indicate disabled state for accessibility
+      aria-disabled={isLoading}
       {...props}
     >
-      <input
+      <styled.input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        className="hidden"
-        disabled={isLoading} // Disable hidden input
-        // Consider adding 'accept' attribute based on validationSchema if possible
-        accept="image/*,video/*" // Accept both image and video files
+        css={{ srOnly: true }}
+        disabled={isLoading}
+        accept="image/*,video/*"
       />
       <Button type="button" variant="ghost" size="sm" onClick={handleClick} disabled={isLoading}>
         <UploadIcon />
         Upload Media
       </Button>
-      <p className="flex items-center gap-1 text-sm text-c-secondary">
-        {isLoading && <Spinner className="size-3" />} {/* Show spinner when loading */}
-        {error ? (
-          <span className="text-c-destructive">{error}</span>
-        ) : (
-          <span>{statusMessage}</span> // Wrap status message for layout
-        )}
-      </p>
-    </div>
+      <styled.p
+        css={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1',
+          textStyle: 'sm',
+          color: 'secondary',
+        }}
+      >
+        {isLoading && <Spinner css={{ boxSize: '3' }} />}
+        <styled.span
+          css={{
+            color: error ? 'accent' : 'currentColor',
+          }}
+        >
+          {error ?? statusMessage}
+        </styled.span>
+      </styled.p>
+    </styled.div>
   );
 };
 
-MediaUpload.displayName = 'MediaUpload'; // Set display name for DevTools
+MediaUpload.displayName = 'MediaUpload';

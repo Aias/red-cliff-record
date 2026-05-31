@@ -5,18 +5,10 @@ import {
   useKeyboardShortcut,
   useRegisteredShortcuts,
 } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
-import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import type { SystemStyleObject } from '@/styled-system/types';
 import { Button } from './button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from './dialog';
+import { Dialog } from './dialog';
 
 interface ShortcutGroup {
   category: string;
@@ -74,22 +66,21 @@ export function KeyboardShortcutsHelp({ buttonCss }: { buttonCss?: SystemStyleOb
   }, [shortcuts]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Keyboard shortcuts" css={buttonCss}>
-          <KeyboardIcon />
-        </Button>
-      </DialogTrigger>
-      <DialogContent
-        className={css({
-          maxHeight: '[85vh]',
-          overflowY: 'auto',
-        })}
-      >
-        <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
-          <DialogDescription>Quick actions available throughout the application</DialogDescription>
-        </DialogHeader>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger
+        render={
+          <Button variant="ghost" size="icon" aria-label="Keyboard shortcuts" css={buttonCss}>
+            <KeyboardIcon />
+          </Button>
+        }
+      />
+      <Dialog.Content css={{ maxHeight: '[85vh]', overflowY: 'auto' }}>
+        <Dialog.Header>
+          <Dialog.Title>Keyboard Shortcuts</Dialog.Title>
+          <Dialog.Description>
+            Quick actions available throughout the application
+          </Dialog.Description>
+        </Dialog.Header>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '4' }}>
           {groups.map((group) => (
             <section key={group.category}>
@@ -150,7 +141,7 @@ export function KeyboardShortcutsHelp({ buttonCss }: { buttonCss?: SystemStyleOb
             </styled.p>
           )}
         </styled.div>
-      </DialogContent>
-    </Dialog>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 }

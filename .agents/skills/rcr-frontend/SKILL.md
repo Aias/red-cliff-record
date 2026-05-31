@@ -38,6 +38,32 @@ Supplements global `react-best-practices` and `code-quality` skills.
 
 **Prop types come from Panda, not React.** When typing a design-system component that composes Panda-styled primitives (`styled()`, `withContext`, recipe-bound), import `ComponentProps` / `ComponentPropsWithRef` from `@/styled-system/types`, not from `react` — the Panda types include the `css` prop, recipe variants, and `unstyled`. React's `ComponentProps` is fine for non-Panda components elsewhere in the app.
 
+### Composing style objects — `css.raw()`
+
+Use `css.raw()` to merge style objects for the **`css` prop**. Don't spread one object into another (`{ ...base, ...specific }`) — Panda's static extractor can't reliably analyze spreads.
+
+- **Reusable chunks** → name a module-scope `css.raw({ ... })` const.
+- **One-off composition** → `css={css.raw(chunkA, chunkB, { ...local })}`.
+- **Consumer overrides** → last argument: `css={css.raw(baseStyles, cssProp)}`.
+- **`css()` vs `css.raw()`** — `css()` emits a **class name** (`className={css({ ... })}` on elements without a `css` prop, e.g. third-party hosts). `css.raw()` returns a **style object** for the `css` prop only; don't assign its result to `className`.
+
+```tsx
+const revealOnGroupCss = css.raw({
+  opacity: 0,
+  _groupHover: { opacity: 1 },
+  _groupFocusWithin: { opacity: 1 },
+});
+
+<styled.div
+  className="group"
+  css={css.raw(revealOnGroupCss, { position: 'absolute', inset: '0' })}
+/>;
+
+export function Toolbar({ css: cssProp }: { css?: SystemStyleObject }) {
+  return <styled.div css={css.raw({ display: 'flex', gap: '2' }, cssProp)} />;
+}
+```
+
 ## Panda fundamentals
 
 - **`strictTokens: true`** and **`strictPropertyValues: true`** — every value must be a defined token or a bracket-escaped literal. If TS errors on a color/spacing value, either use a token or confirm a bracket literal is truly unavoidable.
@@ -46,7 +72,7 @@ Supplements global `react-best-practices` and `code-quality` skills.
 - **`boxSize` when width and height match.** Same rule for `paddingInline`/`paddingBlock` over `paddingLeft` + `paddingRight`.
 - **Declaration order** follows intent (outside-in): position/display → flex/grid container → flex/grid child → sizing/spacing → overflow → typography → visual → transforms/animation → interaction. Not alphabetical.
 - **Static analysis.** Panda needs to parse style objects at build time — no dynamic values or runtime-computed keys in `css` objects. For dynamic numbers, use an inline `style` attribute; for dynamic variants, use `data-*` attributes and target them via selectors.
-- **`[]` escape hatch** is for non-token values only (e.g. `boxSize: '[1.15em]'`, `backgroundSize: '[200% 100%]'`). If a token exists, use it. Use real spaces inside brackets — not underscores.
+- **`[]` escape hatch** is for values the token scales can't express — other units or computed values (`boxSize: '[1.15em]'`, `backgroundSize: '[200% 100%]'`, `width: '[calc(100% - 2rem)]'`). If an exact token exists, use it. When a measurement falls _between_ scale steps — say a mock specifies `0.4rem` of gap while the spacing scale offers `1.5` (0.375rem) and `2` (0.5rem) — round to the nearest token instead of bracket-escaping the exact value; staying on the scale keeps the spacing rhythm consistent and beats a pixel-perfect literal. Reserve brackets for values with no scale neighbor at all. Use real spaces inside brackets — not underscores.
 - **Token interpolation in compound values**: `border: '1px solid {colors.divider}'` (curly syntax), not `token(colors.divider)` unless providing a fallback.
 - **Regenerate after config changes.** After editing recipes, tokens, conditions, or `panda.config.ts`, run `bun run stylegen` (`panda codegen && panda cssgen`) so `src/app/styled-system/*` is in sync.
 
@@ -211,7 +237,7 @@ Models: `scroll-area/` and `tooltip/` (Base UI + slot recipe), `alert-dialog/` (
 - **Composed vs part exports.** When the app always uses the full tree, export one composed component (`ScrollArea`). When consumers assemble parts (`Tooltip.Root`, `Tooltip.Trigger`, `Tooltip.Content`), export the bound parts. Keep internal styled slots (`StyledPositioner`, `StyledPopup`) unexported when a composed wrapper owns them.
 - **No blanket `data-slot`.** Target a subcomponent via its generated `.rcr-<recipe>__<slot>` class (the recipe `className` is unprefixed; the selector carries the `rcr-` prefix). Add a `data-slot` only where something genuinely needs that hook.
 - **`unstyled` prop** drops a slot's recipe styles so you can restyle it via `css` in a specific composition.
-- **Shared style chunks** → a `SystemStyleObject`-typed const (`import type { SystemStyleObject } from '@/styled-system/types'`) spread into the slots. Never `as const`.
+- **Shared style chunks** → a module-scope `css.raw({ ... })` const, composed at each slot with `css.raw(chunk, { ...slotSpecific })`. Never object-spread (`{ ...chunk, ...local }`) or `as const`.
 - **One slot for identical-styled primitives.** If two primitives carry identical, never-diverging slot styles (e.g. a select's scroll-up vs scroll-down buttons), bind both to a single slot (`withContext(ScrollUpButton, 'scrollButton')` + `withContext(ScrollDownButton, 'scrollButton')`) rather than defining two slots that share a copied chunk. Duplicating a chunk across slots that are never independently overridden is a smell — collapse to one slot; split only when they genuinely differ.
 - **Naming:** a slot wrapped by a composed component is the internal `Styled<Slot>` (not exported); its public composed function takes the plain name. Directly-used slots are plain exported consts. Keep it uniform within the file.
 

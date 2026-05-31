@@ -1,6 +1,8 @@
 import type { MediaSelect } from '@hozo/schema/media';
 import { Trash2Icon } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { css } from '@/styled-system/css';
+import { styled } from '@/styled-system/jsx';
 import { Button } from './button';
 import { LazyVideo } from './lazy-video';
 import { MediaLightbox } from './media-lightbox';
@@ -11,7 +13,21 @@ interface MediaGridProps {
   onDelete?: (media: MediaSelect) => void;
 }
 
-const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }) => {
+const mediaFillCss = css({
+  boxSize: 'full',
+  objectFit: 'cover',
+});
+
+const overlayRevealCss = css.raw({
+  opacity: 0,
+  transitionProperty: '[opacity]',
+  transitionDuration: '200',
+  transitionTimingFunction: 'easeOut.cubic',
+  _groupHover: { opacity: 1 },
+  _groupFocusWithin: { opacity: 1 },
+});
+
+function MediaGrid({ media, className, onDelete }: MediaGridProps) {
   // Limit to 8 media items maximum
   const displayMedia = media.slice(0, 8);
   const count = displayMedia.length;
@@ -31,8 +47,18 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
   if (count === 0) return null;
 
   return (
-    <div
-      className={`relative grid aspect-3/2 w-full gap-px overflow-hidden rounded-md bg-c-container ${className}`}
+    <styled.div
+      className={className}
+      css={{
+        position: 'relative',
+        display: 'grid',
+        aspectRatio: '3/2',
+        width: 'full',
+        gap: 'px',
+        overflow: 'hidden',
+        borderRadius: 'md',
+        backgroundColor: 'container',
+      }}
       style={{
         gridTemplateColumns: getGridColumns(count),
         gridTemplateRows: getGridRows(count),
@@ -48,9 +74,19 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
         };
 
         return (
-          <div
+          <styled.div
             key={item.id}
-            className="group relative cursor-pointer overflow-hidden focus-visible:outline-2 focus-visible:outline-c-ring"
+            className="group"
+            css={{
+              position: 'relative',
+              cursor: 'pointer',
+              overflow: 'hidden',
+              _focusVisible: {
+                outlineWidth: '2px',
+                outlineColor: 'focus',
+                outlineStyle: 'solid',
+              },
+            }}
             style={{ gridArea: getGridArea(count, index) }}
             role={isImage ? 'button' : undefined}
             tabIndex={isImage ? 0 : -1}
@@ -65,15 +101,21 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
               }
             }}
           >
-            {/* Gradient overlay that appears on hover */}
-            <div className="pointer-events-none absolute inset-0 z-10 bg-linear-to-b from-black/50 to-transparent opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100" />
+            <styled.div
+              css={css.raw(overlayRevealCss, {
+                pointerEvents: 'none',
+                position: 'absolute',
+                inset: '0',
+                zIndex: '10',
+                backgroundImage: '[linear-gradient(to bottom, oklch(0 0 0 / 0.5), transparent)]',
+              })}
+            />
 
-            {/* Render video or image based on media type */}
             {item.type === 'video' ? (
               <LazyVideo
                 src={item.url}
                 aria-label={item.altText || `Media ${index + 1}`}
-                className="h-full w-full object-cover"
+                className={mediaFillCss}
                 controls
                 muted
                 loop
@@ -81,18 +123,29 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
                 playsInline
               />
             ) : (
-              <img
+              <styled.img
                 src={item.url}
                 alt={item.altText || `Media ${index + 1}`}
-                className="h-full w-full object-cover"
+                className={mediaFillCss}
                 loading="lazy"
                 decoding="async"
               />
             )}
 
-            {/* Toolbar */}
             {onDelete && (
-              <div className="absolute top-2 right-2 z-20 flex justify-end gap-1.5 rounded bg-c-background opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
+              <styled.div
+                css={css.raw(overlayRevealCss, {
+                  position: 'absolute',
+                  insetBlockStart: '2',
+                  insetInlineEnd: '2',
+                  zIndex: '20',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '1.5',
+                  borderRadius: 'md',
+                  backgroundColor: 'background',
+                })}
+              >
                 <Button
                   type="button"
                   size="icon"
@@ -100,14 +153,14 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
                   aria-label="Delete media"
                   onClick={(event) => {
                     event.stopPropagation();
-                    onDelete?.(item);
+                    onDelete(item);
                   }}
                 >
                   <Trash2Icon />
                 </Button>
-              </div>
+              </styled.div>
             )}
-          </div>
+          </styled.div>
         );
       })}
       <MediaLightbox
@@ -116,9 +169,9 @@ const MediaGrid: React.FC<MediaGridProps> = ({ media, className = '', onDelete }
         onClose={() => setLightboxIndex(null)}
         onIndexChange={(nextIndex) => setLightboxIndex(nextIndex)}
       />
-    </div>
+    </styled.div>
   );
-};
+}
 
 // Helper functions to determine grid layout
 function getGridColumns(count: number): string {
