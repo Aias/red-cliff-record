@@ -4,13 +4,14 @@ import { avatarRecipe } from '@/app/components/avatar/avatar.recipe';
 import { badgeRecipe } from '@/app/components/badge/badge.recipe';
 import { buttonRecipe } from '@/app/components/button/button.recipe';
 import { cardRecipe } from '@/app/components/card/card.recipe';
-import { textareaRecipe } from '@/app/components/field/textarea.recipe';
+import { dialogRecipe } from '@/app/components/dialog/dialog.recipe';
 import { inputRecipe, ghostInputRecipe } from '@/app/components/input/input.recipe';
 import { labelRecipe } from '@/app/components/label/label.recipe';
 import { placeholderRecipe } from '@/app/components/placeholder/placeholder.recipe';
 import { proseRecipe } from '@/app/components/prose/prose.recipe';
 import { separatorRecipe } from '@/app/components/separator/separator.recipe';
 import { tableRecipe } from '@/app/components/table/table.recipe';
+import { textareaRecipe } from '@/app/components/textarea/textarea.recipe';
 import { tooltipRecipe } from '@/app/components/tooltip/tooltip.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
 import { blurs } from '@/app/styles/blurs';
@@ -112,6 +113,7 @@ export default defineConfig({
     slotRecipes: {
       alertDialog: alertDialogRecipe,
       avatar: avatarRecipe,
+      dialog: dialogRecipe,
       scrollArea: scrollAreaRecipe,
       table: tableRecipe,
       tooltip: tooltipRecipe,
