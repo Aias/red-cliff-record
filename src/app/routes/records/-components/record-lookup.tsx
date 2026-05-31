@@ -26,20 +26,16 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  type PopoverContentProps,
-} from '@/components/popover';
+import { Popover } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
 import { useUpsertLink } from '@/lib/hooks/link-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import type { DbId } from '@/shared/types/api';
 import type { LinkPartial, RecordGet } from '@/shared/types/domain';
-import { css, cx } from '@/styled-system/css';
+import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import type { ComponentProps } from '@/styled-system/types';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
 
@@ -367,9 +363,9 @@ function RelationshipSelectorRoot({
 
   return (
     <RelationshipSelectorContext.Provider value={contextValue}>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover.Root open={open} onOpenChange={setOpen}>
         {children}
-      </Popover>
+      </Popover.Root>
     </RelationshipSelectorContext.Provider>
   );
 }
@@ -384,16 +380,18 @@ function RelationshipSelectorTrigger({
   const { currentPredicateName } = useRelationshipSelectorContext();
 
   return (
-    <PopoverTrigger asChild>
-      <Button
-        size={size}
-        variant={variant}
-        {...props}
-        css={css.raw(defaultRelationshipSelectorTriggerCss, cssProp)}
-      >
-        {children ?? currentPredicateName ?? 'Add relationship'}
-      </Button>
-    </PopoverTrigger>
+    <Popover.Trigger
+      render={
+        <Button
+          size={size}
+          variant={variant}
+          {...props}
+          css={css.raw(defaultRelationshipSelectorTriggerCss, cssProp)}
+        >
+          {children ?? currentPredicateName ?? 'Add relationship'}
+        </Button>
+      }
+    />
   );
 }
 
@@ -401,10 +399,9 @@ function RelationshipSelectorContent({
   className,
   side = 'left',
   align = 'start',
-  avoidCollisions = true,
   collisionPadding = 8,
   ...props
-}: PopoverContentProps) {
+}: ComponentProps<typeof Popover.Content>) {
   const {
     actions,
     altPressed,
@@ -417,21 +414,18 @@ function RelationshipSelectorContent({
   } = useRelationshipSelectorContext();
 
   return (
-    <PopoverContent
+    <Popover.Content
       data-has-target={targetId ? '' : undefined}
-      className={cx(
-        css({
-          width: '[33vw]',
-          maxWidth: '144',
-          minWidth: '128',
-          padding: '0',
-          '&[data-has-target]': { width: '60', minWidth: '60' },
-        }),
-        className
-      )}
+      className={className}
+      css={{
+        width: '[33vw]',
+        maxWidth: '144',
+        minWidth: '128',
+        padding: '0',
+        '&[data-has-target]': { width: '60', minWidth: '60' },
+      }}
       side={side}
       align={align}
-      avoidCollisions={avoidCollisions}
       collisionPadding={collisionPadding}
       {...props}
     >
@@ -465,7 +459,7 @@ function RelationshipSelectorContent({
           />
         </>
       )}
-    </PopoverContent>
+    </Popover.Content>
   );
 }
 

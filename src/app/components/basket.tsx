@@ -3,9 +3,10 @@ import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import { removeManyFromBasket, useBasket } from '@/lib/hooks/use-basket';
 import type { DbId } from '@/shared/types/api';
+import { styled } from '@/styled-system/jsx';
 import { RecordLink } from '../routes/records/-components/record-link';
 import { Button } from './button';
-import { Popover, PopoverContent, PopoverTrigger } from './popover';
+import { Popover } from './popover';
 import { Separator } from './separator';
 
 function isNotFoundError(error: unknown): boolean {
@@ -19,10 +20,18 @@ function BasketItem({ id, onRemove }: { id: DbId; onRemove: (id: DbId) => void }
   const handleRemove = () => onRemove(id);
 
   return (
-    <div className="group flex items-center gap-3 px-3 py-2 text-xs">
-      <div className="min-w-0 flex-1">
-        <RecordLink id={id} />
-      </div>
+    <styled.div
+      className="group"
+      css={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '3',
+        paddingInline: '3',
+        paddingBlock: '2',
+        textStyle: 'xs',
+      }}
+    >
+      <RecordLink id={id} css={{ minWidth: '0', flex: '1' }} />
       <Button
         variant="ghost"
         size="icon-sm"
@@ -37,9 +46,9 @@ function BasketItem({ id, onRemove }: { id: DbId; onRemove: (id: DbId) => void }
         onClick={handleRemove}
       >
         <XIcon />
-        <span className="sr-only">Remove</span>
+        <styled.span css={{ srOnly: true }}>Remove</styled.span>
       </Button>
-    </div>
+    </styled.div>
   );
 }
 
@@ -117,29 +126,50 @@ export function Basket() {
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" css={basket.count > 0 ? { color: 'accent' } : undefined}>
-          <ShoppingBasketIcon />
-          {basket.count > 0 && <span>{basket.count}</span>}
-          <span className="sr-only">items in basket</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-120 p-0">
+    <Popover.Root>
+      <Popover.Trigger
+        render={
+          <Button variant="ghost" css={basket.count > 0 ? { color: 'accent' } : undefined}>
+            <ShoppingBasketIcon />
+            {basket.count > 0 && <span>{basket.count}</span>}
+            <styled.span css={{ srOnly: true }}>items in basket</styled.span>
+          </Button>
+        }
+      />
+      <Popover.Content
+        align="end"
+        css={{ width: basket.count > 0 ? '128' : '[max-content]', padding: '0' }}
+      >
         {basket.count === 0 ? (
-          <p className="p-4 text-center text-sm text-c-secondary">No items in basket</p>
+          <styled.p
+            css={{
+              padding: '4',
+              textAlign: 'center',
+              textStyle: 'sm',
+              color: 'muted',
+            }}
+          >
+            No items in basket
+          </styled.p>
         ) : (
           <>
-            <ul className="max-h-120 overflow-y-auto">
+            <styled.ul css={{ maxHeight: '128', overflowY: 'auto' }}>
               {basket.ids.map((id, i) => (
                 <li key={id}>
                   {i > 0 && <Separator />}
                   <BasketItem key={id} id={id} onRemove={basket.remove} />
                 </li>
               ))}
-            </ul>
+            </styled.ul>
             <Separator />
-            <div className="flex items-center gap-1 p-2">
+            <styled.div
+              css={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1',
+                padding: '2',
+              }}
+            >
               <Button variant="ghost" size="sm" onClick={() => void copyIds()}>
                 <ClipboardCopyIcon />
                 Copy IDs
@@ -148,15 +178,15 @@ export function Basket() {
                 <ClipboardCopyIcon />
                 Copy JSON
               </Button>
-              <div className="flex-1" />
+              <styled.div css={{ flex: '1' }} />
               <Button variant="ghost" size="sm" onClick={basket.clear}>
                 <Trash2Icon />
                 Clear
               </Button>
-            </div>
+            </styled.div>
           </>
         )}
-      </PopoverContent>
-    </Popover>
+      </Popover.Content>
+    </Popover.Root>
   );
 }

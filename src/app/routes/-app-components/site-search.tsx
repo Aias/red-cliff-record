@@ -12,7 +12,7 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
+import { Popover } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -94,67 +94,69 @@ export const SiteSearch = () => {
   });
 
   return (
-    <Popover
+    <Popover.Root
       open={commandOpen}
       onOpenChange={(open) => {
         setCommandOpen(open);
         if (open && searchQ) setInputValue(searchQ);
       }}
     >
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          css={{
-            containerType: 'inline-size',
-            position: 'relative',
-            width: 'full',
-            minWidth: '0',
-            justifyContent: 'flex-start',
-            gap: '3',
-            contain: 'inline-size',
-            fontWeight: 'normal',
-            color: 'primary',
-            boxShadow: 'none',
-            _childIcon: {
-              color: 'muted',
-            },
-          }}
-          role="combobox"
-          aria-expanded={commandOpen}
-        >
-          <SearchIcon className={css({ '@container (max-width: 10rem)': { srOnly: true } })} />
-          <styled.span css={{ minWidth: '0', flex: '1', truncate: true, textAlign: 'start' }}>
-            {searchQ || 'Search records...'}
-          </styled.span>
-          <styled.kbd
+      <Popover.Trigger
+        render={
+          <Button
+            variant="outline"
             css={{
-              pointerEvents: 'none',
-              marginInlineStart: 'auto',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5',
-              borderRadius: 'md',
-              border: 'border',
-              backgroundColor: 'splash',
-              paddingInline: '1.5',
-              fontFamily: 'mono',
-              fontWeight: 'medium',
-              color: 'accent',
-              userSelect: 'none',
-              '@container (max-width: 14rem)': { srOnly: true },
+              containerType: 'inline-size',
+              position: 'relative',
+              width: 'full',
+              minWidth: '0',
+              justifyContent: 'flex-start',
+              gap: '3',
+              contain: 'inline-size',
+              fontWeight: 'normal',
+              color: 'primary',
+              boxShadow: 'none',
+              _childIcon: {
+                color: 'muted',
+              },
             }}
+            role="combobox"
+            aria-expanded={commandOpen}
           >
-            <styled.span css={{ textStyle: 'xs', color: 'muted' }}>⌘</styled.span>K
-          </styled.kbd>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className={css({
+            <SearchIcon className={css({ '@container (max-width: 10rem)': { srOnly: true } })} />
+            <styled.span css={{ minWidth: '0', flex: '1', truncate: true, textAlign: 'start' }}>
+              {searchQ || 'Search records...'}
+            </styled.span>
+            <styled.kbd
+              css={{
+                pointerEvents: 'none',
+                marginInlineStart: 'auto',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5',
+                borderRadius: 'md',
+                border: 'border',
+                backgroundColor: 'splash',
+                paddingInline: '1.5',
+                fontFamily: 'mono',
+                fontWeight: 'medium',
+                color: 'accent',
+                userSelect: 'none',
+                '@container (max-width: 14rem)': { srOnly: true },
+              }}
+            >
+              <styled.span css={{ textStyle: 'xs', color: 'muted' }}>⌘</styled.span>K
+            </styled.kbd>
+          </Button>
+        }
+      />
+      <Popover.Content
+        css={{
           width: '160',
           maxWidth: '[calc({sizes.screenW} - 1rem)]',
           overflow: 'auto',
           padding: '0',
-        })}
+        }}
         align="center"
         collisionPadding={8}
         sideOffset={16}
@@ -233,7 +235,7 @@ export const SiteSearch = () => {
             </CommandItem>
           </CommandList>
         </Command>
-      </PopoverContent>
-    </Popover>
+      </Popover.Content>
+    </Popover.Root>
   );
 };

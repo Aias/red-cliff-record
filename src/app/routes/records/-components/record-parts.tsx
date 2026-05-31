@@ -8,18 +8,27 @@ import { getRecordTitleFallbacks } from '@/lib/hooks/record-queries';
 import type { RecordGet } from '@/shared/types/domain';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import type { SystemStyleObject } from '@/styled-system/types';
 
 /* ─── SourceLogos ─────────────────────────────────────────────── */
 
 interface SourceLogosProps {
   sources: IntegrationType[] | null | undefined;
   className?: string;
+  css?: SystemStyleObject;
 }
 
-export const SourceLogos = memo(function SourceLogos({ sources, className }: SourceLogosProps) {
+export const SourceLogos = memo(function SourceLogos({
+  sources,
+  className,
+  css: cssProp,
+}: SourceLogosProps) {
   if (!sources?.length) return null;
   return (
-    <styled.ul className={className} css={{ display: 'flex', alignItems: 'center', gap: '1.5' }}>
+    <styled.ul
+      className={className}
+      css={css.raw({ display: 'flex', alignItems: 'center', gap: '1.5' }, cssProp)}
+    >
       {sources.map((s) => (
         <li key={s}>
           <IntegrationLogo integration={s} />
@@ -37,6 +46,7 @@ interface RecordThumbnailProps {
   videoLabel?: string;
   autoPlay?: boolean;
   className?: string;
+  css?: SystemStyleObject;
 }
 
 const mediaFillCss = css({
@@ -52,23 +62,27 @@ export const RecordThumbnail = memo(function RecordThumbnail({
   videoLabel,
   autoPlay,
   className,
+  css: cssProp,
 }: RecordThumbnailProps) {
   return (
     <styled.div
       data-size={size}
       className={className}
-      css={{
-        position: 'relative',
-        aspectRatio: '3/2',
-        flexShrink: '0',
-        alignSelf: 'center',
-        overflow: 'hidden',
-        borderRadius: 'md',
-        border: 'divider',
-        backgroundColor: 'mist',
-        height: 'lh',
-        '&[data-size="md"]': { height: '[2lh]' },
-      }}
+      css={css.raw(
+        {
+          position: 'relative',
+          aspectRatio: '3/2',
+          flexShrink: '0',
+          alignSelf: 'center',
+          overflow: 'hidden',
+          borderRadius: 'md',
+          border: 'divider',
+          backgroundColor: 'mist',
+          height: 'lh',
+          '&[data-size="md"]': { height: '[2lh]' },
+        },
+        cssProp
+      )}
     >
       {media.type === 'image' ? (
         <img

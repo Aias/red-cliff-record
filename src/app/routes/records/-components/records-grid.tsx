@@ -195,7 +195,14 @@ export const RecordsGrid = () => {
     }
   };
 
-  return data ? (
+  if (!data)
+    return (
+      <Placeholder css={{ flexGrow: '1', margin: '4' }}>
+        <Spinner />
+      </Placeholder>
+    );
+
+  return (
     <styled.div
       css={{
         display: 'flex',
@@ -498,9 +505,5 @@ export const RecordsGrid = () => {
         </Table.Table>
       </Table.Root>
     </styled.div>
-  ) : (
-    <Placeholder css={{ flexGrow: '1' }}>
-      <Spinner />
-    </Placeholder>
   );
 };

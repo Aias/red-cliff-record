@@ -11,7 +11,7 @@ import { Input } from '@/components/input';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { Label } from '@/components/label';
 import { MetadataList } from '@/components/metadata-list';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
+import { Popover } from '@/components/popover';
 import { Separator } from '@/components/separator';
 import { Spinner } from '@/components/spinner';
 import { Toggle } from '@/components/toggle';
@@ -51,28 +51,30 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
       css={{ display: 'flex', alignItems: 'center', gap: '2.5' }}
       {...props}
     >
-      <Popover>
-        <PopoverTrigger asChild>
-          <Avatar.Root className={css({ cursor: 'pointer' })}>
-            <Avatar.Image src={record.avatarUrl ?? undefined} />
-            <Avatar.Fallback>
-              {(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
-            </Avatar.Fallback>
-          </Avatar.Root>
-        </PopoverTrigger>
-        <PopoverContent
-          className={css({
+      <Popover.Root>
+        <Popover.Trigger
+          render={
+            <Avatar.Root className={css({ cursor: 'pointer' })}>
+              <Avatar.Image src={record.avatarUrl ?? undefined} />
+              <Avatar.Fallback>
+                {(record.title?.charAt(0) ?? record.type.charAt(0)).toUpperCase()}
+              </Avatar.Fallback>
+            </Avatar.Root>
+          }
+        />
+        <Popover.Content
+          css={{
             display: 'flex',
             minWidth: '80',
             flexDirection: 'column',
             gap: '3',
-          })}
+          }}
         >
           <AvatarSection record={record} />
           <Separator />
           <MetadataSection record={record} />
-        </PopoverContent>
-      </Popover>
+        </Popover.Content>
+      </Popover.Root>
       <Link
         to="/records/$recordId"
         params={{ recordId }}
