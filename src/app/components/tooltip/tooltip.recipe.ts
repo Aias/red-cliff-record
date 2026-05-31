@@ -2,8 +2,10 @@ import { defineSlotRecipe } from '@/app/styles/define-recipe';
 
 export const tooltipRecipe = defineSlotRecipe({
   className: 'tooltip',
-  slots: ['positioner', 'popup', 'arrow'],
+  slots: ['root', 'trigger', 'positioner', 'popup', 'arrow'],
   base: {
+    root: {},
+    trigger: {},
     positioner: {
       isolation: 'isolate',
       zIndex: '50',
@@ -34,12 +36,12 @@ export const tooltipRecipe = defineSlotRecipe({
         fadeOut: 0,
         zoomOut: 0.95,
       },
-      '&[data-side=bottom]': { slideInY: '-0.5rem' },
-      '&[data-side=top]': { slideInY: '0.5rem' },
-      '&[data-side=left]': { slideInX: '0.5rem' },
-      '&[data-side=right]': { slideInX: '-0.5rem' },
-      '&[data-side=inline-start]': { slideInX: '0.5rem' },
-      '&[data-side=inline-end]': { slideInX: '-0.5rem' },
+      _sideBottom: { slideInY: '-0.5rem' },
+      _sideTop: { slideInY: '0.5rem' },
+      _sideLeft: { slideInX: '0.5rem' },
+      _sideRight: { slideInX: '-0.5rem' },
+      _sideInlineStart: { slideInX: '0.5rem' },
+      _sideInlineEnd: { slideInX: '-0.5rem' },
     },
     arrow: {
       boxSize: '2.5',
@@ -53,31 +55,31 @@ export const tooltipRecipe = defineSlotRecipe({
         borderBlockEndWidth: '1px',
         borderInlineEndWidth: '1px',
       },
-      '&[data-side=bottom]': {
+      _sideBottom: {
         insetBlockStart: '1',
       },
-      '&[data-side=top]': {
+      _sideTop: {
         insetBlockEnd: '-2.5',
       },
-      '&[data-side=left]': {
+      _sideLeft: {
         insetBlockStart: '[50% !important]',
         insetInlineEnd: '-1',
-        translate: '[0 -50%]',
+        translateCenter: 'y',
       },
-      '&[data-side=right]': {
+      _sideRight: {
         insetBlockStart: '[50% !important]',
         insetInlineStart: '-1',
-        translate: '[0 -50%]',
+        translateCenter: 'y',
       },
-      '&[data-side=inline-end]': {
+      _sideInlineEnd: {
         insetBlockStart: '[50% !important]',
         insetInlineStart: '-1',
-        translate: '[0 -50%]',
+        translateCenter: 'y',
       },
-      '&[data-side=inline-start]': {
+      _sideInlineStart: {
         insetBlockStart: '[50% !important]',
         insetInlineEnd: '-1',
-        translate: '[0 -50%]',
+        translateCenter: 'y',
       },
     },
   },

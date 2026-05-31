@@ -6,26 +6,15 @@ import type { ComponentProps } from '@/styled-system/types';
 const { withProvider, withContext } = createStyleContext(tooltip);
 
 export function Provider({ delay = 300, ...props }: BaseTooltip.Provider.Props) {
-  return <BaseTooltip.Provider data-slot="tooltip-provider" delay={delay} {...props} />;
+  return <BaseTooltip.Provider delay={delay} {...props} />;
 }
 
-export function Root(props: BaseTooltip.Root.Props) {
-  return <BaseTooltip.Root data-slot="tooltip" {...props} />;
-}
+export const Root = withProvider(BaseTooltip.Root, 'root');
+export const Trigger = withContext(BaseTooltip.Trigger, 'trigger');
 
-export function Trigger(props: BaseTooltip.Trigger.Props) {
-  return <BaseTooltip.Trigger data-slot="tooltip-trigger" {...props} />;
-}
-
-const StyledPositioner = withProvider(BaseTooltip.Positioner, 'positioner', {
-  defaultProps: { 'data-slot': 'tooltip-positioner' },
-});
-const StyledPopup = withContext(BaseTooltip.Popup, 'popup', {
-  defaultProps: { 'data-slot': 'tooltip-content' },
-});
-const StyledArrow = withContext(BaseTooltip.Arrow, 'arrow', {
-  defaultProps: { 'data-slot': 'tooltip-arrow' },
-});
+const StyledPositioner = withContext(BaseTooltip.Positioner, 'positioner');
+const StyledPopup = withContext(BaseTooltip.Popup, 'popup');
+const StyledArrow = withContext(BaseTooltip.Arrow, 'arrow');
 
 type PositionerProps = Pick<
   BaseTooltip.Positioner.Props,
