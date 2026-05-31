@@ -23,7 +23,7 @@ Supplements global `react-best-practices` and `code-quality` skills.
 - Reusable components: `src/app/components/` (kebab-case).
 - **Simple component** → single file: `src/app/components/badge.tsx`.
 - **Component with a recipe** → folder with colocated recipe: `src/app/components/button/{index.tsx, button.recipe.ts}`.
-- **Multi-slot component** → folder with slot recipe and primitives: `src/app/components/alert-dialog/{alert-dialog.recipe.ts, alert-dialog.tsx, index.ts}`.
+- **Multi-slot component** → folder with slot recipe and primitives: `src/app/components/scroll-area/{scroll-area.recipe.ts, scroll-area.tsx, index.ts}` (Base UI + `createStyleContext`) or `alert-dialog/` (legacy Radix, pending migration).
 - **Page-specific components** → `-components/` folder adjacent to the route or `-component.tsx` suffix (TanStack Router convention for excluded directories).
 - Register new recipes in `panda.config.ts` (`theme.extend.recipes` for single, `theme.extend.slotRecipes` for slot) and run `bun run stylegen` so `src/app/styled-system/recipes` updates.
 
@@ -148,29 +148,67 @@ export const tagRecipe = defineRecipe({
 
 Always use `defineRecipe` / `defineSlotRecipe` from `@/app/styles/define-recipe` (not from `@pandacss/dev`). Those wrappers apply Panda's generated strict types so invalid props/values error at author time.
 
+Bind single-element recipes with `styled()` from `@/styled-system/jsx`:
+
+```tsx
+import { Input as BaseInput } from '@base-ui/react/input';
+import { styled } from '@/styled-system/jsx';
+import { input } from '@/styled-system/recipes';
+import type { ComponentProps } from '@/styled-system/types';
+
+export const Input = styled(BaseInput, input);
+export type InputProps = ComponentProps<typeof Input>;
+```
+
+Same pattern for native elements (`styled('label', label)`) and non-Base UI hosts (`styled(Link, button)`). See `input/`, `button/`, `badge/`, `label/`, `separator/`.
+
 ### Multi-slot — `defineSlotRecipe` + `createStyleContext`
 
-Registered recipes bind to components via `createStyleContext(slotRecipe)` → `withProvider` (root) + `withContext` (children). See `alert-dialog/alert-dialog.tsx` and `button/index.tsx` for the two patterns.
+Registered slot recipes bind via `createStyleContext(slotRecipe)` → `withProvider` (root) + `withContext` (child slots). Canonical Base UI examples: `scroll-area/`, `tooltip/`. Legacy Radix still on `alert-dialog/` — migrate to Base UI when touched.
 
-```ts
-import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react'; // after migration
+```tsx
+import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area';
 import { createStyleContext } from '@/styled-system/jsx';
-import { alertDialog } from '@/styled-system/recipes';
+import { scrollArea } from '@/styled-system/recipes';
+import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createStyleContext(alertDialog);
+const { withProvider, withContext } = createStyleContext(scrollArea);
 
-export const Root = withProvider(AlertDialogPrimitive.Root, 'root');
-export const Content = withContext(AlertDialogPrimitive.Popup, 'content');
-// ...
+const Root = withProvider(BaseScrollArea.Root, 'root');
+const Viewport = withContext(BaseScrollArea.Viewport, 'viewport');
+const Content = withContext(BaseScrollArea.Content, 'content');
+const ScrollBar = withContext(BaseScrollArea.Scrollbar, 'scrollbar');
+const Corner = withContext(BaseScrollArea.Corner, 'corner');
+const Thumb = withContext(BaseScrollArea.Thumb, 'thumb');
+
+export const ScrollArea = ({
+  children,
+  orientation = 'vertical',
+  ...props
+}: ComponentProps<typeof Root>) => (
+  <Root orientation={orientation} {...props}>
+    <Viewport>
+      <Content>{children}</Content>
+    </Viewport>
+    <ScrollBar orientation={orientation}>
+      <Thumb />
+    </ScrollBar>
+    <Corner />
+  </Root>
+);
 ```
 
 ### Slot-component file conventions
 
-Model: `dialog` / `alert-dialog`.
+Models: `scroll-area/` and `tooltip/` (Base UI + slot recipe), `alert-dialog/` (Radix, pending migration).
 
-- **Slots** = every slot the original component exposed or rendered (`*Trigger`/`*Content`/`*Close`/… plus `root`), even ones unused in the app; don't invent slots the original never had. `root` is mandatory — bind it with `withProvider`, or `withRootProvider` when the root renders no DOM (e.g. a Radix context-only root).
-- **Bind every rendered slot** with `withContext`, and **compose with the bound slots** — a `Content` that needs a portal renders `<Portal>`, never `<Primitive.Portal>`.
+- **Import naming.** Base UI namespace imports use `Base*` — `import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area'`. Never `*Primitive`; that suffix is Radix/Shadcn (`ScrollAreaPrimitive`, `AlertDialogPrimitive`).
+- **Slots** = every part the headless primitive exposes in its documented anatomy, plus `root`. Don't invent slots the primitive never had; don't omit parts it requires in the tree (Base UI `ScrollArea.Content` inside `Viewport` is mandatory — Radix hid an equivalent wrapper inside `Viewport`). `root` is mandatory — bind with `withProvider`, or `withRootProvider` when the root renders no DOM (Radix context-only roots during migration).
+- **Structural slots.** Register and bind every anatomy part with `withContext` even when the recipe adds no styles — use `slotName: {}` in `base` (see `scroll-area` `content` and `corner`). The slot still gets a generated class and accepts `css` overrides at call sites; the primitive may apply its own inline defaults (e.g. Base UI `Content`'s `minWidth: fit-content`).
+- **Recipe-only variants.** Variants that style slots but aren't props on the headless root go on the `withProvider` root — `createStyleContext` consumes them for styling without forwarding to the primitive. Example: `orientation` on `ScrollArea`'s `Root` drives scrollbar slot styles; Base UI takes `orientation` on `Scrollbar`, not `Root`.
+- **Bind every rendered slot** with `withContext`, and **compose with the bound slots** — a `Content` that needs a portal renders `<Portal>`, never the raw Base UI portal outside styled wrappers.
 - **Portal is internal by default.** A composed `Content` includes the `Portal` (portal-by-default, like Base UI), so bind `Portal` as a non-exported `const` and render it inside `Content`. Don't export it — an exported `Portal` lets a consumer double-wrap (`<X.Portal><X.Content/></X.Portal>`) into nested portals. Export `Portal` only for the manual-composition pattern where `Content` is a bare slot and the consumer writes `<Portal><Overlay/><Content/></Portal>` themselves (e.g. `alert-dialog`).
+- **Composed vs part exports.** When the app always uses the full tree, export one composed component (`ScrollArea`). When consumers assemble parts (`Tooltip.Root`, `Tooltip.Trigger`, `Tooltip.Content`), export the bound parts. Keep internal styled slots (`StyledPositioner`, `StyledPopup`) unexported when a composed wrapper owns them.
 - **No blanket `data-slot`.** Target a subcomponent via its generated `.rcr-<recipe>__<slot>` class (the recipe `className` is unprefixed; the selector carries the `rcr-` prefix). Add a `data-slot` only where something genuinely needs that hook.
 - **`unstyled` prop** drops a slot's recipe styles so you can restyle it via `css` in a specific composition.
 - **Shared style chunks** → a `SystemStyleObject`-typed const (`import type { SystemStyleObject } from '@/styled-system/types'`) spread into the slots. Never `as const`.
@@ -185,15 +223,18 @@ Model: `dialog` / `alert-dialog`.
 
 ## Base UI primitives
 
-- Import from `@base-ui/react` (e.g., `@base-ui/react/button`, or the barrel `from '@base-ui/react'`).
+- Import from `@base-ui/react/<component>` (e.g. `@base-ui/react/button`, `@base-ui/react/scroll-area`) or the barrel `from '@base-ui/react'`.
+- **Namespace alias is `Base*`, not `*Primitive`.** `import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip'`. Reserve `*Primitive` for legacy Radix imports only.
 - **Base UI uses `render={<Element />}` for composition** — the equivalent of Radix's `asChild`. Pass an element instance, not `asChild` + children.
 
   ```tsx
   <Button variant="soft" render={<Link to="/records">Records</Link>} />
   ```
 
-- Mark key DOM nodes with `data-slot` attributes (see the Button and Dialog recipes) so styling hooks are stable across the render tree.
-- When migrating a Radix component, read the Base UI docs for the equivalent (the anatomy often differs, e.g. Radix `Content` ≈ Base UI `Popup`; some primitives split or merge). Don't assume API parity.
+- When migrating a Radix component, read the Base UI docs for the equivalent anatomy — don't assume API parity. Common differences:
+  - Radix `Content` ≈ Base UI `Popup` (dialog, tooltip, …).
+  - Base UI may expose parts Radix hid internally (e.g. `ScrollArea.Content` inside `Viewport`; Radix injected an inner wrapper automatically).
+  - Part names shorten under the namespace (`Scrollbar`, `Thumb`, `Corner` — not `ScrollAreaScrollbar`).
 - A few utility primitives still live in `radix-ui` today (`@radix-ui/react-slot` for `Slot`, `@radix-ui/colors` for the color scales). Keep those; the migration target is the interactive primitives.
 
 ## Icons

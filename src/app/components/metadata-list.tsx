@@ -1,7 +1,6 @@
 import { CopyIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
-import { Button } from './button';
 import {
   DataListItem,
   DataListLabel,
@@ -9,16 +8,7 @@ import {
   DataListValue,
   type DataListRootProps,
 } from './data-list';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from './dialog';
 import { ExternalLink } from './external-link';
-import { ScrollArea } from './scroll-area';
 
 interface MetadataListProps extends DataListRootProps {
   metadata: Record<string, unknown>;
@@ -94,36 +84,5 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
         </DataListItem>
       ))}
     </DataListRoot>
-  );
-};
-
-interface MetadataDialogButtonProps {
-  metadata: Record<string, unknown>;
-  buttonText?: string;
-  buttonProps?: Omit<React.ComponentProps<typeof Button>, 'onClick'>;
-  description?: string;
-}
-
-export const MetadataDialogButton: React.FC<MetadataDialogButtonProps> = ({
-  metadata,
-  buttonText = 'Metadata',
-  buttonProps,
-  description = 'Metadata inspector',
-}) => {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button {...buttonProps}>{buttonText}</Button>
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[90vh] max-w-[75vw] flex-col overflow-hidden px-0 py-5">
-        <DialogHeader className="mb-3 border-b border-c-divider px-5 pb-3">
-          <DialogTitle className="mb-0.5">Metadata</DialogTitle>
-          <DialogDescription className="text-c-secondary">{description}</DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="px-5">
-          <MetadataList metadata={metadata} />
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
   );
 };

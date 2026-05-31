@@ -2,7 +2,7 @@ import { defineSlotRecipe } from '@/app/styles/define-recipe';
 
 export const scrollAreaRecipe = defineSlotRecipe({
   className: 'scroll-area',
-  slots: ['root', 'viewport', 'scrollbar', 'corner', 'thumb'],
+  slots: ['root', 'viewport', 'content', 'scrollbar', 'corner', 'thumb'],
   base: {
     root: {
       position: 'relative',
@@ -18,6 +18,7 @@ export const scrollAreaRecipe = defineSlotRecipe({
         focusVisibleRing: 'outside',
       },
     },
+    content: {},
     scrollbar: {
       display: 'flex',
       touchAction: 'none',
