@@ -5,10 +5,11 @@ import type { ComponentProps } from '@/styled-system/types';
 
 const { withProvider, withContext } = createStyleContext(popover);
 
-export const Root = withProvider(BasePopover.Root, 'root');
-export const Trigger = withContext(BasePopover.Trigger, 'trigger');
+export const createHandle = BasePopover.createHandle;
+export const Root = BasePopover.Root;
+export const Trigger = BasePopover.Trigger;
 
-const StyledPositioner = withContext(BasePopover.Positioner, 'positioner');
+const StyledPositioner = withProvider(BasePopover.Positioner, 'positioner');
 const StyledPopup = withContext(BasePopover.Popup, 'popup');
 
 type PositionerProps = Pick<

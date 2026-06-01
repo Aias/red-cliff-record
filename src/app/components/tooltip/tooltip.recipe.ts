@@ -2,10 +2,8 @@ import { defineSlotRecipe } from '@/app/styles/define-recipe';
 
 export const tooltipRecipe = defineSlotRecipe({
   className: 'tooltip',
-  slots: ['root', 'trigger', 'positioner', 'popup', 'arrow'],
+  slots: ['positioner', 'popup', 'arrow'],
   base: {
-    root: {},
-    trigger: {},
     positioner: {
       isolation: 'isolate',
       zIndex: '50',

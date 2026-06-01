@@ -358,25 +358,30 @@ export function RecordForm({
           }}
         >
           <form.Field name="type">
-            {(field) => (
-              <ToggleGroup.Root
-                value={field.state.value ? [field.state.value] : []}
-                onValueChange={(groupValue) => {
-                  const value = groupValue[0];
-                  if (value) {
-                    field.handleChange(value as RecordType);
-                    debouncedSave();
-                  }
-                }}
-                variant="outline"
-                css={{ flexGrow: '1' }}
-                disabled={isFormLoading}
-              >
-                {RecordTypeSchema.options.map((type) => {
-                  const { icon: Icon, description } = recordTypeIcons[type];
-                  return (
-                    <Tooltip.Root key={type}>
+            {(field) => {
+              type TypeTooltipPayload = { type: RecordType; description: string };
+              const handle = Tooltip.createHandle<TypeTooltipPayload>();
+              return (
+                <ToggleGroup.Root
+                  value={field.state.value ? [field.state.value] : []}
+                  onValueChange={(groupValue) => {
+                    const value = groupValue[0];
+                    if (value) {
+                      field.handleChange(value as RecordType);
+                      debouncedSave();
+                    }
+                  }}
+                  variant="outline"
+                  css={{ flexGrow: '1' }}
+                  disabled={isFormLoading}
+                >
+                  {RecordTypeSchema.options.map((type) => {
+                    const { icon: Icon, description } = recordTypeIcons[type];
+                    return (
                       <Tooltip.Trigger
+                        key={type}
+                        handle={handle}
+                        payload={{ type, description }}
                         render={
                           <ToggleGroup.Item
                             value={type}
@@ -401,21 +406,27 @@ export function RecordForm({
                           </ToggleGroup.Item>
                         }
                       />
-                      <Tooltip.Content side="bottom">
-                        <p>
-                          <styled.strong
-                            css={{ marginInlineEnd: '1', textTransform: 'capitalize' }}
-                          >
-                            {type}
-                          </styled.strong>
-                          {description}
-                        </p>
-                      </Tooltip.Content>
-                    </Tooltip.Root>
-                  );
-                })}
-              </ToggleGroup.Root>
-            )}
+                    );
+                  })}
+                  <Tooltip.Root handle={handle}>
+                    {({ payload }) =>
+                      payload !== undefined ? (
+                        <Tooltip.Content side="bottom">
+                          <p>
+                            <styled.strong
+                              css={{ marginInlineEnd: '1', textTransform: 'capitalize' }}
+                            >
+                              {payload.type}
+                            </styled.strong>
+                            {payload.description}
+                          </p>
+                        </Tooltip.Content>
+                      ) : null
+                    }
+                  </Tooltip.Root>
+                </ToggleGroup.Root>
+              );
+            }}
           </form.Field>
           <form.Field name="isCurated">
             {(field) => (

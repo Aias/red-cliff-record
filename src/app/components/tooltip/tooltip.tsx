@@ -9,10 +9,11 @@ export function Provider({ delay = 300, ...props }: BaseTooltip.Provider.Props) 
   return <BaseTooltip.Provider delay={delay} {...props} />;
 }
 
-export const Root = withProvider(BaseTooltip.Root, 'root');
-export const Trigger = withContext(BaseTooltip.Trigger, 'trigger');
+export const createHandle = BaseTooltip.createHandle;
+export const Root = BaseTooltip.Root;
+export const Trigger = BaseTooltip.Trigger;
 
-const StyledPositioner = withContext(BaseTooltip.Positioner, 'positioner');
+const StyledPositioner = withProvider(BaseTooltip.Positioner, 'positioner');
 const StyledPopup = withContext(BaseTooltip.Popup, 'popup');
 const StyledArrow = withContext(BaseTooltip.Arrow, 'arrow');
 

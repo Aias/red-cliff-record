@@ -5,10 +5,11 @@ import type { ComponentProps } from '@/styled-system/types';
 
 const { withProvider, withContext } = createStyleContext(hoverCard);
 
-export const Root = withProvider(BasePreviewCard.Root, 'root');
-export const Trigger = withContext(BasePreviewCard.Trigger, 'trigger');
+export const createHandle = BasePreviewCard.createHandle;
+export const Root = BasePreviewCard.Root;
+export const Trigger = BasePreviewCard.Trigger;
 
-const StyledPositioner = withContext(BasePreviewCard.Positioner, 'positioner');
+const StyledPositioner = withProvider(BasePreviewCard.Positioner, 'positioner');
 const StyledPopup = withContext(BasePreviewCard.Popup, 'popup');
 
 type PositionerProps = Pick<

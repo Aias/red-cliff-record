@@ -2,10 +2,8 @@ import { defineSlotRecipe } from '@/app/styles/define-recipe';
 
 export const popoverRecipe = defineSlotRecipe({
   className: 'popover',
-  slots: ['root', 'trigger', 'positioner', 'popup'],
+  slots: ['positioner', 'popup'],
   base: {
-    root: {},
-    trigger: {},
     positioner: {
       isolation: 'isolate',
       zIndex: '50',
