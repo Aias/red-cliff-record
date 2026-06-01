@@ -16,7 +16,6 @@ import { getTheme, type Theme } from '@/lib/server/theme';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import pandaStylesUrl from '../styled-system/styles.css?url';
-import stylesUrl from '../styles/app.css?url';
 import { AppLayout } from './-app-components/app-layout';
 import { DefaultCatchBoundary } from './-app-components/catch-boundary';
 import { NotFound as NotFoundComponent } from './-app-components/not-found';
@@ -49,7 +48,6 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         rel: 'stylesheet',
         href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&display=swap',
       },
-      { rel: 'stylesheet', href: stylesUrl },
       { rel: 'stylesheet', href: pandaStylesUrl },
       {
         rel: 'apple-touch-icon',
@@ -143,7 +141,6 @@ function RootDocument({
         colorPalette: 'artifact',
         layerStyle: 'neutral',
       })}
-      data-palette="artifact"
       data-color-scheme={appearance}
       data-theme-transitioning={isTransitioning || undefined}
     >

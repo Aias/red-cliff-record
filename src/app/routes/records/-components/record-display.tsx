@@ -10,10 +10,12 @@ import { useInBasket } from '@/lib/hooks/use-basket';
 import type { DbId } from '@/shared/types/api';
 import { cx, sva } from '@/styled-system/css';
 import { createStyleContext } from '@/styled-system/jsx';
+import type { SystemStyleObject } from '@/styled-system/types';
 import { getRecordTitle, SourceLogos } from './record-parts';
 import { recordTypeIcons } from './type-icons';
 
 const recordDisplay = sva({
+  className: 'record-display',
   slots: [
     'root',
     'errorState',
@@ -117,12 +119,14 @@ interface RecordDisplayProps {
   recordId: DbId;
   compact?: boolean;
   className?: string;
+  css?: SystemStyleObject;
 }
 
 export const RecordDisplay = memo(function RecordDisplay({
   recordId,
   compact,
   className,
+  css: cssProp,
 }: RecordDisplayProps) {
   const { data: record, isError } = useRecord(recordId);
   const inBasket = useInBasket(recordId);
@@ -164,6 +168,7 @@ export const RecordDisplay = memo(function RecordDisplay({
     <Root
       compact={compact}
       className={cx('group', className)}
+      css={cssProp}
       onClick={() => {
         void navigate({ to: '/records/$recordId', params: { recordId: id } });
       }}

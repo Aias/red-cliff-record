@@ -14,7 +14,7 @@ import { Spinner } from '@/components/spinner';
 import { Table } from '@/components/table';
 import { DynamicTextarea } from '@/components/textarea';
 import { Toggle } from '@/components/toggle';
-import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
+import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
 import { useDeleteMedia } from '@/lib/hooks/media-mutations';
 import { useUpsertRecord } from '@/lib/hooks/record-mutations';
@@ -359,17 +359,17 @@ export function RecordForm({
         >
           <form.Field name="type">
             {(field) => (
-              <ToggleGroup
-                type="single"
-                value={field.state.value}
-                onValueChange={(value) => {
+              <ToggleGroup.Root
+                value={field.state.value ? [field.state.value] : []}
+                onValueChange={(groupValue) => {
+                  const value = groupValue[0];
                   if (value) {
                     field.handleChange(value as RecordType);
                     debouncedSave();
                   }
                 }}
                 variant="outline"
-                className={css({ flexGrow: '1' })}
+                css={{ flexGrow: '1' }}
                 disabled={isFormLoading}
               >
                 {RecordTypeSchema.options.map((type) => {
@@ -378,16 +378,15 @@ export function RecordForm({
                     <Tooltip.Root key={type}>
                       <Tooltip.Trigger
                         render={
-                          <ToggleGroupItem
+                          <ToggleGroup.Item
                             value={type}
                             aria-label={type}
-                            data-state={field.state.value === type ? 'on' : 'off'}
-                            className={css({
+                            css={{
                               display: 'flex',
                               flexGrow: '1',
                               alignItems: 'center',
                               gap: '1',
-                            })}
+                            }}
                           >
                             <Icon />
                             <styled.span
@@ -399,7 +398,7 @@ export function RecordForm({
                             >
                               {type}
                             </styled.span>
-                          </ToggleGroupItem>
+                          </ToggleGroup.Item>
                         }
                       />
                       <Tooltip.Content side="bottom">
@@ -415,7 +414,7 @@ export function RecordForm({
                     </Tooltip.Root>
                   );
                 })}
-              </ToggleGroup>
+              </ToggleGroup.Root>
             )}
           </form.Field>
           <form.Field name="isCurated">

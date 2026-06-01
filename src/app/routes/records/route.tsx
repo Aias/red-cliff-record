@@ -35,7 +35,7 @@ function RouteComponent() {
   const currentRecordId = getSelectedRecordId();
 
   const handleValueChange = useCallback(
-    (value: unknown) => {
+    (value: string) => {
       void navigate({
         to: '/records/$recordId',
         params: { recordId: Number(value) },

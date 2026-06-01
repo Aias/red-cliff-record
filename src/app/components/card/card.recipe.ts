@@ -17,4 +17,5 @@ export const cardRecipe = defineRecipe({
     },
   },
   defaultVariants: { compact: false },
+  staticCss: [{ compact: ['*'] }],
 });
