@@ -17,6 +17,7 @@ import { radioCardsRecipe } from '@/app/components/radio-cards/radio-cards.recip
 import { separatorRecipe } from '@/app/components/separator/separator.recipe';
 import { tableRecipe } from '@/app/components/table/table.recipe';
 import { textareaRecipe } from '@/app/components/textarea/textarea.recipe';
+import { toggleRecipe } from '@/app/components/toggle/toggle.recipe';
 import { tooltipRecipe } from '@/app/components/tooltip/tooltip.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
 import { blurs } from '@/app/styles/blurs';
@@ -114,6 +115,7 @@ export default defineConfig({
       prose: proseRecipe,
       separator: separatorRecipe,
       textarea: textareaRecipe,
+      toggle: toggleRecipe,
     },
     slotRecipes: {
       avatar: avatarRecipe,

@@ -13,7 +13,7 @@ import { Label } from '@/components/label';
 import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
 import { Table } from '@/components/table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
+import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
 import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
@@ -173,7 +173,8 @@ export const RecordsGrid = () => {
   };
 
   const toggleBooleanFilter =
-    (field: 'isCurated' | 'isPrivate' | 'hasParent' | 'hasMedia') => (value: string) => {
+    (field: 'isCurated' | 'isPrivate' | 'hasParent' | 'hasMedia') => (groupValue: string[]) => {
+      const value = groupValue[0] ?? 'All';
       setFilters((prev) => ({
         ...prev,
         [field]: value === 'All' ? undefined : value === 'Yes',
@@ -342,87 +343,59 @@ export const RecordsGrid = () => {
         </styled.div>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="curated">Is Curated?</Label>
-          <ToggleGroup
+          <ToggleGroup.Root
             id="curated"
-            type="single"
-            value={curatedValue}
+            value={[curatedValue]}
             onValueChange={toggleBooleanFilter('isCurated')}
             variant="outline"
-            className={css({ width: 'full' })}
+            css={{ width: 'full' }}
           >
-            <ToggleGroupItem value="All" className={css({ flex: '1' })}>
-              All
-            </ToggleGroupItem>
-            <ToggleGroupItem value="Yes" className={css({ flex: '1' })}>
-              Yes
-            </ToggleGroupItem>
-            <ToggleGroupItem value="No" className={css({ flex: '1' })}>
-              No
-            </ToggleGroupItem>
-          </ToggleGroup>
+            <ToggleGroup.Item value="All">All</ToggleGroup.Item>
+            <ToggleGroup.Item value="Yes">Yes</ToggleGroup.Item>
+            <ToggleGroup.Item value="No">No</ToggleGroup.Item>
+          </ToggleGroup.Root>
         </styled.div>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="hasParent">Has Parent?</Label>
-          <ToggleGroup
+          <ToggleGroup.Root
             id="hasParent"
-            type="single"
-            value={hasParentValue}
+            value={[hasParentValue]}
             onValueChange={toggleBooleanFilter('hasParent')}
             variant="outline"
-            className={css({ width: 'full' })}
+            css={{ width: 'full' }}
           >
-            <ToggleGroupItem value="All" className={css({ flex: '1' })}>
-              All
-            </ToggleGroupItem>
-            <ToggleGroupItem value="Yes" className={css({ flex: '1' })}>
-              Yes
-            </ToggleGroupItem>
-            <ToggleGroupItem value="No" className={css({ flex: '1' })}>
-              No
-            </ToggleGroupItem>
-          </ToggleGroup>
+            <ToggleGroup.Item value="All">All</ToggleGroup.Item>
+            <ToggleGroup.Item value="Yes">Yes</ToggleGroup.Item>
+            <ToggleGroup.Item value="No">No</ToggleGroup.Item>
+          </ToggleGroup.Root>
         </styled.div>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="hasMedia">Has Media?</Label>
-          <ToggleGroup
+          <ToggleGroup.Root
             id="hasMedia"
-            type="single"
-            value={hasMediaValue}
+            value={[hasMediaValue]}
             onValueChange={toggleBooleanFilter('hasMedia')}
             variant="outline"
-            className={css({ width: 'full' })}
+            css={{ width: 'full' }}
           >
-            <ToggleGroupItem value="All" className={css({ flex: '1' })}>
-              All
-            </ToggleGroupItem>
-            <ToggleGroupItem value="Yes" className={css({ flex: '1' })}>
-              Yes
-            </ToggleGroupItem>
-            <ToggleGroupItem value="No" className={css({ flex: '1' })}>
-              No
-            </ToggleGroupItem>
-          </ToggleGroup>
+            <ToggleGroup.Item value="All">All</ToggleGroup.Item>
+            <ToggleGroup.Item value="Yes">Yes</ToggleGroup.Item>
+            <ToggleGroup.Item value="No">No</ToggleGroup.Item>
+          </ToggleGroup.Root>
         </styled.div>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="private">Is Private?</Label>
-          <ToggleGroup
+          <ToggleGroup.Root
             id="private"
-            type="single"
-            value={privateValue}
+            value={[privateValue]}
             onValueChange={toggleBooleanFilter('isPrivate')}
             variant="outline"
-            className={css({ width: 'full' })}
+            css={{ width: 'full' }}
           >
-            <ToggleGroupItem value="All" className={css({ flex: '1' })}>
-              All
-            </ToggleGroupItem>
-            <ToggleGroupItem value="Yes" className={css({ flex: '1' })}>
-              Yes
-            </ToggleGroupItem>
-            <ToggleGroupItem value="No" className={css({ flex: '1' })}>
-              No
-            </ToggleGroupItem>
-          </ToggleGroup>
+            <ToggleGroup.Item value="All">All</ToggleGroup.Item>
+            <ToggleGroup.Item value="Yes">Yes</ToggleGroup.Item>
+            <ToggleGroup.Item value="No">No</ToggleGroup.Item>
+          </ToggleGroup.Root>
         </styled.div>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="limit">Results Limit</Label>
