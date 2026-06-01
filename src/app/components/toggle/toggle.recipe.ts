@@ -27,10 +27,12 @@ export const toggleRecipe = defineRecipe({
     _pressed: {
       backgroundColor: 'splash',
       color: 'accent',
+      layerStyle: 'chromatic',
     },
     _disabled: {
       pointerEvents: 'none',
       opacity: '50%',
+      layerStyle: 'neutral',
     },
     _focusVisible: {
       borderColor: 'focus',

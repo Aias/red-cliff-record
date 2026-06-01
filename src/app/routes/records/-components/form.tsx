@@ -433,20 +433,18 @@ export function RecordForm({
               <Tooltip.Root>
                 <Tooltip.Trigger
                   render={
-                    <styled.span css={{ display: 'inline-flex' }}>
-                      <Toggle
-                        variant="outline"
-                        pressed={field.state.value}
-                        aria-label={field.state.value ? 'Curated' : 'Not curated'}
-                        onPressedChange={(pressed) => {
-                          field.handleChange(pressed);
-                          debouncedSave();
-                        }}
-                        disabled={isFormLoading}
-                      >
-                        {field.state.value ? <BadgeCheckIcon /> : <BadgeIcon />}
-                      </Toggle>
-                    </styled.span>
+                    <Toggle
+                      variant="outline"
+                      pressed={field.state.value}
+                      aria-label={field.state.value ? 'Curated' : 'Not curated'}
+                      onPressedChange={(pressed) => {
+                        field.handleChange(pressed);
+                        debouncedSave();
+                      }}
+                      disabled={isFormLoading}
+                    >
+                      {field.state.value ? <BadgeCheckIcon /> : <BadgeIcon />}
+                    </Toggle>
                   }
                 />
                 <Tooltip.Content>{field.state.value ? 'Curated' : 'Not curated'}</Tooltip.Content>
@@ -458,20 +456,18 @@ export function RecordForm({
               <Tooltip.Root>
                 <Tooltip.Trigger
                   render={
-                    <styled.span css={{ display: 'inline-flex' }}>
-                      <Toggle
-                        variant="outline"
-                        pressed={field.state.value}
-                        aria-label={field.state.value ? 'Private' : 'Public'}
-                        onPressedChange={(pressed) => {
-                          field.handleChange(pressed);
-                          debouncedSave();
-                        }}
-                        disabled={isFormLoading}
-                      >
-                        {field.state.value ? <EyeOffIcon /> : <EyeIcon />}
-                      </Toggle>
-                    </styled.span>
+                    <Toggle
+                      variant="outline"
+                      pressed={field.state.value}
+                      aria-label={field.state.value ? 'Private' : 'Public'}
+                      onPressedChange={(pressed) => {
+                        field.handleChange(pressed);
+                        debouncedSave();
+                      }}
+                      disabled={isFormLoading}
+                    >
+                      {field.state.value ? <EyeOffIcon /> : <EyeIcon />}
+                    </Toggle>
                   }
                 />
                 <Tooltip.Content>{field.state.value ? 'Private' : 'Public'}</Tooltip.Content>
@@ -486,7 +482,7 @@ export function RecordForm({
               <Table.Body css={{ '& td:first-child': { width: '20' } }}>
                 <Table.Row>
                   <Table.Cell>
-                    <Label className={css({ display: 'flex', width: 'full' })} htmlFor="url">
+                    <Label css={{ display: 'flex', width: 'full' }} htmlFor="url">
                       URL
                     </Label>
                   </Table.Cell>
@@ -502,7 +498,7 @@ export function RecordForm({
                           <styled.div css={{ display: 'flex', alignItems: 'center', gap: '2' }}>
                             <GhostInput
                               id="url"
-                              className={css({ width: 'full', color: 'display' })}
+                              css={{ width: 'full', color: 'display' }}
                               value={field.state.value ?? ''}
                               placeholder="https://example.com"
                               onChange={(e) => {
@@ -535,10 +531,7 @@ export function RecordForm({
 
                 <Table.Row>
                   <Table.Cell>
-                    <Label
-                      className={css({ display: 'flex', width: 'full' })}
-                      htmlFor="abbreviation"
-                    >
+                    <Label css={{ display: 'flex', width: 'full' }} htmlFor="abbreviation">
                       Abbreviation
                     </Label>
                   </Table.Cell>
@@ -547,7 +540,7 @@ export function RecordForm({
                       {(field) => (
                         <GhostInput
                           id="abbreviation"
-                          className={css({ width: 'full', color: 'display' })}
+                          css={{ width: 'full', color: 'display' }}
                           value={field.state.value ?? ''}
                           placeholder="Short form"
                           onChange={(e) => {
@@ -564,7 +557,7 @@ export function RecordForm({
 
                 <Table.Row>
                   <Table.Cell>
-                    <Label className={css({ display: 'flex', width: 'full' })} htmlFor="sense">
+                    <Label css={{ display: 'flex', width: 'full' }} htmlFor="sense">
                       Sense
                     </Label>
                   </Table.Cell>
@@ -573,7 +566,7 @@ export function RecordForm({
                       {(field) => (
                         <GhostInput
                           id="sense"
-                          className={css({ width: 'full', color: 'display' })}
+                          css={{ width: 'full', color: 'display' }}
                           value={field.state.value ?? ''}
                           placeholder="Meaning or definition"
                           onChange={(e) => {

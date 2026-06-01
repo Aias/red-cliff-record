@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { GlobeIcon, ShoppingBasketIcon, Trash2Icon } from 'lucide-react';
-import { type ComponentProps, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import { AlertDialog } from '@/components/alert-dialog';
@@ -22,13 +22,14 @@ import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-bask
 import type { RecordGet } from '@/shared/types/domain';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import type { ComponentProps } from '@/styled-system/types';
 
-type MetabarProps = ComponentProps<'div'> & {
+type MetabarProps = ComponentProps<typeof styled.div> & {
   recordId: number;
   onDelete?: () => void;
 };
 
-export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProps) => {
+export const Metabar = ({ recordId, onDelete, css: cssProp, ...props }: MetabarProps) => {
   const { data: record } = useRecord(recordId);
   const inBasket = useInBasket(recordId);
   const deleteMutation = useDeleteRecords();
@@ -47,8 +48,7 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
 
   return (
     <styled.div
-      className={className}
-      css={{ display: 'flex', alignItems: 'center', gap: '2.5' }}
+      css={css.raw({ display: 'flex', alignItems: 'center', gap: '2.5' }, cssProp)}
       {...props}
     >
       <Popover.Root>
@@ -104,23 +104,21 @@ export const Metabar = ({ recordId, className, onDelete, ...props }: MetabarProp
         <Tooltip.Root>
           <Tooltip.Trigger
             render={
-              <styled.span css={{ display: 'inline-flex' }}>
-                <Toggle
-                  pressed={inBasket}
-                  aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
-                  onPressedChange={(pressed) => {
-                    if (pressed) {
-                      addToBasket(recordId);
-                      toast.success('Added to basket');
-                    } else {
-                      removeFromBasket(recordId);
-                      toast.success('Removed from basket');
-                    }
-                  }}
-                >
-                  <ShoppingBasketIcon />
-                </Toggle>
-              </styled.span>
+              <Toggle
+                pressed={inBasket}
+                aria-label={inBasket ? 'Remove from basket' : 'Add to basket'}
+                onPressedChange={(pressed) => {
+                  if (pressed) {
+                    addToBasket(recordId);
+                    toast.success('Added to basket');
+                  } else {
+                    removeFromBasket(recordId);
+                    toast.success('Removed from basket');
+                  }
+                }}
+              >
+                <ShoppingBasketIcon />
+              </Toggle>
             }
           />
           <Tooltip.Content>{inBasket ? 'Remove from basket' : 'Add to basket'}</Tooltip.Content>

@@ -9,19 +9,17 @@ import { useInBasket } from '@/lib/hooks/use-basket';
 import type { DbId } from '@/shared/types/api';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
-import type { SystemStyleObject } from '@/styled-system/types';
+import type { ComponentProps } from '@/styled-system/types';
 import { RecordDisplay } from './record-display';
 import { getRecordTitle, RecordThumbnail, SourceLogos } from './record-parts';
 import { recordTypeIcons } from './type-icons';
 
-interface RecordLinkProps {
+type RecordLinkProps = Omit<ComponentProps<typeof styled.div>, 'id'> & {
   id: DbId;
-  className?: string;
   linkOptions?: LinkOptions;
-  css?: SystemStyleObject;
-}
+};
 
-export const RecordLink = memo(({ id, className, linkOptions, css: cssProp }: RecordLinkProps) => {
+export const RecordLink = memo(({ id, linkOptions, css: cssProp, ...props }: RecordLinkProps) => {
   const { data: record, isLoading, isError } = useRecord(id);
   const inBasket = useInBasket(id);
 
@@ -41,6 +39,7 @@ export const RecordLink = memo(({ id, className, linkOptions, css: cssProp }: Re
           },
           cssProp
         )}
+        {...props}
       >
         <RectangleEllipsisIcon />
         <span>Record not found (ID: {id})</span>
@@ -66,7 +65,6 @@ export const RecordLink = memo(({ id, className, linkOptions, css: cssProp }: Re
 
   return (
     <styled.div
-      className={className}
       css={css.raw(
         {
           display: 'flex',
@@ -77,6 +75,7 @@ export const RecordLink = memo(({ id, className, linkOptions, css: cssProp }: Re
         },
         cssProp
       )}
+      {...props}
     >
       <styled.div
         css={{
@@ -120,12 +119,12 @@ export const RecordLink = memo(({ id, className, linkOptions, css: cssProp }: Re
                   }
                 />
                 <HoverCard.Content
-                  css={{ width: '96', overflow: 'hidden', padding: '0' }}
+                  css={{ width: '96', overflow: 'hidden', padding: '3' }}
                   align="center"
                   side="left"
                   sideOffset={12}
                 >
-                  <RecordDisplay recordId={id} compact className={css({ padding: '3' })} />
+                  <RecordDisplay recordId={id} compact />
                 </HoverCard.Content>
               </HoverCard.Root>
             ) : (

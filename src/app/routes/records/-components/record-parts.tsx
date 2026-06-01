@@ -30,9 +30,7 @@ export const SourceLogos = memo(function SourceLogos({
       css={css.raw({ display: 'flex', alignItems: 'center', gap: '1.5' }, cssProp)}
     >
       {sources.map((s) => (
-        <li key={s}>
-          <IntegrationLogo integration={s} />
-        </li>
+        <IntegrationLogo as="li" key={s} integration={s} />
       ))}
     </styled.ul>
   );
