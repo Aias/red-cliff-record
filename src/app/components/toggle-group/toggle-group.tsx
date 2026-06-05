@@ -3,12 +3,13 @@ import { ToggleGroup as BaseToggleGroup } from '@base-ui/react/toggle-group';
 import { createContext, useContext } from 'react';
 import { css } from '@/styled-system/css';
 import { styled, type HTMLStyledProps } from '@/styled-system/jsx';
-import { toggle } from '@/styled-system/recipes';
+import { toggle, type ToggleVariantProps } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-type ToggleVariant = 'default' | 'outline';
-
-const ToggleGroupVariantContext = createContext<ToggleVariant>('default');
+const ToggleGroupContext = createContext<ToggleVariantProps>({
+  variant: 'default',
+  size: 'default',
+});
 
 const groupCss = css.raw({
   display: 'flex',
@@ -27,21 +28,23 @@ type StyledGroupProps = ComponentProps<typeof StyledGroup>;
 // `onValueChange` lose their narrow element type. Keep Root generic at the public
 // boundary and cast back to the widened styled props for the internal spread.
 export type RootProps<Value extends string = string> = BaseToggleGroup.Props<Value> &
-  HTMLStyledProps<'div'> & { variant?: ToggleVariant };
+  HTMLStyledProps<'div'> &
+  ToggleVariantProps;
 
 export function Root<Value extends string = string>({
   variant = 'default',
+  size = 'default',
   css: cssProp,
   ...props
 }: RootProps<Value>) {
   return (
-    <ToggleGroupVariantContext.Provider value={variant}>
+    <ToggleGroupContext.Provider value={{ variant, size }}>
       <StyledGroup
         data-variant={variant}
         css={css.raw(groupCss, cssProp)}
         {...(props as StyledGroupProps)}
       />
-    </ToggleGroupVariantContext.Provider>
+    </ToggleGroupContext.Provider>
   );
 }
 
@@ -76,11 +79,12 @@ const segmentedItemCss = css.raw({
 
 export type ItemProps = ComponentProps<typeof StyledItem>;
 
-export function Item({ css: cssProp, ...props }: ItemProps) {
-  const variant = useContext(ToggleGroupVariantContext);
+export function Item({ size, css: cssProp, ...props }: ItemProps) {
+  const { variant, size: groupSize } = useContext(ToggleGroupContext);
   return (
     <StyledItem
       variant={variant}
+      size={size ?? groupSize}
       data-variant={variant}
       css={css.raw(segmentedItemCss, cssProp)}
       {...props}

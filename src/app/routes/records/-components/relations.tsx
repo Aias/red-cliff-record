@@ -1,9 +1,18 @@
-import { PREDICATES, type PredicateType } from '@hozo';
+import { PREDICATES, type PredicateType, type RecordType } from '@hozo';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeftIcon, ArrowRightIcon, MergeIcon, PlusIcon, TrashIcon } from 'lucide-react';
-import { useCallback, useMemo, useRef } from 'react';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  MergeIcon,
+  PlusIcon,
+  ShapesIcon,
+  TrashIcon,
+} from 'lucide-react';
+import { useCallback, useMemo, useRef, useState, type ElementType } from 'react';
 import { trpc } from '@/app/trpc';
 import { Spinner } from '@/components/spinner';
+import { ToggleGroup } from '@/components/toggle-group';
+import { Tooltip } from '@/components/tooltip';
 import { useDeleteLinks } from '@/lib/hooks/link-mutations';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
@@ -15,6 +24,7 @@ import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
+import { recordTypeIcons } from './type-icons';
 
 /** Predicate types in display priority order (first = highest priority) */
 const PREDICATE_TYPE_ORDER = exhaustive<PredicateType>()([
@@ -319,15 +329,28 @@ export const RelationsList = ({ id }: RelationsListProps) => {
   );
 };
 
+/** Type filter for the similar records section. `all` clears the filter. */
+type SimilarTypeFilter = RecordType | 'all';
+
+const SIMILAR_TYPE_FILTERS: { value: SimilarTypeFilter; label: string; icon: ElementType }[] = [
+  { value: 'all', label: 'All types', icon: ShapesIcon },
+  { value: 'artifact', label: 'Artifacts', icon: recordTypeIcons.artifact.icon },
+  { value: 'entity', label: 'Entities', icon: recordTypeIcons.entity.icon },
+  { value: 'concept', label: 'Concepts', icon: recordTypeIcons.concept.icon },
+];
+
 export const SimilarRecords = ({ id }: { id: DbId }) => {
   const navigate = useNavigate();
   const mergeRecordsMutation = useMergeRecords();
+  const [typeFilter, setTypeFilter] = useState<SimilarTypeFilter>('all');
 
-  // Fetch similar records only if textEmbedding exists
+  // Fetch similar records only if textEmbedding exists. Filtering by type happens in the query
+  // so each type returns its own best matches rather than whatever survives the global top-N.
   const { data: similarRecords, isLoading } = trpc.search.byRecordId.useQuery(
     {
-      id: id,
+      id,
       limit: 20,
+      type: typeFilter === 'all' ? undefined : typeFilter,
     },
     {
       trpc: {
@@ -338,9 +361,42 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
     }
   );
 
+  const handleTypeFilterChange = (value: SimilarTypeFilter[]) => {
+    setTypeFilter(value[0] ?? 'all');
+  };
+
   return (
     <styled.section css={{ textStyle: 'xs' }}>
-      <styled.h3 css={{ marginBlockEnd: '2' }}>Similar Records</styled.h3>
+      <styled.header
+        css={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '2',
+          marginBlockEnd: '2',
+        }}
+      >
+        <styled.h3>Similar Records</styled.h3>
+        <ToggleGroup.Root
+          variant="outline"
+          size="sm"
+          value={[typeFilter]}
+          onValueChange={handleTypeFilterChange}
+        >
+          {SIMILAR_TYPE_FILTERS.map(({ value, label, icon: Icon }) => (
+            <Tooltip.Root key={value}>
+              <Tooltip.Trigger
+                render={
+                  <ToggleGroup.Item value={value} aria-label={label}>
+                    <Icon />
+                  </ToggleGroup.Item>
+                }
+              />
+              <Tooltip.Content>{label}</Tooltip.Content>
+            </Tooltip.Root>
+          ))}
+        </ToggleGroup.Root>
+      </styled.header>
       {isLoading ? (
         <Spinner />
       ) : similarRecords && similarRecords.length > 0 ? (

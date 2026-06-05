@@ -6,17 +6,15 @@ export const toggleRecipe = defineRecipe({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '2',
     flexShrink: '0',
-    height: '9',
-    minWidth: '9',
-    paddingInline: '2',
     borderRadius: 'md',
     textStyle: 'sm',
     fontWeight: 'medium',
     whiteSpace: 'nowrap',
     color: 'secondary',
     outlineStyle: 'none',
+    borderWidth: '1px',
+    borderColor: 'transparent',
     backgroundColor: 'transparent',
     transitionProperty: '[background-color, color, box-shadow]',
     transitionDuration: '150',
@@ -48,10 +46,29 @@ export const toggleRecipe = defineRecipe({
     },
   },
   variants: {
+    size: {
+      default: {
+        height: '9',
+        minWidth: '9',
+        paddingInline: '2',
+        gap: '2',
+        _childIcon: {
+          boxSize: '4',
+        },
+      },
+      sm: {
+        height: '7',
+        minWidth: '7',
+        paddingInline: '1.5',
+        gap: '1.5',
+        _childIcon: {
+          boxSize: '3.5',
+        },
+      },
+    },
     variant: {
       default: {},
       outline: {
-        borderWidth: '1px',
         borderColor: 'border',
         boxShadow: 'xs',
         _hover: {
@@ -61,6 +78,10 @@ export const toggleRecipe = defineRecipe({
     },
   },
   defaultVariants: {
+    size: 'default',
     variant: 'default',
   },
+  // Variants reach this recipe only through the ToggleGroup context wrapper (dynamic props),
+  // so static extraction can't see them — force every variant to be generated.
+  staticCss: ['*'],
 });

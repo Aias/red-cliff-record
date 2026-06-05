@@ -1,5 +1,6 @@
 import {
   PREDICATES,
+  RecordTypeSchema,
   type IntegrationType,
   type MediaType,
   type PredicateSlug,
@@ -192,9 +193,10 @@ export const searchRouter = createTRPCRouter({
       z.object({
         id: IdSchema,
         limit: z.number().optional().default(20),
+        type: RecordTypeSchema.optional(),
       })
     )
-    .query(async ({ ctx: { db }, input: { id, limit } }) => {
+    .query(async ({ ctx: { db }, input: { id, limit, type } }) => {
       try {
         const recordWithLinks = await db.query.records.findFirst({
           columns: {
@@ -242,6 +244,7 @@ export const searchRouter = createTRPCRouter({
               { textEmbedding: { isNotNull: true } },
               { id: { notIn: omittedIds } },
               { isPrivate: false },
+              type ? { type } : {},
               {
                 OR: [
                   {
