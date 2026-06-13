@@ -9,7 +9,7 @@ export type ValidationResult =
 const inputSchema = z.record(z.string(), z.unknown());
 
 export const validateRecord = createServerFn({ method: 'POST' })
-  .inputValidator((input: unknown) => inputSchema.parse(input))
+  .validator((input) => inputSchema.parse(input))
   .handler(({ data }): ValidationResult => {
     const parsed = RecordInsertSchema.safeParse(data);
 
