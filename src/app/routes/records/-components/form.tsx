@@ -1,4 +1,4 @@
-import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
+import type { RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
 import { useRouterState } from '@tanstack/react-router';
 import { BadgeCheckIcon, BadgeIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
@@ -27,7 +27,7 @@ import type { RecordGet } from '@/shared/types/domain';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { Metabar } from './record-metabar';
-import { recordTypeIcons } from './type-icons';
+import { recordTypeIcons, recordTypeOrder } from './type-icons';
 
 interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
   recordId: number;
@@ -375,7 +375,7 @@ export function RecordForm({
                   css={{ flexGrow: '1' }}
                   disabled={isFormLoading}
                 >
-                  {RecordTypeSchema.options.map((type) => {
+                  {recordTypeOrder.map((type) => {
                     const { icon: Icon, description } = recordTypeIcons[type];
                     return (
                       <Tooltip.Trigger

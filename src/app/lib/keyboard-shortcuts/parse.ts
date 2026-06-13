@@ -113,9 +113,15 @@ export function matchesShortcut(event: KeyboardEvent, parsed: ParsedShortcut): b
   if (event.altKey && !hasAlt) return false;
   if (event.shiftKey && !hasShift) return false;
 
-  // Check the main key
+  // Check the main key. For digits, also accept a match by physical key position
+  // (event.code) so the shortcut fires even when a modifier remaps the produced
+  // character — e.g. on macOS Option+1 reports event.key '¡' but event.code stays 'Digit1'.
   const normalizedEventKey = normalizeKey(event.key);
-  return normalizedEventKey === parsed.key;
+  if (normalizedEventKey === parsed.key) return true;
+  if (/^\d$/.test(parsed.key)) {
+    return event.code === `Digit${parsed.key}` || event.code === `Numpad${parsed.key}`;
+  }
+  return false;
 }
 
 /**

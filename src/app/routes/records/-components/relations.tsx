@@ -332,12 +332,33 @@ export const RelationsList = ({ id }: RelationsListProps) => {
 /** Type filter for the similar records section. `all` clears the filter. */
 type SimilarTypeFilter = RecordType | 'all';
 
+// Order follows `recordTypeOrder` (with `all` first); Alt+<n> selects the nth filter.
 const SIMILAR_TYPE_FILTERS: { value: SimilarTypeFilter; label: string; icon: ElementType }[] = [
   { value: 'all', label: 'All types', icon: ShapesIcon },
   { value: 'artifact', label: 'Artifacts', icon: recordTypeIcons.artifact.icon },
-  { value: 'entity', label: 'Entities', icon: recordTypeIcons.entity.icon },
   { value: 'concept', label: 'Concepts', icon: recordTypeIcons.concept.icon },
+  { value: 'entity', label: 'Entities', icon: recordTypeIcons.entity.icon },
 ];
+
+/** Registers Alt+<n> to select a similar-records type filter. Renders nothing. */
+const SimilarTypeShortcut = ({
+  shortcut,
+  value,
+  label,
+  onSelect,
+}: {
+  shortcut: string;
+  value: SimilarTypeFilter;
+  label: string;
+  onSelect: (value: SimilarTypeFilter) => void;
+}) => {
+  useKeyboardShortcut(shortcut, () => onSelect(value), {
+    description: `Filter similar records: ${label}`,
+    category: 'Records',
+    allowInInput: true,
+  });
+  return null;
+};
 
 export const SimilarRecords = ({ id }: { id: DbId }) => {
   const navigate = useNavigate();
@@ -367,6 +388,15 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
 
   return (
     <styled.section css={{ textStyle: 'xs' }}>
+      {SIMILAR_TYPE_FILTERS.map((filter, index) => (
+        <SimilarTypeShortcut
+          key={filter.value}
+          shortcut={`alt+${index + 1}`}
+          value={filter.value}
+          label={filter.label}
+          onSelect={setTypeFilter}
+        />
+      ))}
       <styled.header
         css={{
           display: 'flex',
