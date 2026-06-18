@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { styled } from '@/styled-system/jsx';
 
 interface MasonryProps<T> {
@@ -46,9 +46,8 @@ export function Masonry<T>({
 }: MasonryProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  const heightsRef = useRef(new Map<string, number>());
+  const [heights, setHeights] = useState<Map<string, number>>(() => new Map());
   const observerRef = useRef<ResizeObserver | null>(null);
-  const [, rerender] = useReducer((x: number) => x + 1, 0);
 
   // Observe container width
   useEffect(() => {
@@ -65,17 +64,19 @@ export function Masonry<T>({
   // Single observer for all children
   useEffect(() => {
     const ro = new ResizeObserver((entries) => {
-      let changed = false;
-      for (const entry of entries) {
-        const key = (entry.target as HTMLElement).dataset.masonryKey;
-        if (!key) continue;
-        const h = entry.borderBoxSize[0]?.blockSize ?? 0;
-        if (heightsRef.current.get(key) !== h) {
-          heightsRef.current.set(key, h);
-          changed = true;
+      setHeights((prev) => {
+        let next: Map<string, number> | null = null;
+        for (const entry of entries) {
+          const key = (entry.target as HTMLElement).dataset.masonryKey;
+          if (!key) continue;
+          const h = entry.borderBoxSize[0]?.blockSize ?? 0;
+          if (prev.get(key) !== h) {
+            next ??= new Map(prev);
+            next.set(key, h);
+          }
         }
-      }
-      if (changed) rerender();
+        return next ?? prev;
+      });
     });
     observerRef.current = ro;
     return () => ro.disconnect();
@@ -93,13 +94,7 @@ export function Masonry<T>({
 
   const columnCount = Math.max(1, Math.floor((containerWidth + gap) / (columnWidth + gap)));
   const keys = items.map(keyExtractor);
-  const { positions, height } = computePositions(
-    keys,
-    heightsRef.current,
-    columnCount,
-    containerWidth,
-    gap
-  );
+  const { positions, height } = computePositions(keys, heights, columnCount, containerWidth, gap);
 
   return (
     <styled.div

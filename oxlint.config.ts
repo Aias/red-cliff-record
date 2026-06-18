@@ -41,6 +41,7 @@ export default defineConfig({
     // React
     'react/jsx-key': 'warn',
     'react/rules-of-hooks': 'error',
+    'react/react-compiler': 'error',
     'react/self-closing-comp': 'warn',
     'react/jsx-no-useless-fragment': 'warn',
 
