@@ -1,6 +1,6 @@
 import type { MediaSelect } from '@hozo/schema/media';
 import { Trash2Icon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { Button } from './button';
@@ -31,18 +31,13 @@ function MediaGrid({ media, className, onDelete }: MediaGridProps) {
   // Limit to 8 media items maximum
   const displayMedia = media.slice(0, 8);
   const count = displayMedia.length;
-  const images = useMemo(
-    () => displayMedia.filter((item) => item.type === 'image'),
-    [displayMedia]
-  );
+  const images = displayMedia.filter((item) => item.type === 'image');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const imageIndexById = useMemo(() => {
-    return images.reduce<Map<number, number>>((map, item, index) => {
-      map.set(item.id, index);
-      return map;
-    }, new Map());
-  }, [images]);
+  const imageIndexById = images.reduce<Map<number, number>>((map, item, index) => {
+    map.set(item.id, index);
+    return map;
+  }, new Map());
 
   if (count === 0) return null;
 

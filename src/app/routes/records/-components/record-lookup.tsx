@@ -278,20 +278,18 @@ function RelationshipSelectorRoot({
     { enabled: targetId !== null }
   );
 
-  /* --------------------------------------------------
-   * Reset unsaved state when the popover closes, unless
-   * the target is controlled externally (initialTargetId) or editing mode.
-   * -------------------------------------------------- */
-  useEffect(() => {
-    if (!open && !initialTargetId && !link) {
+  // Reset unsaved state when the popover closes, unless the target is
+  // controlled externally (initialTargetId) or we're editing an existing link.
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) return;
+    if (!initialTargetId && !link) {
       setTargetId(null);
       setPredicate(null);
     }
-    if (!open) {
-      altRef.current = false;
-      setAltPressed(false);
-    }
-  }, [open, initialTargetId, link]);
+    altRef.current = false;
+    setAltPressed(false);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -337,7 +335,7 @@ function RelationshipSelectorRoot({
       {
         onSuccess: (updatedLink) => {
           onComplete?.(updatedLink.sourceId, updatedLink.targetId, updatedLink.predicate);
-          setOpen(false);
+          handleOpenChange(false);
         },
       }
     );
@@ -361,7 +359,7 @@ function RelationshipSelectorRoot({
 
   return (
     <RelationshipSelectorContext.Provider value={contextValue}>
-      <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Root open={open} onOpenChange={handleOpenChange}>
         {children}
       </Popover.Root>
     </RelationshipSelectorContext.Provider>

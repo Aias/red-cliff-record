@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect, useRef } from 'react';
+import { useContext, useEffectEvent, useLayoutEffect } from 'react';
 import { KeyboardShortcutContext } from './context';
 import type {
   KeyboardShortcutConfig,
@@ -49,20 +49,17 @@ export function useKeyboardShortcut(
   options: UseKeyboardShortcutOptions
 ): void {
   const context = useContext(KeyboardShortcutContext);
+  // `register` is referentially stable, so the effect re-registers only when the
+  // shortcut's own options change — not on every context update.
+  const register = context?.register;
 
   const { allowInInput, category, description, enabled, preventDefault, scope, when } = options;
 
-  // Use refs to avoid re-registering on every render
-  const callbackRef = useRef(callback);
-  const contextRef = useRef(context);
-
-  // Update refs on each render
-  callbackRef.current = callback;
-  contextRef.current = context;
+  // Keep the registered callback fresh without re-registering the shortcut.
+  const onTrigger = useEffectEvent((event: KeyboardEvent) => callback(event));
 
   useLayoutEffect(() => {
-    const ctx = contextRef.current;
-    if (!ctx) return;
+    if (!register) return;
 
     // Don't register if disabled
     if (enabled === false) return;
@@ -75,7 +72,7 @@ export function useKeyboardShortcut(
       id,
       keys,
       description,
-      callback: (event) => callbackRef.current(event),
+      callback: onTrigger,
       scope,
       when,
       allowInInput,
@@ -83,8 +80,8 @@ export function useKeyboardShortcut(
       category,
     };
 
-    return ctx.register(config);
-  }, [allowInInput, category, description, enabled, keys, preventDefault, scope, when]);
+    return register(config);
+  }, [register, allowInInput, category, description, enabled, keys, preventDefault, scope, when]);
 }
 
 /**
