@@ -99,12 +99,4 @@ while true; do
     fi
     
     sleep $CHECK_INTERVAL
-donecies"
-            fi
-        else
-            log "ERROR: Git pull failed"
-        fi
-    fi
-    
-    sleep $CHECK_INTERVAL
 done
