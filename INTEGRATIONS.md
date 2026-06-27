@@ -55,10 +55,25 @@ Syncs your GitHub repositories, stars, and commits.
 - Recent commits, including AI-generated summaries and metadata for each commit
 - User profiles
 
+Commits are matched against your authenticated account (`author:@me`) plus any
+extra identities configured via `GITHUB_COMMIT_SEARCH_ORGS` and
+`GITHUB_COMMIT_AUTHOR_EMAILS`. Contributions to repositories you don't own — and
+the repositories themselves — are marked private by default. For a private org
+repo that appears in commit search but can't be read via the REST API, the
+commit is recorded from its search metadata (without per-file changes).
+
 ### Sync Command
 
 ```bash
 rcr sync github
+```
+
+To pull deep history beyond the live sync's forward cutoff and GitHub's
+1000-result search cap, run the windowed backfill:
+
+```bash
+bun scripts/backfill-github-commits.ts --dry-run   # preview
+bun scripts/backfill-github-commits.ts             # writes to the configured database
 ```
 
 ## Airtable Integration

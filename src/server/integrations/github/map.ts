@@ -6,6 +6,7 @@ import {
   type GithubUserSelect,
   type RecordInsert,
 } from '@hozo';
+import { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { mapUrl } from '@/server/lib/url-utils';
@@ -13,6 +14,21 @@ import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 
 const logger = createIntegrationLogger('github', 'map');
+
+let cachedOwnerUserId: number | null = null;
+
+/**
+ * The GitHub user id of the authenticated account — the knowledge base owner.
+ * Repositories owned by anyone else are treated as private contributions.
+ */
+export async function getOwnerUserId(): Promise<number> {
+  if (cachedOwnerUserId === null) {
+    const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+    const { data } = await octokit.rest.users.getAuthenticated();
+    cachedOwnerUserId = data.id;
+  }
+  return cachedOwnerUserId;
+}
 
 /**
  * Maps a GitHub user to a record
@@ -110,7 +126,10 @@ export async function createRecordsFromGithubUsers() {
  * @param repository - The GitHub repository to map
  * @returns A record insert object
  */
-const mapGithubRepositoryToRecord = (repository: GithubRepositorySelect): RecordInsert => {
+const mapGithubRepositoryToRecord = (
+  repository: GithubRepositorySelect,
+  ownerUserId: number
+): RecordInsert => {
   return {
     id: repository.recordId ?? undefined,
     type: 'artifact',
@@ -118,7 +137,8 @@ const mapGithubRepositoryToRecord = (repository: GithubRepositorySelect): Record
     summary: repository.description,
     url: repository.htmlUrl,
     isCurated: false,
-    isPrivate: repository.private,
+    // Repos the user doesn't own are private contributions by default.
+    isPrivate: repository.private || repository.ownerId !== ownerUserId,
     sources: ['github'],
     recordCreatedAt: repository.recordCreatedAt,
     recordUpdatedAt: repository.recordUpdatedAt,
@@ -159,8 +179,10 @@ export async function createRecordsFromGithubRepositories() {
 
   logger.info(`Found ${unmappedRepositories.length} unmapped GitHub repositories`);
 
+  const ownerUserId = await getOwnerUserId();
+
   for (const repository of unmappedRepositories) {
-    const newRecordDefaults = mapGithubRepositoryToRecord(repository);
+    const newRecordDefaults = mapGithubRepositoryToRecord(repository, ownerUserId);
 
     const [newRecord] = await db
       .insert(records)
