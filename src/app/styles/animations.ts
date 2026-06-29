@@ -109,16 +109,16 @@ export const keyframes = defineKeyframes({
    */
   enter: {
     from: {
-      opacity: 'var(--rcr-enter-opacity, 1)',
+      opacity: 'var(--enter-opacity, 1)',
       transform:
-        'translate3d(var(--rcr-enter-translate-x, 0), var(--rcr-enter-translate-y, 0), 0) scale3d(var(--rcr-enter-scale, 1), var(--rcr-enter-scale, 1), var(--rcr-enter-scale, 1))',
+        'translate3d(var(--enter-translate-x, 0), var(--enter-translate-y, 0), 0) scale3d(var(--enter-scale, 1), var(--enter-scale, 1), var(--enter-scale, 1))',
     },
   },
   exit: {
     to: {
-      opacity: 'var(--rcr-exit-opacity, 1)',
+      opacity: 'var(--exit-opacity, 1)',
       transform:
-        'translate3d(var(--rcr-exit-translate-x, 0), var(--rcr-exit-translate-y, 0), 0) scale3d(var(--rcr-exit-scale, 1), var(--rcr-exit-scale, 1), var(--rcr-exit-scale, 1))',
+        'translate3d(var(--exit-translate-x, 0), var(--exit-translate-y, 0), 0) scale3d(var(--exit-scale, 1), var(--exit-scale, 1), var(--exit-scale, 1))',
     },
   },
 });

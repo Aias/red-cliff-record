@@ -24,7 +24,6 @@ import { blurs } from '@/app/styles/blurs';
 import { borders } from '@/app/styles/borders';
 import { colors, semanticColors } from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
-import { PREFIX } from '@/app/styles/constants';
 import { spacing, sizes } from '@/app/styles/dimensions';
 import { globalStyles } from '@/app/styles/globals';
 import { utilities } from '@/app/styles/plugins';
@@ -42,10 +41,6 @@ import { scrollAreaRecipe } from '@/components/scroll-area/scroll-area.recipe';
 export default defineConfig({
   preflight: true,
   jsxFramework: 'react',
-  prefix: {
-    className: PREFIX,
-    cssVar: PREFIX,
-  },
   include: ['./src/app/**/*.{js,jsx,ts,tsx}'],
   outdir: 'src/app/styled-system',
 

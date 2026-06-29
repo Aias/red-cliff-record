@@ -1,5 +1,4 @@
 import { definePreset } from '@pandacss/dev';
-import { PREFIX } from './constants';
 
 export const conditionsPreset = definePreset({
   name: 'conditions',
@@ -16,8 +15,10 @@ export const conditionsPreset = definePreset({
       selected: '&:is([aria-selected=true], [data-selected]:not([data-selected=false]))',
       dark: ':where([data-color-scheme="dark"], [data-dark], .dark) &',
       light: ':where([data-color-scheme="light"], [data-light], .light) &',
-      neutral: `&[data-neutral], &.${PREFIX}-layerStyle_neutral, :where([data-neutral], [data-chroma="neutral"], .neutral, .${PREFIX}-layerStyle_neutral) &`,
-      chromatic: `&[data-chromatic], &.${PREFIX}-layerStyle_chromatic, :where([data-chromatic], .${PREFIX}-layerStyle_chromatic) &`,
+      neutral:
+        '&[data-neutral], &.layerStyle_neutral, :where([data-neutral], [data-chroma="neutral"], .neutral, .layerStyle_neutral) &',
+      chromatic:
+        '&[data-chromatic], &.layerStyle_chromatic, :where([data-chromatic], .layerStyle_chromatic) &',
       childIcon: '& :where(svg, .icon, .lucide)',
       sideBottom: '&[data-side=bottom]',
       sideTop: '&[data-side=top]',
