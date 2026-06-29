@@ -1,21 +1,17 @@
 import { defineGlobalStyles } from '@pandacss/dev';
 import { semanticColorNames, semanticPaletteNames } from './colors';
-import { PREFIX } from './constants';
 
 const toCssVarName = (value: string) =>
   value.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
 
 const paletteAliasScopes = Object.fromEntries(
   semanticPaletteNames.map((palette) => [
-    `@scope (.${PREFIX}-color-palette_${palette})`,
+    `@scope (.color-palette_${palette})`,
     {
       ':scope, :scope *': Object.fromEntries(
         semanticColorNames.map((token) => {
           const cssVarName = toCssVarName(token);
-          return [
-            `--${PREFIX}-colors-${cssVarName}`,
-            `var(--${PREFIX}-colors-${palette}-${cssVarName})`,
-          ];
+          return [`--colors-${cssVarName}`, `var(--colors-${palette}-${cssVarName})`];
         })
       ),
     },
@@ -91,7 +87,7 @@ export const globalStyles = defineGlobalStyles({
     backgroundColor: '{colors.mist}',
     color: '{colors.accent}',
   },
-  'a:any-link:not(.button, .rcr-button), .link': {
+  'a:any-link:not(.button), .link': {
     fontWeight: 'medium',
     color: '{colors.accent}',
     textDecoration: 'underline',

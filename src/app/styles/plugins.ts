@@ -11,17 +11,17 @@ import { defineUtility } from '@pandacss/dev';
 // ---------------------------------------------------------------------------
 
 const enterVarDefaults = {
-  '--rcr-enter-opacity': 'initial',
-  '--rcr-enter-scale': 'initial',
-  '--rcr-enter-translate-x': 'initial',
-  '--rcr-enter-translate-y': 'initial',
+  '--enter-opacity': 'initial',
+  '--enter-scale': 'initial',
+  '--enter-translate-x': 'initial',
+  '--enter-translate-y': 'initial',
 };
 
 const exitVarDefaults = {
-  '--rcr-exit-opacity': 'initial',
-  '--rcr-exit-scale': 'initial',
-  '--rcr-exit-translate-x': 'initial',
-  '--rcr-exit-translate-y': 'initial',
+  '--exit-opacity': 'initial',
+  '--exit-scale': 'initial',
+  '--exit-translate-x': 'initial',
+  '--exit-translate-y': 'initial',
 };
 
 const animateInUtility = defineUtility({
@@ -45,49 +45,49 @@ const animateOutUtility = defineUtility({
 const fadeInUtility = defineUtility({
   className: 'fade-in',
   values: { type: 'number' },
-  transform: (value) => ({ '--rcr-enter-opacity': String(value) }),
+  transform: (value) => ({ '--enter-opacity': String(value) }),
 });
 
 const fadeOutUtility = defineUtility({
   className: 'fade-out',
   values: { type: 'number' },
-  transform: (value) => ({ '--rcr-exit-opacity': String(value) }),
+  transform: (value) => ({ '--exit-opacity': String(value) }),
 });
 
 const zoomInUtility = defineUtility({
   className: 'zoom-in',
   values: { type: 'number' },
-  transform: (value) => ({ '--rcr-enter-scale': String(value) }),
+  transform: (value) => ({ '--enter-scale': String(value) }),
 });
 
 const zoomOutUtility = defineUtility({
   className: 'zoom-out',
   values: { type: 'number' },
-  transform: (value) => ({ '--rcr-exit-scale': String(value) }),
+  transform: (value) => ({ '--exit-scale': String(value) }),
 });
 
 const slideInXUtility = defineUtility({
   className: 'slide-in-x',
   values: { type: 'string' },
-  transform: (value) => ({ '--rcr-enter-translate-x': value }),
+  transform: (value) => ({ '--enter-translate-x': value }),
 });
 
 const slideInYUtility = defineUtility({
   className: 'slide-in-y',
   values: { type: 'string' },
-  transform: (value) => ({ '--rcr-enter-translate-y': value }),
+  transform: (value) => ({ '--enter-translate-y': value }),
 });
 
 const slideOutXUtility = defineUtility({
   className: 'slide-out-x',
   values: { type: 'string' },
-  transform: (value) => ({ '--rcr-exit-translate-x': value }),
+  transform: (value) => ({ '--exit-translate-x': value }),
 });
 
 const slideOutYUtility = defineUtility({
   className: 'slide-out-y',
   values: { type: 'string' },
-  transform: (value) => ({ '--rcr-exit-translate-y': value }),
+  transform: (value) => ({ '--exit-translate-y': value }),
 });
 
 // ---------------------------------------------------------------------------
