@@ -25,7 +25,7 @@ export const createCursorConnection = async () => {
   await Bun.write(cursorDbCopyPath, sourceFile);
 
   const client = new Database(cursorDbCopyPath, { readonly: true });
-  const db = drizzle({ client, schema: cursorSchema });
+  const db = drizzle({ client, relations: cursorSchema.relations });
 
   return { db, client };
 };

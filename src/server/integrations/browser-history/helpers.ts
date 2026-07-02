@@ -18,7 +18,7 @@ export const chromeEpochMicrosecondsToDatetime = (
   );
 };
 
-export const createDailyVisitsQuery = (db: LibSQLDatabase<typeof arcSchema>) => {
+export const createDailyVisitsQuery = (db: LibSQLDatabase<typeof arcSchema.relations>) => {
   return db
     .select({
       viewTime: arcSchema.visits.visitTime,

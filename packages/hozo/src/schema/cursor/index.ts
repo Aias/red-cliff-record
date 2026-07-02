@@ -1,3 +1,4 @@
+import { defineRelations } from 'drizzle-orm';
 import { sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 
 /**
@@ -26,3 +27,5 @@ export const cursorDiskKv = sqliteTable(
   },
   (table) => [unique('cursorDiskKV_key_unique').on(table.key)]
 );
+
+export const relations = defineRelations({ itemTable, cursorDiskKv });

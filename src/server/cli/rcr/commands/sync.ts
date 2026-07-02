@@ -88,7 +88,7 @@ export const run: CommandHandler = async (args, options) => {
   return success({
     ...syncResult,
     duration: Math.round(performance.now() - startTime),
-  } as Parameters<typeof success>[0]);
+  });
 };
 
 // Also export as default command name for `rcr sync github` style

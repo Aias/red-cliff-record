@@ -28,13 +28,13 @@
     "test": "bun test"
   },
   "devDependencies": {
-    "drizzle-kit": "1.0.0-rc.4-5d5b77c",
-    "drizzle-orm": "1.0.0-rc.4-5d5b77c",
+    "drizzle-kit": "1.0.0-rc.4",
+    "drizzle-orm": "1.0.0-rc.4",
     "tsup": "~8.5.1",
     "zod": "~4.4.3"
   },
   "peerDependencies": {
-    "drizzle-orm": "1.0.0-rc.4-5d5b77c",
+    "drizzle-orm": "1.0.0-rc.4",
     "zod": "~4.4.3"
   }
 }
