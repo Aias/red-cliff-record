@@ -88,8 +88,8 @@ export const dropdownMenuRecipe = defineSlotRecipe({
       paddingInline: '2',
       '&[data-inset]': { paddingInlineStart: '8' },
       '&[data-variant=destructive]': {
-        colorPalette: 'error',
-        layerStyle: 'chromatic',
+        palette: 'error',
+        chromatic: true,
         color: 'accent',
         _highlighted: {
           backgroundColor: 'splash',

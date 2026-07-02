@@ -22,7 +22,7 @@ import { tooltipRecipe } from '@/app/components/tooltip/tooltip.recipe';
 import { easings, durations, keyframes } from '@/app/styles/animations';
 import { blurs } from '@/app/styles/blurs';
 import { borders } from '@/app/styles/borders';
-import { colors, semanticColors } from '@/app/styles/colors';
+import { colors } from '@/app/styles/colors';
 import { conditionsPreset } from '@/app/styles/conditions';
 import { spacing, sizes } from '@/app/styles/dimensions';
 import { globalStyles } from '@/app/styles/globals';
@@ -51,16 +51,6 @@ export default defineConfig({
 
   presets: [conditionsPreset],
   globalCss: globalStyles,
-  staticCss: {
-    css: [
-      {
-        properties: {
-          layerStyle: ['chromatic', 'neutral'],
-          palette: ['artifact', 'entity', 'concept', 'error', 'success', 'info'],
-        },
-      },
-    ],
-  },
   theme: {
     extend: {
       tokens: {
@@ -78,17 +68,9 @@ export default defineConfig({
         sizes: sizes,
         spacing: spacing,
       },
-      semanticTokens: {
-        colors: semanticColors,
-      },
     },
     keyframes: keyframes,
     textStyles: textStyles,
-    layerStyles: {
-      // Empty declarations, only for autocomplete and class name generation
-      chromatic: { value: {} },
-      neutral: { value: {} },
-    },
     breakpoints: {
       sm: '40rem',
       md: '48rem',

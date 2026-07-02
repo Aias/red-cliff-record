@@ -1,5 +1,7 @@
 import type { PropertyConfig } from '@pandacss/dev';
 import { defineUtility } from '@pandacss/dev';
+import { borderDeclarations } from './borders';
+import { chromaticDeclarations, paletteDeclarations, palettes, type PaletteName } from './colors';
 
 // ---------------------------------------------------------------------------
 // Composable enter/exit animation utilities
@@ -166,6 +168,41 @@ export const translateCenterUtility = defineUtility({
   },
 });
 
+// ---------------------------------------------------------------------------
+// Theme boundary utilities
+//
+// `palette`, `chromatic`, and `mode` each mark a theme boundary: they change
+// an inherited input (ramp aliases, --chroma, color-scheme) and re-declare the
+// semantic color formulas so the subtree re-resolves against the new context
+// (see colors.ts). A base-layer rule in globals.ts re-asserts the default text
+// color on boundary elements, so plain inherited text adapts across the
+// boundary while explicit colors — recipe or atomic — still win the cascade.
+// ---------------------------------------------------------------------------
+
+const isPaletteName = (value: unknown): value is PaletteName =>
+  typeof value === 'string' && value in palettes;
+
+const paletteUtility = defineUtility({
+  className: 'palette',
+  values: Object.keys(palettes),
+  transform: (value) => {
+    if (!isPaletteName(value)) return {};
+    return {
+      ...paletteDeclarations(value),
+      ...borderDeclarations,
+    };
+  },
+});
+
+const chromaticUtility = defineUtility({
+  className: 'chromatic',
+  values: { type: 'boolean' },
+  transform: (value) => ({
+    ...chromaticDeclarations(value === true),
+    ...borderDeclarations,
+  }),
+});
+
 // Usage: `className={css({ mode: 'inverted' })}`
 export const modeUtility = defineUtility({
   className: 'mode',
@@ -209,5 +246,7 @@ export const utilities: Record<string, PropertyConfig> = {
   slideOutY: slideOutYUtility,
   debug: debugUtility,
   translateCenter: translateCenterUtility,
+  chromatic: chromaticUtility,
   mode: modeUtility,
+  palette: paletteUtility,
 };

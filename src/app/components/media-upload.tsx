@@ -197,8 +197,8 @@ export const MediaUpload = ({
             backgroundColor: 'main/10',
           },
           '&[data-error]': {
-            layerStyle: 'chromatic',
-            colorPalette: 'error',
+            palette: 'error',
+            chromatic: true,
             borderColor: 'accent',
           },
           _loading: {

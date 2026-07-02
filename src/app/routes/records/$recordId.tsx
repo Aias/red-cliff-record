@@ -334,7 +334,7 @@ function RouteComponent() {
       <styled.div
         css={{ display: 'flex', flex: '1', alignItems: 'center', justifyContent: 'center' }}
       >
-        <styled.div css={{ textAlign: 'center', colorPalette: 'error', layerStyle: 'chromatic' }}>
+        <styled.div css={{ textAlign: 'center', palette: 'error', chromatic: true }}>
           <styled.div css={{ marginBlockEnd: '2', color: 'accent' }}>Record not found</styled.div>
           <styled.div css={{ textStyle: 'sm', color: 'muted' }}>
             This record may have been deleted or moved.

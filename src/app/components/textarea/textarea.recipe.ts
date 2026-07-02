@@ -23,7 +23,8 @@ export const textareaRecipe = defineRecipe({
       color: 'muted',
     },
     _invalid: {
-      colorPalette: 'error',
+      palette: 'error',
+      chromatic: true,
     },
     _disabled: {
       opacity: '50%',

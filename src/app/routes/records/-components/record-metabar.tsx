@@ -144,7 +144,7 @@ export const Metabar = ({ recordId, onDelete, css: cssProp, ...props }: MetabarP
                 render={
                   <Button
                     variant="solid"
-                    css={{ colorPalette: 'error', layerStyle: 'chromatic' }}
+                    css={{ palette: 'error', chromatic: true }}
                     onClick={handleDelete}
                   >
                     Continue

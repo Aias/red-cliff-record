@@ -28,7 +28,8 @@ export const buttonRecipe = defineRecipe({
       boxSize: '[1.15em]',
     },
     _invalid: {
-      colorPalette: 'error',
+      palette: 'error',
+      chromatic: true,
     },
     _focusVisible: {
       borderColor: 'focus',
