@@ -22,7 +22,7 @@ export const createArcConnection = async () => {
     url: connectionUrl,
     intMode: 'bigint',
   });
-  const db = drizzle({ client, schema: arcSchema });
+  const db = drizzle({ client, relations: arcSchema.relations });
 
   return { db, client };
 };

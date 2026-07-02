@@ -322,7 +322,7 @@ function logLastSyncPoint(lastKnownTime: bigint | null): void {
  * @returns Array of new history entries
  */
 async function fetchNewHistoryEntries(
-  browserDb: LibSQLDatabase<typeof arcSchema>,
+  browserDb: LibSQLDatabase<typeof arcSchema.relations>,
   lastKnownTime: bigint | null
 ) {
   const dailyVisitsQuery = createDailyVisitsQuery(browserDb);

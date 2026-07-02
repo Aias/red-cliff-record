@@ -18,8 +18,7 @@ const MIN_QUERY_LENGTH = 2;
 export const SiteSearch = () => {
   const navigate = useNavigate();
   const searchQ = useRouterState({
-    select: (s) =>
-      s.location.pathname === '/search' ? (s.location.search as { q?: string }).q : undefined,
+    select: (s) => (s.location.pathname === '/search' ? s.location.search.q : undefined),
   });
   const [inputValue, setInputValue] = useState('');
   const [commandOpen, setCommandOpen] = useState(false);

@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { defineRelations, sql } from 'drizzle-orm';
 import {
   blob,
   index,
@@ -274,4 +274,25 @@ export const visitedLinks = sqliteTable(
 export const historySyncMetadata = sqliteTable('history_sync_metadata', {
   storageKey: integer('storage_key').primaryKey().notNull(),
   value: blob(),
+});
+
+export const relations = defineRelations({
+  meta,
+  urls,
+  visits,
+  visitSource,
+  keywordSearchTerms,
+  downloads,
+  downloadsUrlChains,
+  downloadsSlices,
+  segments,
+  segmentUsage,
+  contentAnnotations,
+  contextAnnotations,
+  clusters,
+  clustersAndVisits,
+  clusterKeywords,
+  clusterVisitDuplicates,
+  visitedLinks,
+  historySyncMetadata,
 });

@@ -280,7 +280,7 @@ export function RecordForm({
       }}
       onBlur={(e) => {
         // If focus is leaving the form entirely and values changed, save immediately
-        if (!e.currentTarget.contains(e.relatedTarget as Node) && !form.state.isDefaultValue) {
+        if (!e.currentTarget.contains(e.relatedTarget) && !form.state.isDefaultValue) {
           void immediateSave();
         }
       }}
@@ -367,7 +367,7 @@ export function RecordForm({
                   onValueChange={(groupValue) => {
                     const value = groupValue[0];
                     if (value) {
-                      field.handleChange(value as RecordType);
+                      field.handleChange(value);
                       debouncedSave();
                     }
                   }}

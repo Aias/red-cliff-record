@@ -22,7 +22,7 @@ export const createDiaConnection = async () => {
     url: connectionUrl,
     intMode: 'bigint',
   });
-  const db = drizzle({ client, schema: diaSchema });
+  const db = drizzle({ client, relations: diaSchema.relations });
 
   return { db, client };
 };

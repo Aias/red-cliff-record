@@ -23,7 +23,7 @@ export type DailyVisitsQueryRow = z.infer<typeof DailyVisitsQueryRowSchema>;
 export const DailyVisitsQueryResultSchema = z.array(DailyVisitsQueryRowSchema);
 
 export interface BrowserConnection {
-  db: LibSQLDatabase<typeof arcSchema>;
+  db: LibSQLDatabase<typeof arcSchema.relations>;
   client: Client;
 }
 
