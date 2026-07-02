@@ -1,6 +1,6 @@
 ---
 name: rcr-frontend
-description: Component and styling conventions for Red Cliff Record. Use when writing, reviewing, or refactoring any frontend code under `src/app/` — components, routes, styles, forms, icons, animations. Triggers on `.tsx`/`.css` edits in this project, design tokens, Panda CSS recipes, Base UI primitives, TanStack Form/Router, Lucide icons, color palettes (`data-palette`, `colorPalette`), or questions like "how do I style X in RCR". Also invoke proactively before UI work to ensure Panda-first styling and Base UI primitives, and to clean up legacy Tailwind/Radix in any file you touch.
+description: Component and styling conventions for Red Cliff Record. Use when writing, reviewing, or refactoring any frontend code under `src/app/` — components, routes, styles, forms, icons, animations. Triggers on `.tsx`/`.css` edits in this project, design tokens, Panda CSS recipes, Base UI primitives, TanStack Form/Router, Lucide icons, color palettes (`palette`, `chromatic`, `mode`), or questions like "how do I style X in RCR". Also invoke proactively before UI work to ensure Panda-first styling and Base UI primitives, and to clean up legacy Tailwind/Radix in any file you touch.
 ---
 
 # RCR Frontend
@@ -80,14 +80,14 @@ export function Toolbar({ css: cssProp }: { css?: SystemStyleObject }) {
 
 Everything lives under `src/app/styles/`:
 
-| File                                                       | Contents                                                       |
-| ---------------------------------------------------------- | -------------------------------------------------------------- |
-| `colors.ts`                                                | Semantic tokens + semantic palettes + Radix color scales       |
-| `typography.ts`                                            | `textStyle` values, font families, sizes, weights              |
-| `dimensions.ts`                                            | `spacing` and `sizes` (multiples of `0.25rem`, plus fractions) |
-| `borders.ts` / `radii.ts` / `shadows.ts` / `animations.ts` | Their namesakes                                                |
-| `conditions.ts`                                            | Custom Panda conditions                                        |
-| `plugins.ts`                                               | Custom utilities (`animateIn`, `fadeIn`, `translateCenter`, …) |
+| File                                                       | Contents                                                          |
+| ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| `colors.ts`                                                | Color engine: Radix hue ramps, palettes, semantic formulas        |
+| `typography.ts`                                            | `textStyle` values, font families, sizes, weights                 |
+| `dimensions.ts`                                            | `spacing` and `sizes` (multiples of `0.25rem`, plus fractions)    |
+| `borders.ts` / `radii.ts` / `shadows.ts` / `animations.ts` | Their namesakes                                                   |
+| `conditions.ts`                                            | Custom Panda conditions                                           |
+| `plugins.ts`                                               | Custom utilities (`palette`, `chromatic`, `mode`, `animateIn`, …) |
 
 ### Semantic color tokens (use these, not Radix scales directly)
 
@@ -95,28 +95,27 @@ Everything lives under `src/app/styles/`:
 
 Use them as token names in Panda (`color: 'primary'`, `backgroundColor: 'float'`). The `c-*` names (`bg-c-paper`, `text-c-primary`) are the Tailwind aliases — only relevant while removing Tailwind from legacy components. In Panda code, `c-paper` doesn't exist; the equivalent is `float` or `surface` depending on intent (check existing usage).
 
-### Palette-aware components via `colorPalette` and `layerStyle`
+### Theme boundaries via `palette`, `chromatic`, and `mode`
 
-Two style properties steer semantic tokens within a subtree. Use them as Panda CSS properties — not HTML attributes.
+Three inherited axes steer every semantic color token. Set any of them anywhere in the tree and the whole subtree re-resolves against the new context until a descendant sets that axis again.
 
-| Property       | Values                                                      | Effect                                                                                                                                      |
-| -------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `colorPalette` | `artifact`, `entity`, `concept`, `error`, `success`, `info` | Remaps every semantic color under this element to the chosen palette (tokens like `accent`, `main`, `splash` resolve through that palette). |
-| `layerStyle`   | `chromatic`, `neutral`                                      | Picks the chromatic or neutral variant of the active palette. Activates the `_chromatic` / `_neutral` conditions inside recipes.            |
+| Utility     | Values                                                      | Effect                                                                                                                       |
+| ----------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `palette`   | `artifact`, `entity`, `concept`, `error`, `success`, `info` | Selects the hue ramps (chromatic + associated neutral) that semantic tokens like `accent`, `main`, `splash` resolve through. |
+| `chromatic` | `true`, `false`                                             | Switches every semantic token between its chromatic and neutral variant.                                                     |
+| `mode`      | `dark`, `light`, `inverted`, `normal`                       | Sets `color-scheme`; all colors are `light-dark()` pairs, so the subtree flips instantly.                                    |
 
 ```tsx
-<styled.span css={{ colorPalette: 'error', backgroundColor: 'splash', color: 'accent' }}>
+<styled.span css={{ palette: 'error', chromatic: true, backgroundColor: 'splash', color: 'accent' }}>
   Error
 </styled.span>
 
-<styled.section css={{ colorPalette: 'info', layerStyle: 'chromatic' }}>
-  {/* Uses the chromatic variant of the `info` palette inside */}
+<styled.section css={{ palette: 'info', chromatic: true }}>
+  {/* Everything inside uses the chromatic variant of the `info` palette */}
 </styled.section>
 ```
 
-Inside a recipe, gate a palette swap on a variant or condition — e.g. `_invalid: { colorPalette: 'error' }` on button/textarea input states.
-
-**Escape hatch — `data-palette` / `data-chromatic`.** These HTML attributes still work (they're wired up in `src/app/styles/theme.css` and `conditions.ts`) and are fine when the element is rendered outside Panda's reach: third-party components that only accept HTML attributes, markdown-generated DOM, server-rendered bootstrap wrappers, etc. For anything authored with `css({ ... })` or `styled.*`, prefer `colorPalette` and `layerStyle`.
+They work identically inside recipes — e.g. `_invalid: { palette: 'error', chromatic: true }` on input states. Each boundary also re-asserts `color: primary` at base-layer precedence, so plain inherited text adapts across the boundary while any explicit `color` still wins.
 
 ### Text styles
 
@@ -140,12 +139,10 @@ Numeric tokens are `0.25rem` multiples: `0, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 
 | ------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `_dark`                                                 | `:where([data-color-scheme="dark"], .dark) &`   | Color-scheme-scoped overrides                                                                                                                                               |
 | `_light`                                                | `:where([data-color-scheme="light"], .light) &` | Color-scheme-scoped overrides                                                                                                                                               |
-| `_neutral`                                              | `&[data-neutral]` (+ scope variants)            | Triggered by `layerStyle: 'neutral'` (or `data-neutral` as escape hatch).                                                                                                   |
-| `_chromatic`                                            | `&[data-chromatic]` (+ scope variants)          | Triggered by `layerStyle: 'chromatic'` (or `data-chromatic` as escape hatch).                                                                                               |
 | `_childIcon`                                            | `& :where(svg, .icon, .lucide)`                 | Size/color icons inside a container. Prefer over `& svg`.                                                                                                                   |
 | `_sideBottom` / `_sideTop` / `_sideLeft` / `_sideRight` | `&[data-side=<side>]`                           | Radix/popper-positioned content (popover, dropdown, hover-card) — directional slide-in animation per placement. Use these instead of raw `'&[data-side=bottom]'` selectors. |
 
-Reach for a defined condition over a raw `[data-*]` selector — but **first check Panda's built-ins so you don't duplicate one**: `_vertical` / `_horizontal` (`[data-orientation]`), `_open` / `_closed` (`[data-state]`), `_hover`, `_focusVisible`, `_disabled`, `_invalid`, `_placeholder`, and the `_group*` / `_peer*` families all ship out of the box. Only when Panda has nothing (e.g. the project's `_side*`, `_chromatic` / `_neutral`) add it to `styles/conditions.ts` (and `bun run stylegen`) rather than inlining the attribute selector in a recipe.
+Reach for a defined condition over a raw `[data-*]` selector — but **first check Panda's built-ins so you don't duplicate one**: `_vertical` / `_horizontal` (`[data-orientation]`), `_open` / `_closed` (`[data-state]`), `_hover`, `_focusVisible`, `_disabled`, `_invalid`, `_placeholder`, and the `_group*` / `_peer*` families all ship out of the box. Only when Panda has nothing (e.g. the project's `_side*`, `_childIcon`) add it to `styles/conditions.ts` (and `bun run stylegen`) rather than inlining the attribute selector in a recipe.
 
 Useful utilities (full list in `src/app/styles/plugins.ts`):
 

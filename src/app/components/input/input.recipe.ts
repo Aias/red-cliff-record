@@ -39,8 +39,8 @@ export const inputRecipe = defineRecipe({
       outlineWidth: '2px',
     },
     _invalid: {
-      layerStyle: 'chromatic',
-      colorPalette: 'error',
+      palette: 'error',
+      chromatic: true,
     },
     _selection: {
       backgroundColor: 'main',

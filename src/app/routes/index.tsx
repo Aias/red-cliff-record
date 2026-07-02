@@ -40,7 +40,7 @@ function Home() {
         />
       )}
       {isError && (
-        <styled.p css={{ colorPalette: 'error', layerStyle: 'chromatic', color: 'accent' }}>
+        <styled.p css={{ palette: 'error', chromatic: true, color: 'accent' }}>
           Error loading records.
         </styled.p>
       )}

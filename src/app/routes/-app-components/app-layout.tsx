@@ -52,7 +52,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
           <LinkButton
             variant="solid"
             css={{
-              layerStyle: 'chromatic',
+              chromatic: true,
               _childIcon: {
                 opacity: '75%',
               },

@@ -138,8 +138,7 @@ function RootDocument({
   return (
     <html
       className={css({
-        colorPalette: 'artifact',
-        layerStyle: 'neutral',
+        palette: 'artifact',
       })}
       data-color-scheme={appearance}
       data-theme-transitioning={isTransitioning || undefined}

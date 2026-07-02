@@ -1,25 +1,23 @@
 import { defineGlobalStyles } from '@pandacss/dev';
-import { semanticColorNames, semanticPaletteNames } from './colors';
+import { palettes } from './colors';
 
-const toCssVarName = (value: string) =>
-  value.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
-
-const paletteAliasScopes = Object.fromEntries(
-  semanticPaletteNames.map((palette) => [
-    `@scope (.color-palette_${palette})`,
-    {
-      ':scope, :scope *': Object.fromEntries(
-        semanticColorNames.map((token) => {
-          const cssVarName = toCssVarName(token);
-          return [`--colors-${cssVarName}`, `var(--colors-${palette}-${cssVarName})`];
-        })
-      ),
-    },
-  ])
-);
+const boundaryClasses = [
+  ...Object.keys(palettes).map((palette) => `.palette_${palette}`),
+  '.chromatic_true',
+  '.chromatic_false',
+  '.mode_normal',
+  '.mode_inverted',
+  '.mode_light',
+  '.mode_dark',
+];
 
 export const globalStyles = defineGlobalStyles({
-  ...paletteAliasScopes,
+  // Theme boundary elements re-assert the default text color so plain
+  // inherited text re-resolves against the new context. This lives in the
+  // base layer so any explicit color — recipe or atomic — wins the cascade.
+  [`:where(${boundaryClasses.join(', ')})`]: {
+    color: 'var(--colors-primary)',
+  },
   html: {
     '--global-font-body': 'fonts.sans',
     '--global-font-mono': 'fonts.mono',

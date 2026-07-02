@@ -336,8 +336,8 @@ export function RecordForm({
                 {field.state.meta.errors && (
                   <styled.p
                     css={{
-                      colorPalette: 'error',
-                      layerStyle: 'chromatic',
+                      palette: 'error',
+                      chromatic: true,
                       textStyle: 'sm',
                     }}
                   >
@@ -515,8 +515,8 @@ export function RecordForm({
                           {field.state.meta.errors && (
                             <styled.p
                               css={{
-                                colorPalette: 'error',
-                                layerStyle: 'chromatic',
+                                palette: 'error',
+                                chromatic: true,
                                 textStyle: 'sm',
                               }}
                             >
