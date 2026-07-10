@@ -30,7 +30,7 @@ export const SiteSearch = () => {
   const shouldSearch = debouncedQuery.length >= MIN_QUERY_LENGTH;
 
   const trigram = trpc.records.list.useQuery(
-    { searchQuery: debouncedQuery, strategy: 'trigram', limit: 10 },
+    { searchQuery: debouncedQuery, strategy: 'lexical', limit: 10 },
     { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
   const vector = trpc.records.list.useQuery(

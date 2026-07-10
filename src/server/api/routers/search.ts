@@ -9,14 +9,16 @@ import {
 import { TRPCError } from '@trpc/server';
 import { cosineDistance, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { createEmbedding } from '@/lib/server/create-embedding';
 import {
+  exactMatchTier,
+  ftsRank,
+  lexicalMatchCondition,
+  setTrigramThresholds,
   similarity,
   SIMILARITY_THRESHOLD,
-  TRIGRAM_DISTANCE_THRESHOLD,
   trigramDistance,
-  WORD_SIMILARITY_DISTANCE_THRESHOLD,
 } from '@/server/lib/constants';
+import { createEmbedding } from '@/server/lib/create-embedding';
 import { IdSchema, SearchRecordsInputSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
@@ -72,85 +74,81 @@ type SearchResult = {
 export const searchRouter = createTRPCRouter({
   byTextQuery: publicProcedure
     .input(SearchRecordsInputSchema)
-    .query(({ ctx: { db }, input }): Promise<SearchResult[]> => {
+    .query(async ({ ctx: { db }, input }): Promise<SearchResult[]> => {
       const {
         query,
         filters: { recordType },
         limit,
       } = input;
-      return db.query.records.findMany({
-        where: {
-          RAW: (records, { sql }) =>
-            sql`(
-						${records.title} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-						${query} <<-> ${records.title} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD} OR
-						${records.abbreviation} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-						${query} <<-> ${records.abbreviation} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD} OR
-						${records.content} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-						(POSITION(' ' IN ${query}) > 0 AND ${query} <<-> ${records.content} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD}) OR
-						${records.summary} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-						(POSITION(' ' IN ${query}) > 0 AND ${query} <<-> ${records.summary} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD})
-					)`,
-          type: recordType,
-        },
-        limit,
-        orderBy: (records, { desc }) => [
-          trigramDistance(records, query),
-          desc(records.recordUpdatedAt),
-        ],
-        columns: {
-          id: true,
-          type: true,
-          title: true,
-          content: true,
-          summary: true,
-          sense: true,
-          abbreviation: true,
-          url: true,
-          avatarUrl: true,
-          mediaCaption: true,
-          rating: true,
-          recordUpdatedAt: true,
-          recordCreatedAt: true,
-          contentCreatedAt: true,
-          contentUpdatedAt: true,
-          sources: true,
-          textEmbedding: false,
-        },
-        with: {
-          outgoingLinks: {
-            columns: {
-              id: true,
-              predicate: true,
-            },
-            with: {
-              target: {
-                columns: {
-                  id: true,
-                  type: true,
-                  title: true,
-                  abbreviation: true,
-                  sense: true,
-                  summary: true,
-                  avatarUrl: true,
+      return db.transaction(async (tx) => {
+        await setTrigramThresholds(tx);
+        return tx.query.records.findMany({
+          where: {
+            RAW: (records) => lexicalMatchCondition(records, query),
+            type: recordType,
+          },
+          limit,
+          orderBy: (records, { desc }) => [
+            exactMatchTier(records, query),
+            desc(ftsRank(records.textSearch, query)),
+            trigramDistance(records, query),
+            desc(records.recordUpdatedAt),
+          ],
+          columns: {
+            id: true,
+            type: true,
+            title: true,
+            content: true,
+            summary: true,
+            sense: true,
+            abbreviation: true,
+            url: true,
+            avatarUrl: true,
+            mediaCaption: true,
+            rating: true,
+            recordUpdatedAt: true,
+            recordCreatedAt: true,
+            contentCreatedAt: true,
+            contentUpdatedAt: true,
+            sources: true,
+            textEmbedding: false,
+            textSearch: false,
+          },
+          with: {
+            outgoingLinks: {
+              columns: {
+                id: true,
+                predicate: true,
+              },
+              with: {
+                target: {
+                  columns: {
+                    id: true,
+                    type: true,
+                    title: true,
+                    abbreviation: true,
+                    sense: true,
+                    summary: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+              where: {
+                predicate: {
+                  in: searchLinkPredicates,
                 },
               },
             },
-            where: {
-              predicate: {
-                in: searchLinkPredicates,
+            media: {
+              columns: {
+                id: true,
+                type: true,
+                url: true,
+                altText: true,
               },
             },
           },
-          media: {
-            columns: {
-              id: true,
-              type: true,
-              url: true,
-              altText: true,
-            },
-          },
-        },
+        });
       });
     }),
 

@@ -54,7 +54,7 @@ export const OrderBySchema = z.array(OrderCriteriaSchema);
 
 export const ListRecordsInputSchema = z.object({
   searchQuery: z.string().optional(),
-  strategy: z.enum(['hybrid', 'trigram', 'vector']).optional(),
+  strategy: z.enum(['hybrid', 'lexical', 'vector']).optional(),
   filters: RecordFiltersSchema.optional().default({}),
   limit: LimitSchema.optional().default(DEFAULT_LIMIT),
   offset: OffsetSchema.optional().default(0),

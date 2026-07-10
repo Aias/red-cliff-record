@@ -26,9 +26,11 @@ const SnapshotLinkSchema = z.object({
   recordUpdatedAt: z.date(),
 });
 
+const SnapshotRecordSchema = RecordSelectSchema.omit({ textSearch: true });
+
 const MergeSnapshotSchema = z.object({
-  sourceRecord: RecordSelectSchema,
-  targetRecord: RecordSelectSchema,
+  sourceRecord: SnapshotRecordSchema,
+  targetRecord: SnapshotRecordSchema,
   links: z.array(SnapshotLinkSchema),
   mediaAssignments: z.array(z.object({ id: z.number(), recordId: z.number().nullable() })),
   integrationAssignments: z.array(

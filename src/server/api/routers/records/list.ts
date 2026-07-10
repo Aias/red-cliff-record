@@ -1,12 +1,14 @@
 import { containmentPredicateSlugs } from '@hozo';
 import { cosineDistance, sql } from 'drizzle-orm';
 import type { z } from 'zod';
-import { createEmbedding } from '@/lib/server/create-embedding';
 import {
-  TRIGRAM_DISTANCE_THRESHOLD,
+  exactMatchTier,
+  ftsRank,
+  lexicalMatchCondition,
+  setTrigramThresholds,
   trigramDistance,
-  WORD_SIMILARITY_THRESHOLD,
 } from '@/server/lib/constants';
+import { createEmbedding } from '@/server/lib/create-embedding';
 import {
   ListRecordsInputSchema,
   type IdParamList,
@@ -53,13 +55,12 @@ function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
   };
 }
 
-function rrfMerge<T extends { id: number }>(...lists: T[][]): T[] {
+function rrfMerge<T extends { id: number }>(...lists: { items: T[]; weight?: number }[]): T[] {
   const scores = new Map<number, { item: T; score: number }>();
 
-  for (const list of lists) {
-    for (let rank = 0; rank < list.length; rank++) {
-      const item = list[rank]!;
-      const rrfScore = 1 / (RRF_K + rank + 1);
+  for (const { items, weight = 1 } of lists) {
+    for (const [rank, item] of items.entries()) {
+      const rrfScore = weight / (RRF_K + rank + 1);
       const existing = scores.get(item.id);
       if (existing) {
         existing.score += rrfScore;
@@ -99,32 +100,22 @@ export const list = publicProcedure
       return runFilteredList();
     }
 
-    const runTrigramSearch = async () => {
+    const runLexicalSearch = async () => {
       const effectiveLimit = strategy === 'hybrid' ? SEARCH_CAP : limit;
-      const similarityThreshold = String(1 - TRIGRAM_DISTANCE_THRESHOLD);
-      const wordSimilarityThreshold = String(WORD_SIMILARITY_THRESHOLD);
       return db.transaction(async (tx) => {
-        await tx.execute(
-          sql`SELECT set_config('pg_trgm.similarity_threshold', ${similarityThreshold}, true)`
-        );
-        await tx.execute(
-          sql`SELECT set_config('pg_trgm.word_similarity_threshold', ${wordSimilarityThreshold}, true)`
-        );
+        await setTrigramThresholds(tx);
         return tx.query.records.findMany({
           columns: { id: true },
+          extras: {
+            exactTier: (records) => exactMatchTier(records, searchQuery).as('exact_tier'),
+          },
           where: {
             ...filterWhere,
-            RAW: (records, { sql }) =>
-              sql`(
-                ${records.title} % ${searchQuery} OR ${searchQuery} <% ${records.title} OR
-                ${records.abbreviation} % ${searchQuery} OR ${searchQuery} <% ${records.abbreviation} OR
-                ${records.content} % ${searchQuery} OR
-                (POSITION(' ' IN ${searchQuery}) > 0 AND ${searchQuery} <% ${records.content}) OR
-                ${records.summary} % ${searchQuery} OR
-                (POSITION(' ' IN ${searchQuery}) > 0 AND ${searchQuery} <% ${records.summary})
-              )`,
+            RAW: (records) => lexicalMatchCondition(records, searchQuery),
           },
-          orderBy: (records, { asc }) => [
+          orderBy: (records, { asc, desc }) => [
+            exactMatchTier(records, searchQuery),
+            desc(ftsRank(records.textSearch, searchQuery)),
             trigramDistance(records, searchQuery),
             asc(sql`length(${records.title})`),
           ],
@@ -151,23 +142,36 @@ export const list = publicProcedure
     };
 
     const runHybridSearch = async (): Promise<IdParamList> => {
-      const trigramPromise = runTrigramSearch();
+      const lexicalPromise = runLexicalSearch();
       const vectorPromise = runVectorSearch();
 
-      const trigramResults = await trigramPromise;
-      let vectorResults: typeof trigramResults = [];
+      const lexicalRows = await lexicalPromise;
+      let vectorResults: { id: number }[] = [];
       try {
         vectorResults = await vectorPromise;
       } catch {
         // Vector search failed; keep text results only.
       }
 
+      // Literal matches (exact/prefix/substring) get extra weight so they
+      // can't be diluted below purely semantic neighbors in the fused ranking.
+      const lexicalResults = lexicalRows.map(({ id }) => ({ id }));
+      const literalResults = lexicalRows
+        .filter((row) => row.exactTier <= 2)
+        .map(({ id }) => ({ id }));
+
       // Offset is ignored here: merged rankings are not stable across requests.
-      return { ids: rrfMerge(trigramResults, vectorResults).slice(0, limit) };
+      const merged = rrfMerge(
+        { items: literalResults, weight: 2 },
+        { items: lexicalResults },
+        { items: vectorResults }
+      );
+      return { ids: merged.slice(0, limit) };
     };
 
-    if (strategy === 'trigram') {
-      return { ids: await runTrigramSearch() };
+    if (strategy === 'lexical') {
+      const rows = await runLexicalSearch();
+      return { ids: rows.map(({ id }) => ({ id })) };
     }
 
     if (strategy === 'vector') {

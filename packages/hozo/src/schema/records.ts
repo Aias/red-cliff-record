@@ -1,5 +1,7 @@
+import { sql, type SQL } from 'drizzle-orm';
 import {
   boolean,
+  customType,
   index,
   integer,
   pgEnum,
@@ -28,6 +30,12 @@ export * from './records.shared';
 
 export const recordTypeEnum = pgEnum('record_type', recordTypes);
 
+const tsvector = customType<{ data: string }>({
+  dataType() {
+    return 'tsvector';
+  },
+});
+
 export const records = pgTable(
   'records',
   {
@@ -49,6 +57,15 @@ export const records = pgTable(
     isCurated: boolean('is_curated').notNull().default(false),
     reminderAt: timestamp('reminder_at', { withTimezone: true }),
     sources: integrationTypeEnum('sources').array(),
+    /**
+     * Weighted full-text search document: title/abbreviation/sense (A),
+     * summary/mediaCaption (B), content (C), notes (D). Content is capped to
+     * keep the vector under Postgres's tsvector size limit on outlier records.
+     */
+    textSearch: tsvector('text_search').generatedAlwaysAs(
+      (): SQL =>
+        sql`setweight(to_tsvector('english', coalesce(${records.title}, '') || ' ' || coalesce(${records.abbreviation}, '') || ' ' || coalesce(${records.sense}, '')), 'A') || setweight(to_tsvector('english', coalesce(${records.summary}, '') || ' ' || coalesce(${records.mediaCaption}, '')), 'B') || setweight(to_tsvector('english', left(coalesce(${records.content}, ''), 100000)), 'C') || setweight(to_tsvector('english', coalesce(${records.notes}, '')), 'D')`
+    ),
     ...databaseTimestamps,
     ...contentTimestamps,
     ...textEmbeddingColumns,
@@ -66,6 +83,7 @@ export const records = pgTable(
     index().on(table.isCurated),
     index().on(table.type, table.eloScore),
     index().using('hnsw', table.textEmbedding.op('vector_cosine_ops')),
+    index('idx_records_text_search').using('gin', table.textSearch),
   ]
 );
 

@@ -48,8 +48,8 @@ export const integrationTableMap = {
 export type IntegrationTableName = keyof typeof integrationTableMap;
 
 export type MergeSnapshot = {
-  sourceRecord: RecordSelect;
-  targetRecord: RecordSelect;
+  sourceRecord: Omit<RecordSelect, 'textSearch'>;
+  targetRecord: Omit<RecordSelect, 'textSearch'>;
   links: LinkSelect[];
   mediaAssignments: Array<{ id: number; recordId: number | null }>;
   integrationAssignments: Array<{
@@ -92,11 +92,13 @@ export const merge = publicProcedure
             where: {
               id: sourceId,
             },
+            columns: { textSearch: false },
           }),
           db.query.records.findFirst({
             where: {
               id: targetId,
             },
+            columns: { textSearch: false },
           }),
         ]);
 
