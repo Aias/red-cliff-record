@@ -4,10 +4,10 @@ import { join } from 'node:path';
 import { media } from '@hozo';
 import { eq } from 'drizzle-orm';
 import mime from 'mime-types';
-import OpenAI from 'openai';
 import { db } from '@/server/db/connections/postgres';
 import { writeDebugOutput } from '@/server/integrations/common/debug-output';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
+import { getOpenAIClient, OPENAI_MODEL } from '@/server/lib/openai';
 import { embedRecordsByIds } from '@/server/services/embed-records';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 
@@ -43,23 +43,11 @@ Examples of good alt text:
 
 Respond with only the alt text, no preamble or commentary.`;
 
-let openai: OpenAI | null = null;
-
 interface VisionInputImage {
   detail: 'auto' | 'high' | 'low';
   image_url: string;
   type: 'input_image';
 }
-
-type OpenAIClientResult =
-  | {
-      ok: true;
-      client: OpenAI;
-    }
-  | {
-      ok: false;
-      error: string;
-    };
 
 type VisionApiResult =
   | {
@@ -144,20 +132,6 @@ export interface GenerateAltTextResult {
 type GenerateAltTextInternalOptions = GenerateAltTextOptions & {
   signal?: AbortSignal;
 };
-
-function getOpenAIClient(): OpenAIClientResult {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return { ok: false, error: 'OPENAI_API_KEY is not set' };
-  }
-
-  if (openai) {
-    return { ok: true, client: openai };
-  }
-
-  openai = new OpenAI({ apiKey });
-  return { ok: true, client: openai };
-}
 
 function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -663,15 +637,10 @@ async function callVisionApi(
   images: VisionInputImage[],
   signal?: AbortSignal
 ): Promise<VisionApiResult> {
-  const openAiClientResult = getOpenAIClient();
-  if (!openAiClientResult.ok) {
-    return { ok: false, error: openAiClientResult.error };
-  }
-
   try {
-    const response = await openAiClientResult.client.responses.create(
+    const response = await getOpenAIClient().responses.create(
       {
-        model: 'gpt-5.2',
+        model: OPENAI_MODEL,
         input: [
           {
             type: 'message',
