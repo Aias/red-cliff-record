@@ -1,14 +1,16 @@
 import { records, RunTypeSchema } from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
-import { runConcurrentPool } from '@/shared/lib/async-pool';
+import { createEmbeddings } from '@/server/lib/create-embedding';
 import { createRecordEmbeddingText, getRecordTitle } from '@/shared/lib/embedding';
 import type { FullRecord } from '@/shared/types/domain';
-import { createEmbedding } from '../../app/lib/server/create-embedding';
 import { createIntegrationLogger } from '../integrations/common/logging';
 import { runIntegration } from '../integrations/common/run-integration';
 
 const logger = createIntegrationLogger('services', 'embed-records');
+
+/** Records embedded (and written back) per OpenAI request. */
+const EMBED_BATCH_SIZE = 64;
 
 export interface EmbedRecordResult {
   recordId: number;
@@ -16,22 +18,13 @@ export interface EmbedRecordResult {
   error?: string;
 }
 
-export interface EmbedRecordsByIdsOptions {
-  /** Number of concurrent embedding requests (default: 10) */
-  concurrency?: number;
-}
-
 /**
  * Embed specific records by their IDs.
  * Fetches full record data including relations and media, generates embedding text,
- * and updates the database with the new embeddings.
+ * and updates the database with the new embeddings. Texts are sent to the
+ * embedding API in batches rather than one request per record.
  */
-export async function embedRecordsByIds(
-  recordIds: number[],
-  options: EmbedRecordsByIdsOptions = {}
-): Promise<EmbedRecordResult[]> {
-  const { concurrency = 10 } = options;
-
+export async function embedRecordsByIds(recordIds: number[]): Promise<EmbedRecordResult[]> {
   if (recordIds.length === 0) {
     return [];
   }
@@ -44,12 +37,12 @@ export async function embedRecordsByIds(
     with: {
       outgoingLinks: {
         with: {
-          target: { columns: { textEmbedding: false } },
+          target: { columns: { textEmbedding: false, textSearch: false } },
         },
       },
       incomingLinks: {
         with: {
-          source: { columns: { textEmbedding: false } },
+          source: { columns: { textEmbedding: false, textSearch: false } },
         },
         where: { predicate: { notIn: ['format_of'] } },
       },
@@ -58,46 +51,76 @@ export async function embedRecordsByIds(
   });
 
   const recordMap = new Map(recordsToEmbed.map((r) => [r.id, r]));
+  const resultMap = new Map<number, EmbedRecordResult>();
+  const pending: { recordId: number; record: FullRecord; text: string }[] = [];
 
-  const results = await runConcurrentPool({
-    items: uniqueIds,
-    concurrency,
-    worker: async (recordId): Promise<EmbedRecordResult> => {
-      const record = recordMap.get(recordId);
-      if (!record) {
-        return { recordId, success: false, error: 'Record not found' };
+  for (const recordId of uniqueIds) {
+    const record = recordMap.get(recordId);
+    if (!record) {
+      resultMap.set(recordId, { recordId, success: false, error: 'Record not found' });
+      continue;
+    }
+
+    const text = createRecordEmbeddingText(record);
+    if (!text) {
+      logger.warn(`No text to embed for record ${recordId}, skipping`);
+      resultMap.set(recordId, { recordId, success: false, error: 'No text to embed' });
+      continue;
+    }
+
+    pending.push({ recordId, record, text });
+  }
+
+  for (let start = 0; start < pending.length; start += EMBED_BATCH_SIZE) {
+    const batch = pending.slice(start, start + EMBED_BATCH_SIZE);
+
+    try {
+      const embeddings = await createEmbeddings(batch.map((item) => item.text));
+
+      await Promise.all(
+        batch.map(async (item, index) => {
+          const embedding = embeddings[index];
+          if (!embedding) {
+            resultMap.set(item.recordId, {
+              recordId: item.recordId,
+              success: false,
+              error: 'Missing embedding in batch response',
+            });
+            return;
+          }
+
+          await db
+            .update(records)
+            .set({ textEmbedding: embedding })
+            .where(eq(records.id, item.recordId));
+          resultMap.set(item.recordId, { recordId: item.recordId, success: true });
+        })
+      );
+
+      const last = batch.at(-1);
+      if (batch.length === 1 && last) {
+        logger.info(`Embedded record ${last.recordId}: ${getRecordTitle(last.record, 80)}`);
+      } else {
+        logger.info(`Embedded records ${start + 1}–${start + batch.length} of ${pending.length}`);
       }
-
-      const textToEmbed = createRecordEmbeddingText(record);
-      if (!textToEmbed) {
-        logger.warn(`No text to embed for record ${recordId}, skipping`);
-        return { recordId, success: false, error: 'No text to embed' };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to embed batch of ${batch.length} record(s): ${message}`);
+      for (const item of batch) {
+        resultMap.set(item.recordId, { recordId: item.recordId, success: false, error: message });
       }
+    }
+  }
 
-      try {
-        const embedding = await createEmbedding(textToEmbed);
-        await db.update(records).set({ textEmbedding: embedding }).where(eq(records.id, recordId));
-        logger.info(`Embedded record ${recordId}: ${getRecordTitle(record, 80)}`);
-        return { recordId, success: true };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        logger.error(`Failed to embed record ${recordId}: ${message}`);
-        return { recordId, success: false, error: message };
-      }
-    },
-  });
+  const results = uniqueIds.map(
+    (recordId) => resultMap.get(recordId) ?? { recordId, success: false, error: 'Unknown error' }
+  );
 
-  const successCount = results.filter((r) => r.ok && r.value.success).length;
-  const failCount = results.filter((r) => !r.ok || !r.value.success).length;
+  const successCount = results.filter((r) => r.success).length;
+  const failCount = results.length - successCount;
   logger.info(`Embedded ${successCount} record(s), ${failCount} failed`);
 
-  return results.map((r, i) => {
-    if (r.ok) {
-      return r.value;
-    }
-    const recordId = uniqueIds[i] ?? -1;
-    return { recordId, success: false, error: r.error.message };
-  });
+  return results;
 }
 
 /**
@@ -129,10 +152,7 @@ export async function embedRecords(): Promise<number> {
     return 0;
   }
 
-  const results = await embedRecordsByIds(
-    recordsWithoutEmbeddings.map((r) => r.id),
-    { concurrency: 25 }
-  );
+  const results = await embedRecordsByIds(recordsWithoutEmbeddings.map((r) => r.id));
 
   const successCount = results.filter((r) => r.success).length;
   const failCount = results.filter((r) => !r.success).length;

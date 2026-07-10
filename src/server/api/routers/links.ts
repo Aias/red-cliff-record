@@ -10,9 +10,25 @@ import {
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { embedRecordsByIds } from '@/server/services/embed-records';
 import { IdSchema, type DbId } from '@/shared/types/api';
 import type { RecordLinks, RecordLinksMap } from '@/shared/types/domain';
 import { createTRPCRouter, publicProcedure } from '../init';
+
+/**
+ * Regenerate embeddings for both endpoints of changed links.
+ * Embedding text includes linked-record titles, so link mutations leave
+ * embeddings stale until regenerated. Fire-and-forget, like record edits.
+ */
+function reembedLinkedRecords(recordIds: number[]): void {
+  const uniqueIds = [...new Set(recordIds)];
+  if (uniqueIds.length === 0) {
+    return;
+  }
+  embedRecordsByIds(uniqueIds).catch((error) => {
+    console.warn('Failed to regenerate embeddings after link change:', error);
+  });
+}
 
 export const linksRouter = createTRPCRouter({
   /**
@@ -212,6 +228,8 @@ export const linksRouter = createTRPCRouter({
       });
     }
 
+    reembedLinkedRecords([row.sourceId, row.targetId]);
+
     return row;
   }),
 
@@ -231,6 +249,7 @@ export const linksRouter = createTRPCRouter({
       return []; // Return empty array if input is empty
     }
     const deletedLinks = await db.delete(links).where(inArray(links.id, input)).returning();
+    reembedLinkedRecords(deletedLinks.flatMap((link) => [link.sourceId, link.targetId]));
     return deletedLinks;
   }),
 });

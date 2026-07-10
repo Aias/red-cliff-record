@@ -14,7 +14,6 @@ export const EMBEDDING_RECORD_FIELDS = [
   'summary',
   'notes',
   'mediaCaption',
-  'url',
 ] as const satisfies readonly (keyof RecordSelect)[];
 
 type EmbeddingRecordFields = (typeof EMBEDDING_RECORD_FIELDS)[number];
@@ -66,20 +65,6 @@ export const getRecordTitle = (
 };
 
 /**
- * Extract domain and path from URL, stripping protocol and query params.
- * e.g., "https://example.com/path?q=1" → "example.com/path"
- */
-const simplifyUrl = (url: string): string => {
-  try {
-    const parsed = new URL(url);
-    const path = parsed.pathname === '/' ? '' : parsed.pathname;
-    return `${parsed.hostname}${path}`;
-  } catch {
-    return url;
-  }
-};
-
-/**
  * Join items with appropriate separator based on count.
  * Short lists use comma separation; longer lists use newlines.
  */
@@ -95,9 +80,14 @@ const joinList = (items: string[], threshold = 4): string => {
  *
  * Structure prioritizes semantic content first, then relationships and metadata.
  * This ordering helps embedding models weight substance over structural metadata.
+ *
+ * Structural identifiers (format links, identity links, source URLs) are
+ * deliberately excluded: they describe where a record came from rather than
+ * what it says, and including them clusters records by platform (e.g., all
+ * tweets near all tweets) instead of by meaning.
  */
 export const createRecordEmbeddingText = (record: EmbeddingRecord) => {
-  const { title, content, summary, notes, mediaCaption, outgoingLinks, incomingLinks, media, url } =
+  const { title, content, summary, notes, mediaCaption, outgoingLinks, incomingLinks, media } =
     record;
 
   // Extract relationships by predicate type
@@ -107,12 +97,6 @@ export const createRecordEmbeddingText = (record: EmbeddingRecord) => {
   const created = incomingLinks
     .filter((link) => PREDICATES[link.predicate].type === 'creation')
     .map((link) => link.source);
-  const formats = outgoingLinks
-    .filter((link) => PREDICATES[link.predicate].type === 'form')
-    .map((link) => link.target);
-  const sameAs = outgoingLinks
-    .filter((link) => PREDICATES[link.predicate].type === 'identity')
-    .map((link) => link.target);
   const parents = outgoingLinks
     .filter((link) => PREDICATES[link.predicate].type === 'containment')
     .map((link) => link.target);
@@ -197,23 +181,9 @@ export const createRecordEmbeddingText = (record: EmbeddingRecord) => {
     const tagTitles = tags.map((t) => getRecordTitle(t));
     parts.push(`Tags: ${joinList(tagTitles)}`);
   }
-
-  // === METADATA (structural information) ===
-
   if (created.length > 0) {
     const createdTitles = created.map((c) => getRecordTitle(c));
     parts.push(`Creator of: ${joinList(createdTitles)}`);
-  }
-  if (formats.length > 0) {
-    const formatTitles = formats.map((f) => getRecordTitle(f));
-    parts.push(`Format: ${joinList(formatTitles)}`);
-  }
-  if (sameAs.length > 0) {
-    const sameAsTitles = sameAs.map((s) => getRecordTitle(s));
-    parts.push(`Same as: ${joinList(sameAsTitles)}`);
-  }
-  if (url) {
-    parts.push(`Source: ${simplifyUrl(url)}`);
   }
 
   return parts.join('\n\n');
