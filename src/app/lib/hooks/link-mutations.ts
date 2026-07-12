@@ -4,11 +4,9 @@ import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import type { DbId } from '@/shared/types/api';
 import type { RecordLinks } from '@/shared/types/domain';
-import { useEmbedRecord } from './record-mutations';
 
 export function useUpsertLink() {
   const utils = trpc.useUtils();
-  const embedMutation = useEmbedRecord();
 
   return trpc.links.upsert.useMutation({
     onMutate: async ({ sourceId, targetId, predicate, id }) => {
@@ -106,8 +104,6 @@ export function useUpsertLink() {
           return ids.includes(sourceId) || ids.includes(targetId);
         },
       });
-      embedMutation.mutate({ id: sourceId });
-      embedMutation.mutate({ id: targetId });
     },
     onError: (err, variables, ctx) => {
       if (ctx?.prevSource) {

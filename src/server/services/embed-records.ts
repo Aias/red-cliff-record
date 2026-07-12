@@ -1,5 +1,5 @@
 import { records, RunTypeSchema } from '@hozo';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { createEmbeddings } from '@/server/lib/create-embedding';
 import { createRecordEmbeddingText, getRecordTitle } from '@/shared/lib/embedding';
@@ -129,6 +129,30 @@ export async function embedRecordsByIds(recordIds: number[]): Promise<EmbedRecor
 export async function embedRecordById(recordId: number): Promise<EmbedRecordResult> {
   const [result] = await embedRecordsByIds([recordId]);
   return result ?? { recordId, success: false, error: 'Unknown error' };
+}
+
+/**
+ * Regenerate embeddings for records whose embedding text changed, without
+ * blocking the mutation that changed it. Records whose regeneration fails
+ * have their vectors nulled so the enrichment sync retries them instead of
+ * serving stale ones indefinitely.
+ */
+export function queueRecordEmbeddings(recordIds: number[]): void {
+  const uniqueIds = [...new Set(recordIds)];
+  if (uniqueIds.length === 0) {
+    return;
+  }
+
+  void embedRecordsByIds(uniqueIds)
+    .then(async (results) => {
+      const failedIds = results.filter((r) => !r.success).map((r) => r.recordId);
+      if (failedIds.length > 0) {
+        await db.update(records).set({ textEmbedding: null }).where(inArray(records.id, failedIds));
+      }
+    })
+    .catch((error) => {
+      logger.error(`Failed to regenerate embeddings for ${uniqueIds.length} record(s)`, error);
+    });
 }
 
 /**
