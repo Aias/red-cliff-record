@@ -21,6 +21,7 @@ function createRecordLoader() {
       },
       columns: {
         textEmbedding: false,
+        textSearch: false,
       },
       with: {
         media: true,

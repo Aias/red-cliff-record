@@ -22,6 +22,7 @@ import {
 import { TRPCError } from '@trpc/server';
 import { eq, getTableName, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { queueRecordEmbeddings } from '@/server/services/embed-records';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
@@ -48,8 +49,8 @@ export const integrationTableMap = {
 export type IntegrationTableName = keyof typeof integrationTableMap;
 
 export type MergeSnapshot = {
-  sourceRecord: RecordSelect;
-  targetRecord: RecordSelect;
+  sourceRecord: Omit<RecordSelect, 'textSearch'>;
+  targetRecord: Omit<RecordSelect, 'textSearch'>;
   links: LinkSelect[];
   mediaAssignments: Array<{ id: number; recordId: number | null }>;
   integrationAssignments: Array<{
@@ -92,11 +93,13 @@ export const merge = publicProcedure
             where: {
               id: sourceId,
             },
+            columns: { textSearch: false },
           }),
           db.query.records.findFirst({
             where: {
               id: targetId,
             },
+            columns: { textSearch: false },
           }),
         ]);
 
@@ -286,6 +289,10 @@ export const merge = publicProcedure
             mediaAssignments: premergeMedia,
             integrationAssignments: premergeIntegrations,
           };
+
+          // The target's text changed and every re-linked neighbor's
+          // embedding text references it.
+          queueRecordEmbeddings(touchedIds);
 
           return {
             updatedRecord,

@@ -4,26 +4,9 @@ import { getQueryKey } from '@trpc/react-query';
 import { toast } from 'sonner';
 import { trpc } from '@/app/trpc';
 import { removeManyFromBasket, replaceBasketId } from '@/lib/hooks/use-basket';
-import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId, IdParamList } from '@/shared/types/api';
 import type { RecordGet } from '@/shared/types/domain';
-
-export function useEmbedRecord() {
-  const utils = trpc.useUtils();
-  return trpc.records.embed.useMutation({
-    onSuccess: (data) => {
-      utils.records.get.setData({ id: data.id }, (prev) => {
-        if (!prev) return undefined;
-        return {
-          ...prev,
-          recordUpdatedAt: data.recordUpdatedAt,
-        };
-      });
-      void utils.search.byRecordId.invalidate({ id: data.id });
-    },
-  });
-}
 
 export function useBulkUpdate() {
   const utils = trpc.useUtils();
@@ -59,7 +42,6 @@ export function useBulkUpdate() {
 
 export function useUpsertRecord() {
   const utils = trpc.useUtils();
-  const embedMutation = useEmbedRecord();
 
   return trpc.records.upsert.useMutation({
     onMutate: async (input) => {
@@ -72,21 +54,12 @@ export function useUpsertRecord() {
       }
       return { previous };
     },
-    onSuccess: (row, input) => {
+    onSuccess: (row) => {
       /* patch point cache */
       utils.records.get.setData({ id: row.id }, row);
 
       /* refresh ID tables & search index */
       void utils.records.list.invalidate();
-
-      const isNewRecord = input.id === undefined;
-      const embeddingFields = new Set<string>(EMBEDDING_RECORD_FIELDS);
-      const affectsEmbedding =
-        isNewRecord ||
-        Object.entries(input).some(([k, v]) => v !== undefined && embeddingFields.has(k));
-      if (affectsEmbedding) {
-        embedMutation.mutate({ id: row.id });
-      }
     },
     onError: (err, input, ctx) => {
       if (input.id !== undefined && ctx?.previous) {
@@ -195,7 +168,6 @@ export function useDeleteRecords() {
 export function useMergeRecords() {
   const qc = useQueryClient();
   const utils = trpc.useUtils();
-  const embedMutation = useEmbedRecord();
   const undoMergeMutation = useUndoMerge();
 
   return trpc.records.merge.useMutation({
@@ -276,9 +248,6 @@ export function useMergeRecords() {
       void utils.records.list.invalidate();
       void utils.records.tree.invalidate();
 
-      /* re-embed the target record */
-      embedMutation.mutate({ id: updatedRecord.id });
-
       /* undo toast */
       toast('Records merged', {
         action: {
@@ -308,7 +277,6 @@ export function useMergeRecords() {
 function useUndoMerge() {
   const qc = useQueryClient();
   const utils = trpc.useUtils();
-  const embedMutation = useEmbedRecord();
   const navigate = useNavigate();
 
   return trpc.records.undoMerge.useMutation({
@@ -330,10 +298,6 @@ function useUndoMerge() {
       void utils.links.listForRecord.invalidate({ id: sourceId });
       void utils.links.listForRecord.invalidate({ id: targetId });
       void utils.links.map.invalidate();
-
-      // Re-embed both records
-      embedMutation.mutate({ id: sourceId });
-      embedMutation.mutate({ id: targetId });
 
       // Navigate back to the restored source record
       void navigate({

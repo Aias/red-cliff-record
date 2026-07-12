@@ -7,16 +7,20 @@ import {
   type RecordType,
 } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { cosineDistance, sql } from 'drizzle-orm';
+import { cosineDistance, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { createEmbedding } from '@/lib/server/create-embedding';
 import {
-  similarity,
+  exactMatchTier,
+  ftsRank,
+  lexicalMatchCondition,
+  normalizedUrlColumn,
+  normalizeUrl,
+  setTrigramThresholds,
   SIMILARITY_THRESHOLD,
-  TRIGRAM_DISTANCE_THRESHOLD,
   trigramDistance,
-  WORD_SIMILARITY_DISTANCE_THRESHOLD,
+  URL_DUPLICATE_CANDIDATE_LIMIT,
 } from '@/server/lib/constants';
+import { createEmbedding } from '@/server/lib/create-embedding';
 import { IdSchema, SearchRecordsInputSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
@@ -72,85 +76,81 @@ type SearchResult = {
 export const searchRouter = createTRPCRouter({
   byTextQuery: publicProcedure
     .input(SearchRecordsInputSchema)
-    .query(({ ctx: { db }, input }): Promise<SearchResult[]> => {
+    .query(async ({ ctx: { db }, input }): Promise<SearchResult[]> => {
       const {
         query,
         filters: { recordType },
         limit,
       } = input;
-      return db.query.records.findMany({
-        where: {
-          RAW: (records, { sql }) =>
-            sql`(
-						${records.title} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-						${query} <<-> ${records.title} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD} OR
-						${records.abbreviation} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-						${query} <<-> ${records.abbreviation} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD} OR
-						${records.content} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-						(POSITION(' ' IN ${query}) > 0 AND ${query} <<-> ${records.content} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD}) OR
-						${records.summary} <-> ${query} < ${TRIGRAM_DISTANCE_THRESHOLD} OR
-						(POSITION(' ' IN ${query}) > 0 AND ${query} <<-> ${records.summary} < ${WORD_SIMILARITY_DISTANCE_THRESHOLD})
-					)`,
-          type: recordType,
-        },
-        limit,
-        orderBy: (records, { desc }) => [
-          trigramDistance(records, query),
-          desc(records.recordUpdatedAt),
-        ],
-        columns: {
-          id: true,
-          type: true,
-          title: true,
-          content: true,
-          summary: true,
-          sense: true,
-          abbreviation: true,
-          url: true,
-          avatarUrl: true,
-          mediaCaption: true,
-          rating: true,
-          recordUpdatedAt: true,
-          recordCreatedAt: true,
-          contentCreatedAt: true,
-          contentUpdatedAt: true,
-          sources: true,
-          textEmbedding: false,
-        },
-        with: {
-          outgoingLinks: {
-            columns: {
-              id: true,
-              predicate: true,
-            },
-            with: {
-              target: {
-                columns: {
-                  id: true,
-                  type: true,
-                  title: true,
-                  abbreviation: true,
-                  sense: true,
-                  summary: true,
-                  avatarUrl: true,
+      return db.transaction(async (tx) => {
+        await setTrigramThresholds(tx);
+        return tx.query.records.findMany({
+          where: {
+            RAW: (records) => lexicalMatchCondition(records, query),
+            type: recordType,
+          },
+          limit,
+          orderBy: (records, { desc }) => [
+            exactMatchTier(records, query),
+            desc(ftsRank(records.textSearch, query)),
+            trigramDistance(records, query),
+            desc(records.recordUpdatedAt),
+          ],
+          columns: {
+            id: true,
+            type: true,
+            title: true,
+            content: true,
+            summary: true,
+            sense: true,
+            abbreviation: true,
+            url: true,
+            avatarUrl: true,
+            mediaCaption: true,
+            rating: true,
+            recordUpdatedAt: true,
+            recordCreatedAt: true,
+            contentCreatedAt: true,
+            contentUpdatedAt: true,
+            sources: true,
+            textEmbedding: false,
+            textSearch: false,
+          },
+          with: {
+            outgoingLinks: {
+              columns: {
+                id: true,
+                predicate: true,
+              },
+              with: {
+                target: {
+                  columns: {
+                    id: true,
+                    type: true,
+                    title: true,
+                    abbreviation: true,
+                    sense: true,
+                    summary: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+              where: {
+                predicate: {
+                  in: searchLinkPredicates,
                 },
               },
             },
-            where: {
-              predicate: {
-                in: searchLinkPredicates,
+            media: {
+              columns: {
+                id: true,
+                type: true,
+                url: true,
+                altText: true,
               },
             },
           },
-          media: {
-            columns: {
-              id: true,
-              type: true,
-              url: true,
-              altText: true,
-            },
-          },
-        },
+        });
       });
     }),
 
@@ -202,6 +202,7 @@ export const searchRouter = createTRPCRouter({
           columns: {
             id: true,
             textEmbedding: true,
+            url: true,
           },
           where: {
             id,
@@ -222,11 +223,7 @@ export const searchRouter = createTRPCRouter({
         if (!recordWithLinks) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
         }
-        const { textEmbedding, outgoingLinks, incomingLinks } = recordWithLinks;
-
-        if (textEmbedding === null) {
-          return [];
-        }
+        const { textEmbedding, url, outgoingLinks, incomingLinks } = recordWithLinks;
 
         const omittedIds = [
           id,
@@ -234,42 +231,89 @@ export const searchRouter = createTRPCRouter({
           ...incomingLinks.map((l) => l.sourceId),
         ];
 
+        // A shared source URL is a near-certain duplicate signal independent
+        // of embeddings, but only when the URL is distinctive — platform root
+        // URLs shared by dozens of records carry no identity information, so
+        // those are suppressed rather than truncated to an arbitrary few.
+        const seedUrl = normalizeUrl(url);
+        const urlMatches = seedUrl
+          ? await db.query.records.findMany({
+              columns: { id: true },
+              where: {
+                AND: [
+                  { id: { notIn: omittedIds } },
+                  { isPrivate: false },
+                  type ? { type } : {},
+                  { RAW: (t) => sql`${normalizedUrlColumn(t.url)} = ${seedUrl}` },
+                ],
+              },
+              limit: URL_DUPLICATE_CANDIDATE_LIMIT + 1,
+            })
+          : [];
+        const urlCandidateIds =
+          urlMatches.length > 0 && urlMatches.length <= URL_DUPLICATE_CANDIDATE_LIMIT
+            ? urlMatches.map((r) => r.id)
+            : [];
+
+        if (textEmbedding === null) {
+          return urlCandidateIds.map((candidateId) => ({
+            id: candidateId,
+            similarity: null,
+          }));
+        }
+
         return await db.query.records.findMany({
           columns: { id: true },
           extras: {
-            similarity: (t) => similarity(t.textEmbedding, textEmbedding),
+            similarity: (t) =>
+              sql<number | null>`1 - (${cosineDistance(t.textEmbedding, textEmbedding)})`.as(
+                'similarity'
+              ),
           },
           where: {
             AND: [
-              { textEmbedding: { isNotNull: true } },
               { id: { notIn: omittedIds } },
               { isPrivate: false },
               type ? { type } : {},
               {
                 OR: [
+                  ...(urlCandidateIds.length > 0 ? [{ id: { in: urlCandidateIds } }] : []),
                   {
-                    RAW: (t, { sql }) =>
-                      sql`1 - (${cosineDistance(t.textEmbedding, textEmbedding)}) > ${SIMILARITY_THRESHOLD}`,
-                  },
-                  {
-                    outgoingLinks: {
-                      predicate: {
-                        in: nonContainmentPredicates,
+                    AND: [
+                      { textEmbedding: { isNotNull: true } },
+                      {
+                        OR: [
+                          {
+                            RAW: (t, { sql }) =>
+                              sql`1 - (${cosineDistance(t.textEmbedding, textEmbedding)}) > ${SIMILARITY_THRESHOLD}`,
+                          },
+                          {
+                            outgoingLinks: {
+                              predicate: {
+                                in: nonContainmentPredicates,
+                              },
+                            },
+                          },
+                          {
+                            incomingLinks: {
+                              id: {
+                                isNotNull: true,
+                              },
+                            },
+                          },
+                        ],
                       },
-                    },
-                  },
-                  {
-                    incomingLinks: {
-                      id: {
-                        isNotNull: true,
-                      },
-                    },
+                    ],
                   },
                 ],
               },
             ],
           },
-          orderBy: (t, { desc }) => [desc(sql`similarity`), desc(t.recordUpdatedAt)],
+          orderBy: (t, { desc }) => [
+            ...(urlCandidateIds.length > 0 ? [desc(inArray(t.id, urlCandidateIds))] : []),
+            sql`similarity DESC NULLS LAST`,
+            desc(t.recordUpdatedAt),
+          ],
           limit,
         });
       } catch (err) {

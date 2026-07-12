@@ -10,6 +10,7 @@ import {
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { queueRecordEmbeddings } from '@/server/services/embed-records';
 import { IdSchema, type DbId } from '@/shared/types/api';
 import type { RecordLinks, RecordLinksMap } from '@/shared/types/domain';
 import { createTRPCRouter, publicProcedure } from '../init';
@@ -178,9 +179,19 @@ export const linksRouter = createTRPCRouter({
     } satisfies Partial<LinkInsert>;
 
     let row: LinkSelect | undefined;
+    /* Endpoints of the pre-update row: retargeting a link leaves the old
+     * endpoints' embedding text stale, so they regenerate alongside the new. */
+    let previousEndpointIds: number[] = [];
 
     if (input.id) {
       /* UPDATE --------------------------------------------------- */
+      const previous = await db.query.links.findFirst({
+        where: { id: input.id },
+        columns: { sourceId: true, targetId: true },
+      });
+      if (previous) {
+        previousEndpointIds = [previous.sourceId, previous.targetId];
+      }
       [row] = await db.update(links).set(linkData).where(eq(links.id, input.id)).returning();
       if (!row) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Link not found for update' });
@@ -212,6 +223,8 @@ export const linksRouter = createTRPCRouter({
       });
     }
 
+    queueRecordEmbeddings([row.sourceId, row.targetId, ...previousEndpointIds]);
+
     return row;
   }),
 
@@ -231,6 +244,7 @@ export const linksRouter = createTRPCRouter({
       return []; // Return empty array if input is empty
     }
     const deletedLinks = await db.delete(links).where(inArray(links.id, input)).returning();
+    queueRecordEmbeddings(deletedLinks.flatMap((link) => [link.sourceId, link.targetId]));
     return deletedLinks;
   }),
 });

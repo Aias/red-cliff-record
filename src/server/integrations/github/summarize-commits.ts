@@ -1,8 +1,9 @@
 import { githubCommits, GithubCommitTypeSchema } from '@hozo';
 import { eq } from 'drizzle-orm';
-import OpenAI from 'openai';
+import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { db } from '@/server/db/connections/postgres';
+import { getOpenAIClient, OPENAI_MODEL } from '@/server/lib/openai';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createIntegrationLogger } from '../common/logging';
 
@@ -51,10 +52,6 @@ export const CommitSummaryResponseSchema = z.object({
 
 export type CommitSummaryResponse = z.infer<typeof CommitSummaryResponseSchema>;
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export const commitSummarizerInstructions = `
 <assistant-notes>
 
@@ -91,24 +88,21 @@ You will be given the following as input:
 export const summarizeCommit = async (
   commit: CommitSummaryInput
 ): Promise<CommitSummaryResponse> => {
-  const response = await openai.responses.create({
-    model: 'gpt-5.2',
+  const response = await getOpenAIClient().responses.parse({
+    model: OPENAI_MODEL,
     instructions: commitSummarizerInstructions,
     text: {
-      format: {
-        type: 'json_schema',
-        name: 'commit_summary',
-        schema: z.toJSONSchema(CommitSummaryResponseSchema),
-        strict: true,
-      },
+      format: zodTextFormat(CommitSummaryResponseSchema, 'commit_summary'),
     },
     input: [{ type: 'message', role: 'user', content: JSON.stringify(commit) }],
   });
 
-  const summaryJson = JSON.parse(response.output_text);
-  const summary = CommitSummaryResponseSchema.parse(summaryJson);
+  if (!response.output_parsed) {
+    const reason = response.incomplete_details?.reason ?? response.status ?? 'no output';
+    throw new Error(`Commit summary response could not be parsed (${reason})`);
+  }
 
-  return summary;
+  return response.output_parsed;
 };
 
 type CommitWithRelations = Awaited<ReturnType<typeof getCommitsWithoutSummaries>>[number];

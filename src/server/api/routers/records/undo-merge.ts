@@ -9,6 +9,7 @@ import {
 import { TRPCError } from '@trpc/server';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { queueRecordEmbeddings } from '@/server/services/embed-records';
 import { publicProcedure } from '../../init';
 import { type IntegrationTableName, integrationTableMap } from './merge';
 
@@ -26,9 +27,11 @@ const SnapshotLinkSchema = z.object({
   recordUpdatedAt: z.date(),
 });
 
+const SnapshotRecordSchema = RecordSelectSchema.omit({ textSearch: true });
+
 const MergeSnapshotSchema = z.object({
-  sourceRecord: RecordSelectSchema,
-  targetRecord: RecordSelectSchema,
+  sourceRecord: SnapshotRecordSchema,
+  targetRecord: SnapshotRecordSchema,
   links: z.array(SnapshotLinkSchema),
   mediaAssignments: z.array(z.object({ id: z.number(), recordId: z.number().nullable() })),
   integrationAssignments: z.array(
@@ -151,6 +154,14 @@ export const undoMerge = publicProcedure
           message: 'Failed to fetch restored records.',
         });
       }
+
+      // Both restored records were nulled above, and every endpoint of the
+      // restored links has embedding text referencing them.
+      queueRecordEmbeddings([
+        sourceRecord.id,
+        targetRecord.id,
+        ...snapshot.links.flatMap((link) => [link.sourceId, link.targetId]),
+      ]);
 
       return {
         sourceRecord: restoredSourceRecord,

@@ -59,7 +59,7 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
   const shouldSearch = debouncedQuery.length >= 1;
 
   const trigram = trpc.records.list.useQuery(
-    { searchQuery: debouncedQuery, strategy: 'trigram', limit: 8 },
+    { searchQuery: debouncedQuery, strategy: 'lexical', limit: 8 },
     { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
   );
   const vector = trpc.records.list.useQuery(

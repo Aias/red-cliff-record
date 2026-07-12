@@ -2,7 +2,7 @@ import { RecordInsertSchema, records } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { embedRecordsByIds } from '@/server/services/embed-records';
+import { queueRecordEmbeddings } from '@/server/services/embed-records';
 import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
 import { IdSchema, type DbId } from '@/shared/types/api';
 import type { RecordGet } from '@/shared/types/domain';
@@ -57,6 +57,10 @@ export const upsert = publicProcedure
       });
     }
 
+    if (input.id === undefined || affectsEmbedding) {
+      queueRecordEmbeddings([result.id]);
+    }
+
     return record;
   });
 
@@ -92,9 +96,7 @@ export const bulkUpdate = publicProcedure
       .returning({ id: records.id });
 
     if (affectsEmbedding) {
-      embedRecordsByIds(updated.map((r) => r.id)).catch((error) => {
-        console.warn('Failed to regenerate embeddings after bulk update:', error);
-      });
+      queueRecordEmbeddings(updated.map((r) => r.id));
     }
 
     if (updated.length !== ids.length) {

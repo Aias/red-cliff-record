@@ -5,8 +5,11 @@ import type { DbId } from './api';
  * Core domain types used across client and server
  */
 
-// Record without embedding data (for client consumption)
-export type RecordGet = Omit<RecordSelect & { media?: MediaSelect[] }, 'textEmbedding'> & {
+// Record without embedding or search-index data (for client consumption)
+export type RecordGet = Omit<
+  RecordSelect & { media?: MediaSelect[] },
+  'textEmbedding' | 'textSearch'
+> & {
   outgoingLinks?: Array<{
     predicate: PredicateSlug;
     target: { id: DbId; title: string | null };
