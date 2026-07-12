@@ -1,4 +1,4 @@
-import { cosineDistance, sql, type Column, type SQL } from 'drizzle-orm';
+import { sql, type Column, type SQL } from 'drizzle-orm';
 
 export const SIMILARITY_THRESHOLD = 0.8; // Cosine similarity floor (higher = stricter)
 /** Max same-URL records pinned as duplicate candidates; larger clusters are junk (platform root URLs), not identity signals. */
