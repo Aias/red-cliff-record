@@ -1,0 +1,3 @@
+ALTER TABLE "records" DROP COLUMN "text_search";--> statement-breakpoint
+ALTER TABLE "records" ADD COLUMN "text_search" tsvector GENERATED ALWAYS AS (setweight(to_tsvector('english', coalesce("records"."title", '') || ' ' || coalesce("records"."abbreviation", '') || ' ' || coalesce("records"."sense", '')), 'A') || setweight(to_tsvector('english', coalesce("records"."summary", '') || ' ' || coalesce("records"."media_caption", '')), 'B') || setweight(to_tsvector('english', left(coalesce("records"."content", ''), 100000)), 'C') || setweight(to_tsvector('english', coalesce("records"."notes", '') || ' ' || coalesce("records"."url", '')), 'D')) STORED;--> statement-breakpoint
+CREATE INDEX "idx_records_text_search" ON "records" USING gin ("text_search");

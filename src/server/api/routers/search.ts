@@ -7,16 +7,19 @@ import {
   type RecordType,
 } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { cosineDistance, sql } from 'drizzle-orm';
+import { cosineDistance, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   exactMatchTier,
   ftsRank,
   lexicalMatchCondition,
+  normalizedUrlColumn,
+  normalizeUrl,
   setTrigramThresholds,
   similarity,
   SIMILARITY_THRESHOLD,
   trigramDistance,
+  URL_DUPLICATE_CANDIDATE_LIMIT,
 } from '@/server/lib/constants';
 import { createEmbedding } from '@/server/lib/create-embedding';
 import { IdSchema, SearchRecordsInputSchema } from '@/shared/types/api';
@@ -200,6 +203,7 @@ export const searchRouter = createTRPCRouter({
           columns: {
             id: true,
             textEmbedding: true,
+            url: true,
           },
           where: {
             id,
@@ -220,7 +224,7 @@ export const searchRouter = createTRPCRouter({
         if (!recordWithLinks) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
         }
-        const { textEmbedding, outgoingLinks, incomingLinks } = recordWithLinks;
+        const { textEmbedding, url, outgoingLinks, incomingLinks } = recordWithLinks;
 
         if (textEmbedding === null) {
           return [];
@@ -231,6 +235,29 @@ export const searchRouter = createTRPCRouter({
           ...outgoingLinks.map((l) => l.targetId),
           ...incomingLinks.map((l) => l.sourceId),
         ];
+
+        // A shared source URL is a near-certain duplicate signal, but only
+        // when the URL is distinctive — platform root URLs shared by dozens
+        // of records carry no identity information, so those are suppressed
+        // rather than truncated to an arbitrary few.
+        const seedUrl = normalizeUrl(url);
+        const urlMatches = seedUrl
+          ? await db.query.records.findMany({
+              columns: { id: true },
+              where: {
+                AND: [
+                  { id: { notIn: omittedIds } },
+                  { isPrivate: false },
+                  { RAW: (t) => sql`${normalizedUrlColumn(t.url)} = ${seedUrl}` },
+                ],
+              },
+              limit: URL_DUPLICATE_CANDIDATE_LIMIT + 1,
+            })
+          : [];
+        const urlCandidateIds =
+          urlMatches.length > 0 && urlMatches.length <= URL_DUPLICATE_CANDIDATE_LIMIT
+            ? urlMatches.map((r) => r.id)
+            : [];
 
         return await db.query.records.findMany({
           columns: { id: true },
@@ -245,6 +272,7 @@ export const searchRouter = createTRPCRouter({
               type ? { type } : {},
               {
                 OR: [
+                  ...(urlCandidateIds.length > 0 ? [{ id: { in: urlCandidateIds } }] : []),
                   {
                     RAW: (t, { sql }) =>
                       sql`1 - (${cosineDistance(t.textEmbedding, textEmbedding)}) > ${SIMILARITY_THRESHOLD}`,
@@ -267,7 +295,11 @@ export const searchRouter = createTRPCRouter({
               },
             ],
           },
-          orderBy: (t, { desc }) => [desc(sql`similarity`), desc(t.recordUpdatedAt)],
+          orderBy: (t, { desc }) => [
+            ...(urlCandidateIds.length > 0 ? [desc(inArray(t.id, urlCandidateIds))] : []),
+            desc(sql`similarity`),
+            desc(t.recordUpdatedAt),
+          ],
           limit,
         });
       } catch (err) {

@@ -59,12 +59,14 @@ export const records = pgTable(
     sources: integrationTypeEnum('sources').array(),
     /**
      * Weighted full-text search document: title/abbreviation/sense (A),
-     * summary/mediaCaption (B), content (C), notes (D). Content is capped to
-     * keep the vector under Postgres's tsvector size limit on outlier records.
+     * summary/mediaCaption (B), content (C), notes/url (D). Postgres tokenizes
+     * URLs into host and path lexemes, so domain queries match records by
+     * their source URL. Content is capped to keep the vector under Postgres's
+     * tsvector size limit on outlier records.
      */
     textSearch: tsvector('text_search').generatedAlwaysAs(
       (): SQL =>
-        sql`setweight(to_tsvector('english', coalesce(${records.title}, '') || ' ' || coalesce(${records.abbreviation}, '') || ' ' || coalesce(${records.sense}, '')), 'A') || setweight(to_tsvector('english', coalesce(${records.summary}, '') || ' ' || coalesce(${records.mediaCaption}, '')), 'B') || setweight(to_tsvector('english', left(coalesce(${records.content}, ''), 100000)), 'C') || setweight(to_tsvector('english', coalesce(${records.notes}, '')), 'D')`
+        sql`setweight(to_tsvector('english', coalesce(${records.title}, '') || ' ' || coalesce(${records.abbreviation}, '') || ' ' || coalesce(${records.sense}, '')), 'A') || setweight(to_tsvector('english', coalesce(${records.summary}, '') || ' ' || coalesce(${records.mediaCaption}, '')), 'B') || setweight(to_tsvector('english', left(coalesce(${records.content}, ''), 100000)), 'C') || setweight(to_tsvector('english', coalesce(${records.notes}, '') || ' ' || coalesce(${records.url}, '')), 'D')`
     ),
     ...databaseTimestamps,
     ...contentTimestamps,

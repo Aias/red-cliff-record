@@ -1,6 +1,8 @@
 import { cosineDistance, sql, type Column, type SQL } from 'drizzle-orm';
 
 export const SIMILARITY_THRESHOLD = 0.8; // Cosine similarity floor (higher = stricter)
+/** Max same-URL records pinned as duplicate candidates; larger clusters are junk (platform root URLs), not identity signals. */
+export const URL_DUPLICATE_CANDIDATE_LIMIT = 2;
 export const TRIGRAM_DISTANCE_THRESHOLD = 0.75; // pg_trgm distance ceiling (lower = stricter)
 export const WORD_SIMILARITY_THRESHOLD = 0.5; // pg_trgm word_similarity floor for phrase matching
 export const WORD_SIMILARITY_DISTANCE_THRESHOLD = 1 - WORD_SIMILARITY_THRESHOLD;
@@ -33,6 +35,27 @@ export const trigramDistance = (
 /** Escape LIKE/ILIKE metacharacters in user input. */
 const escapeLikePattern = (query: string) => query.replace(/[\\%_]/g, '\\$&');
 
+/** Strip protocol, www, and trailing slashes so URLs compare by identity. */
+export const normalizeUrl = (url: string | null | undefined): string | null => {
+  if (!url) {
+    return null;
+  }
+  const normalized = url
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\/(www\.)?/, '')
+    .replace(/\/+$/, '');
+  return normalized.length > 0 ? normalized : null;
+};
+
+/** The same URL normalization as `normalizeUrl`, applied to a column. */
+export const normalizedUrlColumn = (column: Column): SQL =>
+  sql`lower(regexp_replace(${column}, '^https?://(www\\.)?|/+$', '', 'g'))`;
+
+/** Queries containing a dot or slash may be URLs or domains; only those should match against the url column. */
+const asUrlQuery = (query: string): string | null =>
+  /[./]/.test(query) ? normalizeUrl(query) : null;
+
 /**
  * Build a tsquery from user input: websearch syntax for whole words, OR'd
  * with a per-word prefix query so partially typed words still match.
@@ -56,19 +79,25 @@ export const ftsRank = (textSearch: Column, query: string): SQL =>
   sql`ts_rank_cd(${textSearch}, ${toTsQuery(query)})`;
 
 /**
- * Tiered exactness for ranking: 0 = exact title/abbreviation match,
- * 1 = title prefix, 2 = title/abbreviation substring, 3 = everything else.
- * Keeps literal matches ahead of fuzzy and semantic ones.
+ * Tiered exactness for ranking: 0 = exact title/abbreviation/URL match,
+ * 1 = title prefix, 2 = title/abbreviation/URL substring, 3 = everything else.
+ * Keeps literal matches ahead of fuzzy and semantic ones. URL tiers apply
+ * only to URL-shaped queries so slug fragments don't outrank real matches.
  */
 export const exactMatchTier = (
-  columns: { title: Column; abbreviation: Column },
+  columns: { title: Column; abbreviation: Column; url: Column },
   query: string
 ): SQL<number> => {
   const escaped = escapeLikePattern(query.trim());
+  const urlQuery = asUrlQuery(query);
+  const urlExact = urlQuery ? sql`${normalizedUrlColumn(columns.url)} = ${urlQuery}` : sql`false`;
+  const urlSubstring = urlQuery
+    ? sql`${columns.url} ILIKE ${`%${escapeLikePattern(urlQuery)}%`}`
+    : sql`false`;
   return sql<number>`CASE
-    WHEN lower(${columns.title}) = lower(${query}) OR lower(${columns.abbreviation}) = lower(${query}) THEN 0
+    WHEN lower(${columns.title}) = lower(${query}) OR lower(${columns.abbreviation}) = lower(${query}) OR ${urlExact} THEN 0
     WHEN ${columns.title} ILIKE ${`${escaped}%`} THEN 1
-    WHEN ${columns.title} ILIKE ${`%${escaped}%`} OR ${columns.abbreviation} ILIKE ${`%${escaped}%`} THEN 2
+    WHEN ${columns.title} ILIKE ${`%${escaped}%`} OR ${columns.abbreviation} ILIKE ${`%${escaped}%`} OR ${urlSubstring} THEN 2
     ELSE 3
   END`;
 };
@@ -86,13 +115,19 @@ export const lexicalMatchCondition = (
     abbreviation: Column;
     content: Column;
     summary: Column;
+    url: Column;
     textSearch: Column;
   },
   query: string
 ): SQL => {
   const substring = `%${escapeLikePattern(query.trim())}%`;
+  const urlQuery = asUrlQuery(query);
+  const urlCondition = urlQuery
+    ? sql`${columns.url} ILIKE ${`%${escapeLikePattern(urlQuery)}%`}`
+    : sql`false`;
   return sql`(
     ${columns.textSearch} @@ ${toTsQuery(query)} OR
+    ${urlCondition} OR
     ${columns.title} ILIKE ${substring} OR
     ${columns.abbreviation} ILIKE ${substring} OR
     ${columns.title} % ${query} OR ${query} <% ${columns.title} OR
