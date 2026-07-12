@@ -7,10 +7,6 @@ export const TRIGRAM_DISTANCE_THRESHOLD = 0.75; // pg_trgm distance ceiling (low
 export const WORD_SIMILARITY_THRESHOLD = 0.5; // pg_trgm word_similarity floor for phrase matching
 export const WORD_SIMILARITY_DISTANCE_THRESHOLD = 1 - WORD_SIMILARITY_THRESHOLD;
 
-export const similarity = (column: Column, vector: number[]) => {
-  return sql<number>`1 - (${cosineDistance(column, vector)})`.as('similarity');
-};
-
 /** Best trigram distance across title, abbreviation, content, summary.
  * Uses word_similarity (<<->) for multi-word queries on content/summary. */
 export const trigramDistance = (

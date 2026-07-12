@@ -471,7 +471,7 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
                     color: 'secondary',
                   }}
                 >
-                  {`${Math.round(record.similarity * 100)}%`}
+                  {record.similarity === null ? 'url' : `${Math.round(record.similarity * 100)}%`}
                 </RelationshipSelector.Trigger>
                 <RelationshipSelector.Content side="left" />
               </RelationshipSelector.Root>

@@ -16,7 +16,6 @@ import {
   normalizedUrlColumn,
   normalizeUrl,
   setTrigramThresholds,
-  similarity,
   SIMILARITY_THRESHOLD,
   trigramDistance,
   URL_DUPLICATE_CANDIDATE_LIMIT,
@@ -226,20 +225,16 @@ export const searchRouter = createTRPCRouter({
         }
         const { textEmbedding, url, outgoingLinks, incomingLinks } = recordWithLinks;
 
-        if (textEmbedding === null) {
-          return [];
-        }
-
         const omittedIds = [
           id,
           ...outgoingLinks.map((l) => l.targetId),
           ...incomingLinks.map((l) => l.sourceId),
         ];
 
-        // A shared source URL is a near-certain duplicate signal, but only
-        // when the URL is distinctive — platform root URLs shared by dozens
-        // of records carry no identity information, so those are suppressed
-        // rather than truncated to an arbitrary few.
+        // A shared source URL is a near-certain duplicate signal independent
+        // of embeddings, but only when the URL is distinctive — platform root
+        // URLs shared by dozens of records carry no identity information, so
+        // those are suppressed rather than truncated to an arbitrary few.
         const seedUrl = normalizeUrl(url);
         const urlMatches = seedUrl
           ? await db.query.records.findMany({
@@ -248,6 +243,7 @@ export const searchRouter = createTRPCRouter({
                 AND: [
                   { id: { notIn: omittedIds } },
                   { isPrivate: false },
+                  type ? { type } : {},
                   { RAW: (t) => sql`${normalizedUrlColumn(t.url)} = ${seedUrl}` },
                 ],
               },
@@ -259,14 +255,23 @@ export const searchRouter = createTRPCRouter({
             ? urlMatches.map((r) => r.id)
             : [];
 
+        if (textEmbedding === null) {
+          return urlCandidateIds.map((candidateId) => ({
+            id: candidateId,
+            similarity: null,
+          }));
+        }
+
         return await db.query.records.findMany({
           columns: { id: true },
           extras: {
-            similarity: (t) => similarity(t.textEmbedding, textEmbedding),
+            similarity: (t) =>
+              sql<number | null>`1 - (${cosineDistance(t.textEmbedding, textEmbedding)})`.as(
+                'similarity'
+              ),
           },
           where: {
             AND: [
-              { textEmbedding: { isNotNull: true } },
               { id: { notIn: omittedIds } },
               { isPrivate: false },
               type ? { type } : {},
@@ -274,22 +279,31 @@ export const searchRouter = createTRPCRouter({
                 OR: [
                   ...(urlCandidateIds.length > 0 ? [{ id: { in: urlCandidateIds } }] : []),
                   {
-                    RAW: (t, { sql }) =>
-                      sql`1 - (${cosineDistance(t.textEmbedding, textEmbedding)}) > ${SIMILARITY_THRESHOLD}`,
-                  },
-                  {
-                    outgoingLinks: {
-                      predicate: {
-                        in: nonContainmentPredicates,
+                    AND: [
+                      { textEmbedding: { isNotNull: true } },
+                      {
+                        OR: [
+                          {
+                            RAW: (t, { sql }) =>
+                              sql`1 - (${cosineDistance(t.textEmbedding, textEmbedding)}) > ${SIMILARITY_THRESHOLD}`,
+                          },
+                          {
+                            outgoingLinks: {
+                              predicate: {
+                                in: nonContainmentPredicates,
+                              },
+                            },
+                          },
+                          {
+                            incomingLinks: {
+                              id: {
+                                isNotNull: true,
+                              },
+                            },
+                          },
+                        ],
                       },
-                    },
-                  },
-                  {
-                    incomingLinks: {
-                      id: {
-                        isNotNull: true,
-                      },
-                    },
+                    ],
                   },
                 ],
               },
@@ -297,7 +311,7 @@ export const searchRouter = createTRPCRouter({
           },
           orderBy: (t, { desc }) => [
             ...(urlCandidateIds.length > 0 ? [desc(inArray(t.id, urlCandidateIds))] : []),
-            desc(sql`similarity`),
+            sql`similarity DESC NULLS LAST`,
             desc(t.recordUpdatedAt),
           ],
           limit,
