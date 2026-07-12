@@ -71,17 +71,6 @@ export function useUpsertLink() {
         };
       });
 
-      // Use Set for O(1) lookups when filtering
-      const idSet = new Set([sourceId, targetId]);
-      utils.search.byRecordId.setData({ id: sourceId, limit: 10 }, (prev) => {
-        if (!prev) return undefined;
-        return prev.filter((r) => !idSet.has(r.id));
-      });
-      utils.search.byRecordId.setData({ id: targetId, limit: 10 }, (prev) => {
-        if (!prev) return undefined;
-        return prev.filter((r) => !idSet.has(r.id));
-      });
-
       return { prevSource, prevTarget };
     },
     onSuccess: (row) => {
@@ -89,6 +78,9 @@ export function useUpsertLink() {
 
       void utils.links.listForRecord.invalidate({ id: sourceId });
       void utils.links.listForRecord.invalidate({ id: targetId });
+
+      void utils.search.byRecordId.invalidate({ id: sourceId });
+      void utils.search.byRecordId.invalidate({ id: targetId });
 
       void utils.records.tree.invalidate({ id: sourceId });
       void utils.records.tree.invalidate({ id: targetId });
