@@ -366,7 +366,7 @@ async function syncReadwiseDocumentsInternal(integrationRunId: number): Promise<
           await createRecordsFromReadwiseTags();
         }),
       ]);
-      await createRecordsFromReadwiseDocuments();
+      await createRecordsFromReadwiseDocuments(integrationRunId);
     }
 
     logger.complete('Processed documents', successCount);
