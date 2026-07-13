@@ -16,8 +16,12 @@ import {
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
+import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
+
+/** Default concurrency for database operations */
+const DB_CONCURRENCY = 10;
 
 const logger = createIntegrationLogger('raindrop', 'map');
 
@@ -88,30 +92,35 @@ export async function createRaindropTags(integrationRunId?: number) {
   }
 
   // Create new bookmark-tag relationships
-  const bookmarkTagPromises = bookmarks.flatMap((bookmark) => {
+  const bookmarkTagRows = bookmarks.flatMap((bookmark) => {
     if (!bookmark.tags) return [];
 
-    return bookmark.tags.map(async (tag) => {
-      const tagId = tagMap.get(tag);
-      if (!tagId) return null;
-
-      const [bookmarkTag] = await db
-        .insert(raindropBookmarkTags)
-        .values({ bookmarkId: bookmark.id, tagId })
-        .onConflictDoUpdate({
-          target: [raindropBookmarkTags.bookmarkId, raindropBookmarkTags.tagId],
-          set: {
-            recordUpdatedAt: new Date(),
-          },
-        })
-        .returning();
-
-      return bookmarkTag;
-    });
+    return bookmark.tags
+      .map((tag) => {
+        const tagId = tagMap.get(tag);
+        if (!tagId) return null;
+        return { bookmarkId: bookmark.id, tagId };
+      })
+      .filter((row): row is { bookmarkId: number; tagId: number } => row !== null);
   });
 
-  const newBookmarkTags = (await Promise.all(bookmarkTagPromises)).filter(Boolean);
-  logger.info(`Inserted ${newBookmarkTags.length} bookmark tags`);
+  const BULK_INSERT_CHUNK_SIZE = 1000;
+  let insertedCount = 0;
+  for (let i = 0; i < bookmarkTagRows.length; i += BULK_INSERT_CHUNK_SIZE) {
+    const chunk = bookmarkTagRows.slice(i, i + BULK_INSERT_CHUNK_SIZE);
+    const inserted = await db
+      .insert(raindropBookmarkTags)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: [raindropBookmarkTags.bookmarkId, raindropBookmarkTags.tagId],
+        set: {
+          recordUpdatedAt: new Date(),
+        },
+      })
+      .returning();
+    insertedCount += inserted.length;
+  }
+  logger.info(`Inserted ${insertedCount} bookmark tags`);
 
   logger.complete(`Processed tags for ${bookmarks.length} bookmarks`);
   return bookmarks;
@@ -162,43 +171,51 @@ export async function createRecordsFromRaindropBookmarks() {
 
   logger.info(`Found ${unmappedBookmarks.length} unmapped Raindrop bookmarks`);
 
-  for (const bookmark of unmappedBookmarks) {
-    const newRecordDefaults = mapRaindropBookmarkToRecord(bookmark);
+  let processed = 0;
+  const bookmarkResults = await runConcurrentPool({
+    items: unmappedBookmarks,
+    concurrency: DB_CONCURRENCY,
+    async worker(bookmark) {
+      const newRecordDefaults = mapRaindropBookmarkToRecord(bookmark);
 
-    const [newRecord] = await db
-      .insert(records)
-      .values(newRecordDefaults)
-      .returning({ id: records.id });
+      const [newRecord] = await db
+        .insert(records)
+        .values(newRecordDefaults)
+        .returning({ id: records.id });
 
-    if (!newRecord) {
-      throw new Error('Failed to create record');
-    }
-
-    logger.info(`Created record ${newRecord.id} for bookmark ${bookmark.title} (${bookmark.id})`);
-
-    await db
-      .update(raindropBookmarks)
-      .set({ recordId: newRecord.id })
-      .where(eq(raindropBookmarks.id, bookmark.id));
-
-    // Link tags to the record
-    for (const tag of bookmark.tagRecords) {
-      if (tag.recordId) {
-        logger.info(`Linking record ${newRecord.id} to tag ${tag.recordId}`);
-        await linkRecords(newRecord.id, tag.recordId, 'tagged_with', db);
+      if (!newRecord) {
+        throw new Error('Failed to create record');
       }
-    }
 
-    // Link media to the record if it exists
-    for (const image of bookmark.coverImages) {
-      if (image.mediaId) {
-        logger.info(`Linking media ${image.mediaId} to record ${newRecord.id}`);
-        await db.update(media).set({ recordId: newRecord.id }).where(eq(media.id, image.mediaId));
+      logger.info(`Created record ${newRecord.id} for bookmark ${bookmark.title} (${bookmark.id})`);
+
+      await db
+        .update(raindropBookmarks)
+        .set({ recordId: newRecord.id })
+        .where(eq(raindropBookmarks.id, bookmark.id));
+
+      // Link tags to the record
+      for (const tag of bookmark.tagRecords) {
+        if (tag.recordId) {
+          logger.info(`Linking record ${newRecord.id} to tag ${tag.recordId}`);
+          await linkRecords(newRecord.id, tag.recordId, 'tagged_with', db);
+        }
       }
-    }
-  }
 
-  logger.complete(`Processed ${unmappedBookmarks.length} Raindrop bookmarks`);
+      // Link media to the record if it exists
+      for (const image of bookmark.coverImages) {
+        if (image.mediaId) {
+          logger.info(`Linking media ${image.mediaId} to record ${newRecord.id}`);
+          await db.update(media).set({ recordId: newRecord.id }).where(eq(media.id, image.mediaId));
+        }
+      }
+
+      processed++;
+    },
+  });
+  throwPoolFailures(bookmarkResults, 'Raindrop bookmark→record mapping', unmappedBookmarks.length);
+
+  logger.complete(`Processed ${processed} of ${unmappedBookmarks.length} Raindrop bookmarks`);
 }
 
 const mapRaindropImageToMedia = async (
@@ -256,8 +273,10 @@ export async function createMediaFromRaindropBookmarks() {
 
   logger.info(`Found ${unmappedImages.length} Raindrop images without media`);
 
-  await Promise.all(
-    unmappedImages.map(async (image) => {
+  const mediaResults = await runConcurrentPool({
+    items: unmappedImages,
+    concurrency: DB_CONCURRENCY,
+    async worker(image) {
       const newMedia = await mapRaindropImageToMedia(image);
       if (!newMedia) {
         logger.warn(`Invalid image for image ${image.id}, deleting...`);
@@ -297,8 +316,9 @@ export async function createMediaFromRaindropBookmarks() {
           .set({ recordId: image.bookmark.recordId })
           .where(eq(media.id, newMediaRecord.id));
       }
-    })
-  );
+    },
+  });
+  throwPoolFailures(mediaResults, 'Raindrop media creation', unmappedImages.length);
 
   logger.complete(`Processed ${unmappedImages.length} Raindrop bookmark media`);
 }
@@ -345,42 +365,50 @@ export async function createRecordsFromRaindropTags() {
 
   logger.info(`Found ${unmappedTags.length} unmapped Raindrop tags`);
 
-  for (const tag of unmappedTags) {
-    const newCategoryDefaults = mapRaindropTagToRecord(tag);
+  let processed = 0;
+  const tagResults = await runConcurrentPool({
+    items: unmappedTags,
+    concurrency: DB_CONCURRENCY,
+    async worker(tag) {
+      const newCategoryDefaults = mapRaindropTagToRecord(tag);
 
-    const [newCategory] = await db
-      .insert(records)
-      .values(newCategoryDefaults)
-      .returning({ id: records.id })
-      .onConflictDoUpdate({
-        target: records.id,
-        set: {
-          recordUpdatedAt: new Date(),
-          isCurated: false,
-        },
-      });
+      const [newCategory] = await db
+        .insert(records)
+        .values(newCategoryDefaults)
+        .returning({ id: records.id })
+        .onConflictDoUpdate({
+          target: records.id,
+          set: {
+            recordUpdatedAt: new Date(),
+            isCurated: false,
+          },
+        });
 
-    if (!newCategory) {
-      throw new Error('Failed to create category');
-    }
-
-    logger.info(`Created record ${newCategory.id} for tag ${tag.tag}`);
-
-    await db
-      .update(raindropTags)
-      .set({ recordId: newCategory.id })
-      .where(eq(raindropTags.id, tag.id));
-
-    // Link bookmarks to the tag
-    for (const bookmark of tag.bookmarks) {
-      if (bookmark.recordId) {
-        logger.info(`Linking record ${bookmark.recordId} to category ${newCategory.id}`);
-        await linkRecords(bookmark.recordId, newCategory.id, 'tagged_with', db);
+      if (!newCategory) {
+        throw new Error('Failed to create category');
       }
-    }
-  }
 
-  logger.complete(`Processed ${unmappedTags.length} Raindrop tags`);
+      logger.info(`Created record ${newCategory.id} for tag ${tag.tag}`);
+
+      await db
+        .update(raindropTags)
+        .set({ recordId: newCategory.id })
+        .where(eq(raindropTags.id, tag.id));
+
+      // Link bookmarks to the tag
+      for (const bookmark of tag.bookmarks) {
+        if (bookmark.recordId) {
+          logger.info(`Linking record ${bookmark.recordId} to category ${newCategory.id}`);
+          await linkRecords(bookmark.recordId, newCategory.id, 'tagged_with', db);
+        }
+      }
+
+      processed++;
+    },
+  });
+  throwPoolFailures(tagResults, 'Raindrop tag→record mapping', unmappedTags.length);
+
+  logger.complete(`Processed ${processed} of ${unmappedTags.length} Raindrop tags`);
 }
 
 export const mapRaindropHighlightToRecord = (
@@ -432,44 +460,64 @@ export async function createRecordsFromRaindropHighlights() {
   // Map to store the new record IDs keyed by highlight ID
   const recordMap = new Map<string, number>();
 
-  for (const highlight of unmappedHighlights) {
-    const newRecordDefaults = mapRaindropHighlightToRecord(highlight);
+  const highlightResults = await runConcurrentPool({
+    items: unmappedHighlights,
+    concurrency: DB_CONCURRENCY,
+    async worker(highlight) {
+      const newRecordDefaults = mapRaindropHighlightToRecord(highlight);
 
-    const [newRecord] = await db
-      .insert(records)
-      .values(newRecordDefaults)
-      .returning({ id: records.id });
+      const [newRecord] = await db
+        .insert(records)
+        .values(newRecordDefaults)
+        .returning({ id: records.id });
 
-    if (!newRecord) {
-      throw new Error('Failed to create record');
-    }
+      if (!newRecord) {
+        throw new Error('Failed to create record');
+      }
 
-    logger.info(
-      `Created record ${newRecord.id} for highlight ${highlight.text.slice(0, 30)}... (${highlight.id})`
-    );
+      logger.info(
+        `Created record ${newRecord.id} for highlight ${highlight.text.slice(0, 30)}... (${highlight.id})`
+      );
 
-    await db
-      .update(raindropHighlights)
-      .set({ recordId: newRecord.id })
-      .where(eq(raindropHighlights.id, highlight.id));
+      await db
+        .update(raindropHighlights)
+        .set({ recordId: newRecord.id })
+        .where(eq(raindropHighlights.id, highlight.id));
 
-    recordMap.set(highlight.id, newRecord.id);
-  }
+      recordMap.set(highlight.id, newRecord.id);
+    },
+  });
+  throwPoolFailures(
+    highlightResults,
+    'Raindrop highlight→record mapping',
+    unmappedHighlights.length
+  );
 
   // Link highlight records to their parent bookmark records via contained_by
-  for (const highlight of unmappedHighlights) {
-    const childRecordId = recordMap.get(highlight.id);
-    const parentRecordId = highlight.bookmark.recordId;
+  const parentLinkResults = await runConcurrentPool({
+    items: unmappedHighlights,
+    concurrency: DB_CONCURRENCY,
+    async worker(highlight) {
+      const childRecordId = recordMap.get(highlight.id);
+      const parentRecordId = highlight.bookmark.recordId;
 
-    if (childRecordId && parentRecordId) {
-      await linkRecords(childRecordId, parentRecordId, 'contained_by', db);
-      logger.info(`Linked highlight record ${childRecordId} to bookmark record ${parentRecordId}`);
-    } else {
-      logger.warn(
-        `Skipping linking for highlight ${highlight.id} due to missing record IDs (child: ${childRecordId}, parent: ${parentRecordId})`
-      );
-    }
-  }
+      if (childRecordId && parentRecordId) {
+        await linkRecords(childRecordId, parentRecordId, 'contained_by', db);
+        logger.info(
+          `Linked highlight record ${childRecordId} to bookmark record ${parentRecordId}`
+        );
+      } else {
+        logger.warn(
+          `Skipping linking for highlight ${highlight.id} due to missing record IDs (child: ${childRecordId}, parent: ${parentRecordId})`
+        );
+      }
+    },
+  });
+  throwPoolFailures(
+    parentLinkResults,
+    'Raindrop highlight parent linking',
+    unmappedHighlights.length
+  );
 
   logger.complete(`Processed ${unmappedHighlights.length} Raindrop highlights`);
 }

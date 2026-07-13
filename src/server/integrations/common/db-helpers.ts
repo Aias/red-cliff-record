@@ -1,4 +1,6 @@
 import { links as linksTable, type LinkInsert, type PredicateSlug } from '@hozo';
+import { getColumns, sql, type SQL } from 'drizzle-orm';
+import type { PgTable } from 'drizzle-orm/pg-core';
 import { type Db } from '@/server/db/connections/postgres';
 import type { RecordSlug } from '@/server/db/seed';
 import { createIntegrationLogger } from './logging';
@@ -67,6 +69,27 @@ export async function linkRecords(
     logger.error(`Failed to link record ${sourceId} to record ${targetId}`, error);
     throw error;
   }
+}
+
+/**
+ * Builds an `onConflictDoUpdate` set that overwrites the given columns with
+ * the incoming (excluded) row values, enabling multi-row upserts via a single
+ * `.values(rows)` insert.
+ */
+export function conflictUpdateSet<TTable extends PgTable>(
+  table: TTable,
+  columns: Extract<keyof TTable['_']['columns'], string>[]
+): Partial<Record<Extract<keyof TTable['_']['columns'], string>, SQL>> {
+  const tableColumns = getColumns(table);
+  const set: Partial<Record<Extract<keyof TTable['_']['columns'], string>, SQL>> = {};
+  for (const column of columns) {
+    const tableColumn = tableColumns[column];
+    if (!tableColumn) {
+      throw new Error(`conflictUpdateSet: unknown column ${column}`);
+    }
+    set[column] = sql.raw(`excluded."${tableColumn.name}"`);
+  }
+  return set;
 }
 
 export async function bulkInsertLinks(links: LinkInsert[], db: Db): Promise<void> {

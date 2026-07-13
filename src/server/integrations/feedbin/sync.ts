@@ -61,14 +61,28 @@ async function getRecentFeedIds(limit = 1000): Promise<Set<number>> {
   return new Set(rows.map((r) => r.id));
 }
 
+/** Chunk size for `in` queries against candidate entry IDs */
+const EXISTING_ENTRY_ID_CHUNK_SIZE = 1000;
+
 /**
- * Get ALL existing entry IDs from the database
+ * Get which of the given candidate entry IDs already exist in the database
  */
-async function getAllExistingEntryIds(): Promise<Set<number>> {
-  const rows = await db.query.feedEntries.findMany({
-    columns: { id: true },
-  });
-  return new Set(rows.map((r) => r.id));
+async function getExistingEntryIds(candidateIds: number[]): Promise<Set<number>> {
+  const existing = new Set<number>();
+
+  for (let i = 0; i < candidateIds.length; i += EXISTING_ENTRY_ID_CHUNK_SIZE) {
+    const chunk = candidateIds.slice(i, i + EXISTING_ENTRY_ID_CHUNK_SIZE);
+    if (chunk.length === 0) continue;
+
+    const rows = await db.query.feedEntries.findMany({
+      where: { id: { in: chunk } },
+      columns: { id: true },
+    });
+
+    for (const row of rows) existing.add(row.id);
+  }
+
+  return existing;
 }
 
 /**
@@ -108,11 +122,6 @@ async function bulkUpdateReadStatus(entryIds: number[], read: boolean): Promise<
     } catch (error) {
       logger.error(`Bulk update batch failed or timed out`, error);
       // Continue with next batch even if this one fails
-    }
-
-    // Add small delay between batches
-    if (i + BATCH_SIZE < entryIds.length) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 }
@@ -175,6 +184,9 @@ async function syncSingleFeed(feedId: number, iconMap?: Map<string, string>): Pr
   }
 }
 
+/** Concurrency for upserting feeds */
+const FEED_CONCURRENCY = 10;
+
 /**
  * Sync feeds from Feedbin subscriptions
  */
@@ -186,78 +198,64 @@ async function syncFeeds(
   logger.start(`Syncing ${subscriptions.length} feeds`);
 
   const FEED_TIMEOUT_MS = 15000; // 15 seconds per feed
-  let successCount = 0;
-  let errorCount = 0;
 
-  for (const [index, subscription] of subscriptions.entries()) {
-    const feedStartTime = Date.now();
+  const results = await runConcurrentPool({
+    items: subscriptions,
+    concurrency: FEED_CONCURRENCY,
+    timeoutMs: FEED_TIMEOUT_MS,
+    worker: async (subscription, index) => {
+      // Extract domain from site URL for icon lookup
+      const siteUrl = subscription.site_url;
+      let iconUrl: string | null = null;
 
-    try {
-      // Set up timeout for individual feed processing
-      await Promise.race([
-        (async () => {
-          // Extract domain from site URL for icon lookup
-          const siteUrl = subscription.site_url;
-          let iconUrl: string | null = null;
+      if (siteUrl) {
+        try {
+          const url = new URL(siteUrl);
+          iconUrl = iconMap.get(url.hostname) || null;
+        } catch {
+          // Ignore URL parsing errors
+        }
+      }
 
-          if (siteUrl) {
-            try {
-              const url = new URL(siteUrl);
-              iconUrl = iconMap.get(url.hostname) || null;
-            } catch {
-              // Ignore URL parsing errors
-            }
-          }
+      // Upsert feed
+      await db
+        .insert(feeds)
+        .values({
+          id: subscription.feed_id,
+          name: subscription.title,
+          feedUrl: subscription.feed_url,
+          siteUrl: subscription.site_url,
+          iconUrl,
+          sources: ['feedbin'],
+          contentCreatedAt: subscription.created_at,
+        })
+        .onConflictDoUpdate({
+          target: feeds.id,
+          set: {
+            name: subscription.title,
+            feedUrl: subscription.feed_url,
+            siteUrl: subscription.site_url,
+            iconUrl,
+            recordUpdatedAt: new Date(),
+          },
+        });
 
-          // Upsert feed
-          await db
-            .insert(feeds)
-            .values({
-              id: subscription.feed_id,
-              name: subscription.title,
-              feedUrl: subscription.feed_url,
-              siteUrl: subscription.site_url,
-              iconUrl,
-              sources: ['feedbin'],
-              contentCreatedAt: subscription.created_at,
-            })
-            .onConflictDoUpdate({
-              target: feeds.id,
-              set: {
-                name: subscription.title,
-                feedUrl: subscription.feed_url,
-                siteUrl: subscription.site_url,
-                iconUrl,
-                recordUpdatedAt: new Date(),
-              },
-            });
-        })(),
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`Feed sync timeout after ${FEED_TIMEOUT_MS}ms`)),
-            FEED_TIMEOUT_MS
-          )
-        ),
-      ]);
+      logger.info(`Synced feed "${subscription.title}" (${index + 1} of ${subscriptions.length})`);
+    },
+  });
 
-      successCount++;
-      const feedDuration = Date.now() - feedStartTime;
-      logger.info(
-        `Synced feed "${subscription.title}" (${index + 1} of ${subscriptions.length}) in ${feedDuration}ms`
-      );
-    } catch (error) {
-      errorCount++;
+  const successCount = results.filter((r) => r.ok).length;
+  const errorCount = results.length - successCount;
+
+  results.forEach((result, index) => {
+    if (!result.ok) {
+      const subscription = subscriptions[index];
       logger.warn(
-        `Failed to sync feed ${subscription.feed_id} (${index + 1} of ${subscriptions.length})`,
-        error
+        `Failed to sync feed ${subscription?.feed_id} (${index + 1} of ${subscriptions.length})`,
+        result.error
       );
     }
-
-    // Add small delay between feeds to prevent overwhelming the system
-    if (index < subscriptions.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
+  });
 
   logger.complete(`Synced ${successCount} feeds (${errorCount} errors)`);
 }
@@ -502,11 +500,6 @@ async function bulkUpdateStarredStatus(entryIds: number[], starred: boolean): Pr
       logger.error(`Bulk update batch failed or timed out`, error);
       // Continue with next batch even if this one fails
     }
-
-    // Add small delay between batches
-    if (i + BATCH_SIZE < entryIds.length) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
   }
 }
 
@@ -563,10 +556,9 @@ async function syncFeedbin(
     syncedFeedIds.clear();
 
     // Get existing IDs for recent entries and feeds
-    const [existingEntryStatuses, existingFeedIds, allExistingEntryIds] = await Promise.all([
+    const [existingEntryStatuses, existingFeedIds] = await Promise.all([
       getRecentEntryStatuses(),
       getRecentFeedIds(),
-      getAllExistingEntryIds(),
     ]);
 
     // Step 1: Get last sync time and fetch new subscriptions
@@ -628,11 +620,13 @@ async function syncFeedbin(
     // Combine all IDs we need to consider
     const idsToConsider = new Set<number>([...unreadSet, ...recentlyReadIds, ...starredSet]);
 
+    // Check which of the candidate IDs already exist in the database
+    const candidateIds = Array.from(new Set([...idsToConsider, ...updatedIds]));
+    const existingEntryIds = await getExistingEntryIds(candidateIds);
+
     // Split between new entries to fetch and updated entries to re-fetch
-    const newEntriesToFetch = Array.from(idsToConsider).filter(
-      (id) => !allExistingEntryIds.has(id)
-    );
-    const updatedEntriesToFetch = updatedIds.filter((id) => allExistingEntryIds.has(id));
+    const newEntriesToFetch = Array.from(idsToConsider).filter((id) => !existingEntryIds.has(id));
+    const updatedEntriesToFetch = updatedIds.filter((id) => existingEntryIds.has(id));
 
     logger.info(`Found ${newEntriesToFetch.length} new entries to fetch`);
     logger.info(`Found ${updatedEntriesToFetch.length} updated entries to re-fetch`);
@@ -673,29 +667,22 @@ async function syncFeedbin(
     if (missingFeedIds.length > 0) {
       logger.info(`Fetching ${missingFeedIds.length} missing feeds before syncing entries`);
 
-      const FEED_BATCH_SIZE = 20;
-      let feedFetchCount = 0;
-
-      for (let i = 0; i < missingFeedIds.length; i += FEED_BATCH_SIZE) {
-        const batch = missingFeedIds.slice(i, i + FEED_BATCH_SIZE);
-        logger.info(
-          `Processing feed batch ${Math.floor(i / FEED_BATCH_SIZE) + 1} of ${Math.ceil(missingFeedIds.length / FEED_BATCH_SIZE)}`
-        );
-
-        await Promise.all(
-          batch.map(async (feedId) => {
-            try {
-              feedFetchCount++;
-              await syncSingleFeed(feedId, iconMap);
-              syncedFeedIds.add(feedId);
-              existingFeedIds.add(feedId);
-              logger.info(`Fetched feed ${feedId} (${feedFetchCount} of ${missingFeedIds.length})`);
-            } catch (error) {
-              logger.warn(`Failed to fetch feed ${feedId}`, error);
-            }
-          })
-        );
-      }
+      await runConcurrentPool({
+        items: missingFeedIds,
+        concurrency: 20,
+        worker: async (feedId) => {
+          try {
+            await syncSingleFeed(feedId, iconMap);
+            syncedFeedIds.add(feedId);
+            existingFeedIds.add(feedId);
+          } catch (error) {
+            logger.warn(`Failed to fetch feed ${feedId}`, error);
+          }
+        },
+        onProgress: (completed, total) => {
+          logger.info(`Fetched feed ${completed} of ${total}`);
+        },
+      });
     }
 
     // Step 7: Sync entries

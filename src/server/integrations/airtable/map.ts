@@ -19,8 +19,12 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { getMediaInsertData } from '@/server/lib/media';
 import { mapUrl } from '@/server/lib/url-utils';
+import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { bulkInsertLinks } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
+
+/** Default concurrency for database operations */
+const DB_CONCURRENCY = 10;
 
 const logger = createIntegrationLogger('airtable', 'map');
 
@@ -78,33 +82,39 @@ export async function createRecordsFromAirtableFormats() {
 
   logger.info(`Found ${formats.length} unmapped Airtable formats`);
 
-  for (const format of formats) {
-    const record = mapFormatToRecord(format);
-    logger.info(`Creating record for format ${format.name}`);
+  let processed = 0;
+  const formatResults = await runConcurrentPool({
+    items: formats,
+    concurrency: DB_CONCURRENCY,
+    async worker(format) {
+      const record = mapFormatToRecord(format);
 
-    const [newRecord] = await db
-      .insert(records)
-      .values(record)
-      .onConflictDoUpdate({
-        target: records.id,
-        set: { recordUpdatedAt: new Date() },
-      })
-      .returning({ id: records.id });
+      const [newRecord] = await db
+        .insert(records)
+        .values(record)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: { recordUpdatedAt: new Date() },
+        })
+        .returning({ id: records.id });
 
-    if (!newRecord) {
-      logger.error(`Failed to create record for format ${format.name}`);
-      continue;
-    }
+      if (!newRecord) {
+        logger.error(`Failed to create record for format ${format.name}`);
+        return;
+      }
 
-    await db
-      .update(airtableFormats)
-      .set({ recordId: newRecord.id })
-      .where(eq(airtableFormats.id, format.id));
+      await db
+        .update(airtableFormats)
+        .set({ recordId: newRecord.id })
+        .where(eq(airtableFormats.id, format.id));
 
-    logger.info(`Linked format ${format.name} to record ${newRecord.id}`);
-  }
+      logger.info(`Linked format ${format.name} to record ${newRecord.id}`);
+      processed++;
+    },
+  });
+  throwPoolFailures(formatResults, 'Airtable format→record mapping', formats.length);
 
-  logger.complete(`Processed ${formats.length} Airtable formats`);
+  logger.complete(`Processed ${processed} of ${formats.length} Airtable formats`);
 }
 
 // ------------------------------------------------------------------------
@@ -156,32 +166,39 @@ export async function createRecordsFromAirtableCreators() {
 
   logger.info(`Found ${creators.length} unmapped Airtable creators`);
 
-  for (const creator of creators) {
-    const entity = mapAirtableCreatorToRecord(creator);
+  let processed = 0;
+  const creatorResults = await runConcurrentPool({
+    items: creators,
+    concurrency: DB_CONCURRENCY,
+    async worker(creator) {
+      const entity = mapAirtableCreatorToRecord(creator);
 
-    const [newRecord] = await db
-      .insert(records)
-      .values(entity)
-      .onConflictDoUpdate({
-        target: records.id,
-        set: { recordUpdatedAt: new Date() },
-      })
-      .returning({ id: records.id });
+      const [newRecord] = await db
+        .insert(records)
+        .values(entity)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: { recordUpdatedAt: new Date() },
+        })
+        .returning({ id: records.id });
 
-    if (!newRecord) {
-      logger.error(`Failed to create record for creator ${creator.name}`);
-      continue;
-    }
+      if (!newRecord) {
+        logger.error(`Failed to create record for creator ${creator.name}`);
+        return;
+      }
 
-    await db
-      .update(airtableCreators)
-      .set({ recordId: newRecord.id })
-      .where(eq(airtableCreators.id, creator.id));
+      await db
+        .update(airtableCreators)
+        .set({ recordId: newRecord.id })
+        .where(eq(airtableCreators.id, creator.id));
 
-    logger.info(`Linked creator ${creator.name} to record ${newRecord.id}`);
-  }
+      logger.info(`Linked creator ${creator.name} to record ${newRecord.id}`);
+      processed++;
+    },
+  });
+  throwPoolFailures(creatorResults, 'Airtable creator→record mapping', creators.length);
 
-  logger.complete(`Processed ${creators.length} Airtable creators`);
+  logger.complete(`Processed ${processed} of ${creators.length} Airtable creators`);
 }
 
 // ------------------------------------------------------------------------
@@ -233,32 +250,39 @@ export async function createRecordsFromAirtableSpaces() {
 
   logger.info(`Found ${spaces.length} unmapped Airtable spaces`);
 
-  for (const space of spaces) {
-    const record = mapAirtableSpaceToRecord(space);
+  let processed = 0;
+  const spaceResults = await runConcurrentPool({
+    items: spaces,
+    concurrency: DB_CONCURRENCY,
+    async worker(space) {
+      const record = mapAirtableSpaceToRecord(space);
 
-    const [newRecord] = await db
-      .insert(records)
-      .values(record)
-      .onConflictDoUpdate({
-        target: records.id,
-        set: { recordUpdatedAt: new Date() },
-      })
-      .returning({ id: records.id });
+      const [newRecord] = await db
+        .insert(records)
+        .values(record)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: { recordUpdatedAt: new Date() },
+        })
+        .returning({ id: records.id });
 
-    if (!newRecord) {
-      logger.error(`Failed to create record for space ${space.name}`);
-      continue;
-    }
+      if (!newRecord) {
+        logger.error(`Failed to create record for space ${space.name}`);
+        return;
+      }
 
-    await db
-      .update(airtableSpaces)
-      .set({ recordId: newRecord.id })
-      .where(eq(airtableSpaces.id, space.id));
+      await db
+        .update(airtableSpaces)
+        .set({ recordId: newRecord.id })
+        .where(eq(airtableSpaces.id, space.id));
 
-    logger.info(`Linked space ${space.name} to record ${newRecord.id}`);
-  }
+      logger.info(`Linked space ${space.name} to record ${newRecord.id}`);
+      processed++;
+    },
+  });
+  throwPoolFailures(spaceResults, 'Airtable space→record mapping', spaces.length);
 
-  logger.complete(`Processed ${spaces.length} Airtable spaces`);
+  logger.complete(`Processed ${processed} of ${spaces.length} Airtable spaces`);
 }
 
 // ------------------------------------------------------------------------
@@ -423,43 +447,48 @@ export async function createRecordsFromAirtableExtracts() {
   // Pass 1: Create records and link media
   // ------------------------------------------------------------------------
   logger.info('Starting Pass 1: Create records and link media');
-  for (const extract of extracts) {
-    const recordPayload = mapAirtableExtractToRecord(extract);
+  const pass1Results = await runConcurrentPool({
+    items: extracts,
+    concurrency: DB_CONCURRENCY,
+    async worker(extract) {
+      const recordPayload = mapAirtableExtractToRecord(extract);
 
-    const [insertedRecord] = await db
-      .insert(records)
-      .values(recordPayload)
-      .onConflictDoUpdate({
-        target: records.id,
-        set: {
-          recordUpdatedAt: new Date(),
-        },
-      })
-      .returning({ id: records.id });
+      const [insertedRecord] = await db
+        .insert(records)
+        .values(recordPayload)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: {
+            recordUpdatedAt: new Date(),
+          },
+        })
+        .returning({ id: records.id });
 
-    if (!insertedRecord) {
-      logger.error(`Failed to create record for Airtable extract ${extract.id}`);
-      continue;
-    }
-
-    await db
-      .update(airtableExtracts)
-      .set({ recordId: insertedRecord.id })
-      .where(eq(airtableExtracts.id, extract.id));
-
-    recordMap.set(extract.id, insertedRecord.id);
-    logger.info(`Created record ${insertedRecord.id} for Airtable extract ${extract.id}`);
-
-    for (const attachment of extract.attachments) {
-      if (attachment.mediaId) {
-        await db
-          .update(media)
-          .set({ recordId: insertedRecord.id })
-          .where(eq(media.id, attachment.mediaId));
-        logger.info(`Linked media ${attachment.mediaId} to record ${insertedRecord.id}`);
+      if (!insertedRecord) {
+        logger.error(`Failed to create record for Airtable extract ${extract.id}`);
+        return;
       }
-    }
-  }
+
+      await db
+        .update(airtableExtracts)
+        .set({ recordId: insertedRecord.id })
+        .where(eq(airtableExtracts.id, extract.id));
+
+      recordMap.set(extract.id, insertedRecord.id);
+      logger.info(`Created record ${insertedRecord.id} for Airtable extract ${extract.id}`);
+
+      for (const attachment of extract.attachments) {
+        if (attachment.mediaId) {
+          await db
+            .update(media)
+            .set({ recordId: insertedRecord.id })
+            .where(eq(media.id, attachment.mediaId));
+          logger.info(`Linked media ${attachment.mediaId} to record ${insertedRecord.id}`);
+        }
+      }
+    },
+  });
+  throwPoolFailures(pass1Results, 'Airtable extract→record mapping', extracts.length);
   logger.info('Completed Pass 1.');
 
   // ------------------------------------------------------------------------

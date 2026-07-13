@@ -1,9 +1,11 @@
 import { githubRepositories, type GithubRepositoryInsert } from '@hozo';
 import { RequestError } from '@octokit/request-error';
-import { Octokit } from '@octokit/rest';
+import type { Octokit } from '@octokit/rest';
 import { db } from '@/server/db/connections/postgres';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { createIntegrationLogger } from '../common/logging';
+import { createGithubClient } from './octokit';
 import { ensureGithubUserExists } from './sync-users';
 import { GithubStarredReposResponseSchema, type StarredRepo } from './types';
 
@@ -12,8 +14,8 @@ const logger = createIntegrationLogger('github', 'sync-stars');
 /**
  * Configuration constants
  */
-const PAGE_SIZE = 50;
-const REQUEST_DELAY_MS = 1000;
+const PAGE_SIZE = 100;
+const DB_CONCURRENCY = 10;
 
 /**
  * Retrieves the most recent starred date from the database
@@ -44,7 +46,7 @@ async function getMostRecentStarredAt(): Promise<Date | null> {
 }
 
 /**
- * Processes a single starred repository
+ * Upserts a single starred repository; its owner must already exist
  *
  * @param star - The starred repo data from the API
  * @param integrationRunId - The ID of the current integration run
@@ -54,10 +56,6 @@ async function processStarredRepo(star: StarredRepo, integrationRunId: number): 
   const { repo, starred_at } = star;
 
   try {
-    // First ensure the owner exists using shared helper
-    await ensureGithubUserExists(repo.owner, integrationRunId);
-
-    // Then insert the repository
     const newRepo: GithubRepositoryInsert = {
       id: repo.id,
       nodeId: repo.node_id,
@@ -140,9 +138,7 @@ export async function syncGitHubStars(
   collectDebugData?: unknown[],
   skipPersist = false
 ): Promise<number> {
-  const octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN,
-  });
+  const octokit = createGithubClient();
 
   logger.start('Fetching GitHub starred repos');
 
@@ -154,7 +150,7 @@ export async function syncGitHubStars(
     logger.info('No existing stars in database');
   }
 
-  // Collect all new starred repos first, respecting rate limits during pagination
+  // Collect all new starred repos first
   const allNewStars: StarredRepo[] = [];
   let page = 1;
   let hasMore = true;
@@ -201,9 +197,6 @@ export async function syncGitHubStars(
       allNewStars.push(...newStarsOnPage);
 
       logger.info(`Found ${newStarsOnPage.length} new stars on page ${page}`);
-
-      // Rate limit delay between API requests
-      await Bun.sleep(REQUEST_DELAY_MS);
       page++;
     } catch (error) {
       if (error instanceof RequestError) {
@@ -231,21 +224,29 @@ export async function syncGitHubStars(
     return allNewStars.length;
   }
 
-  let successCount = 0;
-  for (let i = 0; i < allNewStars.length; i++) {
-    const star = allNewStars[i];
-    if (!star) {
-      continue;
-    }
-    const result = await processStarredRepo(star, integrationRunId);
-    if (result) successCount++;
-
-    if ((i + 1) % 10 === 0 || i + 1 === allNewStars.length) {
-      logger.info(`Processed ${i + 1}/${allNewStars.length} starred repos`);
-    }
-
-    await Bun.sleep(REQUEST_DELAY_MS);
+  // Upsert each unique owner once, then the repositories concurrently
+  const ownersById = new Map<number, StarredRepo['repo']['owner']>();
+  for (const star of allNewStars) {
+    ownersById.set(star.repo.owner.id, star.repo.owner);
   }
+  await runConcurrentPool({
+    items: [...ownersById.values()],
+    concurrency: DB_CONCURRENCY,
+    worker: (owner) => ensureGithubUserExists(owner, integrationRunId),
+  });
+
+  const results = await runConcurrentPool({
+    items: allNewStars,
+    concurrency: DB_CONCURRENCY,
+    worker: (star) => processStarredRepo(star, integrationRunId),
+    onProgress: (completed, total) => {
+      if (completed % 25 === 0 || completed === total) {
+        logger.info(`Processed ${completed}/${total} starred repos`);
+      }
+    },
+  });
+  const successCount = results.filter((result) => result.ok && result.value).length;
+
   logger.complete('Synced starred repositories', successCount);
   return successCount;
 }

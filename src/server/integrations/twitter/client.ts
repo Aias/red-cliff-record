@@ -120,7 +120,7 @@ export class TwitterClient {
   /**
    * Fetches a single page of bookmarks.
    */
-  private async fetchBookmarksPage(cursor?: string, count = 20): Promise<BookmarksPageResponse> {
+  private async fetchBookmarksPage(cursor?: string, count = 50): Promise<BookmarksPageResponse> {
     const variables = {
       count,
       includePromotedContent: false,
@@ -299,7 +299,7 @@ export class TwitterClient {
    * Fetches all bookmarks with pagination.
    *
    * @param options.maxPages - Maximum number of pages to fetch (default: unlimited)
-   * @param options.pageSize - Number of items per page (default: 20)
+   * @param options.pageSize - Number of items per page (default: 50)
    * @param options.knownTweetIds - Set of tweet IDs already in database; stops when encountered
    * @returns Array of bookmark responses in the format expected by sync.ts
    */
@@ -308,7 +308,7 @@ export class TwitterClient {
     pageSize?: number;
     knownTweetIds?: Set<string>;
   }): Promise<TwitterBookmarksArray> {
-    const { maxPages, pageSize = 20, knownTweetIds } = options ?? {};
+    const { maxPages, pageSize = 50, knownTweetIds } = options ?? {};
     const responses: TwitterBookmarksArray = [];
     let cursor: string | undefined;
     let pagesFetched = 0;

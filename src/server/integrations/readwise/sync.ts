@@ -1,5 +1,7 @@
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@hozo';
 import { db } from '@/server/db/connections/postgres';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
+import { withBufferedLogs } from '../common/buffered-logs';
 import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';
 import { createIntegrationLogger } from '../common/logging';
@@ -22,6 +24,8 @@ import {
  */
 const API_BASE_URL = 'https://readwise.io/api/v3/list/';
 const RETRY_DELAY_BASE = 1000; // 1 second in milliseconds
+/** Default concurrency for database operations */
+const DB_CONCURRENCY = 10;
 const READWISE_TOKEN = requireEnv('READWISE_TOKEN');
 const logger = createIntegrationLogger('readwise', 'sync');
 
@@ -196,39 +200,54 @@ const mapReadwiseArticleToDocument = (
 };
 
 /**
- * Sorts documents by their hierarchical relationship
- *
- * This ensures that parent documents are processed before their children.
- *
- * @param documents - The documents to sort
- * @returns Sorted array of documents
+ * Gets the depth of a document in the parent/child tree (0 for a root document)
  */
+function getDocumentDepth(
+  doc: ReadwiseArticle,
+  idToDocument: Map<string, ReadwiseArticle>
+): number {
+  let depth = 0;
+  let current = doc;
+  while (current.parent_id) {
+    const parent = idToDocument.get(current.parent_id);
+    if (!parent) break;
+    depth++;
+    current = parent;
+  }
+  return depth;
+}
+
 function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle[] {
   // Create a map of id to document for quick lookup
   const idToDocument = new Map(documents.map((doc) => [doc.id, doc]));
 
-  // Helper function to get the ancestry chain for a document
-  function getAncestryChain(doc: ReadwiseArticle): string[] {
-    const chain: string[] = [];
-    let current = doc;
-    while (current.parent_id) {
-      const parent = idToDocument.get(current.parent_id);
-      if (!parent) break;
-      chain.push(current.parent_id);
-      current = parent;
-    }
-    return chain;
-  }
-
   // Sort by ancestry chain length (parents first), then by creation date
   return [...documents].sort((a, b) => {
-    const aChain = getAncestryChain(a);
-    const bChain = getAncestryChain(b);
-    if (aChain.length !== bChain.length) {
-      return aChain.length - bChain.length;
+    const aDepth = getDocumentDepth(a, idToDocument);
+    const bDepth = getDocumentDepth(b, idToDocument);
+    if (aDepth !== bDepth) {
+      return aDepth - bDepth;
     }
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
+}
+
+/**
+ * Groups documents by their depth in the parent/child tree so that each depth
+ * level can be inserted concurrently while still guaranteeing every ancestor
+ * is inserted before its descendants.
+ */
+function groupDocumentsByDepth(documents: ReadwiseArticle[]): ReadwiseArticle[][] {
+  const idToDocument = new Map(documents.map((doc) => [doc.id, doc]));
+
+  const levels: ReadwiseArticle[][] = [];
+  for (const doc of documents) {
+    const depth = getDocumentDepth(doc, idToDocument);
+    const level = levels[depth] ?? [];
+    level.push(doc);
+    levels[depth] = level;
+  }
+  return levels;
 }
 
 /**
@@ -299,39 +318,54 @@ async function syncReadwiseDocumentsInternal(integrationRunId: number): Promise<
       // Sort documents to ensure parents are processed before children
       const sortedDocuments = sortDocumentsByHierarchy(allDocuments);
 
-      // Process each document
-      for (const doc of sortedDocuments) {
-        try {
-          // Map and insert the document
-          const documentToInsert = mapReadwiseArticleToDocument(doc, integrationRunId);
-          await db
-            .insert(readwiseDocuments)
-            .values(documentToInsert)
-            .onConflictDoUpdate({
-              target: readwiseDocuments.id,
-              set: { ...documentToInsert, recordUpdatedAt: new Date() },
-            });
+      // Insert level by level (root documents first) so that inserts within a
+      // level can run concurrently while ancestors always land before descendants.
+      const documentLevels = groupDocumentsByDepth(sortedDocuments);
+      for (const level of documentLevels) {
+        await runConcurrentPool({
+          items: level,
+          concurrency: DB_CONCURRENCY,
+          async worker(doc) {
+            try {
+              // Map and insert the document
+              const documentToInsert = mapReadwiseArticleToDocument(doc, integrationRunId);
+              await db
+                .insert(readwiseDocuments)
+                .values(documentToInsert)
+                .onConflictDoUpdate({
+                  target: readwiseDocuments.id,
+                  set: { ...documentToInsert, recordUpdatedAt: new Date() },
+                });
 
-          successCount++;
+              successCount++;
 
-          // Log progress periodically
-          if (successCount % 20 === 0) {
-            logger.info(`Processed ${successCount} of ${sortedDocuments.length} documents`);
-          }
-        } catch (error) {
-          logger.error('Error processing document', {
-            documentId: doc.id,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
+              // Log progress periodically
+              if (successCount % 20 === 0) {
+                logger.info(`Processed ${successCount} of ${sortedDocuments.length} documents`);
+              }
+            } catch (error) {
+              logger.error('Error processing document', {
+                documentId: doc.id,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
+          },
+        });
       }
 
-      // Step 4: Create related entities
+      // Step 4: Create related entities.
+      // Authors and tags are independent dependency chains, so run them concurrently.
       logger.info('Creating related entities');
-      await createReadwiseAuthors();
-      await createReadwiseTags(integrationRunId);
-      await createRecordsFromReadwiseAuthors();
-      await createRecordsFromReadwiseTags();
+      await Promise.all([
+        withBufferedLogs(async () => {
+          await createReadwiseAuthors();
+          await createRecordsFromReadwiseAuthors();
+        }),
+        withBufferedLogs(async () => {
+          await createReadwiseTags(integrationRunId);
+          await createRecordsFromReadwiseTags();
+        }),
+      ]);
       await createRecordsFromReadwiseDocuments();
     }
 

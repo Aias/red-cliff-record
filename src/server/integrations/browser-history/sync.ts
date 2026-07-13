@@ -2,6 +2,7 @@ import { arcSchema, browsingHistory, type Browser, type BrowsingHistoryInsert } 
 import { and, eq, gt, isNotNull, ne, notLike, sql } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { db } from '@/server/db/connections/postgres';
+import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
 import {
@@ -251,20 +252,20 @@ async function syncBrowserHistory(
  * @returns Promise that resolves to true if the sync should proceed, false otherwise
  */
 async function checkHostname(currentHostname: string, _browser: Browser): Promise<boolean> {
-  // Get all unique hostnames from the database
-  const uniqueHostnames = await db
-    .select({
-      hostname: browsingHistory.hostname,
-    })
-    .from(browsingHistory)
-    // .where(eq(browsingHistory.browser, browser))
-    .groupBy(browsingHistory.hostname);
-
-  const knownHostnames = new Set(uniqueHostnames.map((h) => h.hostname));
+  const existing = await db.query.browsingHistory.findFirst({
+    where: { hostname: currentHostname },
+    columns: { hostname: true },
+  });
 
   // If current hostname is not in the database, ask for confirmation
-  if (!knownHostnames.has(currentHostname)) {
-    logger.info('Known hostnames: ' + Array.from(knownHostnames).join(', '));
+  if (!existing) {
+    const uniqueHostnames = await db
+      .select({
+        hostname: browsingHistory.hostname,
+      })
+      .from(browsingHistory)
+      .groupBy(browsingHistory.hostname);
+    logger.info('Known hostnames: ' + uniqueHostnames.map((h) => h.hostname).join(', '));
     return askForConfirmation(
       `Current hostname "${currentHostname}" has not been seen before. Proceed with sync?`
     );
@@ -505,30 +506,37 @@ async function insertHistoryEntries(processedHistory: BrowsingHistoryInsert[]): 
   }
 
   // Insert in batches to avoid overwhelming the database
-  const totalBatches = Math.ceil(dedupedHistory.length / BATCH_SIZE);
-  let skippedCount = 0;
-
+  const batches: BrowsingHistoryInsert[][] = [];
   for (let i = 0; i < dedupedHistory.length; i += BATCH_SIZE) {
-    const batch = dedupedHistory.slice(i, i + BATCH_SIZE);
-
-    // Use onConflictDoNothing to skip duplicate entries
-    // The unique constraint on (hostname, viewEpochMicroseconds, url) will prevent duplicates
-    const result = await db
-      .insert(browsingHistory)
-      .values(batch)
-      .onConflictDoNothing()
-      .returning({ id: browsingHistory.id });
-
-    const insertedCount = result.length;
-    const expectedCount = batch.length;
-    if (insertedCount < expectedCount) {
-      skippedCount += expectedCount - insertedCount;
-    }
-
-    logger.info(
-      `Inserted batch ${Math.floor(i / BATCH_SIZE) + 1} of ${totalBatches} (${insertedCount}/${expectedCount} entries)`
-    );
+    batches.push(dedupedHistory.slice(i, i + BATCH_SIZE));
   }
+
+  const results = await runConcurrentPool({
+    items: batches,
+    concurrency: 8,
+    worker: async (batch, index) => {
+      // Use onConflictDoNothing to skip duplicate entries
+      // The unique constraint on (hostname, viewEpochMicroseconds, url) will prevent duplicates
+      const result = await db
+        .insert(browsingHistory)
+        .values(batch)
+        .onConflictDoNothing()
+        .returning({ id: browsingHistory.id });
+
+      const insertedCount = result.length;
+      const expectedCount = batch.length;
+
+      logger.info(
+        `Inserted batch ${index + 1} of ${batches.length} (${insertedCount}/${expectedCount} entries)`
+      );
+
+      return expectedCount - insertedCount;
+    },
+  });
+
+  throwPoolFailures(results, 'Insert history batch', batches.length);
+
+  const skippedCount = results.reduce((sum, r) => sum + (r.ok ? r.value : 0), 0);
 
   if (skippedCount > 0) {
     logger.info(`Skipped ${skippedCount} duplicate entries`);

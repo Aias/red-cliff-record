@@ -9,8 +9,12 @@ import {
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
+import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { getRecordId, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
+
+/** Default concurrency for database operations */
+const DB_CONCURRENCY = 10;
 
 const logger = createIntegrationLogger('adobe', 'map');
 
@@ -51,23 +55,28 @@ export const resetMediaCaptionsForLightroomImages = async () => {
   logger.info(`Found ${images.length} Lightroom images with linked records`);
 
   let updatedCount = 0;
-  for (const image of images) {
-    if (!image.recordId) continue;
+  const captionResults = await runConcurrentPool({
+    items: images,
+    concurrency: DB_CONCURRENCY,
+    async worker(image) {
+      if (!image.recordId) return;
 
-    const description = generateImageDescription(image);
+      const description = generateImageDescription(image);
 
-    // Update the record's mediaCaption
-    await db
-      .update(records)
-      .set({
-        mediaCaption: description,
-        recordUpdatedAt: new Date(),
-      })
-      .where(eq(records.id, image.recordId));
+      // Update the record's mediaCaption
+      await db
+        .update(records)
+        .set({
+          mediaCaption: description,
+          recordUpdatedAt: new Date(),
+        })
+        .where(eq(records.id, image.recordId));
 
-    updatedCount++;
-    logger.info(`Updated caption for record ${image.recordId} (${image.fileName})`);
-  }
+      updatedCount++;
+      logger.info(`Updated caption for record ${image.recordId} (${image.fileName})`);
+    },
+  });
+  throwPoolFailures(captionResults, 'Lightroom media caption reset', images.length);
 
   logger.complete(`Updated captions for ${updatedCount} records`);
 };
@@ -152,93 +161,101 @@ export const createMediaFromLightroomImages = async () => {
 
   logger.info(`Found ${unmappedImages.length} unmapped Lightroom images`);
 
-  for (const image of unmappedImages) {
-    let mediaId: number | null = image.media?.id ?? null;
-    let recordId: number | null = image.record?.id ?? null;
+  let processed = 0;
+  const imageResults = await runConcurrentPool({
+    items: unmappedImages,
+    concurrency: DB_CONCURRENCY,
+    async worker(image) {
+      let mediaId: number | null = image.media?.id ?? null;
+      let recordId: number | null = image.record?.id ?? null;
 
-    // Create media if needed
-    if (!mediaId) {
-      logger.info(`Creating media for ${image.fileName}`);
-      const newMediaDefaults = await mapLightroomImageToMedia(image);
+      // Create media if needed
+      if (!mediaId) {
+        logger.info(`Creating media for ${image.fileName}`);
+        const newMediaDefaults = await mapLightroomImageToMedia(image);
 
-      if (!newMediaDefaults) {
-        logger.error(`Failed to create media for ${image.fileName}`);
-        continue;
+        if (!newMediaDefaults) {
+          logger.error(`Failed to create media for ${image.fileName}`);
+          return;
+        }
+
+        // Update the url2048 to the new url so subsequent runs don't try to upload again
+        await db
+          .update(lightroomImages)
+          .set({ url2048: newMediaDefaults.url })
+          .where(eq(lightroomImages.id, image.id));
+
+        const [newMedia] = await db
+          .insert(media)
+          .values(newMediaDefaults)
+          .onConflictDoUpdate({
+            target: media.id,
+            set: {
+              recordUpdatedAt: new Date(),
+            },
+          })
+          .returning({ id: media.id });
+
+        if (!newMedia) {
+          throw new Error('Failed to create media');
+        }
+
+        mediaId = newMedia.id;
+        await db.update(lightroomImages).set({ mediaId }).where(eq(lightroomImages.id, image.id));
+
+        logger.info(`Created media ${mediaId} for ${image.fileName}`);
       }
 
-      // Update the url2048 to the new url so subsequent runs don't try to upload again
-      await db
-        .update(lightroomImages)
-        .set({ url2048: newMediaDefaults.url })
-        .where(eq(lightroomImages.id, image.id));
+      // Create record if needed
+      if (!image.record) {
+        logger.info(`Creating record for ${image.fileName}`);
+        const newRecordDefaults = mapLightroomImageToRecord(image);
 
-      const [newMedia] = await db
-        .insert(media)
-        .values(newMediaDefaults)
-        .onConflictDoUpdate({
-          target: media.id,
-          set: {
-            recordUpdatedAt: new Date(),
-          },
-        })
-        .returning({ id: media.id });
+        const [newRecord] = await db
+          .insert(records)
+          .values(newRecordDefaults)
+          .onConflictDoUpdate({
+            target: records.id,
+            set: {
+              recordUpdatedAt: new Date(),
+            },
+          })
+          .returning({ id: records.id });
 
-      if (!newMedia) {
-        throw new Error('Failed to create media');
+        if (!newRecord) {
+          throw new Error('Failed to create record');
+        }
+
+        recordId = newRecord.id;
+        await db.update(lightroomImages).set({ recordId }).where(eq(lightroomImages.id, image.id));
+
+        // Link to author if found
+        const me = await getRecordId('nick-trombley', db);
+
+        if (me) {
+          await linkRecords(recordId, me, 'created_by', db);
+        }
+
+        logger.info(`Created record ${recordId} for ${image.fileName}`);
       }
 
-      mediaId = newMedia.id;
-      await db.update(lightroomImages).set({ mediaId }).where(eq(lightroomImages.id, image.id));
-
-      logger.info(`Created media ${mediaId} for ${image.fileName}`);
-    }
-
-    // Create record if needed
-    if (!image.record) {
-      logger.info(`Creating record for ${image.fileName}`);
-      const newRecordDefaults = mapLightroomImageToRecord(image);
-
-      const [newRecord] = await db
-        .insert(records)
-        .values(newRecordDefaults)
-        .onConflictDoUpdate({
-          target: records.id,
-          set: {
-            recordUpdatedAt: new Date(),
-          },
-        })
-        .returning({ id: records.id });
-
-      if (!newRecord) {
-        throw new Error('Failed to create record');
+      // Link media to record if both exist
+      if (mediaId && recordId) {
+        logger.info(`Linking media ${mediaId} to record ${recordId}`);
+        await db
+          .update(media)
+          .set({
+            recordId,
+          })
+          .where(eq(media.id, mediaId));
       }
 
-      recordId = newRecord.id;
-      await db.update(lightroomImages).set({ recordId }).where(eq(lightroomImages.id, image.id));
+      processed++;
+    },
+  });
+  throwPoolFailures(imageResults, 'Lightroom image processing', unmappedImages.length);
 
-      // Link to author if found
-      const me = await getRecordId('nick-trombley', db);
-
-      if (me) {
-        await linkRecords(recordId, me, 'created_by', db);
-      }
-
-      logger.info(`Created record ${recordId} for ${image.fileName}`);
-    }
-
-    // Link media to record if both exist
-    if (mediaId && recordId) {
-      logger.info(`Linking media ${mediaId} to record ${recordId}`);
-      await db
-        .update(media)
-        .set({
-          recordId,
-        })
-        .where(eq(media.id, mediaId));
-    }
-  }
-
-  logger.complete(`Processed ${unmappedImages.length} Lightroom images`);
+  logger.complete(`Processed ${processed} of ${unmappedImages.length} Lightroom images`);
 };
 
 export const createRecordMediaLinks = async () => {
@@ -262,15 +279,18 @@ export const createRecordMediaLinks = async () => {
 
   logger.info(`Found ${images.length} Lightroom images with both record and media IDs`);
 
-  for (const image of images) {
-    logger.info(`Linking media ${image.mediaId} to record ${image.recordId}`);
-    await db
-      .update(media)
-      .set({
-        recordId: image.recordId!,
-      })
-      .where(eq(media.id, image.mediaId!));
-  }
+  const linkResults = await runConcurrentPool({
+    items: images,
+    concurrency: DB_CONCURRENCY,
+    async worker(image) {
+      const { recordId, mediaId } = image;
+      if (!recordId || !mediaId) return;
+
+      logger.info(`Linking media ${mediaId} to record ${recordId}`);
+      await db.update(media).set({ recordId }).where(eq(media.id, mediaId));
+    },
+  });
+  throwPoolFailures(linkResults, 'Lightroom record-media linking', images.length);
 
   logger.complete(`Linked ${images.length} media items to records`);
 };

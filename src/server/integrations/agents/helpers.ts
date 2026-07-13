@@ -106,12 +106,8 @@ export async function getRecentSessionFiles(
   basePath: string = CLAUDE_PROJECTS_PATH
 ): Promise<SessionFileInfo[]> {
   const projectDirs = await discoverProjectDirectories(basePath);
-  const allFiles: SessionFileInfo[] = [];
-
-  for (const projectDir of projectDirs) {
-    const files = await discoverSessionFiles(projectDir);
-    allFiles.push(...files);
-  }
+  const filesByProject = await Promise.all(projectDirs.map((dir) => discoverSessionFiles(dir)));
+  const allFiles = filesByProject.flat();
 
   // Sort by modification time, most recent first
   allFiles.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());

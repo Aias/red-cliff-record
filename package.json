@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -43,6 +43,7 @@
   "dependencies": {
     "@base-ui/react": "~1.6.0",
     "@libsql/client": "~0.17.4",
+    "@octokit/plugin-throttling": "~11.0.3",
     "@octokit/request-error": "~7.1.0",
     "@octokit/rest": "~22.0.1",
     "@radix-ui/colors": "~3.0.0",

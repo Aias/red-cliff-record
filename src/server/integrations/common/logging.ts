@@ -1,3 +1,5 @@
+import { writeLogLine } from './buffered-logs';
+
 /**
  * Creates a logger with a specific prefix for integration processes
  *
@@ -16,36 +18,36 @@ export function createIntegrationLogger(integration: string, process: string) {
   function log(level: Level, message: string, ...args: unknown[]) {
     const styledMessage = style(message, { ...styleForLevel(level), useAnsi });
     // Always log to stderr so CLI JSON output stays clean on stdout.
-    console.error(`${styledPrefix} ${styledMessage}`, ...args);
+    writeLogLine(`${styledPrefix} ${styledMessage}`, ...args);
   }
 
   function logError(message: string, error?: unknown, ...args: unknown[]) {
     const styledMessage = style(message, { ...styleForLevel('error'), useAnsi });
 
     if (error instanceof Error) {
-      console.error(`${styledPrefix} ${styledMessage}:`, error.message, ...args);
+      writeLogLine(`${styledPrefix} ${styledMessage}:`, error.message, ...args);
       if (error.cause) {
         if (error.cause instanceof Error) {
-          console.error(`${styledPrefix} ${styledMessage} cause:`, error.cause.message);
+          writeLogLine(`${styledPrefix} ${styledMessage} cause:`, error.cause.message);
           if (error.cause.stack) {
-            console.error(style(error.cause.stack, { dim: true, useAnsi }));
+            writeLogLine(style(error.cause.stack, { dim: true, useAnsi }));
           }
         } else {
-          console.error(`${styledPrefix} ${styledMessage} cause:`, error.cause);
+          writeLogLine(`${styledPrefix} ${styledMessage} cause:`, error.cause);
         }
       }
       if (error.stack) {
-        console.error(style(error.stack, { dim: true, useAnsi }));
+        writeLogLine(style(error.stack, { dim: true, useAnsi }));
       }
       return;
     }
 
     if (error !== undefined) {
-      console.error(`${styledPrefix} ${styledMessage}:`, error, ...args);
+      writeLogLine(`${styledPrefix} ${styledMessage}:`, error, ...args);
       return;
     }
 
-    console.error(`${styledPrefix} ${styledMessage}`, ...args);
+    writeLogLine(`${styledPrefix} ${styledMessage}`, ...args);
   }
 
   return {

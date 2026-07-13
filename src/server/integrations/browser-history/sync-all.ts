@@ -1,3 +1,4 @@
+import { withBufferedLogs } from '../common/buffered-logs';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -17,39 +18,53 @@ async function syncAllBrowserData(
   collectDebugData?: { arc: unknown[]; dia: unknown[] }
 ): Promise<number> {
   logger.start('Starting all browser history synchronization');
-  let totalEntriesCreated = 0;
 
-  // Run Arc browser sync
-  try {
-    logger.info('Starting Arc Browser Sync');
-    const arcEntries = await syncSingleBrowser(arcConfig, integrationRunId, collectDebugData?.arc);
-    totalEntriesCreated += arcEntries;
-    logger.complete('Arc Browser Sync', arcEntries);
-  } catch (error) {
-    if (error instanceof BrowserNotInstalledError) {
-      logger.warn(error.message + ' Skipping Arc sync.');
-    } else {
-      logger.error('Arc browser sync failed', error);
+  const syncArc = async (): Promise<number> => {
+    try {
+      logger.info('Starting Arc Browser Sync');
+      const arcEntries = await syncSingleBrowser(
+        arcConfig,
+        integrationRunId,
+        collectDebugData?.arc
+      );
+      logger.complete('Arc Browser Sync', arcEntries);
+      return arcEntries;
+    } catch (error) {
+      if (error instanceof BrowserNotInstalledError) {
+        logger.warn(error.message + ' Skipping Arc sync.');
+      } else {
+        logger.error('Arc browser sync failed', error);
+      }
+      // Continue with Dia sync even if Arc fails
+      return 0;
     }
-    // Continue with Dia sync even if Arc fails
-  }
+  };
 
-  // Add a small delay between syncs to ensure clean separation
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  // Run Dia browser sync
-  try {
-    logger.info('Starting Dia Browser Sync');
-    const diaEntries = await syncSingleBrowser(diaConfig, integrationRunId, collectDebugData?.dia);
-    totalEntriesCreated += diaEntries;
-    logger.complete('Dia Browser Sync', diaEntries);
-  } catch (error) {
-    if (error instanceof BrowserNotInstalledError) {
-      logger.warn(error.message + ' Skipping Dia sync.');
-    } else {
-      logger.error('Dia browser sync failed', error);
+  const syncDia = async (): Promise<number> => {
+    try {
+      logger.info('Starting Dia Browser Sync');
+      const diaEntries = await syncSingleBrowser(
+        diaConfig,
+        integrationRunId,
+        collectDebugData?.dia
+      );
+      logger.complete('Dia Browser Sync', diaEntries);
+      return diaEntries;
+    } catch (error) {
+      if (error instanceof BrowserNotInstalledError) {
+        logger.warn(error.message + ' Skipping Dia sync.');
+      } else {
+        logger.error('Dia browser sync failed', error);
+      }
+      return 0;
     }
-  }
+  };
+
+  const [arcEntries, diaEntries] = await Promise.all([
+    withBufferedLogs(syncArc),
+    withBufferedLogs(syncDia),
+  ]);
+  const totalEntriesCreated = arcEntries + diaEntries;
 
   logger.complete('All browser history synchronization completed', totalEntriesCreated);
   return totalEntriesCreated;
