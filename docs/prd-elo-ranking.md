@@ -182,17 +182,17 @@ Clean break: the `rating` column is dropped and all star-related UI, filters, an
 
 Current integrations map external signals to the 0–3 star scale. Under ELO:
 
-- **New records from integrations** get the default ELO (1200). External importance signals (Readwise stars, Raindrop important flag, Airtable michelin stars, Adobe ratings) are mapped to seed ELOs using the same star→ELO table from the migration.
+- **New records from integrations** get the default ELO (1200). External importance signals (Readwise stars, Raindrop important flag, Airtable michelin stars, Adobe ratings) are mapped to seed ELOs via a fixed signal→ELO table (1000/1200/1400/1600 for 0–3 stars).
 - **ELO is always user-sovereign.** Integration re-syncs never overwrite ELO scores, regardless of whether the record has matchup history. Once created, ELO is controlled exclusively through matchups.
 
 ## Implementation Phases
 
 ### Phase 1: Schema + migration
 
-- [ ] Add `eloScore` and `eloMatchups` columns to `records`
-- [ ] Create `elo_matchups` table
-- [ ] Backfill `eloScore` from existing `rating` values using the seed table
-- [ ] Set `eloMatchups` to 3 for all seeded records
+- [x] Add `eloScore` column to `records`
+- [ ] Add `eloMatchups` counter column to `records`
+- [x] Create `elo_matchups` table
+- [x] Seed `eloScore` from record richness signals (`src/server/db/seed-elo.ts`)
 
 ### Phase 2: ELO calculation + tRPC endpoints
 
@@ -229,16 +229,9 @@ Current integrations map external signals to the 0–3 star scale. Under ELO:
 - [ ] Drop `rating` column
 - [ ] Remove any remaining star references from integrations/CLI
 
-### Seed Table
+### Seeding
 
-| Stars | Initial ELO | Initial eloMatchups |
-| ----- | ----------- | ------------------- |
-| 0     | 1000        | 3                   |
-| 1     | 1200        | 3                   |
-| 2     | 1400        | 3                   |
-| 3     | 1600        | 3                   |
-
-The spread (200 points per star) is wide enough to be meaningful but narrow enough that a few matchups can overturn a bad seed. The phantom matchup count of 3 means seeded records start with K=32 but aren't quite as volatile as truly fresh records.
+Initial scores come from a richness heuristic over existing metadata rather than the star rating alone (`src/server/db/seed-elo.ts`). Each record's relevance is `(rating + curation boosts) × sqrt(weighted signal sum)` over links, media, notes, summary, and content. Within each type, percentile rank is mapped through an inverse normal CDF centered on the 1200 default (sd 150), so seeds follow the bell-shaped distribution matchup play converges to and new records enter at the median. Seeded records carry no matchup history: K=32 lets real comparisons quickly overturn a bad seed.
 
 ## Decisions
 
@@ -255,7 +248,7 @@ The spread (200 points per star) is wide enough to be meaningful but narrow enou
 - **Cycles:** No detection or prevention. ELO handles them naturally.
 - **Decay:** No score decay. Matchup selection biases toward records that haven't been compared recently.
 - **Integration sovereignty:** ELO is always user-sovereign. Re-syncs never overwrite, even for zero-matchup records.
-- **Seeding:** Stars→ELO via migration table. `eloMatchups` set to 3 for seeded records.
+- **Seeding:** Per-type richness percentile mapped through an inverse normal CDF centered on 1200 (sd 150). No phantom matchup count — seeds stay volatile (K=32) until real comparisons accumulate.
 - **New records:** No ranking nudge on creation. Records sit at 1200 until organically encountered.
 - **API consolidation:** Single `getMatchup` endpoint with optional `focusRecordId` param instead of separate random/settle queries.
 - **Matchup history:** Not surfaced in UI. Fire-and-forget; only scores matter.
