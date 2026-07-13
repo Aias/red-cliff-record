@@ -1,6 +1,6 @@
 {
   "name": "@aias/hozo",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Shared schema, relations, and validation for Red Cliff Record",
   "license": "MIT",
   "files": [
@@ -23,7 +23,7 @@
   "scripts": {
     "dev:watch": "tsup src/index.ts --dts --format esm --sourcemap --watch",
     "lint": "oxlint --fix --type-aware . && tsgo --noEmit",
-    "prepack": "tsup src/index.ts --dts --format esm --sourcemap --clean",
+    "prepack": "bunx --bun tsup src/index.ts --dts --format esm --sourcemap --clean",
     "test": "bun test"
   },
   "devDependencies": {

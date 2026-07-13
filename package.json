@@ -34,6 +34,7 @@
     "format:check": "oxfmt --check",
     "lint": "oxlint --fix .",
     "lint:check": "oxlint .",
+    "publish:hozo": "bun publish --cwd packages/hozo",
     "rcr": "bun src/server/cli/rcr/index.ts",
     "start": "bun run server.ts",
     "stylegen": "rm -rf src/app/styled-system && panda codegen && panda cssgen",
