@@ -7,6 +7,7 @@ import {
   type TwitterUserInsert,
 } from '@hozo';
 import { db } from '@/server/db/connections/postgres';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -222,6 +223,7 @@ async function fetchMissingParentTweets(
   // Collect reply parent IDs that need fetching
   const batchTweetIds = new Set(tweets.map((t) => t.rest_id));
   const parentIdsToFetch: string[] = [];
+  const parentIdsToFetchSet = new Set<string>();
 
   for (const tweet of tweets) {
     const replyToId = tweet.legacy.in_reply_to_status_id_str;
@@ -236,7 +238,8 @@ async function fetchMissingParentTweets(
       // Skip if already in current batch or known to exist in DB
       if (!batchTweetIds.has(replyToId) && !knownExistingIds.has(replyToId)) {
         // Avoid duplicates in the fetch list
-        if (!parentIdsToFetch.includes(replyToId)) {
+        if (!parentIdsToFetchSet.has(replyToId)) {
+          parentIdsToFetchSet.add(replyToId);
           parentIdsToFetch.push(replyToId);
         }
       }
@@ -251,50 +254,63 @@ async function fetchMissingParentTweets(
   logger.info(`Fetching ${parentIdsToFetch.length} parent tweets...`);
 
   const client = createTwitterClient({ timeoutMs: 30000 });
-  const parentTweets: TweetData[] = [];
-  const failedFetchIds: string[] = [];
 
-  for (let i = 0; i < parentIdsToFetch.length; i++) {
-    const parentId = parentIdsToFetch[i];
-    if (!parentId) {
-      continue;
-    }
-    try {
-      const result = await client.fetchTweetById(parentId);
+  type ParentFetchResult =
+    | { status: 'success'; tweet: TweetData }
+    | { status: 'failed'; parentId: string };
 
-      if (result.success) {
-        const parsed = TimelineItemSchema.safeParse(result.tweetResult);
-        if (parsed.success) {
-          const tweetResult = parsed.data;
+  const fetchResults = await runConcurrentPool({
+    items: parentIdsToFetch,
+    concurrency: 3,
+    onProgress: (completed, total) => {
+      logger.info(`Parent tweet fetch progress: ${completed}/${total}`);
+    },
+    async worker(parentId): Promise<ParentFetchResult> {
+      try {
+        const result = await client.fetchTweetById(parentId);
 
-          if (isTweetWithVisibilityResults(tweetResult)) {
-            logger.info(`Fetched parent tweet ${parentId}`);
-            parentTweets.push({ ...tweetResult.tweet, isQuoted: false });
-          } else if (isTweet(tweetResult)) {
-            logger.info(`Fetched parent tweet ${parentId}`);
-            parentTweets.push({ ...tweetResult, isQuoted: false });
-          } else {
+        if (result.success) {
+          const parsed = TimelineItemSchema.safeParse(result.tweetResult);
+          if (parsed.success) {
+            const tweetResult = parsed.data;
+
+            if (isTweetWithVisibilityResults(tweetResult)) {
+              logger.info(`Fetched parent tweet ${parentId}`);
+              return { status: 'success', tweet: { ...tweetResult.tweet, isQuoted: false } };
+            } else if (isTweet(tweetResult)) {
+              logger.info(`Fetched parent tweet ${parentId}`);
+              return { status: 'success', tweet: { ...tweetResult, isQuoted: false } };
+            }
             logger.warn(
               `Parent tweet ${parentId} is not a valid tweet type: ${tweetResult.__typename}`
             );
-            failedFetchIds.push(parentId);
+            return { status: 'failed', parentId };
           }
-        } else {
           logger.warn(`Failed to parse parent tweet ${parentId}: ${parsed.error.message}`);
-          failedFetchIds.push(parentId);
+          return { status: 'failed', parentId };
         }
-      } else {
         logger.warn(`Failed to fetch parent tweet ${parentId}: ${result.error}`);
-        failedFetchIds.push(parentId);
+        return { status: 'failed', parentId };
+      } catch (error) {
+        logger.error(`Error fetching parent tweet ${parentId}`, error);
+        return { status: 'failed', parentId };
       }
-    } catch (error) {
-      logger.error(`Error fetching parent tweet ${parentId}`, error);
-      failedFetchIds.push(parentId);
-    }
+    },
+  });
 
-    // Small delay between requests for rate limiting
-    await Bun.sleep(300);
-    logger.info(`Parent tweet fetch progress: ${i + 1}/${parentIdsToFetch.length}`);
+  const parentTweets: TweetData[] = [];
+  const failedFetchIds: string[] = [];
+  for (const result of fetchResults) {
+    if (!result.ok) {
+      // Workers always catch their own errors and return a result, so this shouldn't happen.
+      logger.error('Unexpected parent tweet fetch failure', result.error);
+      continue;
+    }
+    if (result.value.status === 'success') {
+      parentTweets.push(result.value.tweet);
+    } else {
+      failedFetchIds.push(result.value.parentId);
+    }
   }
 
   logger.info(`Fetched ${parentTweets.length} parent tweets, ${failedFetchIds.length} failed`);
@@ -489,6 +505,7 @@ async function storeTweetData(
   return db.transaction(
     async (tx) => {
       const CHUNK_SIZE = 1000;
+      const INSERT_CHUNK_SIZE = 500;
 
       const getExistingTwitterUserIds = async (ids: string[]): Promise<Set<string>> => {
         const existing = new Set<string>();
@@ -613,24 +630,17 @@ async function storeTweetData(
           });
       }
 
-      // 3. Insert Media
+      // 3. Insert Media (new rows only; existing media is updated separately once its R2 upload completes)
       const existingMediaIds = await getExistingMediaIds(processedMedia.map((m) => m.id));
-      const newMediaItems = processedMedia.length - existingMediaIds.size;
+      const newMediaRows = processedMedia.filter((m) => !existingMediaIds.has(m.id));
       logger.info(
-        `Media: total=${processedMedia.length} new=${newMediaItems} existing=${existingMediaIds.size}`
+        `Media: total=${processedMedia.length} new=${newMediaRows.length} existing=${existingMediaIds.size}`
       );
 
-      let mediaInsertIndex = 0;
-      for (const mediaItem of processedMedia) {
-        if (existingMediaIds.has(mediaItem.id)) {
-          continue;
-        }
-
-        mediaInsertIndex++;
-        logger.info(
-          `Media ${formatProgress(mediaInsertIndex, newMediaItems)} insert (${mediaItem.id}) ${mediaItem.type} ${mediaItem.tweetUrl}`
-        );
-        await tx.insert(mediaTable).values(mediaItem).onConflictDoNothing();
+      for (let i = 0; i < newMediaRows.length; i += INSERT_CHUNK_SIZE) {
+        const chunk = newMediaRows.slice(i, i + INSERT_CHUNK_SIZE);
+        await tx.insert(mediaTable).values(chunk).onConflictDoNothing();
+        logger.info(`Media ${formatProgress(i + chunk.length, newMediaRows.length)} inserted`);
       }
 
       logger.info(

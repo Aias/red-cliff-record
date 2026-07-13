@@ -12,6 +12,7 @@ import { syncCodexHistory } from '@/server/integrations/agents/sync-codex';
 import { syncCursorHistory } from '@/server/integrations/agents/sync-cursor';
 import { syncAirtableData } from '@/server/integrations/airtable/sync';
 import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
+import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
 import { syncFeedbin } from '@/server/integrations/feedbin/sync';
 import { syncGitHubData } from '@/server/integrations/github/sync';
 import { syncRaindropData } from '@/server/integrations/raindrop/sync';
@@ -184,9 +185,14 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
     }
     case 'agents': {
       const sessionLimit = 5;
-      await syncClaudeHistory(debug, { sessionLimit });
-      await syncCodexHistory(debug, { sessionLimit });
-      await syncCursorHistory(debug, { sessionLimit });
+      const settled = await Promise.allSettled([
+        withBufferedLogs(() => syncClaudeHistory(debug, { sessionLimit })),
+        withBufferedLogs(() => syncCodexHistory(debug, { sessionLimit })),
+        withBufferedLogs(() => syncCursorHistory(debug, { sessionLimit })),
+      ]);
+      for (const result of settled) {
+        if (result.status === 'rejected') throw result.reason;
+      }
       return {
         integration,
         success: true,
@@ -208,22 +214,25 @@ async function runDailySync(options: SyncOptions) {
     'github',
   ];
 
-  const results: Array<{ step: string; success: boolean; error?: string }> = [];
   const startTime = performance.now();
 
-  // Run external syncs
-  for (const integration of dailyIntegrations) {
-    try {
-      await runSingleSync(integration, options);
-      results.push({ step: integration, success: true });
-    } catch (e) {
-      results.push({
-        step: integration,
-        success: false,
-        error: e instanceof Error ? e.message : String(e),
-      });
-    }
-  }
+  // Run external syncs concurrently — they hit disjoint APIs. Each
+  // integration's logs are buffered and emitted as one contiguous block when
+  // it finishes, so concurrent output never interleaves.
+  const results: Array<{ step: string; success: boolean; error?: string }> = await Promise.all(
+    dailyIntegrations.map(async (integration) => {
+      try {
+        await withBufferedLogs(() => runSingleSync(integration, options));
+        return { step: integration, success: true };
+      } catch (e) {
+        return {
+          step: integration,
+          success: false,
+          error: e instanceof Error ? e.message : String(e),
+        };
+      }
+    })
+  );
 
   // Run enrichments once at the end
   try {

@@ -2,6 +2,7 @@ import { records, RunTypeSchema } from '@hozo';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { createEmbeddings } from '@/server/lib/create-embedding';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createRecordEmbeddingText, getRecordTitle } from '@/shared/lib/embedding';
 import type { FullRecord } from '@/shared/types/domain';
 import { createIntegrationLogger } from '../integrations/common/logging';
@@ -11,6 +12,9 @@ const logger = createIntegrationLogger('services', 'embed-records');
 
 /** Records embedded (and written back) per OpenAI request. */
 const EMBED_BATCH_SIZE = 64;
+
+/** Number of embedding batches processed concurrently. */
+const EMBED_CONCURRENCY = 4;
 
 export interface EmbedRecordResult {
   recordId: number;
@@ -71,46 +75,53 @@ export async function embedRecordsByIds(recordIds: number[]): Promise<EmbedRecor
     pending.push({ recordId, record, text });
   }
 
+  const batches: { start: number; items: typeof pending }[] = [];
   for (let start = 0; start < pending.length; start += EMBED_BATCH_SIZE) {
-    const batch = pending.slice(start, start + EMBED_BATCH_SIZE);
-
-    try {
-      const embeddings = await createEmbeddings(batch.map((item) => item.text));
-
-      await Promise.all(
-        batch.map(async (item, index) => {
-          const embedding = embeddings[index];
-          if (!embedding) {
-            resultMap.set(item.recordId, {
-              recordId: item.recordId,
-              success: false,
-              error: 'Missing embedding in batch response',
-            });
-            return;
-          }
-
-          await db
-            .update(records)
-            .set({ textEmbedding: embedding })
-            .where(eq(records.id, item.recordId));
-          resultMap.set(item.recordId, { recordId: item.recordId, success: true });
-        })
-      );
-
-      const last = batch.at(-1);
-      if (batch.length === 1 && last) {
-        logger.info(`Embedded record ${last.recordId}: ${getRecordTitle(last.record, 80)}`);
-      } else {
-        logger.info(`Embedded records ${start + 1}–${start + batch.length} of ${pending.length}`);
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to embed batch of ${batch.length} record(s): ${message}`);
-      for (const item of batch) {
-        resultMap.set(item.recordId, { recordId: item.recordId, success: false, error: message });
-      }
-    }
+    batches.push({ start, items: pending.slice(start, start + EMBED_BATCH_SIZE) });
   }
+
+  await runConcurrentPool({
+    items: batches,
+    concurrency: EMBED_CONCURRENCY,
+    async worker({ start, items: batch }) {
+      try {
+        const embeddings = await createEmbeddings(batch.map((item) => item.text));
+
+        await Promise.all(
+          batch.map(async (item, index) => {
+            const embedding = embeddings[index];
+            if (!embedding) {
+              resultMap.set(item.recordId, {
+                recordId: item.recordId,
+                success: false,
+                error: 'Missing embedding in batch response',
+              });
+              return;
+            }
+
+            await db
+              .update(records)
+              .set({ textEmbedding: embedding })
+              .where(eq(records.id, item.recordId));
+            resultMap.set(item.recordId, { recordId: item.recordId, success: true });
+          })
+        );
+
+        const last = batch.at(-1);
+        if (batch.length === 1 && last) {
+          logger.info(`Embedded record ${last.recordId}: ${getRecordTitle(last.record, 80)}`);
+        } else {
+          logger.info(`Embedded records ${start + 1}–${start + batch.length} of ${pending.length}`);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Failed to embed batch of ${batch.length} record(s): ${message}`);
+        for (const item of batch) {
+          resultMap.set(item.recordId, { recordId: item.recordId, success: false, error: message });
+        }
+      }
+    },
+  });
 
   const results = uniqueIds.map(
     (recordId) => resultMap.get(recordId) ?? { recordId, success: false, error: 'Unknown error' }

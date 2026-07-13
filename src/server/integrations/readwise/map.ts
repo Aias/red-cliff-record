@@ -491,9 +491,13 @@ export const mapReadwiseDocumentToRecord = (
 };
 
 /**
- * Creates records from Readwise documents that don't have associated records yet
+ * Creates records from Readwise documents that don't have associated records
+ * yet. When an integration run id is given, also refreshes author and tag
+ * links for already-mapped documents updated in that run — a tag added in
+ * Readwise to a previously synced document arrives as a document update, not
+ * a new document, and would otherwise never be linked.
  */
-export async function createRecordsFromReadwiseDocuments() {
+export async function createRecordsFromReadwiseDocuments(integrationRunId?: number) {
   logger.start('Creating records from Readwise documents');
 
   // Query readwise documents that need records created (skip notes-only docs)
@@ -528,12 +532,28 @@ export async function createRecordsFromReadwiseDocuments() {
     },
   });
 
-  if (documents.length === 0) {
+  const updatedMappedDocuments = integrationRunId
+    ? await db.query.readwiseDocuments.findMany({
+        where: {
+          integrationRunId,
+          recordId: {
+            isNotNull: true,
+          },
+          deletedAt: {
+            isNull: true,
+          },
+        },
+      })
+    : [];
+
+  if (documents.length === 0 && updatedMappedDocuments.length === 0) {
     logger.skip('No new or updated documents to process');
     return;
   }
 
-  logger.info(`Found ${documents.length} unmapped Readwise documents`);
+  logger.info(
+    `Found ${documents.length} unmapped and ${updatedMappedDocuments.length} updated Readwise documents`
+  );
 
   // Map to store the new record IDs keyed by the corresponding readwise document ID.
   const recordMap = new Map<string, number>();
@@ -613,9 +633,28 @@ export async function createRecordsFromReadwiseDocuments() {
   );
 
   // Step 3: Link records to index entries via recordCreators (for authors) and recordCategories (for tags).
+  // Covers both newly created records and already-mapped documents updated in
+  // this run; link upserts make relinking existing pairs a no-op.
+  const documentsToLink: Array<{
+    authorId: number | null;
+    tags: string[] | null;
+    recordId: number;
+  }> = [];
+  for (const doc of documents) {
+    const recordId = recordMap.get(doc.id);
+    if (recordId) {
+      documentsToLink.push({ authorId: doc.authorId, tags: doc.tags, recordId });
+    }
+  }
+  for (const doc of updatedMappedDocuments) {
+    if (doc.recordId) {
+      documentsToLink.push({ authorId: doc.authorId, tags: doc.tags, recordId: doc.recordId });
+    }
+  }
+
   // Build a map for authors.
   const authorIdsSet = new Set<number>();
-  for (const doc of documents) {
+  for (const doc of documentsToLink) {
     if (doc.authorId) {
       authorIdsSet.add(doc.authorId);
     }
@@ -640,7 +679,7 @@ export async function createRecordsFromReadwiseDocuments() {
 
   // Build a map for tags.
   const tagSet = new Set<string>();
-  for (const doc of documents) {
+  for (const doc of documentsToLink) {
     if (doc.tags) {
       doc.tags.forEach((tag) => tagSet.add(tag));
     }
@@ -667,9 +706,8 @@ export async function createRecordsFromReadwiseDocuments() {
   const recordCreatorsValues: LinkInsert[] = [];
   const recordRelationsValues: LinkInsert[] = [];
 
-  for (const doc of documents) {
-    const recordId = recordMap.get(doc.id);
-    if (!recordId) continue;
+  for (const doc of documentsToLink) {
+    const { recordId } = doc;
 
     // Link author via recordCreators.
     if (doc.authorId && authorIndexMap.has(doc.authorId)) {
@@ -713,5 +751,7 @@ export async function createRecordsFromReadwiseDocuments() {
     logger.info(`Linked ${recordRelationsValues.length} tags to records`);
   }
 
-  logger.complete(`Processed ${recordMap.size} Readwise documents`);
+  logger.complete(
+    `Processed ${recordMap.size} new and ${updatedMappedDocuments.length} updated Readwise documents`
+  );
 }

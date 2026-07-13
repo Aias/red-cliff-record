@@ -19,6 +19,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { uploadMediaToR2 } from '@/server/lib/media';
+import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -34,6 +35,9 @@ import {
 import { CreatorFieldSetSchema, ExtractFieldSetSchema, SpaceFieldSetSchema } from './types';
 
 const logger = createIntegrationLogger('airtable', 'sync');
+
+/** Default concurrency for database operations */
+const DB_CONCURRENCY = 10;
 
 /**
  * Synchronizes Airtable creators with the database
@@ -277,7 +281,33 @@ async function syncExtracts(
 
     logger.info(`Syncing ${parsedRecords.length} extracts`);
 
-    // Step 4: First pass - Upsert extracts and their relationships
+    // Step 4: Upload every attachment image across all extracts up front, so the
+    // per-extract transaction below only performs (fast) database writes. A
+    // failed upload aborts the sync, matching the previous behavior where an
+    // upload failure inside the shared transaction rolled back every extract.
+    const imagesToUpload = parsedRecords.flatMap((record) =>
+      (record.fields.images ?? []).map((image) => ({ extractId: record.id, image }))
+    );
+
+    const uploadResults = await runConcurrentPool({
+      items: imagesToUpload,
+      concurrency: DB_CONCURRENCY,
+      async worker({ extractId, image }) {
+        logger.info(`Uploading media ${image.filename} for extract ${extractId}`);
+        const permanentUrl = await uploadMediaToR2(image.url);
+        return { imageId: image.id, permanentUrl };
+      },
+    });
+    throwPoolFailures(uploadResults, 'Airtable extract image upload', imagesToUpload.length);
+
+    const uploadedUrlsByImageId = new Map<string, string>();
+    for (const result of uploadResults) {
+      if (result.ok) {
+        uploadedUrlsByImageId.set(result.value.imageId, result.value.permanentUrl);
+      }
+    }
+
+    // Step 5: First pass - Upsert extracts and their relationships
     await db.transaction(async (tx) => {
       for (const record of parsedRecords) {
         const fields = record.fields;
@@ -316,11 +346,11 @@ async function syncExtracts(
         // Process attachments
         if (fields.images) {
           for (const image of fields.images) {
-            logger.info(`Uploading media ${image.filename} for extract ${record.id}`);
-
-            // Upload the image to R2 storage
-            const permanentUrl = await uploadMediaToR2(image.url);
-            logger.info(`Uploaded to ${permanentUrl}, inserting attachment...`);
+            const permanentUrl = uploadedUrlsByImageId.get(image.id);
+            if (!permanentUrl) {
+              throw new Error(`Missing uploaded URL for attachment ${image.id}`);
+            }
+            logger.info(`Inserting attachment ${image.filename} for extract ${record.id}`);
 
             // Create the attachment record
             const attachment: AirtableAttachmentInsert = {
@@ -371,7 +401,7 @@ async function syncExtracts(
       }
     });
 
-    // Step 5: Second pass - Update parent-child relationships and connections
+    // Step 6: Second pass - Update parent-child relationships and connections
     await updateExtractRelationships(parsedRecords);
 
     collectDebugData?.push(...updatedRecords);
@@ -395,27 +425,43 @@ async function syncExtracts(
 async function updateExtractRelationships(
   parsedRecords: Array<{ id: string; fields: ReturnType<typeof ExtractFieldSetSchema.parse> }>
 ): Promise<void> {
+  const parentUpdates: Array<{ id: string; parentId: string }> = [];
+  const connectionValues: AirtableExtractConnectionInsert[] = [];
+
   for (const record of parsedRecords) {
     const { parentId, connectionIds } = record.fields;
 
-    // Update parent-child relationship
-    if (parentId?.[0]) {
-      await db
-        .update(airtableExtracts)
-        .set({ parentId: parentId[0] })
-        .where(eq(airtableExtracts.id, record.id));
+    const firstParentId = parentId?.[0];
+    if (firstParentId) {
+      parentUpdates.push({ id: record.id, parentId: firstParentId });
     }
 
-    // Update connections
     if (connectionIds) {
       for (const connectionId of connectionIds) {
-        const link: AirtableExtractConnectionInsert = {
-          fromExtractId: record.id,
-          toExtractId: connectionId,
-        };
-        await db.insert(airtableExtractConnections).values(link).onConflictDoNothing();
+        connectionValues.push({ fromExtractId: record.id, toExtractId: connectionId });
       }
     }
+  }
+
+  // Update connections in a single bulk insert
+  if (connectionValues.length > 0) {
+    await db.insert(airtableExtractConnections).values(connectionValues).onConflictDoNothing();
+  }
+
+  // Update parent-child relationships (each row targets a different parentId, so
+  // these remain individual updates, pooled for concurrency)
+  if (parentUpdates.length > 0) {
+    const parentUpdateResults = await runConcurrentPool({
+      items: parentUpdates,
+      concurrency: DB_CONCURRENCY,
+      async worker(update) {
+        await db
+          .update(airtableExtracts)
+          .set({ parentId: update.parentId })
+          .where(eq(airtableExtracts.id, update.id));
+      },
+    });
+    throwPoolFailures(parentUpdateResults, 'Airtable extract parent update', parentUpdates.length);
   }
 }
 
@@ -455,6 +501,24 @@ async function syncFormats(integrationRunId: number, collectDebugData?: unknown[
 
     logger.info(`Syncing ${unlinkedExtracts.length} formats`);
 
+    // Look up all formats that might already exist for these extracts once,
+    // instead of a findFirst query per extract inside the loop below.
+    const formatStrings = [
+      ...new Set(
+        unlinkedExtracts
+          .map((extract) => extract.formatString)
+          .filter((formatString): formatString is string => formatString !== null)
+      ),
+    ];
+    const existingFormats = await db.query.airtableFormats.findMany({
+      where: {
+        name: {
+          in: formatStrings,
+        },
+      },
+    });
+    const formatMap = new Map(existingFormats.map((format) => [format.name, format]));
+
     // Process each unlinked extract
     await db.transaction(async (tx) => {
       for (const extract of unlinkedExtracts) {
@@ -465,11 +529,7 @@ async function syncFormats(integrationRunId: number, collectDebugData?: unknown[
         }
 
         // Try to find an existing format
-        const format = await tx.query.airtableFormats.findFirst({
-          where: {
-            name: extract.formatString,
-          },
-        });
+        const format = formatMap.get(extract.formatString);
 
         if (format) {
           // Link to existing format
@@ -501,6 +561,8 @@ async function syncFormats(integrationRunId: number, collectDebugData?: unknown[
             logger.error(`Failed to create new format ${extract.formatString}`);
             continue;
           }
+
+          formatMap.set(newFormat.name, newFormat);
 
           // Link to the new format
           await tx

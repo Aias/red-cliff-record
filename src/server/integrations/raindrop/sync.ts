@@ -9,6 +9,7 @@ import {
   type RaindropHighlightInsert,
 } from '@hozo';
 import { db } from '@/server/db/connections/postgres';
+import { withBufferedLogs } from '../common/buffered-logs';
 import { createDebugContext } from '../common/debug-output';
 import { requireEnv } from '../common/env';
 import { createIntegrationLogger } from '../common/logging';
@@ -387,11 +388,12 @@ async function processRaindrops(raindrops: Raindrop[], integrationRunId: number)
  * @param integrationRunId - The ID of the current integration run
  */
 async function createRelatedEntities(integrationRunId: number): Promise<void> {
-  // Create tags from raindrops
-  await createRaindropTags(integrationRunId);
+  // Create tags from raindrops and media from bookmarks (independent of each other)
+  await Promise.all([
+    withBufferedLogs(() => createRaindropTags(integrationRunId)),
+    withBufferedLogs(() => createMediaFromRaindropBookmarks()),
+  ]);
 
-  // Create media from bookmarks
-  await createMediaFromRaindropBookmarks();
   // Create records from tags
   await createRecordsFromRaindropTags();
   // Create main records

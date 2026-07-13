@@ -4,6 +4,7 @@ import {
   twitterMedia,
   twitterTweets,
   twitterUsers,
+  type LinkInsert,
   type MediaInsert,
   type RecordInsert,
   type TwitterMediaSelect,
@@ -13,10 +14,14 @@ import {
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
+import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { decodeHtmlEntities } from '@/shared/lib/formatting';
-import { linkRecords } from '../common/db-helpers';
+import { bulkInsertLinks, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 import { createUrlResolver, loadKnownTweetIds, normalizeTweetContent } from './tweet-text';
+
+/** Default concurrency for database operations */
+const DB_CONCURRENCY = 10;
 
 const logger = createIntegrationLogger('twitter', 'map');
 
@@ -69,29 +74,34 @@ export async function createRecordsFromTwitterUsers() {
 
   logger.info(`Found ${users.length} unmapped Twitter users`);
 
-  for (const user of users) {
-    const entity = mapTwitterUserToRecord(user);
+  const userResults = await runConcurrentPool({
+    items: users,
+    concurrency: DB_CONCURRENCY,
+    async worker(user) {
+      const entity = mapTwitterUserToRecord(user);
 
-    const [newRecord] = await db
-      .insert(records)
-      .values(entity)
-      .onConflictDoUpdate({
-        target: records.id,
-        set: { recordUpdatedAt: new Date() },
-      })
-      .returning({ id: records.id });
+      const [newRecord] = await db
+        .insert(records)
+        .values(entity)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: { recordUpdatedAt: new Date() },
+        })
+        .returning({ id: records.id });
 
-    if (!newRecord) {
-      throw new Error('Failed to create record');
-    }
+      if (!newRecord) {
+        throw new Error('Failed to create record');
+      }
 
-    await db
-      .update(twitterUsers)
-      .set({ recordId: newRecord.id })
-      .where(eq(twitterUsers.id, user.id));
+      await db
+        .update(twitterUsers)
+        .set({ recordId: newRecord.id })
+        .where(eq(twitterUsers.id, user.id));
 
-    logger.info(`Created record ${newRecord.id} for user ${user.username}`);
-  }
+      logger.info(`Created record ${newRecord.id} for user ${user.username}`);
+    },
+  });
+  throwPoolFailures(userResults, 'Twitter user→record mapping', users.length);
 
   logger.complete(`Processed ${users.length} Twitter users`);
 }
@@ -158,59 +168,64 @@ export async function createRecordsFromTweets() {
   // Map to store the new record IDs keyed by the corresponding Twitter tweet ID.
   const recordMap = new Map<string, number>();
 
-  for (const tweet of tweets) {
-    const decodedText = tweet.text ? decodeHtmlEntities(tweet.text).trim() : '';
-    // Include quoted tweet ID so its URL gets removed (relationship is tracked separately)
-    const additionalKnownIds = tweet.quotedTweet?.id ? [tweet.quotedTweet.id] : [];
-    const content = await normalizeTweetContent(decodedText, knownTweetIds, resolveUrl, {
-      additionalKnownIds,
-    });
-    const record = mapTwitterTweetToRecord(tweet, content);
+  const tweetResults = await runConcurrentPool({
+    items: tweets,
+    concurrency: DB_CONCURRENCY,
+    async worker(tweet) {
+      const decodedText = tweet.text ? decodeHtmlEntities(tweet.text).trim() : '';
+      // Include quoted tweet ID so its URL gets removed (relationship is tracked separately)
+      const additionalKnownIds = tweet.quotedTweet?.id ? [tweet.quotedTweet.id] : [];
+      const content = await normalizeTweetContent(decodedText, knownTweetIds, resolveUrl, {
+        additionalKnownIds,
+      });
+      const record = mapTwitterTweetToRecord(tweet, content);
 
-    // Insert the record with parentId set to null (to be updated later if this is a quote).
-    const [newRecord] = await db
-      .insert(records)
-      .values(record)
-      .onConflictDoUpdate({
-        target: records.id,
-        set: { recordUpdatedAt: new Date() },
-      })
-      .returning({ id: records.id });
-    if (!newRecord) {
-      throw new Error('Failed to create record');
-    }
-
-    await db
-      .update(twitterTweets)
-      .set({ recordId: newRecord.id })
-      .where(eq(twitterTweets.id, tweet.id));
-
-    updatedTweetIds.push(tweet.id);
-    recordMap.set(tweet.id, newRecord.id);
-
-    // Link the tweet creator via recordCreators.
-    if (tweet.user.recordId) {
-      await linkRecords(newRecord.id, tweet.user.recordId, 'created_by', db, { log: false });
-      logger.info(
-        `Created record ${newRecord.id} for tweet ${tweet.text?.slice(0, 20)} (${tweet.id}); created_by -> ${tweet.user.recordId}`
-      );
-    } else {
-      logger.info(
-        `Created record ${newRecord.id} for tweet ${tweet.text?.slice(0, 20)} (${tweet.id})`
-      );
-    }
-
-    // Link the tweet media via recordMedia.
-    for (const mediaItem of tweet.media) {
-      if (mediaItem.mediaId) {
-        logger.info(`Linking media ${mediaItem.mediaId} to record ${newRecord.id}`);
-        await db
-          .update(media)
-          .set({ recordId: newRecord.id })
-          .where(eq(media.id, mediaItem.mediaId));
+      // Insert the record with parentId set to null (to be updated later if this is a quote).
+      const [newRecord] = await db
+        .insert(records)
+        .values(record)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: { recordUpdatedAt: new Date() },
+        })
+        .returning({ id: records.id });
+      if (!newRecord) {
+        throw new Error('Failed to create record');
       }
-    }
-  }
+
+      await db
+        .update(twitterTweets)
+        .set({ recordId: newRecord.id })
+        .where(eq(twitterTweets.id, tweet.id));
+
+      updatedTweetIds.push(tweet.id);
+      recordMap.set(tweet.id, newRecord.id);
+
+      // Link the tweet creator via recordCreators.
+      if (tweet.user.recordId) {
+        await linkRecords(newRecord.id, tweet.user.recordId, 'created_by', db, { log: false });
+        logger.info(
+          `Created record ${newRecord.id} for tweet ${tweet.text?.slice(0, 20)} (${tweet.id}); created_by -> ${tweet.user.recordId}`
+        );
+      } else {
+        logger.info(
+          `Created record ${newRecord.id} for tweet ${tweet.text?.slice(0, 20)} (${tweet.id})`
+        );
+      }
+
+      // Link the tweet media via recordMedia.
+      for (const mediaItem of tweet.media) {
+        if (mediaItem.mediaId) {
+          logger.info(`Linking media ${mediaItem.mediaId} to record ${newRecord.id}`);
+          await db
+            .update(media)
+            .set({ recordId: newRecord.id })
+            .where(eq(media.id, mediaItem.mediaId));
+        }
+      }
+    },
+  });
+  throwPoolFailures(tweetResults, 'Twitter tweet→record mapping', tweets.length);
 
   // Update relationships for tweets that quote or reply to another tweet.
   if (updatedTweetIds.length > 0) {
@@ -248,19 +263,28 @@ export async function linkQuotedTweets(tweetIds: string[]) {
 
   logger.info(`Found ${tweetsWithQuotes.length} tweets with quotes to link`);
 
+  const links: LinkInsert[] = [];
   for (const tweet of tweetsWithQuotes) {
     // The quoted tweet should already have been processed.
-    const quotedTweet = tweet.quotedTweet!;
-    if (!tweet.recordId || !quotedTweet.recordId) {
+    const quotedTweet = tweet.quotedTweet;
+    if (!tweet.recordId || !quotedTweet?.recordId) {
       logger.warn(`Quoted tweet ${tweet.id} not linked to record`);
       continue;
     }
 
     // Link the tweet record to the quoted tweet record.
-    await linkRecords(tweet.recordId, quotedTweet.recordId, 'quotes', db, { log: false });
+    links.push({
+      sourceId: tweet.recordId,
+      targetId: quotedTweet.recordId,
+      predicate: 'quotes',
+    });
     logger.info(
       `Linked quote: tweet record ${tweet.recordId} quotes -> ${quotedTweet.recordId} (${tweet.id} -> ${quotedTweet.id})`
     );
+  }
+
+  if (links.length > 0) {
+    await bulkInsertLinks(links, db);
   }
 
   logger.complete(`Linked ${tweetsWithQuotes.length} quoted tweets`);
@@ -293,6 +317,7 @@ export async function linkRepliedToTweets(tweetIds: string[]) {
 
   logger.info(`Found ${tweetsWithReplies.length} tweets with replies to link`);
 
+  const links: LinkInsert[] = [];
   for (const tweet of tweetsWithReplies) {
     const parentTweet = tweet.inReplyToTweet;
     if (!parentTweet) {
@@ -306,10 +331,18 @@ export async function linkRepliedToTweets(tweetIds: string[]) {
     }
 
     // Link the reply record to the parent tweet record via responds_to
-    await linkRecords(tweet.recordId, parentTweet.recordId, 'responds_to', db, { log: false });
+    links.push({
+      sourceId: tweet.recordId,
+      targetId: parentTweet.recordId,
+      predicate: 'responds_to',
+    });
     logger.info(
       `Linked reply: tweet record ${tweet.recordId} responds_to -> ${parentTweet.recordId} (${tweet.id} -> ${parentTweet.id})`
     );
+  }
+
+  if (links.length > 0) {
+    await bulkInsertLinks(links, db);
   }
 
   logger.complete(`Linked ${tweetsWithReplies.length} reply tweets`);
@@ -385,86 +418,76 @@ export async function createMediaFromTweets() {
 
   logger.info(`Found ${mediaWithTweets.length} Twitter media items to process`);
 
-  // Process media in batches for parallelization
-  const BATCH_SIZE = 3; // Process 3 media items at a time
   let processed = 0;
+  await runConcurrentPool({
+    items: mediaWithTweets,
+    concurrency: 3,
+    async worker(item) {
+      try {
+        logger.info(
+          `[${++processed}/${mediaWithTweets.length}] Processing media: ${item.mediaUrl}`
+        );
 
-  for (let i = 0; i < mediaWithTweets.length; i += BATCH_SIZE) {
-    const batch = mediaWithTweets.slice(i, i + BATCH_SIZE);
-
-    logger.info(
-      `Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(mediaWithTweets.length / BATCH_SIZE)} (${batch.length} items)`
-    );
-
-    // Process batch in parallel
-    await Promise.all(
-      batch.map(async (item) => {
-        try {
-          logger.info(
-            `[${++processed}/${mediaWithTweets.length}] Processing media: ${item.mediaUrl}`
+        const mediaItem = await mapTwitterMediaToMedia(item);
+        if (!mediaItem) {
+          logger.error(
+            `Failed to create media for tweet ${item.tweetUrl}: ${item.mediaUrl}, deleting source media`
           );
 
-          const mediaItem = await mapTwitterMediaToMedia(item);
-          if (!mediaItem) {
-            logger.error(
-              `Failed to create media for tweet ${item.tweetUrl}: ${item.mediaUrl}, deleting source media`
-            );
-
-            await db
-              .update(twitterMedia)
-              .set({ mediaId: null, deletedAt: new Date() })
-              .where(eq(twitterMedia.id, item.id));
-
-            return;
-          }
-
-          logger.info(
-            `[${processed}/${mediaWithTweets.length}] Creating media record for ${mediaItem.url}`
-          );
-
-          const [newMedia] = await db
-            .insert(media)
-            .values(mediaItem)
-            .onConflictDoUpdate({
-              target: [media.url, media.recordId],
-              set: {
-                recordUpdatedAt: new Date(),
-              },
-            })
-            .returning({ id: media.id });
-
-          if (!newMedia) {
-            throw new Error('Failed to create media');
-          }
-
-          logger.info(
-            `[${processed}/${mediaWithTweets.length}] ✓ Created media ${newMedia.id} for ${mediaItem.url}`
-          );
-
-          await db
-            .update(twitterMedia)
-            .set({ mediaId: newMedia.id, mediaUrl: mediaItem.url })
-            .where(eq(twitterMedia.id, item.id));
-
-          if (item.tweet.recordId) {
-            logger.info(`Linking media ${newMedia.id} to record ${item.tweet.recordId}`);
-
-            await db
-              .update(media)
-              .set({ recordId: item.tweet.recordId })
-              .where(eq(media.id, newMedia.id));
-          }
-        } catch (error) {
-          logger.error(`Failed to process media ${item.mediaUrl}:`, error);
-          // Mark as deleted to skip in future runs
           await db
             .update(twitterMedia)
             .set({ mediaId: null, deletedAt: new Date() })
             .where(eq(twitterMedia.id, item.id));
+
+          return;
         }
-      })
-    );
-  }
+
+        logger.info(
+          `[${processed}/${mediaWithTweets.length}] Creating media record for ${mediaItem.url}`
+        );
+
+        const [newMedia] = await db
+          .insert(media)
+          .values(mediaItem)
+          .onConflictDoUpdate({
+            target: [media.url, media.recordId],
+            set: {
+              recordUpdatedAt: new Date(),
+            },
+          })
+          .returning({ id: media.id });
+
+        if (!newMedia) {
+          throw new Error('Failed to create media');
+        }
+
+        logger.info(
+          `[${processed}/${mediaWithTweets.length}] ✓ Created media ${newMedia.id} for ${mediaItem.url}`
+        );
+
+        await db
+          .update(twitterMedia)
+          .set({ mediaId: newMedia.id, mediaUrl: mediaItem.url })
+          .where(eq(twitterMedia.id, item.id));
+
+        if (item.tweet.recordId) {
+          logger.info(`Linking media ${newMedia.id} to record ${item.tweet.recordId}`);
+
+          await db
+            .update(media)
+            .set({ recordId: item.tweet.recordId })
+            .where(eq(media.id, newMedia.id));
+        }
+      } catch (error) {
+        logger.error(`Failed to process media ${item.mediaUrl}:`, error);
+        // Mark as deleted to skip in future runs
+        await db
+          .update(twitterMedia)
+          .set({ mediaId: null, deletedAt: new Date() })
+          .where(eq(twitterMedia.id, item.id));
+      }
+    },
+  });
 
   logger.complete(`Processed ${mediaWithTweets.length} Twitter media items`);
 }

@@ -7,11 +7,12 @@ import {
   type GithubRepositoryInsert,
 } from '@hozo';
 import { RequestError } from '@octokit/request-error';
-import { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';
 import { db } from '@/server/db/connections/postgres';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { createIntegrationLogger } from '../common/logging';
+import { createGithubClient } from './octokit';
 import { syncCommitSummaries } from './summarize-commits';
 import { ensureGithubUserExists } from './sync-users';
 
@@ -21,13 +22,14 @@ const logger = createIntegrationLogger('github', 'sync-commits');
  * Type definitions
  */
 type GithubRepository = Endpoints['GET /repos/{owner}/{repo}']['response']['data'];
+type CommitSearchItem = Endpoints['GET /search/commits']['response']['data']['items'][number];
 
 /**
  * Configuration constants
  */
 const MAX_PATCH_LENGTH = 2048;
 const PER_PAGE = 100;
-const REQUEST_DELAY_MS = 1000;
+const COMMIT_CONCURRENCY = 8;
 
 /**
  * Retrieves the most recent commit date from the database
@@ -100,17 +102,9 @@ async function ensureRepositoryExists(
     contentUpdatedAt: new Date(repoData.updated_at),
   };
 
-  // First try to get existing repository to preserve starredAt
-  const existingRepo = await db.query.githubRepositories.findFirst({
-    columns: {
-      starredAt: true,
-    },
-    where: {
-      id: repoData.id,
-    },
-  });
-
-  // Insert or update the repository
+  // starredAt is deliberately absent from the update set so a star date
+  // written by the stars sync survives commit-driven upserts, including when
+  // the two syncs run concurrently.
   await db
     .insert(githubRepositories)
     .values(newRepo)
@@ -119,8 +113,6 @@ async function ensureRepositoryExists(
       set: {
         ...newRepo,
         recordUpdatedAt: new Date(),
-        // Only include starredAt if it exists in the database
-        ...(existingRepo?.starredAt && { starredAt: existingRepo.starredAt }),
       },
     });
 
@@ -147,9 +139,7 @@ async function syncGitHubCommits(
   collectDebugData?: unknown[],
   skipPersist = false
 ): Promise<number> {
-  const octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN,
-  });
+  const octokit = createGithubClient();
 
   logger.start('Fetching GitHub commits');
 
@@ -163,11 +153,107 @@ async function syncGitHubCommits(
     logger.info('No existing commits in database');
   }
 
+  // Memoize per-run repository fetches and upserts: a push often lands many
+  // commits in the same repository.
+  const repositoryDataCache = new Map<string, Promise<GithubRepository>>();
+  const getRepositoryData = (owner: string, repo: string): Promise<GithubRepository> => {
+    const key = `${owner}/${repo}`;
+    let cached = repositoryDataCache.get(key);
+    if (!cached) {
+      cached = octokit.rest.repos.get({ owner, repo }).then((response) => {
+        logRateLimitInfo(response, logger);
+        return response.data;
+      });
+      repositoryDataCache.set(key, cached);
+    }
+    return cached;
+  };
+
+  const ensuredRepositories = new Map<number, Promise<number>>();
+  const ensureRepositoryOnce = (repoData: GithubRepository): Promise<number> => {
+    let ensured = ensuredRepositories.get(repoData.id);
+    if (!ensured) {
+      ensured = ensureRepositoryExists(repoData, integrationRunId);
+      ensuredRepositories.set(repoData.id, ensured);
+    }
+    return ensured;
+  };
+
+  const processCommitItem = async (item: CommitSearchItem): Promise<'inserted' | 'skipped'> => {
+    try {
+      // Get the full repository data
+      const repoData = await getRepositoryData(item.repository.owner.login, item.repository.name);
+
+      // Skip if this is a fork and the commit is older than the fork date
+      if (repoData.fork && new Date(item.commit.author.date) < new Date(repoData.created_at)) {
+        logger.info(`Skipping commit ${item.sha} as it predates fork creation`);
+        return 'skipped';
+      }
+
+      // Get detailed commit info including file changes
+      const detailedCommit = await octokit.rest.repos.getCommit({
+        owner: item.repository.owner.login,
+        repo: item.repository.name,
+        ref: item.sha,
+      });
+      logRateLimitInfo(detailedCommit, logger);
+
+      // In debug mode, just count the commits without persisting
+      if (skipPersist) {
+        logger.info(`Would insert commit ${item.sha} for ${item.repository.full_name}`);
+        return 'inserted';
+      }
+
+      // Ensure repository exists in database
+      await ensureRepositoryOnce(repoData);
+
+      // Insert new commit
+      const newCommit: GithubCommitInsert = {
+        id: item.node_id,
+        sha: item.sha,
+        message: item.commit.message,
+        htmlUrl: item.html_url,
+        repositoryId: item.repository.id,
+        committedAt: item.commit.committer?.date ? new Date(item.commit.committer.date) : null,
+        contentCreatedAt: new Date(item.commit.author.date),
+        integrationRunId,
+        changes: detailedCommit.data.stats?.total ?? null,
+        additions: detailedCommit.data.stats?.additions ?? null,
+        deletions: detailedCommit.data.stats?.deletions ?? null,
+      };
+
+      await db.insert(githubCommits).values(newCommit);
+
+      // Insert commit changes
+      const files = detailedCommit.data.files ?? [];
+      if (files.length > 0) {
+        const newChanges: GithubCommitChangeInsert[] = files.map((file) => ({
+          filename: file.filename,
+          status: file.status,
+          patch: file.patch ? file.patch.slice(0, MAX_PATCH_LENGTH) : '',
+          commitId: item.node_id,
+          changes: file.changes,
+          additions: file.additions,
+          deletions: file.deletions,
+        }));
+        await db.insert(githubCommitChanges).values(newChanges);
+      }
+
+      logger.info(`Inserted commit ${item.sha} for ${item.repository.full_name}`);
+      return 'inserted';
+    } catch (error) {
+      logger.error(`Error processing commit ${item.sha}`, {
+        error: error instanceof Error ? error.message : String(error),
+        repository: item.repository.full_name,
+      });
+      return 'skipped';
+    }
+  };
+
   let page = 1;
-  let hasMore = true;
   let totalCommits = 0;
 
-  while (hasMore) {
+  while (true) {
     try {
       logger.info(`Fetching page ${page}...`);
 
@@ -196,128 +282,39 @@ async function syncGitHubCommits(
 
       // Check if we've reached the end of the results
       if (response.data.items.length === 0) {
-        hasMore = false;
         break;
       }
 
-      // Process commits sequentially with rate limiting
-      let newCommitsOnPage = 0;
-      let processedAnyNewCommits = false;
-
-      for (let i = 0; i < response.data.items.length; i++) {
-        const item = response.data.items[i];
-        if (!item) {
-          logger.warn(`Missing commit item at index ${i} on page ${page}`);
-          continue;
+      // One bulk existence check per page instead of one query per commit
+      let newItems: CommitSearchItem[] = [...response.data.items];
+      if (!skipPersist) {
+        const existingCommits = await db.query.githubCommits.findMany({
+          columns: { sha: true },
+          where: { sha: { in: newItems.map((item) => item.sha) } },
+        });
+        const existingShas = new Set(existingCommits.map((commit) => commit.sha));
+        if (existingShas.size > 0) {
+          logger.info(`Skipping ${existingShas.size} existing commits on page ${page}`);
+          newItems = newItems.filter((item) => !existingShas.has(item.sha));
         }
-        try {
-          // In debug mode, skip DB existence check
-          if (!skipPersist) {
-            const existingCommit = await db.query.githubCommits.findFirst({
-              columns: { id: true, sha: true },
-              where: { sha: item.sha },
-            });
-
-            if (existingCommit) {
-              logger.info(`Skipping existing commit ${item.sha}`);
-              await Bun.sleep(REQUEST_DELAY_MS);
-              continue;
-            }
-          }
-
-          // Get the full repository data
-          const repoResponse = await octokit.rest.repos.get({
-            owner: item.repository.owner.login,
-            repo: item.repository.name,
-          });
-          logRateLimitInfo(repoResponse, logger);
-
-          // Skip if this is a fork and the commit is older than the fork date
-          if (repoResponse.data.fork) {
-            const commitDate = new Date(item.commit.author.date);
-            const forkDate = new Date(repoResponse.data.created_at);
-
-            if (commitDate < forkDate) {
-              logger.info(`Skipping commit ${item.sha} as it predates fork creation`);
-              await Bun.sleep(REQUEST_DELAY_MS);
-              continue;
-            }
-          }
-
-          // Get detailed commit info including file changes
-          const detailedCommit = await octokit.rest.repos.getCommit({
-            owner: item.repository.owner.login,
-            repo: item.repository.name,
-            ref: item.sha,
-          });
-          logRateLimitInfo(detailedCommit, logger);
-
-          processedAnyNewCommits = true;
-
-          // In debug mode, just count the commits without persisting
-          if (skipPersist) {
-            logger.info(`Would insert commit ${item.sha} for ${item.repository.full_name}`);
-            newCommitsOnPage++;
-            await Bun.sleep(REQUEST_DELAY_MS);
-            continue;
-          }
-
-          // Ensure repository exists in database
-          await ensureRepositoryExists(repoResponse.data, integrationRunId);
-
-          // Insert new commit
-          const newCommit: GithubCommitInsert = {
-            id: item.node_id,
-            sha: item.sha,
-            message: item.commit.message,
-            htmlUrl: item.html_url,
-            repositoryId: item.repository.id,
-            committedAt: item.commit.committer?.date ? new Date(item.commit.committer.date) : null,
-            contentCreatedAt: new Date(item.commit.author.date),
-            integrationRunId,
-            changes: detailedCommit.data.stats?.total ?? null,
-            additions: detailedCommit.data.stats?.additions ?? null,
-            deletions: detailedCommit.data.stats?.deletions ?? null,
-          };
-
-          await db.insert(githubCommits).values(newCommit);
-
-          // Insert commit changes
-          for (const file of detailedCommit.data.files || []) {
-            const newChange: GithubCommitChangeInsert = {
-              filename: file.filename,
-              status: file.status,
-              patch: file.patch ? file.patch.slice(0, MAX_PATCH_LENGTH) : '',
-              commitId: item.node_id,
-              changes: file.changes,
-              additions: file.additions,
-              deletions: file.deletions,
-            };
-            await db.insert(githubCommitChanges).values(newChange);
-          }
-
-          logger.info(`Inserted commit ${item.sha} for ${item.repository.full_name}`);
-          newCommitsOnPage++;
-          await Bun.sleep(REQUEST_DELAY_MS);
-        } catch (error) {
-          logger.error(`Error processing commit ${item.sha}`, {
-            error: error instanceof Error ? error.message : String(error),
-            repository: item.repository?.full_name,
-          });
-          await Bun.sleep(REQUEST_DELAY_MS);
-        }
-
-        logger.info(`Processing commits: ${i + 1}/${response.data.items.length}`);
       }
 
-      totalCommits += newCommitsOnPage;
-
-      // If we didn't process any new commits on this page, we can stop
-      if (!processedAnyNewCommits) {
+      if (newItems.length === 0) {
         logger.info('No new commits found on this page, stopping pagination');
-        hasMore = false;
         break;
       }
+
+      const results = await runConcurrentPool({
+        items: newItems,
+        concurrency: COMMIT_CONCURRENCY,
+        worker: (item) => processCommitItem(item),
+        onProgress: (completed, total) => {
+          if (completed % 10 === 0 || completed === total) {
+            logger.info(`Processing commits: ${completed}/${total}`);
+          }
+        },
+      });
+      totalCommits += results.filter((result) => result.ok && result.value === 'inserted').length;
 
       logger.info(`Processed new commits from page ${page}`);
       page++;

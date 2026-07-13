@@ -9,10 +9,13 @@ import {
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { mapUrl } from '@/server/lib/url-utils';
+import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
 
 const logger = createIntegrationLogger('github', 'map');
+
+const DB_CONCURRENCY = 10;
 
 /**
  * Maps a GitHub user to a record
@@ -72,34 +75,38 @@ export async function createRecordsFromGithubUsers() {
 
   logger.info(`Found ${unmappedUsers.length} unmapped GitHub users`);
 
-  for (const user of unmappedUsers) {
-    const newEntityDefaults = mapGithubUserToRecord(user);
+  const results = await runConcurrentPool({
+    items: unmappedUsers,
+    concurrency: DB_CONCURRENCY,
+    worker: async (user) => {
+      const newEntityDefaults = mapGithubUserToRecord(user);
 
-    const [newRecord] = await db
-      .insert(records)
-      .values(newEntityDefaults)
-      .onConflictDoUpdate({
-        target: records.id,
-        set: { recordUpdatedAt: new Date() },
-      })
-      .returning({ id: records.id });
+      const [newRecord] = await db
+        .insert(records)
+        .values(newEntityDefaults)
+        .returning({ id: records.id });
 
-    if (!newRecord) {
-      throw new Error('Failed to create record');
-    }
-
-    logger.info(`Created record ${newRecord.id} for ${user.login} (${user.id})`);
-
-    await db.update(githubUsers).set({ recordId: newRecord.id }).where(eq(githubUsers.id, user.id));
-
-    // Link repositories to creator
-    for (const repository of user.repositories) {
-      if (repository.recordId) {
-        logger.info(`Linking repository ${repository.id} to creator record ${newRecord.id}`);
-        await linkRecords(repository.recordId, newRecord.id, 'created_by', db);
+      if (!newRecord) {
+        throw new Error('Failed to create record');
       }
-    }
-  }
+
+      logger.info(`Created record ${newRecord.id} for ${user.login} (${user.id})`);
+
+      await db
+        .update(githubUsers)
+        .set({ recordId: newRecord.id })
+        .where(eq(githubUsers.id, user.id));
+
+      // Link repositories to creator
+      for (const repository of user.repositories) {
+        if (repository.recordId) {
+          logger.info(`Linking repository ${repository.id} to creator record ${newRecord.id}`);
+          await linkRecords(repository.recordId, newRecord.id, 'created_by', db);
+        }
+      }
+    },
+  });
+  throwPoolFailures(results, 'createRecordsFromGithubUsers', unmappedUsers.length);
 
   logger.complete(`Processed ${unmappedUsers.length} GitHub users`);
 }
@@ -159,33 +166,38 @@ export async function createRecordsFromGithubRepositories() {
 
   logger.info(`Found ${unmappedRepositories.length} unmapped GitHub repositories`);
 
-  for (const repository of unmappedRepositories) {
-    const newRecordDefaults = mapGithubRepositoryToRecord(repository);
+  const results = await runConcurrentPool({
+    items: unmappedRepositories,
+    concurrency: DB_CONCURRENCY,
+    worker: async (repository) => {
+      const newRecordDefaults = mapGithubRepositoryToRecord(repository);
 
-    const [newRecord] = await db
-      .insert(records)
-      .values(newRecordDefaults)
-      .returning({ id: records.id });
+      const [newRecord] = await db
+        .insert(records)
+        .values(newRecordDefaults)
+        .returning({ id: records.id });
 
-    if (!newRecord) {
-      throw new Error('Failed to create record');
-    }
+      if (!newRecord) {
+        throw new Error('Failed to create record');
+      }
 
-    logger.info(`Created record ${newRecord.id} for ${repository.name} (${repository.id})`);
+      logger.info(`Created record ${newRecord.id} for ${repository.name} (${repository.id})`);
 
-    await db
-      .update(githubRepositories)
-      .set({ recordId: newRecord.id })
-      .where(eq(githubRepositories.id, repository.id));
+      await db
+        .update(githubRepositories)
+        .set({ recordId: newRecord.id })
+        .where(eq(githubRepositories.id, repository.id));
 
-    // Link repository to owner
-    if (repository.owner.recordId) {
-      logger.info(
-        `Linking repository ${repository.id} to creator record ${repository.owner.recordId}`
-      );
-      await linkRecords(newRecord.id, repository.owner.recordId, 'created_by', db);
-    }
-  }
+      // Link repository to owner
+      if (repository.owner.recordId) {
+        logger.info(
+          `Linking repository ${repository.id} to creator record ${repository.owner.recordId}`
+        );
+        await linkRecords(newRecord.id, repository.owner.recordId, 'created_by', db);
+      }
+    },
+  });
+  throwPoolFailures(results, 'createRecordsFromGithubRepositories', unmappedRepositories.length);
 
   logger.complete(`Processed ${unmappedRepositories.length} GitHub repositories`);
 }

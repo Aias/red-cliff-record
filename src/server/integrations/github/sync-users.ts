@@ -1,17 +1,18 @@
 import { githubUsers, type GithubUserInsert } from '@hozo';
 import { RequestError } from '@octokit/request-error';
-import { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
+import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { createIntegrationLogger } from '../common/logging';
+import { createGithubClient } from './octokit';
 
 const logger = createIntegrationLogger('github', 'sync-users');
 
 /**
  * Configuration constants
  */
-const REQUEST_DELAY_MS = 1000;
+const USER_CONCURRENCY = 10;
 
 /**
  * Ensures a GitHub user exists in the database
@@ -70,12 +71,10 @@ export async function ensureGithubUserExists(
  * 3. Updates the user records with the full information
  *
  * @returns The number of users successfully updated
- * @throws Error if the GitHub API request fails due to rate limiting
+ * @throws Error if a non-API failure (e.g. database error) occurs
  */
 export async function updatePartialUsers(): Promise<number> {
-  const octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN,
-  });
+  const octokit = createGithubClient();
 
   logger.start('Fetching full user information for partial users');
 
@@ -96,68 +95,76 @@ export async function updatePartialUsers(): Promise<number> {
     return 0;
   }
 
-  let updatedCount = 0;
-
-  for (const user of partialUsers) {
-    try {
-      logger.info(`Fetching full information for user ${user.login}...`);
-      const response = await octokit.rest.users.getByUsername({
-        username: user.login,
-        headers: {
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      });
-
-      logRateLimitInfo(response, logger);
-
-      const userData = response.data;
-
-      await db
-        .update(githubUsers)
-        .set({
-          name: userData.name,
-          company: userData.company,
-          blog: userData.blog,
-          location: userData.location,
-          email: userData.email,
-          bio: userData.bio,
-          twitterUsername: userData.twitter_username,
-          followers: userData.followers,
-          following: userData.following,
-          contentCreatedAt: new Date(userData.created_at),
-          contentUpdatedAt: new Date(userData.updated_at),
-          partial: false,
-          recordUpdatedAt: new Date(),
-        })
-        .where(eq(githubUsers.id, user.id));
-
-      updatedCount++;
-      logger.info(`Updated user ${user.login} (${updatedCount}/${partialUsers.length})`);
-
-      await Bun.sleep(REQUEST_DELAY_MS);
-    } catch (error) {
-      if (error instanceof RequestError) {
-        logger.error(`Error fetching user ${user.login}`, {
-          status: error.status,
-          message: error.message,
-          headers: error.response?.headers,
+  const results = await runConcurrentPool({
+    items: partialUsers,
+    concurrency: USER_CONCURRENCY,
+    worker: async (user) => {
+      try {
+        const response = await octokit.rest.users.getByUsername({
+          username: user.login,
+          headers: {
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
         });
 
-        if (error.response) {
-          logRateLimitInfo(error.response, logger);
-        }
+        logRateLimitInfo(response, logger);
 
-        if (error.status === 403 || error.status === 429) {
-          throw new Error(`GitHub API rate limit exceeded: ${error.message}`);
-        }
+        const userData = response.data;
 
-        logger.warn(`Skipping user ${user.login} due to error`);
-        continue;
+        await db
+          .update(githubUsers)
+          .set({
+            name: userData.name,
+            company: userData.company,
+            blog: userData.blog,
+            location: userData.location,
+            email: userData.email,
+            bio: userData.bio,
+            twitterUsername: userData.twitter_username,
+            followers: userData.followers,
+            following: userData.following,
+            contentCreatedAt: new Date(userData.created_at),
+            contentUpdatedAt: new Date(userData.updated_at),
+            partial: false,
+            recordUpdatedAt: new Date(),
+          })
+          .where(eq(githubUsers.id, user.id));
+
+        logger.info(`Updated user ${user.login}`);
+        return true;
+      } catch (error) {
+        if (error instanceof RequestError) {
+          logger.error(`Error fetching user ${user.login}`, {
+            status: error.status,
+            message: error.message,
+            headers: error.response?.headers,
+          });
+
+          if (error.response) {
+            logRateLimitInfo(error.response, logger);
+          }
+
+          logger.warn(`Skipping user ${user.login} due to error`);
+          return false;
+        }
+        throw error;
       }
-      throw error;
-    }
+    },
+    onProgress: (completed, total) => {
+      if (completed % 10 === 0 || completed === total) {
+        logger.info(`Progress: ${completed}/${total} users`);
+      }
+    },
+  });
+
+  // API errors skip the individual user; anything else (e.g. a database
+  // failure) is systemic and should abort the run
+  const firstFailure = results.find((result) => !result.ok);
+  if (firstFailure && !firstFailure.ok) {
+    throw firstFailure.error;
   }
 
+  const updatedCount = results.filter((result) => result.ok && result.value).length;
   logger.complete('Updated users with full information', updatedCount);
   return updatedCount;
 }
