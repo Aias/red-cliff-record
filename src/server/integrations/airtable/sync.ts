@@ -20,7 +20,6 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { uploadMediaToR2 } from '@/server/lib/media';
 import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
-import { conflictUpdateSet } from '../common/db-helpers';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -112,24 +111,18 @@ async function syncCreators(integrationRunId: number, collectDebugData?: unknown
 
     // Use a transaction to ensure all creators are synced atomically
     await db.transaction(async (tx) => {
-      await tx
-        .insert(airtableCreators)
-        .values(creatorsToSync)
-        .onConflictDoUpdate({
-          target: [airtableCreators.id],
-          set: conflictUpdateSet(airtableCreators, [
-            'name',
-            'type',
-            'primaryProject',
-            'website',
-            'professions',
-            'organizations',
-            'nationalities',
-            'contentCreatedAt',
-            'contentUpdatedAt',
-            'integrationRunId',
-          ]),
-        });
+      for (const creator of creatorsToSync) {
+        logger.info(`Syncing creator ${creator.name}`);
+        await tx
+          .insert(airtableCreators)
+          .values(creator)
+          .onConflictDoUpdate({
+            target: [airtableCreators.id],
+            set: {
+              ...creator,
+            },
+          });
+      }
     });
 
     logger.complete(`Synced creators`, creatorsToSync.length);
@@ -205,20 +198,18 @@ async function syncSpaces(integrationRunId: number, collectDebugData?: unknown[]
 
     // Use a transaction to ensure all spaces are synced atomically
     await db.transaction(async (tx) => {
-      await tx
-        .insert(airtableSpaces)
-        .values(spacesToSync)
-        .onConflictDoUpdate({
-          target: [airtableSpaces.id],
-          set: conflictUpdateSet(airtableSpaces, [
-            'name',
-            'fullName',
-            'icon',
-            'contentCreatedAt',
-            'contentUpdatedAt',
-            'integrationRunId',
-          ]),
-        });
+      for (const space of spacesToSync) {
+        logger.info(`Syncing space ${space.name}`);
+        await tx
+          .insert(airtableSpaces)
+          .values(space)
+          .onConflictDoUpdate({
+            target: [airtableSpaces.id],
+            set: {
+              ...space,
+            },
+          });
+      }
     });
 
     logger.complete(`Synced spaces`, spacesToSync.length);

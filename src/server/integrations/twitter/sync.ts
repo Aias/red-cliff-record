@@ -8,7 +8,6 @@ import {
 } from '@hozo';
 import { db } from '@/server/db/connections/postgres';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
-import { conflictUpdateSet } from '../common/db-helpers';
 import { createDebugContext } from '../common/debug-output';
 import { createIntegrationLogger } from '../common/logging';
 import { runIntegration } from '../common/run-integration';
@@ -585,28 +584,24 @@ async function storeTweetData(
         `Users: total=${processedUsers.length} new=${newUsers} existing=${existingUserIds.size}`
       );
 
-      const userSetColumns = conflictUpdateSet(usersTable, [
-        'description',
-        'displayName',
-        'username',
-        'location',
-        'profileImageUrl',
-        'profileBannerUrl',
-        'url',
-        'externalUrl',
-        'contentCreatedAt',
-        'integrationRunId',
-      ]);
-      for (let i = 0; i < processedUsers.length; i += INSERT_CHUNK_SIZE) {
-        const chunk = processedUsers.slice(i, i + INSERT_CHUNK_SIZE);
+      let userIndex = 0;
+      for (const user of processedUsers) {
+        userIndex++;
+        const action = existingUserIds.has(user.id) ? 'update' : 'insert';
+        logger.info(
+          `User ${formatProgress(userIndex, processedUsers.length)} ${action} @${user.username} (${user.id})`
+        );
+
         await tx
           .insert(usersTable)
-          .values(chunk)
+          .values(user)
           .onConflictDoUpdate({
             target: [usersTable.id],
-            set: { ...userSetColumns, recordUpdatedAt: new Date() },
+            set: {
+              ...user,
+              recordUpdatedAt: new Date(),
+            },
           });
-        logger.info(`Users ${formatProgress(i + chunk.length, processedUsers.length)} upserted`);
       }
 
       // 2. Insert Tweets (already topologically sorted so dependencies come first)
@@ -616,28 +611,23 @@ async function storeTweetData(
         `Tweets: total=${processedTweets.length} new=${newTweetsCount} existing=${existingTweetIds.size}`
       );
 
-      const tweetSetColumns = conflictUpdateSet(tweetsTable, [
-        'userId',
-        'text',
-        'quotedTweetId',
-        'inReplyToTweetId',
-        'conversationId',
-        'contentCreatedAt',
-        'integrationRunId',
-      ]);
-      // Chunks are processed in order (not concurrently): tweets are topologically sorted so
-      // parent/quoted tweets precede replies, and a referenced tweet must already be in an
-      // earlier-or-same chunk when its dependent is inserted.
-      for (let i = 0; i < processedTweets.length; i += INSERT_CHUNK_SIZE) {
-        const chunk = processedTweets.slice(i, i + INSERT_CHUNK_SIZE);
+      let tweetIndex = 0;
+      for (const tweet of processedTweets) {
+        tweetIndex++;
+        const action = existingTweetIds.has(tweet.id) ? 'update' : 'insert';
+        const tweetType = tweet.quotedTweetId ? 'quote' : 'tweet';
+        const suffix = tweet.quotedTweetId ? ` -> ${tweet.quotedTweetId}` : '';
+        logger.info(
+          `Tweet ${formatProgress(tweetIndex, processedTweets.length)} ${action} ${tweetType} (${tweet.id}${suffix})`
+        );
+
         await tx
           .insert(tweetsTable)
-          .values(chunk)
+          .values(tweet)
           .onConflictDoUpdate({
             target: tweetsTable.id,
-            set: { ...tweetSetColumns, recordUpdatedAt: new Date() },
+            set: { ...tweet, recordUpdatedAt: new Date() },
           });
-        logger.info(`Tweets ${formatProgress(i + chunk.length, processedTweets.length)} upserted`);
       }
 
       // 3. Insert Media (new rows only; existing media is updated separately once its R2 upload completes)
