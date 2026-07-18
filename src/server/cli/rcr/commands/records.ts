@@ -37,7 +37,7 @@ function parseCommaSeparated<T>(value: string | undefined, schema: z.ZodType<T>)
 }
 
 /**
- * Parse order string like "createdAt:desc,rating:asc" into OrderCriteria array
+ * Parse order string like "createdAt:desc,eloScore:asc" into OrderCriteria array
  */
 function parseOrderString(
   value: string | undefined
@@ -77,10 +77,10 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
   parent: z.boolean().optional(),
   'has-title': z.boolean().optional(),
   // Range filters
-  'rating-min': RecordFiltersSchema.shape.minRating.optional(),
-  'rating-max': RecordFiltersSchema.shape.maxRating.optional(),
+  'elo-min': RecordFiltersSchema.shape.minElo.optional(),
+  'elo-max': RecordFiltersSchema.shape.maxElo.optional(),
   // Ordering
-  order: z.string().optional(), // e.g., "createdAt:desc,rating:asc"
+  order: z.string().optional(), // e.g., "createdAt:desc,eloScore:asc"
   // Output options
   full: z.boolean().optional(), // Return full records instead of just IDs
 })
@@ -91,8 +91,8 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
       sources: parseCommaSeparated(opts.source, IntegrationTypeSchema),
       isCurated: opts.curated,
       isPrivate: opts.private,
-      minRating: opts['rating-min'],
-      maxRating: opts['rating-max'],
+      minElo: opts['elo-min'],
+      maxElo: opts['elo-max'],
       hasEmbedding: opts.embedding,
       hasMedia: opts.media,
       hasParent: opts.parent,
@@ -172,7 +172,7 @@ export const get: CommandHandler = async (args, options) => {
  *   --type=entity,concept --source=readwise,github
  *
  * Supports ordering with --order=field:direction (comma-separated for multiple):
- *   --order=rating:desc,createdAt:asc
+ *   --order=eloScore:desc,createdAt:asc
  *
  * Use --full to return complete record objects instead of just IDs.
  */
@@ -264,7 +264,7 @@ const BulkUpdateDataSchema = RecordInsertSchema.omit({
  *
  * Examples:
  *   rcr records bulk-update 1,2,3 '{"isCurated": true}'
- *   rcr records bulk-update 5,10,15 '{"rating": 3, "isPrivate": false}'
+ *   rcr records bulk-update 5,10,15 '{"notes": "reviewed", "isPrivate": false}'
  */
 export const bulkUpdate: CommandHandler = async (args, options) => {
   parseOptions(BaseOptionsSchema.strict(), options);

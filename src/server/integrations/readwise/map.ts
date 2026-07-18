@@ -13,6 +13,7 @@ import {
 } from '@hozo';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
+import { starsToElo } from '@/server/lib/elo';
 import { mapUrl } from '@/server/lib/url-utils';
 import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { bulkInsertLinks, linkRecords } from '../common/db-helpers';
@@ -454,16 +455,16 @@ export const mapReadwiseDocumentToRecord = (
     .filter(Boolean)
     .join('\n\n');
 
-  // Determine rating from tags
-  let rating = 0;
+  // Determine star signal from tags
+  let stars = 0;
   if (document.tags?.includes('⭐')) {
-    rating = 1;
+    stars = 1;
   }
   if (document.tags?.includes('⭐⭐')) {
-    rating = 2;
+    stars = 2;
   }
   if (document.tags?.includes('⭐⭐⭐')) {
-    rating = 3;
+    stars = 3;
   }
 
   return {
@@ -481,7 +482,7 @@ export const mapReadwiseDocumentToRecord = (
     )
       ? null
       : document.imageUrl,
-    rating,
+    eloScore: starsToElo(stars),
     sources: ['readwise'],
     recordCreatedAt: document.recordCreatedAt,
     recordUpdatedAt: document.recordUpdatedAt,

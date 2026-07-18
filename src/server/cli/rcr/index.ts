@@ -198,9 +198,9 @@ Records List Filters:
   --parent[=BOOL]         Filter by has parent (true/false)
   --media[=BOOL]          Filter by has media (true/false)
   --embedding[=BOOL]      Filter by has embedding (true/false)
-  --rating-min=N          Minimum rating (0-3)
-  --rating-max=N          Maximum rating (0-3)
-  --order=<fields>        Order by fields (field:dir,... e.g. rating:desc,title:asc)
+  --elo-min=N             Minimum ELO score
+  --elo-max=N             Maximum ELO score
+  --order=<fields>        Order by fields (field:dir,... e.g. eloScore:desc,title:asc)
   --full                  Return complete records instead of just IDs
 
 Global Options:
@@ -221,7 +221,7 @@ Examples:
   rcr records list --type=entity --limit=10
   rcr records list --source=readwise --has-title --full  # Full Readwise docs
   rcr records list --type=entity,concept --curated=false # Uncurated entities/concepts
-  rcr records list --order=rating:desc,title:asc         # Custom ordering
+  rcr records list --order=eloScore:desc,title:asc       # Custom ordering
   rcr records list --source=readwise --has-title=false   # Records without titles
   rcr media list --type=image --alt-text=false --limit=10
   rcr search "machine learning"
