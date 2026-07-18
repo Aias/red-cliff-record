@@ -12,6 +12,7 @@ import type { FamilyTree } from '@/server/api/routers/records/tree';
 import { CoercedIdSchema, type DbId } from '@/shared/types/api';
 import { styled } from '@/styled-system/jsx';
 import { RecordForm } from './-components/form';
+import { RankSection } from './-components/rank';
 import { RecordDisplay } from './-components/record-display';
 import { RecordLink } from './-components/record-link';
 import { RelationsList, SimilarRecords } from './-components/relations';
@@ -345,7 +346,7 @@ function RouteComponent() {
   }
 
   return (
-    <styled.div css={{ display: 'flex', flex: '1', overflowX: 'auto', scrollbarWidth: '[thin]' }}>
+    <styled.div css={{ display: 'flex', flex: '1', overflowX: 'auto' }}>
       <styled.ul
         css={{
           display: 'flex',
@@ -356,7 +357,6 @@ function RouteComponent() {
           flexDirection: 'column',
           gap: '2',
           overflowY: 'auto',
-          scrollbarWidth: '[thin]',
           borderInlineEnd: 'divider',
           backgroundColor: 'container',
           padding: '3',
@@ -397,13 +397,13 @@ function RouteComponent() {
           flexDirection: 'column',
           gap: '4',
           overflowY: 'auto',
-          scrollbarWidth: '[thin]',
           padding: '4',
           '@container (max-width: 40rem)': { minWidth: 'screenW' },
         }}
       >
         <RelationsList id={recordId} />
         <SimilarRecords id={recordId} />
+        <RankSection key={recordId} id={recordId} />
       </styled.div>
     </styled.div>
   );
