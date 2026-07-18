@@ -45,7 +45,6 @@ export const textareaRecipe = defineRecipe({
         minHeight: '16',
         resize: 'block',
         overflowY: 'auto',
-        scrollbarWidth: '[thin]',
       },
       auto: {
         minHeight: '0',
