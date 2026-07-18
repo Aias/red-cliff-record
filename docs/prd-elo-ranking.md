@@ -1,7 +1,7 @@
 # PRD: ELO Ranking System
 
-**Status:** Draft
-**Date:** 2026-02-17
+**Status:** Final
+**Date:** 2026-07-18
 **Replaces:** Star rating system (0–3 `rating` field on records)
 
 ## Problem
@@ -16,11 +16,12 @@ Replace star ratings with an **ELO-based ranking system**, scoped per record typ
 
 ### ELO Scores
 
-- Each record gets an `eloScore` (integer, default 1200).
+- Each record has an `eloScore` (integer, default 1200).
 - Scores are scoped by record type — an artifact's ELO is only meaningful relative to other artifacts.
 - **Adaptive K-factor:** Each record uses its own K based on its own matchup count (asymmetric updates, standard ELO practice). K=32 for records with <10 matchups, K=24 for 10–30, K=16 for 30+. New records move fast through the ranks; established records stabilize.
-- Scores are truly unbounded — no floor or ceiling. They will naturally cluster around 800–1600 in practice.
-- Draws are valid outcomes and split points per standard ELO calculation. Both draws and decisive outcomes increment each record's `eloMatchups` counter. Skips do not.
+- **Matchup counts are derived**, not stored: a record's count is a `COUNT` over `elo_matchups` rows referencing it. At personal-KB scale this is trivially cheap, and it can never drift from the history that defines it.
+- Scores are truly unbounded — no floor or ceiling. They naturally cluster around 800–1600 in practice.
+- Draws are valid outcomes and split points per standard ELO calculation. Skips leave no trace.
 
 ### Matchups
 
@@ -29,23 +30,16 @@ A **matchup** is a head-to-head comparison: the user sees two records of the sam
 **Outcomes:**
 
 - **Win/Loss:** Winner gains points, loser loses points (asymmetric K per record).
-- **Draw:** Points are split per standard ELO formula. Both records' `eloMatchups` counters increment.
+- **Draw:** Points split per standard ELO formula.
 - **Skip:** No ELO change, no matchup recorded. The opponent is replaced with a new one.
 
-**Storage:** Each matchup (except skips) is persisted for history. Matchup history is not surfaced in the UI — it's fire-and-forget from the user's perspective; only the resulting score matters.
+**Storage:** Each matchup (except skips) is persisted to `elo_matchups`. Matchup history is not surfaced in the UI — it's fire-and-forget from the user's perspective; only the resulting score matters.
 
-| Field        | Type      | Description                                                                              |
-| ------------ | --------- | ---------------------------------------------------------------------------------------- |
-| `id`         | serial    | Primary key                                                                              |
-| `recordA`    | int (FK)  | First record                                                                             |
-| `recordB`    | int (FK)  | Second record                                                                            |
-| `winner`     | int? (FK) | Winning record (null = draw)                                                             |
-| `recordType` | text      | Denormalized for query performance and historical correctness if a record's type changes |
-| `createdAt`  | timestamp | When the comparison was made                                                             |
-
-After each matchup, both records' ELO scores are updated in place.
+**Pool:** Matchups draw exclusively from **curated records** (`isCurated`). Uncurated auto-imports are not rankable — curation is the gateway into the arena.
 
 **Deletion behavior:** When a record is deleted, its matchup rows cascade-delete. The opponent's ELO is **not** retroactively recalculated — ELO is a running tally; history is not rewritten.
+
+**Merge behavior:** The surviving record takes the **max** of the two records' scores (mirroring the old max-rating convention). The absorbed record's matchup rows are **repointed** to the survivor (`record_a_id`, `record_b_id`, and `winner_id` references), so its history — and therefore its derived matchup count — carries over. Any matchup rows where the two merged records faced each other are deleted first; repointing them would create self-matchups.
 
 **Consistency:** ELO handles transitive cycles (A > B > C > A) naturally through score adjustments. No cycle detection or prevention logic.
 
@@ -55,7 +49,7 @@ After each matchup, both records' ELO scores are updated in place.
 
 ### Contextual Matchups (Relations Sidebar)
 
-The **primary everyday interaction** with the ELO system. When viewing a record, the existing relations sidebar includes a collapsible matchup section showing a few randomly selected opponents. The user can tap one to declare a winner, and both records' scores update immediately with a brief delta animation (e.g., `+18`).
+The **primary everyday interaction** with the ELO system. When viewing a record, the relations sidebar includes a collapsible **"Rank"** section showing a few randomly selected opponents. The user can tap one to declare a winner, and both records' scores update immediately with a brief delta animation (e.g., `+18`).
 
 **Why this matters:** Most curation happens while you're already looking at a record — reading its content, editing its metadata, reviewing its links. Embedding matchups in that context means ranking is a natural side-effect of curation rather than a separate chore.
 
@@ -64,16 +58,15 @@ The **primary everyday interaction** with the ELO system. When viewing a record,
 - Show 2–3 opponent cards in the sidebar, using the established sidebar record card pattern.
 - Each opponent card has two buttons: **thumbs up** (current record wins) and **thumbs down** (opponent wins). Explicit, no ambiguity about which direction the comparison goes.
 - After a matchup, the resolved opponent is replaced with a new one, so the user can keep going or stop at any time.
-- A **refresh/shuffle button** lets the user get new opponents without completing a matchup.
+- A **refresh/shuffle button** fetches new opponents without completing a matchup.
 - Score delta is shown briefly after each matchup (e.g., `1200 → 1218`) then settles to the new score.
 - The section is **collapsible**, with collapsed state persisted in localStorage.
+- Below the existing relations/similar-records sections in the sidebar.
 
 **Opponent selection:**
 
-- Default: records with similar ELO (±200), same type. If fewer than 2–3 candidates exist in that window, widen until enough opponents are found.
-- If the current record has <10 matchups (`eloMatchups < 10`), bias selection toward well-established records (high matchup count) to anchor the new record faster.
-
-**UI location:** Below the existing relations/links in the sidebar, under a "Rank" or "Compare" heading.
+- Default: curated records with similar ELO (±200), same type. If fewer than 2–3 candidates exist in that window, widen until enough opponents are found.
+- If the current record has <10 matchups, bias selection toward well-established records (high matchup count) to anchor the new record faster.
 
 ### Focused Burst ("Rank This")
 
@@ -86,9 +79,9 @@ A focused matchup mode for quickly triangulating a record's position. Accessible
 
 This is **not** a convergence algorithm that "stops" — ranking is perpetual, just as chess players can always play new opponents. The focused burst is simply a convenient way to run a series of informative matchups for one record.
 
-### Arena Mode
+### Arena Page
 
-A dedicated page where the user is shown two records of the same type and picks a winner.
+A dedicated page at `/arena`, linked as **"Arena"** in the main nav, where the user is shown two records of the same type and picks a winner.
 
 **Pair selection heuristic:**
 
@@ -99,11 +92,11 @@ A dedicated page where the user is shown two records of the same type and picks 
 **Arena features:**
 
 - Record type selector (entity / concept / artifact).
-- Optional filters (date range, tags, subtype) to narrow the matchup pool. Filters reset each session — arena is meant to be serendipitous.
-- ELO scores are **hidden** before the user picks to avoid anchoring bias.
-- Draw and skip buttons available on every matchup.
+- ELO scores are **hidden** before the user picks to avoid anchoring bias, revealed with the delta after.
+- Draw and skip available on every matchup.
 - Search to focus on a specific record (enters focused burst mode, locking one side).
-- Session stats: matchups completed this session, records ranked.
+- **Keyboard shortcuts:** ← / → pick a side, D declares a draw, S skips. Rapid ranking is the point of the page.
+- No filters, no session stats — the arena is deliberately serendipitous chrome-free ranking.
 
 **UI sketch:**
 
@@ -117,139 +110,120 @@ A dedicated page where the user is shown two records of the same type and picks 
                   [ Skip ]
 ```
 
-## Schema Changes
+## Schema
 
-### New columns on `records`
+### `records`
 
 ```
-eloScore     integer  NOT NULL  DEFAULT 1200
-eloMatchups  integer  NOT NULL  DEFAULT 0     -- total matchups participated in (wins + losses + draws, not skips)
+elo_score  integer  NOT NULL  DEFAULT 1200     -- with index on (type, elo_score)
 ```
 
-### New table: `elo_matchups`
+No matchup counter column — counts derive from `elo_matchups`.
+
+### `elo_matchups`
 
 ```
 id           serial   PRIMARY KEY
 record_a_id  integer  NOT NULL  REFERENCES records(id) ON DELETE CASCADE
 record_b_id  integer  NOT NULL  REFERENCES records(id) ON DELETE CASCADE
-winner_id    integer            REFERENCES records(id) ON DELETE SET NULL
-record_type  text     NOT NULL
+winner_id    integer            REFERENCES records(id) ON DELETE SET NULL   -- null = draw
+record_type  record_type NOT NULL   -- denormalized for query performance and historical correctness
 created_at   timestamp NOT NULL DEFAULT now()
 ```
 
-### Deprecation of `rating`
+### Removal of `rating`
 
-Clean break: the `rating` column is dropped and all star-related UI, filters, and CLI flags are removed. Stars are gone from all interfaces once ELO ships.
+Clean break: the `rating` column is dropped and all star-related filters, CLI flags, and integration mappings are removed or converted to their ELO equivalents.
 
 ## API Surface
 
-### tRPC Mutations
+### `elo` tRPC router
 
-- `elo.submitMatchup({ winnerId, loserId } | { drawIds: [id, id] })` — Record a matchup result, update ELO scores, return new scores. Server-side validation rejects cross-type matchups.
+- `elo.submitMatchup` — Record a win/loss (`{ winnerId, loserId }`) or draw (`{ drawIds: [id, id] }`) in a transaction: validate both records are the same type (reject cross-type), compute asymmetric ELO updates from derived matchup counts, insert the matchup row, update both scores, return the new scores and deltas.
+- `elo.getMatchup({ recordType, focusRecordId?, excludeIds? })` — Returns a pair of curated records. Without `focusRecordId`: pair per the arena heuristic. With `focusRecordId`: that record plus an opponent from across the full ELO spectrum (focused burst). `excludeIds` lets skip replace opponents without repeats.
+- `elo.getOpponents({ recordId, count })` — Sidebar opponent selection (±200 window with widening, establishment bias for new records).
 
-### tRPC Queries
+### Existing API changes
 
-- `elo.getMatchup({ recordType, focusRecordId? })` — Returns a pair of records. Without `focusRecordId`: random pair per arena heuristic. With `focusRecordId`: opponent selected across the full ELO spectrum for triangulation (focused burst mode).
-- `elo.getLeaderboard({ recordType, limit?, offset?, minMatchups? })` — Paginated list of records ordered by ELO score. Optional `minMatchups` filter to hide unranked records.
+- `records.list`: `eloScore` joins the `orderBy` fields; `minElo` / `maxElo` filters replace `minRating` / `maxRating`. A leaderboard is just `records.list` ordered by `eloScore` — no dedicated endpoint.
+- Record detail: exposes `eloScore` and derived matchup count.
+- CLI `rcr records list`: `--elo-min` / `--elo-max` replace `--rating-min` / `--rating-max`; `elo` joins the `--order` fields.
+- Matchup mutations follow the existing tRPC optimistic-mutation and invalidation patterns.
 
-### Existing API Changes
+## UI
 
-- Record list/grid endpoints: replace `rating` sort/filter with `eloScore` equivalents.
-- Record detail: expose `eloScore` and `eloMatchups` count.
-- CLI `rcr records list`: replace `--rating-min/max` with `--elo-min/max`, add `--order=elo:desc`.
-- Cache invalidation: matchup mutations follow existing tRPC optimistic mutation and invalidation patterns.
-
-## UI Changes
-
-### Record Grid/List
-
-- Replace star display with raw ELO score (e.g., `1340`).
-- No tier abstraction — the number itself is the display.
-
-### Record Detail / Relations Sidebar
-
-- Remove star slider.
-- Show current ELO score and matchup count.
-- Add collapsible contextual matchup section to the relations sidebar (2–3 opponent cards using established sidebar card pattern, inline win/loss/skip actions, refresh button).
-- "Rank this" button launches focused burst mode.
-
-### New: Arena Page
-
-- Accessible from main nav or records section.
-- Full arena mode UI as described above.
+- **Record grid:** ELO column shows the score (sortable once `eloScore` is an `orderBy` field).
+- **Record detail sidebar:** current ELO score and matchup count, collapsible "Rank" section with opponent cards, "Rank this" button launching focused burst.
+- **Arena page:** as described above.
+- Raw numbers everywhere — no tier abstraction.
 
 ## Integration Mapping
 
-Current integrations map external signals to the 0–3 star scale. Under ELO:
+Integrations write mapped record values at creation only (re-sync conflict handlers touch nothing but `recordUpdatedAt`), so ELO seeding from external signals is naturally creation-scoped:
 
-- **New records from integrations** get the default ELO (1200). External importance signals (Readwise stars, Raindrop important flag, Airtable michelin stars, Adobe ratings) are mapped to seed ELOs via a fixed signal→ELO table (1000/1200/1400/1600 for 0–3 stars).
-- **ELO is always user-sovereign.** Integration re-syncs never overwrite ELO scores, regardless of whether the record has matchup history. Once created, ELO is controlled exclusively through matchups.
+- External importance signals (Readwise star tags, Raindrop `important`, Airtable michelin stars, Adobe ratings) map to creation-time seeds: **no signal → 1200** (the default — absence of signal is not a negative signal), **1–3 stars → 1300 / 1400 / 1500**.
+- **ELO is user-sovereign.** Once created, a record's score is controlled exclusively through matchups. Re-syncs never overwrite it; `records.bulkUpdate` excludes it.
 
-## Implementation Phases
+## Bootstrap
 
-### Phase 1: Schema + migration
+Initial scores were seeded from a richness heuristic over existing metadata (`(rating + curation boosts) × sqrt(weighted signal sum)`, mapped through per-type percentile → inverse normal CDF centered on 1200, sd 150). The seed has been applied to production; the one-shot seed script is deleted along with the `rating` column it reads. Seeded records carry no matchup history, so K=32 lets real comparisons quickly overturn a bad seed.
 
-- [x] Add `eloScore` column to `records`
-- [ ] Add `eloMatchups` counter column to `records`
-- [x] Create `elo_matchups` table
-- [x] Seed `eloScore` from record richness signals (`src/server/db/seed-elo.ts`)
+## Implementation Plan
 
-### Phase 2: ELO calculation + tRPC endpoints
+### Phase 1: Schema _(done)_
 
-- [ ] ELO math (expected score, score update with asymmetric K)
-- [ ] `elo.submitMatchup` mutation (win/loss/draw, server-side cross-type validation)
-- [ ] `elo.getMatchup` query (random pair + optional `focusRecordId` for focused burst)
-- [ ] `elo.getLeaderboard` query (paginated, optional `minMatchups` filter)
+- [x] `eloScore` column + `(type, eloScore)` index
+- [x] `elo_matchups` table
+- [x] Seed production scores
 
-### Phase 3: Replace star references in existing UI/API
+### Phase 2: ELO engine + tRPC endpoints
 
-- [ ] Swap `rating` for `eloScore` in record grid/list display
-- [ ] Swap `rating` for `eloScore` in record detail
-- [ ] Update CLI `rcr records list` flags (`--elo-min/max`, `--order=elo:desc`)
-- [ ] Remove star slider from record detail
+- [x] ELO math (expected score, asymmetric adaptive K from derived counts, draw handling)
+- [x] `elo.submitMatchup` transaction with cross-type validation
+- [x] `elo.getMatchup` (arena heuristic + focused burst) and `elo.getOpponents` (sidebar), curated pool
+- [x] `eloScore` in `records.list` orderBy; matchup count on record detail
+
+### Phase 3: Arena page
+
+- [x] `/arena` route + "Arena" nav entry
+- [x] Type selector, hidden-score matchup cards, pick/draw/skip, delta reveal
+- [x] Keyboard shortcuts (← → D S)
+- [x] Search-to-focus (focused burst)
 
 ### Phase 4: Sidebar matchups
 
-- [ ] Opponent selection query (±200 ELO, widen if sparse, bias toward established for new records)
-- [ ] Collapsible matchup section in relations sidebar
-- [ ] Opponent cards with thumbs up/down, skip, refresh
-- [ ] Score delta animation
-- [ ] "Rank this" button launching focused burst
+- [x] Collapsible "Rank" section (localStorage-persisted) below similar records
+- [x] Opponent cards with thumbs up/down, skip, refresh
+- [x] Score delta animation
+- [x] "Rank this" button → focused burst
 
-### Phase 5: Arena page
+### Phase 5: Drop `rating`
 
-- [ ] Dedicated page with record type selector
-- [ ] Matchup card UI (scores hidden pre-pick, draw/skip buttons)
-- [ ] Optional filters (date range, tags, subtype — reset per session)
-- [ ] Search-to-focus (lock one side for focused burst)
-- [ ] Session stats
-
-### Phase 6: Cleanup
-
-- [ ] Drop `rating` column
-- [ ] Remove any remaining star references from integrations/CLI
-
-### Seeding
-
-Initial scores come from a richness heuristic over existing metadata rather than the star rating alone (`src/server/db/seed-elo.ts`). Each record's relevance is `(rating + curation boosts) × sqrt(weighted signal sum)` over links, media, notes, summary, and content. Within each type, percentile rank is mapped through an inverse normal CDF centered on the 1200 default (sd 150), so seeds follow the bell-shaped distribution matchup play converges to and new records enter at the median. Seeded records carry no matchup history: K=32 lets real comparisons quickly overturn a bad seed.
+- [x] Integrations: map star signals to creation-time `eloScore` seeds (1200/1300/1400/1500)
+- [x] Merge: survivor takes max `eloScore`; repoint absorbed record's matchups (deleting direct pair matchups first)
+- [x] `minElo`/`maxElo` filters + CLI flag swap
+- [x] Drop `rating` column (schema + migration), remove remaining references
+- [x] Delete `seed-elo.ts`
 
 ## Decisions
 
+- **Engine:** Plain ELO with adaptive K — not Glicko or Bradley-Terry. For a single user with no rating periods, rating deviation reduces to a matchup-count proxy, which adaptive K already uses; ELO keeps instant deltas and legible scores. The matchup log is engine-agnostic, so a future migration stays open.
 - **K-factor:** Adaptive, per-record (asymmetric). K=32 (<10 matchups), K=24 (10–30), K=16 (30+).
+- **Matchup counts:** Derived from `elo_matchups`, never stored. No counter column.
 - **Score bounds:** Unbounded. No floor or ceiling.
-- **Draws:** Supported. Split points per standard ELO. Increment matchup counters.
-- **Skips:** Supported. No ELO change, no matchup recorded, opponent replaced.
-- **Sidebar interaction:** Thumbs up / thumbs down buttons on each opponent card. Refresh button for new opponents. Collapsible with persistent state.
+- **Draws:** Supported. Split points per standard ELO.
+- **Skips:** Supported. No ELO change, no row, opponent replaced.
+- **Pool:** Curated records only, all interactions. No toggle.
 - **Score display:** Raw numbers everywhere. No tier abstraction. Brief delta animation after matchups.
-- **Arena page:** Dedicated page. Scores hidden before pick. Optional filters (reset per session). Search to focus on a specific record.
-- **Focused burst:** Opponents across full ELO spectrum. No convergence endpoint — ranking is perpetual.
-- **Cross-type comparison:** No. Server-side validation rejects cross-type matchups.
-- **Deletion:** Cascade-delete matchup rows. No retroactive recalculation of opponent scores.
+- **Arena:** Dedicated `/arena` page, main-nav entry. Scores hidden pre-pick. No filters, no session stats. Keyboard-first.
+- **Focused burst:** Opponents across the full ELO spectrum. No convergence endpoint — ranking is perpetual.
+- **Sidebar:** "Rank" heading (consistent with "Rank this"). Thumbs up/down per opponent card, refresh, collapsible with persisted state.
+- **Cross-type comparison:** Rejected server-side. Each type is its own league.
+- **Deletion:** Cascade-delete matchup rows. No retroactive recalculation.
+- **Merge:** Survivor takes max score; absorbed record's matchup history repoints to it (direct pair matchups deleted first).
 - **Cycles:** No detection or prevention. ELO handles them naturally.
 - **Decay:** No score decay. Matchup selection biases toward records that haven't been compared recently.
-- **Integration sovereignty:** ELO is always user-sovereign. Re-syncs never overwrite, even for zero-matchup records.
-- **Seeding:** Per-type richness percentile mapped through an inverse normal CDF centered on 1200 (sd 150). No phantom matchup count — seeds stay volatile (K=32) until real comparisons accumulate.
-- **New records:** No ranking nudge on creation. Records sit at 1200 until organically encountered.
-- **API consolidation:** Single `getMatchup` endpoint with optional `focusRecordId` param instead of separate random/settle queries.
+- **Integration sovereignty:** Creation-time seeds only (no signal → 1200; stars → 1300/1400/1500). Re-syncs and bulk updates never touch ELO.
+- **Leaderboard:** `records.list` ordered by `eloScore` — no dedicated endpoint or page.
 - **Matchup history:** Not surfaced in UI. Fire-and-forget; only scores matter.
-- **Opponent window fallback:** If <3 candidates within ±200 ELO, widen window until enough are found.
+- **Opponent window fallback:** If too few candidates within ±200 ELO, widen the window until enough are found.
