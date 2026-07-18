@@ -27,8 +27,8 @@ function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
     types,
     hasParent,
     hasTitle,
-    minRating,
-    maxRating,
+    minElo,
+    maxElo,
     isPrivate,
     isCurated,
     hasReminder,
@@ -50,7 +50,7 @@ function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
     media: hasMedia,
     reminderAt: hasReminder === true ? NOT_NULL : hasReminder === false ? IS_NULL : undefined,
     sources: sources?.length ? { arrayOverlaps: sources } : undefined,
-    rating: minRating || maxRating ? { gte: minRating, lte: maxRating } : undefined,
+    eloScore: minElo || maxElo ? { gte: minElo, lte: maxElo } : undefined,
     textEmbedding: hasEmbedding === true ? NOT_NULL : hasEmbedding === false ? IS_NULL : undefined,
   };
 }
