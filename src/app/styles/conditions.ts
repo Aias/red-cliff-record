@@ -16,6 +16,7 @@ export const conditionsPreset = definePreset({
       dark: ':where([data-color-scheme="dark"], [data-dark], .dark) &',
       light: ':where([data-color-scheme="light"], [data-light], .light) &',
       childIcon: '& :where(svg, .icon, .lucide)',
+      dataFocused: '&[data-focused]:not([data-focused=false])',
       sideBottom: '&[data-side=bottom]',
       sideTop: '&[data-side=top]',
       sideLeft: '&[data-side=left]',

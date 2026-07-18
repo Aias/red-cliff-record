@@ -27,7 +27,7 @@ import { RelationshipSelector } from './record-lookup';
 import { recordTypeIcons } from './type-icons';
 
 /** Predicate types in display priority order (first = highest priority) */
-const PREDICATE_TYPE_ORDER = exhaustive<PredicateType>()([
+export const PREDICATE_TYPE_ORDER = exhaustive<PredicateType>()([
   'identity',
   'containment',
   'creation',
