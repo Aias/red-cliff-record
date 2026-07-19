@@ -1,6 +1,6 @@
 import { eloMatchups, records, type RecordType } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { and, count, eq, inArray, max, min, sql } from 'drizzle-orm';
+import { count, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from '@/server/db/connections/postgres';
 import { eloDeltas } from '@/server/lib/elo';
 import {
@@ -40,7 +40,33 @@ async function matchupCounts(db: Queryable, ids: DbId[]): Promise<Map<DbId, numb
 }
 
 /**
- * Sample curated same-type opponents near an anchor score, widening the window
+ * The matchup pool: curated records of one type, and for artifacts only those
+ * at the root level. An artifact contained by a parent (a highlight, an
+ * excerpt) is ranked through its parent, not on its own — the `contained_by`
+ * predicate specifically; citation links like quotes don't demote a record.
+ * Concepts and entities always stand alone.
+ */
+function poolWhere(type: RecordType) {
+  return {
+    type,
+    isCurated: true,
+    ...(type === 'artifact'
+      ? { NOT: { outgoingLinks: { predicate: 'contained_by' as const } } }
+      : {}),
+  };
+}
+
+/** Ids among the given records that have a structural parent. */
+async function containedIds(db: Queryable, ids: DbId[]): Promise<Set<DbId>> {
+  const rows = await db.query.links.findMany({
+    where: { sourceId: { in: ids }, predicate: 'contained_by' },
+    columns: { sourceId: true },
+  });
+  return new Set(rows.map((r) => r.sourceId));
+}
+
+/**
+ * Sample same-type pool opponents near an anchor score, widening the window
  * until enough candidates exist. When anchoring a provisional record, prefer
  * established opponents (high matchup count) so its score converges faster.
  */
@@ -59,8 +85,7 @@ async function selectOpponents(
     sample = await db.query.records.findMany({
       columns: { id: true },
       where: {
-        type: opts.type,
-        isCurated: true,
+        ...poolWhere(opts.type),
         ...(opts.excludeIds.length ? { id: { notIn: opts.excludeIds } } : {}),
         ...(window === Infinity
           ? {}
@@ -104,6 +129,16 @@ export const submitMatchup = publicProcedure
           code: 'BAD_REQUEST',
           message: `Submit matchup: cross-type matchup (${a.type} vs ${b.type}) is not allowed`,
         });
+      }
+      if (a.type === 'artifact') {
+        const contained = await containedIds(tx, [aId, bId]);
+        const childId = contained.has(aId) ? aId : contained.has(bId) ? bId : null;
+        if (childId !== null) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Submit matchup: record ${childId} is contained by a parent record and cannot be ranked`,
+          });
+        }
       }
 
       const counts = await matchupCounts(tx, [aId, bId]);
@@ -150,6 +185,9 @@ export const getOpponents = publicProcedure
     const counts = await matchupCounts(db, [focus.id]);
     const matchupCount = counts.get(focus.id) ?? 0;
     if (!focus.isCurated) return { matchupCount, opponentIds: [] };
+    if (focus.type === 'artifact' && (await containedIds(db, [focus.id])).size > 0) {
+      return { matchupCount, opponentIds: [] };
+    }
 
     const opponentIds = await selectOpponents(db, {
       type: focus.type,
@@ -183,21 +221,34 @@ export const getMatchup = publicProcedure
           message: 'Get matchup: only curated records can be ranked',
         });
       }
+      if (focus.type === 'artifact' && (await containedIds(db, [focus.id])).size > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Get matchup: records contained by a parent cannot be ranked',
+        });
+      }
 
       // Focused burst: triangulate by aiming at a uniformly random point on
       // the pool's score spectrum instead of staying near the record's score.
-      const [range] = await db
-        .select({ lo: min(records.eloScore), hi: max(records.eloScore) })
-        .from(records)
-        .where(and(eq(records.type, focus.type), eq(records.isCurated, true)));
-      if (!range || range.lo === null || range.hi === null) return null;
-      const target = range.lo + Math.random() * (range.hi - range.lo);
+      const [lowest, highest] = await Promise.all([
+        db.query.records.findFirst({
+          columns: { eloScore: true },
+          where: poolWhere(focus.type),
+          orderBy: (r, { asc }) => asc(r.eloScore),
+        }),
+        db.query.records.findFirst({
+          columns: { eloScore: true },
+          where: poolWhere(focus.type),
+          orderBy: (r, { desc }) => desc(r.eloScore),
+        }),
+      ]);
+      if (!lowest || !highest) return null;
+      const target = lowest.eloScore + Math.random() * (highest.eloScore - lowest.eloScore);
 
       const nearest = await db.query.records.findMany({
         columns: { id: true },
         where: {
-          type: focus.type,
-          isCurated: true,
+          ...poolWhere(focus.type),
           id: { notIn: [focus.id, ...excludeIds] },
         },
         orderBy: (r) => [sql`abs(${r.eloScore} - ${target})`, sql`random()`],
@@ -211,8 +262,7 @@ export const getMatchup = publicProcedure
       const pair = await db.query.records.findMany({
         columns: { id: true },
         where: {
-          type: recordType,
-          isCurated: true,
+          ...poolWhere(recordType),
           ...(excludeIds.length ? { id: { notIn: excludeIds } } : {}),
         },
         orderBy: () => sql`random()`,
@@ -226,8 +276,7 @@ export const getMatchup = publicProcedure
     const sample = await db.query.records.findMany({
       columns: { id: true, eloScore: true },
       where: {
-        type: recordType,
-        isCurated: true,
+        ...poolWhere(recordType),
         ...(excludeIds.length ? { id: { notIn: excludeIds } } : {}),
       },
       orderBy: () => sql`random()`,

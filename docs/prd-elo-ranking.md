@@ -35,7 +35,7 @@ A **matchup** is a head-to-head comparison: the user sees two records of the sam
 
 **Storage:** Each matchup (except skips) is persisted to `elo_matchups`. Matchup history is not surfaced in the UI — it's fire-and-forget from the user's perspective; only the resulting score matters.
 
-**Pool:** Matchups draw exclusively from **curated records** (`isCurated`). Uncurated auto-imports are not rankable — curation is the gateway into the arena.
+**Pool:** Matchups draw exclusively from **curated records** (`isCurated`). Uncurated auto-imports are not rankable — curation is the gateway into the arena. Artifacts must additionally be **root-level**: an artifact contained by a parent record (an outgoing `contained_by` link — citation links like `quotes` don't count) is ranked through its parent, not on its own. Concepts and entities always stand alone.
 
 **Deletion behavior:** When a record is deleted, its matchup rows cascade-delete. The opponent's ELO is **not** retroactively recalculated — ELO is a running tally; history is not rewritten.
 
@@ -213,7 +213,7 @@ Initial scores were seeded from a richness heuristic over existing metadata (`(r
 - **Score bounds:** Unbounded. No floor or ceiling.
 - **Draws:** Supported. Split points per standard ELO.
 - **Skips:** Supported. No ELO change, no row, opponent replaced.
-- **Pool:** Curated records only, all interactions. No toggle.
+- **Pool:** Curated records only, all interactions. No toggle. Artifacts with a structural parent (`contained_by`) are excluded — only root-level records compete.
 - **Score display:** Raw numbers everywhere. No tier abstraction. Brief delta animation after matchups.
 - **Arena:** Dedicated `/arena` page, main-nav entry. Scores hidden pre-pick. No filters, no session stats. Keyboard-first.
 - **Focused burst:** Opponents across the full ELO spectrum. No convergence endpoint — ranking is perpetual.

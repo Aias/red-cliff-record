@@ -48,7 +48,13 @@ export const RankSection = ({ id }: { id: DbId }) => {
   const utils = trpc.useUtils();
   const submit = useSubmitMatchup();
 
-  const eligible = record?.isCurated === true;
+  // Only root-level artifacts are rankable: one contained by a parent record
+  // (a highlight, an excerpt) is ranked through that parent. Citation links
+  // like quotes don't demote a record, and concepts/entities always stand alone.
+  const isChildArtifact =
+    record?.type === 'artifact' &&
+    (record.outgoingLinks?.some((link) => link.predicate === 'contained_by') ?? false);
+  const eligible = record?.isCurated === true && !isChildArtifact;
   const opponents = trpc.elo.getOpponents.useQuery(
     { recordId: id, count: OPPONENT_COUNT },
     {
