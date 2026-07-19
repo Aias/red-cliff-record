@@ -44,6 +44,13 @@ export const linksRouter = createTRPCRouter({
               predicate: true,
               recordUpdatedAt: true,
             },
+            with: {
+              target: {
+                columns: {
+                  eloScore: true,
+                },
+              },
+            },
           },
           incomingLinks: {
             columns: {
@@ -53,6 +60,13 @@ export const linksRouter = createTRPCRouter({
               predicate: true,
               recordUpdatedAt: true,
             },
+            with: {
+              source: {
+                columns: {
+                  eloScore: true,
+                },
+              },
+            },
           },
         },
       });
@@ -60,7 +74,15 @@ export const linksRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
       }
 
-      return recordWithLinks;
+      return {
+        id: recordWithLinks.id,
+        outgoingLinks: recordWithLinks.outgoingLinks
+          .toSorted((a, b) => b.target.eloScore - a.target.eloScore || a.targetId - b.targetId)
+          .map(({ target: _target, ...link }) => link),
+        incomingLinks: recordWithLinks.incomingLinks
+          .toSorted((a, b) => b.source.eloScore - a.source.eloScore || a.sourceId - b.sourceId)
+          .map(({ source: _source, ...link }) => link),
+      };
     }),
 
   /**

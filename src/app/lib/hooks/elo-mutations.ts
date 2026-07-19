@@ -1,8 +1,8 @@
 import { trpc } from '@/app/trpc';
 
 /**
- * Submit an ELO matchup (win/loss or draw). Both participants' cached records
- * are invalidated so displayed scores update; list order may have changed too.
+ * Submit an ELO matchup (win/loss or draw). Invalidate participant records and
+ * queries whose ordering depends on ELO scores.
  */
 export function useSubmitMatchup() {
   const utils = trpc.useUtils();
@@ -12,6 +12,7 @@ export function useSubmitMatchup() {
         void utils.records.get.invalidate({ id });
       }
       void utils.records.list.invalidate();
+      void utils.links.listForRecord.invalidate();
     },
   });
 }
