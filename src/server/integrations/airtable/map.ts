@@ -17,6 +17,7 @@ import {
 } from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
+import { starsToElo } from '@/server/lib/elo';
 import { getMediaInsertData } from '@/server/lib/media';
 import { mapUrl } from '@/server/lib/url-utils';
 import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
@@ -396,7 +397,7 @@ const mapAirtableExtractToRecord = (
     content: extract.content,
     notes: extract.notes,
     mediaCaption: extract.attachmentCaption,
-    rating: extract.michelinStars,
+    eloScore: starsToElo(extract.michelinStars),
     isCurated: false,
     isPrivate: extract.publishedAt ? false : true,
     sources: ['airtable'],

@@ -78,7 +78,7 @@ export function mergeRecords<T extends RecordSelect | RecordGet>(
             'content',
             'notes',
             'sources',
-            'rating',
+            'eloScore',
             'isPrivate',
             'isCurated',
             'recordUpdatedAt',
@@ -99,7 +99,7 @@ export function mergeRecords<T extends RecordSelect | RecordGet>(
     content: mergeTextFields(source.content, target.content),
     notes: mergeTextFields(source.notes, target.notes),
     sources: allSources.length > 0 ? allSources : null,
-    rating: Math.max(source.rating, target.rating),
+    eloScore: Math.max(source.eloScore, target.eloScore),
     isPrivate: source.isPrivate || target.isPrivate,
     isCurated: source.isCurated || target.isCurated,
     // Use earliest dates for creation timestamps, most recent for update timestamps

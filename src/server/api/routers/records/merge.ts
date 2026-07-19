@@ -1,9 +1,10 @@
-import type { LinkInsert, LinkSelect, RecordSelect } from '@hozo';
+import type { EloMatchupSelect, LinkInsert, LinkSelect, RecordSelect } from '@hozo';
 import {
   airtableCreators,
   airtableExtracts,
   airtableFormats,
   airtableSpaces,
+  eloMatchups,
   githubRepositories,
   githubUsers,
   lightroomImages,
@@ -20,7 +21,7 @@ import {
   twitterUsers,
 } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { eq, getTableName, inArray } from 'drizzle-orm';
+import { and, eq, getTableName, inArray, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { queueRecordEmbeddings } from '@/server/services/embed-records';
 import { mergeRecords } from '@/shared/lib/merge-records';
@@ -58,6 +59,8 @@ export type MergeSnapshot = {
     id: string | number;
     recordId: number;
   }>;
+  /** Matchup rows referencing the source pre-merge, for undo restoration. */
+  eloMatchups: EloMatchupSelect[];
 };
 
 export const merge = publicProcedure
@@ -159,6 +162,13 @@ export const merge = publicProcedure
           },
         });
 
+        // Capture matchups referencing the source before they are repointed
+        const premergeMatchups = await db.query.eloMatchups.findMany({
+          where: {
+            OR: [{ recordAId: sourceId }, { recordBId: sourceId }, { winnerId: sourceId }],
+          },
+        });
+
         // Use shared merge logic
         const updatePayload = mergeRecords(source, target);
 
@@ -256,6 +266,30 @@ export const merge = publicProcedure
             newLinks = await db.insert(links).values(dedupedLinksToInsert).returning();
           }
 
+          // 4. Repoint ELO matchup history to the surviving record. Matchups
+          //    the two records played against each other are dropped first —
+          //    repointed they would become self-matchups.
+          await db
+            .delete(eloMatchups)
+            .where(
+              or(
+                and(eq(eloMatchups.recordAId, sourceId), eq(eloMatchups.recordBId, targetId)),
+                and(eq(eloMatchups.recordAId, targetId), eq(eloMatchups.recordBId, sourceId))
+              )
+            );
+          await db
+            .update(eloMatchups)
+            .set({ recordAId: targetId })
+            .where(eq(eloMatchups.recordAId, sourceId));
+          await db
+            .update(eloMatchups)
+            .set({ recordBId: targetId })
+            .where(eq(eloMatchups.recordBId, sourceId));
+          await db
+            .update(eloMatchups)
+            .set({ winnerId: targetId })
+            .where(eq(eloMatchups.winnerId, sourceId));
+
           // Collect all unique IDs that were affected by the link changes
           // Exclude the original source ID (since it's deleted) but include the target ID
           const touchedIds: DbId[] = Array.from(
@@ -288,6 +322,7 @@ export const merge = publicProcedure
             links: premergeLinks,
             mediaAssignments: premergeMedia,
             integrationAssignments: premergeIntegrations,
+            eloMatchups: premergeMatchups,
           };
 
           // The target's text changed and every re-linked neighbor's

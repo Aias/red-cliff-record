@@ -7,7 +7,6 @@ import {
   pgEnum,
   pgTable,
   serial,
-  smallint,
   text,
   timestamp,
   unique,
@@ -51,7 +50,6 @@ export const records = pgTable(
     content: text('content'),
     notes: text('notes'),
     mediaCaption: text('media_caption'),
-    rating: smallint('rating').notNull().default(0),
     eloScore: integer('elo_score').notNull().default(1200),
     isPrivate: boolean('is_private').notNull().default(false),
     isCurated: boolean('is_curated').notNull().default(false),
@@ -94,7 +92,6 @@ export type RecordSelect = typeof records.$inferSelect;
 export const RecordInsertSchema = createInsertSchema(records).extend({
   url: emptyStringToNull(z.url()).optional(),
   avatarUrl: emptyStringToNull(z.url()).optional(),
-  rating: z.number().int().min(0).max(3).default(0),
 });
 export type RecordInsert = typeof records.$inferInsert;
 

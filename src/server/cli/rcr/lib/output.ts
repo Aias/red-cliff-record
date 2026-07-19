@@ -85,7 +85,7 @@ function formatArrayAsTable(data: RecordValue[]): string {
   }
 
   // Prioritize common fields for display
-  const priorityKeys = ['id', 'type', 'title', 'name', 'slug', 'rating', 'similarity', 'url'];
+  const priorityKeys = ['id', 'type', 'title', 'name', 'slug', 'eloScore', 'similarity', 'url'];
   const orderedKeys = [
     ...priorityKeys.filter((k) => keys.has(k)),
     ...[...keys].filter((k) => !priorityKeys.includes(k)).slice(0, 3), // Add up to 3 more

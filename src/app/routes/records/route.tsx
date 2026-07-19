@@ -136,7 +136,6 @@ function RouteComponent() {
                 flexDirection: 'column',
                 gap: '1',
                 overflowY: 'auto',
-                scrollbarWidth: '[thin]',
                 paddingInline: '3',
                 textStyle: 'xs',
               }}

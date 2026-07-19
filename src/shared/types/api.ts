@@ -23,7 +23,7 @@ const OrderByFieldSchema = z.enum([
   'title',
   'contentCreatedAt',
   'contentUpdatedAt',
-  'rating',
+  'eloScore',
   'id',
 ]);
 
@@ -38,8 +38,8 @@ export const RecordFiltersSchema = z.object({
   types: z.array(RecordTypeSchema).optional(),
   hasParent: z.boolean().optional(),
   hasTitle: z.boolean().optional(),
-  minRating: z.number().int().gte(0).optional(),
-  maxRating: z.number().int().lte(3).optional(),
+  minElo: z.number().int().optional(),
+  maxElo: z.number().int().optional(),
   isPrivate: z.boolean().optional(),
   isCurated: z.boolean().optional(),
   hasReminder: z.boolean().optional(),
@@ -62,6 +62,31 @@ export const ListRecordsInputSchema = z.object({
 });
 
 export type ListRecordsInput = z.infer<typeof ListRecordsInputSchema>;
+
+export const SubmitMatchupInputSchema = z
+  .union([
+    z.object({ winnerId: IdSchema, loserId: IdSchema }),
+    z.object({ drawIds: z.tuple([IdSchema, IdSchema]) }),
+  ])
+  .refine(
+    (input) =>
+      'winnerId' in input
+        ? input.winnerId !== input.loserId
+        : input.drawIds[0] !== input.drawIds[1],
+    { message: 'A record cannot face itself' }
+  );
+
+export const GetMatchupInputSchema = z.object({
+  recordType: RecordTypeSchema,
+  focusRecordId: IdSchema.optional(),
+  excludeIds: z.array(IdSchema).optional().default([]),
+});
+
+export const GetOpponentsInputSchema = z.object({
+  recordId: IdSchema,
+  count: z.number().int().positive().optional().default(3),
+  excludeIds: z.array(IdSchema).optional().default([]),
+});
 
 export const SearchRecordsInputSchema = z.object({
   query: z.string(),

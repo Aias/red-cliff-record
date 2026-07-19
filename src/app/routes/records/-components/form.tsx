@@ -63,7 +63,6 @@ const defaultData: RecordGet = {
   mediaCaption: null,
   isCurated: false,
   isPrivate: false,
-  rating: 0,
   eloScore: 1200,
   reminderAt: null,
   sources: [],

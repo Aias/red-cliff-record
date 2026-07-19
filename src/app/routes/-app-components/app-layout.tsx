@@ -71,6 +71,9 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
           <LinkButton variant="ghost" to="/records">
             Index
           </LinkButton>
+          <LinkButton variant="ghost" to="/arena">
+            Arena
+          </LinkButton>
         </styled.li>
         <styled.li
           css={{

@@ -44,7 +44,6 @@ type SearchResult = {
   abbreviation?: string | null;
   url?: string | null;
   avatarUrl?: string | null;
-  rating: number;
   recordUpdatedAt: Date;
   recordCreatedAt: Date;
   contentCreatedAt?: Date | null;
@@ -107,7 +106,6 @@ export const searchRouter = createTRPCRouter({
             url: true,
             avatarUrl: true,
             mediaCaption: true,
-            rating: true,
             recordUpdatedAt: true,
             recordCreatedAt: true,
             contentCreatedAt: true,

@@ -15,6 +15,7 @@ import {
 } from '@hozo';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
+import { starsToElo } from '@/server/lib/elo';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
 import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { linkRecords } from '../common/db-helpers';
@@ -134,7 +135,7 @@ export const mapRaindropBookmarkToRecord = (bookmark: RaindropBookmarkSelect): R
     url: bookmark.linkUrl,
     content: bookmark.excerpt,
     notes: bookmark.note,
-    rating: bookmark.important ? 1 : 0,
+    eloScore: starsToElo(bookmark.important ? 1 : 0),
     sources: ['raindrop'],
     isPrivate: false,
     isCurated: false,

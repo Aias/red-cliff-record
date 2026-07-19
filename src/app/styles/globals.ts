@@ -12,6 +12,10 @@ const boundaryClasses = [
 ];
 
 export const globalStyles = defineGlobalStyles({
+  // scrollbar-width does not inherit, so thin scrollbars must apply everywhere
+  '*': {
+    scrollbarWidth: 'thin',
+  },
   // Theme boundary elements re-assert the default text color so plain
   // inherited text re-resolves against the new context. This lives in the
   // base layer so any explicit color — recipe or atomic — wins the cascade.
@@ -25,7 +29,6 @@ export const globalStyles = defineGlobalStyles({
     '--global-color-placeholder': 'colors.muted',
     '--global-color-selection': 'colors.splash',
     '--global-color-focus-ring': 'colors.focus',
-    scrollbarWidth: 'thin',
     textRendering: 'optimizeLegibility',
     WebkitFontSmoothing: 'antialiased',
     fontSynthesis: 'none',

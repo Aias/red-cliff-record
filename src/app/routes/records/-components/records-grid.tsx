@@ -121,7 +121,7 @@ function RecordRow({ recordId }: { recordId: DbId }) {
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        {record.eloScore !== 1200 && record.eloScore}
+        {record.eloScore}
       </Table.Cell>
       <Table.Cell css={{ textAlign: 'center' }}>
         <SourceLogos

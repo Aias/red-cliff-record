@@ -1,6 +1,8 @@
 import {
   type PredicateSlug,
+  EloMatchupSelectSchema,
   RecordSelectSchema,
+  eloMatchups,
   links,
   media,
   predicateSlugs,
@@ -41,6 +43,7 @@ const MergeSnapshotSchema = z.object({
       recordId: z.number(),
     })
   ),
+  eloMatchups: z.array(EloMatchupSelectSchema),
 });
 
 export const undoMerge = publicProcedure
@@ -111,7 +114,18 @@ export const undoMerge = publicProcedure
           .where(eq(table.id, assignment.id));
       }
 
-      // 5. Delete current links for both records, re-insert originals
+      // 5. Restore ELO matchup history the merge repointed or removed
+      if (snapshot.eloMatchups.length > 0) {
+        await tx.delete(eloMatchups).where(
+          inArray(
+            eloMatchups.id,
+            snapshot.eloMatchups.map((m) => m.id)
+          )
+        );
+        await tx.insert(eloMatchups).values(snapshot.eloMatchups);
+      }
+
+      // 6. Delete current links for both records, re-insert originals
       const bothIds = [sourceRecord.id, targetRecord.id];
       const currentLinks = await tx.query.links.findMany({
         where: {
@@ -142,7 +156,7 @@ export const undoMerge = publicProcedure
         );
       }
 
-      // 6. Fetch restored records to return
+      // 7. Fetch restored records to return
       const [restoredSourceRecord, restoredTargetRecord] = await Promise.all([
         tx.query.records.findFirst({ where: { id: sourceRecord.id } }),
         tx.query.records.findFirst({ where: { id: targetRecord.id } }),
