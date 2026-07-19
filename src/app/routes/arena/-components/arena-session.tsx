@@ -136,6 +136,7 @@ export function ArenaSession({ type, focus }: { type: RecordType; focus?: DbId }
             fontWeight: 'semibold',
             textTransform: 'uppercase',
             color: 'muted',
+            flex: '[0 0 auto]',
           }}
         >
           vs
@@ -175,6 +176,7 @@ function MatchupCard({
     <styled.section
       data-focused={focused ? true : undefined}
       css={{
+        width: 'full',
         display: 'flex',
         flexDirection: 'column',
         gap: '3',

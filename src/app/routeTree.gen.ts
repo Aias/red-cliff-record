@@ -9,21 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SearchRouteImport } from './routes/search'
-import { Route as RecordsRouteRouteImport } from './routes/records/route'
-import { Route as ArenaRouteRouteImport } from './routes/arena/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ArenaRouteRouteImport } from './routes/arena/route'
+import { Route as RecordsRouteRouteImport } from './routes/records/route'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
 
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RecordsRouteRoute = RecordsRouteRouteImport.update({
-  id: '/records',
-  path: '/records',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArenaRouteRoute = ArenaRouteRouteImport.update({
@@ -31,9 +26,14 @@ const ArenaRouteRoute = ArenaRouteRouteImport.update({
   path: '/arena',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const RecordsRouteRoute = RecordsRouteRouteImport.update({
+  id: '/records',
+  path: '/records',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecordsRecordIdRoute = RecordsRecordIdRouteImport.update({
@@ -109,18 +109,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/records': {
-      id: '/records'
-      path: '/records'
-      fullPath: '/records'
-      preLoaderRoute: typeof RecordsRouteRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/arena': {
@@ -130,11 +123,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArenaRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/records': {
+      id: '/records'
+      path: '/records'
+      fullPath: '/records'
+      preLoaderRoute: typeof RecordsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/records/$recordId': {
