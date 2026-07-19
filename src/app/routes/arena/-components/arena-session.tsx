@@ -113,7 +113,7 @@ export function ArenaSession({ type, focus }: { type: RecordType; focus?: DbId }
       <styled.div
         css={{
           display: 'grid',
-          gridTemplateColumns: '[1fr auto 1fr]',
+          gridTemplateColumns: '[minmax(0, 1fr) auto minmax(0, 1fr)]',
           alignItems: 'stretch',
           gap: '4',
           width: 'full',
@@ -180,6 +180,7 @@ function MatchupCard({
         display: 'flex',
         flexDirection: 'column',
         gap: '3',
+        minWidth: '0',
         minHeight: '0',
         borderRadius: 'md',
         borderWidth: '1px',
