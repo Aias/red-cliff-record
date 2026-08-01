@@ -5,7 +5,20 @@ import { useTRPC } from '@/app/trpc';
 import { removeManyFromBasket, replaceBasketId } from '@/lib/hooks/use-basket';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId, IdParamList } from '@/shared/types/api';
-import type { RecordGet } from '@/shared/types/domain';
+import type { RecordGet, RecordSlim } from '@/shared/types/domain';
+
+/**
+ * Drop present-but-undefined values so an optimistic spread can't clobber
+ * cached fields the mutation input doesn't actually change (the server
+ * filters undefined the same way before writing).
+ */
+function stripUndefined<T extends object>(obj: T): Partial<T> {
+  const result: Partial<T> = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) result[key] = obj[key];
+  }
+  return result;
+}
 
 export function useBulkUpdate() {
   const trpc = useTRPC();
@@ -54,7 +67,8 @@ export function useUpsertRecord() {
         await queryClient.cancelQueries(trpc.records.get.queryFilter({ id: input.id }));
         const previous = queryClient.getQueryData(trpc.records.get.queryKey({ id: input.id }));
         if (previous) {
-          const changes = input as Partial<RecordGet>;
+          const { textEmbedding: _textEmbedding, ...rest } = input;
+          const changes: Partial<RecordSlim> = stripUndefined(rest);
           queryClient.setQueryData(trpc.records.get.queryKey({ id: input.id }), (p) =>
             p ? { ...p, ...changes } : p
           );
