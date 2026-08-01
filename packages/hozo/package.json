@@ -21,16 +21,16 @@
     "access": "public"
   },
   "scripts": {
-    "dev:watch": "tsup src/index.ts --dts --format esm --sourcemap --watch",
-    "lint": "oxlint --fix --type-aware . && tsgo --noEmit",
-    "prepack": "bunx --bun tsup src/index.ts --dts --format esm --sourcemap --clean",
+    "dev:watch": "tsup src/index.ts --format esm --sourcemap --watch",
+    "lint": "oxlint --fix --type-aware . && tsc --noEmit",
+    "prepack": "bunx --bun tsup src/index.ts --format esm --sourcemap --clean && tsc -p . --noEmit false --emitDeclarationOnly",
     "test": "bun test"
   },
   "devDependencies": {
     "drizzle-kit": "1.0.0-rc.4",
     "drizzle-orm": "1.0.0-rc.4",
     "tsup": "~8.5.1",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "zod": "~4.4.3"
   },
   "peerDependencies": {

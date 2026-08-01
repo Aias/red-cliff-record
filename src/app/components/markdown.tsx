@@ -1,5 +1,4 @@
-import type MarkdownIt from 'markdown-it';
-import MarkdownItLib from 'markdown-it';
+import MarkdownItLib, { type MarkdownIt } from 'markdown-it';
 import { useMemo } from 'react';
 import { Prose, type ProseProps } from './prose';
 
@@ -37,6 +36,8 @@ const md = new MarkdownItLib({
   linkify: true,
   typographer: true,
 }).use(markPlugin);
+// linkify-it disables schemeless matches by default; bare domains (example.com) should auto-link.
+md.linkify.set({ fuzzyLink: true });
 
 export type MarkdownProps = Omit<ProseProps, 'children' | 'as' | 'dangerouslySetInnerHTML'> & {
   children: string;

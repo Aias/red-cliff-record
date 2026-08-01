@@ -1,7 +1,7 @@
 import { defineConfig } from 'oxlint';
 
 export default defineConfig({
-  plugins: ['typescript', 'import', 'react'],
+  plugins: ['import', 'oxc', 'react', 'typescript', 'unicorn'],
   options: {
     typeAware: true,
   },
