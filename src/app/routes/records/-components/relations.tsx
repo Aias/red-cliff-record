@@ -1,4 +1,4 @@
-import { PREDICATES, type PredicateType, type RecordType } from '@hozo';
+import { PREDICATES, type RecordType } from '@hozo';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -18,25 +18,14 @@ import { useDeleteLinks } from '@/lib/hooks/link-mutations';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
-import { exhaustive } from '@/shared/lib/type-utils';
 import type { DbId } from '@/shared/types/api';
 import type { LinkPartial } from '@/shared/types/domain';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import { PREDICATE_TYPE_ORDER } from './predicate-order';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 import { recordTypeIcons } from './type-icons';
-
-/** Predicate types in display priority order (first = highest priority) */
-export const PREDICATE_TYPE_ORDER = exhaustive<PredicateType>()([
-  'identity',
-  'containment',
-  'creation',
-  'reference',
-  'association',
-  'form',
-  'description',
-]);
 
 interface RelationsListProps {
   id: DbId;
