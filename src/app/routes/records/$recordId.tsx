@@ -20,8 +20,10 @@ import { RelationsList, SimilarRecords } from './-components/relations';
 export const Route = createFileRoute('/records/$recordId')({
   params: { parse: (params) => ({ recordId: CoercedIdSchema.parse(params.recordId) }) },
   component: RouteComponent,
-  loader: async ({ context: { trpc, queryClient }, params: { recordId } }) => {
-    await queryClient.ensureQueryData(trpc.records.get.queryOptions({ id: recordId }));
+  loader: async ({ context, params: { recordId } }) => {
+    await context.queryClient.ensureQueryData(
+      context.trpc.records.get.queryOptions({ id: recordId })
+    );
   },
 });
 

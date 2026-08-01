@@ -11,7 +11,7 @@ export const readFileAsBase64 = (file: File): Promise<string> => {
         reject(new Error('Failed to read file as base64: result is empty'));
       }
     };
-    reader.onerror = (error) => reject(error);
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
 };

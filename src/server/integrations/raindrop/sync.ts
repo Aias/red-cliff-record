@@ -228,7 +228,7 @@ async function getLastSyncDate(): Promise<Date | undefined> {
  * @returns Array of new raindrops
  */
 async function fetchNewRaindrops(lastKnownDate?: Date): Promise<Raindrop[]> {
-  let newRaindrops: Raindrop[] = [];
+  const newRaindrops: Raindrop[] = [];
   let page = 0;
   let hasMore = true;
   let totalFetched = 0;
@@ -272,10 +272,10 @@ async function fetchNewRaindrops(lastKnownDate?: Date): Promise<Raindrop[]> {
       const newItems = parsedData.items.filter(
         ({ lastUpdate }) => !lastKnownDate || lastUpdate > lastKnownDate
       );
-      newRaindrops = [...newRaindrops, ...newItems];
+      newRaindrops.push(...newItems);
       hasMore = false;
     } else {
-      newRaindrops = [...newRaindrops, ...parsedData.items];
+      newRaindrops.push(...parsedData.items);
       hasMore = parsedData.items.length === RAINDROPS_PAGE_SIZE;
     }
 

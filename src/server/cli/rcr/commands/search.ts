@@ -126,8 +126,8 @@ export const similar: CommandHandler = async (args, options) => {
   const results = await Promise.all(
     ids.map(async (id) => {
       try {
-        const similar = await caller.search.byRecordId({ id, limit });
-        return { id, similar };
+        const matches = await caller.search.byRecordId({ id, limit });
+        return { id, similar: matches };
       } catch (e) {
         if (e instanceof TRPCError) {
           if (e.code === 'NOT_FOUND') {
