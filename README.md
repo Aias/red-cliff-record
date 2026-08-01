@@ -285,7 +285,7 @@ bun run build
 ```bash
 bun run dev          # Start development server
 bun run build        # Build for production
-bun check            # Lint (oxlint) + typecheck (tsgo) + format (oxfmt) — fast, run often
+bun check            # Lint (oxlint) + typecheck (tsc) + format (oxfmt) — fast, run often
 bun run lint         # Lint + typecheck only
 bun run format       # Format only
 bun run db:studio    # Open Drizzle Studio

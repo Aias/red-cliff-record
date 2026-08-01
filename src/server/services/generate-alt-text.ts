@@ -912,7 +912,7 @@ async function generateMissingAltText(
       OR: [{ altTextGeneratedAt: { isNull: true } }, { altTextGeneratedAt: { lt: cooldownDate } }],
     },
     columns: { id: true },
-    orderBy: (media, { desc }) => [desc(media.recordCreatedAt)],
+    orderBy: (t, { desc }) => [desc(t.recordCreatedAt)],
     limit,
   });
 

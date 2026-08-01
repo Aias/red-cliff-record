@@ -59,7 +59,7 @@ export async function runConcurrentPool<T, R>(
     );
   }
 
-  const results: Array<ConcurrentPoolItemResult<R>> = new Array(items.length);
+  const results = Array.from<ConcurrentPoolItemResult<R>>({ length: items.length });
   let nextIndex = 0;
   let completedCount = 0;
 

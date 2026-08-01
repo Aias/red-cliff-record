@@ -426,14 +426,14 @@ export const children: CommandHandler = async (args, options) => {
   const id = parseId(args);
 
   try {
-    const tree = await caller.records.tree({ id });
-    const children = tree.incomingLinks.map((link) => ({
+    const treeResult = await caller.records.tree({ id });
+    const childRecords = treeResult.incomingLinks.map((link) => ({
       id: link.source.id,
       title: link.source.title,
       recordCreatedAt: link.source.recordCreatedAt,
       predicate: link.predicate,
     }));
-    return success({ parentId: id, children }, { count: children.length });
+    return success({ parentId: id, children: childRecords }, { count: childRecords.length });
   } catch (e) {
     if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
       throw createError('NOT_FOUND', `Record ${id} not found`);
@@ -453,8 +453,8 @@ export const parent: CommandHandler = async (args, options) => {
   const id = parseId(args);
 
   try {
-    const tree = await caller.records.tree({ id });
-    const parentLink = tree.outgoingLinks[0];
+    const treeResult = await caller.records.tree({ id });
+    const parentLink = treeResult.outgoingLinks[0];
     if (!parentLink) {
       return success({ childId: id, parent: null });
     }

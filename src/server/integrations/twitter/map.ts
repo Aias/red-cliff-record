@@ -358,14 +358,14 @@ type MediaWithTweet = TwitterMediaSelect & {
 /**
  * Maps Twitter media to a media object
  *
- * @param media - The Twitter media to map
+ * @param mediaItem - The Twitter media to map
  * @returns A promise resolving to a media insert object or null if processing fails
  */
 export const mapTwitterMediaToMedia = async (
-  media: MediaWithTweet
+  mediaItem: MediaWithTweet
 ): Promise<MediaInsert | null> => {
   // First upload to R2 if needed
-  let mediaUrl = media.mediaUrl;
+  let mediaUrl = mediaItem.mediaUrl;
   try {
     const newUrl = await uploadMediaToR2(mediaUrl);
     if (!newUrl) {
@@ -373,11 +373,14 @@ export const mapTwitterMediaToMedia = async (
     }
 
     mediaUrl = newUrl;
-    logger.info(`Uploaded media ${media.mediaUrl} to ${newUrl}`);
+    logger.info(`Uploaded media ${mediaItem.mediaUrl} to ${newUrl}`);
 
-    await db.update(twitterMedia).set({ mediaUrl: newUrl }).where(eq(twitterMedia.id, media.id));
+    await db
+      .update(twitterMedia)
+      .set({ mediaUrl: newUrl })
+      .where(eq(twitterMedia.id, mediaItem.id));
 
-    logger.info(`Updated twitterMedia ${media.id} with new URL ${newUrl}`);
+    logger.info(`Updated twitterMedia ${mediaItem.id} with new URL ${newUrl}`);
   } catch (error) {
     logger.error('Error uploading media to R2', error);
     return null;
@@ -385,9 +388,9 @@ export const mapTwitterMediaToMedia = async (
 
   // Then get metadata and create media object
   return getMediaInsertData(mediaUrl, {
-    recordId: media.tweet.recordId,
-    recordCreatedAt: media.tweet.recordCreatedAt,
-    recordUpdatedAt: media.tweet.recordUpdatedAt,
+    recordId: mediaItem.tweet.recordId,
+    recordCreatedAt: mediaItem.tweet.recordCreatedAt,
+    recordUpdatedAt: mediaItem.tweet.recordUpdatedAt,
   });
 };
 

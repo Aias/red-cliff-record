@@ -282,7 +282,7 @@ export const searchRouter = createTRPCRouter({
                       {
                         OR: [
                           {
-                            RAW: (t, { sql }) =>
+                            RAW: (t) =>
                               sql`1 - (${cosineDistance(t.textEmbedding, textEmbedding)}) > ${SIMILARITY_THRESHOLD}`,
                           },
                           {

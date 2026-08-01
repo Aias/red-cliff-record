@@ -74,9 +74,9 @@ export const mediaRouter = createTRPCRouter({
       },
       limit,
       offset,
-      orderBy: (media, { asc, desc }) =>
+      orderBy: (t, { asc, desc }) =>
         orderBy.map(({ field, direction }) =>
-          direction === 'asc' ? asc(media[field]) : desc(media[field])
+          direction === 'asc' ? asc(t[field]) : desc(t[field])
         ),
     });
 

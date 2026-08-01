@@ -18,7 +18,7 @@ function computePositions(
   gap: number
 ) {
   const colWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
-  const colHeights = new Array<number>(columnCount).fill(0);
+  const colHeights = Array.from({ length: columnCount }, () => 0);
   const positions = new Map<string, { x: number; y: number; width: number }>();
 
   for (const key of keys) {

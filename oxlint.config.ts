@@ -1,7 +1,7 @@
 import { defineConfig } from 'oxlint';
 
 export default defineConfig({
-  plugins: ['typescript', 'import', 'react'],
+  plugins: ['import', 'oxc', 'react', 'typescript', 'unicorn'],
   options: {
     typeAware: true,
   },
@@ -33,22 +33,32 @@ export default defineConfig({
     'typescript/no-unnecessary-template-expression': 'warn',
     'typescript/restrict-plus-operands': 'warn',
     'typescript/unbound-method': 'off',
+    'typescript/switch-exhaustiveness-check': [
+      'warn',
+      { considerDefaultExhaustiveForUnions: true },
+    ],
+    'typescript/only-throw-error': 'warn',
+    'typescript/prefer-promise-reject-errors': 'warn',
+    'typescript/require-array-sort-compare': 'warn',
     // 'typescript/no-unnecessary-condition': 'warn',
-    // 'typescript/switch-exhaustiveness-check': 'warn',
     // 'typescript/no-unsafe-enum-comparison': 'warn',
-    // 'typescript/only-throw-error': 'warn',
 
     // React
     'react/jsx-key': 'warn',
     'react/rules-of-hooks': 'error',
     'react/react-compiler': 'error',
+    'react/exhaustive-deps': 'warn',
     'react/self-closing-comp': 'warn',
     'react/jsx-no-useless-fragment': 'warn',
 
     // General
+    'eslint/array-callback-return': 'warn',
     'eslint/eqeqeq': 'warn',
+    'eslint/no-shadow': 'warn',
     'eslint/prefer-const': 'warn',
+    'import/no-cycle': 'warn',
     'import/no-duplicates': 'warn',
+    'oxc/no-accumulating-spread': 'warn',
   },
   ignorePatterns: [
     '**/build/**',
