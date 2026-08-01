@@ -1,9 +1,10 @@
 import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations.shared';
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronDownIcon, ShoppingBasketIcon } from 'lucide-react';
 import { useState } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { DropdownMenu } from '@/components/dropdown-menu';
 import { ExternalLink } from '@/components/external-link';
@@ -134,10 +135,10 @@ function RecordRow({ recordId }: { recordId: DbId }) {
 }
 
 export const RecordsGrid = () => {
+  const trpc = useTRPC();
   const { state, setFilters, setLimit, reset } = useRecordFilters();
-  const { data } = trpc.records.list.useQuery(
-    { ...state, offset: 0 },
-    { placeholderData: (prev) => prev }
+  const { data } = useQuery(
+    trpc.records.list.queryOptions({ ...state, offset: 0 }, { placeholderData: (prev) => prev })
   );
 
   const {

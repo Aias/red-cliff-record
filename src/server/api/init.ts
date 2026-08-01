@@ -4,6 +4,7 @@ import DataLoader from 'dataloader';
 import superjson from 'superjson';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/connections/postgres';
+import { matchupCounts } from '@/server/lib/elo';
 import type { RecordGet } from '@/shared/types/domain';
 
 /** Predicate slugs for creation and containment types */
@@ -50,10 +51,16 @@ function createRecordLoader() {
     });
 
     const byId = new Map(rows.map((r) => [r.id, r]));
+    const counts = await matchupCounts(
+      db,
+      rows.map((r) => r.id)
+    );
 
     return ids.map((id) => {
       const record = byId.get(id);
-      return record ? record : new Error(`Record not found for ID: ${id}`);
+      return record
+        ? { ...record, matchupCount: counts.get(id) ?? 0 }
+        : new Error(`Record not found for ID: ${id}`);
     });
   });
 }

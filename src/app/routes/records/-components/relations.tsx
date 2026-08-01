@@ -1,4 +1,5 @@
-import { PREDICATES, type PredicateType, type RecordType } from '@hozo';
+import { PREDICATES, type RecordType } from '@hozo';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
   ArrowLeftIcon,
@@ -9,7 +10,7 @@ import {
   TrashIcon,
 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState, type ElementType } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Spinner } from '@/components/spinner';
 import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
@@ -17,25 +18,14 @@ import { useDeleteLinks } from '@/lib/hooks/link-mutations';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
-import { exhaustive } from '@/shared/lib/type-utils';
 import type { DbId } from '@/shared/types/api';
 import type { LinkPartial } from '@/shared/types/domain';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import { PREDICATE_TYPE_ORDER } from './predicate-order';
 import { RecordLink } from './record-link';
 import { RelationshipSelector } from './record-lookup';
 import { recordTypeIcons } from './type-icons';
-
-/** Predicate types in display priority order (first = highest priority) */
-export const PREDICATE_TYPE_ORDER = exhaustive<PredicateType>()([
-  'identity',
-  'containment',
-  'creation',
-  'reference',
-  'association',
-  'form',
-  'description',
-]);
 
 interface RelationsListProps {
   id: DbId;
@@ -361,25 +351,31 @@ const SimilarTypeShortcut = ({
 };
 
 export const SimilarRecords = ({ id }: { id: DbId }) => {
+  const trpc = useTRPC();
   const navigate = useNavigate();
   const mergeRecordsMutation = useMergeRecords();
   const [typeFilter, setTypeFilter] = useState<SimilarTypeFilter>('all');
 
   // Fetch similar records only if textEmbedding exists. Filtering by type happens in the query
   // so each type returns its own best matches rather than whatever survives the global top-N.
-  const { data: similarRecords, isLoading } = trpc.search.byRecordId.useQuery(
-    {
-      id,
-      limit: 20,
-      type: typeFilter === 'all' ? undefined : typeFilter,
-    },
-    {
-      trpc: {
-        context: {
-          skipBatch: true,
-        },
+  const { data: similarRecords, isLoading } = useQuery(
+    trpc.search.byRecordId.queryOptions(
+      {
+        id,
+        limit: 20,
+        type: typeFilter === 'all' ? undefined : typeFilter,
       },
-    }
+      {
+        trpc: {
+          context: {
+            skipBatch: true,
+          },
+        },
+        // Vector search over embeddings that update asynchronously; link
+        // mutations invalidate it explicitly where similarity actually changes.
+        meta: { invalidation: 'manual' },
+      }
+    )
   );
 
   const handleTypeFilterChange = (value: SimilarTypeFilter[]) => {

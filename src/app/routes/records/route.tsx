@@ -1,6 +1,7 @@
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, Outlet, useMatches } from '@tanstack/react-router';
 import { useCallback } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
@@ -14,11 +15,14 @@ export const Route = createFileRoute('/records')({
 });
 
 function RouteComponent() {
+  const trpc = useTRPC();
   const navigate = Route.useNavigate();
   const { state: filtersState } = useRecordFilters();
-  const { data: recordsList } = trpc.records.list.useQuery(
-    { ...filtersState, offset: 0 },
-    { placeholderData: (prev) => prev }
+  const { data: recordsList } = useQuery(
+    trpc.records.list.queryOptions(
+      { ...filtersState, offset: 0 },
+      { placeholderData: (prev) => prev }
+    )
   );
   const matches = useMatches();
 

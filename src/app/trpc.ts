@@ -1,4 +1,5 @@
 import {
+  createTRPCClient,
   httpBatchLink,
   httpLink,
   loggerLink,
@@ -6,17 +7,16 @@ import {
   TRPCClientError,
   type TRPCLink,
 } from '@trpc/client';
-import { createTRPCReact } from '@trpc/react-query';
-import { type createServerSideHelpers } from '@trpc/react-query/server';
 import { observable } from '@trpc/server/observable';
+import { createTRPCContext, type TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 import { toast } from 'sonner';
 import superjson from 'superjson';
 import type { AppRouter } from '@/server/api/root';
 import { PortSchema } from '@/shared/lib/env';
 
-export const trpc = createTRPCReact<AppRouter>();
+export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
 
-export type ServerHelpers = ReturnType<typeof createServerSideHelpers<AppRouter>>;
+export type TRPCProxy = TRPCOptionsProxy<AppRouter>;
 
 function getBaseUrl() {
   // 1. Running in the browser (dev or prod)
@@ -82,7 +82,7 @@ const toastLink: TRPCLink<AppRouter> = () => {
 
 const ENABLE_LOGGING = false;
 
-export const trpcClient = trpc.createClient({
+export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     toastLink,
     loggerLink({

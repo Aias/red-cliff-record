@@ -4,8 +4,8 @@ import type { DbId } from '@/shared/types/api';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import type { SystemStyleObject } from '@/styled-system/types';
+import { PREDICATE_TYPE_ORDER } from './predicate-order';
 import { RecordLink } from './record-link';
-import { PREDICATE_TYPE_ORDER } from './relations';
 
 /** Cap per predicate group so heavily-linked records stay scannable */
 const MAX_PER_PREDICATE = 10;

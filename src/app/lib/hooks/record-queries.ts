@@ -1,26 +1,22 @@
 import { PREDICATES, type Predicate, type PredicateSlug } from '@hozo';
-import { useQueries } from '@tanstack/react-query';
-import { trpc } from '@/app/trpc';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { useTRPC } from '@/app/trpc';
 import type { DbId, ListRecordsInput } from '@/shared/types/api';
 import type { RecordGet } from '@/shared/types/domain';
 
 export function useRecord(id: DbId) {
-  return trpc.records.get.useQuery({ id });
+  const trpc = useTRPC();
+  return useQuery(trpc.records.get.queryOptions({ id }));
 }
 
-export const useRecordSuspense = (id: DbId) => {
-  return trpc.records.get.useSuspenseQuery({ id });
-};
-
 export function useRecordList(args: ListRecordsInput) {
-  const { data, ...rest } = trpc.records.list.useQuery(args);
+  const trpc = useTRPC();
+  const { data, ...rest } = useQuery(trpc.records.list.queryOptions(args));
 
   const ids = data?.ids.map((id) => id.id) ?? [];
 
-  const utils = trpc.useUtils();
-
   const recordQueries = useQueries({
-    queries: ids.map((id) => utils.records.get.queryOptions({ id })),
+    queries: ids.map((id) => trpc.records.get.queryOptions({ id })),
   });
 
   const records = recordQueries.map((q) => q.data).filter((r) => r !== undefined);
@@ -29,15 +25,20 @@ export function useRecordList(args: ListRecordsInput) {
 }
 
 export function useRecordTree(id: DbId) {
-  return trpc.records.tree.useQuery({ id }, { placeholderData: (previousData) => previousData });
+  const trpc = useTRPC();
+  return useQuery(
+    trpc.records.tree.queryOptions({ id }, { placeholderData: (previousData) => previousData })
+  );
 }
 
 export function useRecordLinks(id: DbId) {
-  return trpc.links.listForRecord.useQuery({ id });
+  const trpc = useTRPC();
+  return useQuery(trpc.links.listForRecord.queryOptions({ id }));
 }
 
 export function useLinksMap(ids: DbId[]) {
-  return trpc.links.map.useQuery({ recordIds: ids });
+  const trpc = useTRPC();
+  return useQuery(trpc.links.map.queryOptions({ recordIds: ids }));
 }
 
 /** Returns predicates keyed by slug (static data, no network request) */
