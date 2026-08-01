@@ -14,11 +14,15 @@ export function getRouter() {
   // `meta: { invalidation: 'manual' }`. Only active queries refetch (batched
   // into one request by the tRPC batch link); inactive ones are marked stale.
   // Per-mutation cache handlers narrow this default, they don't replace it.
+  // Data-less queries are skipped: they have nothing to go stale, and forcing
+  // a refetch on an errored query (e.g. a 404 for a deleted record) would
+  // resurface the error on every subsequent mutation.
   const queryClient: QueryClient = new QueryClient({
     mutationCache: new MutationCache({
       onSuccess: () => {
         void queryClient.invalidateQueries({
-          predicate: (query) => query.meta?.invalidation !== 'manual',
+          predicate: (query) =>
+            query.state.data !== undefined && query.meta?.invalidation !== 'manual',
         });
       },
     }),

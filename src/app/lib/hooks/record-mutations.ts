@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
-import { useTRPC } from '@/app/trpc';
+import { useTRPC, type TRPCProxy } from '@/app/trpc';
 import { removeManyFromBasket, replaceBasketId } from '@/lib/hooks/use-basket';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import type { DbId, IdParamList } from '@/shared/types/api';
@@ -18,6 +18,19 @@ function stripUndefined<T extends object>(obj: T): Partial<T> {
     if (obj[key] !== undefined) result[key] = obj[key];
   }
   return result;
+}
+
+/**
+ * Drop a deleted (or merged-away) record's point queries from the cache.
+ * Removed queries are invisible to `invalidateQueries`, so the global
+ * invalidate-on-mutation default can't force-refetch a record the server
+ * no longer has. Callers snapshot first and restore in onError.
+ */
+function removeRecordQueries(queryClient: QueryClient, trpc: TRPCProxy, id: DbId) {
+  queryClient.removeQueries({ queryKey: trpc.records.get.queryKey({ id }), exact: true });
+  queryClient.removeQueries({ queryKey: trpc.search.byRecordId.queryKey({ id }), exact: true });
+  queryClient.removeQueries({ queryKey: trpc.records.tree.queryKey({ id }), exact: true });
+  queryClient.removeQueries({ queryKey: trpc.links.listForRecord.queryKey({ id }), exact: true });
 }
 
 export function useBulkUpdate() {
@@ -87,16 +100,6 @@ export function useDeleteRecords() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const removeRecordQueries = (id: DbId) => {
-    queryClient.removeQueries({ queryKey: trpc.records.get.queryKey({ id }), exact: true });
-    queryClient.removeQueries({ queryKey: trpc.search.byRecordId.queryKey({ id }), exact: true });
-    queryClient.removeQueries({ queryKey: trpc.records.tree.queryKey({ id }), exact: true });
-    queryClient.removeQueries({
-      queryKey: trpc.links.listForRecord.queryKey({ id }),
-      exact: true,
-    });
-  };
-
   return useMutation(
     trpc.records.delete.mutationOptions({
       onMutate: async (ids) => {
@@ -115,7 +118,7 @@ export function useDeleteRecords() {
         const previousRecords = new Map<DbId, RecordGet | undefined>();
         ids.forEach((id) => {
           previousRecords.set(id, queryClient.getQueryData(trpc.records.get.queryKey({ id })));
-          removeRecordQueries(id);
+          removeRecordQueries(queryClient, trpc, id);
         });
 
         // Optimistically remove deleted records from all record lists
@@ -135,7 +138,7 @@ export function useDeleteRecords() {
         removeManyFromBasket(rows.map(({ id }) => id));
 
         // Cleanup is already done in onMutate, just ensure consistency
-        rows.forEach(({ id }) => removeRecordQueries(id));
+        rows.forEach(({ id }) => removeRecordQueries(queryClient, trpc, id));
       },
       onError: (_err, _ids, ctx) => {
         ctx?.previousRecords.forEach((data, id) => {
@@ -182,10 +185,10 @@ export function useMergeRecords() {
 
           // Update the target record with merged data
           queryClient.setQueryData(trpc.records.get.queryKey({ id: targetId }), optimisticUpdate);
-
-          // Remove the source record from cache
-          queryClient.setQueryData(trpc.records.get.queryKey({ id: sourceId }), () => undefined);
         }
+
+        // The merge deletes the source record server-side.
+        removeRecordQueries(queryClient, trpc, sourceId);
 
         // Optimistically remove source record from all record lists
         const entries = queryClient.getQueriesData<IdParamList>(trpc.records.list.pathFilter());
@@ -207,15 +210,11 @@ export function useMergeRecords() {
           trpc.search.byRecordId.queryFilter({ id: updatedRecord.id })
         );
 
-        /* freeze the deleted ID so nothing refetches it */
-        const deletedKey = trpc.records.get.queryKey({ id: deletedRecordId });
-
-        // stop any in-flight request
-        void queryClient.cancelQueries({ queryKey: deletedKey, exact: true });
-
-        // mark as permanently gone
-        queryClient.setQueryData(deletedKey, () => undefined);
-        queryClient.setQueryDefaults(deletedKey, { staleTime: Infinity, retry: false });
+        // A RecordLink pointing at the deleted id can still mount from stale
+        // links data and fetch it; don't retry the inevitable not-found.
+        queryClient.setQueryDefaults(trpc.records.get.queryKey({ id: deletedRecordId }), {
+          retry: false,
+        });
 
         /* undo toast */
         toast('Records merged', {
@@ -262,9 +261,9 @@ function useUndoMerge() {
         const sourceId = sourceRecord.id;
         const targetId = targetRecord.id;
 
-        // Remove the staleTime: Infinity freeze on the source record
+        // The source record exists again; lift its retry: false default
         const sourceKey = trpc.records.get.queryKey({ id: sourceId });
-        queryClient.setQueryDefaults(sourceKey, { staleTime: undefined, retry: undefined });
+        queryClient.setQueryDefaults(sourceKey, { retry: undefined });
 
         // Similarity search is excluded from global invalidation.
         void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id: sourceId }));
