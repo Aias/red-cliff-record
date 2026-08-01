@@ -1,3 +1,4 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
   ChevronDownIcon,
@@ -9,7 +10,7 @@ import {
   ThumbsUpIcon,
 } from 'lucide-react';
 import { useEffect, useEffectEvent, useState, useSyncExternalStore } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Spinner } from '@/components/spinner';
 import { Tooltip } from '@/components/tooltip';
@@ -45,7 +46,8 @@ export const RankSection = ({ id }: { id: DbId }) => {
     collapsedStore.getSnapshot,
     collapsedStore.getServerSnapshot
   );
-  const utils = trpc.useUtils();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const submit = useSubmitMatchup();
 
   // Only root-level artifacts are rankable: one contained by a parent record
@@ -55,29 +57,32 @@ export const RankSection = ({ id }: { id: DbId }) => {
     record?.type === 'artifact' &&
     (record.outgoingLinks?.some((link) => link.predicate === 'contained_by') ?? false);
   const eligible = record?.isCurated === true && !isChildArtifact;
-  const opponents = trpc.elo.getOpponents.useQuery(
-    { recordId: id, count: OPPONENT_COUNT },
-    {
-      enabled: eligible && !collapsed,
-      staleTime: Infinity,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-    }
+  const opponents = useQuery(
+    trpc.elo.getOpponents.queryOptions(
+      { recordId: id, count: OPPONENT_COUNT },
+      {
+        enabled: eligible && !collapsed,
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+      }
+    )
   );
 
   // Slots override the query result so a resolved opponent can be swapped out
   // without re-rolling the other rows; `seen` keeps replacements fresh.
   const [slots, setSlots] = useState<DbId[] | null>(null);
   const [seen, setSeen] = useState<DbId[]>([]);
-  const [matchupsPlayed, setMatchupsPlayed] = useState(0);
   const [reveal, setReveal] = useState<Reveal | null>(null);
   const displayed = slots ?? opponents.data?.opponentIds ?? [];
 
   const replaceOpponent = (opponentId: DbId) => {
     const excluded = [...new Set([...seen, ...displayed])];
     setSeen(excluded);
-    void utils.elo.getOpponents
-      .fetch({ recordId: id, count: 1, excludeIds: excluded })
+    void queryClient
+      .fetchQuery(
+        trpc.elo.getOpponents.queryOptions({ recordId: id, count: 1, excludeIds: excluded })
+      )
       .then(({ opponentIds }) => {
         const next = opponentIds[0];
         setSlots((prev) => {
@@ -93,8 +98,14 @@ export const RankSection = ({ id }: { id: DbId }) => {
     if (reveal) return;
     const excluded = [...new Set([...seen, ...displayed])];
     setSeen(excluded);
-    void utils.elo.getOpponents
-      .fetch({ recordId: id, count: OPPONENT_COUNT, excludeIds: excluded })
+    void queryClient
+      .fetchQuery(
+        trpc.elo.getOpponents.queryOptions({
+          recordId: id,
+          count: OPPONENT_COUNT,
+          excludeIds: excluded,
+        })
+      )
       .then(({ opponentIds }) => {
         if (opponentIds.length > 0) {
           setSlots(opponentIds);
@@ -116,7 +127,6 @@ export const RankSection = ({ id }: { id: DbId }) => {
           const focusResult = results.find((r) => r.id === id);
           const opponentResult = results.find((r) => r.id === opponentId);
           if (!focusResult || !opponentResult) return;
-          setMatchupsPlayed((n) => n + 1);
           setReveal({
             opponentId,
             focusDelta: focusResult.delta,
@@ -144,7 +154,6 @@ export const RankSection = ({ id }: { id: DbId }) => {
 
   if (!record || !eligible) return null;
 
-  const matchupCount = (opponents.data?.matchupCount ?? 0) + matchupsPlayed;
   const CollapseIcon = collapsed ? ChevronRightIcon : ChevronDownIcon;
 
   return (
@@ -209,7 +218,7 @@ export const RankSection = ({ id }: { id: DbId }) => {
               {record.eloScore}
             </styled.span>
             {reveal && <EloDelta delta={reveal.focusDelta} />}
-            <span>· {matchupCount} matchups</span>
+            <span>· {record.matchupCount} matchups</span>
           </styled.p>
           {opponents.isLoading ? (
             <Spinner />

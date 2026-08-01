@@ -64,6 +64,7 @@ const defaultData: RecordGet = {
   isCurated: false,
   isPrivate: false,
   eloScore: 1200,
+  matchupCount: 0,
   reminderAt: null,
   sources: [],
   media: [],

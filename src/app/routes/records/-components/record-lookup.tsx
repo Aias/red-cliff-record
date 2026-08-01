@@ -5,6 +5,7 @@ import {
   type Predicate,
   type PredicateSlug,
 } from '@hozo';
+import { skipToken, useQuery } from '@tanstack/react-query';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
 import {
   createContext,
@@ -15,7 +16,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Badge } from '@/components/badge';
 import { Button, type ButtonProps } from '@/components/button';
 import { Command } from '@/components/command';
@@ -52,19 +53,24 @@ interface RecordSearchProps {
 }
 
 function RecordSearch({ onSelect }: RecordSearchProps) {
+  const trpc = useTRPC();
   const [query, setQuery] = useState('');
   const createRecordMutation = useUpsertRecord();
 
   const debouncedQuery = useDebounce(query, 200);
   const shouldSearch = debouncedQuery.length >= 1;
 
-  const trigram = trpc.records.list.useQuery(
-    { searchQuery: debouncedQuery, strategy: 'lexical', limit: 8 },
-    { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+  const trigram = useQuery(
+    trpc.records.list.queryOptions(
+      { searchQuery: debouncedQuery, strategy: 'lexical', limit: 8 },
+      { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+    )
   );
-  const vector = trpc.records.list.useQuery(
-    { searchQuery: debouncedQuery, strategy: 'vector', limit: 8 },
-    { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+  const vector = useQuery(
+    trpc.records.list.queryOptions(
+      { searchQuery: debouncedQuery, strategy: 'vector', limit: 8 },
+      { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+    )
   );
 
   const trigramResults = trigram.data?.ids ?? [];
@@ -257,6 +263,7 @@ function RelationshipSelectorRoot({
   onComplete,
   buildActions,
 }: RelationshipSelectorRootProps) {
+  const trpc = useTRPC();
   const initialTarget = initialTargetId ?? link?.targetId ?? null;
   const [targetId, setTargetId] = useState<number | null>(initialTarget);
   const [predicate, setPredicate] = useState<PredicateSlug | null>(link?.predicate ?? null);
@@ -273,9 +280,8 @@ function RelationshipSelectorRoot({
     list.forEach((p) => map.set(p.slug, p));
     return Array.from(map.values());
   }, [incoming]);
-  const { data: targetRecord } = trpc.records.get.useQuery(
-    { id: targetId! },
-    { enabled: targetId !== null }
+  const { data: targetRecord } = useQuery(
+    trpc.records.get.queryOptions(targetId === null ? skipToken : { id: targetId })
   );
 
   // Reset unsaved state when the popover closes, unless the target is

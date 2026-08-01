@@ -1,5 +1,4 @@
-import type { RecordSelect } from '@hozo';
-import type { RecordGet } from '@/shared/types/domain';
+import type { RecordSlim } from '@/shared/types/domain';
 
 /**
  * Helper function to merge text fields during record merging.
@@ -57,7 +56,7 @@ function getMostRecentDate(date1: Date | null, date2: Date | null): Date | null 
  * @param target The target record (will survive the merge)
  * @returns Merged record data based on the merge rules
  */
-export function mergeRecords<T extends RecordSelect | RecordGet>(
+export function mergeRecords<T extends RecordSlim>(
   source: T,
   target: T
 ): Omit<T, 'id'> & { recordUpdatedAt: Date; textEmbedding: null } {

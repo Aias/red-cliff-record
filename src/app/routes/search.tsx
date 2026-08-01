@@ -1,6 +1,7 @@
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Masonry } from '@/components/masonry';
 import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
@@ -13,10 +14,13 @@ export const Route = createFileRoute('/search')({
 });
 
 function SearchPage() {
+  const trpc = useTRPC();
   const { q } = Route.useSearch();
-  const { data } = trpc.records.list.useQuery(
-    { searchQuery: q || undefined, limit: 100 },
-    { enabled: q.length > 0, placeholderData: (prev) => prev }
+  const { data } = useQuery(
+    trpc.records.list.queryOptions(
+      { searchQuery: q || undefined, limit: 100 },
+      { enabled: q.length > 0, placeholderData: (prev) => prev }
+    )
   );
 
   return (

@@ -1,12 +1,13 @@
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routerWithQueryClient } from '@tanstack/react-router-with-query';
-import { createServerSideHelpers } from '@trpc/react-query/server';
+import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
 import { deserialize, serialize } from 'superjson';
+import type { AppRouter } from '@/server/api/root';
 import { DefaultCatchBoundary } from './routes/-app-components/catch-boundary';
 import { NotFound } from './routes/-app-components/not-found';
 import { routeTree } from './routeTree.gen';
-import { trpc, trpcClient } from './trpc';
+import { TRPCProvider, trpcClient } from './trpc';
 
 export function getRouter() {
   const queryClient = new QueryClient({
@@ -25,23 +26,24 @@ export function getRouter() {
     },
   });
 
-  const serverHelpers = createServerSideHelpers({
+  const trpc = createTRPCOptionsProxy<AppRouter>({
     client: trpcClient,
+    queryClient,
   });
 
   return routerWithQueryClient(
     createTanStackRouter({
       routeTree,
-      context: { queryClient, trpc: serverHelpers },
+      context: { queryClient, trpc },
       defaultPreload: 'intent',
       scrollRestoration: true,
       defaultErrorComponent: DefaultCatchBoundary,
       defaultNotFoundComponent: () => <NotFound />,
       Wrap: (props) => {
         return (
-          <trpc.Provider client={trpcClient} queryClient={queryClient}>
+          <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
             {props.children}
-          </trpc.Provider>
+          </TRPCProvider>
         );
       },
     }),

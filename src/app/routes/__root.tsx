@@ -7,7 +7,7 @@ import {
   type ErrorComponentProps,
 } from '@tanstack/react-router';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import type { ServerHelpers } from '@/app/trpc';
+import type { TRPCProxy } from '@/app/trpc';
 import { Toaster } from '@/components/sonner';
 import { Tooltip } from '@/components/tooltip';
 import { KeyboardShortcutProvider } from '@/lib/keyboard-shortcuts/context';
@@ -22,7 +22,7 @@ import { NotFound as NotFoundComponent } from './-app-components/not-found';
 
 export interface RouterAppContext {
   queryClient: QueryClient;
-  trpc: ServerHelpers;
+  trpc: TRPCProxy;
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({

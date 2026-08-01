@@ -1,4 +1,5 @@
 import { PREDICATES, type PredicateType, type RecordType } from '@hozo';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
   ArrowLeftIcon,
@@ -9,7 +10,7 @@ import {
   TrashIcon,
 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState, type ElementType } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Spinner } from '@/components/spinner';
 import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
@@ -361,25 +362,28 @@ const SimilarTypeShortcut = ({
 };
 
 export const SimilarRecords = ({ id }: { id: DbId }) => {
+  const trpc = useTRPC();
   const navigate = useNavigate();
   const mergeRecordsMutation = useMergeRecords();
   const [typeFilter, setTypeFilter] = useState<SimilarTypeFilter>('all');
 
   // Fetch similar records only if textEmbedding exists. Filtering by type happens in the query
   // so each type returns its own best matches rather than whatever survives the global top-N.
-  const { data: similarRecords, isLoading } = trpc.search.byRecordId.useQuery(
-    {
-      id,
-      limit: 20,
-      type: typeFilter === 'all' ? undefined : typeFilter,
-    },
-    {
-      trpc: {
-        context: {
-          skipBatch: true,
-        },
+  const { data: similarRecords, isLoading } = useQuery(
+    trpc.search.byRecordId.queryOptions(
+      {
+        id,
+        limit: 20,
+        type: typeFilter === 'all' ? undefined : typeFilter,
       },
-    }
+      {
+        trpc: {
+          context: {
+            skipBatch: true,
+          },
+        },
+      }
+    )
   );
 
   const handleTypeFilterChange = (value: SimilarTypeFilter[]) => {

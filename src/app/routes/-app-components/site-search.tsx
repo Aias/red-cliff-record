@@ -1,7 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { PlusCircleIcon, SearchIcon } from 'lucide-react';
 import { useState } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Command } from '@/components/command';
 import { Popover } from '@/components/popover';
@@ -16,6 +17,7 @@ import { SearchResultItem } from '../records/-components/search-result-item';
 const MIN_QUERY_LENGTH = 2;
 
 export const SiteSearch = () => {
+  const trpc = useTRPC();
   const navigate = useNavigate();
   const searchQ = useRouterState({
     select: (s) => (s.location.pathname === '/search' ? s.location.search.q : undefined),
@@ -29,13 +31,17 @@ export const SiteSearch = () => {
   const debouncedQuery = useDebounce(inputValue, 300);
   const shouldSearch = debouncedQuery.length >= MIN_QUERY_LENGTH;
 
-  const trigram = trpc.records.list.useQuery(
-    { searchQuery: debouncedQuery, strategy: 'lexical', limit: 10 },
-    { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+  const trigram = useQuery(
+    trpc.records.list.queryOptions(
+      { searchQuery: debouncedQuery, strategy: 'lexical', limit: 10 },
+      { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+    )
   );
-  const vector = trpc.records.list.useQuery(
-    { searchQuery: debouncedQuery, strategy: 'vector', limit: 10 },
-    { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+  const vector = useQuery(
+    trpc.records.list.queryOptions(
+      { searchQuery: debouncedQuery, strategy: 'vector', limit: 10 },
+      { enabled: shouldSearch, trpc: { context: { skipBatch: true } } }
+    )
   );
 
   const trigramResults = trigram.data?.ids ?? [];

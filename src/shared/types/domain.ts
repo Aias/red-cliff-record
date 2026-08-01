@@ -5,11 +5,13 @@ import type { DbId } from './api';
  * Core domain types used across client and server
  */
 
-// Record without embedding or search-index data (for client consumption)
-export type RecordGet = Omit<
-  RecordSelect & { media?: MediaSelect[] },
-  'textEmbedding' | 'textSearch'
-> & {
+// Record row without embedding or search-index data
+export type RecordSlim = Omit<RecordSelect, 'textEmbedding' | 'textSearch'>;
+
+// records.get response: slim record enriched with API-computed data
+export type RecordGet = RecordSlim & {
+  matchupCount: number;
+  media?: MediaSelect[];
   outgoingLinks?: Array<{
     predicate: PredicateSlug;
     target: { id: DbId; title: string | null };
@@ -18,8 +20,8 @@ export type RecordGet = Omit<
 
 // Complete record with both incoming and outgoing links
 export interface FullRecord extends RecordSelect {
-  outgoingLinks: Array<LinkSelect & { target: RecordGet }>;
-  incomingLinks: Array<LinkSelect & { source: RecordGet }>;
+  outgoingLinks: Array<LinkSelect & { target: RecordSlim }>;
+  incomingLinks: Array<LinkSelect & { source: RecordSlim }>;
   media: Array<MediaSelect>;
 }
 

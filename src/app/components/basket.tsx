@@ -1,6 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { ClipboardCopyIcon, ShoppingBasketIcon, Trash2Icon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { removeManyFromBasket, useBasket } from '@/lib/hooks/use-basket';
 import type { DbId } from '@/shared/types/api';
 import { styled } from '@/styled-system/jsx';
@@ -54,7 +55,8 @@ function BasketItem({ id, onRemove }: { id: DbId; onRemove: (id: DbId) => void }
 
 export function Basket() {
   const basket = useBasket();
-  const utils = trpc.useUtils();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
   const copyIds = async () => {
     try {
@@ -68,7 +70,9 @@ export function Basket() {
 
   const copyJson = async () => {
     const ids = basket.ids;
-    const results = await Promise.allSettled(ids.map((id) => utils.records.get.ensureData({ id })));
+    const results = await Promise.allSettled(
+      ids.map((id) => queryClient.ensureQueryData(trpc.records.get.queryOptions({ id })))
+    );
 
     const records: unknown[] = [];
     const missingIds: DbId[] = [];

@@ -1,7 +1,8 @@
 import { isStructuralContainment, type PredicateSlug } from '@hozo';
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Card } from '@/components/card';
 import { Spinner } from '@/components/spinner';
 import { useBulkUpdate, useDeleteRecords } from '@/lib/hooks/record-mutations';
@@ -187,11 +188,14 @@ const getPreviousRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId 
 };
 
 function RouteComponent() {
+  const trpc = useTRPC();
   const navigate = Route.useNavigate();
   const { state: filtersState } = useRecordFilters();
-  const { data: recordsList } = trpc.records.list.useQuery(
-    { ...filtersState, offset: 0 },
-    { placeholderData: (prev) => prev }
+  const { data: recordsList } = useQuery(
+    trpc.records.list.queryOptions(
+      { ...filtersState, offset: 0 },
+      { placeholderData: (prev) => prev }
+    )
   );
   const { recordId } = Route.useParams();
   const { data: tree, isError: treeError, isLoading: treeLoading } = useRecordTree(recordId);

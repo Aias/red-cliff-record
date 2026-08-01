@@ -1,7 +1,8 @@
 import type { RecordType } from '@hozo';
+import { useQueryClient } from '@tanstack/react-query';
 import { EqualIcon, SkipForwardIcon } from 'lucide-react';
 import { useEffect, useEffectEvent, useState, type ReactNode } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
@@ -37,7 +38,8 @@ function getSession(key: string): SessionState {
 
 export function ArenaSession({ type, focus }: { type: RecordType; focus?: DbId }) {
   const sessionKey = `${type}:${focus ?? 'open'}`;
-  const utils = trpc.useUtils();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [pair, setPair] = useState<Matchup>(() => sessions.get(sessionKey)?.pair ?? null);
   const [loading, setLoading] = useState(() => !sessions.get(sessionKey)?.pair);
   const submit = useSubmitMatchup();
@@ -45,8 +47,13 @@ export function ArenaSession({ type, focus }: { type: RecordType; focus?: DbId }
   const loadNext = (excludeIds: DbId[]) => {
     const session = getSession(sessionKey);
     session.excludeIds = excludeIds;
-    void utils.elo.getMatchup
-      .fetch({ recordType: type, focusRecordId: focus, excludeIds }, { staleTime: 0, gcTime: 0 })
+    void queryClient
+      .fetchQuery(
+        trpc.elo.getMatchup.queryOptions(
+          { recordType: type, focusRecordId: focus, excludeIds },
+          { staleTime: 0, gcTime: 0 }
+        )
+      )
       .then((next) => {
         session.pair = next;
         setPair(next);

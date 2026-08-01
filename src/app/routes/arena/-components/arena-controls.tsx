@@ -1,8 +1,9 @@
 import type { RecordType } from '@hozo';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { CrosshairIcon, XIcon } from 'lucide-react';
 import { useState, type ElementType } from 'react';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Command } from '@/components/command';
 import { Dialog } from '@/components/dialog';
@@ -125,18 +126,21 @@ export function ArenaControls({ type, focus }: { type: RecordType; focus?: DbId 
 }
 
 function FocusSearch({ type, onSelect }: { type: RecordType; onSelect: (id: DbId) => void }) {
+  const trpc = useTRPC();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 200);
   const shouldSearch = debouncedQuery.length >= 1;
 
-  const results = trpc.records.list.useQuery(
-    {
-      searchQuery: debouncedQuery,
-      strategy: 'lexical',
-      filters: { types: [type], isCurated: true },
-      limit: 8,
-    },
-    { enabled: shouldSearch }
+  const results = useQuery(
+    trpc.records.list.queryOptions(
+      {
+        searchQuery: debouncedQuery,
+        strategy: 'lexical',
+        filters: { types: [type], isCurated: true },
+        limit: 8,
+      },
+      { enabled: shouldSearch }
+    )
   );
   const ids = results.data?.ids ?? [];
 

@@ -1,8 +1,9 @@
+import { useMutation } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { GlobeIcon, ShoppingBasketIcon, Trash2Icon } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import { trpc } from '@/app/trpc';
+import { useTRPC } from '@/app/trpc';
 import { AlertDialog } from '@/components/alert-dialog';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
@@ -169,9 +170,11 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
     setLocalUrl(record.avatarUrl ?? '');
   }
 
+  const trpc = useTRPC();
   const upsertMutation = useUpsertRecord();
-  const { mutate: fetchFavicon, isPending: isFetchingFavicon } =
-    trpc.records.fetchFavicon.useMutation();
+  const { mutate: fetchFavicon, isPending: isFetchingFavicon } = useMutation(
+    trpc.records.fetchFavicon.mutationOptions()
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalUrl(e.target.value);

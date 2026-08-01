@@ -1,8 +1,7 @@
 import { eloMatchups, records, type RecordType } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { count, eq, inArray, sql } from 'drizzle-orm';
-import type { Db } from '@/server/db/connections/postgres';
-import { eloDeltas } from '@/server/lib/elo';
+import { eq, sql } from 'drizzle-orm';
+import { eloDeltas, matchupCounts, type Queryable } from '@/server/lib/elo';
 import {
   GetMatchupInputSchema,
   GetOpponentsInputSchema,
@@ -11,33 +10,10 @@ import {
 } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
-type Queryable = Db | Parameters<Parameters<Db['transaction']>[0]>[0];
-
 const OPPONENT_WINDOWS = [200, 400, 800, 1600, Infinity];
 const WILDCARD_PROBABILITY = 0.15;
 /** A record with fewer matchups than this gets anchored against established opponents. */
 const PROVISIONAL_MATCHUPS = 10;
-
-async function matchupCounts(db: Queryable, ids: DbId[]): Promise<Map<DbId, number>> {
-  if (ids.length === 0) return new Map();
-  const [asA, asB] = await Promise.all([
-    db
-      .select({ id: eloMatchups.recordAId, n: count() })
-      .from(eloMatchups)
-      .where(inArray(eloMatchups.recordAId, ids))
-      .groupBy(eloMatchups.recordAId),
-    db
-      .select({ id: eloMatchups.recordBId, n: count() })
-      .from(eloMatchups)
-      .where(inArray(eloMatchups.recordBId, ids))
-      .groupBy(eloMatchups.recordBId),
-  ]);
-  const counts = new Map(ids.map((id) => [id, 0]));
-  for (const { id, n } of [...asA, ...asB]) {
-    counts.set(id, (counts.get(id) ?? 0) + n);
-  }
-  return counts;
-}
 
 /**
  * The matchup pool: curated records of one type, and for artifacts only those
@@ -182,21 +158,20 @@ export const getOpponents = publicProcedure
       });
     }
 
-    const counts = await matchupCounts(db, [focus.id]);
-    const matchupCount = counts.get(focus.id) ?? 0;
-    if (!focus.isCurated) return { matchupCount, opponentIds: [] };
+    if (!focus.isCurated) return { opponentIds: [] };
     if (focus.type === 'artifact' && (await containedIds(db, [focus.id])).size > 0) {
-      return { matchupCount, opponentIds: [] };
+      return { opponentIds: [] };
     }
 
+    const counts = await matchupCounts(db, [focus.id]);
     const opponentIds = await selectOpponents(db, {
       type: focus.type,
       anchorElo: focus.eloScore,
       excludeIds: [focus.id, ...input.excludeIds],
       needed: input.count,
-      biasEstablished: matchupCount < PROVISIONAL_MATCHUPS,
+      biasEstablished: (counts.get(focus.id) ?? 0) < PROVISIONAL_MATCHUPS,
     });
-    return { matchupCount, opponentIds };
+    return { opponentIds };
   });
 
 export const getMatchup = publicProcedure
