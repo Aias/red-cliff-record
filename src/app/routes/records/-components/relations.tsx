@@ -371,6 +371,9 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
             skipBatch: true,
           },
         },
+        // Vector search over embeddings that update asynchronously; link
+        // mutations invalidate it explicitly where similarity actually changes.
+        meta: { invalidation: 'manual' },
       }
     )
   );

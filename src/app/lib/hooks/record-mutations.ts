@@ -41,12 +41,6 @@ export function useBulkUpdate() {
         });
         return { previous };
       },
-      onSuccess: (ids) => {
-        void queryClient.invalidateQueries(trpc.records.list.pathFilter());
-        ids.forEach(
-          (id) => void queryClient.invalidateQueries(trpc.records.get.queryFilter({ id }))
-        );
-      },
       onError: (_err, _vars, ctx) => {
         ctx?.previous.forEach((data, id) => {
           queryClient.setQueryData(trpc.records.get.queryKey({ id }), data);
@@ -76,11 +70,9 @@ export function useUpsertRecord() {
         return { previous };
       },
       onSuccess: (row) => {
-        /* patch point cache */
+        // Patch the point cache with the authoritative row ahead of the
+        // global invalidation refetch.
         queryClient.setQueryData(trpc.records.get.queryKey({ id: row.id }), row);
-
-        /* refresh ID tables & search index */
-        void queryClient.invalidateQueries(trpc.records.list.pathFilter());
       },
       onError: (_err, input, ctx) => {
         if (input.id !== undefined && ctx?.previous) {
@@ -144,11 +136,6 @@ export function useDeleteRecords() {
 
         // Cleanup is already done in onMutate, just ensure consistency
         rows.forEach(({ id }) => removeRecordQueries(id));
-
-        /* Invalidate targeted caches that might reference deleted records */
-        void queryClient.invalidateQueries(trpc.records.tree.pathFilter()); // Tree queries may contain deleted records as children
-        void queryClient.invalidateQueries(trpc.links.listForRecord.pathFilter()); // Link queries may reference deleted records
-        void queryClient.invalidateQueries(trpc.links.map.pathFilter()); // Link maps may reference deleted records
       },
       onError: (_err, _ids, ctx) => {
         ctx?.previousRecords.forEach((data, id) => {
@@ -212,10 +199,10 @@ export function useMergeRecords() {
 
         return { previousSource, previousTarget, previousLists: entries };
       },
-      onSuccess: ({ updatedRecord, deletedRecordId, touchedIds, snapshot }) => {
+      onSuccess: ({ updatedRecord, deletedRecordId, snapshot }) => {
         replaceBasketId(deletedRecordId, updatedRecord.id);
 
-        void queryClient.invalidateQueries(trpc.records.get.queryFilter({ id: updatedRecord.id }));
+        // Similarity search is excluded from global invalidation.
         void queryClient.invalidateQueries(
           trpc.search.byRecordId.queryFilter({ id: updatedRecord.id })
         );
@@ -229,18 +216,6 @@ export function useMergeRecords() {
         // mark as permanently gone
         queryClient.setQueryData(deletedKey, () => undefined);
         queryClient.setQueryDefaults(deletedKey, { staleTime: Infinity, retry: false });
-
-        /* per-record link lists */
-        touchedIds.forEach(
-          (id) => void queryClient.invalidateQueries(trpc.links.listForRecord.queryFilter({ id }))
-        );
-
-        /* maps that may reference the merged records */
-        void queryClient.invalidateQueries(trpc.links.map.pathFilter());
-
-        /* record-ID tables */
-        void queryClient.invalidateQueries(trpc.records.list.pathFilter());
-        void queryClient.invalidateQueries(trpc.records.tree.pathFilter());
 
         /* undo toast */
         toast('Records merged', {
@@ -291,16 +266,9 @@ function useUndoMerge() {
         const sourceKey = trpc.records.get.queryKey({ id: sourceId });
         queryClient.setQueryDefaults(sourceKey, { staleTime: undefined, retry: undefined });
 
-        // Invalidate caches for both records
-        void queryClient.invalidateQueries(trpc.records.get.queryFilter({ id: sourceId }));
-        void queryClient.invalidateQueries(trpc.records.get.queryFilter({ id: targetId }));
+        // Similarity search is excluded from global invalidation.
         void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id: sourceId }));
         void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id: targetId }));
-        void queryClient.invalidateQueries(trpc.records.list.pathFilter());
-        void queryClient.invalidateQueries(trpc.records.tree.pathFilter());
-        void queryClient.invalidateQueries(trpc.links.listForRecord.queryFilter({ id: sourceId }));
-        void queryClient.invalidateQueries(trpc.links.listForRecord.queryFilter({ id: targetId }));
-        void queryClient.invalidateQueries(trpc.links.map.pathFilter());
 
         // Navigate back to the restored source record
         void navigate({

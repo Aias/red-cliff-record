@@ -65,6 +65,8 @@ export const RankSection = ({ id }: { id: DbId }) => {
         staleTime: Infinity,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
+        // Random roll: auto-invalidation would re-roll opponents on every mutation.
+        meta: { invalidation: 'manual' },
       }
     )
   );

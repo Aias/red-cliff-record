@@ -3,8 +3,8 @@ import { useTRPC } from '@/app/trpc';
 
 /**
  * Submit an ELO matchup (win/loss or draw). Patch the participants' cached
- * records from the authoritative response, and invalidate queries whose
- * ordering depends on ELO scores.
+ * records from the authoritative response so scores update ahead of the
+ * global invalidation refetch.
  */
 export function useSubmitMatchup() {
   const trpc = useTRPC();
@@ -17,8 +17,6 @@ export function useSubmitMatchup() {
             prev ? { ...prev, eloScore, matchupCount } : prev
           );
         }
-        void queryClient.invalidateQueries(trpc.records.list.pathFilter());
-        void queryClient.invalidateQueries(trpc.links.listForRecord.pathFilter());
       },
     })
   );

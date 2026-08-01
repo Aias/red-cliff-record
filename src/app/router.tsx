@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routerWithQueryClient } from '@tanstack/react-router-with-query';
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
@@ -10,7 +10,18 @@ import { routeTree } from './routeTree.gen';
 import { TRPCProvider, trpcClient } from './trpc';
 
 export function getRouter() {
-  const queryClient = new QueryClient({
+  // Every successful mutation invalidates all queries except those tagged
+  // `meta: { invalidation: 'manual' }`. Only active queries refetch (batched
+  // into one request by the tRPC batch link); inactive ones are marked stale.
+  // Per-mutation cache handlers narrow this default, they don't replace it.
+  const queryClient: QueryClient = new QueryClient({
+    mutationCache: new MutationCache({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          predicate: (query) => query.meta?.invalidation !== 'manual',
+        });
+      },
+    }),
     defaultOptions: {
       dehydrate: {
         serializeData: serialize,
@@ -57,5 +68,14 @@ declare module '@tanstack/react-router' {
   }
   interface HistoryState {
     focusForm?: boolean;
+  }
+}
+
+declare module '@tanstack/react-query' {
+  interface Register {
+    queryMeta: {
+      /** Opt a query out of the global invalidate-on-mutation default. */
+      invalidation?: 'manual';
+    };
   }
 }

@@ -86,19 +86,11 @@ export function useUpsertLink() {
 
         return { prevSource, prevTarget };
       },
-      onSuccess: (row) => {
-        const { sourceId, targetId } = row;
-
-        void queryClient.invalidateQueries(trpc.links.listForRecord.queryFilter({ id: sourceId }));
-        void queryClient.invalidateQueries(trpc.links.listForRecord.queryFilter({ id: targetId }));
-
+      onSuccess: ({ sourceId, targetId }) => {
+        // Similarity search is excluded from global invalidation but links
+        // change its results (url-linked records rank as similar).
         void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id: sourceId }));
         void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id: targetId }));
-
-        void queryClient.invalidateQueries(trpc.records.tree.queryFilter({ id: sourceId }));
-        void queryClient.invalidateQueries(trpc.records.tree.queryFilter({ id: targetId }));
-
-        void queryClient.invalidateQueries(trpc.links.map.pathFilter());
       },
       onError: (_err, variables, ctx) => {
         if (ctx?.prevSource) {
@@ -141,22 +133,16 @@ export function useDeleteLinks() {
         return { previous };
       },
       onSuccess: (rows) => {
-        /* collect every record whose link list changed */
+        // Similarity search is excluded from global invalidation but links
+        // change its results.
         const touched = new Set<DbId>();
         rows.forEach(({ sourceId, targetId }) => {
           touched.add(sourceId);
           touched.add(targetId);
         });
-
-        /* 1 ▸ invalidate per-record link lists */
         touched.forEach((id) => {
-          void queryClient.invalidateQueries(trpc.links.listForRecord.queryFilter({ id }));
-          void queryClient.invalidateQueries(trpc.records.tree.queryFilter({ id }));
           void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id }));
         });
-
-        /* 2 ▸ drop any cached map that may reference the deleted links */
-        void queryClient.invalidateQueries(trpc.links.map.pathFilter());
       },
       onError: (_err, _ids, ctx) => {
         ctx?.previous.forEach(([key, data]) => {
