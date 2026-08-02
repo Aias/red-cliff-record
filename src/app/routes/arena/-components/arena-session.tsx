@@ -1,13 +1,14 @@
 import type { RecordType } from '@hozo';
-import { useQueryClient } from '@tanstack/react-query';
+import { useZero } from '@rocicorp/zero/react';
 import { EqualIcon, SkipForwardIcon } from 'lucide-react';
 import { useEffect, useEffectEvent, useState, type ReactNode } from 'react';
-import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
+import { readEloPool } from '@/lib/hooks/record-queries';
 import { useZeroMutate } from '@/lib/hooks/zero-mutate';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
+import { selectMatchup } from '@/shared/lib/elo';
 import type { DbId } from '@/shared/types/api';
 import { mutators } from '@/shared/zero/mutators';
 import { styled } from '@/styled-system/jsx';
@@ -39,8 +40,7 @@ function getSession(key: string): SessionState {
 
 export function ArenaSession({ type, focus }: { type: RecordType; focus?: DbId }) {
   const sessionKey = `${type}:${focus ?? 'open'}`;
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
+  const zero = useZero();
   const [pair, setPair] = useState<Matchup>(() => sessions.get(sessionKey)?.pair ?? null);
   const [loading, setLoading] = useState(() => !sessions.get(sessionKey)?.pair);
   const zeroMutate = useZeroMutate();
@@ -48,14 +48,9 @@ export function ArenaSession({ type, focus }: { type: RecordType; focus?: DbId }
   const loadNext = (excludeIds: DbId[]) => {
     const session = getSession(sessionKey);
     session.excludeIds = excludeIds;
-    void queryClient
-      .fetchQuery(
-        trpc.elo.getMatchup.queryOptions(
-          { recordType: type, focusRecordId: focus, excludeIds },
-          { staleTime: 0, gcTime: 0 }
-        )
-      )
-      .then((next) => {
+    void readEloPool(zero, type)
+      .then((pool) => {
+        const next = selectMatchup(pool, { focusId: focus, excludeIds });
         session.pair = next;
         setPair(next);
       })

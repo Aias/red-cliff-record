@@ -22,7 +22,7 @@ import { useRecord, type RecordData } from '@/lib/hooks/record-queries';
 import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-basket';
 import { useRecordUpload } from '@/lib/hooks/use-record-upload';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
-import { validateRecord } from '@/lib/server/validate-record';
+import type { UpdateRecordInput } from '@/shared/zero/mutators';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { Metabar } from './record-metabar';
@@ -60,7 +60,6 @@ type RecordFormValues = {
   mediaCaption: string | null;
   isCurated: boolean;
   isPrivate: boolean;
-  media: RecordData['media'];
 };
 
 const defaultData: RecordFormValues = {
@@ -75,8 +74,66 @@ const defaultData: RecordFormValues = {
   mediaCaption: null,
   isCurated: false,
   isPrivate: false,
-  media: [],
 };
+
+/** How long typing must pause before the pending changes commit. */
+const COMMIT_DEBOUNCE_MS = 300;
+
+function valuesFromRecord(record: RecordData): RecordFormValues {
+  return {
+    type: record.type,
+    title: record.title,
+    sense: record.sense,
+    abbreviation: record.abbreviation,
+    url: record.url,
+    summary: record.summary,
+    content: record.content,
+    notes: record.notes,
+    mediaCaption: record.mediaCaption,
+    isCurated: record.isCurated,
+    isPrivate: record.isPrivate,
+  };
+}
+
+/** Normalize form values to their stored shape (empty strings become null). */
+function normalizeValues(values: RecordFormValues): RecordFormValues {
+  return {
+    ...values,
+    title: values.title || null,
+    sense: values.sense || null,
+    abbreviation: values.abbreviation || null,
+    url: values.url || null,
+    summary: values.summary || null,
+    content: values.content || null,
+    notes: values.notes || null,
+    mediaCaption: values.mediaCaption || null,
+  };
+}
+
+/**
+ * Fields where `next` diverges from the committed baseline. A malformed URL is
+ * held back (the field validator surfaces the error) until it parses or clears.
+ */
+function collectChanges(
+  next: RecordFormValues,
+  base: RecordFormValues
+): Omit<UpdateRecordInput, 'id'> {
+  const changes: Omit<UpdateRecordInput, 'id'> = {};
+  if (next.type !== base.type) changes.type = next.type;
+  if (next.isCurated !== base.isCurated) changes.isCurated = next.isCurated;
+  if (next.isPrivate !== base.isPrivate) changes.isPrivate = next.isPrivate;
+  if (next.title !== base.title) changes.title = next.title;
+  if (next.sense !== base.sense) changes.sense = next.sense;
+  if (next.abbreviation !== base.abbreviation) changes.abbreviation = next.abbreviation;
+  if (next.summary !== base.summary) changes.summary = next.summary;
+  if (next.content !== base.content) changes.content = next.content;
+  if (next.notes !== base.notes) changes.notes = next.notes;
+  if (next.mediaCaption !== base.mediaCaption) changes.mediaCaption = next.mediaCaption;
+  if (next.url !== base.url && (next.url === null || z.url().safeParse(next.url).success)) {
+    changes.url = next.url;
+  }
+  return changes;
+}
 
 export function RecordForm({
   recordId,
@@ -108,22 +165,7 @@ export function RecordForm({
     }
   }, [shouldFocus, isLoading]);
 
-  const formData: RecordFormValues = record
-    ? {
-        type: record.type,
-        title: record.title,
-        sense: record.sense,
-        abbreviation: record.abbreviation,
-        url: record.url,
-        summary: record.summary,
-        content: record.content,
-        notes: record.notes,
-        mediaCaption: record.mediaCaption,
-        isCurated: record.isCurated,
-        isPrivate: record.isPrivate,
-        media: record.media,
-      }
-    : defaultData;
+  const formData: RecordFormValues = record ? valuesFromRecord(record) : defaultData;
   const isFormLoading = isLoading || !record;
 
   const inBasket = useInBasket(recordId);
@@ -131,110 +173,73 @@ export function RecordForm({
   const deleteMediaMutation = useDeleteMedia();
   const { uploadFile, isUploading } = useRecordUpload(recordId);
 
-  const form = useForm({
-    defaultValues: formData,
-    onSubmit: async ({ value }) => {
-      const {
-        type,
-        isCurated,
-        isPrivate,
-        title,
-        url,
-        abbreviation,
-        sense,
-        summary,
-        content,
-        notes,
-        mediaCaption,
-      } = value;
-      await updateRecord({
-        id: recordId,
-        type,
-        isCurated,
-        isPrivate,
-        title: title || null,
-        url: url || null,
-        abbreviation: abbreviation || null,
-        sense: sense || null,
-        summary: summary || null,
-        content: content || null,
-        notes: notes || null,
-        mediaCaption: mediaCaption || null,
-      });
-    },
-    validators: {
-      onSubmitAsync: async ({ value }) => {
-        const { media: _media, ...fields } = value;
-        const result = await validateRecord({ data: fields });
-        if (!result.success) {
-          return {
-            form: result.formError,
-            fields: result.fieldErrors,
-          };
-        }
-        return undefined;
-      },
-    },
-  });
+  const form = useForm({ defaultValues: formData });
 
-  useEffect(() => {
-    if (record) {
-      form.setFieldValue('media', record.media ?? [], {
-        dontUpdateMeta: true,
-      });
-    }
-  }, [record, form]);
+  /* Baseline for diffing commits: the last state written to (or read from)
+   * the synced record. null until the record first loads. */
+  const lastCommittedRef = useRef<RecordFormValues | null>(null);
 
-  // Auto-save functionality
-  const debouncedSave = useCallback(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      // Only save if values have actually changed
-      if (!form.state.isDefaultValue) {
-        void form.handleSubmit();
-      }
-    }, 1000); // Save after 1 second of inactivity
-  }, [form]);
-
-  const immediateSave = useCallback(async () => {
+  /** Write fields that changed since the last commit to the synced record. */
+  const commit = useCallback(async () => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
-    await form.handleSubmit();
-  }, [form]);
+    const base = lastCommittedRef.current;
+    if (!base) return;
+    const changes = collectChanges(normalizeValues(form.state.values), base);
+    if (Object.keys(changes).length === 0) return;
+    lastCommittedRef.current = { ...base, ...changes };
+    await updateRecord({ id: recordId, ...changes });
+  }, [form, recordId, updateRecord]);
 
-  // Save immediately before navigation or form blur
+  const debouncedSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => void commit(), COMMIT_DEBOUNCE_MS);
+  }, [commit]);
+
+  /* Sync the synced record into the form: seed once it loads, then absorb
+   * external edits (another tab, the CLI, enrichment). Echoes of this form's
+   * own commits match the baseline and no-op; while a commit is pending, the
+   * in-flight local edits win. */
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Only save if there's a pending save and values have actually changed
-      if (saveTimeoutRef.current && !form.state.isDefaultValue) {
-        // Note: beforeunload can't wait for async operations, so we trigger it but can't guarantee completion
-        void immediateSave();
-      }
-    };
+    if (!record) return;
+    const synced = valuesFromRecord(record);
+    const base = lastCommittedRef.current;
+    lastCommittedRef.current = synced;
+    if (!base) {
+      form.reset(synced);
+      return;
+    }
+    if (saveTimeoutRef.current) return;
+    if (Object.keys(collectChanges(synced, base)).length > 0) {
+      form.reset(synced);
+    }
+  }, [record, form]);
 
-    // Save when navigating away or closing
-    window.addEventListener('beforeunload', handleBeforeUnload);
+  const commitRef = useRef(commit);
+  useEffect(() => {
+    commitRef.current = commit;
+  });
 
+  /* Flush any pending commit when the form unmounts or the tab closes.
+   * beforeunload cannot await, but firing the mutation lets Zero enqueue it. */
+  useEffect(() => {
+    const flush = () => void commitRef.current();
+    window.addEventListener('beforeunload', flush);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      window.removeEventListener('beforeunload', flush);
+      flush();
     };
-  }, [form.state.isDefaultValue, immediateSave]);
+  }, []);
 
   const curateAndNextHandler = useCallback(async () => {
-    // Set curated flag before saving to avoid race condition with bulkUpdate
     form.setFieldValue('isCurated', true);
-    // Save immediately before navigation and wait for completion
-    await immediateSave();
-    // Navigate after save completes
+    await commit();
     onFinalize();
-  }, [form, immediateSave, onFinalize]);
+  }, [form, commit, onFinalize]);
 
   // Register keyboard shortcuts
   useKeyboardShortcut('mod+shift+enter', () => void curateAndNextHandler(), {
@@ -296,13 +301,7 @@ export function RecordForm({
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        void form.handleSubmit();
-      }}
-      onBlur={(e) => {
-        // If focus is leaving the form entirely and values changed, save immediately
-        if (!e.currentTarget.contains(e.relatedTarget) && !form.state.isDefaultValue) {
-          void immediateSave();
-        }
+        void commit();
       }}
       onKeyDown={(e) => {
         // Escape blurs the currently focused element (first escape unfocuses field)
@@ -346,7 +345,7 @@ export function RecordForm({
                     field.handleChange(e.target.value);
                     debouncedSave();
                   }}
-                  onBlur={() => debouncedSave()}
+                  onBlur={() => void commit()}
                   readOnly={isFormLoading}
                   className={css({
                     color: 'display',
@@ -379,7 +378,10 @@ export function RecordForm({
         >
           <form.Field name="type">
             {(field) => {
-              type TypeTooltipPayload = { type: RecordType; description: string };
+              type TypeTooltipPayload = {
+                type: RecordType;
+                description: string;
+              };
               const handle = Tooltip.createHandle<TypeTooltipPayload>();
               return (
                 <ToggleGroup.Root
@@ -418,7 +420,9 @@ export function RecordForm({
                               css={{
                                 display: 'none',
                                 textTransform: 'capitalize',
-                                '@container (min-width: 30rem)': { display: 'inline' },
+                                '@container (min-width: 30rem)': {
+                                  display: 'inline',
+                                },
                               }}
                             >
                               {type}
@@ -434,7 +438,10 @@ export function RecordForm({
                         <Tooltip.Content side="bottom">
                           <p>
                             <styled.strong
-                              css={{ marginInlineEnd: '1', textTransform: 'capitalize' }}
+                              css={{
+                                marginInlineEnd: '1',
+                                textTransform: 'capitalize',
+                              }}
                             >
                               {payload.type}
                             </styled.strong>
@@ -515,7 +522,13 @@ export function RecordForm({
                     >
                       {(field) => (
                         <>
-                          <styled.div css={{ display: 'flex', alignItems: 'center', gap: '2' }}>
+                          <styled.div
+                            css={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '2',
+                            }}
+                          >
                             <GhostInput
                               id="url"
                               css={{ width: 'full', color: 'display' }}
@@ -525,7 +538,7 @@ export function RecordForm({
                                 field.handleChange(e.target.value);
                                 debouncedSave();
                               }}
-                              onBlur={() => debouncedSave()}
+                              onBlur={() => void commit()}
                               readOnly={isFormLoading}
                             />
                             {field.state.value && (
@@ -567,7 +580,7 @@ export function RecordForm({
                             field.handleChange(e.target.value);
                             debouncedSave();
                           }}
-                          onBlur={() => debouncedSave()}
+                          onBlur={() => void commit()}
                           readOnly={isFormLoading}
                         />
                       )}
@@ -593,7 +606,7 @@ export function RecordForm({
                             field.handleChange(e.target.value);
                             debouncedSave();
                           }}
-                          onBlur={() => debouncedSave()}
+                          onBlur={() => void commit()}
                           readOnly={isFormLoading}
                         />
                       )}
@@ -607,7 +620,12 @@ export function RecordForm({
       </styled.div>
 
       <styled.div
-        css={{ marginBlockStart: '4', display: 'flex', flexDirection: 'column', gap: '3' }}
+        css={{
+          marginBlockStart: '4',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '3',
+        }}
       >
         <form.Field name="summary">
           {(field) => (
@@ -621,7 +639,7 @@ export function RecordForm({
                   field.handleChange(e.target.value);
                   debouncedSave();
                 }}
-                onBlur={() => debouncedSave()}
+                onBlur={() => void commit()}
                 disabled={isFormLoading}
               />
             </styled.div>
@@ -640,73 +658,69 @@ export function RecordForm({
                   field.handleChange(e.target.value);
                   debouncedSave();
                 }}
-                onBlur={() => debouncedSave()}
+                onBlur={() => void commit()}
                 disabled={isFormLoading}
               />
             </styled.div>
           )}
         </form.Field>
 
-        <form.Field name="media">
-          {(field) =>
-            field.state.value && field.state.value.length > 0 ? (
-              <styled.div
-                css={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'clip',
-                  borderRadius: 'md',
-                  borderWidth: '1px',
-                  borderColor: 'divider/75',
-                }}
-              >
-                <MediaGrid
-                  media={field.state.value}
-                  onDelete={(media) => deleteMediaMutation.mutate([media.id])}
-                  className={css({ borderRadius: 'none' })}
-                />
+        {record && record.media.length > 0 ? (
+          <styled.div
+            css={{
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'clip',
+              borderRadius: 'md',
+              borderWidth: '1px',
+              borderColor: 'divider/75',
+            }}
+          >
+            <MediaGrid
+              media={record.media}
+              onDelete={(media) => deleteMediaMutation.mutate([media.id])}
+              className={css({ borderRadius: 'none' })}
+            />
 
-                <form.Field name="mediaCaption">
-                  {(captionField) => (
-                    <styled.div
-                      css={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        borderBlockStartWidth: '1px',
-                        borderBlockStartColor: 'divider/75',
-                      }}
-                    >
-                      <Label htmlFor="mediaCaption" className={css({ srOnly: true })}>
-                        Caption
-                      </Label>
-                      <DynamicTextarea
-                        ref={mediaCaptionRef}
-                        id="mediaCaption"
-                        value={captionField.state.value ?? ''}
-                        placeholder="Add a caption..."
-                        onChange={(e) => {
-                          captionField.handleChange(e.target.value);
-                          debouncedSave();
-                        }}
-                        onBlur={() => debouncedSave()}
-                        disabled={isFormLoading}
-                        css={{
-                          border: 'none',
-                          boxShadow: 'none',
-                          _focusVisible: {
-                            outlineWidth: '0',
-                          },
-                        }}
-                      />
-                    </styled.div>
-                  )}
-                </form.Field>
-              </styled.div>
-            ) : (
-              <MediaUpload ref={mediaUploadRef} onUpload={uploadFile} />
-            )
-          }
-        </form.Field>
+            <form.Field name="mediaCaption">
+              {(captionField) => (
+                <styled.div
+                  css={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderBlockStartWidth: '1px',
+                    borderBlockStartColor: 'divider/75',
+                  }}
+                >
+                  <Label htmlFor="mediaCaption" className={css({ srOnly: true })}>
+                    Caption
+                  </Label>
+                  <DynamicTextarea
+                    ref={mediaCaptionRef}
+                    id="mediaCaption"
+                    value={captionField.state.value ?? ''}
+                    placeholder="Add a caption..."
+                    onChange={(e) => {
+                      captionField.handleChange(e.target.value);
+                      debouncedSave();
+                    }}
+                    onBlur={() => void commit()}
+                    disabled={isFormLoading}
+                    css={{
+                      border: 'none',
+                      boxShadow: 'none',
+                      _focusVisible: {
+                        outlineWidth: '0',
+                      },
+                    }}
+                  />
+                </styled.div>
+              )}
+            </form.Field>
+          </styled.div>
+        ) : (
+          <MediaUpload ref={mediaUploadRef} onUpload={uploadFile} />
+        )}
 
         <form.Field name="notes">
           {(field) => (
@@ -722,7 +736,7 @@ export function RecordForm({
                   field.handleChange(e.target.value);
                   debouncedSave();
                 }}
-                onBlur={() => debouncedSave()}
+                onBlur={() => void commit()}
                 disabled={isFormLoading}
                 css={{
                   margin: '0',

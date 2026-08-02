@@ -1,5 +1,4 @@
 import { useZero } from '@rocicorp/zero/react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
   ChevronDownIcon,
@@ -11,14 +10,13 @@ import {
   ThumbsUpIcon,
 } from 'lucide-react';
 import { useEffect, useEffectEvent, useState, useSyncExternalStore } from 'react';
-import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Spinner } from '@/components/spinner';
 import { Tooltip } from '@/components/tooltip';
 import { createLocalStorageStore } from '@/lib/create-local-storage-store';
-import { useMatchupCount, useRecord } from '@/lib/hooks/record-queries';
+import { readEloPool, useMatchupCount, useRecord } from '@/lib/hooks/record-queries';
 import { useZeroMutate } from '@/lib/hooks/zero-mutate';
-import { eloDeltas } from '@/shared/lib/elo';
+import { eloDeltas, PROVISIONAL_MATCHUPS, selectOpponents } from '@/shared/lib/elo';
 import type { DbId } from '@/shared/types/api';
 import { mutators } from '@/shared/zero/mutators';
 import { queries } from '@/shared/zero/queries';
@@ -51,8 +49,6 @@ export const RankSection = ({ id }: { id: DbId }) => {
     collapsedStore.getSnapshot,
     collapsedStore.getServerSnapshot
   );
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const zero = useZero();
   const zeroMutate = useZeroMutate();
   const [submitting, setSubmitting] = useState(false);
@@ -64,66 +60,62 @@ export const RankSection = ({ id }: { id: DbId }) => {
     record?.type === 'artifact' &&
     (record.outgoingLinks?.some((link) => link.predicate === 'contained_by') ?? false);
   const eligible = record?.isCurated === true && !isChildArtifact;
-  const opponents = useQuery(
-    trpc.elo.getOpponents.queryOptions(
-      { recordId: id, count: OPPONENT_COUNT },
-      {
-        enabled: eligible && !collapsed,
-        staleTime: Infinity,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        // Random roll: auto-invalidation would re-roll opponents on every mutation.
-        meta: { invalidation: 'manual' },
-      }
-    )
-  );
 
-  // Slots override the query result so a resolved opponent can be swapped out
-  // without re-rolling the other rows; `seen` keeps replacements fresh.
+  // Individual slots so a resolved opponent can be swapped out without
+  // re-rolling the other rows; `seen` keeps replacements fresh.
   const [slots, setSlots] = useState<DbId[] | null>(null);
   const [seen, setSeen] = useState<DbId[]>([]);
   const [reveal, setReveal] = useState<Reveal | null>(null);
-  const displayed = slots ?? opponents.data?.opponentIds ?? [];
+  const displayed = slots ?? [];
+
+  /** Roll opponents near this record's score from the local synced pool. */
+  const rollOpponents = async (count: number, excludeIds: DbId[]): Promise<DbId[]> => {
+    if (!record) return [];
+    const pool = await readEloPool(zero, record.type);
+    const focus = pool.find((candidate) => candidate.id === id);
+    if (!focus) return [];
+    return selectOpponents(pool, {
+      anchorElo: focus.eloScore,
+      excludeIds: [id, ...excludeIds],
+      needed: count,
+      biasEstablished: focus.matchupCount < PROVISIONAL_MATCHUPS,
+    });
+  };
+
+  const rollInitial = useEffectEvent(() => {
+    if (slots !== null) return;
+    void rollOpponents(OPPONENT_COUNT, []).then(setSlots);
+  });
+  useEffect(() => {
+    if (eligible && !collapsed) rollInitial();
+  }, [eligible, collapsed]);
 
   const replaceOpponent = (opponentId: DbId) => {
     const excluded = [...new Set([...seen, ...displayed])];
     setSeen(excluded);
-    void queryClient
-      .fetchQuery(
-        trpc.elo.getOpponents.queryOptions({ recordId: id, count: 1, excludeIds: excluded })
-      )
-      .then(({ opponentIds }) => {
-        const next = opponentIds[0];
-        setSlots((prev) => {
-          const base = prev ?? opponents.data?.opponentIds ?? [];
-          return next
-            ? base.map((o) => (o === opponentId ? next : o))
-            : base.filter((o) => o !== opponentId);
-        });
+    void rollOpponents(1, excluded).then(([next]) => {
+      setSlots((prev) => {
+        const base = prev ?? [];
+        return next
+          ? base.map((o) => (o === opponentId ? next : o))
+          : base.filter((o) => o !== opponentId);
       });
+    });
   };
 
   const refresh = () => {
     if (reveal) return;
     const excluded = [...new Set([...seen, ...displayed])];
     setSeen(excluded);
-    void queryClient
-      .fetchQuery(
-        trpc.elo.getOpponents.queryOptions({
-          recordId: id,
-          count: OPPONENT_COUNT,
-          excludeIds: excluded,
-        })
-      )
-      .then(({ opponentIds }) => {
-        if (opponentIds.length > 0) {
-          setSlots(opponentIds);
-        } else {
-          // Pool exhausted: forget history and start over
-          setSeen([]);
-          setSlots(null);
-        }
-      });
+    void rollOpponents(OPPONENT_COUNT, excluded).then((opponentIds) => {
+      if (opponentIds.length > 0) {
+        setSlots(opponentIds);
+      } else {
+        // Pool exhausted: forget history and start over
+        setSeen([]);
+        void rollOpponents(OPPONENT_COUNT, []).then(setSlots);
+      }
+    });
   };
 
   const fight = (opponentId: DbId, focusWins: boolean) => {
@@ -206,6 +198,7 @@ export const RankSection = ({ id }: { id: DbId }) => {
           <Tooltip.Trigger
             render={
               <Button
+                nativeButton={false}
                 variant="ghost"
                 size="icon"
                 aria-label="Rank this record in the arena"
@@ -244,7 +237,7 @@ export const RankSection = ({ id }: { id: DbId }) => {
             {reveal && <EloDelta delta={reveal.focusDelta} />}
             <span>· {matchupCount} matchups</span>
           </styled.p>
-          {opponents.isLoading ? (
+          {slots === null ? (
             <Spinner />
           ) : displayed.length > 0 ? (
             <ul>

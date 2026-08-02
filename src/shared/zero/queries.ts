@@ -109,6 +109,17 @@ export const queries = defineQueries({
     if (args.limit !== undefined) q = q.limit(args.limit);
     return q;
   }),
+  /**
+   * Matchup pool candidates: curated records of one type, with the structural
+   * `contained_by` edges that disqualify child artifacts (negation needs NOT
+   * EXISTS, unsupported in client ZQL, so callers filter in JS).
+   */
+  eloPool: defineQuery(z.object({ type: RecordTypeSchema }), ({ args: { type } }) =>
+    zql.records
+      .where('type', type)
+      .where('isCurated', true)
+      .related('outgoingLinks', (q) => q.where('predicate', 'contained_by'))
+  ),
   /** ELO matchups a record has participated in (either side). */
   recordMatchups: defineQuery(IdArgsSchema, ({ args: { id } }) =>
     zql.eloMatchups.where(({ cmp, or }) => or(cmp('recordAId', id), cmp('recordBId', id)))

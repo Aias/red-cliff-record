@@ -142,19 +142,19 @@ export async function embedRecordById(recordId: number): Promise<EmbedRecordResu
   return result ?? { recordId, success: false, error: 'Unknown error' };
 }
 
-/**
- * Regenerate embeddings for records whose embedding text changed, without
- * blocking the mutation that changed it. Records whose regeneration fails
- * have their vectors nulled so the enrichment sync retries them instead of
- * serving stale ones indefinitely.
- */
-export function queueRecordEmbeddings(recordIds: number[]): void {
-  const uniqueIds = [...new Set(recordIds)];
-  if (uniqueIds.length === 0) {
-    return;
-  }
+/** Settle window before regenerating, so rapid edits (keystroke-level saves)
+ * coalesce into one embedding request per burst instead of one per mutation. */
+const EMBED_SETTLE_MS = 2500;
 
-  void embedRecordsByIds(uniqueIds)
+const pendingEmbedIds = new Set<number>();
+let embedSettleTimer: ReturnType<typeof setTimeout> | undefined;
+
+function flushQueuedEmbeddings(): void {
+  const ids = [...pendingEmbedIds];
+  pendingEmbedIds.clear();
+  embedSettleTimer = undefined;
+
+  void embedRecordsByIds(ids)
     .then(async (results) => {
       const failedIds = results.filter((r) => !r.success).map((r) => r.recordId);
       if (failedIds.length > 0) {
@@ -162,8 +162,26 @@ export function queueRecordEmbeddings(recordIds: number[]): void {
       }
     })
     .catch((error) => {
-      logger.error(`Failed to regenerate embeddings for ${uniqueIds.length} record(s)`, error);
+      logger.error(`Failed to regenerate embeddings for ${ids.length} record(s)`, error);
     });
+}
+
+/**
+ * Regenerate embeddings for records whose embedding text changed, without
+ * blocking the mutation that changed it. Regeneration waits until edits
+ * settle ({@link EMBED_SETTLE_MS} after the most recent call), then runs one
+ * batch. Records whose regeneration fails have their vectors nulled so the
+ * enrichment sync retries them instead of serving stale ones indefinitely.
+ */
+export function queueRecordEmbeddings(recordIds: number[]): void {
+  if (recordIds.length === 0) {
+    return;
+  }
+  for (const id of recordIds) {
+    pendingEmbedIds.add(id);
+  }
+  clearTimeout(embedSettleTimer);
+  embedSettleTimer = setTimeout(flushQueuedEmbeddings, EMBED_SETTLE_MS);
 }
 
 /**

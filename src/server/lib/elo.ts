@@ -3,7 +3,7 @@ import { count, inArray } from 'drizzle-orm';
 import type { Db } from '@/server/db/connections/postgres';
 import type { DbId } from '@/shared/types/api';
 
-export type Queryable = Db | Parameters<Parameters<Db['transaction']>[0]>[0];
+type Queryable = Db | Parameters<Parameters<Db['transaction']>[0]>[0];
 
 /** Total matchups played per record, counting appearances on either side. */
 export async function matchupCounts(db: Queryable, ids: DbId[]): Promise<Map<DbId, number>> {
