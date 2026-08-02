@@ -25,7 +25,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "dev": "bun run dev:panda & bun run dev:zero & bun run dev:vite",
+    "dev": "bun run dev:panda & (mkdir -p .zero-cache && bun run dev:zero > .zero-cache/zero.log 2>&1) & bun run dev:vite",
     "dev:full": "bun run --filter '*' dev:watch",
     "dev:panda": "panda --watch",
     "dev:vite": "bunx --bun vite",

@@ -214,7 +214,7 @@ psql $DATABASE_URL -c "ALTER SYSTEM SET wal_level = 'logical';"
 psql $DATABASE_URL -c "CREATE PUBLICATION zero_data FOR TABLE records, links, elo_matchups, media;"
 ```
 
-Configure the `ZERO_*` and `PUBLIC_ZERO_CACHE_URL` variables in `.env` (see `.env.example`). `bun dev` starts zero-cache alongside Vite; to run it on its own, use `bun run dev:zero`.
+Configure the `ZERO_*` and `PUBLIC_ZERO_CACHE_URL` variables in `.env` (see `.env.example`). `bun dev` starts zero-cache alongside Vite, writing its logs to `.zero-cache/zero.log` (`tail -f` to watch them). To run it in the foreground on its own, use `bun run dev:zero`.
 
 The Zero client schema is generated from the Drizzle schema via `drizzle-zero.config.ts`; regenerate with `bun run zero:generate` after schema changes to synced tables.
 
