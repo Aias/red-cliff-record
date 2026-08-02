@@ -59,7 +59,7 @@ function getMostRecentDate(date1: Date | null, date2: Date | null): Date | null 
 export function mergeRecords<T extends RecordSlim>(
   source: T,
   target: T
-): Omit<T, 'id'> & { recordUpdatedAt: Date; textEmbedding: null } {
+): Omit<T, 'id'> & { recordUpdatedAt: Date; textEmbedding: null; textEmbeddedAt: null } {
   // Deduplicate the sources array
   const allSources = Array.from(new Set([...(source.sources ?? []), ...(target.sources ?? [])]));
 
@@ -85,6 +85,7 @@ export function mergeRecords<T extends RecordSlim>(
             'contentCreatedAt',
             'contentUpdatedAt',
             'textEmbedding',
+            'textEmbeddedAt',
           ].includes(key)
         ) {
           return false;
@@ -107,6 +108,7 @@ export function mergeRecords<T extends RecordSlim>(
     contentUpdatedAt: getMostRecentDate(source.contentUpdatedAt, target.contentUpdatedAt),
     recordUpdatedAt: new Date(),
     textEmbedding: null, // Changes require recalculating the embedding
+    textEmbeddedAt: null,
   };
 
   // Remove id from the result and return

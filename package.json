@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -38,10 +38,12 @@
     "publish:hozo": "bun publish --cwd packages/hozo",
     "rcr": "bun src/server/cli/rcr/index.ts",
     "start": "bun run server.ts",
+    "start:zero": "mkdir -p .zero-cache && zero-cache",
     "stylegen": "rm -rf src/app/styled-system && panda codegen && panda cssgen",
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
-    "zero:generate": "drizzle-zero generate -o src/shared/zero/schema.gen.ts -f"
+    "zero:generate": "drizzle-zero generate -o src/shared/zero/schema.gen.ts -f",
+    "zero:publication": "bun run src/server/db/sync-zero-publication.ts"
   },
   "dependencies": {
     "@base-ui/react": "~1.6.0",

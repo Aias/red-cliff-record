@@ -36,6 +36,7 @@ export default drizzleZeroConfig(
         sources: true,
         textSearch: false,
         textEmbedding: false,
+        textEmbeddedAt: true,
         recordCreatedAt: number().from('created_at'),
         recordUpdatedAt: number().from('updated_at'),
         contentCreatedAt: true,

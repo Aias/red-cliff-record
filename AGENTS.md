@@ -38,6 +38,8 @@ psql $DATABASE_URL_DEV -c "\dt table_name"
 3. **User verifies** → Query dev database to confirm schema is correct
 4. PR merged → deploy script auto-runs migration against prod
 
+If the migration touches a Zero-synced table (records, links, elo_matchups, media), run `bun run zero:generate` for the client schema, and `bun run zero:publication` once the migration is applied — the `zero_data` publication names columns explicitly (to exclude `text_embedding`/`text_search`), and a pinned column list never picks up new columns on its own. Skip it and clients fail with `SchemaVersionNotSupported` however often the replica is rebuilt. Nothing else is needed: zero-cache applies published DDL to its replica while running. Recovery steps for an already-diverged replica are in `README.md` (Zero Sync Engine).
+
 **OR** keep dev synced with prod: `rcr db clone-prod-to-dev --yes`
 
 ## Architecture

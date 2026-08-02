@@ -101,7 +101,7 @@ export async function embedRecordsByIds(recordIds: number[]): Promise<EmbedRecor
 
             await db
               .update(records)
-              .set({ textEmbedding: embedding })
+              .set({ textEmbedding: embedding, textEmbeddedAt: new Date() })
               .where(eq(records.id, item.recordId));
             resultMap.set(item.recordId, { recordId: item.recordId, success: true });
           })
@@ -158,7 +158,10 @@ function flushQueuedEmbeddings(): void {
     .then(async (results) => {
       const failedIds = results.filter((r) => !r.success).map((r) => r.recordId);
       if (failedIds.length > 0) {
-        await db.update(records).set({ textEmbedding: null }).where(inArray(records.id, failedIds));
+        await db
+          .update(records)
+          .set({ textEmbedding: null, textEmbeddedAt: null })
+          .where(inArray(records.id, failedIds));
       }
     })
     .catch((error) => {

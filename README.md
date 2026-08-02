@@ -211,12 +211,48 @@ The app syncs its entity graph through [zero-cache](https://zero.rocicorp.dev), 
 ```bash
 # Requires a Postgres restart after changing wal_level
 psql $DATABASE_URL -c "ALTER SYSTEM SET wal_level = 'logical';"
-psql $DATABASE_URL -c "CREATE PUBLICATION zero_data FOR TABLE records, links, elo_matchups, media;"
+bun run zero:publication
 ```
 
 Configure the `ZERO_*` and `PUBLIC_ZERO_CACHE_URL` variables in `.env` (see `.env.example`). `bun dev` starts zero-cache alongside Vite, writing its logs to `.zero-cache/zero.log` (`tail -f` to watch them). To run it in the foreground on its own, use `bun run dev:zero`.
 
+#### Keeping the schema in step
+
 The Zero client schema is generated from the Drizzle schema via `drizzle-zero.config.ts`; regenerate with `bun run zero:generate` after schema changes to synced tables.
+
+`zero:publication` points the `zero_data` publication at exactly the columns that schema declares. It is needed because `records` holds types Zero cannot replicate — `text_embedding` (vector) and `text_search` (tsvector) — so the publication names columns explicitly rather than publishing whole tables, and **a Postgres column list pins the published set**: a column added later is not replicated until the list is restated, and until then zero-cache rejects every client with `SchemaVersionNotSupported`. Deriving the list from the generated schema keeps the two from drifting. The command is declarative and idempotent — it creates the publication if it is missing — and the deploy pipeline runs it after every migration.
+
+So a migration on a synced table needs only:
+
+```bash
+bun run zero:generate     # if columns were added, removed, or renamed
+bun run zero:publication  # after the migration is applied
+```
+
+No restart or replica rebuild: zero-cache installs DDL event triggers on the upstream database, sees published schema changes as they commit, and applies them to its replica (backfilling added columns) while running.
+
+#### Recovering a diverged replica
+
+If zero-cache's state has already diverged — clients stuck on `SchemaVersionNotSupported` after the publication is confirmed correct — rebuild it from scratch. Deleting `.zero-cache/replica.db3` alone is not enough, since zero-cache keeps its schema snapshot and change log upstream in the `zero_0*` schemas and rebuilds the replica from them:
+
+```bash
+# Stop `bun dev` first — deleting the replica under a running zero-cache
+# corrupts it ("replica db must be in wal2 mode").
+rm -f .zero-cache/replica.db3*
+psql $DATABASE_URL_DEV <<'SQL'
+DROP EVENT TRIGGER IF EXISTS zero_ddl_start_0;
+DROP EVENT TRIGGER IF EXISTS zero_ddl_end_0;
+DROP SCHEMA IF EXISTS "zero_0/cdc" CASCADE;
+DROP SCHEMA IF EXISTS "zero_0/cvr" CASCADE;
+DROP SCHEMA IF EXISTS "zero_0" CASCADE;
+DROP PUBLICATION IF EXISTS "_zero_metadata_0";
+SELECT pg_drop_replication_slot(slot_name)
+  FROM pg_replication_slots WHERE slot_name LIKE 'zero_%' AND NOT active;
+SQL
+bun dev  # zero-cache recreates its metadata and runs a fresh initial sync
+```
+
+Leave the `zero` schema (deployed permissions) and the `zero_data` publication in place — zero-cache does not recreate those.
 
 ### Start Development Server
 

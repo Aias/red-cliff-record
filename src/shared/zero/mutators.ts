@@ -132,15 +132,27 @@ export const mutators = defineMutators({
   records: {
     update: defineMutator(UpdateRecordSchema, async ({ tx, ctx, args }) => {
       const { id, ...fields } = args;
-      await tx.mutate.records.update({ ...fields, id, recordUpdatedAt: Date.now() });
-      if (changesAffectEmbedding(fields)) ctx?.queueEmbeddings([id]);
+      const affectsEmbedding = changesAffectEmbedding(fields);
+      await tx.mutate.records.update({
+        ...fields,
+        id,
+        recordUpdatedAt: Date.now(),
+        ...(affectsEmbedding ? { textEmbeddedAt: null } : {}),
+      });
+      if (affectsEmbedding) ctx?.queueEmbeddings([id]);
     }),
     bulkUpdate: defineMutator(BulkUpdateSchema, async ({ tx, ctx, args: { ids, data } }) => {
       const now = Date.now();
+      const affectsEmbedding = changesAffectEmbedding(data);
       for (const id of ids) {
-        await tx.mutate.records.update({ ...data, id, recordUpdatedAt: now });
+        await tx.mutate.records.update({
+          ...data,
+          id,
+          recordUpdatedAt: now,
+          ...(affectsEmbedding ? { textEmbeddedAt: null } : {}),
+        });
       }
-      if (changesAffectEmbedding(data)) ctx?.queueEmbeddings(ids);
+      if (affectsEmbedding) ctx?.queueEmbeddings(ids);
     }),
   },
   links: {

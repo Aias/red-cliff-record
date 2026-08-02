@@ -1,5 +1,5 @@
 import { PREDICATES, type PredicateSlug, type RecordType } from '@hozo';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
   ArrowLeftIcon,
@@ -9,15 +9,16 @@ import {
   ShapesIcon,
   TrashIcon,
 } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState, type ElementType } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ElementType } from 'react';
 import { useTRPC } from '@/app/trpc';
 import { Spinner } from '@/components/spinner';
 import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
 import { useDeleteLinks } from '@/lib/hooks/link-mutations';
 import { useMergeRecords } from '@/lib/hooks/record-mutations';
-import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
+import { usePredicateMap, useRecord, useRecordLinks } from '@/lib/hooks/record-queries';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
+import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
 import type { DbId } from '@/shared/types/api';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
@@ -351,9 +352,35 @@ const SimilarTypeShortcut = ({
 
 export const SimilarRecords = ({ id }: { id: DbId }) => {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const mergeRecordsMutation = useMergeRecords();
   const [typeFilter, setTypeFilter] = useState<SimilarTypeFilter>('all');
+
+  /* Embeddings regenerate server-side after edits settle; the synced
+   * textEmbeddedAt column is nulled while a regeneration is pending and set
+   * when the new vector lands. Re-run the similarity search only on landing,
+   * so the stale list stays up — marked pending — until fresh results replace
+   * it (undefined = row not loaded yet). */
+  const { data: syncedRecord } = useRecord(id);
+  const embeddedAt = syncedRecord === undefined ? undefined : syncedRecord.textEmbeddedAt;
+  const embeddingPending =
+    syncedRecord?.textEmbeddedAt === null &&
+    EMBEDDING_RECORD_FIELDS.some((field) => syncedRecord[field]);
+  const lastSeen = useRef({ id, embeddedAt });
+  useEffect(() => {
+    const prev = lastSeen.current;
+    lastSeen.current = { id, embeddedAt };
+    if (
+      prev.id === id &&
+      prev.embeddedAt !== undefined &&
+      embeddedAt !== undefined &&
+      embeddedAt !== null &&
+      prev.embeddedAt !== embeddedAt
+    ) {
+      void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id }));
+    }
+  }, [id, embeddedAt, queryClient, trpc]);
 
   // Fetch similar records only if textEmbedding exists. Filtering by type happens in the query
   // so each type returns its own best matches rather than whatever survives the global top-N.
@@ -371,7 +398,8 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
           },
         },
         // Vector search over embeddings that update asynchronously; link
-        // mutations invalidate it explicitly where similarity actually changes.
+        // mutations and the textEmbeddedAt watch above invalidate it
+        // explicitly where similarity actually changes.
         meta: { invalidation: 'manual' },
       }
     )
@@ -401,7 +429,12 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
           marginBlockEnd: '2',
         }}
       >
-        <styled.h3>Similar Records</styled.h3>
+        <styled.div css={{ display: 'flex', alignItems: 'center', gap: '2' }}>
+          <styled.h3>Similar Records</styled.h3>
+          {embeddingPending && (
+            <Spinner role="status" aria-label="Updating similar records" css={{ color: 'muted' }} />
+          )}
+        </styled.div>
         <ToggleGroup.Root
           variant="outline"
           size="sm"
