@@ -8,6 +8,7 @@ export const ClientEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PUBLIC_URL: z.string().optional(),
   PUBLIC_DEV_PORT: z.string().default('5173'),
+  PUBLIC_ZERO_CACHE_URL: z.string().default('http://localhost:4848'),
 });
 
 // Server-only env vars (never exposed to client)

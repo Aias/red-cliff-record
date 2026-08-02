@@ -5,7 +5,8 @@ import {
   type Predicate,
   type PredicateSlug,
 } from '@hozo';
-import { skipToken, useQuery } from '@tanstack/react-query';
+import { useQuery as useZeroQuery } from '@rocicorp/zero/react';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
 import {
   createContext,
@@ -23,10 +24,11 @@ import { Command } from '@/components/command';
 import { Popover } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
 import { useUpsertLink } from '@/lib/hooks/link-mutations';
-import { useUpsertRecord } from '@/lib/hooks/record-mutations';
+import { useCreateRecord } from '@/lib/hooks/record-mutations';
+import type { RecordData } from '@/lib/hooks/record-queries';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import type { DbId } from '@/shared/types/api';
-import type { LinkPartial, RecordGet } from '@/shared/types/domain';
+import { queries } from '@/shared/zero/queries';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import type { ComponentProps } from '@/styled-system/types';
@@ -55,7 +57,7 @@ interface RecordSearchProps {
 function RecordSearch({ onSelect }: RecordSearchProps) {
   const trpc = useTRPC();
   const [query, setQuery] = useState('');
-  const createRecordMutation = useUpsertRecord();
+  const createRecordMutation = useCreateRecord();
 
   const debouncedQuery = useDebounce(query, 200);
   const shouldSearch = debouncedQuery.length >= 1;
@@ -206,16 +208,23 @@ function PredicateCombobox({
   );
 }
 
+/** The minimal link shape the selector needs to edit an existing relation. */
+export interface RelationshipLink {
+  id: number;
+  targetId: DbId;
+  predicate: PredicateSlug;
+}
+
 interface RelationshipSelectorRootProps {
   children: ReactNode;
   sourceId: number;
   initialTargetId?: number;
-  link?: LinkPartial | null;
+  link?: RelationshipLink | null;
   onComplete?: (sourceId: number, targetId: number, predicate: PredicateSlug) => void;
   buildActions?: (ctx: {
     sourceId: number;
     targetId: number;
-    link: LinkPartial | null;
+    link: RelationshipLink | null;
   }) => RelationshipAction[];
   incoming?: boolean;
 }
@@ -233,7 +242,7 @@ type RelationshipSelectorContextValue = {
   handlePredicateSelect: (selectedPredicate: PredicateSlug) => void;
   handleRecordSelect: (id: DbId) => void;
   targetId: number | null;
-  targetRecord?: RecordGet;
+  targetRecord?: RecordData;
 };
 
 const RelationshipSelectorContext = createContext<RelationshipSelectorContextValue | null>(null);
@@ -263,7 +272,6 @@ function RelationshipSelectorRoot({
   onComplete,
   buildActions,
 }: RelationshipSelectorRootProps) {
-  const trpc = useTRPC();
   const initialTarget = initialTargetId ?? link?.targetId ?? null;
   const [targetId, setTargetId] = useState<number | null>(initialTarget);
   const [predicate, setPredicate] = useState<PredicateSlug | null>(link?.predicate ?? null);
@@ -280,9 +288,7 @@ function RelationshipSelectorRoot({
     list.forEach((p) => map.set(p.slug, p));
     return Array.from(map.values());
   }, [incoming]);
-  const { data: targetRecord } = useQuery(
-    trpc.records.get.queryOptions(targetId === null ? skipToken : { id: targetId })
-  );
+  const [targetRecord] = useZeroQuery(targetId !== null && queries.record({ id: targetId }));
 
   // Reset unsaved state when the popover closes, unless the target is
   // controlled externally (initialTargetId) or we're editing an existing link.
@@ -321,7 +327,7 @@ function RelationshipSelectorRoot({
     return buildActions({ sourceId, targetId, link });
   }, [buildActions, sourceId, targetId, link]);
 
-  const upsertLinkMutation = useUpsertLink();
+  const upsertLink = useUpsertLink();
 
   const handleRecordSelect = (id: DbId) => setTargetId(id);
 
@@ -331,20 +337,15 @@ function RelationshipSelectorRoot({
     const swap = altRef.current;
     altRef.current = false;
     setAltPressed(false);
-    upsertLinkMutation.mutate(
-      {
-        id: link?.id,
-        sourceId: swap ? targetId : sourceId,
-        targetId: swap ? sourceId : targetId,
-        predicate: selectedPredicate,
-      },
-      {
-        onSuccess: (updatedLink) => {
-          onComplete?.(updatedLink.sourceId, updatedLink.targetId, updatedLink.predicate);
-          handleOpenChange(false);
-        },
-      }
-    );
+    void upsertLink({
+      id: link?.id,
+      sourceId: swap ? targetId : sourceId,
+      targetId: swap ? sourceId : targetId,
+      predicate: selectedPredicate,
+    }).then((updatedLink) => {
+      onComplete?.(updatedLink.sourceId, updatedLink.targetId, updatedLink.predicate);
+      handleOpenChange(false);
+    });
   };
 
   const currentPredicateName = useMemo(

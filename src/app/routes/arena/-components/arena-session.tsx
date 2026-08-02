@@ -6,9 +6,10 @@ import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
-import { useSubmitMatchup } from '@/lib/hooks/elo-mutations';
+import { useZeroMutate } from '@/lib/hooks/zero-mutate';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import type { DbId } from '@/shared/types/api';
+import { mutators } from '@/shared/zero/mutators';
 import { styled } from '@/styled-system/jsx';
 import { RecordDisplay } from '../../records/-components/record-display';
 import { RelationsPreview } from '../../records/-components/relations-preview';
@@ -42,7 +43,7 @@ export function ArenaSession({ type, focus }: { type: RecordType; focus?: DbId }
   const queryClient = useQueryClient();
   const [pair, setPair] = useState<Matchup>(() => sessions.get(sessionKey)?.pair ?? null);
   const [loading, setLoading] = useState(() => !sessions.get(sessionKey)?.pair);
-  const submit = useSubmitMatchup();
+  const zeroMutate = useZeroMutate();
 
   const loadNext = (excludeIds: DbId[]) => {
     const session = getSession(sessionKey);
@@ -81,14 +82,14 @@ export function ArenaSession({ type, focus }: { type: RecordType; focus?: DbId }
   const busy = loading || !pair;
   const pick = (winnerId: DbId, loserId: DbId) => {
     if (busy) return;
-    submit.mutate({ winnerId, loserId });
+    void zeroMutate(mutators.elo.submitMatchup({ winnerId, loserId }));
     advance();
   };
   const pickLeft = () => pair && pick(pair.aId, pair.bId);
   const pickRight = () => pair && pick(pair.bId, pair.aId);
   const draw = () => {
     if (!pair || loading) return;
-    submit.mutate({ drawIds: [pair.aId, pair.bId] });
+    void zeroMutate(mutators.elo.submitMatchup({ drawIds: [pair.aId, pair.bId] }));
     advance();
   };
   const skip = () => {

@@ -12,13 +12,14 @@ import { Toaster } from '@/components/sonner';
 import { Tooltip } from '@/components/tooltip';
 import { KeyboardShortcutProvider } from '@/lib/keyboard-shortcuts/context';
 import { seo, SITE_NAME } from '@/lib/seo';
-import { getTheme, type Theme } from '@/lib/server/theme';
+import { readThemeCookie, themeInitScript, type Theme } from '@/lib/theme';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import pandaStylesUrl from '../styled-system/styles.css?url';
 import { AppLayout } from './-app-components/app-layout';
 import { DefaultCatchBoundary } from './-app-components/catch-boundary';
 import { NotFound as NotFoundComponent } from './-app-components/not-found';
+import { ZeroInit } from './-app-components/zero-init';
 
 export interface RouterAppContext {
   queryClient: QueryClient;
@@ -26,8 +27,8 @@ export interface RouterAppContext {
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-  loader: () => getTheme(),
   head: () => ({
+    scripts: [{ children: themeInitScript }],
     meta: [
       {
         charSet: 'utf-8',
@@ -76,17 +77,15 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 });
 
 function ErrorComponent(props: ErrorComponentProps) {
-  const { theme: initialTheme } = Route.useLoaderData();
   return (
-    <RootDocument appearance={initialTheme} isTransitioning={false}>
+    <RootDocument appearance={readThemeCookie()} isTransitioning={false}>
       <DefaultCatchBoundary {...props} />
     </RootDocument>
   );
 }
 
 function RootComponent() {
-  const { theme: initialTheme } = Route.useLoaderData();
-  const [appearance, setAppearance] = useState<'light' | 'dark'>(initialTheme);
+  const [appearance, setAppearance] = useState<Theme>(readThemeCookie);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const prevAppearanceRef = useRef(appearance);
 
@@ -106,13 +105,15 @@ function RootComponent() {
 
   return (
     <RootDocument appearance={appearance} isTransitioning={isTransitioning}>
-      <KeyboardShortcutProvider>
-        <Tooltip.Provider>
-          <AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
-            <Outlet />
-          </AppLayout>
-        </Tooltip.Provider>
-      </KeyboardShortcutProvider>
+      <ZeroInit>
+        <KeyboardShortcutProvider>
+          <Tooltip.Provider>
+            <AppLayout currentTheme={appearance} onThemeChange={setAppearance}>
+              <Outlet />
+            </AppLayout>
+          </Tooltip.Provider>
+        </KeyboardShortcutProvider>
+      </ZeroInit>
     </RootDocument>
   );
 }
@@ -142,6 +143,9 @@ function RootDocument({
       })}
       data-color-scheme={appearance}
       data-theme-transitioning={isTransitioning || undefined}
+      // The prerendered shell always carries the default scheme; the cookie
+      // (via themeInitScript pre-paint, then hydration) supplies the real one.
+      suppressHydrationWarning
     >
       <head>
         <HeadContent />

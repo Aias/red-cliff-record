@@ -57,6 +57,7 @@ psql $DATABASE_URL_DEV -c "\dt table_name"
 
 - **React Compiler is enabled** (`babel-plugin-react-compiler`). Don't add manual `useMemo`/`useCallback` for optimization — the compiler handles it.
 - **tRPC toast link auto-handles errors.** Don't add `toast.error()` in mutation `onError` — it's already wired up globally in the tRPC client.
+- **Zero owns the entity graph in the SPA.** Reads of records/links/matchups/media are ZQL queries (`src/shared/zero/queries.ts`) and CRUD writes are Zero mutators (`src/shared/zero/mutators.ts`, server overrides in `src/server/zero/`). tRPC remains for search (including searchQuery/hasEmbedding record lists), opponent selection, create/delete/merge, media blobs, and the entire CLI; browse-mode record lists filter client-side over ZQL. Don't add TanStack Query cache surgery for Zero-synced data — replication keeps clients current. After Drizzle schema changes to synced tables, run `bun run zero:generate`. `bun dev` runs zero-cache alongside Vite; without it the app cannot load data.
 
 ## Skills Index
 

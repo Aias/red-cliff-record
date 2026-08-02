@@ -3,7 +3,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { Basket } from '@/components/basket';
 import { Button, LinkButton } from '@/components/button';
 import { KeyboardShortcutsHelp } from '@/components/keyboard-shortcuts-help';
-import { setTheme } from '@/lib/server/theme';
+import { writeThemeCookie } from '@/lib/theme';
 import { styled } from '@/styled-system/jsx';
 
 const SiteSearch = lazy(() => import('./site-search').then((m) => ({ default: m.SiteSearch })));
@@ -18,7 +18,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
   const toggleTheme = () => {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     onThemeChange(newTheme);
-    void setTheme({ data: { theme: newTheme } });
+    writeThemeCookie(newTheme);
   };
 
   return (

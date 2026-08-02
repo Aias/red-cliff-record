@@ -1,3 +1,4 @@
+import { useZero } from '@rocicorp/zero/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
@@ -15,9 +16,12 @@ import { Button } from '@/components/button';
 import { Spinner } from '@/components/spinner';
 import { Tooltip } from '@/components/tooltip';
 import { createLocalStorageStore } from '@/lib/create-local-storage-store';
-import { useSubmitMatchup } from '@/lib/hooks/elo-mutations';
-import { useRecord } from '@/lib/hooks/record-queries';
+import { useMatchupCount, useRecord } from '@/lib/hooks/record-queries';
+import { useZeroMutate } from '@/lib/hooks/zero-mutate';
+import { eloDeltas } from '@/shared/lib/elo';
 import type { DbId } from '@/shared/types/api';
+import { mutators } from '@/shared/zero/mutators';
+import { queries } from '@/shared/zero/queries';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { EloDelta } from './elo-delta';
@@ -41,6 +45,7 @@ interface Reveal {
 
 export const RankSection = ({ id }: { id: DbId }) => {
   const { data: record } = useRecord(id);
+  const matchupCount = useMatchupCount(id);
   const collapsed = useSyncExternalStore(
     collapsedStore.subscribe,
     collapsedStore.getSnapshot,
@@ -48,7 +53,9 @@ export const RankSection = ({ id }: { id: DbId }) => {
   );
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const submit = useSubmitMatchup();
+  const zero = useZero();
+  const zeroMutate = useZeroMutate();
+  const [submitting, setSubmitting] = useState(false);
 
   // Only root-level artifacts are rankable: one contained by a parent record
   // (a highlight, an excerpt) is ranked through that parent. Citation links
@@ -120,23 +127,38 @@ export const RankSection = ({ id }: { id: DbId }) => {
   };
 
   const fight = (opponentId: DbId, focusWins: boolean) => {
-    if (reveal || submit.isPending) return;
+    if (reveal || submitting) return;
     const [winnerId, loserId] = focusWins ? [id, opponentId] : [opponentId, id];
-    submit.mutate(
-      { winnerId, loserId },
-      {
-        onSuccess: ({ results }) => {
-          const focusResult = results.find((r) => r.id === id);
-          const opponentResult = results.find((r) => r.id === opponentId);
-          if (!focusResult || !opponentResult) return;
-          setReveal({
-            opponentId,
-            focusDelta: focusResult.delta,
-            opponentDelta: opponentResult.delta,
-          });
-        },
+    setSubmitting(true);
+    void (async () => {
+      try {
+        // Read pre-matchup scores so the reveal deltas match what the mutator
+        // computes inside its transaction.
+        const [focus, opponent, focusMatchups, opponentMatchups] = await Promise.all([
+          zero.run(queries.record({ id })),
+          zero.run(queries.record({ id: opponentId })),
+          zero.run(queries.recordMatchups({ id })),
+          zero.run(queries.recordMatchups({ id: opponentId })),
+        ]);
+        if (!focus || !opponent) return;
+        const [winner, winnerMatchups, loser, loserMatchups] = focusWins
+          ? [focus, focusMatchups, opponent, opponentMatchups]
+          : [opponent, opponentMatchups, focus, focusMatchups];
+        const { deltaA: winnerDelta, deltaB: loserDelta } = eloDeltas(
+          { eloScore: winner.eloScore, matchupCount: winnerMatchups.length },
+          { eloScore: loser.eloScore, matchupCount: loserMatchups.length },
+          'win'
+        );
+        await zeroMutate(mutators.elo.submitMatchup({ winnerId, loserId }));
+        setReveal({
+          opponentId,
+          focusDelta: focusWins ? winnerDelta : loserDelta,
+          opponentDelta: focusWins ? loserDelta : winnerDelta,
+        });
+      } finally {
+        setSubmitting(false);
       }
-    );
+    })();
   };
 
   const onRevealTimeout = useEffectEvent(() => {
@@ -220,7 +242,7 @@ export const RankSection = ({ id }: { id: DbId }) => {
               {record.eloScore}
             </styled.span>
             {reveal && <EloDelta delta={reveal.focusDelta} />}
-            <span>· {record.matchupCount} matchups</span>
+            <span>· {matchupCount} matchups</span>
           </styled.p>
           {opponents.isLoading ? (
             <Spinner />
@@ -230,7 +252,7 @@ export const RankSection = ({ id }: { id: DbId }) => {
                 <OpponentRow
                   key={opponentId}
                   opponentId={opponentId}
-                  busy={reveal !== null || submit.isPending}
+                  busy={reveal !== null || submitting}
                   revealDelta={reveal?.opponentId === opponentId ? reveal.opponentDelta : undefined}
                   onFight={fight}
                   onSkip={replaceOpponent}

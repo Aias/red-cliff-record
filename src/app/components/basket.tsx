@@ -1,21 +1,14 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useZero } from '@rocicorp/zero/react';
 import { ClipboardCopyIcon, ShoppingBasketIcon, Trash2Icon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { useTRPC } from '@/app/trpc';
 import { removeManyFromBasket, useBasket } from '@/lib/hooks/use-basket';
 import type { DbId } from '@/shared/types/api';
+import { queries } from '@/shared/zero/queries';
 import { styled } from '@/styled-system/jsx';
 import { RecordLink } from '../routes/records/-components/record-link';
 import { Button } from './button';
 import { Popover } from './popover';
 import { Separator } from './separator';
-
-function isNotFoundError(error: unknown): boolean {
-  if (!error || typeof error !== 'object' || !('data' in error)) return false;
-  const { data } = error;
-  if (!data || typeof data !== 'object' || !('code' in data)) return false;
-  return data.code === 'NOT_FOUND';
-}
 
 function BasketItem({ id, onRemove }: { id: DbId; onRemove: (id: DbId) => void }) {
   const handleRemove = () => onRemove(id);
@@ -55,8 +48,7 @@ function BasketItem({ id, onRemove }: { id: DbId; onRemove: (id: DbId) => void }
 
 export function Basket() {
   const basket = useBasket();
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
+  const zero = useZero();
 
   const copyIds = async () => {
     try {
@@ -70,30 +62,10 @@ export function Basket() {
 
   const copyJson = async () => {
     const ids = basket.ids;
-    const results = await Promise.allSettled(
-      ids.map((id) => queryClient.ensureQueryData(trpc.records.get.queryOptions({ id })))
-    );
-
-    const records: unknown[] = [];
-    const missingIds: DbId[] = [];
-    const failedIds: DbId[] = [];
-
-    results.forEach((result, index) => {
-      const id = ids[index];
-      if (id === undefined) return;
-
-      if (result.status === 'fulfilled') {
-        records.push(result.value);
-        return;
-      }
-
-      if (isNotFoundError(result.reason)) {
-        missingIds.push(id);
-        return;
-      }
-
-      failedIds.push(id);
-    });
+    const rows = await zero.run(queries.recordsByIds({ ids }));
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const records = ids.flatMap((id) => byId.get(id) ?? []);
+    const missingIds = ids.filter((id) => !byId.has(id));
 
     if (missingIds.length > 0) {
       removeManyFromBasket(missingIds);
@@ -112,21 +84,13 @@ export function Basket() {
       return;
     }
 
-    if (missingIds.length === 0 && failedIds.length === 0) {
+    if (missingIds.length === 0) {
       toast.success('Copied JSON to clipboard');
       return;
     }
 
-    const messageParts: string[] = [
-      `Copied ${records.length} record${records.length === 1 ? '' : 's'}`,
-    ];
-    if (missingIds.length > 0) {
-      messageParts.push(`removed ${missingIds.length} missing`);
-    }
-    if (failedIds.length > 0) {
-      messageParts.push(`${failedIds.length} failed to load`);
-    }
-    toast.success(messageParts.join(' • '));
+    const copied = `Copied ${records.length} record${records.length === 1 ? '' : 's'}`;
+    toast.success(`${copied} • removed ${missingIds.length} missing`);
   };
 
   return (

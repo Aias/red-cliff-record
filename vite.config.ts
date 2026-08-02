@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       tanstackStart({
         srcDirectory: './src/app',
+        spa: { enabled: true },
       }),
       viteReact(),
       babel({ presets: [reactCompilerPreset()] }),

@@ -15,7 +15,6 @@ function Home() {
       hasMedia: true,
     },
     limit: 100,
-    offset: 0,
     orderBy: [{ field: 'recordUpdatedAt', direction: 'desc' }],
   });
 

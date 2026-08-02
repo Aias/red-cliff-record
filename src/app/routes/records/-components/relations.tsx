@@ -1,4 +1,4 @@
-import { PREDICATES, type RecordType } from '@hozo';
+import { PREDICATES, type PredicateSlug, type RecordType } from '@hozo';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -19,7 +19,6 @@ import { useMergeRecords } from '@/lib/hooks/record-mutations';
 import { usePredicateMap, useRecordLinks } from '@/lib/hooks/record-queries';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import type { DbId } from '@/shared/types/api';
-import type { LinkPartial } from '@/shared/types/domain';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { PREDICATE_TYPE_ORDER } from './predicate-order';
@@ -47,7 +46,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
   });
 
   const sortLinks = useCallback(
-    (links: LinkPartial[]): LinkPartial[] => {
+    <T extends { predicate: PredicateSlug; recordUpdatedAt: number }>(links: readonly T[]): T[] => {
       return [...links].sort((a, b) => {
         const typeA = predicates[a.predicate]?.type;
         const typeB = predicates[b.predicate]?.type;
@@ -58,7 +57,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
         if (orderA !== orderB) return orderA - orderB;
 
         // Then by recordUpdatedAt descending (most recent first)
-        return b.recordUpdatedAt.getTime() - a.recordUpdatedAt.getTime();
+        return b.recordUpdatedAt - a.recordUpdatedAt;
       });
     },
     [predicates]
@@ -196,7 +195,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                           </>
                         ),
                         onSelect: () => {
-                          deleteLinkMutation.mutate([link.id]);
+                          void deleteLinkMutation([link]);
                         },
                       },
                     ];
@@ -283,7 +282,7 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                           </>
                         ),
                         onSelect: () => {
-                          deleteLinkMutation.mutate([link.id]);
+                          void deleteLinkMutation([link]);
                         },
                       },
                     ];

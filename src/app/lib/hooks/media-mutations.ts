@@ -1,40 +1,16 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useTRPC } from '@/app/trpc';
-import type { DbId } from '@/shared/types/api';
 
-export function useCreateMedia(id: DbId) {
+/**
+ * Media create/delete stay on tRPC: uploads move bytes to R2 and the rows
+ * sync back into the local graph through replication.
+ */
+export function useCreateMedia() {
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
-  return useMutation(
-    trpc.media.create.mutationOptions({
-      onSuccess: (data) => {
-        queryClient.setQueryData(trpc.records.get.queryKey({ id }), (prev) => {
-          if (!prev) return undefined;
-          return { ...prev, media: [...(prev.media ?? []), data] };
-        });
-      },
-    })
-  );
+  return useMutation(trpc.media.create.mutationOptions());
 }
 
 export function useDeleteMedia() {
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
-  return useMutation(
-    trpc.media.delete.mutationOptions({
-      onSuccess: (deletedMedia) => {
-        for (const m of deletedMedia) {
-          if (m.recordId) {
-            queryClient.setQueryData(trpc.records.get.queryKey({ id: m.recordId }), (prev) => {
-              if (!prev) return undefined;
-              return {
-                ...prev,
-                media: prev.media?.filter((p) => p.id !== m.id),
-              };
-            });
-          }
-        }
-      },
-    })
-  );
+  return useMutation(trpc.media.delete.mutationOptions());
 }

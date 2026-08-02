@@ -1,15 +1,12 @@
 import { isStructuralContainment, type PredicateSlug } from '@hozo';
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo } from 'react';
-import { useTRPC } from '@/app/trpc';
 import { Card } from '@/components/card';
 import { Spinner } from '@/components/spinner';
 import { useBulkUpdate, useDeleteRecords } from '@/lib/hooks/record-mutations';
-import { useRecordTree } from '@/lib/hooks/record-queries';
+import { useRecordList, useRecordTree, type RecordTreeData } from '@/lib/hooks/record-queries';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
-import type { FamilyTree } from '@/server/api/routers/records/tree';
 import { CoercedIdSchema, type DbId } from '@/shared/types/api';
 import { styled } from '@/styled-system/jsx';
 import { RecordForm } from './-components/form';
@@ -21,11 +18,6 @@ import { RelationsList, SimilarRecords } from './-components/relations';
 export const Route = createFileRoute('/records/$recordId')({
   params: { parse: (params) => ({ recordId: CoercedIdSchema.parse(params.recordId) }) },
   component: RouteComponent,
-  loader: async ({ context, params: { recordId } }) => {
-    await context.queryClient.ensureQueryData(
-      context.trpc.records.get.queryOptions({ id: recordId })
-    );
-  },
 });
 
 type TreeNode = {
@@ -34,123 +26,60 @@ type TreeNode = {
   isStructural: boolean;
   title?: string | null;
   id: DbId;
-  recordCreatedAt: Date;
+  recordCreatedAt: number;
 };
 
-const sortByRecordCreatedAt = <T extends { recordCreatedAt: Date }>(records: T[]): T[] => {
-  return [...records].sort((a, b) => a.recordCreatedAt.getTime() - b.recordCreatedAt.getTime());
+/** A tree edge whose far endpoint resolved, keyed by that endpoint's creation time. */
+type TreeEdge<T> = { predicate: PredicateSlug; record: T; recordCreatedAt: number };
+
+const resolveEdges = <TLink extends { predicate: PredicateSlug }, TRecord>(
+  links: readonly TLink[],
+  endpoint: (link: TLink) => (TRecord & { recordCreatedAt: number }) | undefined
+): TreeEdge<TRecord & { recordCreatedAt: number }>[] => {
+  return links
+    .flatMap((link) => {
+      const record = endpoint(link);
+      return record
+        ? [{ predicate: link.predicate, record, recordCreatedAt: record.recordCreatedAt }]
+        : [];
+    })
+    .sort((a, b) => a.recordCreatedAt - b.recordCreatedAt);
 };
 
-const flattenTree = (tree: FamilyTree): TreeNode[] => {
+const toNode = (edge: TreeEdge<{ id: DbId; title: string | null }>): TreeNode => ({
+  predicate: edge.predicate,
+  isStructural: isStructuralContainment(edge.predicate),
+  id: edge.record.id,
+  title: edge.record.title,
+  recordCreatedAt: edge.recordCreatedAt,
+});
+
+const flattenTree = (tree: RecordTreeData): TreeNode[] => {
   const nodes: TreeNode[] = [];
-  const { id, incomingLinks, outgoingLinks, title, recordCreatedAt } = tree;
 
-  // Sort outgoing links by recordCreatedAt
-  const sortedOutgoingLinks = sortByRecordCreatedAt(
-    outgoingLinks.map((link) => ({
-      ...link,
-      recordCreatedAt: link.target.recordCreatedAt,
-    }))
-  );
+  const parents = resolveEdges(tree.outgoingLinks, (link) => link.target);
+  parents.forEach((parent) => {
+    const grandparents = resolveEdges(parent.record.outgoingLinks, (link) => link.target);
+    grandparents.forEach((grandparent) => nodes.push(toNode(grandparent)));
 
-  sortedOutgoingLinks.forEach((parent) => {
-    const {
-      predicate: parentPredicate,
-      target: {
-        id: parentId,
-        title: parentTitle,
-        recordCreatedAt: parentRecordCreatedAt,
-        incomingLinks: parentIncomingLinks,
-        outgoingLinks: parentOutgoingLinks,
-      },
-    } = parent;
+    nodes.push(toNode(parent));
 
-    // Sort grandparent links by recordCreatedAt
-    const sortedGrandparentLinks = sortByRecordCreatedAt(
-      parentOutgoingLinks.map((link) => ({
-        ...link,
-        recordCreatedAt: link.target.recordCreatedAt,
-      }))
-    );
-
-    sortedGrandparentLinks.forEach((grandparent) => {
-      const {
-        predicate: grandparentPredicate,
-        target: {
-          id: grandparentId,
-          title: grandparentTitle,
-          recordCreatedAt: grandparentRecordCreatedAt,
-        },
-      } = grandparent;
-
-      nodes.push({
-        predicate: grandparentPredicate,
-        isStructural: isStructuralContainment(grandparentPredicate),
-        id: grandparentId,
-        title: grandparentTitle,
-        recordCreatedAt: grandparentRecordCreatedAt,
-      });
-    });
-
-    nodes.push({
-      predicate: parentPredicate,
-      isStructural: isStructuralContainment(parentPredicate),
-      id: parentId,
-      title: parentTitle,
-      recordCreatedAt: parentRecordCreatedAt,
-    });
-
-    // Sort child links by recordCreatedAt
-    const sortedChildLinks = sortByRecordCreatedAt(
-      parentIncomingLinks.map((link) => ({
-        ...link,
-        recordCreatedAt: link.source.recordCreatedAt,
-      }))
-    );
-
-    sortedChildLinks.forEach((child) => {
-      const {
-        predicate: childPredicate,
-        source: { id: childId, title: childTitle, recordCreatedAt: childRecordCreatedAt },
-      } = child;
-
-      nodes.push({
-        predicate: childPredicate,
-        isStructural: isStructuralContainment(childPredicate),
-        id: childId,
-        title: childTitle,
-        recordCreatedAt: childRecordCreatedAt,
-      });
-    });
+    const siblings = resolveEdges(parent.record.incomingLinks, (link) => link.source);
+    siblings.forEach((sibling) => nodes.push(toNode(sibling)));
   });
 
   // Only add if there are no outgoing links, otherwise we'll get duplicates from parent's child nodes.
-  if (outgoingLinks.length === 0) {
-    nodes.push({ id, title, recordCreatedAt, isStructural: true });
+  if (parents.length === 0) {
+    nodes.push({
+      id: tree.id,
+      title: tree.title,
+      recordCreatedAt: tree.recordCreatedAt,
+      isStructural: true,
+    });
   }
 
-  // Sort incoming links by recordCreatedAt
-  const sortedIncomingLinks = sortByRecordCreatedAt(
-    incomingLinks.map((link) => ({
-      ...link,
-      recordCreatedAt: link.source.recordCreatedAt,
-    }))
-  );
-
-  sortedIncomingLinks.forEach((child) => {
-    const {
-      predicate: childPredicate,
-      source: { id: childId, title: childTitle, recordCreatedAt: childRecordCreatedAt },
-    } = child;
-
-    nodes.push({
-      predicate: childPredicate,
-      isStructural: isStructuralContainment(childPredicate),
-      id: childId,
-      title: childTitle,
-      recordCreatedAt: childRecordCreatedAt,
-    });
-  });
+  const children = resolveEdges(tree.incomingLinks, (link) => link.source);
+  children.forEach((child) => nodes.push(toNode(child)));
 
   return nodes;
 };
@@ -188,15 +117,9 @@ const getPreviousRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId 
 };
 
 function RouteComponent() {
-  const trpc = useTRPC();
   const navigate = Route.useNavigate();
   const { state: filtersState } = useRecordFilters();
-  const { data: recordsList } = useQuery(
-    trpc.records.list.queryOptions(
-      { ...filtersState, offset: 0 },
-      { placeholderData: (prev) => prev }
-    )
-  );
+  const { ids: listIds } = useRecordList(filtersState);
   const { recordId } = Route.useParams();
   const { data: tree, isError: treeError, isLoading: treeLoading } = useRecordTree(recordId);
   const bulkUpdate = useBulkUpdate();
@@ -204,9 +127,9 @@ function RouteComponent() {
 
   // If tree query fails, it likely means the record doesn't exist (deleted or invalid ID)
   useEffect(() => {
-    if (treeError && recordsList?.ids.length) {
+    if (treeError && listIds.length) {
       // Navigate to first available record
-      const firstAvailableId = recordsList.ids[0]?.id;
+      const firstAvailableId = listIds[0];
       if (firstAvailableId && firstAvailableId !== recordId) {
         void navigate({
           to: '/records/$recordId',
@@ -217,7 +140,7 @@ function RouteComponent() {
         void navigate({ to: '/records' });
       }
     }
-  }, [treeError, recordsList, recordId, navigate]);
+  }, [treeError, listIds, recordId, navigate]);
 
   const nodes = useMemo(() => {
     if (!tree) return [];
@@ -244,12 +167,11 @@ function RouteComponent() {
     const idsToCurate = Array.from(new Set(nodes.map((t) => t.id)));
 
     // Calculate next ID before triggering mutations to avoid race conditions
-    const listIds = recordsList?.ids.map((r) => r.id) ?? [];
     const skip = new Set(idsToCurate);
     const nextId = getNextRecord(listIds, recordId, skip);
 
     // Trigger mutation optimistically
-    bulkUpdate.mutate({ ids: idsToCurate, data: { isCurated: true } });
+    void bulkUpdate({ ids: idsToCurate, data: { isCurated: true } });
 
     // Navigate immediately - tree structure is unaffected by curation
     if (nextId) {
@@ -260,12 +182,11 @@ function RouteComponent() {
     } else {
       void navigate({ to: '/records' });
     }
-  }, [bulkUpdate, nodes, recordsList, recordId, navigate]);
+  }, [bulkUpdate, nodes, listIds, recordId, navigate]);
 
   const handleDelete = useCallback(
     (id: DbId) => {
       deleteMutation.mutate([id]);
-      const listIds = recordsList?.ids.map((r) => r.id) ?? [];
       const skip = new Set([id]);
       const nextId = getNextRecord(listIds, recordId, skip);
 
@@ -278,12 +199,11 @@ function RouteComponent() {
         void navigate({ to: '/records' });
       }
     },
-    [deleteMutation, recordsList, recordId, navigate]
+    [deleteMutation, listIds, recordId, navigate]
   );
 
   // Navigate to next record
   const navigateToNext = useCallback(() => {
-    const listIds = recordsList?.ids.map((r) => r.id) ?? [];
     const nextId = getNextRecord(listIds, recordId, new Set());
     if (nextId) {
       void navigate({
@@ -291,11 +211,10 @@ function RouteComponent() {
         params: { recordId: nextId },
       });
     }
-  }, [recordsList, recordId, navigate]);
+  }, [listIds, recordId, navigate]);
 
   // Navigate to previous record
   const navigateToPrevious = useCallback(() => {
-    const listIds = recordsList?.ids.map((r) => r.id) ?? [];
     const prevId = getPreviousRecord(listIds, recordId, new Set());
     if (prevId) {
       void navigate({
@@ -303,7 +222,7 @@ function RouteComponent() {
         params: { recordId: prevId },
       });
     }
-  }, [recordsList, recordId, navigate]);
+  }, [listIds, recordId, navigate]);
 
   // Navigate back to records list
   const navigateToList = useCallback(() => {

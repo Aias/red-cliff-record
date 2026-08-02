@@ -1,13 +1,8 @@
-import { eloMatchups, records, type RecordType } from '@hozo';
+import type { RecordType } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { eq, sql } from 'drizzle-orm';
-import { eloDeltas, matchupCounts, type Queryable } from '@/server/lib/elo';
-import {
-  GetMatchupInputSchema,
-  GetOpponentsInputSchema,
-  SubmitMatchupInputSchema,
-  type DbId,
-} from '@/shared/types/api';
+import { sql } from 'drizzle-orm';
+import { matchupCounts, type Queryable } from '@/server/lib/elo';
+import { GetMatchupInputSchema, GetOpponentsInputSchema, type DbId } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
 
 const OPPONENT_WINDOWS = [200, 400, 800, 1600, Infinity];
@@ -80,69 +75,6 @@ async function selectOpponents(
   // Stable sort keeps the random order within count ties
   return ids.sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0)).slice(0, opts.needed);
 }
-
-export const submitMatchup = publicProcedure
-  .input(SubmitMatchupInputSchema)
-  .mutation(async ({ ctx: { db }, input }) => {
-    const [aId, bId] = 'winnerId' in input ? [input.winnerId, input.loserId] : input.drawIds;
-    const winnerId = 'winnerId' in input ? input.winnerId : null;
-
-    return db.transaction(async (tx) => {
-      const pair = await tx.query.records.findMany({
-        where: { id: { in: [aId, bId] } },
-        columns: { id: true, type: true, eloScore: true },
-      });
-      const a = pair.find((r) => r.id === aId);
-      const b = pair.find((r) => r.id === bId);
-      if (!a || !b) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: `Submit matchup: record ${!a ? aId : bId} not found`,
-        });
-      }
-      if (a.type !== b.type) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Submit matchup: cross-type matchup (${a.type} vs ${b.type}) is not allowed`,
-        });
-      }
-      if (a.type === 'artifact') {
-        const contained = await containedIds(tx, [aId, bId]);
-        const childId = contained.has(aId) ? aId : contained.has(bId) ? bId : null;
-        if (childId !== null) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Submit matchup: record ${childId} is contained by a parent record and cannot be ranked`,
-          });
-        }
-      }
-
-      const counts = await matchupCounts(tx, [aId, bId]);
-      const countA = counts.get(aId) ?? 0;
-      const countB = counts.get(bId) ?? 0;
-      const { deltaA, deltaB } = eloDeltas(
-        { eloScore: a.eloScore, matchupCount: countA },
-        { eloScore: b.eloScore, matchupCount: countB },
-        winnerId === null ? 'draw' : 'win'
-      );
-
-      await tx.insert(eloMatchups).values({
-        recordAId: aId,
-        recordBId: bId,
-        winnerId,
-        recordType: a.type,
-      });
-
-      const results = [
-        { id: aId, eloScore: a.eloScore + deltaA, delta: deltaA, matchupCount: countA + 1 },
-        { id: bId, eloScore: b.eloScore + deltaB, delta: deltaB, matchupCount: countB + 1 },
-      ];
-      for (const { id, eloScore } of results) {
-        await tx.update(records).set({ eloScore }).where(eq(records.id, id));
-      }
-      return { results };
-    });
-  });
 
 export const getOpponents = publicProcedure
   .input(GetOpponentsInputSchema)
@@ -276,7 +208,6 @@ export const getMatchup = publicProcedure
   });
 
 export const eloRouter = createTRPCRouter({
-  submitMatchup,
   getMatchup,
   getOpponents,
 });

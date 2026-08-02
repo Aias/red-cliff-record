@@ -17,13 +17,12 @@ import { Toggle } from '@/components/toggle';
 import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
 import { useDeleteMedia } from '@/lib/hooks/media-mutations';
-import { useUpsertRecord } from '@/lib/hooks/record-mutations';
-import { useRecord } from '@/lib/hooks/record-queries';
+import { useUpdateRecord } from '@/lib/hooks/record-mutations';
+import { useRecord, type RecordData } from '@/lib/hooks/record-queries';
 import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-basket';
 import { useRecordUpload } from '@/lib/hooks/use-record-upload';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { validateRecord } from '@/lib/server/validate-record';
-import type { RecordGet } from '@/shared/types/domain';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { Metabar } from './record-metabar';
@@ -48,31 +47,36 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
-const defaultData: RecordGet = {
-  id: 0,
-  slug: null,
+/** The editable subset of a record the form manages. */
+type RecordFormValues = {
+  type: RecordType;
+  title: string | null;
+  sense: string | null;
+  abbreviation: string | null;
+  url: string | null;
+  summary: string | null;
+  content: string | null;
+  notes: string | null;
+  mediaCaption: string | null;
+  isCurated: boolean;
+  isPrivate: boolean;
+  media: RecordData['media'];
+};
+
+const defaultData: RecordFormValues = {
   type: 'artifact',
   title: null,
   sense: null,
   abbreviation: null,
   url: null,
-  avatarUrl: null,
   summary: null,
   content: null,
   notes: null,
   mediaCaption: null,
   isCurated: false,
   isPrivate: false,
-  eloScore: 1200,
-  matchupCount: 0,
-  reminderAt: null,
-  sources: [],
   media: [],
-  recordCreatedAt: new Date(),
-  recordUpdatedAt: new Date(),
-  contentCreatedAt: new Date(),
-  contentUpdatedAt: new Date(),
-} as const;
+};
 
 export function RecordForm({
   recordId,
@@ -104,11 +108,26 @@ export function RecordForm({
     }
   }, [shouldFocus, isLoading]);
 
-  const formData = record ?? defaultData;
+  const formData: RecordFormValues = record
+    ? {
+        type: record.type,
+        title: record.title,
+        sense: record.sense,
+        abbreviation: record.abbreviation,
+        url: record.url,
+        summary: record.summary,
+        content: record.content,
+        notes: record.notes,
+        mediaCaption: record.mediaCaption,
+        isCurated: record.isCurated,
+        isPrivate: record.isPrivate,
+        media: record.media,
+      }
+    : defaultData;
   const isFormLoading = isLoading || !record;
 
   const inBasket = useInBasket(recordId);
-  const updateMutation = useUpsertRecord();
+  const updateRecord = useUpdateRecord();
   const deleteMediaMutation = useDeleteMedia();
   const { uploadFile, isUploading } = useRecordUpload(recordId);
 
@@ -128,7 +147,7 @@ export function RecordForm({
         notes,
         mediaCaption,
       } = value;
-      await updateMutation.mutateAsync({
+      await updateRecord({
         id: recordId,
         type,
         isCurated,
@@ -145,7 +164,8 @@ export function RecordForm({
     },
     validators: {
       onSubmitAsync: async ({ value }) => {
-        const result = await validateRecord({ data: value });
+        const { media: _media, ...fields } = value;
+        const result = await validateRecord({ data: fields });
         if (!result.success) {
           return {
             form: result.formError,
@@ -208,7 +228,7 @@ export function RecordForm({
   }, [form.state.isDefaultValue, immediateSave]);
 
   const curateAndNextHandler = useCallback(async () => {
-    // Set curated flag before saving to avoid race condition with bulkUpsert
+    // Set curated flag before saving to avoid race condition with bulkUpdate
     form.setFieldValue('isCurated', true);
     // Save immediately before navigation and wait for completion
     await immediateSave();

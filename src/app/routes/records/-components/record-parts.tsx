@@ -4,8 +4,7 @@ import type { ReactNode } from 'react';
 import { memo } from 'react';
 import { IntegrationLogo } from '@/components/integration-logo';
 import { LazyVideo } from '@/components/lazy-video';
-import { getRecordTitleFallbacks } from '@/lib/hooks/record-queries';
-import type { RecordGet } from '@/shared/types/domain';
+import { getRecordTitleFallbacks, type RecordData } from '@/lib/hooks/record-queries';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import type { SystemStyleObject } from '@/styled-system/types';
@@ -109,7 +108,7 @@ export const RecordThumbnail = memo(function RecordThumbnail({
 
 /** Resolve a record's display title through the fallback chain: title → creator → ↳parent → fallback */
 export function getRecordTitle(
-  record: Pick<RecordGet, 'title' | 'outgoingLinks'>,
+  record: Pick<RecordData, 'title' | 'outgoingLinks'>,
   fallback = 'Untitled'
 ): ReactNode {
   const { creatorTitle, parentTitle } = getRecordTitleFallbacks(record.outgoingLinks);

@@ -7,7 +7,7 @@ import { Button } from '@/components/button';
 import { Command } from '@/components/command';
 import { Popover } from '@/components/popover';
 import { Spinner } from '@/components/spinner';
-import { useUpsertRecord } from '@/lib/hooks/record-mutations';
+import { useCreateRecord } from '@/lib/hooks/record-mutations';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { css } from '@/styled-system/css';
@@ -26,7 +26,7 @@ export const SiteSearch = () => {
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandValue, setCommandValue] = useState('');
 
-  const createRecordMutation = useUpsertRecord();
+  const createRecordMutation = useCreateRecord();
 
   const debouncedQuery = useDebounce(inputValue, 300);
   const shouldSearch = debouncedQuery.length >= MIN_QUERY_LENGTH;

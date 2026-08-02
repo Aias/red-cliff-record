@@ -7,7 +7,8 @@ A personal knowledge repository that aggregates data from multiple external sour
 ## Architecture Overview
 
 - **Frontend**: React 19 + TanStack (Start, Router, Query) + Tailwind CSS v4
-- **Backend**: tRPC + Drizzle ORM + PostgreSQL
+- **Sync**: [Rocicorp Zero](https://zero.rocicorp.dev) replicates the entity graph (records, links, matchups, media) to the client; reads are local ZQL queries and writes are optimistic custom mutators
+- **Backend**: tRPC + Drizzle ORM + PostgreSQL (search, list/opponent selection, and heavy mutations like create/delete/merge; also the full CLI surface)
 - **Deployment/Hosting**: Bun server + local PostgreSQL on a Tailscale network
 - **Search**: PostgreSQL full-text search + OpenAI embeddings
 
@@ -202,6 +203,20 @@ For media storage, you'll need a Cloudflare R2 bucket:
    S3_BUCKET=your-bucket-name
    ASSETS_DOMAIN=https://your-assets-domain.com
    ```
+
+### Zero Sync Engine
+
+The app syncs its entity graph through [zero-cache](https://zero.rocicorp.dev), which tails Postgres logical replication. One-time database setup (per database):
+
+```bash
+# Requires a Postgres restart after changing wal_level
+psql $DATABASE_URL -c "ALTER SYSTEM SET wal_level = 'logical';"
+psql $DATABASE_URL -c "CREATE PUBLICATION zero_data FOR TABLE records, links, elo_matchups, media;"
+```
+
+Configure the `ZERO_*` and `PUBLIC_ZERO_CACHE_URL` variables in `.env` (see `.env.example`). `bun dev` starts zero-cache alongside Vite; to run it on its own, use `bun run dev:zero`.
+
+The Zero client schema is generated from the Drizzle schema via `drizzle-zero.config.ts`; regenerate with `bun run zero:generate` after schema changes to synced tables.
 
 ### Start Development Server
 
