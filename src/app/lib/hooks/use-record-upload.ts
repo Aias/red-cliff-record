@@ -12,7 +12,7 @@ export interface UseRecordUploadResult {
 }
 
 export function useRecordUpload(recordId: DbId): UseRecordUploadResult {
-  const createMediaMutation = useCreateMedia(recordId);
+  const createMediaMutation = useCreateMedia();
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isUploading, setIsUploading] = useState(false);

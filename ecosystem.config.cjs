@@ -24,6 +24,26 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
     },
     {
+      // Sync engine: replicates the entity graph to clients
+      name: 'red-cliff-zero-cache',
+      script: 'bun',
+      args: 'run start:zero',
+      cwd: __dirname,
+      env: {
+        NODE_ENV: 'production',
+      },
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '2G',
+      error_file: './logs/zero-cache-errors.log',
+      out_file: './logs/zero-cache-output.log',
+      log_file: './logs/zero-cache-combined.log',
+      merge_logs: true,
+      time: true,
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    },
+    {
       // Auto-deployment monitor
       name: 'red-cliff-deploy',
       script: './scripts/deploy/auto-deploy.sh',

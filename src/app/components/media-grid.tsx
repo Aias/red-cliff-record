@@ -1,4 +1,3 @@
-import type { MediaSelect } from '@hozo/schema/media';
 import { Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
 import { css } from '@/styled-system/css';
@@ -7,10 +6,18 @@ import { Button } from './button';
 import { LazyVideo } from './lazy-video';
 import { MediaLightbox } from './media-lightbox';
 
+/** The subset of a media row the grid needs to render an item. */
+export interface MediaGridItem {
+  id: number;
+  type: string;
+  url: string;
+  altText: string | null;
+}
+
 interface MediaGridProps {
-  media: MediaSelect[];
+  media: readonly MediaGridItem[];
   className?: string;
-  onDelete?: (media: MediaSelect) => void;
+  onDelete?: (media: MediaGridItem) => void;
 }
 
 const mediaFillCss = css({

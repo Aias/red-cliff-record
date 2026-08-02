@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -25,11 +25,12 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "dev": "bun run dev:panda & bun run dev:vite",
+    "dev": "bun run dev:panda & (mkdir -p .zero-cache && bun run dev:zero > .zero-cache/zero.log 2>&1) & bun run dev:vite",
     "dev:full": "bun run --filter '*' dev:watch",
     "dev:panda": "panda --watch",
     "dev:vite": "bunx --bun vite",
     "dev:watch": "bunx --bun vite",
+    "dev:zero": "zero-cache-dev",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "oxlint --fix .",
@@ -37,9 +38,12 @@
     "publish:hozo": "bun publish --cwd packages/hozo",
     "rcr": "bun src/server/cli/rcr/index.ts",
     "start": "bun run server.ts",
+    "start:zero": "mkdir -p .zero-cache && zero-cache",
     "stylegen": "rm -rf src/app/styled-system && panda codegen && panda cssgen",
     "typecheck": "tsc --noEmit",
-    "typecheck:watch": "tsc --noEmit --watch"
+    "typecheck:watch": "tsc --noEmit --watch",
+    "zero:generate": "drizzle-zero generate -o src/shared/zero/schema.gen.ts -f",
+    "zero:publication": "bun run src/server/db/sync-zero-publication.ts"
   },
   "dependencies": {
     "@base-ui/react": "~1.6.0",
@@ -48,6 +52,7 @@
     "@octokit/request-error": "~7.1.1",
     "@octokit/rest": "~22.0.1",
     "@radix-ui/colors": "~3.0.0",
+    "@rocicorp/zero": "~1.8.0",
     "@tanstack/react-form": "~1.33.3",
     "@tanstack/react-query": "~5.101.4",
     "@tanstack/react-router": "~1.170.18",
@@ -66,6 +71,7 @@
     "markdown-it": "~15.0.0",
     "mime-types": "~3.0.2",
     "openai": "~7.3.0",
+    "postgres": "^3.4.9",
     "react": "~19.2.8",
     "react-dom": "~19.2.8",
     "react-scan": "~0.5.7",
@@ -85,6 +91,7 @@
     "@vitejs/plugin-react": "~6.0.5",
     "babel-plugin-react-compiler": "~1.0.0",
     "drizzle-kit": "1.0.0-rc.4",
+    "drizzle-zero": "~1.0.0-beta.1",
     "oxfmt": "~0.61.0",
     "oxlint": "~1.76.0",
     "oxlint-tsgolint": "~7.0.2001",
@@ -95,6 +102,7 @@
     "node": ">=24"
   },
   "trustedDependencies": [
-    "@parcel/watcher"
+    "@parcel/watcher",
+    "@rocicorp/zero-sqlite3"
   ]
 }

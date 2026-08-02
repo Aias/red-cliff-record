@@ -17,10 +17,9 @@ import { Separator } from '@/components/separator';
 import { Spinner } from '@/components/spinner';
 import { Toggle } from '@/components/toggle';
 import { Tooltip } from '@/components/tooltip';
-import { useDeleteRecords, useUpsertRecord } from '@/lib/hooks/record-mutations';
-import { useRecord } from '@/lib/hooks/record-queries';
+import { useDeleteRecords, useUpdateRecord } from '@/lib/hooks/record-mutations';
+import { useRecord, type RecordData } from '@/lib/hooks/record-queries';
 import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-basket';
-import type { RecordGet } from '@/shared/types/domain';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import type { ComponentProps } from '@/styled-system/types';
@@ -86,7 +85,7 @@ export const Metabar = ({ recordId, onDelete, css: cssProp, ...props }: MetabarP
           textTransform: 'capitalize',
         })}
       >
-        {`${record.type} #${record.id}, ${record.recordCreatedAt.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: '2-digit' })} ${record.recordCreatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+        {`${record.type} #${record.id}, ${new Date(record.recordCreatedAt).toLocaleDateString([], { month: 'numeric', day: 'numeric', year: '2-digit' })} ${new Date(record.recordCreatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
       </Link>
       {record.sources && (
         <styled.div
@@ -160,7 +159,7 @@ export const Metabar = ({ recordId, onDelete, css: cssProp, ...props }: MetabarP
   );
 };
 
-const AvatarSection = ({ record }: { record: RecordGet }) => {
+const AvatarSection = ({ record }: { record: RecordData }) => {
   const recordId = record.id;
   const [localUrl, setLocalUrl] = useState(record.avatarUrl ?? '');
   const [prevUrl, setPrevUrl] = useState(record.avatarUrl);
@@ -171,7 +170,7 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
   }
 
   const trpc = useTRPC();
-  const upsertMutation = useUpsertRecord();
+  const updateRecord = useUpdateRecord();
   const { mutate: fetchFavicon, isPending: isFetchingFavicon } = useMutation(
     trpc.records.fetchFavicon.mutationOptions()
   );
@@ -183,7 +182,7 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
   const handleBlur = () => {
     const normalized = localUrl.trim() || null;
     if (normalized === record.avatarUrl) return;
-    upsertMutation.mutate({ id: record.id, avatarUrl: normalized });
+    void updateRecord({ id: record.id, avatarUrl: normalized });
   };
 
   const handleFetchFavicon = () => {
@@ -193,7 +192,7 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
       {
         onSuccess: ({ avatarUrl }) => {
           setLocalUrl(avatarUrl);
-          upsertMutation.mutate({ id: record.id, avatarUrl: avatarUrl });
+          void updateRecord({ id: record.id, avatarUrl: avatarUrl });
         },
       }
     );
@@ -237,7 +236,9 @@ const AvatarSection = ({ record }: { record: RecordGet }) => {
   );
 };
 
-const MetadataSection = ({ record }: { record: RecordGet }) => {
+const toDate = (timestamp: number | null) => (timestamp === null ? null : new Date(timestamp));
+
+const MetadataSection = ({ record }: { record: RecordData }) => {
   return (
     <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '3' }}>
       <h2>Record Metadata</h2>
@@ -245,10 +246,10 @@ const MetadataSection = ({ record }: { record: RecordGet }) => {
         metadata={{
           ID: record.id,
           Slug: record.slug,
-          Created: record.recordCreatedAt,
-          Updated: record.recordUpdatedAt,
-          'Content Created': record.contentCreatedAt,
-          'Content Updated': record.contentUpdatedAt,
+          Created: toDate(record.recordCreatedAt),
+          Updated: toDate(record.recordUpdatedAt),
+          'Content Created': toDate(record.contentCreatedAt),
+          'Content Updated': toDate(record.contentUpdatedAt),
         }}
       />
     </styled.div>

@@ -70,19 +70,28 @@ while true; do
                     continue
                 fi
 
+                # Point Zero's publication at the columns the client schema expects
+                log "Syncing Zero publication..."
+                if ! NODE_ENV=production bun run zero:publication; then
+                    log "ERROR: Zero publication sync failed, aborting deploy"
+                    LAST_COMMIT=$REMOTE_COMMIT
+                    sleep $CHECK_INTERVAL
+                    continue
+                fi
+
                 # Build the application
                 log "Building application..."
                 # Build hozo package first, then the main app
                 if bun run build; then
                     log "Build successful"
                     
-                    # Restart the server via PM2
-                    log "Restarting PM2 process..."
-                    if pm2 restart red-cliff-record; then
+                    # Restart the server and sync engine via PM2
+                    log "Restarting PM2 processes..."
+                    if pm2 restart red-cliff-record red-cliff-zero-cache; then
                         log "PM2 restart successful"
                     else
                         log "WARNING: PM2 restart failed, trying reload..."
-                        pm2 reload red-cliff-record
+                        pm2 reload red-cliff-record red-cliff-zero-cache
                     fi
                     
                     log "Deployment complete!"

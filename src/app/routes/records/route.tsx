@@ -1,8 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, Outlet, useMatches } from '@tanstack/react-router';
 import { useCallback } from 'react';
-import { useTRPC } from '@/app/trpc';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
+import { useRecordList } from '@/lib/hooks/record-queries';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { css } from '@/styled-system/css';
@@ -15,15 +14,9 @@ export const Route = createFileRoute('/records')({
 });
 
 function RouteComponent() {
-  const trpc = useTRPC();
   const navigate = Route.useNavigate();
   const { state: filtersState } = useRecordFilters();
-  const { data: recordsList } = useQuery(
-    trpc.records.list.queryOptions(
-      { ...filtersState, offset: 0 },
-      { placeholderData: (prev) => prev }
-    )
-  );
+  const { ids: recordIds } = useRecordList(filtersState);
   const matches = useMatches();
 
   // Check if a record is selected by seeing if we're on a record detail route
@@ -50,14 +43,14 @@ function RouteComponent() {
 
   // Open first record from list view
   const openFirstRecord = useCallback(() => {
-    const firstRecordId = recordsList?.ids[0]?.id;
+    const firstRecordId = recordIds[0];
     if (firstRecordId) {
       void navigate({
         to: '/records/$recordId',
         params: { recordId: firstRecordId },
       });
     }
-  }, [recordsList, navigate]);
+  }, [recordIds, navigate]);
 
   // Focus current record in sidebar (or first if not found)
   const focusSidebarRecord = useCallback(() => {
@@ -93,7 +86,7 @@ function RouteComponent() {
         '&[data-record-selected]': { padding: '0' },
       }}
     >
-      {isRecordSelected && recordsList ? (
+      {isRecordSelected ? (
         <>
           <styled.div
             css={{
@@ -124,7 +117,7 @@ function RouteComponent() {
               >
                 Records{' '}
                 <styled.span css={{ textStyle: 'sm', color: 'secondary' }}>
-                  ({recordsList.ids.length})
+                  ({recordIds.length})
                 </styled.span>
               </styled.h2>
               <Link to="/records" className={css({ textStyle: 'sm' })}>
@@ -144,7 +137,7 @@ function RouteComponent() {
                 textStyle: 'xs',
               }}
             >
-              {recordsList.ids.map(({ id }) => (
+              {recordIds.map((id) => (
                 <RadioCardsItem key={id} value={id.toString()} data-record-sidebar-id={id}>
                   <RecordLink id={id} className={css({ width: 'full', overflow: 'hidden' })} />
                 </RadioCardsItem>

@@ -80,14 +80,14 @@ export const undoMerge = publicProcedure
       const { id: _targetId, ...targetFields } = targetRecord;
       await tx
         .update(records)
-        .set({ ...targetFields, textEmbedding: null })
+        .set({ ...targetFields, textEmbedding: null, textEmbeddedAt: null })
         .where(eq(records.id, targetRecord.id));
 
       // 2. Re-insert source record with original ID
       const { textEmbedding: _embedding, ...sourceFields } = sourceRecord;
       const [restoredSource] = await tx
         .insert(records)
-        .values({ ...sourceFields, textEmbedding: null })
+        .values({ ...sourceFields, textEmbedding: null, textEmbeddedAt: null })
         .returning();
 
       if (!restoredSource) {

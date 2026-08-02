@@ -49,10 +49,32 @@ This creates the production build in the `dist/` directory.
 
 ### Configuration
 
-The `ecosystem.config.cjs` file in the root directory manages both:
+The `ecosystem.config.cjs` file in the root directory manages:
 
 - **red-cliff-record**: The main application (runs on `bun run server.ts`)
+- **red-cliff-zero-cache**: The Zero sync engine, which replicates the entity graph to clients. The app cannot load data without it; see "Enabling the sync engine on an existing deployment" below for the prerequisites
 - **red-cliff-deploy**: The auto-deployment monitor that checks for updates every 60 seconds
+
+### Enabling the sync engine on an existing deployment
+
+A deployment that predates the sync engine will not pick it up from a `git pull` alone — two of the moving parts sit outside the auto-deploy loop:
+
+- The monitor holds its loaded copy of `auto-deploy.sh` in memory, so edits to the script (new deploy steps included) take effect only after `pm2 restart red-cliff-deploy`.
+- `pm2 restart` only touches processes pm2 already knows about, so apps added to `ecosystem.config.cjs` must be registered with `pm2 start ecosystem.config.cjs`.
+
+Once per box, after pulling a revision that includes the sync engine:
+
+1. Set `wal_level = logical` on the upstream Postgres and restart it:
+
+   ```bash
+   psql $DATABASE_URL -c "ALTER SYSTEM SET wal_level = 'logical';"
+   ```
+
+2. Add the `ZERO_*` and `PUBLIC_ZERO_CACHE_URL` variables to `.env` (see `.env.example` — the query/mutate/cache URLs must use the deployed origin, not localhost).
+3. Create the `zero_data` publication: `NODE_ENV=production bun run zero:publication`
+4. Register the new processes, refresh the monitor, and persist: `pm2 start ecosystem.config.cjs && pm2 restart red-cliff-deploy && pm2 save`
+
+Deploys after that are fully automatic: the loop re-syncs the publication after migrations and restarts both the app and zero-cache.
 
 ### Logging
 
@@ -63,6 +85,9 @@ Logs live in the `logs/` directory.
 - `errors.log` — Application errors
 - `output.log` — Application stdout
 - `combined.log` — Merged stdout and stderr for the app
+- `zero-cache-errors.log` — Sync engine errors
+- `zero-cache-output.log` — Sync engine stdout
+- `zero-cache-combined.log` — Merged logs for the sync engine
 - `deploy-error.log` — Deployment script errors
 - `deploy-out.log` — Deployment script stdout
 - `deploy-combined.log` — Merged logs for deployment script

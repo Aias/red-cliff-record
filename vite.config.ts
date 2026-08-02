@@ -19,6 +19,17 @@ export default defineConfig(({ mode }) => {
           // Panda is-valid-prop.mjs — harmless misplaced @__PURE__ (chakra-ui/panda#2063)
           invalidAnnotation: false,
         },
+        output: {
+          codeSplitting: {
+            // Name shared chunks honestly instead of after an arbitrary member
+            // module. minShareCount keeps route-exclusive modules in their route
+            // chunks, matching the automatic splitting this replaces.
+            groups: [
+              { name: 'vendor', test: /node_modules/, minShareCount: 2 },
+              { name: 'shared', minShareCount: 2 },
+            ],
+          },
+        },
       },
     },
     server: {
@@ -43,6 +54,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       tanstackStart({
         srcDirectory: './src/app',
+        spa: { enabled: true },
       }),
       viteReact(),
       babel({ presets: [reactCompilerPreset()] }),

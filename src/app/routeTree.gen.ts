@@ -15,6 +15,8 @@ import { Route as RecordsRouteRouteImport } from './routes/records/route'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
+import { Route as ApiZeroMutateRouteImport } from './routes/api/zero/mutate'
+import { Route as ApiZeroQueryRouteImport } from './routes/api/zero/query'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +48,16 @@ const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   path: '/api/trpc/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiZeroMutateRoute = ApiZeroMutateRouteImport.update({
+  id: '/api/zero/mutate',
+  path: '/api/zero/mutate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiZeroQueryRoute = ApiZeroQueryRouteImport.update({
+  id: '/api/zero/query',
+  path: '/api/zero/query',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +66,8 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/api/zero/mutate': typeof ApiZeroMutateRoute
+  '/api/zero/query': typeof ApiZeroQueryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +76,8 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/api/zero/mutate': typeof ApiZeroMutateRoute
+  '/api/zero/query': typeof ApiZeroQueryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +87,8 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/api/zero/mutate': typeof ApiZeroMutateRoute
+  '/api/zero/query': typeof ApiZeroQueryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +99,8 @@ export interface FileRouteTypes {
     | '/search'
     | '/records/$recordId'
     | '/api/trpc/$'
+    | '/api/zero/mutate'
+    | '/api/zero/query'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +109,8 @@ export interface FileRouteTypes {
     | '/search'
     | '/records/$recordId'
     | '/api/trpc/$'
+    | '/api/zero/mutate'
+    | '/api/zero/query'
   id:
     | '__root__'
     | '/'
@@ -97,6 +119,8 @@ export interface FileRouteTypes {
     | '/search'
     | '/records/$recordId'
     | '/api/trpc/$'
+    | '/api/zero/mutate'
+    | '/api/zero/query'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -105,6 +129,8 @@ export interface RootRouteChildren {
   RecordsRouteRoute: typeof RecordsRouteRouteWithChildren
   SearchRoute: typeof SearchRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
+  ApiZeroMutateRoute: typeof ApiZeroMutateRoute
+  ApiZeroQueryRoute: typeof ApiZeroQueryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -151,6 +177,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTrpcSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/zero/mutate': {
+      id: '/api/zero/mutate'
+      path: '/api/zero/mutate'
+      fullPath: '/api/zero/mutate'
+      preLoaderRoute: typeof ApiZeroMutateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/zero/query': {
+      id: '/api/zero/query'
+      path: '/api/zero/query'
+      fullPath: '/api/zero/query'
+      preLoaderRoute: typeof ApiZeroQueryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -172,6 +212,8 @@ const rootRouteChildren: RootRouteChildren = {
   RecordsRouteRoute: RecordsRouteRouteWithChildren,
   SearchRoute: SearchRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
+  ApiZeroMutateRoute: ApiZeroMutateRoute,
+  ApiZeroQueryRoute: ApiZeroQueryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

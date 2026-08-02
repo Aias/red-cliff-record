@@ -38,6 +38,8 @@ psql $DATABASE_URL_DEV -c "\dt table_name"
 3. **User verifies** → Query dev database to confirm schema is correct
 4. PR merged → deploy script auto-runs migration against prod
 
+If the migration touches a Zero-synced table (records, links, elo_matchups, media), run `bun run zero:generate` for the client schema, and `bun run zero:publication` once the migration is applied — the `zero_data` publication names columns explicitly (to exclude `text_embedding`/`text_search`), and a pinned column list never picks up new columns on its own. Skip it and clients fail with `SchemaVersionNotSupported` however often the replica is rebuilt. Nothing else is needed: zero-cache applies published DDL to its replica while running. Recovery steps for an already-diverged replica are in `README.md` (Zero Sync Engine).
+
 **OR** keep dev synced with prod: `rcr db clone-prod-to-dev --yes`
 
 ## Architecture
@@ -57,6 +59,7 @@ psql $DATABASE_URL_DEV -c "\dt table_name"
 
 - **React Compiler is enabled** (`babel-plugin-react-compiler`). Don't add manual `useMemo`/`useCallback` for optimization — the compiler handles it.
 - **tRPC toast link auto-handles errors.** Don't add `toast.error()` in mutation `onError` — it's already wired up globally in the tRPC client.
+- **Zero owns the entity graph in the SPA.** Reads of records/links/matchups/media are ZQL queries (`src/shared/zero/queries.ts`) and CRUD writes are Zero mutators (`src/shared/zero/mutators.ts`, server overrides in `src/server/zero/`). tRPC remains for search (including searchQuery/hasEmbedding record lists), opponent selection, create/delete/merge, media blobs, and the entire CLI; browse-mode record lists filter client-side over ZQL. Don't add TanStack Query cache surgery for Zero-synced data — replication keeps clients current. After Drizzle schema changes to synced tables, run `bun run zero:generate`. `bun dev` runs zero-cache alongside Vite; without it the app cannot load data.
 
 ## Skills Index
 

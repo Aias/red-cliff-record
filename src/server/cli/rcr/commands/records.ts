@@ -254,6 +254,7 @@ const BulkUpdateDataSchema = RecordInsertSchema.omit({
   slug: true,
   sources: true,
   textEmbedding: true,
+  textEmbeddedAt: true,
 }).partial();
 
 /**

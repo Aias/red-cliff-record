@@ -70,8 +70,15 @@ export const commonColumns = {
 
 const textEmbedding = vector('text_embedding', { dimensions: TEXT_EMBEDDING_DIMENSIONS });
 
+/* The vector itself stays server-side (too large to sync); the timestamp is
+ * synced through Zero so clients can react when an embedding lands. The two
+ * columns are written together: both set on success, both nulled when the
+ * embedding is invalidated. */
+const textEmbeddedAt = timestamp('text_embedded_at', { withTimezone: true });
+
 export const textEmbeddingColumns = {
   textEmbedding: textEmbedding,
+  textEmbeddedAt: textEmbeddedAt,
 };
 
 export const integrationRuns = pgTable(

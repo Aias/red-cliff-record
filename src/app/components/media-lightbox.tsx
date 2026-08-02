@@ -1,12 +1,11 @@
-import type { MediaSelect } from '@hozo/schema/media';
 import { useCallback, useMemo, useRef, type KeyboardEvent } from 'react';
 import { styled } from '@/styled-system/jsx';
 import { Dialog } from './dialog';
 
-type LightboxImage = Pick<MediaSelect, 'altText' | 'id' | 'url'>;
+type LightboxImage = { id: number; url: string; altText: string | null };
 
 interface MediaLightboxProps {
-  images: LightboxImage[];
+  images: readonly LightboxImage[];
   activeIndex: number | null;
   onClose: () => void;
   onIndexChange: (nextIndex: number | null) => void;

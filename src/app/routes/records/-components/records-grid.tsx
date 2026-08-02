@@ -1,10 +1,8 @@
 import { IntegrationTypeSchema, type IntegrationType } from '@hozo/schema/operations.shared';
 import { RecordTypeSchema, type RecordType } from '@hozo/schema/records.shared';
-import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronDownIcon, ShoppingBasketIcon } from 'lucide-react';
 import { useState } from 'react';
-import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { DropdownMenu } from '@/components/dropdown-menu';
 import { ExternalLink } from '@/components/external-link';
@@ -16,7 +14,7 @@ import { Spinner } from '@/components/spinner';
 import { Table } from '@/components/table';
 import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
-import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
+import { getRecordTitleFallbacks, useRecord, useRecordList } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import type { DbId } from '@/shared/types/api';
@@ -25,8 +23,8 @@ import { styled } from '@/styled-system/jsx';
 import { SourceLogos } from './record-parts';
 import { recordTypeIcons, RecordTypeIcon } from './type-icons';
 
-function formatDate(dateValue: Date | string) {
-  const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+function formatDate(dateValue: Date | string | number) {
+  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
   const hours24 = date.getHours();
   const minutes = date.getMinutes();
   const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
@@ -135,11 +133,8 @@ function RecordRow({ recordId }: { recordId: DbId }) {
 }
 
 export const RecordsGrid = () => {
-  const trpc = useTRPC();
   const { state, setFilters, setLimit, reset } = useRecordFilters();
-  const { data } = useQuery(
-    trpc.records.list.queryOptions({ ...state, offset: 0 }, { placeholderData: (prev) => prev })
-  );
+  const { ids: recordIds, isLoading } = useRecordList(state);
 
   const {
     filters: { types, isCurated, isPrivate, sources, hasParent, hasMedia },
@@ -192,7 +187,7 @@ export const RecordsGrid = () => {
     }
   };
 
-  if (!data)
+  if (isLoading)
     return (
       <Placeholder css={{ flexGrow: '1', margin: '4' }}>
         <Spinner />
@@ -411,7 +406,7 @@ export const RecordsGrid = () => {
         </styled.div>
       </styled.div>
       <Table.Root
-        data-empty={data.ids.length === 0}
+        data-empty={recordIds.length === 0}
         css={{
           display: 'flex',
           flexDirection: 'column',
@@ -455,8 +450,8 @@ export const RecordsGrid = () => {
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {data.ids.length > 0 ? (
-              data.ids.map(({ id }) => <RecordRow key={id} recordId={id} />)
+            {recordIds.length > 0 ? (
+              recordIds.map((id) => <RecordRow key={id} recordId={id} />)
             ) : (
               <Table.Row>
                 <Table.Cell colSpan={6} css={{ pointerEvents: 'none', textAlign: 'center' }}>

@@ -15,6 +15,7 @@ const BulkUpdateDataSchema = RecordInsertSchema.omit({
   sources: true,
   eloScore: true,
   textEmbedding: true,
+  textEmbeddedAt: true,
 }).partial();
 
 export const upsert = publicProcedure
@@ -35,7 +36,7 @@ export const upsert = publicProcedure
         set: {
           ...updateFields,
           recordUpdatedAt: new Date(),
-          ...(affectsEmbedding ? { textEmbedding: null } : {}),
+          ...(affectsEmbedding ? { textEmbedding: null, textEmbeddedAt: null } : {}),
         },
       })
       .returning({
@@ -90,7 +91,7 @@ export const bulkUpdate = publicProcedure
       .set({
         ...updateData,
         recordUpdatedAt: new Date(),
-        ...(affectsEmbedding ? { textEmbedding: null } : {}),
+        ...(affectsEmbedding ? { textEmbedding: null, textEmbeddedAt: null } : {}),
       })
       .where(inArray(records.id, ids))
       .returning({ id: records.id });

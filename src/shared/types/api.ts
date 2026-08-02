@@ -76,18 +76,6 @@ export const SubmitMatchupInputSchema = z
     { message: 'A record cannot face itself' }
   );
 
-export const GetMatchupInputSchema = z.object({
-  recordType: RecordTypeSchema,
-  focusRecordId: IdSchema.optional(),
-  excludeIds: z.array(IdSchema).optional().default([]),
-});
-
-export const GetOpponentsInputSchema = z.object({
-  recordId: IdSchema,
-  count: z.number().int().positive().optional().default(3),
-  excludeIds: z.array(IdSchema).optional().default([]),
-});
-
 export const SearchRecordsInputSchema = z.object({
   query: z.string(),
   filters: z

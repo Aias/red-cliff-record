@@ -284,6 +284,11 @@ export const containmentPredicateSlugs = Object.values(PREDICATES)
 /** Predicate slugs for structural parent-child hierarchies only (excludes citation) */
 export const structuralContainmentSlugs: PredicateSlug[] = ['contained_by', 'contains'];
 
+/** Predicate slugs for creation and containment edges (record title fallback chain) */
+export const creationContainmentPredicateSlugs = Object.values(PREDICATES)
+  .filter((p) => p.type === 'creation' || p.type === 'containment')
+  .map((p) => p.slug);
+
 /** Check if a predicate is structural containment (vs citation like quotes) */
 export function isStructuralContainment(slug: PredicateSlug): boolean {
   return structuralContainmentSlugs.includes(slug);
