@@ -1,0 +1,17 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+# Panda's styled-system output is gitignored and no install hook generates it,
+# so a fresh workspace cannot typecheck until stylegen has run.
+setup = "bun install && bun run stylegen"
+# zero-cache holds a replication slot on the shared dev database, and it and
+# Vite both bind fixed ports, so one workspace runs the stack at a time.
+run_mode = "nonconcurrent"
+
+# Needs the local Postgres and the secrets in .env, neither of which a cloud
+# sandbox has.
+[scripts.run.dev]
+command = "bun dev"
+available_in = ["local"]
+default = true
+icon = "play"

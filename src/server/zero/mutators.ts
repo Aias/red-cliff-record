@@ -8,6 +8,7 @@ import {
   canonicalizeLink,
   LinkUpsertSchema,
   mutators,
+  queueEmbeddings,
 } from '@/shared/zero/mutators';
 
 /**
@@ -58,7 +59,7 @@ export const serverMutators = defineMutators(mutators, {
           });
       }
 
-      ctx?.queueEmbeddings([sourceId, targetId, ...previousEndpointIds]);
+      await queueEmbeddings(tx, ctx, [sourceId, targetId, ...previousEndpointIds]);
     }),
   },
   elo: {

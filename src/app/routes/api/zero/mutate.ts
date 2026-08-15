@@ -10,7 +10,7 @@ const handle = async ({ request }: { request: Request }) => {
    * and the regeneration is queued after the transactions finish. */
   const pending = new Set<DbId>();
   const processor = new PushProcessor(zeroDb, {
-    queueEmbeddings: (ids: DbId[]) => ids.forEach((id) => pending.add(id)),
+    regenerateEmbeddings: (ids: DbId[]) => ids.forEach((id) => pending.add(id)),
   });
   const response = await processor.process(serverMutators, request);
   queueRecordEmbeddings([...pending]);

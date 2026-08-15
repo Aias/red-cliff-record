@@ -8,8 +8,10 @@ export interface ZeroAppContext {
   /**
    * Collect record ids whose text embeddings should be regenerated once the
    * enclosing transaction commits (embeddings must read committed data).
+   * Mutators reach this through `queueEmbeddings`, which also marks the
+   * records pending; calling it directly leaves them unmarked.
    */
-  queueEmbeddings: (ids: DbId[]) => void;
+  regenerateEmbeddings: (ids: DbId[]) => void;
 }
 
 declare module '@rocicorp/zero' {
