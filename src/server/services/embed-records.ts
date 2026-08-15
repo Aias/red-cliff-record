@@ -143,8 +143,9 @@ export async function embedRecordById(recordId: number): Promise<EmbedRecordResu
 }
 
 /** Settle window before regenerating, so rapid edits (keystroke-level saves)
- * coalesce into one embedding request per burst instead of one per mutation. */
-const EMBED_SETTLE_MS = 2500;
+ * coalesce into one embedding request per burst instead of one per mutation.
+ * Short enough that a record is embedded again moments after an edit lands. */
+const EMBED_SETTLE_MS = 500;
 
 const pendingEmbedIds = new Set<number>();
 let embedSettleTimer: ReturnType<typeof setTimeout> | undefined;

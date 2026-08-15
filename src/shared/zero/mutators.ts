@@ -3,8 +3,8 @@ import { RecordTypeSchema } from '@hozo/schema/records.shared';
 import { defineMutator, defineMutators, type Transaction } from '@rocicorp/zero';
 import { z } from 'zod';
 import { eloDeltas } from '@/shared/lib/elo';
-import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
 import { IdSchema, SubmitMatchupInputSchema, type DbId } from '@/shared/types/api';
+import type { ZeroAppContext } from './context';
 import { zql } from './schema.gen';
 
 /**
@@ -15,13 +15,24 @@ import { zql } from './schema.gen';
 let nextClientInsertId = -1;
 const tempId = () => nextClientInsertId--;
 
-const embeddingFields = new Set<string>(EMBEDDING_RECORD_FIELDS);
-
-/** Keys of `changes` that carry a value and feed the record's embedding text. */
-function changesAffectEmbedding(changes: Record<string, unknown>): boolean {
-  return Object.entries(changes).some(
-    ([key, value]) => value !== undefined && embeddingFields.has(key)
-  );
+/**
+ * Mark records' embeddings stale and schedule their regeneration.
+ *
+ * Clearing `textEmbeddedAt` is what tells clients a regeneration is in flight,
+ * so it happens here rather than at each call site: the mark and the work it
+ * describes cannot drift apart. The vector itself survives, so similarity
+ * search keeps serving the previous results until the new one lands.
+ */
+export async function queueEmbeddings(
+  tx: Transaction,
+  ctx: ZeroAppContext | undefined,
+  ids: DbId[]
+): Promise<void> {
+  const unique = [...new Set(ids)];
+  for (const id of unique) {
+    await tx.mutate.records.update({ id, textEmbeddedAt: null });
+  }
+  ctx?.regenerateEmbeddings(unique);
 }
 
 export const RecordUpdateFieldsSchema = z.object({
@@ -130,29 +141,20 @@ export async function applyMatchupScores(tx: Transaction, input: SubmitMatchupIn
 
 export const mutators = defineMutators({
   records: {
+    /* Embedding text is drawn from most of a record and from its relations and
+     * media, and regeneration is cheap, so every write queues one rather than
+     * keeping a list of which columns feed the vector in step with the text. */
     update: defineMutator(UpdateRecordSchema, async ({ tx, ctx, args }) => {
       const { id, ...fields } = args;
-      const affectsEmbedding = changesAffectEmbedding(fields);
-      await tx.mutate.records.update({
-        ...fields,
-        id,
-        recordUpdatedAt: Date.now(),
-        ...(affectsEmbedding ? { textEmbeddedAt: null } : {}),
-      });
-      if (affectsEmbedding) ctx?.queueEmbeddings([id]);
+      await tx.mutate.records.update({ ...fields, id, recordUpdatedAt: Date.now() });
+      await queueEmbeddings(tx, ctx, [id]);
     }),
     bulkUpdate: defineMutator(BulkUpdateSchema, async ({ tx, ctx, args: { ids, data } }) => {
       const now = Date.now();
-      const affectsEmbedding = changesAffectEmbedding(data);
       for (const id of ids) {
-        await tx.mutate.records.update({
-          ...data,
-          id,
-          recordUpdatedAt: now,
-          ...(affectsEmbedding ? { textEmbeddedAt: null } : {}),
-        });
+        await tx.mutate.records.update({ ...data, id, recordUpdatedAt: now });
       }
-      if (affectsEmbedding) ctx?.queueEmbeddings(ids);
+      await queueEmbeddings(tx, ctx, ids);
     }),
   },
   links: {
@@ -175,7 +177,7 @@ export const mutators = defineMutators({
         });
         /* Retargeting a link leaves the old endpoints' embedding text stale,
          * so they regenerate alongside the new endpoints. */
-        ctx?.queueEmbeddings([sourceId, targetId, previous.sourceId, previous.targetId]);
+        await queueEmbeddings(tx, ctx, [sourceId, targetId, previous.sourceId, previous.targetId]);
         return;
       }
 
@@ -199,13 +201,17 @@ export const mutators = defineMutators({
           recordUpdatedAt: now,
         });
       }
-      ctx?.queueEmbeddings([sourceId, targetId]);
+      await queueEmbeddings(tx, ctx, [sourceId, targetId]);
     }),
     delete: defineMutator(DeleteLinksSchema, async ({ tx, ctx, args: { links } }) => {
       for (const link of links) {
         await tx.mutate.links.delete({ id: link.id });
       }
-      ctx?.queueEmbeddings(links.flatMap((link) => [link.sourceId, link.targetId]));
+      await queueEmbeddings(
+        tx,
+        ctx,
+        links.flatMap((link) => [link.sourceId, link.targetId])
+      );
     }),
   },
   elo: {
