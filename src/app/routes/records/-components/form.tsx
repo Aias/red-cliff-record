@@ -34,19 +34,6 @@ interface RecordFormProps extends React.HTMLAttributes<HTMLFormElement> {
   onDelete?: () => void;
 }
 
-function getErrorMessage(error: unknown): string {
-  if (typeof error === 'string') return error;
-  if (
-    error &&
-    typeof error === 'object' &&
-    'message' in error &&
-    typeof error.message === 'string'
-  ) {
-    return error.message;
-  }
-  return String(error);
-}
-
 /** The editable subset of a record the form manages. */
 type RecordFormValues = {
   type: RecordType;
@@ -339,7 +326,7 @@ export function RecordForm({
                 <GhostInput
                   aria-label="Record title"
                   ref={titleInputRef}
-                  value={field.state.value ?? ''}
+                  value={field.value ?? ''}
                   placeholder="Untitled Record"
                   onChange={(e) => {
                     field.handleChange(e.target.value);
@@ -352,7 +339,7 @@ export function RecordForm({
                     _placeholder: { fontWeight: 'medium' },
                   })}
                 />
-                {field.state.meta.errors && (
+                {field.meta.isInvalid && (
                   <styled.p
                     css={{
                       palette: 'error',
@@ -360,7 +347,7 @@ export function RecordForm({
                       textStyle: 'sm',
                     }}
                   >
-                    {field.state.meta.errors.map(getErrorMessage).join(', ')}
+                    {field.errors.map((error) => error.message).join(', ')}
                   </styled.p>
                 )}
               </styled.div>
@@ -385,7 +372,7 @@ export function RecordForm({
               const handle = Tooltip.createHandle<TypeTooltipPayload>();
               return (
                 <ToggleGroup.Root
-                  value={field.state.value ? [field.state.value] : []}
+                  value={field.value ? [field.value] : []}
                   onValueChange={(groupValue) => {
                     const value = groupValue[0];
                     if (value) {
@@ -462,19 +449,19 @@ export function RecordForm({
                   render={
                     <Toggle
                       variant="outline"
-                      pressed={field.state.value}
-                      aria-label={field.state.value ? 'Curated' : 'Not curated'}
+                      pressed={field.value}
+                      aria-label={field.value ? 'Curated' : 'Not curated'}
                       onPressedChange={(pressed) => {
                         field.handleChange(pressed);
                         debouncedSave();
                       }}
                       disabled={isFormLoading}
                     >
-                      {field.state.value ? <BadgeCheckIcon /> : <BadgeIcon />}
+                      {field.value ? <BadgeCheckIcon /> : <BadgeIcon />}
                     </Toggle>
                   }
                 />
-                <Tooltip.Content>{field.state.value ? 'Curated' : 'Not curated'}</Tooltip.Content>
+                <Tooltip.Content>{field.value ? 'Curated' : 'Not curated'}</Tooltip.Content>
               </Tooltip.Root>
             )}
           </form.Field>
@@ -485,19 +472,19 @@ export function RecordForm({
                   render={
                     <Toggle
                       variant="outline"
-                      pressed={field.state.value}
-                      aria-label={field.state.value ? 'Private' : 'Public'}
+                      pressed={field.value}
+                      aria-label={field.value ? 'Private' : 'Public'}
                       onPressedChange={(pressed) => {
                         field.handleChange(pressed);
                         debouncedSave();
                       }}
                       disabled={isFormLoading}
                     >
-                      {field.state.value ? <EyeOffIcon /> : <EyeIcon />}
+                      {field.value ? <EyeOffIcon /> : <EyeIcon />}
                     </Toggle>
                   }
                 />
-                <Tooltip.Content>{field.state.value ? 'Private' : 'Public'}</Tooltip.Content>
+                <Tooltip.Content>{field.value ? 'Private' : 'Public'}</Tooltip.Content>
               </Tooltip.Root>
             )}
           </form.Field>
@@ -516,9 +503,18 @@ export function RecordForm({
                   <Table.Cell>
                     <form.Field
                       name="url"
-                      validators={{
-                        onChange: z.url().or(z.string().length(0)).nullable(),
-                      }}
+                      validators={[
+                        {
+                          run: z.url().or(z.string().length(0)).nullable(),
+                          triggers: [
+                            'blur',
+                            {
+                              trigger: 'change',
+                              when: ({ fieldApi }) => fieldApi.meta.isBlurred,
+                            },
+                          ],
+                        },
+                      ]}
                     >
                       {(field) => (
                         <>
@@ -532,20 +528,21 @@ export function RecordForm({
                             <GhostInput
                               id="url"
                               css={{ width: 'full', color: 'display' }}
-                              value={field.state.value ?? ''}
+                              value={field.value ?? ''}
                               placeholder="https://example.com"
                               onChange={(e) => {
                                 field.handleChange(e.target.value);
                                 debouncedSave();
                               }}
-                              onBlur={() => void commit()}
+                              onBlur={() => {
+                                field.handleBlur();
+                                void commit();
+                              }}
                               readOnly={isFormLoading}
                             />
-                            {field.state.value && (
-                              <ExternalLink href={field.state.value}>{null}</ExternalLink>
-                            )}
+                            {field.value && <ExternalLink href={field.value}>{null}</ExternalLink>}
                           </styled.div>
-                          {field.state.meta.errors && (
+                          {field.meta.isInvalid && (
                             <styled.p
                               css={{
                                 palette: 'error',
@@ -553,7 +550,7 @@ export function RecordForm({
                                 textStyle: 'sm',
                               }}
                             >
-                              {field.state.meta.errors.map(getErrorMessage).join(', ')}
+                              {field.errors.map((error) => error.message).join(', ')}
                             </styled.p>
                           )}
                         </>
@@ -574,7 +571,7 @@ export function RecordForm({
                         <GhostInput
                           id="abbreviation"
                           css={{ width: 'full', color: 'display' }}
-                          value={field.state.value ?? ''}
+                          value={field.value ?? ''}
                           placeholder="Short form"
                           onChange={(e) => {
                             field.handleChange(e.target.value);
@@ -600,7 +597,7 @@ export function RecordForm({
                         <GhostInput
                           id="sense"
                           css={{ width: 'full', color: 'display' }}
-                          value={field.state.value ?? ''}
+                          value={field.value ?? ''}
                           placeholder="Meaning or definition"
                           onChange={(e) => {
                             field.handleChange(e.target.value);
@@ -633,7 +630,7 @@ export function RecordForm({
               <Label htmlFor="summary">Summary</Label>
               <DynamicTextarea
                 id="summary"
-                value={field.state.value ?? ''}
+                value={field.value ?? ''}
                 placeholder="A brief summary of this record"
                 onChange={(e) => {
                   field.handleChange(e.target.value);
@@ -652,7 +649,7 @@ export function RecordForm({
               <Label htmlFor="content">Content</Label>
               <DynamicTextarea
                 id="content"
-                value={field.state.value ?? ''}
+                value={field.value ?? ''}
                 placeholder="Main content"
                 onChange={(e) => {
                   field.handleChange(e.target.value);
@@ -698,7 +695,7 @@ export function RecordForm({
                   <DynamicTextarea
                     ref={mediaCaptionRef}
                     id="mediaCaption"
-                    value={captionField.state.value ?? ''}
+                    value={captionField.value ?? ''}
                     placeholder="Add a caption..."
                     onChange={(e) => {
                       captionField.handleChange(e.target.value);
@@ -730,7 +727,7 @@ export function RecordForm({
               </Label>
               <DynamicTextarea
                 id="notes"
-                value={field.state.value ?? ''}
+                value={field.value ?? ''}
                 placeholder="Add notes..."
                 onChange={(e) => {
                   field.handleChange(e.target.value);
