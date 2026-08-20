@@ -1,6 +1,5 @@
-import babel from '@rolldown/plugin-babel';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
-import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react';
+import viteReact from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import { ClientEnvSchema, EnvSchema, PortSchema } from './src/shared/lib/env.ts'; // Extension required for `configLoader: 'native'`
 
@@ -56,8 +55,7 @@ export default defineConfig(({ mode }) => {
         srcDirectory: './src/app',
         spa: { enabled: true },
       }),
-      viteReact(),
-      babel({ presets: [reactCompilerPreset()] }),
+      viteReact({ compiler: true }),
     ],
   };
 });

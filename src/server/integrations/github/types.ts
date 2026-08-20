@@ -1,6 +1,12 @@
 import { emptyStringToNull } from '@hozo';
 import { z } from 'zod';
 
+/**
+ * GitHub's OpenAPI schema types resource ids as `number | bigint`, while every
+ * GitHub id column in the database is a 32-bit integer.
+ */
+export const toGithubId = (id: number | bigint): number => Number(id);
+
 export const GithubEventSchema = z.object({
   id: z.string(),
   type: z.string(),

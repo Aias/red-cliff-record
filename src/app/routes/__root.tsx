@@ -118,6 +118,20 @@ function RootComponent() {
   );
 }
 
+// Lives outside the component because React Compiler cannot lower a dynamic
+// import inside one, and bails on the whole component when it finds one.
+function loadReactScan() {
+  return import('react-scan')
+    .then(({ scan }) => {
+      scan({
+        enabled: false,
+      });
+    })
+    .catch((err) => {
+      console.error('Failed to load react-scan:', err);
+    });
+}
+
 function RootDocument({
   children,
   appearance,
@@ -125,15 +139,7 @@ function RootDocument({
 }: Readonly<{ children: ReactNode; appearance: Theme; isTransitioning: boolean }>) {
   useEffect(() => {
     if (import.meta.env.DEV) {
-      import('react-scan')
-        .then(({ scan }) => {
-          scan({
-            enabled: false,
-          });
-        })
-        .catch((err) => {
-          console.error('Failed to load react-scan:', err);
-        });
+      void loadReactScan();
     }
   }, []);
   return (

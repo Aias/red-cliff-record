@@ -15,6 +15,7 @@ import { createIntegrationLogger } from '../common/logging';
 import { createGithubClient } from './octokit';
 import { syncCommitSummaries } from './summarize-commits';
 import { ensureGithubUserExists } from './sync-users';
+import { toGithubId } from './types';
 
 const logger = createIntegrationLogger('github', 'sync-commits');
 
@@ -85,11 +86,11 @@ async function ensureRepositoryExists(
 
   // Prepare repository data for insertion
   const newRepo: GithubRepositoryInsert = {
-    id: repoData.id,
+    id: toGithubId(repoData.id),
     nodeId: repoData.node_id,
     name: repoData.name,
     fullName: repoData.full_name,
-    ownerId: repoData.owner.id,
+    ownerId: toGithubId(repoData.owner.id),
     private: repoData.private,
     htmlUrl: repoData.html_url,
     homepageUrl: repoData.homepage,
@@ -116,7 +117,7 @@ async function ensureRepositoryExists(
       },
     });
 
-  return repoData.id;
+  return toGithubId(repoData.id);
 }
 
 /**
@@ -171,10 +172,11 @@ async function syncGitHubCommits(
 
   const ensuredRepositories = new Map<number, Promise<number>>();
   const ensureRepositoryOnce = (repoData: GithubRepository): Promise<number> => {
-    let ensured = ensuredRepositories.get(repoData.id);
+    const repositoryId = toGithubId(repoData.id);
+    let ensured = ensuredRepositories.get(repositoryId);
     if (!ensured) {
       ensured = ensureRepositoryExists(repoData, integrationRunId);
-      ensuredRepositories.set(repoData.id, ensured);
+      ensuredRepositories.set(repositoryId, ensured);
     }
     return ensured;
   };
@@ -213,7 +215,7 @@ async function syncGitHubCommits(
         sha: item.sha,
         message: item.commit.message,
         htmlUrl: item.html_url,
-        repositoryId: item.repository.id,
+        repositoryId: toGithubId(item.repository.id),
         committedAt: item.commit.committer?.date ? new Date(item.commit.committer.date) : null,
         contentCreatedAt: new Date(item.commit.author.date),
         integrationRunId,

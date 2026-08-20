@@ -30,15 +30,15 @@ export function useRecordUpload(recordId: DbId): UseRecordUploadResult {
           fileName: file.name,
           fileType: file.type,
         });
+        setIsUploading(false);
         setIsSuccess(true);
         toast.success('Media uploaded');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error during upload';
+        setIsUploading(false);
         setError(err instanceof Error ? err : new Error(message));
         toast.error(`Upload failed: ${message}`);
         throw err;
-      } finally {
-        setIsUploading(false);
       }
     },
     [recordId, createMediaMutation]

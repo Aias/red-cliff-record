@@ -123,34 +123,32 @@ export const RankSection = ({ id }: { id: DbId }) => {
     const [winnerId, loserId] = focusWins ? [id, opponentId] : [opponentId, id];
     setSubmitting(true);
     void (async () => {
-      try {
-        // Read pre-matchup scores so the reveal deltas match what the mutator
-        // computes inside its transaction.
-        const [focus, opponent, focusMatchups, opponentMatchups] = await Promise.all([
-          zero.run(queries.record({ id })),
-          zero.run(queries.record({ id: opponentId })),
-          zero.run(queries.recordMatchups({ id })),
-          zero.run(queries.recordMatchups({ id: opponentId })),
-        ]);
-        if (!focus || !opponent) return;
-        const [winner, winnerMatchups, loser, loserMatchups] = focusWins
-          ? [focus, focusMatchups, opponent, opponentMatchups]
-          : [opponent, opponentMatchups, focus, focusMatchups];
-        const { deltaA: winnerDelta, deltaB: loserDelta } = eloDeltas(
-          { eloScore: winner.eloScore, matchupCount: winnerMatchups.length },
-          { eloScore: loser.eloScore, matchupCount: loserMatchups.length },
-          'win'
-        );
-        await zeroMutate(mutators.elo.submitMatchup({ winnerId, loserId }));
-        setReveal({
-          opponentId,
-          focusDelta: focusWins ? winnerDelta : loserDelta,
-          opponentDelta: focusWins ? loserDelta : winnerDelta,
-        });
-      } finally {
-        setSubmitting(false);
-      }
-    })();
+      // Read pre-matchup scores so the reveal deltas match what the mutator
+      // computes inside its transaction.
+      const [focus, opponent, focusMatchups, opponentMatchups] = await Promise.all([
+        zero.run(queries.record({ id })),
+        zero.run(queries.record({ id: opponentId })),
+        zero.run(queries.recordMatchups({ id })),
+        zero.run(queries.recordMatchups({ id: opponentId })),
+      ]);
+      if (!focus || !opponent) return;
+      const [winner, winnerMatchups, loser, loserMatchups] = focusWins
+        ? [focus, focusMatchups, opponent, opponentMatchups]
+        : [opponent, opponentMatchups, focus, focusMatchups];
+      const { deltaA: winnerDelta, deltaB: loserDelta } = eloDeltas(
+        { eloScore: winner.eloScore, matchupCount: winnerMatchups.length },
+        { eloScore: loser.eloScore, matchupCount: loserMatchups.length },
+        'win'
+      );
+      await zeroMutate(mutators.elo.submitMatchup({ winnerId, loserId }));
+      setReveal({
+        opponentId,
+        focusDelta: focusWins ? winnerDelta : loserDelta,
+        opponentDelta: focusWins ? loserDelta : winnerDelta,
+      });
+    })().finally(() => {
+      setSubmitting(false);
+    });
   };
 
   const onRevealTimeout = useEffectEvent(() => {
