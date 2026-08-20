@@ -68,12 +68,11 @@ export const MediaUpload = ({
         setError(errorMessage);
         setStatusMessage('Drag file here, paste, or click to upload');
         toast.error(errorMessage);
-      } finally {
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        setIsLoading(false);
       }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      setIsLoading(false);
     },
     [onUpload, validationSchema, isLoading]
   );

@@ -71,7 +71,7 @@ export function Masonry<T>({
           if (!key) continue;
           const h = entry.borderBoxSize[0]?.blockSize ?? 0;
           if (prev.get(key) !== h) {
-            next ??= new Map(prev);
+            next = next ?? new Map(prev);
             next.set(key, h);
           }
         }
