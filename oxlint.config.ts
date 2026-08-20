@@ -46,10 +46,24 @@ export default defineConfig({
     // React
     'react/jsx-key': 'warn',
     'react/rules-of-hooks': 'error',
-    'react/react-compiler': 'error',
     'react/exhaustive-deps': 'warn',
     'react/self-closing-comp': 'warn',
     'react/jsx-no-useless-fragment': 'warn',
+
+    // React Compiler
+    'react/error-boundaries': 'error',
+    'react/globals': 'error',
+    'react/immutability': 'error',
+    'react/incompatible-library': 'error',
+    'react/preserve-manual-memoization': 'error',
+    'react/purity': 'error',
+    'react/refs': 'error',
+    'react/set-state-in-effect': 'error',
+    'react/set-state-in-render': 'error',
+    'react/static-components': 'error',
+    'react/unsupported-syntax': 'error',
+    'react/use-memo': 'error',
+    'react/void-use-memo': 'error',
 
     // General
     'eslint/array-callback-return': 'warn',
