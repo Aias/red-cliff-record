@@ -6,6 +6,7 @@ import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { logRateLimitInfo } from '../common/log-rate-limit-info';
 import { createIntegrationLogger } from '../common/logging';
 import { createGithubClient } from './octokit';
+import { toGithubId } from './types';
 
 const logger = createIntegrationLogger('github', 'sync-users');
 
@@ -26,7 +27,7 @@ const USER_CONCURRENCY = 10;
  */
 export async function ensureGithubUserExists(
   userData: {
-    id: number;
+    id: number | bigint;
     login: string;
     node_id: string;
     html_url: string;
@@ -37,7 +38,7 @@ export async function ensureGithubUserExists(
 ): Promise<number> {
   // Prepare user data for insertion
   const user: GithubUserInsert = {
-    id: userData.id,
+    id: toGithubId(userData.id),
     login: userData.login,
     nodeId: userData.node_id,
     htmlUrl: userData.html_url,
@@ -59,7 +60,7 @@ export async function ensureGithubUserExists(
       },
     });
 
-  return userData.id;
+  return toGithubId(userData.id);
 }
 
 /**
