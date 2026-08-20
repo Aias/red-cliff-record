@@ -9,10 +9,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # 1 – Install Node.js 24 (required for oxlint.config.ts)
+      # 1 – Install Node.js 26 (required for oxlint.config.ts)
       - uses: actions/setup-node@v5
         with:
-          node-version: '24'
+          node-version: '26'
 
       # 2 – Install Bun
       - uses: oven-sh/setup-bun@v2
