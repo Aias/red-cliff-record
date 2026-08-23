@@ -5,11 +5,13 @@
  * - avatars: Upload external avatar URLs to R2
  * - alt-text: Generate alt text for image/video media using OpenAI vision
  * - embeddings: Generate text embeddings for records
+ * - elo: Refit ELO scores from the stored matchup history
  */
 
 import { z } from 'zod';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
+import { runEloRefit } from '@/server/services/refit-elo';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
 import { assertNever } from '@/shared/lib/type-utils';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
@@ -17,7 +19,7 @@ import { createError } from '../lib/errors';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
-const EnrichmentNameSchema = z.enum(['avatars', 'alt-text', 'embeddings']);
+const EnrichmentNameSchema = z.enum(['avatars', 'alt-text', 'embeddings', 'elo']);
 type EnrichmentName = z.infer<typeof EnrichmentNameSchema>;
 const ENRICHMENT_LIST = EnrichmentNameSchema.options;
 
@@ -33,8 +35,9 @@ const EnrichOptionsSchema = BaseOptionsSchema.extend({
  *   avatars     Upload external avatar URLs to R2
  *   alt-text    Generate alt text for image/video media using OpenAI vision
  *   embeddings  Generate text embeddings for records
+ *   elo         Refit ELO scores from the stored matchup history
  *
- * If no enrichment is specified, runs all three in order.
+ * If no enrichment is specified, runs all of them in order.
  *
  * Options:
  *   --limit=N   For alt-text: max media items to process (default: 100)
@@ -102,16 +105,25 @@ async function runSingleEnrichment(enrichment: EnrichmentName, options: EnrichOp
         duration: Math.round(performance.now() - startTime),
       };
     }
+    case 'elo': {
+      const result = await runEloRefit();
+      return {
+        enrichment,
+        success: true,
+        ...result,
+        duration: Math.round(performance.now() - startTime),
+      };
+    }
     default:
       assertNever(enrichment);
   }
 }
 
 /**
- * Run all enrichments in order: avatars → alt-text → embeddings
+ * Run all enrichments in order: avatars → alt-text → embeddings → elo
  */
 async function runAllEnrichments(options: EnrichOptions) {
-  const enrichments: EnrichmentName[] = ['avatars', 'alt-text', 'embeddings'];
+  const enrichments: EnrichmentName[] = ['avatars', 'alt-text', 'embeddings', 'elo'];
   const results: Array<{ enrichment: string; success: boolean; error?: string }> = [];
   const startTime = performance.now();
 

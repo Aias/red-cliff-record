@@ -2,9 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import {
   eloDeltas,
   expectedScore,
+  fitBradleyTerry,
   kFactor,
+  relevanceToEloPriors,
   selectMatchup,
   selectOpponents,
+  type MatchupOutcome,
   type PoolCandidate,
 } from './elo';
 
@@ -176,5 +179,127 @@ describe('eloDeltas', () => {
     );
     expect(deltaA).toBe(16);
     expect(deltaB).toBe(-8);
+  });
+});
+
+describe('fitBradleyTerry', () => {
+  const win = (winnerId: number, loserId: number): MatchupOutcome => ({
+    recordAId: winnerId,
+    recordBId: loserId,
+    winnerId,
+  });
+  const draw = (recordAId: number, recordBId: number): MatchupOutcome => ({
+    recordAId,
+    recordBId,
+    winnerId: null,
+  });
+  const score = (scores: Map<number, number>, id: number): number => {
+    const value = scores.get(id);
+    if (value === undefined) throw new Error(`No score for record ${id}`);
+    return value;
+  };
+
+  test('empty history fits nothing', () => {
+    expect(fitBradleyTerry([]).size).toBe(0);
+  });
+
+  test('a single win places the winner symmetrically above the loser', () => {
+    const scores = fitBradleyTerry([win(1, 2)]);
+    expect(score(scores, 1)).toBeGreaterThan(1200);
+    expect(score(scores, 1) - 1200).toBe(1200 - score(scores, 2));
+  });
+
+  test('a draw leaves both records at the default score', () => {
+    const scores = fitBradleyTerry([draw(1, 2)]);
+    expect(score(scores, 1)).toBe(1200);
+    expect(score(scores, 2)).toBe(1200);
+  });
+
+  test('orders a transitive chain never directly compared end to end', () => {
+    const scores = fitBradleyTerry([win(1, 2), win(1, 2), win(2, 3), win(2, 3)]);
+    expect(score(scores, 1)).toBeGreaterThan(score(scores, 2));
+    expect(score(scores, 2)).toBeGreaterThan(score(scores, 3));
+  });
+
+  test('a result propagates to records outside the new matchup', () => {
+    const history = [win(1, 2), win(2, 3)];
+    const before = fitBradleyTerry(history);
+    const after = fitBradleyTerry([...history, win(3, 4)]);
+    // Record 3 proving strength lifts record 2 (who beat it), and record 1 in turn.
+    expect(score(after, 2)).toBeGreaterThan(score(before, 2));
+    expect(score(after, 1)).toBeGreaterThan(score(before, 1));
+  });
+
+  test('the anchor keeps an undefeated record finite', () => {
+    const scores = fitBradleyTerry(Array.from({ length: 20 }, () => win(1, 2)));
+    expect(score(scores, 1)).toBeGreaterThan(1200);
+    expect(score(scores, 1)).toBeLessThan(2400);
+  });
+
+  test('disconnected components share a common scale', () => {
+    const scores = fitBradleyTerry([win(1, 2), win(3, 4)]);
+    expect(score(scores, 1)).toBe(score(scores, 3));
+    expect(score(scores, 2)).toBe(score(scores, 4));
+  });
+
+  test('priors: a record with no matchups scores exactly its prior', () => {
+    const scores = fitBradleyTerry([win(1, 2)], new Map([[3, 1750]]));
+    expect(score(scores, 3)).toBe(1750);
+  });
+
+  test('priors: equal wins over equal opponents preserve the prior gap', () => {
+    const priors = new Map([
+      [1, 1800],
+      [2, 900],
+      [3, 1200],
+      [4, 1200],
+    ]);
+    const scores = fitBradleyTerry([win(1, 3), win(2, 4)], priors);
+    expect(score(scores, 1)).toBeGreaterThan(score(scores, 2));
+    expect(score(scores, 1)).toBeGreaterThan(1800);
+    expect(score(scores, 2)).toBeGreaterThan(900);
+  });
+
+  test('priors: beating a stronger opponent earns more', () => {
+    const priors = new Map([
+      [1, 1200],
+      [2, 1200],
+      [3, 1600],
+      [4, 1000],
+    ]);
+    const scores = fitBradleyTerry([win(1, 3), win(2, 4)], priors);
+    expect(score(scores, 1)).toBeGreaterThan(score(scores, 2));
+  });
+});
+
+describe('relevanceToEloPriors', () => {
+  test('a single record sits at the 1200 median', () => {
+    expect(relevanceToEloPriors(new Map([[1, 7]])).get(1)).toBe(1200);
+  });
+
+  test('ordering follows relevance and ties share a score', () => {
+    const priors = relevanceToEloPriors(
+      new Map([
+        [1, 10],
+        [2, 5],
+        [3, 5],
+        [4, 1],
+      ])
+    );
+    expect(priors.get(2)).toBe(priors.get(3));
+    expect(priors.get(1)).toBeGreaterThan(priors.get(2) ?? 0);
+    expect(priors.get(2)).toBeGreaterThan(priors.get(4) ?? 0);
+  });
+
+  test('percentiles map symmetrically around 1200', () => {
+    const priors = relevanceToEloPriors(
+      new Map([
+        [1, 1],
+        [2, 2],
+        [3, 3],
+      ])
+    );
+    expect(priors.get(2)).toBe(1200);
+    expect((priors.get(1) ?? 0) - 1200).toBe(1200 - (priors.get(3) ?? 0));
   });
 });

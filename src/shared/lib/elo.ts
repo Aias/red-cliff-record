@@ -124,3 +124,138 @@ export function eloDeltas(
   const deltaB = Math.round(kFactor(b.matchupCount) * (1 - actualA - (1 - expectedA)));
   return { deltaA, deltaB };
 }
+
+/** A stored matchup outcome; a null winner is a draw. */
+export type MatchupOutcome = { recordAId: number; recordBId: number; winnerId: number | null };
+
+const DEFAULT_ELO = 1200;
+/** Points per tenfold strength ratio on the Elo scale, matching expectedScore. */
+const ELO_SCALE = 400;
+/** Spread of the prior distribution records are percentile-mapped onto. */
+const PRIOR_SD = 150;
+
+/**
+ * Pseudo-draws each record plays against a fixed anchor at its own prior
+ * score. They weight the prior against matchup evidence, keep undefeated
+ * records finite, and pin disconnected regions of the comparison graph to a
+ * common scale.
+ */
+const REFIT_ANCHOR_GAMES = 2;
+const REFIT_MAX_ITERATIONS = 1000;
+const REFIT_TOLERANCE = 1e-10;
+
+const toStrength = (elo: number): number => 10 ** ((elo - DEFAULT_ELO) / ELO_SCALE);
+
+/** Inverse standard normal CDF (Acklam's approximation, |error| < 1.2e-9) on (0, 1). */
+function probit(p: number): number {
+  const pLow = 0.02425;
+  if (p < pLow || p > 1 - pLow) {
+    const q = Math.sqrt(-2 * Math.log(Math.min(p, 1 - p)));
+    const z =
+      (((((-7.784894002430293e-3 * q + -3.223964580411365e-1) * q + -2.400758277161838) * q +
+        -2.549732539343734) *
+        q +
+        4.374664141464968) *
+        q +
+        2.938163982698783) /
+      ((((7.784695709041462e-3 * q + 3.224671290700398e-1) * q + 2.445134137142996) * q +
+        3.754408661907416) *
+        q +
+        1);
+    return p < pLow ? z : -z;
+  }
+  const q = p - 0.5;
+  const r = q * q;
+  return (
+    ((((((-3.969683028665376e1 * r + 2.209460984245205e2) * r + -2.759285104469687e2) * r +
+      1.38357751867269e2) *
+      r +
+      -3.066479806614716e1) *
+      r +
+      2.506628277459239) *
+      q) /
+    (((((-5.447609879822406e1 * r + 1.615858368580409e2) * r + -1.556989798598866e2) * r +
+      6.680131188771972e1) *
+      r +
+      -1.328068155288572e1) *
+      r +
+      1)
+  );
+}
+
+/**
+ * Map raw relevance values onto the Elo scale by percentile rank through the
+ * inverse normal CDF, centered on the 1200 default, so priors follow the
+ * bell-shaped distribution matchup play converges to. Ties share the average
+ * rank, and the median relevance lands on 1200.
+ */
+export function relevanceToEloPriors(relevances: ReadonlyMap<number, number>): Map<number, number> {
+  const tiers = [...Map.groupBy(relevances, ([, relevance]) => relevance)].sort(
+    ([a], [b]) => a - b
+  );
+  const priors = new Map<number, number>();
+  let rank = 0;
+  for (const [, tied] of tiers) {
+    const percentile = (rank + tied.length / 2) / relevances.size;
+    const elo = Math.round(DEFAULT_ELO + PRIOR_SD * probit(percentile));
+    for (const [id] of tied) priors.set(id, elo);
+    rank += tied.length;
+  }
+  return priors;
+}
+
+/**
+ * Refit scores for every record in the matchup history or the priors map with
+ * a Bradley-Terry model, via the minorization-maximization algorithm (Hunter
+ * 2004). Unlike incremental Elo, each result propagates through the whole
+ * comparison graph: beating a record also strengthens the case against
+ * everything that record has beaten. Each record anchors at its prior score
+ * (1200 when absent), so matchup evidence moves records relative to their
+ * priors and a record with no matchups scores exactly its prior. Strengths
+ * map onto the Elo scale used by expectedScore (strength ratio 10 = 400
+ * points).
+ */
+export function fitBradleyTerry(
+  matchups: readonly MatchupOutcome[],
+  priors: ReadonlyMap<number, number> = new Map()
+): Map<number, number> {
+  const wins = new Map<number, number>();
+  const games = new Map<number, Map<number, number>>();
+  const addGame = (id: number, opponentId: number, won: number) => {
+    wins.set(id, (wins.get(id) ?? 0) + won);
+    const opponents = games.get(id) ?? new Map<number, number>();
+    opponents.set(opponentId, (opponents.get(opponentId) ?? 0) + 1);
+    games.set(id, opponents);
+  };
+  for (const { recordAId, recordBId, winnerId } of matchups) {
+    const winA = winnerId === null ? 0.5 : winnerId === recordAId ? 1 : 0;
+    addGame(recordAId, recordBId, winA);
+    addGame(recordBId, recordAId, 1 - winA);
+  }
+  const anchors = new Map<number, number>();
+  for (const id of [...games.keys(), ...priors.keys()]) {
+    anchors.set(id, toStrength(priors.get(id) ?? DEFAULT_ELO));
+  }
+  const strengths = new Map(anchors);
+  for (let iteration = 0; iteration < REFIT_MAX_ITERATIONS; iteration++) {
+    let maxChange = 0;
+    for (const [id, opponents] of games) {
+      const anchor = anchors.get(id) ?? 1;
+      const strength = strengths.get(id) ?? anchor;
+      let denominator = REFIT_ANCHOR_GAMES / (strength + anchor);
+      for (const [opponentId, count] of opponents) {
+        denominator += count / (strength + (strengths.get(opponentId) ?? 1));
+      }
+      const next = ((wins.get(id) ?? 0) + REFIT_ANCHOR_GAMES / 2) / denominator;
+      maxChange = Math.max(maxChange, Math.abs(next - strength) / strength);
+      strengths.set(id, next);
+    }
+    if (maxChange < REFIT_TOLERANCE) break;
+  }
+  return new Map(
+    [...strengths].map(([id, strength]) => [
+      id,
+      Math.round(DEFAULT_ELO + ELO_SCALE * Math.log10(strength)),
+    ])
+  );
+}
