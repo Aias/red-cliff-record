@@ -176,10 +176,11 @@ Commands:
   sync                          Run all daily syncs + enrich
   sync <integration>            Run a single sync (github, readwise, etc.) + enrich
 
-  enrich [enrichment]           Run enrichments (avatars, alt-text, embeddings)
+  enrich [enrichment]           Run enrichments (avatars, alt-text, embeddings, elo)
   enrich avatars                Upload external avatar URLs to R2
   enrich alt-text               Generate alt text for image/video media [--limit=N]
   enrich embeddings             Generate text embeddings for records
+  enrich elo                    Refit ELO scores from matchup history
 
   db backup <prod|dev>          Backup database [--data-only] [--dry-run|-n]
   db restore <prod|dev>         Restore database [--clean] [--data-only] [--dry-run|-n]
