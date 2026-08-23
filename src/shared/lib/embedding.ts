@@ -85,6 +85,13 @@ const joinList = (items: string[], threshold = 4): string => {
  * deliberately excluded: they describe where a record came from rather than
  * what it says, and including them clusters records by platform (e.g., all
  * tweets near all tweets) instead of by meaning.
+ *
+ * Relation lines lead with the record's own title rather than a bare label
+ * for the same reason: in a sparse record the label is most of the document,
+ * so two unrelated entities that both read "Creator of: …" embed closer to
+ * each other than to a fully populated record about the same subject.
+ * Repeating the title keeps identity tokens, not shared scaffolding,
+ * dominant in the vector.
  */
 export const createRecordEmbeddingText = (record: EmbeddingRecord) => {
   const { title, content, summary, notes, mediaCaption, outgoingLinks, incomingLinks, media } =
@@ -118,6 +125,9 @@ export const createRecordEmbeddingText = (record: EmbeddingRecord) => {
 
   const parts: string[] = [];
 
+  const relationLine = (subjectPhrase: string, barePhrase: string, titles: string[]) =>
+    title ? `${title} ${subjectPhrase}: ${joinList(titles)}` : `${barePhrase}: ${joinList(titles)}`;
+
   // === PRIMARY CONTENT (highest semantic value) ===
 
   // Title with context
@@ -132,7 +142,13 @@ export const createRecordEmbeddingText = (record: EmbeddingRecord) => {
 
   // Parent context (where this content comes from)
   if (parents.length > 0) {
-    parts.push(`From: ${parents.map((p) => getRecordTitle(p)).join(', ')}`);
+    parts.push(
+      relationLine(
+        'is from',
+        'From',
+        parents.map((p) => getRecordTitle(p))
+      )
+    );
   }
 
   // Core content
@@ -155,7 +171,7 @@ export const createRecordEmbeddingText = (record: EmbeddingRecord) => {
   // Child content (excerpts, highlights, etc.)
   if (children.length > 0) {
     const childTitles = children.map((c) => getRecordTitle(c, 500));
-    parts.push(`Contains: ${joinList(childTitles)}`);
+    parts.push(relationLine('contains', 'Contains', childTitles));
   }
 
   // Notes (user annotations)
@@ -167,23 +183,23 @@ export const createRecordEmbeddingText = (record: EmbeddingRecord) => {
 
   if (references.length > 0) {
     const refTitles = references.map((r) => getRecordTitle(r));
-    parts.push(`References: ${joinList(refTitles)}`);
+    parts.push(relationLine('references', 'References', refTitles));
   }
   if (referencedBy.length > 0) {
     const refByTitles = referencedBy.map((r) => getRecordTitle(r));
-    parts.push(`Referenced by: ${joinList(refByTitles)}`);
+    parts.push(relationLine('is referenced by', 'Referenced by', refByTitles));
   }
   if (associations.length > 0) {
     const assocTitles = associations.map((a) => getRecordTitle(a));
-    parts.push(`Related: ${joinList(assocTitles)}`);
+    parts.push(relationLine('is related to', 'Related', assocTitles));
   }
   if (tags.length > 0) {
     const tagTitles = tags.map((t) => getRecordTitle(t));
-    parts.push(`Tags: ${joinList(tagTitles)}`);
+    parts.push(relationLine('is tagged', 'Tags', tagTitles));
   }
   if (created.length > 0) {
     const createdTitles = created.map((c) => getRecordTitle(c));
-    parts.push(`Creator of: ${joinList(createdTitles)}`);
+    parts.push(relationLine('created', 'Creator of', createdTitles));
   }
 
   return parts.join('\n\n');
