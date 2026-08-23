@@ -74,7 +74,8 @@ export const normalizedTitleColumn = (column: Column): SQL =>
  */
 export const titleMatchTier = (column: Column, normalizedTitle: string | null): SQL<number> =>
   normalizedTitle === null
-    ? sql<number>`(0)`
+    ? // The cast keeps ORDER BY from reading the bare constant as a column position.
+      sql<number>`(0::int)`
     : sql<number>`CASE
         WHEN ${normalizedTitleColumn(column)} = ${normalizedTitle} THEN 2
         WHEN similarity(${column}, ${normalizedTitle}) >= ${TITLE_VARIANT_SIMILARITY} THEN 1
