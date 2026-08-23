@@ -124,3 +124,57 @@ export function eloDeltas(
   const deltaB = Math.round(kFactor(b.matchupCount) * (1 - actualA - (1 - expectedA)));
   return { deltaA, deltaB };
 }
+
+/** A stored matchup outcome; a null winner is a draw. */
+export type MatchupOutcome = { recordAId: number; recordBId: number; winnerId: number | null };
+
+/**
+ * Pseudo-draws each record plays against a fixed 1200-rated anchor. They keep
+ * undefeated records finite, shrink sparse histories toward the default score,
+ * and pin disconnected regions of the comparison graph to a common scale.
+ */
+const REFIT_ANCHOR_GAMES = 2;
+const REFIT_MAX_ITERATIONS = 1000;
+const REFIT_TOLERANCE = 1e-10;
+
+/**
+ * Refit scores for every record in the matchup history with a Bradley-Terry
+ * model, via the minorization-maximization algorithm (Hunter 2004). Unlike
+ * incremental Elo, each result propagates through the whole comparison graph:
+ * beating a record also strengthens the case against everything that record
+ * has beaten. Strengths map onto the Elo scale used by expectedScore
+ * (strength ratio 10 = 400 points), anchored so unplayed strength is 1200.
+ */
+export function fitBradleyTerry(matchups: readonly MatchupOutcome[]): Map<number, number> {
+  const wins = new Map<number, number>();
+  const games = new Map<number, Map<number, number>>();
+  const addGame = (id: number, opponentId: number, won: number) => {
+    wins.set(id, (wins.get(id) ?? 0) + won);
+    const opponents = games.get(id) ?? new Map<number, number>();
+    opponents.set(opponentId, (opponents.get(opponentId) ?? 0) + 1);
+    games.set(id, opponents);
+  };
+  for (const { recordAId, recordBId, winnerId } of matchups) {
+    const winA = winnerId === null ? 0.5 : winnerId === recordAId ? 1 : 0;
+    addGame(recordAId, recordBId, winA);
+    addGame(recordBId, recordAId, 1 - winA);
+  }
+  const strengths = new Map([...games.keys()].map((id): [number, number] => [id, 1]));
+  for (let iteration = 0; iteration < REFIT_MAX_ITERATIONS; iteration++) {
+    let maxChange = 0;
+    for (const [id, opponents] of games) {
+      const strength = strengths.get(id) ?? 1;
+      let denominator = REFIT_ANCHOR_GAMES / (strength + 1);
+      for (const [opponentId, count] of opponents) {
+        denominator += count / (strength + (strengths.get(opponentId) ?? 1));
+      }
+      const next = ((wins.get(id) ?? 0) + REFIT_ANCHOR_GAMES / 2) / denominator;
+      maxChange = Math.max(maxChange, Math.abs(next - strength) / strength);
+      strengths.set(id, next);
+    }
+    if (maxChange < REFIT_TOLERANCE) break;
+  }
+  return new Map(
+    [...strengths].map(([id, strength]) => [id, Math.round(1200 + 400 * Math.log10(strength))])
+  );
+}

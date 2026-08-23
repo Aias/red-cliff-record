@@ -2,9 +2,11 @@ import { describe, expect, test } from 'bun:test';
 import {
   eloDeltas,
   expectedScore,
+  fitBradleyTerry,
   kFactor,
   selectMatchup,
   selectOpponents,
+  type MatchupOutcome,
   type PoolCandidate,
 } from './elo';
 
@@ -176,5 +178,66 @@ describe('eloDeltas', () => {
     );
     expect(deltaA).toBe(16);
     expect(deltaB).toBe(-8);
+  });
+});
+
+describe('fitBradleyTerry', () => {
+  const win = (winnerId: number, loserId: number): MatchupOutcome => ({
+    recordAId: winnerId,
+    recordBId: loserId,
+    winnerId,
+  });
+  const draw = (recordAId: number, recordBId: number): MatchupOutcome => ({
+    recordAId,
+    recordBId,
+    winnerId: null,
+  });
+  const score = (scores: Map<number, number>, id: number): number => {
+    const value = scores.get(id);
+    if (value === undefined) throw new Error(`No score for record ${id}`);
+    return value;
+  };
+
+  test('empty history fits nothing', () => {
+    expect(fitBradleyTerry([]).size).toBe(0);
+  });
+
+  test('a single win places the winner symmetrically above the loser', () => {
+    const scores = fitBradleyTerry([win(1, 2)]);
+    expect(score(scores, 1)).toBeGreaterThan(1200);
+    expect(score(scores, 1) - 1200).toBe(1200 - score(scores, 2));
+  });
+
+  test('a draw leaves both records at the default score', () => {
+    const scores = fitBradleyTerry([draw(1, 2)]);
+    expect(score(scores, 1)).toBe(1200);
+    expect(score(scores, 2)).toBe(1200);
+  });
+
+  test('orders a transitive chain never directly compared end to end', () => {
+    const scores = fitBradleyTerry([win(1, 2), win(1, 2), win(2, 3), win(2, 3)]);
+    expect(score(scores, 1)).toBeGreaterThan(score(scores, 2));
+    expect(score(scores, 2)).toBeGreaterThan(score(scores, 3));
+  });
+
+  test('a result propagates to records outside the new matchup', () => {
+    const history = [win(1, 2), win(2, 3)];
+    const before = fitBradleyTerry(history);
+    const after = fitBradleyTerry([...history, win(3, 4)]);
+    // Record 3 proving strength lifts record 2 (who beat it), and record 1 in turn.
+    expect(score(after, 2)).toBeGreaterThan(score(before, 2));
+    expect(score(after, 1)).toBeGreaterThan(score(before, 1));
+  });
+
+  test('the anchor keeps an undefeated record finite', () => {
+    const scores = fitBradleyTerry(Array.from({ length: 20 }, () => win(1, 2)));
+    expect(score(scores, 1)).toBeGreaterThan(1200);
+    expect(score(scores, 1)).toBeLessThan(2400);
+  });
+
+  test('disconnected components share a common scale', () => {
+    const scores = fitBradleyTerry([win(1, 2), win(3, 4)]);
+    expect(score(scores, 1)).toBe(score(scores, 3));
+    expect(score(scores, 2)).toBe(score(scores, 4));
   });
 });

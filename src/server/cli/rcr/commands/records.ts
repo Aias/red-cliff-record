@@ -339,6 +339,17 @@ export const merge: CommandHandler = async (args, options) => {
 };
 
 /**
+ * Refit all ELO scores from the stored matchup history (batch Bradley-Terry)
+ * Usage: rcr records refit-elo
+ */
+export const refitElo: CommandHandler = async (_args, options) => {
+  parseOptions(BaseOptionsSchema.strict(), options);
+  const result = await caller.records.refitElo();
+  return success(result);
+};
+export { refitElo as 'refit-elo' };
+
+/**
  * Generate embedding for record(s)
  * Usage: rcr records embed <id...>
  */

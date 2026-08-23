@@ -143,6 +143,7 @@ Commands:
   records bulk-update <ids> <json>  Bulk update records by ID
   records delete <id...>        Delete record(s)
   records merge <src> <target>  Merge source record into target
+  records refit-elo             Refit all ELO scores from matchup history
   records embed <id...>         Generate embedding(s) for record(s)
   records tree <id...>          Get hierarchical family tree(s)
   records children <id>         Get children of a record
