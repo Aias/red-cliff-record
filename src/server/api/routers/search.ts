@@ -14,9 +14,11 @@ import {
   ftsRank,
   lexicalMatchCondition,
   normalizedUrlColumn,
+  normalizeTitle,
   normalizeUrl,
   setTrigramThresholds,
   SIMILARITY_THRESHOLD,
+  titleMatchTier,
   trigramDistance,
   URL_DUPLICATE_CANDIDATE_LIMIT,
 } from '@/server/lib/constants';
@@ -85,15 +87,15 @@ export const searchRouter = createTRPCRouter({
         await setTrigramThresholds(tx);
         return tx.query.records.findMany({
           where: {
-            RAW: (records) => lexicalMatchCondition(records, query),
+            RAW: (t) => lexicalMatchCondition(t, query),
             type: recordType,
           },
           limit,
-          orderBy: (records, { desc }) => [
-            exactMatchTier(records, query),
-            desc(ftsRank(records.textSearch, query)),
-            trigramDistance(records, query),
-            desc(records.recordUpdatedAt),
+          orderBy: (t, { desc }) => [
+            exactMatchTier(t, query),
+            desc(ftsRank(t.textSearch, query)),
+            trigramDistance(t, query),
+            desc(t.recordUpdatedAt),
           ],
           columns: {
             id: true,
@@ -200,6 +202,7 @@ export const searchRouter = createTRPCRouter({
           columns: {
             id: true,
             textEmbedding: true,
+            title: true,
             url: true,
           },
           where: {
@@ -221,7 +224,7 @@ export const searchRouter = createTRPCRouter({
         if (!recordWithLinks) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Record not found' });
         }
-        const { textEmbedding, url, outgoingLinks, incomingLinks } = recordWithLinks;
+        const { textEmbedding, title, url, outgoingLinks, incomingLinks } = recordWithLinks;
 
         const omittedIds = [
           id,
@@ -253,8 +256,30 @@ export const searchRouter = createTRPCRouter({
             ? urlMatches.map((r) => r.id)
             : [];
 
+        // A shared or near-identical title is likewise a duplicate signal that
+        // outranks cosine similarity: sparse records embed mostly as their
+        // template, so the vector space cannot be trusted to put an identically
+        // titled record above a merely similar-shaped one.
+        const seedTitle = normalizeTitle(title);
+
         if (textEmbedding === null) {
-          return urlCandidateIds.map((candidateId) => ({
+          const titleMatches = seedTitle
+            ? await db.query.records.findMany({
+                columns: { id: true },
+                where: {
+                  AND: [
+                    { id: { notIn: omittedIds } },
+                    { isPrivate: false },
+                    type ? { type } : {},
+                    { RAW: (t) => sql`${titleMatchTier(t.title, seedTitle)} > 0` },
+                  ],
+                },
+                orderBy: (t, { desc }) => [desc(titleMatchTier(t.title, seedTitle))],
+                limit,
+              })
+            : [];
+          const candidateIds = [...new Set([...urlCandidateIds, ...titleMatches.map((r) => r.id)])];
+          return candidateIds.map((candidateId) => ({
             id: candidateId,
             similarity: null,
           }));
@@ -276,6 +301,7 @@ export const searchRouter = createTRPCRouter({
               {
                 OR: [
                   ...(urlCandidateIds.length > 0 ? [{ id: { in: urlCandidateIds } }] : []),
+                  { RAW: (t) => sql`${titleMatchTier(t.title, seedTitle)} > 0` },
                   {
                     AND: [
                       { textEmbedding: { isNotNull: true } },
@@ -309,6 +335,7 @@ export const searchRouter = createTRPCRouter({
           },
           orderBy: (t, { desc }) => [
             ...(urlCandidateIds.length > 0 ? [desc(inArray(t.id, urlCandidateIds))] : []),
+            desc(titleMatchTier(t.title, seedTitle)),
             sql`similarity DESC NULLS LAST`,
             desc(t.recordUpdatedAt),
           ],

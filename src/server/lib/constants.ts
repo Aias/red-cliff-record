@@ -3,6 +3,9 @@ import { sql, type Column, type SQL } from 'drizzle-orm';
 export const SIMILARITY_THRESHOLD = 0.8; // Cosine similarity floor (higher = stricter)
 /** Max same-URL records pinned as duplicate candidates; larger clusters are junk (platform root URLs), not identity signals. */
 export const URL_DUPLICATE_CANDIDATE_LIMIT = 2;
+/** pg_trgm similarity floor for treating two titles as the same title spelled differently.
+ * Above it sit variants of one name; below it sit records that merely share a common word. */
+export const TITLE_VARIANT_SIMILARITY = 0.6;
 export const TRIGRAM_DISTANCE_THRESHOLD = 0.75; // pg_trgm distance ceiling (lower = stricter)
 export const WORD_SIMILARITY_THRESHOLD = 0.5; // pg_trgm word_similarity floor for phrase matching
 export const WORD_SIMILARITY_DISTANCE_THRESHOLD = 1 - WORD_SIMILARITY_THRESHOLD;
@@ -47,6 +50,36 @@ export const normalizeUrl = (url: string | null | undefined): string | null => {
 /** The same URL normalization as `normalizeUrl`, applied to a column. */
 export const normalizedUrlColumn = (column: Column): SQL =>
   sql`lower(regexp_replace(${column}, '^https?://(www\\.)?|/+$', '', 'g'))`;
+
+/** Strip case and collapse whitespace so titles compare by identity. */
+export const normalizeTitle = (title: string | null | undefined): string | null => {
+  if (!title) {
+    return null;
+  }
+  const normalized = title.toLowerCase().replace(/\s+/g, ' ').trim();
+  return normalized.length > 0 ? normalized : null;
+};
+
+/** The same title normalization as `normalizeTitle`, applied to a column. */
+export const normalizedTitleColumn = (column: Column): SQL =>
+  sql`btrim(lower(regexp_replace(${column}, '\\s+', ' ', 'g')))`;
+
+/**
+ * Tiered agreement with a seed title: 2 = the same title, 1 = a spelling
+ * variant, 0 = unrelated (every record, when the seed has no title). Two
+ * records sharing a title is a far stronger duplicate signal than the cosine
+ * distance between them, because sparse records embed mostly as their
+ * template — a bare name under a heading — and so sit closer to every other
+ * sparse record than to a fully populated record describing the same subject.
+ */
+export const titleMatchTier = (column: Column, normalizedTitle: string | null): SQL<number> =>
+  normalizedTitle === null
+    ? sql<number>`(0)`
+    : sql<number>`CASE
+        WHEN ${normalizedTitleColumn(column)} = ${normalizedTitle} THEN 2
+        WHEN similarity(${column}, ${normalizedTitle}) >= ${TITLE_VARIANT_SIMILARITY} THEN 1
+        ELSE 0
+      END`;
 
 /** Queries containing a dot or slash may be URLs or domains; only those should match against the url column. */
 const asUrlQuery = (query: string): string | null =>
