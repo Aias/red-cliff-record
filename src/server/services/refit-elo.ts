@@ -19,25 +19,32 @@ type RecordSignals = {
   has_media_caption: boolean;
   containment_links: string;
   other_links: string;
+  work_children: string;
   media_count: string;
 };
 
 /**
  * Compute a raw relevance score from richness signals: explicit curation as a
  * multiplier over a sqrt-dampened sum that rewards breadth of metadata
- * without letting any single signal dominate.
+ * without letting any single signal dominate. A creator's corpus lives in the
+ * quotes and children of their works, so those count toward the creator too.
+ * Entity metadata (bio, avatar, url) tracks enrichment rather than importance,
+ * so it weighs half and entities lean on their graph instead.
  */
 function computeRelevance(s: RecordSignals): number {
   const multiplier = 1 + (s.is_curated ? 1 : 0);
+  const metadataWeight = s.type === 'entity' ? 0.5 : 1;
   const richness =
     Number(s.containment_links) + // structural hierarchy (parent/child, quotes)
     Number(s.other_links) * 2 + // graph centrality (refs, tags, associations, creation)
-    Number(s.media_count) * 2 + // visual richness
-    (s.has_media_caption ? 4 : 0) + // curated media description
-    (s.has_notes ? 2 : 0) + // personal annotation
-    (s.has_url ? 1 : 0) + // has source
-    (s.has_summary ? 3 : 0) + // has summary
-    (s.has_content ? 4 : 0); // has substantial content
+    Number(s.work_children) * 2 + // corpus behind a creator's works
+    metadataWeight *
+      (Number(s.media_count) * 2 + // visual richness
+        (s.has_media_caption ? 4 : 0) + // curated media description
+        (s.has_notes ? 2 : 0) + // personal annotation
+        (s.has_url ? 1 : 0) + // has source
+        (s.has_summary ? 3 : 0) + // has summary
+        (s.has_content ? 4 : 0)); // has substantial content
   return multiplier * Math.sqrt(richness);
 }
 
@@ -59,6 +66,7 @@ async function computePriors(): Promise<Map<number, number>> {
       r.media_caption IS NOT NULL AND r.media_caption != '' AS has_media_caption,
       COALESCE(l.containment_cnt, 0) AS containment_links,
       COALESCE(l.other_cnt, 0) AS other_links,
+      COALESCE(w.cnt, 0) AS work_children,
       COALESCE(m.cnt, 0) AS media_count
     FROM records r
     LEFT JOIN (
@@ -73,6 +81,13 @@ async function computePriors(): Promise<Map<number, number>> {
       ) t
       GROUP BY rid
     ) l ON l.rid = r.id
+    LEFT JOIN (
+      SELECT wl.target_id AS rid, COUNT(*) AS cnt
+      FROM links wl
+      JOIN links cl ON cl.target_id = wl.source_id AND cl.predicate IN ('contained_by', 'quotes')
+      WHERE wl.predicate = 'created_by'
+      GROUP BY wl.target_id
+    ) w ON w.rid = r.id
     LEFT JOIN (
       SELECT record_id AS rid, COUNT(*) AS cnt
       FROM media WHERE record_id IS NOT NULL
