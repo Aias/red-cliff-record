@@ -113,6 +113,24 @@ export function useMatchupCount(id: DbId) {
 export type EloPool = { candidates: PoolCandidate[]; playedPairs: ReadonlySet<string> };
 
 /**
+ * An artifact contained by a parent (a highlight, an excerpt) is ranked
+ * through its parent; concepts and entities always stand alone.
+ */
+function rankable<T extends { type: RecordType; outgoingLinks: readonly unknown[] }>(
+  records: readonly T[]
+): T[] {
+  return records.filter(
+    (record) => record.type !== 'artifact' || record.outgoingLinks.length === 0
+  );
+}
+
+/** Live Elo scores of the rankable pool for a type, from the local synced graph. */
+export function useEloScores(type: RecordType): number[] {
+  const [records] = useZeroQuery(queries.eloPool({ type }));
+  return rankable(records).map((record) => record.eloScore);
+}
+
+/**
  * Point-in-time read of the matchup pool for a type: curated records (root
  * level only, for artifacts) with per-record matchup counts and the set of
  * pairs already played, from the local synced graph.
@@ -132,15 +150,11 @@ export async function readEloPool(
     counts.set(matchup.recordBId, (counts.get(matchup.recordBId) ?? 0) + 1);
     playedPairs.add(matchupKey(matchup.recordAId, matchup.recordBId));
   }
-  // An artifact contained by a parent (a highlight, an excerpt) is ranked
-  // through its parent; concepts and entities always stand alone.
-  const candidates = records
-    .filter((record) => record.type !== 'artifact' || record.outgoingLinks.length === 0)
-    .map((record) => ({
-      id: record.id,
-      eloScore: record.eloScore,
-      matchupCount: counts.get(record.id) ?? 0,
-    }));
+  const candidates = rankable(records).map((record) => ({
+    id: record.id,
+    eloScore: record.eloScore,
+    matchupCount: counts.get(record.id) ?? 0,
+  }));
   return { candidates, playedPairs };
 }
 

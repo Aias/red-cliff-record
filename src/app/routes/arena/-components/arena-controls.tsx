@@ -1,14 +1,12 @@
 import type { RecordType } from '@hozo';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { ChevronDownIcon, CrosshairIcon, TrendingUpIcon, XIcon } from 'lucide-react';
+import { CrosshairIcon, XIcon } from 'lucide-react';
 import { useState, type ElementType } from 'react';
-import { z } from 'zod';
 import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Command } from '@/components/command';
 import { Dialog } from '@/components/dialog';
-import { DropdownMenu } from '@/components/dropdown-menu';
 import { Spinner } from '@/components/spinner';
 import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
@@ -19,21 +17,13 @@ import { styled } from '@/styled-system/jsx';
 import { getRecordTitle } from '../../records/-components/record-parts';
 import { SearchResultItem } from '../../records/-components/search-result-item';
 import { recordTypeIcons } from '../../records/-components/type-icons';
+import { EloScrubber } from './elo-scrubber';
 
 const ARENA_TYPES: { value: RecordType; label: string; icon: ElementType }[] = [
   { value: 'artifact', label: 'Artifacts', icon: recordTypeIcons.artifact.icon },
   { value: 'concept', label: 'Concepts', icon: recordTypeIcons.concept.icon },
   { value: 'entity', label: 'Entities', icon: recordTypeIcons.entity.icon },
 ];
-
-/**
- * Score floors for matchup selection. Scores are percentile-mapped onto an
- * Elo scale centered at 1200 with roughly a 150-point spread, so these rungs
- * step from the top quarter to the top few percent of the pool.
- */
-const MIN_SCORE_OPTIONS = [1300, 1400, 1500, 1600];
-
-const MinScoreSchema = z.number().int().positive();
 
 export function ArenaControls({
   type,
@@ -59,11 +49,8 @@ export function ArenaControls({
     void navigate({ search: (prev) => ({ ...prev, focus: id }) });
   };
 
-  const handleMinScoreChange = (value: unknown) => {
-    const parsed = MinScoreSchema.safeParse(value);
-    void navigate({
-      search: (prev) => ({ ...prev, minScore: parsed.success ? parsed.data : undefined }),
-    });
+  const handleMinScoreChange = (next: number | undefined) => {
+    void navigate({ search: (prev) => ({ ...prev, minScore: next }) });
   };
 
   const clearFocus = () => {
@@ -74,74 +61,67 @@ export function ArenaControls({
     <styled.header
       css={{
         display: 'flex',
-        flexWrap: 'wrap',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: '3',
+        gap: '6',
+        width: 'full',
       }}
     >
-      <ToggleGroup.Root
-        variant="outline"
-        css={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: '[1fr]' }}
-        value={[type]}
-        onValueChange={handleTypeChange}
+      <styled.div
+        css={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '3',
+        }}
       >
-        {ARENA_TYPES.map(({ value, label, icon: Icon }) => (
-          <Tooltip.Root key={value}>
-            <Tooltip.Trigger
+        <ToggleGroup.Root
+          variant="outline"
+          css={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: '[1fr]' }}
+          value={[type]}
+          onValueChange={handleTypeChange}
+        >
+          {ARENA_TYPES.map(({ value, label, icon: Icon }) => (
+            <Tooltip.Root key={value}>
+              <Tooltip.Trigger
+                render={
+                  <ToggleGroup.Item value={value} aria-label={label}>
+                    <Icon />
+                    {label}
+                  </ToggleGroup.Item>
+                }
+              />
+              <Tooltip.Content>{recordTypeIcons[value].description}</Tooltip.Content>
+            </Tooltip.Root>
+          ))}
+        </ToggleGroup.Root>
+
+        <Dialog.Root open={searchOpen} onOpenChange={setSearchOpen}>
+          {focus !== undefined ? (
+            <FocusedRecordChip focus={focus} onClear={clearFocus} />
+          ) : (
+            <Dialog.Trigger
               render={
-                <ToggleGroup.Item value={value} aria-label={label}>
-                  <Icon />
-                  {label}
-                </ToggleGroup.Item>
+                <Button variant="outline">
+                  <CrosshairIcon />
+                  Focus a record…
+                </Button>
               }
             />
-            <Tooltip.Content>{recordTypeIcons[value].description}</Tooltip.Content>
-          </Tooltip.Root>
-        ))}
-      </ToggleGroup.Root>
-
-      <DropdownMenu.Root>
-        <Button variant="outline" render={<DropdownMenu.Trigger />}>
-          <TrendingUpIcon />
-          {minScore !== undefined ? `${minScore}+` : 'Any score'}
-          <ChevronDownIcon />
-        </Button>
-        <DropdownMenu.Content align="start" css={{ width: '40' }}>
-          <DropdownMenu.RadioGroup value={minScore ?? 0} onValueChange={handleMinScoreChange}>
-            <DropdownMenu.RadioItem value={0}>Any score</DropdownMenu.RadioItem>
-            {MIN_SCORE_OPTIONS.map((score) => (
-              <DropdownMenu.RadioItem key={score} value={score}>
-                {score}+
-              </DropdownMenu.RadioItem>
-            ))}
-          </DropdownMenu.RadioGroup>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
-      <Dialog.Root open={searchOpen} onOpenChange={setSearchOpen}>
-        {focus !== undefined ? (
-          <FocusedRecordChip focus={focus} onClear={clearFocus} />
-        ) : (
-          <Dialog.Trigger
-            render={
-              <Button variant="outline">
-                <CrosshairIcon />
-                Focus a record…
-              </Button>
-            }
-          />
-        )}
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title>Focus a record</Dialog.Title>
-            <Dialog.Description>
-              Lock one side of the arena to rank a single record against the field.
-            </Dialog.Description>
-          </Dialog.Header>
-          <FocusSearch type={type} onSelect={handleFocusSelect} />
-        </Dialog.Content>
-      </Dialog.Root>
+          )}
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>Focus a record</Dialog.Title>
+              <Dialog.Description>
+                Lock one side of the arena to rank a single record against the field.
+              </Dialog.Description>
+            </Dialog.Header>
+            <FocusSearch type={type} onSelect={handleFocusSelect} />
+          </Dialog.Content>
+        </Dialog.Root>
+      </styled.div>
+      <EloScrubber type={type} minScore={minScore} onMinScoreChange={handleMinScoreChange} />
     </styled.header>
   );
 }

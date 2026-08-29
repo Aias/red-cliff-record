@@ -1,5 +1,10 @@
 "$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
 
+# `bun dev` also starts zero-cache, which binds its own ports; pin the preview to
+# the Vite server so the Open button lands on the app.
+[[preview_urls]]
+url = "http://localhost:5173"
+
 [scripts]
 # Panda's styled-system output is gitignored and no install hook generates it,
 # so a fresh workspace cannot typecheck until stylegen has run.

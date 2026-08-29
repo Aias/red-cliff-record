@@ -1,9 +1,9 @@
 import { defineTokens } from '@pandacss/dev';
 import {
-  amber,
-  amberDark,
   bronze,
   bronzeDark,
+  brown,
+  brownDark,
   gold,
   goldDark,
   grass,
@@ -78,8 +78,8 @@ const zipRadixScale = (
 });
 
 const hues = {
-  amber: zipRadixScale(amber, amberDark, 'black'),
   bronze: zipRadixScale(bronze, bronzeDark),
+  brown: zipRadixScale(brown, brownDark),
   gold: zipRadixScale(gold, goldDark),
   grass: zipRadixScale(grass, grassDark),
   iris: zipRadixScale(iris, irisDark),
@@ -93,7 +93,7 @@ type HueName = keyof typeof hues;
 
 export const palettes = {
   artifact: { chromatic: 'gold', neutral: 'sand' },
-  concept: { chromatic: 'amber', neutral: 'sand' },
+  concept: { chromatic: 'brown', neutral: 'sand' },
   entity: { chromatic: 'bronze', neutral: 'sand' },
   error: { chromatic: 'tomato', neutral: 'mauve' },
   info: { chromatic: 'iris', neutral: 'slate' },
