@@ -16,6 +16,7 @@ import { Tooltip } from '@/components/tooltip';
 import { createLocalStorageStore } from '@/lib/create-local-storage-store';
 import { readEloPool, useMatchupCount, useRecord } from '@/lib/hooks/record-queries';
 import { useZeroMutate } from '@/lib/hooks/zero-mutate';
+import { whenSynced } from '@/lib/sync-status';
 import { eloDeltas, PROVISIONAL_MATCHUPS, selectOpponents } from '@/shared/lib/elo';
 import type { DbId } from '@/shared/types/api';
 import { mutators } from '@/shared/zero/mutators';
@@ -71,7 +72,13 @@ export const RankSection = ({ id }: { id: DbId }) => {
   /** Roll opponents near this record's score from the local synced pool. */
   const rollOpponents = async (count: number, excludeIds: DbId[]): Promise<DbId[]> => {
     if (!record) return [];
-    const pool = await readEloPool(zero, record.type);
+    let pool = await readEloPool(zero, record.type);
+    if (!pool.some((candidate) => candidate.id === id)) {
+      // A pool missing this record before the initial preload lands means the
+      // local replica hasn't hydrated — wait for the sync and re-read.
+      await whenSynced();
+      pool = await readEloPool(zero, record.type);
+    }
     const focus = pool.find((candidate) => candidate.id === id);
     if (!focus) return [];
     return selectOpponents(pool, {
