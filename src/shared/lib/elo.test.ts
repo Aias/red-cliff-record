@@ -4,6 +4,7 @@ import {
   expectedScore,
   fitBradleyTerry,
   kFactor,
+  matchupKey,
   relevanceToEloPriors,
   selectMatchup,
   selectOpponents,
@@ -15,15 +16,25 @@ function makePool(scores: number[], matchupCount = 0): PoolCandidate[] {
   return scores.map((eloScore, index) => ({ id: index + 1, eloScore, matchupCount }));
 }
 
+const noPairs = new Set<string>();
+
+describe('matchupKey', () => {
+  test('is orientation-independent', () => {
+    expect(matchupKey(3, 7)).toBe(matchupKey(7, 3));
+  });
+});
+
 describe('selectOpponents', () => {
   const pool = makePool([1000, 1100, 1200, 1300, 1400, 2400]);
+  const anchor: PoolCandidate = { id: 99, eloScore: 1200, matchupCount: 0 };
 
   test('returns the requested number of distinct pool members', () => {
     const ids = selectOpponents(pool, {
-      anchorElo: 1200,
+      anchor,
       excludeIds: [],
       needed: 3,
       biasEstablished: false,
+      playedPairs: noPairs,
     });
     expect(ids).toHaveLength(3);
     expect(new Set(ids).size).toBe(3);
@@ -32,21 +43,23 @@ describe('selectOpponents', () => {
 
   test('honors exclusions', () => {
     const ids = selectOpponents(pool, {
-      anchorElo: 1200,
+      anchor,
       excludeIds: [1, 2, 3],
       needed: 3,
       biasEstablished: false,
+      playedPairs: noPairs,
     });
     expect(ids.sort((a, b) => a - b)).toEqual([4, 5, 6]);
   });
 
   test('widens the window when nearby candidates run out', () => {
-    // Only the outlier remains: reachable solely through the Infinity window.
+    // Only the outlier remains: reachable solely through the widest window.
     const ids = selectOpponents(pool, {
-      anchorElo: 1000,
+      anchor: { id: 99, eloScore: 1000, matchupCount: 0 },
       excludeIds: [1, 2, 3, 4, 5],
       needed: 1,
       biasEstablished: false,
+      playedPairs: noPairs,
     });
     expect(ids).toEqual([6]);
   });
@@ -58,22 +71,35 @@ describe('selectOpponents', () => {
       { id: 3, eloScore: 1190, matchupCount: 2 },
     ];
     const ids = selectOpponents(mixed, {
-      anchorElo: 1200,
+      anchor,
       excludeIds: [],
       needed: 2,
       biasEstablished: true,
+      playedPairs: noPairs,
     });
     expect(ids[0]).toBe(2);
   });
 
   test('returns everything available when the pool is smaller than needed', () => {
     const ids = selectOpponents(pool.slice(0, 2), {
-      anchorElo: 1200,
+      anchor,
       excludeIds: [],
       needed: 5,
       biasEstablished: false,
+      playedPairs: noPairs,
     });
     expect(ids.sort((a, b) => a - b)).toEqual([1, 2]);
+  });
+
+  test('unplayed pairings come first; rematches only fill the remainder', () => {
+    const ids = selectOpponents(makePool([1200, 1210]), {
+      anchor,
+      excludeIds: [],
+      needed: 2,
+      biasEstablished: false,
+      playedPairs: new Set([matchupKey(99, 1)]),
+    });
+    expect(ids).toEqual([2, 1]);
   });
 });
 
@@ -81,29 +107,72 @@ describe('selectMatchup', () => {
   const pool = makePool([1000, 1100, 1200, 1300, 1400]);
 
   test('open mode pairs two distinct pool members', () => {
-    const pair = selectMatchup(pool, { excludeIds: [] });
+    const pair = selectMatchup(pool, { excludeIds: [], playedPairs: noPairs });
     expect(pair).not.toBeNull();
     expect(pair?.aId).not.toBe(pair?.bId);
   });
 
-  test('open mode returns null when fewer than two candidates remain', () => {
-    expect(selectMatchup(pool.slice(0, 1), { excludeIds: [] })).toBeNull();
-    expect(selectMatchup(pool, { excludeIds: [1, 2, 3, 4] })).toBeNull();
+  test('open mode returns null when the pool itself is too small', () => {
+    expect(selectMatchup(pool.slice(0, 1), { excludeIds: [], playedPairs: noPairs })).toBeNull();
+  });
+
+  test('open mode relaxes exclusions oldest-first instead of starving', () => {
+    const pair = selectMatchup(pool, { excludeIds: [1, 2, 3, 4], playedPairs: noPairs });
+    expect(pair).not.toBeNull();
+    expect([pair?.aId, pair?.bId].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual([1, 5]);
+  });
+
+  test('open mode avoids already-played pairs while unplayed ones exist', () => {
+    const uneven: PoolCandidate[] = [
+      { id: 1, eloScore: 1200, matchupCount: 0 },
+      { id: 2, eloScore: 1210, matchupCount: 5 },
+      { id: 3, eloScore: 1190, matchupCount: 5 },
+    ];
+    const played = new Set([matchupKey(1, 2)]);
+    for (let i = 0; i < 100; i++) {
+      const pair = selectMatchup(uneven, { excludeIds: [], playedPairs: played });
+      expect(pair).not.toBeNull();
+      expect(matchupKey(pair?.aId ?? 0, pair?.bId ?? 0)).not.toBe(matchupKey(1, 2));
+    }
   });
 
   test('focused mode anchors on the focus record', () => {
-    const pair = selectMatchup(pool, { focusId: 3, excludeIds: [] });
+    const pair = selectMatchup(pool, { focusId: 3, excludeIds: [], playedPairs: noPairs });
     expect(pair?.aId).toBe(3);
     expect(pair?.bId).not.toBe(3);
   });
 
   test('focused mode returns null when the focus is not in the pool', () => {
-    expect(selectMatchup(pool, { focusId: 99, excludeIds: [] })).toBeNull();
+    expect(selectMatchup(pool, { focusId: 99, excludeIds: [], playedPairs: noPairs })).toBeNull();
   });
 
   test('focused mode respects exclusions', () => {
-    const pair = selectMatchup(pool, { focusId: 1, excludeIds: [2, 3, 4] });
+    const pair = selectMatchup(pool, { focusId: 1, excludeIds: [2, 3, 4], playedPairs: noPairs });
     expect(pair).toEqual({ aId: 1, bId: 5 });
+  });
+
+  test('focused mode relaxes exclusions oldest-first instead of starving', () => {
+    const pair = selectMatchup(pool, {
+      focusId: 1,
+      excludeIds: [2, 3, 4, 5],
+      playedPairs: noPairs,
+    });
+    expect(pair).toEqual({ aId: 1, bId: 2 });
+  });
+
+  test('focused mode avoids already-played opponents while unplayed ones exist', () => {
+    const played = new Set([matchupKey(1, 2), matchupKey(1, 3), matchupKey(1, 4)]);
+    for (let i = 0; i < 20; i++) {
+      const pair = selectMatchup(pool, { focusId: 1, excludeIds: [], playedPairs: played });
+      expect(pair).toEqual({ aId: 1, bId: 5 });
+    }
+  });
+
+  test('focused mode rematches when every pairing is played', () => {
+    const played = new Set(pool.map((r) => matchupKey(1, r.id)));
+    const pair = selectMatchup(pool, { focusId: 1, excludeIds: [], playedPairs: played });
+    expect(pair?.aId).toBe(1);
+    expect(pair?.bId).not.toBe(1);
   });
 });
 

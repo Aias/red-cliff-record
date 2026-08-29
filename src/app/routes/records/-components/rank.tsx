@@ -73,19 +73,20 @@ export const RankSection = ({ id }: { id: DbId }) => {
   const rollOpponents = async (count: number, excludeIds: DbId[]): Promise<DbId[]> => {
     if (!record) return [];
     let pool = await readEloPool(zero, record.type);
-    if (!pool.some((candidate) => candidate.id === id)) {
+    if (!pool.candidates.some((candidate) => candidate.id === id)) {
       // A pool missing this record before the initial preload lands means the
       // local replica hasn't hydrated — wait for the sync and re-read.
       await whenSynced();
       pool = await readEloPool(zero, record.type);
     }
-    const focus = pool.find((candidate) => candidate.id === id);
+    const focus = pool.candidates.find((candidate) => candidate.id === id);
     if (!focus) return [];
-    return selectOpponents(pool, {
-      anchorElo: focus.eloScore,
-      excludeIds: [id, ...excludeIds],
+    return selectOpponents(pool.candidates, {
+      anchor: focus,
+      excludeIds,
       needed: count,
       biasEstablished: focus.matchupCount < PROVISIONAL_MATCHUPS,
+      playedPairs: pool.playedPairs,
     });
   };
 

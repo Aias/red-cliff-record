@@ -1,10 +1,27 @@
-const OPPONENT_WINDOWS = [200, 400, 800, 1600, Infinity];
+/**
+ * Score windows an opponent is drawn from, with the chance of drawing each.
+ * Most picks stay near the anchor while the weighted tail keeps distant
+ * regions of the pool connected; an empty window widens to the next.
+ */
+const OPPONENT_WINDOWS = [
+  { span: 200, weight: 0.6 },
+  { span: 400, weight: 0.25 },
+  { span: 800, weight: 0.1 },
+  { span: Infinity, weight: 0.05 },
+];
 const WILDCARD_PROBABILITY = 0.15;
+/** Tournament sample size: the extreme of a few candidates is a soft bias, not a global argmax. */
+const TOURNAMENT_SIZE = 8;
 /** A record with fewer matchups than this gets anchored against established opponents. */
 export const PROVISIONAL_MATCHUPS = 10;
 
 /** A rankable record: curated, and for artifacts, not contained by a parent. */
 export type PoolCandidate = { id: number; eloScore: number; matchupCount: number };
+
+/** Orientation-independent key for a pair of records. */
+export function matchupKey(aId: number, bId: number): string {
+  return aId < bId ? `${aId}:${bId}` : `${bId}:${aId}`;
+}
 
 /** Fisher-Yates over a copy. */
 function shuffle<T>(items: readonly T[]): T[] {
@@ -21,50 +38,111 @@ function shuffle<T>(items: readonly T[]): T[] {
   return result;
 }
 
+function randomOf<T>(items: readonly T[]): T | undefined {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+/** Best-scoring candidate of a small random sample. */
+function tournament(
+  candidates: readonly PoolCandidate[],
+  score: (candidate: PoolCandidate) => number
+): PoolCandidate | undefined {
+  return shuffle(candidates)
+    .slice(0, TOURNAMENT_SIZE)
+    .reduce<PoolCandidate | undefined>(
+      (best, candidate) =>
+        best === undefined || score(candidate) > score(best) ? candidate : best,
+      undefined
+    );
+}
+
+/** Candidates within a rolled score window of the anchor. */
+function windowedCandidates(
+  candidates: readonly PoolCandidate[],
+  anchorElo: number
+): PoolCandidate[] {
+  let roll = Math.random();
+  // A -1 start (floating-point residue) slices to the widest window alone.
+  const start = OPPONENT_WINDOWS.findIndex(({ weight }) => (roll -= weight) < 0);
+  for (const { span } of OPPONENT_WINDOWS.slice(start)) {
+    const inWindow = candidates.filter((r) => Math.abs(r.eloScore - anchorElo) <= span);
+    if (inWindow.length > 0) return inWindow;
+  }
+  return [];
+}
+
 /**
- * Sample pool opponents near an anchor score, widening the window until
- * enough candidates exist. When anchoring a provisional record, prefer
- * established opponents (high matchup count) so its score converges faster.
+ * Drop recency exclusions oldest-first until at least `minimum` records
+ * survive, so a small pool degrades to sooner repeats instead of no matchup.
+ */
+function relaxExclusions(
+  pool: readonly PoolCandidate[],
+  excludeIds: readonly number[],
+  minimum: number
+): { eligible: PoolCandidate[]; excludeIds: number[] } {
+  for (let drop = 0; ; drop++) {
+    const kept = excludeIds.slice(drop);
+    const excluded = new Set(kept);
+    const eligible = pool.filter((r) => !excluded.has(r.id));
+    if (eligible.length >= minimum || kept.length === 0) return { eligible, excludeIds: kept };
+  }
+}
+
+/**
+ * Sample pool opponents for an anchor record, mostly near its score with a
+ * weighted tail of distant picks. Pairs the anchor has already played fill
+ * seats only when unplayed candidates run out. When anchoring a provisional
+ * record, prefer established opponents (high matchup count) so its score
+ * converges faster.
  */
 export function selectOpponents(
   pool: readonly PoolCandidate[],
-  opts: { anchorElo: number; excludeIds: number[]; needed: number; biasEstablished: boolean }
+  opts: {
+    anchor: PoolCandidate;
+    excludeIds: number[];
+    needed: number;
+    biasEstablished: boolean;
+    playedPairs: ReadonlySet<string>;
+  }
 ): number[] {
-  const excluded = new Set(opts.excludeIds);
+  const excluded = new Set([opts.anchor.id, ...opts.excludeIds]);
   const eligible = pool.filter((r) => !excluded.has(r.id));
-  let sample: PoolCandidate[] = [];
-  for (const window of OPPONENT_WINDOWS) {
-    const inWindow =
-      window === Infinity
-        ? eligible
-        : eligible.filter((r) => Math.abs(r.eloScore - opts.anchorElo) <= window);
-    sample = shuffle(inWindow).slice(0, Math.max(opts.needed * 8, 24));
-    if (sample.length >= opts.needed) break;
+  const unplayed = eligible.filter((r) => !opts.playedPairs.has(matchupKey(opts.anchor.id, r.id)));
+  const selected: PoolCandidate[] = [];
+  for (const candidates of [unplayed, eligible]) {
+    let remaining = candidates.filter((r) => !selected.includes(r));
+    while (selected.length < opts.needed && remaining.length > 0) {
+      const inWindow = windowedCandidates(remaining, opts.anchor.eloScore);
+      const pick = opts.biasEstablished
+        ? tournament(inWindow, (r) => r.matchupCount)
+        : randomOf(inWindow);
+      if (pick === undefined) break;
+      selected.push(pick);
+      remaining = remaining.filter((r) => r !== pick);
+    }
   }
-  if (opts.biasEstablished) {
-    // Stable sort keeps the random order within count ties
-    sample.sort((a, b) => b.matchupCount - a.matchupCount);
-  }
-  return sample.slice(0, opts.needed).map((r) => r.id);
+  return selected.map((r) => r.id);
 }
 
 /**
  * Pick the next matchup from the pool. A focus record triangulates by aiming
  * at a uniformly random point on the pool's score spectrum instead of staying
  * near its own score. Open mode surfaces under-ranked records: occasionally a
- * pure wildcard pair, otherwise the least-played of a random sample against a
- * nearby opponent.
+ * pure wildcard pair, otherwise the softly least-played record against a
+ * windowed opponent. Already-played pairs rematch only when nothing unplayed
+ * remains.
  */
 export function selectMatchup(
   pool: readonly PoolCandidate[],
-  opts: { focusId?: number; excludeIds: number[] }
+  opts: { focusId?: number; excludeIds: number[]; playedPairs: ReadonlySet<string> }
 ): { aId: number; bId: number } | null {
-  const excluded = new Set(opts.excludeIds);
-
   if (opts.focusId !== undefined) {
     const focus = pool.find((r) => r.id === opts.focusId);
     if (!focus) return null;
-    const candidates = pool.filter((r) => r.id !== focus.id && !excluded.has(r.id));
+    const others = pool.filter((r) => r.id !== focus.id);
+    const { eligible } = relaxExclusions(others, opts.excludeIds, 1);
+    const unplayed = eligible.filter((r) => !opts.playedPairs.has(matchupKey(focus.id, r.id)));
+    const candidates = unplayed.length > 0 ? unplayed : eligible;
     if (candidates.length === 0) return null;
     const scores = pool.map((r) => r.eloScore);
     const target =
@@ -72,25 +150,24 @@ export function selectMatchup(
     const nearest = shuffle(candidates)
       .sort((a, b) => Math.abs(a.eloScore - target) - Math.abs(b.eloScore - target))
       .slice(0, 5);
-    const opponent = nearest[Math.floor(Math.random() * nearest.length)];
+    const opponent = randomOf(nearest);
     return opponent ? { aId: focus.id, bId: opponent.id } : null;
   }
 
-  const eligible = pool.filter((r) => !excluded.has(r.id));
+  const { eligible, excludeIds } = relaxExclusions(pool, opts.excludeIds, 2);
   if (Math.random() < WILDCARD_PROBABILITY) {
-    const [a, b] = shuffle(eligible);
-    return a && b ? { aId: a.id, bId: b.id } : null;
+    const [a, ...rest] = shuffle(eligible);
+    const b = a && rest.find((r) => !opts.playedPairs.has(matchupKey(a.id, r.id)));
+    if (a && b) return { aId: a.id, bId: b.id };
   }
-
-  const sample = shuffle(eligible).slice(0, 50);
-  if (sample.length < 2) return null;
-  const [a] = sample.sort((x, y) => x.matchupCount - y.matchupCount);
+  const a = tournament(eligible, (r) => -r.matchupCount);
   if (!a) return null;
   const [bId] = selectOpponents(pool, {
-    anchorElo: a.eloScore,
-    excludeIds: [a.id, ...opts.excludeIds],
+    anchor: a,
+    excludeIds,
     needed: 1,
     biasEstablished: false,
+    playedPairs: opts.playedPairs,
   });
   return bId !== undefined ? { aId: a.id, bId } : null;
 }

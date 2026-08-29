@@ -7,11 +7,11 @@ import { Button } from '@/components/button';
 import { Placeholder } from '@/components/placeholder';
 import { Spinner } from '@/components/spinner';
 import { Tooltip } from '@/components/tooltip';
-import { readEloPool } from '@/lib/hooks/record-queries';
+import { readEloPool, type EloPool } from '@/lib/hooks/record-queries';
 import { useZeroMutate } from '@/lib/hooks/zero-mutate';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { whenSynced } from '@/lib/sync-status';
-import { eloDeltas, selectMatchup, type PoolCandidate } from '@/shared/lib/elo';
+import { eloDeltas, selectMatchup } from '@/shared/lib/elo';
 import type { DbId, UndoMatchupInput } from '@/shared/types/api';
 import { mutators, type SubmitMatchupInput } from '@/shared/zero/mutators';
 import { queries } from '@/shared/zero/queries';
@@ -19,7 +19,7 @@ import { styled } from '@/styled-system/jsx';
 import { RecordDisplay } from '../../records/-components/record-display';
 import { RelationsPreview } from '../../records/-components/relations-preview';
 
-/** Recent focused-burst opponents excluded from reselection. */
+/** Recently seen records excluded from reselection; selection relaxes oldest-first when the pool runs short. */
 const EXCLUDE_MEMORY = 20;
 
 export type ArenaSide = 'left' | 'right';
@@ -75,22 +75,22 @@ export function ArenaSession({ type, focus, side, minScore }: ArenaParams) {
   const focusedLeft = focus !== undefined && side !== 'right';
   const focusedRight = focus !== undefined && side === 'right';
   const opponentOf = (current: Pair) => (focusedRight ? current.aId : current.bId);
-  const nextExcludes = (current: Pair) =>
-    focus !== undefined
-      ? [...getSession(sessionKey).excludeIds, opponentOf(current)].slice(-EXCLUDE_MEMORY)
-      : [current.aId, current.bId];
+  const nextExcludes = (current: Pair) => {
+    const seen = focus !== undefined ? [opponentOf(current)] : [current.aId, current.bId];
+    return [...getSession(sessionKey).excludeIds, ...seen].slice(-EXCLUDE_MEMORY);
+  };
 
   const loadNext = (excludeIds: DbId[]) => {
     const session = getSession(sessionKey);
     session.excludeIds = excludeIds;
-    const select = (pool: PoolCandidate[]) => {
+    const select = ({ candidates, playedPairs }: EloPool) => {
       // The focused record stays eligible below the score floor so it can be
       // ranked against the filtered field from wherever it currently sits.
       const eligible =
         minScore === undefined
-          ? pool
-          : pool.filter((record) => record.eloScore >= minScore || record.id === focus);
-      const selected = selectMatchup(eligible, { focusId: focus, excludeIds });
+          ? candidates
+          : candidates.filter((record) => record.eloScore >= minScore || record.id === focus);
+      const selected = selectMatchup(eligible, { focusId: focus, excludeIds, playedPairs });
       return selected && focusedRight ? { aId: selected.bId, bId: selected.aId } : selected;
     };
     void (async () => {
