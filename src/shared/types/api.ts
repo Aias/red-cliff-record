@@ -76,6 +76,21 @@ export const SubmitMatchupInputSchema = z
     { message: 'A record cannot face itself' }
   );
 
+/**
+ * Everything needed to reverse a submitted matchup: the stored row's identity
+ * (winner-first orientation, null winner for a draw) and the score deltas it
+ * applied, computed by the submitter from the same pre-matchup state the
+ * mutator read.
+ */
+export const UndoMatchupInputSchema = z.object({
+  aId: IdSchema,
+  bId: IdSchema,
+  winnerId: IdSchema.nullable(),
+  deltaA: z.number().int(),
+  deltaB: z.number().int(),
+});
+export type UndoMatchupInput = z.infer<typeof UndoMatchupInputSchema>;
+
 export const SearchRecordsInputSchema = z.object({
   query: z.string(),
   filters: z

@@ -4,18 +4,20 @@ import { z } from 'zod';
 import { CoercedIdSchema } from '@/shared/types/api';
 import { styled } from '@/styled-system/jsx';
 import { ArenaControls } from './-components/arena-controls';
-import { ArenaSession } from './-components/arena-session';
+import { arenaSessionKey, ArenaSession } from './-components/arena-session';
 
 export const Route = createFileRoute('/arena')({
   component: ArenaPage,
   validateSearch: z.object({
     type: RecordTypeSchema.catch('artifact'),
     focus: CoercedIdSchema.optional().catch(undefined),
+    side: z.enum(['left', 'right']).optional().catch(undefined),
+    minScore: z.coerce.number().int().positive().optional().catch(undefined),
   }),
 });
 
 function ArenaPage() {
-  const { type, focus } = Route.useSearch();
+  const { type, focus, side, minScore } = Route.useSearch();
 
   return (
     <styled.main
@@ -30,8 +32,14 @@ function ArenaPage() {
         padding: '6',
       }}
     >
-      <ArenaControls type={type} focus={focus} />
-      <ArenaSession key={`${type}:${focus ?? 'open'}`} type={type} focus={focus} />
+      <ArenaControls type={type} focus={focus} minScore={minScore} />
+      <ArenaSession
+        key={arenaSessionKey({ type, focus, side, minScore })}
+        type={type}
+        focus={focus}
+        side={side}
+        minScore={minScore}
+      />
     </styled.main>
   );
 }

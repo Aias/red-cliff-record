@@ -1,19 +1,22 @@
 import type { RecordType } from '@hozo';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { CrosshairIcon, XIcon } from 'lucide-react';
+import { ChevronDownIcon, CrosshairIcon, TrendingUpIcon, XIcon } from 'lucide-react';
 import { useState, type ElementType } from 'react';
+import { z } from 'zod';
 import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Command } from '@/components/command';
 import { Dialog } from '@/components/dialog';
+import { DropdownMenu } from '@/components/dropdown-menu';
 import { Spinner } from '@/components/spinner';
 import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
+import { useRecord } from '@/lib/hooks/record-queries';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import type { DbId } from '@/shared/types/api';
 import { styled } from '@/styled-system/jsx';
-import { RecordLink } from '../../records/-components/record-link';
+import { getRecordTitle } from '../../records/-components/record-parts';
 import { SearchResultItem } from '../../records/-components/search-result-item';
 import { recordTypeIcons } from '../../records/-components/type-icons';
 
@@ -23,24 +26,48 @@ const ARENA_TYPES: { value: RecordType; label: string; icon: ElementType }[] = [
   { value: 'entity', label: 'Entities', icon: recordTypeIcons.entity.icon },
 ];
 
-export function ArenaControls({ type, focus }: { type: RecordType; focus?: DbId }) {
+/**
+ * Score floors for matchup selection. Scores are percentile-mapped onto an
+ * Elo scale centered at 1200 with roughly a 150-point spread, so these rungs
+ * step from the top quarter to the top few percent of the pool.
+ */
+const MIN_SCORE_OPTIONS = [1300, 1400, 1500, 1600];
+
+const MinScoreSchema = z.number().int().positive();
+
+export function ArenaControls({
+  type,
+  focus,
+  minScore,
+}: {
+  type: RecordType;
+  focus?: DbId;
+  minScore?: number;
+}) {
   const navigate = useNavigate({ from: '/arena' });
   const [searchOpen, setSearchOpen] = useState(false);
 
   const handleTypeChange = (value: RecordType[]) => {
     const next = value[0];
     if (next && next !== type) {
-      void navigate({ search: { type: next } });
+      void navigate({ search: { type: next, minScore } });
     }
   };
 
   const handleFocusSelect = (id: DbId) => {
     setSearchOpen(false);
-    void navigate({ search: { type, focus: id } });
+    void navigate({ search: (prev) => ({ ...prev, focus: id }) });
+  };
+
+  const handleMinScoreChange = (value: unknown) => {
+    const parsed = MinScoreSchema.safeParse(value);
+    void navigate({
+      search: (prev) => ({ ...prev, minScore: parsed.success ? parsed.data : undefined }),
+    });
   };
 
   const clearFocus = () => {
-    void navigate({ search: { type } });
+    void navigate({ search: { type, minScore } });
   };
 
   return (
@@ -74,34 +101,28 @@ export function ArenaControls({ type, focus }: { type: RecordType; focus?: DbId 
         ))}
       </ToggleGroup.Root>
 
-      {focus ? (
-        <styled.div
-          css={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2',
-            maxWidth: '96',
-            borderRadius: 'md',
-            border: 'border',
-            backgroundColor: 'splash',
-            paddingInlineStart: '3',
-            paddingInlineEnd: '1',
-            paddingBlock: '1',
-            textStyle: 'sm',
-            _childIcon: { flexShrink: '0', color: 'accent' },
-          }}
-        >
-          <CrosshairIcon />
-          <RecordLink
-            id={focus}
-            linkOptions={{ to: '/records/$recordId', params: { recordId: focus } }}
-          />
-          <Button variant="ghost" size="icon" aria-label="Stop focusing" onClick={clearFocus}>
-            <XIcon />
-          </Button>
-        </styled.div>
-      ) : (
-        <Dialog.Root open={searchOpen} onOpenChange={setSearchOpen}>
+      <DropdownMenu.Root>
+        <Button variant="outline" render={<DropdownMenu.Trigger />}>
+          <TrendingUpIcon />
+          {minScore !== undefined ? `${minScore}+` : 'Any score'}
+          <ChevronDownIcon />
+        </Button>
+        <DropdownMenu.Content align="start" css={{ width: '40' }}>
+          <DropdownMenu.RadioGroup value={minScore ?? 0} onValueChange={handleMinScoreChange}>
+            <DropdownMenu.RadioItem value={0}>Any score</DropdownMenu.RadioItem>
+            {MIN_SCORE_OPTIONS.map((score) => (
+              <DropdownMenu.RadioItem key={score} value={score}>
+                {score}+
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+
+      <Dialog.Root open={searchOpen} onOpenChange={setSearchOpen}>
+        {focus !== undefined ? (
+          <FocusedRecordChip focus={focus} onClear={clearFocus} />
+        ) : (
           <Dialog.Trigger
             render={
               <Button variant="outline">
@@ -110,18 +131,59 @@ export function ArenaControls({ type, focus }: { type: RecordType; focus?: DbId 
               </Button>
             }
           />
-          <Dialog.Content>
-            <Dialog.Header>
-              <Dialog.Title>Focus a record</Dialog.Title>
-              <Dialog.Description>
-                Lock one side of the arena to rank a single record against the field.
-              </Dialog.Description>
-            </Dialog.Header>
-            <FocusSearch type={type} onSelect={handleFocusSelect} />
-          </Dialog.Content>
-        </Dialog.Root>
-      )}
+        )}
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title>Focus a record</Dialog.Title>
+            <Dialog.Description>
+              Lock one side of the arena to rank a single record against the field.
+            </Dialog.Description>
+          </Dialog.Header>
+          <FocusSearch type={type} onSelect={handleFocusSelect} />
+        </Dialog.Content>
+      </Dialog.Root>
     </styled.header>
+  );
+}
+
+function FocusedRecordChip({ focus, onClear }: { focus: DbId; onClear: () => void }) {
+  const { data: record } = useRecord(focus);
+  return (
+    <styled.div css={{ display: 'flex', maxWidth: '96' }}>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <Dialog.Trigger
+              render={
+                <Button
+                  variant="solid"
+                  css={{ minWidth: '0', borderStartEndRadius: 'none', borderEndEndRadius: 'none' }}
+                >
+                  <CrosshairIcon />
+                  <styled.span css={{ minWidth: '0', truncate: true }}>
+                    {record ? getRecordTitle(record) : `Record ${focus}`}
+                  </styled.span>
+                </Button>
+              }
+            />
+          }
+        />
+        <Tooltip.Content>Focus a different record</Tooltip.Content>
+      </Tooltip.Root>
+      <Button
+        variant="solid"
+        size="icon"
+        aria-label="Stop focusing"
+        onClick={onClear}
+        css={{
+          borderStartStartRadius: 'none',
+          borderEndStartRadius: 'none',
+          borderInlineStartColor: 'mainContrast/20',
+        }}
+      >
+        <XIcon />
+      </Button>
+    </styled.div>
   );
 }
 
