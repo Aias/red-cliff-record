@@ -301,7 +301,6 @@ rcr sync feedbin
 rcr sync adobe
 rcr sync browsing                       # Arc + Dia browser history (macOS)
 rcr sync twitter
-rcr sync agents                         # Claude, Codex, Cursor histories
 rcr sync avatars                        # Transfer avatars to R2
 rcr sync embeddings                     # Generate embeddings for records
 rcr sync                                # Run all daily syncs

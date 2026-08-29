@@ -31,6 +31,7 @@ Debug mode:
 
 - Fetches data from the API as normal
 - Skips all database writes
+- Skips enrichments (avatars, alt-text, embeddings)
 - Outputs raw API responses to `.temp/<integration>-<timestamp>.json`
 - Useful for testing credentials, viewing raw data, and debugging API issues
 
@@ -318,7 +319,7 @@ To sync all configured integrations at once:
 rcr sync
 ```
 
-This runs: browsing, raindrop, readwise, github, airtable, twitter, then enrichments (avatars, alt-text, embeddings). Adobe, feedbin, and agents are excluded—run them individually if needed.
+This runs: browsing, raindrop, readwise, github, airtable, twitter, then enrichments (avatars, alt-text, embeddings). Adobe and feedbin are excluded—run them individually if needed.
 
 ## Rate Limits and Best Practices
 

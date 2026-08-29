@@ -6,10 +6,6 @@
 
 import { z } from 'zod';
 import { checkDatabaseConnection } from '@/server/db/connections/postgres';
-import { syncLightroomImages } from '@/server/integrations/adobe/sync';
-import { syncClaudeHistory } from '@/server/integrations/agents/sync-claude';
-import { syncCodexHistory } from '@/server/integrations/agents/sync-codex';
-import { syncCursorHistory } from '@/server/integrations/agents/sync-cursor';
 import { syncAirtableData } from '@/server/integrations/airtable/sync';
 import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
 import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
@@ -17,6 +13,7 @@ import { syncFeedbin } from '@/server/integrations/feedbin/sync';
 import { syncGitHubData } from '@/server/integrations/github/sync';
 import { syncRaindropData } from '@/server/integrations/raindrop/sync';
 import { syncReadwiseDocuments } from '@/server/integrations/readwise/sync';
+import { runIntegrationSync } from '@/server/integrations/runtime/runtime';
 import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
@@ -36,7 +33,6 @@ const IntegrationNameSchema = z.enum([
   'feedbin',
   'browsing',
   'twitter',
-  'agents',
 ]);
 type IntegrationName = z.infer<typeof IntegrationNameSchema>;
 const INTEGRATION_LIST = IntegrationNameSchema.options;
@@ -50,7 +46,7 @@ const INTEGRATION_LIST = IntegrationNameSchema.options;
  *
  * With an integration name, runs that single sync followed by enrichments.
  * Available: github, readwise, raindrop, airtable, adobe, feedbin,
- *   browsing, twitter, agents
+ *   browsing, twitter
  *
  * Use `rcr enrich` to run enrichments separately.
  */
@@ -81,10 +77,11 @@ export const run: CommandHandler = async (args, options) => {
   }
   const integration = integrationResult.data;
 
-  // Run the single sync, then enrichments
+  // Run the single sync, then enrichments. Debug syncs persist nothing, so
+  // there is nothing to enrich.
   const startTime = performance.now();
   const syncResult = await runSingleSync(integration, { debug });
-  await runEnrichments(debug);
+  if (!debug) await runEnrichments();
 
   return success({
     ...syncResult,
@@ -101,16 +98,15 @@ export { run as adobe };
 export { run as feedbin };
 export { run as browsing };
 export { run as twitter };
-export { run as agents };
 
 interface SyncOptions {
   debug: boolean;
 }
 
 /** Run all enrichments in order: avatars → alt-text → embeddings */
-async function runEnrichments(debug: boolean) {
+async function runEnrichments() {
   await runSaveAvatarsIntegration();
-  await runAltTextIntegration({ debug });
+  await runAltTextIntegration();
   await runEmbedRecordsIntegration();
 }
 
@@ -152,10 +148,12 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
       };
     }
     case 'adobe': {
-      await syncLightroomImages(debug);
+      const summary = await runIntegrationSync('adobe', { debug });
       return {
         integration,
         success: true,
+        entriesCreated: summary.entriesCreated,
+        failedItems: summary.failures.length,
         duration: Math.round(performance.now() - startTime),
       };
     }
@@ -177,22 +175,6 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
     }
     case 'twitter': {
       await syncTwitterData(debug);
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'agents': {
-      const sessionLimit = 5;
-      const settled = await Promise.allSettled([
-        withBufferedLogs(() => syncClaudeHistory(debug, { sessionLimit })),
-        withBufferedLogs(() => syncCodexHistory(debug, { sessionLimit })),
-        withBufferedLogs(() => syncCursorHistory(debug, { sessionLimit })),
-      ]);
-      for (const result of settled) {
-        if (result.status === 'rejected') throw result.reason;
-      }
       return {
         integration,
         success: true,
@@ -234,16 +216,19 @@ async function runDailySync(options: SyncOptions) {
     })
   );
 
-  // Run enrichments once at the end
-  try {
-    await runEnrichments(options.debug);
-    results.push({ step: 'enrich', success: true });
-  } catch (e) {
-    results.push({
-      step: 'enrich',
-      success: false,
-      error: e instanceof Error ? e.message : String(e),
-    });
+  // Run enrichments once at the end. Debug syncs persist nothing, so there is
+  // nothing to enrich.
+  if (!options.debug) {
+    try {
+      await runEnrichments();
+      results.push({ step: 'enrich', success: true });
+    } catch (e) {
+      results.push({
+        step: 'enrich',
+        success: false,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
   }
 
   const successCount = results.filter((r) => r.success).length;
