@@ -3,7 +3,12 @@ import { RecordTypeSchema } from '@hozo/schema/records.shared';
 import { defineMutator, defineMutators, type Transaction } from '@rocicorp/zero';
 import { z } from 'zod';
 import { eloDeltas } from '@/shared/lib/elo';
-import { IdSchema, SubmitMatchupInputSchema, type DbId } from '@/shared/types/api';
+import {
+  IdSchema,
+  SubmitMatchupInputSchema,
+  UndoMatchupInputSchema,
+  type DbId,
+} from '@/shared/types/api';
 import type { ZeroAppContext } from './context';
 import { zql } from './schema.gen';
 
@@ -225,6 +230,44 @@ export const mutators = defineMutators({
         recordType,
         recordCreatedAt: Date.now(),
       });
+    }),
+    /**
+     * Reverse a just-submitted matchup: delete its row and subtract the score
+     * deltas it applied. The target must still be the newest matchup touching
+     * either record, which guarantees no later result has moved these scores,
+     * so subtracting the submitted deltas restores them exactly.
+     */
+    undoMatchup: defineMutator(UndoMatchupInputSchema, async ({ tx, args }) => {
+      const { aId, bId, winnerId, deltaA, deltaB } = args;
+      const latest = await tx.run(
+        zql.eloMatchups
+          .where(({ cmp, or }) =>
+            or(
+              cmp('recordAId', aId),
+              cmp('recordBId', aId),
+              cmp('recordAId', bId),
+              cmp('recordBId', bId)
+            )
+          )
+          .orderBy('recordCreatedAt', 'desc')
+          .one()
+      );
+      if (
+        !latest ||
+        latest.recordAId !== aId ||
+        latest.recordBId !== bId ||
+        latest.winnerId !== winnerId
+      ) {
+        throw new Error('Undo matchup: a newer matchup involves these records');
+      }
+      const [a, b] = await Promise.all([
+        tx.run(zql.records.where('id', aId).one()),
+        tx.run(zql.records.where('id', bId).one()),
+      ]);
+      if (!a || !b) throw new Error(`Undo matchup: record ${!a ? aId : bId} not found`);
+      await tx.mutate.records.update({ id: aId, eloScore: a.eloScore - deltaA });
+      await tx.mutate.records.update({ id: bId, eloScore: b.eloScore - deltaB });
+      await tx.mutate.eloMatchups.delete({ id: latest.id });
     }),
   },
 });
