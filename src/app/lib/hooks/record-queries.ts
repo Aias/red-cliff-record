@@ -3,7 +3,7 @@ import type { RecordType } from '@hozo/schema/records.shared';
 import { useQuery as useZeroQuery, type useZero } from '@rocicorp/zero/react';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/app/trpc';
-import type { PoolCandidate } from '@/shared/lib/elo';
+import { matchupKey, type PoolCandidate } from '@/shared/lib/elo';
 import type { DbId, ListRecordsInput } from '@/shared/types/api';
 import { queries } from '@/shared/zero/queries';
 
@@ -109,33 +109,39 @@ export function useMatchupCount(id: DbId) {
   return matchups.length;
 }
 
+/** Point-in-time matchup pool: rankable candidates and the pairs already played. */
+export type EloPool = { candidates: PoolCandidate[]; playedPairs: ReadonlySet<string> };
+
 /**
  * Point-in-time read of the matchup pool for a type: curated records (root
- * level only, for artifacts) with per-record matchup counts, from the local
- * synced graph.
+ * level only, for artifacts) with per-record matchup counts and the set of
+ * pairs already played, from the local synced graph.
  */
 export async function readEloPool(
   zero: ReturnType<typeof useZero>,
   type: RecordType
-): Promise<PoolCandidate[]> {
-  const [candidates, matchups] = await Promise.all([
+): Promise<EloPool> {
+  const [records, matchups] = await Promise.all([
     zero.run(queries.eloPool({ type })),
     zero.run(queries.allEloMatchups()),
   ]);
   const counts = new Map<DbId, number>();
+  const playedPairs = new Set<string>();
   for (const matchup of matchups) {
     counts.set(matchup.recordAId, (counts.get(matchup.recordAId) ?? 0) + 1);
     counts.set(matchup.recordBId, (counts.get(matchup.recordBId) ?? 0) + 1);
+    playedPairs.add(matchupKey(matchup.recordAId, matchup.recordBId));
   }
   // An artifact contained by a parent (a highlight, an excerpt) is ranked
   // through its parent; concepts and entities always stand alone.
-  return candidates
+  const candidates = records
     .filter((record) => record.type !== 'artifact' || record.outgoingLinks.length === 0)
     .map((record) => ({
       id: record.id,
       eloScore: record.eloScore,
       matchupCount: counts.get(record.id) ?? 0,
     }));
+  return { candidates, playedPairs };
 }
 
 /** Returns predicates keyed by slug (static data, no network request) */
