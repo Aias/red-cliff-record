@@ -1,0 +1,5 @@
+# Auto-compile every zod schema on first parse (z.compile fast path) in Bun
+# processes run from the repo root: server.ts, vite, and scripts. Entry points
+# that run from other working directories carry their own zod/compile import
+# (src/app/router.tsx for the browser, src/server/cli/rcr/index.ts for the CLI).
+preload = ["zod/compile"]

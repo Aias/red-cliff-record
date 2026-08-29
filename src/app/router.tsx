@@ -1,3 +1,6 @@
+// Auto-compiles every zod schema on first parse; must load before any module
+// that defines schemas. Bun processes get the same via bunfig.toml preload.
+import 'zod/compile';
 import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';

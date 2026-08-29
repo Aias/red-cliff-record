@@ -21,6 +21,9 @@
  *   --debug              Enable debug output
  */
 
+// Auto-compiles every zod schema on first parse. The bunfig.toml preload only
+// applies when CWD is the repo root; the linked `rcr` bin runs from anywhere.
+import 'zod/compile';
 import { existsSync, readFileSync, realpathSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
