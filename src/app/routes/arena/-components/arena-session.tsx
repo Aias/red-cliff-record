@@ -10,7 +10,8 @@ import { Tooltip } from '@/components/tooltip';
 import { readEloPool } from '@/lib/hooks/record-queries';
 import { useZeroMutate } from '@/lib/hooks/zero-mutate';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
-import { eloDeltas, selectMatchup } from '@/shared/lib/elo';
+import { whenSynced } from '@/lib/sync-status';
+import { eloDeltas, selectMatchup, type PoolCandidate } from '@/shared/lib/elo';
 import type { DbId, UndoMatchupInput } from '@/shared/types/api';
 import { mutators, type SubmitMatchupInput } from '@/shared/zero/mutators';
 import { queries } from '@/shared/zero/queries';
@@ -82,20 +83,28 @@ export function ArenaSession({ type, focus, side, minScore }: ArenaParams) {
   const loadNext = (excludeIds: DbId[]) => {
     const session = getSession(sessionKey);
     session.excludeIds = excludeIds;
-    void readEloPool(zero, type)
-      .then((pool) => {
-        // The focused record stays eligible below the score floor so it can be
-        // ranked against the filtered field from wherever it currently sits.
-        const eligible =
-          minScore === undefined
-            ? pool
-            : pool.filter((record) => record.eloScore >= minScore || record.id === focus);
-        const selected = selectMatchup(eligible, { focusId: focus, excludeIds });
-        const next = selected && focusedRight ? { aId: selected.bId, bId: selected.aId } : selected;
-        session.pair = next;
-        setPair(next);
-      })
-      .finally(() => setLoading(false));
+    const select = (pool: PoolCandidate[]) => {
+      // The focused record stays eligible below the score floor so it can be
+      // ranked against the filtered field from wherever it currently sits.
+      const eligible =
+        minScore === undefined
+          ? pool
+          : pool.filter((record) => record.eloScore >= minScore || record.id === focus);
+      const selected = selectMatchup(eligible, { focusId: focus, excludeIds });
+      return selected && focusedRight ? { aId: selected.bId, bId: selected.aId } : selected;
+    };
+    void (async () => {
+      let next = select(await readEloPool(zero, type));
+      if (!next) {
+        // An empty selection before the initial preload lands means the local
+        // replica hasn't hydrated, not that the pool is empty — wait for the
+        // sync and re-read before concluding there is nothing to rank.
+        await whenSynced();
+        next = select(await readEloPool(zero, type));
+      }
+      session.pair = next;
+      setPair(next);
+    })().finally(() => setLoading(false));
   };
 
   const loadInitial = useEffectEvent(() => {

@@ -1,6 +1,6 @@
 import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
-import { routerWithQueryClient } from '@tanstack/react-router-with-query';
+import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
 import { deserialize, serialize } from 'superjson';
 import type { AppRouter } from '@/server/api/root';
@@ -46,24 +46,23 @@ export function getRouter() {
     queryClient,
   });
 
-  return routerWithQueryClient(
-    createTanStackRouter({
-      routeTree,
-      context: { queryClient, trpc },
-      defaultPreload: 'intent',
-      scrollRestoration: true,
-      defaultErrorComponent: DefaultCatchBoundary,
-      defaultNotFoundComponent: () => <NotFound />,
-      Wrap: (props) => {
-        return (
-          <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-            {props.children}
-          </TRPCProvider>
-        );
-      },
-    }),
-    queryClient
-  );
+  const router = createTanStackRouter({
+    routeTree,
+    context: { queryClient, trpc },
+    defaultPreload: 'intent',
+    scrollRestoration: true,
+    defaultErrorComponent: DefaultCatchBoundary,
+    defaultNotFoundComponent: () => <NotFound />,
+    Wrap: (props) => {
+      return (
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          {props.children}
+        </TRPCProvider>
+      );
+    },
+  });
+  setupRouterSsrQueryIntegration({ router, queryClient });
+  return router;
 }
 
 declare module '@tanstack/react-router' {

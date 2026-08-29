@@ -5,6 +5,7 @@ import { Button, LinkButton } from '@/components/button';
 import { KeyboardShortcutsHelp } from '@/components/keyboard-shortcuts-help';
 import { writeThemeCookie } from '@/lib/theme';
 import { styled } from '@/styled-system/jsx';
+import { SyncIndicator } from './sync-indicator';
 
 const SiteSearch = lazy(() => import('./site-search').then((m) => ({ default: m.SiteSearch })));
 
@@ -116,6 +117,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
         <styled.li
           css={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '1' }}
         >
+          <SyncIndicator />
           <Basket />
           <KeyboardShortcutsHelp
             buttonCss={{
