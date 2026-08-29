@@ -1,6 +1,6 @@
 import { Slider as BaseSlider } from '@base-ui/react/slider';
 import type { RecordType } from '@hozo';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useEloScores } from '@/lib/hooks/record-queries';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
@@ -27,6 +27,7 @@ export function EloScrubber({
   css?: SystemStyleObject;
 }) {
   const scores = useEloScores(type);
+  const thumbInputRef = useRef<HTMLInputElement>(null);
   // Live scrub position; cleared when the committed floor lands from the URL.
   const [scrub, setScrub] = useState<number | null>(null);
   const [prevMinScore, setPrevMinScore] = useState(minScore);
@@ -53,8 +54,14 @@ export function EloScrubber({
   const included = scores.filter((score) => score >= floor).length;
 
   const handleValueChange = (value: number) => setScrub(value);
-  const handleValueCommitted = (value: number) =>
+  const handleValueCommitted = (value: number, details: BaseSlider.Root.CommitEventDetails) => {
     onMinScoreChange(value <= domainStart ? undefined : value);
+    // A pointer scrub focuses the thumb's hidden input, which would silently
+    // repurpose the arrow keys from picking a winner to moving the floor.
+    // Release focus so arrows mean "pick" again; a keyboard adjustment keeps
+    // focus (and suppresses the pick shortcuts) until the user tabs away.
+    if (details.reason !== 'keyboard') thumbInputRef.current?.blur();
+  };
 
   return (
     <BaseSlider.Root
@@ -138,6 +145,7 @@ export function EloScrubber({
           </styled.div>
           <BaseSlider.Thumb
             aria-label="Score floor"
+            inputRef={thumbInputRef}
             render={
               <styled.div
                 css={{
