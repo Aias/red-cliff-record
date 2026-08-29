@@ -1,5 +1,6 @@
-import { Data } from 'effect';
+import { Data, type Config } from 'effect';
 import type { HttpClientError } from 'effect/unstable/http';
+import type { RateLimiter } from 'effect/unstable/persistence';
 import type { z } from 'zod';
 
 /** A request to an external API failed at the transport or protocol level. */
@@ -24,7 +25,9 @@ export type IntegrationError =
   | ApiRequestError
   | ApiValidationError
   | DbError
-  | HttpClientError.HttpClientError;
+  | HttpClientError.HttpClientError
+  | Config.ConfigError
+  | RateLimiter.RateLimiterError;
 
 export const describeError = (error: unknown): string => {
   if (error instanceof ApiRequestError) {

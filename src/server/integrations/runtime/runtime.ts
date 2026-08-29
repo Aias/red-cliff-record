@@ -1,11 +1,19 @@
 import { Exit, Layer, ManagedRuntime } from 'effect';
 import { FetchHttpClient } from 'effect/unstable/http';
+import { RateLimiter } from 'effect/unstable/persistence';
 import { databaseLayer } from './db';
 import { debugSinkDisabled } from './debug';
 import { syncOne, type RegisteredIntegration } from './registry';
 import { causeMessage, type SyncSummary } from './run';
 
-const appLayers = Layer.mergeAll(databaseLayer, debugSinkDisabled, FetchHttpClient.layer);
+const rateLimiterLayer = RateLimiter.layer.pipe(Layer.provide(RateLimiter.layerStoreMemory));
+
+const appLayers = Layer.mergeAll(
+  databaseLayer,
+  debugSinkDisabled,
+  FetchHttpClient.layer,
+  rateLimiterLayer
+);
 
 /**
  * Promise boundary for the non-Effect CLI: builds the runtime, runs one sync,

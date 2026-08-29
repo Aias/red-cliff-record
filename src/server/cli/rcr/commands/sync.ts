@@ -11,8 +11,6 @@ import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-a
 import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
 import { syncFeedbin } from '@/server/integrations/feedbin/sync';
 import { syncGitHubData } from '@/server/integrations/github/sync';
-import { syncRaindropData } from '@/server/integrations/raindrop/sync';
-import { syncReadwiseDocuments } from '@/server/integrations/readwise/sync';
 import { runIntegrationSync } from '@/server/integrations/runtime/runtime';
 import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
@@ -124,18 +122,22 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
       };
     }
     case 'readwise': {
-      await syncReadwiseDocuments(debug);
+      const summary = await runIntegrationSync('readwise', { debug });
       return {
         integration,
         success: true,
+        entriesCreated: summary.entriesCreated,
+        failedItems: summary.failures.length,
         duration: Math.round(performance.now() - startTime),
       };
     }
     case 'raindrop': {
-      await syncRaindropData(debug);
+      const summary = await runIntegrationSync('raindrop', { debug });
       return {
         integration,
         success: true,
+        entriesCreated: summary.entriesCreated,
+        failedItems: summary.failures.length,
         duration: Math.round(performance.now() - startTime),
       };
     }

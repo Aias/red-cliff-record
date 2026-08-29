@@ -23,3 +23,12 @@ export const databaseLayer = Layer.succeed(Database, {
       catch: (cause) => new DbError({ operation, cause }),
     }),
 });
+
+/** Wraps a legacy Promise-based promotion step (`map.ts`) in a typed effect. */
+export const legacyOperation = (
+  operation: string,
+  run: () => Promise<unknown>
+): Effect.Effect<void, DbError> =>
+  Effect.tryPromise({ try: run, catch: (cause) => new DbError({ operation, cause }) }).pipe(
+    Effect.asVoid
+  );

@@ -1,11 +1,16 @@
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@hozo';
-import { db } from '@/server/db/connections/postgres';
-import { runConcurrentPool } from '@/shared/lib/async-pool';
-import { withBufferedLogs } from '../common/buffered-logs';
-import { createDebugContext } from '../common/debug-output';
-import { requireEnv } from '../common/env';
-import { createIntegrationLogger } from '../common/logging';
-import { runIntegration } from '../common/run-integration';
+import { Config, Effect, Option, Stream } from 'effect';
+import { Database, legacyOperation } from '../runtime/db';
+import { DebugSink } from '../runtime/debug';
+import { makeApiClient } from '../runtime/http';
+import {
+  forEachCollect,
+  requireRunId,
+  type IntegrationDef,
+  type ItemFailure,
+  type SyncSummary,
+} from '../runtime/run';
+import { decodeZod } from '../runtime/zod';
 import {
   createReadwiseAuthors,
   createReadwiseTags,
@@ -13,160 +18,76 @@ import {
   createRecordsFromReadwiseDocuments,
   createRecordsFromReadwiseTags,
 } from './map';
-import {
-  ReadwiseArticlesResponseSchema,
-  type ReadwiseArticle,
-  type ReadwiseArticlesResponse,
-} from './types';
+import { ReadwiseArticlesResponseSchema, type ReadwiseArticle } from './types';
 
-/**
- * Configuration constants
- */
-const API_BASE_URL = 'https://readwise.io/api/v3/list/';
-const RETRY_DELAY_BASE = 1000; // 1 second in milliseconds
-/** Default concurrency for database operations */
+const API_BASE_URL = 'https://readwise.io/api/v3';
 const DB_CONCURRENCY = 10;
-const READWISE_TOKEN = requireEnv('READWISE_TOKEN');
-const logger = createIntegrationLogger('readwise', 'sync');
 
-/**
- * Retrieves the most recent update time from the database
- *
- * This is used to determine the cutoff point for fetching new documents
- *
- * @returns The date of the most recently updated document, or null if none exists
- */
-async function getMostRecentUpdateTime(): Promise<Date | null> {
-  const mostRecent = await db.query.readwiseDocuments.findFirst({
-    columns: {
-      contentUpdatedAt: true,
-    },
-    orderBy: {
-      contentUpdatedAt: 'desc',
-    },
+const decodePage = decodeZod(ReadwiseArticlesResponseSchema, 'readwise documents');
+
+const readwiseClient = Effect.gen(function* () {
+  const token = yield* Config.redacted('READWISE_TOKEN');
+  return yield* makeApiClient({
+    baseUrl: API_BASE_URL,
+    authorization: { scheme: 'Token', token },
+    rateLimit: { key: 'readwise', limit: 20, window: '1 minute' },
   });
-  if (mostRecent) {
-    logger.info(
-      `Last known readwise date: ${mostRecent.contentUpdatedAt?.toLocaleString() ?? 'none'}`
+});
+
+const getMostRecentUpdateTime = Effect.gen(function* () {
+  const database = yield* Database;
+  const mostRecent = yield* database.use('readwiseDocuments.lastUpdated', (client) =>
+    client.query.readwiseDocuments.findFirst({
+      columns: { contentUpdatedAt: true },
+      orderBy: { contentUpdatedAt: 'desc' },
+    })
+  );
+  yield* Effect.logInfo(
+    `Last known readwise date: ${mostRecent?.contentUpdatedAt?.toISOString() ?? 'none'}`
+  );
+  return mostRecent?.contentUpdatedAt ?? null;
+});
+
+const fetchAllDocuments = (updatedAfter: Date | null) =>
+  Effect.gen(function* () {
+    const client = yield* readwiseClient;
+    const sink = yield* DebugSink;
+    const pages = Stream.paginate(null as string | null, (pageCursor) =>
+      Effect.gen(function* () {
+        const urlParams: Record<string, string> = { withHtmlContent: 'true' };
+        if (pageCursor) urlParams.pageCursor = pageCursor;
+        if (updatedAfter) {
+          // +1ms so the boundary document is not re-fetched every run
+          urlParams.updatedAfter = new Date(updatedAfter.getTime() + 1).toISOString();
+        }
+        const response = yield* client.get('/list/', { urlParams });
+        const json = yield* response.json;
+        yield* sink.capture(json);
+        const page = yield* decodePage(json);
+        yield* Effect.logInfo(`Retrieved ${page.results.length} documents`);
+        return [
+          page.results,
+          page.nextPageCursor ? Option.some(page.nextPageCursor) : Option.none<string | null>(),
+        ] as const;
+      })
     );
-    return mostRecent.contentUpdatedAt;
+    return yield* Stream.runCollect(pages);
+  });
+
+const validHttpUrl = (value: string | null | undefined): string | null => {
+  if (!value || !/^https?:\/\//.test(value)) return null;
+  try {
+    new URL(value);
+    return value;
+  } catch {
+    return null;
   }
-  logger.info('No existing documents found');
-  return null;
-}
+};
 
-/**
- * Fetches documents from the Readwise API
- *
- * This function handles pagination and rate limiting automatically.
- *
- * @param pageCursor - Optional cursor for pagination
- * @param updatedAfter - Optional date to filter documents updated after this time
- * @param collectRawData - Optional array to collect raw API responses before validation
- * @returns Promise resolving to the API response with documents
- * @throws Error if the API request fails
- */
-async function fetchReadwiseDocuments(
-  pageCursor?: string,
-  updatedAfter?: Date,
-  collectRawData?: unknown[]
-): Promise<ReadwiseArticlesResponse> {
-  const params = new URLSearchParams();
-  let updatedAfterParam: string | null = null;
-
-  if (pageCursor) params.append('pageCursor', pageCursor);
-  if (updatedAfter) {
-    const afterDate = new Date(updatedAfter.getTime() + 1);
-    updatedAfterParam = afterDate.toISOString();
-    params.append('updatedAfter', updatedAfterParam);
-  }
-  params.append('withHtmlContent', 'true');
-
-  let attempt = 0;
-  while (true) {
-    logger.info(`Fetching Readwise documents${pageCursor ? ' (with cursor)' : ''}`);
-    const response = await fetch(`${API_BASE_URL}?${params.toString()}`, {
-      headers: {
-        Authorization: `Token ${READWISE_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      // Collect raw data BEFORE validation
-      if (collectRawData) {
-        collectRawData.push({
-          request: {
-            pageCursor: pageCursor ?? null,
-            updatedAfter: updatedAfterParam,
-            query: params.toString(),
-          },
-          response: data,
-        });
-      }
-      const parsed = ReadwiseArticlesResponseSchema.parse(data);
-      return parsed;
-    }
-
-    if (response.status === 429) {
-      const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
-      logger.warn(`Rate limit hit, waiting ${retryAfter} seconds before retrying...`);
-      await new Promise((r) => setTimeout(r, retryAfter * RETRY_DELAY_BASE));
-      continue;
-    }
-
-    attempt++;
-    if (attempt >= 3) {
-      throw new Error(
-        `Failed to fetch Readwise documents: ${response.statusText} (${response.status})`
-      );
-    }
-    logger.warn(`Request failed with status ${response.status}, retrying...`);
-    await new Promise((r) => setTimeout(r, RETRY_DELAY_BASE));
-  }
-}
-
-/**
- * Maps a Readwise article to a document format for database insertion
- *
- * This function validates URLs and handles null values appropriately.
- *
- * @param article - The Readwise article to map
- * @param integrationRunId - The ID of the current integration run
- * @returns A document object ready for database insertion
- */
 const mapReadwiseArticleToDocument = (
   article: ReadwiseArticle,
   integrationRunId: number
 ): ReadwiseDocumentInsert => {
-  // Validate source URL
-  let validSourceUrl: string | null = null;
-  if (article.source_url) {
-    try {
-      if (/^https?:\/\//.test(article.source_url)) {
-        new URL(article.source_url);
-        validSourceUrl = article.source_url;
-      }
-    } catch {
-      logger.warn(`Skipping invalid source_url: ${article.source_url}`);
-    }
-  }
-
-  // Validate image URL
-  let validImageUrl: string | null = null;
-  if (article.image_url) {
-    try {
-      if (/^https?:\/\//.test(article.image_url)) {
-        new URL(article.image_url);
-        validImageUrl = article.image_url;
-      }
-    } catch {
-      logger.warn(`Skipping invalid image_url: ${article.image_url}`);
-    }
-  }
-
-  // Map to database format
   return {
     id: article.id,
     parentId: article.parent_id,
@@ -183,8 +104,8 @@ const mapReadwiseArticleToDocument = (
     content: article.content || null,
     htmlContent: article.html_content || null,
     notes: article.notes || null,
-    imageUrl: validImageUrl,
-    sourceUrl: validSourceUrl,
+    imageUrl: validHttpUrl(article.image_url),
+    sourceUrl: validHttpUrl(article.source_url),
     readingProgress: article.reading_progress.toString(),
     firstOpenedAt: article.first_opened_at,
     lastOpenedAt: article.last_opened_at,
@@ -199,9 +120,7 @@ const mapReadwiseArticleToDocument = (
   };
 };
 
-/**
- * Gets the depth of a document in the parent/child tree (0 for a root document)
- */
+/** Gets the depth of a document in the parent/child tree (0 for a root document). */
 function getDocumentDepth(
   doc: ReadwiseArticle,
   idToDocument: Map<string, ReadwiseArticle>
@@ -217,10 +136,8 @@ function getDocumentDepth(
   return depth;
 }
 
-function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle[] {
-  // Create a map of id to document for quick lookup
+function sortDocumentsByHierarchy(documents: ReadonlyArray<ReadwiseArticle>): ReadwiseArticle[] {
   const idToDocument = new Map(documents.map((doc) => [doc.id, doc]));
-
   // Sort by ancestry chain length (parents first), then by creation date
   return [...documents].sort((a, b) => {
     const aDepth = getDocumentDepth(a, idToDocument);
@@ -237,9 +154,8 @@ function sortDocumentsByHierarchy(documents: ReadwiseArticle[]): ReadwiseArticle
  * level can be inserted concurrently while still guaranteeing every ancestor
  * is inserted before its descendants.
  */
-function groupDocumentsByDepth(documents: ReadwiseArticle[]): ReadwiseArticle[][] {
+function groupDocumentsByDepth(documents: ReadonlyArray<ReadwiseArticle>): ReadwiseArticle[][] {
   const idToDocument = new Map(documents.map((doc) => [doc.id, doc]));
-
   const levels: ReadwiseArticle[][] = [];
   for (const doc of documents) {
     const depth = getDocumentDepth(doc, idToDocument);
@@ -250,162 +166,68 @@ function groupDocumentsByDepth(documents: ReadwiseArticle[]): ReadwiseArticle[][
   return levels;
 }
 
-/**
- * Fetches all Readwise documents from API without persisting
- *
- * @param debugData - Array to collect raw API data
- */
-async function fetchReadwiseDataOnly(debugData: unknown[]): Promise<void> {
-  logger.info('Fetching documents from Readwise API');
-  let nextPageCursor: string | null = null;
-  let totalDocuments = 0;
-
-  do {
-    const response = await fetchReadwiseDocuments(
-      nextPageCursor ?? undefined,
-      undefined,
-      debugData
-    );
-    totalDocuments += response.results.length;
-    nextPageCursor = response.nextPageCursor;
-    logger.info(`Retrieved ${response.results.length} documents (total: ${totalDocuments})`);
-  } while (nextPageCursor);
-
-  logger.info(`Fetched ${totalDocuments} documents total`);
-}
-
-/**
- * Synchronizes Readwise documents with the database
- *
- * This function:
- * 1. Determines the last sync point
- * 2. Fetches new or updated documents from the API
- * 3. Processes and stores the documents
- * 4. Creates related entities (authors, tags, records)
- *
- * @param integrationRunId - The ID of the current integration run
- * @returns The number of successfully processed documents
- * @throws Error if API requests fail
- */
-async function syncReadwiseDocumentsInternal(integrationRunId: number): Promise<number> {
-  try {
-    logger.start('Starting Readwise documents sync');
-
-    // Step 1: Determine last sync point
-    const lastUpdateTime = await getMostRecentUpdateTime();
-
-    // Step 2: Fetch all documents
-    logger.info('Fetching documents from Readwise API');
-    const allDocuments: ReadwiseArticle[] = [];
-    let nextPageCursor: string | null = null;
-
-    do {
-      const response = await fetchReadwiseDocuments(
-        nextPageCursor ?? undefined,
-        lastUpdateTime ?? undefined
-      );
-      allDocuments.push(...response.results);
-      nextPageCursor = response.nextPageCursor;
-
-      logger.info(`Retrieved ${response.results.length} documents (total: ${allDocuments.length})`);
-    } while (nextPageCursor);
-
-    // Step 3: Process documents
-    let successCount = 0;
-    if (allDocuments.length > 0) {
-      logger.info(`Processing ${allDocuments.length} documents`);
-
-      // Sort documents to ensure parents are processed before children
-      const sortedDocuments = sortDocumentsByHierarchy(allDocuments);
-
-      // Insert level by level (root documents first) so that inserts within a
-      // level can run concurrently while ancestors always land before descendants.
-      const documentLevels = groupDocumentsByDepth(sortedDocuments);
-      for (const level of documentLevels) {
-        await runConcurrentPool({
-          items: level,
-          concurrency: DB_CONCURRENCY,
-          async worker(doc) {
-            try {
-              // Map and insert the document
-              const documentToInsert = mapReadwiseArticleToDocument(doc, integrationRunId);
-              await db
-                .insert(readwiseDocuments)
-                .values(documentToInsert)
-                .onConflictDoUpdate({
-                  target: readwiseDocuments.id,
-                  set: { ...documentToInsert, recordUpdatedAt: new Date() },
-                });
-
-              successCount++;
-
-              // Log progress periodically
-              if (successCount % 20 === 0) {
-                logger.info(`Processed ${successCount} of ${sortedDocuments.length} documents`);
-              }
-            } catch (error) {
-              logger.error('Error processing document', {
-                documentId: doc.id,
-                error: error instanceof Error ? error.message : String(error),
-              });
-            }
-          },
-        });
-      }
-
-      // Step 4: Create related entities.
-      // Authors and tags are independent dependency chains, so run them concurrently.
-      logger.info('Creating related entities');
-      await Promise.all([
-        withBufferedLogs(async () => {
+const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
+  Effect.gen(function* () {
+    const runId = yield* requireRunId;
+    if (documents.length === 0) {
+      return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
+    }
+    const database = yield* Database;
+    const levels = groupDocumentsByDepth(sortDocumentsByHierarchy(documents));
+    let entriesCreated = 0;
+    const failures: Array<ItemFailure> = [];
+    for (const level of levels) {
+      const result = yield* forEachCollect(level, {
+        concurrency: DB_CONCURRENCY,
+        label: (doc) => doc.id,
+        worker: (doc) => {
+          const documentToInsert = mapReadwiseArticleToDocument(doc, runId);
+          return database.use(`readwiseDocuments.upsert:${doc.id}`, (client) =>
+            client
+              .insert(readwiseDocuments)
+              .values(documentToInsert)
+              .onConflictDoUpdate({
+                target: readwiseDocuments.id,
+                set: { ...documentToInsert, recordUpdatedAt: new Date() },
+              })
+          );
+        },
+      });
+      entriesCreated += result.successes.length;
+      failures.push(...result.failures);
+    }
+    yield* Effect.logInfo(`Upserted ${entriesCreated} of ${documents.length} documents`);
+    // Authors and tags are independent dependency chains, so run them concurrently
+    yield* Effect.all(
+      [
+        legacyOperation('readwise.authors', async () => {
           await createReadwiseAuthors();
           await createRecordsFromReadwiseAuthors();
         }),
-        withBufferedLogs(async () => {
-          await createReadwiseTags(integrationRunId);
+        legacyOperation('readwise.tags', async () => {
+          await createReadwiseTags(runId);
           await createRecordsFromReadwiseTags();
         }),
-      ]);
-      await createRecordsFromReadwiseDocuments(integrationRunId);
-    }
+      ],
+      { concurrency: 2 }
+    );
+    yield* legacyOperation('readwise.documents', () => createRecordsFromReadwiseDocuments(runId));
+    return { entriesCreated, failures } satisfies SyncSummary;
+  });
 
-    logger.complete('Processed documents', successCount);
-    return successCount;
-  } catch (error) {
-    logger.error('Error syncing Readwise documents', error);
-    throw error;
+const sync = Effect.gen(function* () {
+  const lastUpdateTime = yield* getMostRecentUpdateTime;
+  const documents = yield* fetchAllDocuments(lastUpdateTime);
+  yield* Effect.logInfo(`Fetched ${documents.length} documents total`);
+  const sink = yield* DebugSink;
+  if (sink.enabled) {
+    yield* Effect.logInfo(`Debug mode: skipping database writes for ${documents.length} documents`);
+    return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
   }
-}
+  return yield* persistDocuments(documents);
+});
 
-/**
- * Wrapper function that uses runIntegration
- *
- * @param debug - If true, fetches data and outputs to .temp/ without writing to database
- */
-async function syncReadwiseData(debug = false): Promise<void> {
-  const debugContext = createDebugContext<unknown[]>('readwise', debug, []);
-  try {
-    if (debug) {
-      // Debug mode: fetch data and output to .temp/ only, skip database writes
-      logger.start('Starting Readwise data fetch (debug mode - no database writes)');
-      if (debugContext.data) {
-        await fetchReadwiseDataOnly(debugContext.data);
-      }
-      logger.complete('Readwise data fetch completed (debug mode)');
-    } else {
-      // Normal mode: full sync with database writes
-      logger.start('Starting Readwise data synchronization');
-      await runIntegration('readwise', (runId) => syncReadwiseDocumentsInternal(runId));
-      logger.complete('Readwise data synchronization completed');
-    }
-  } catch (error) {
-    logger.error('Error syncing Readwise data', error);
-    throw error;
-  } finally {
-    await debugContext.flush().catch((flushError) => {
-      logger.error('Failed to write debug output for Readwise', flushError);
-    });
-  }
-}
-
-export { syncReadwiseData as syncReadwiseDocuments };
+export const readwiseIntegration: IntegrationDef = {
+  integrationType: 'readwise',
+  sync,
+};

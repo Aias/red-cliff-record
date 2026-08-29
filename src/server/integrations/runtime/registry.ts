@@ -1,10 +1,14 @@
 import { Effect, Layer } from 'effect';
 import { adobeIntegration } from '../adobe/sync';
+import { raindropIntegration } from '../raindrop/sync';
+import { readwiseIntegration } from '../readwise/sync';
 import { debugSinkCapture } from './debug';
 import { CurrentRun, withRun, type IntegrationDef } from './run';
 
 const registry = {
   adobe: adobeIntegration,
+  raindrop: raindropIntegration,
+  readwise: readwiseIntegration,
 } satisfies Record<string, IntegrationDef>;
 
 export type RegisteredIntegration = keyof typeof registry;
