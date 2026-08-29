@@ -1,11 +1,5 @@
 import { Context, Effect, Layer } from 'effect';
 
-/**
- * Debug-mode sink for raw API payloads. The disabled layer is ambient;
- * `--debug` swaps in the capture layer, which buffers everything handed to
- * `capture` and flushes it to `.temp/` when the run's scope closes. Syncs
- * consult `enabled` to skip persistence entirely in debug mode.
- */
 export class DebugSink extends Context.Service<
   DebugSink,
   {

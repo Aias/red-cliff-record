@@ -48,6 +48,8 @@ const getMostRecentUpdateTime = Effect.gen(function* () {
   return mostRecent?.contentUpdatedAt ?? null;
 });
 
+const justAfter = (date: Date) => new Date(date.getTime() + 1);
+
 const fetchAllDocuments = (updatedAfter: Date | null) =>
   Effect.gen(function* () {
     const client = yield* readwiseClient;
@@ -57,8 +59,7 @@ const fetchAllDocuments = (updatedAfter: Date | null) =>
         const urlParams: Record<string, string> = { withHtmlContent: 'true' };
         if (pageCursor) urlParams.pageCursor = pageCursor;
         if (updatedAfter) {
-          // +1ms so the boundary document is not re-fetched every run
-          urlParams.updatedAfter = new Date(updatedAfter.getTime() + 1).toISOString();
+          urlParams.updatedAfter = justAfter(updatedAfter).toISOString();
         }
         const response = yield* client.get('/list/', { urlParams });
         const json = yield* response.json;
@@ -120,7 +121,6 @@ const mapReadwiseArticleToDocument = (
   };
 };
 
-/** Gets the depth of a document in the parent/child tree (0 for a root document). */
 function getDocumentDepth(
   doc: ReadwiseArticle,
   idToDocument: Map<string, ReadwiseArticle>
@@ -138,7 +138,6 @@ function getDocumentDepth(
 
 function sortDocumentsByHierarchy(documents: ReadonlyArray<ReadwiseArticle>): ReadwiseArticle[] {
   const idToDocument = new Map(documents.map((doc) => [doc.id, doc]));
-  // Sort by ancestry chain length (parents first), then by creation date
   return [...documents].sort((a, b) => {
     const aDepth = getDocumentDepth(a, idToDocument);
     const bDepth = getDocumentDepth(b, idToDocument);
@@ -149,11 +148,6 @@ function sortDocumentsByHierarchy(documents: ReadonlyArray<ReadwiseArticle>): Re
   });
 }
 
-/**
- * Groups documents by their depth in the parent/child tree so that each depth
- * level can be inserted concurrently while still guaranteeing every ancestor
- * is inserted before its descendants.
- */
 function groupDocumentsByDepth(documents: ReadonlyArray<ReadwiseArticle>): ReadwiseArticle[][] {
   const idToDocument = new Map(documents.map((doc) => [doc.id, doc]));
   const levels: ReadwiseArticle[][] = [];
@@ -197,7 +191,6 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
       failures.push(...result.failures);
     }
     yield* Effect.logInfo(`Upserted ${entriesCreated} of ${documents.length} documents`);
-    // Authors and tags are independent dependency chains, so run them concurrently
     yield* Effect.all(
       [
         legacyOperation('readwise.authors', async () => {

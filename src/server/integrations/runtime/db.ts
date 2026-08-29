@@ -2,10 +2,6 @@ import { Context, Effect, Layer } from 'effect';
 import { db, type Db } from '@/server/db/connections/postgres';
 import { DbError } from './errors';
 
-/**
- * Access to the shared Drizzle client. Integrations never own the connection's
- * lifecycle — the same client serves tRPC and the rest of the server.
- */
 export class Database extends Context.Service<
   Database,
   {
@@ -24,7 +20,6 @@ export const databaseLayer = Layer.succeed(Database, {
     }),
 });
 
-/** Wraps a legacy Promise-based promotion step (`map.ts`) in a typed effect. */
 export const legacyOperation = (
   operation: string,
   run: () => Promise<unknown>

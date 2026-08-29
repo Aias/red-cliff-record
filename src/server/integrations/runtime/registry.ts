@@ -16,11 +16,6 @@ export type RegisteredIntegration = keyof typeof registry;
 export const isRegisteredIntegration = (name: string): name is RegisteredIntegration =>
   name in registry;
 
-/**
- * Runs a single integration sync. Normal mode wraps the work in run tracking;
- * debug mode swaps in the capturing DebugSink, creates no run row, and
- * persists nothing.
- */
 export const syncOne = (name: RegisteredIntegration, options: { readonly debug: boolean }) => {
   const def = registry[name];
   const sync = options.debug

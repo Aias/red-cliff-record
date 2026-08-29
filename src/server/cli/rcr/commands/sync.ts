@@ -75,8 +75,6 @@ export const run: CommandHandler = async (args, options) => {
   }
   const integration = integrationResult.data;
 
-  // Run the single sync, then enrichments. Debug syncs persist nothing, so
-  // there is nothing to enrich.
   const startTime = performance.now();
   const syncResult = await runSingleSync(integration, { debug });
   if (!debug) await runEnrichments();
@@ -218,8 +216,6 @@ async function runDailySync(options: SyncOptions) {
     })
   );
 
-  // Run enrichments once at the end. Debug syncs persist nothing, so there is
-  // nothing to enrich.
   if (!options.debug) {
     try {
       await runEnrichments();

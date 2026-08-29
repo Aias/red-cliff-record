@@ -23,10 +23,6 @@ export interface SyncSummary {
   readonly failures: ReadonlyArray<ItemFailure>;
 }
 
-/**
- * The active integration run. `runId` is null in debug mode, where no
- * `integration_runs` row is created and nothing is persisted.
- */
 export class CurrentRun extends Context.Service<
   CurrentRun,
   {
@@ -34,11 +30,6 @@ export class CurrentRun extends Context.Service<
   }
 >()('integrations/CurrentRun') {}
 
-/**
- * The run id for persistence paths. Staging tables require a real run id, and
- * persistence must never execute in debug mode — reaching this without a run
- * row is a bug, so it dies rather than failing.
- */
 export const requireRunId = Effect.gen(function* () {
   const { runId } = yield* CurrentRun;
   if (runId === null) {
@@ -66,41 +57,56 @@ export const causeMessage = <E>(cause: Cause.Cause<E>): string => {
   return Cause.pretty(cause);
 };
 
-const startRun = (integrationType: IntegrationType, runType: RunType) =>
-  Effect.gen(function* () {
-    const database = yield* Database;
-    const rows = yield* database.use('integration_runs.insert', (client) =>
-      client
-        .insert(integrationRuns)
-        .values({ integrationType, runType, runStartTime: new Date() })
-        .returning()
-    );
-    const run = rows[0];
-    if (!run) {
-      return yield* new DbError({
-        operation: 'integration_runs.insert',
-        cause: 'no row returned',
-      });
-    }
-    yield* Effect.logInfo(`Created integration run ${run.id}`);
-    return run.id;
-  });
+export interface RunCompletion {
+  readonly status: (typeof IntegrationStatusSchema.enum)[keyof typeof IntegrationStatusSchema.enum];
+  readonly runEndTime: Date;
+  readonly entriesCreated?: number;
+  readonly message?: string | null;
+}
 
-const finishRun = (
-  runId: number,
-  fields: {
-    status: (typeof IntegrationStatusSchema.enum)[keyof typeof IntegrationStatusSchema.enum];
-    runEndTime: Date;
-    entriesCreated?: number;
-    message?: string | null;
+export class RunTracker extends Context.Service<
+  RunTracker,
+  {
+    readonly start: (
+      integrationType: IntegrationType,
+      runType: RunType
+    ) => Effect.Effect<number, DbError>;
+    readonly finish: (runId: number, fields: RunCompletion) => Effect.Effect<void, DbError>;
   }
-) =>
+>()('integrations/RunTracker') {}
+
+export const runTrackerLayer = Layer.effect(
+  RunTracker,
   Effect.gen(function* () {
     const database = yield* Database;
-    yield* database.use('integration_runs.update', (client) =>
-      client.update(integrationRuns).set(fields).where(eq(integrationRuns.id, runId))
-    );
-  });
+    return {
+      start: (integrationType, runType) =>
+        Effect.gen(function* () {
+          const rows = yield* database.use('integration_runs.insert', (client) =>
+            client
+              .insert(integrationRuns)
+              .values({ integrationType, runType, runStartTime: new Date() })
+              .returning()
+          );
+          const run = rows[0];
+          if (!run) {
+            return yield* new DbError({
+              operation: 'integration_runs.insert',
+              cause: 'no row returned',
+            });
+          }
+          yield* Effect.logInfo(`Created integration run ${run.id}`);
+          return run.id;
+        }),
+      finish: (runId, fields) =>
+        database
+          .use('integration_runs.update', (client) =>
+            client.update(integrationRuns).set(fields).where(eq(integrationRuns.id, runId))
+          )
+          .pipe(Effect.asVoid),
+    };
+  })
+);
 
 const failureSummaryMessage = (failures: ReadonlyArray<ItemFailure>): string | null => {
   const [first] = failures;
@@ -108,28 +114,28 @@ const failureSummaryMessage = (failures: ReadonlyArray<ItemFailure>): string | n
   return `${failures.length} item(s) failed. First: ${first.label}: ${first.message}`;
 };
 
-/**
- * Tracks a sync in `integration_runs`: inserts the row before the work runs
- * and finalizes it on success, failure, and interrupt. Feedbin reads these
- * rows as its incremental-sync cursor, so the row semantics must not change.
- */
 export const withRun = <A extends SyncSummary, E, R>(
   integrationType: IntegrationType,
   work: Effect.Effect<A, E, R>,
   runType: RunType = RunTypeSchema.enum.sync
 ) =>
   Effect.gen(function* () {
-    const runId = yield* Effect.acquireRelease(startRun(integrationType, runType), (id, exit) =>
-      Exit.isSuccess(exit)
-        ? Effect.void
-        : finishRun(id, {
-            status: IntegrationStatusSchema.enum.fail,
-            runEndTime: new Date(),
-            message: causeMessage(exit.cause),
-          }).pipe(Effect.catch((error) => Effect.logError('Failed to record run failure', error)))
+    const tracker = yield* RunTracker;
+    const runId = yield* Effect.acquireRelease(
+      tracker.start(integrationType, runType),
+      (id, exit) =>
+        Exit.isSuccess(exit)
+          ? Effect.void
+          : tracker
+              .finish(id, {
+                status: IntegrationStatusSchema.enum.fail,
+                runEndTime: new Date(),
+                message: causeMessage(exit.cause),
+              })
+              .pipe(Effect.catch((error) => Effect.logError('Failed to record run failure', error)))
     );
     const summary = yield* work.pipe(Effect.provide(Layer.succeed(CurrentRun, { runId })));
-    yield* finishRun(runId, {
+    yield* tracker.finish(runId, {
       status: IntegrationStatusSchema.enum.success,
       runEndTime: new Date(),
       entriesCreated: summary.entriesCreated,
@@ -138,12 +144,6 @@ export const withRun = <A extends SyncSummary, E, R>(
     return summary;
   }).pipe(Effect.scoped);
 
-/**
- * Runs a worker over every item with bounded concurrency, collecting failures
- * instead of aborting: one bad item never kills the sync, but every failure is
- * logged and surfaced in the summary. Defects still propagate — a thrown bug
- * is systemic, not an item failure.
- */
 export const forEachCollect = <A, X, E, R>(
   items: ReadonlyArray<A>,
   options: {

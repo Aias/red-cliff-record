@@ -3,19 +3,16 @@ import type { HttpClientError } from 'effect/unstable/http';
 import type { RateLimiter } from 'effect/unstable/persistence';
 import type { z } from 'zod';
 
-/** A request to an external API failed at the transport or protocol level. */
 export class ApiRequestError extends Data.TaggedError('ApiRequestError')<{
   readonly resource: string;
   readonly cause: unknown;
 }> {}
 
-/** An external API responded with a payload that failed schema validation. */
 export class ApiValidationError extends Data.TaggedError('ApiValidationError')<{
   readonly resource: string;
   readonly issues: ReadonlyArray<z.core.$ZodIssue>;
 }> {}
 
-/** A database read or write failed. */
 export class DbError extends Data.TaggedError('DbError')<{
   readonly operation: string;
   readonly cause: unknown;

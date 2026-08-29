@@ -2,7 +2,6 @@ import { Effect } from 'effect';
 import type { z } from 'zod';
 import { ApiValidationError } from './errors';
 
-/** Decodes an unknown value with a Zod schema, failing with a typed error. */
 export const decodeZod =
   <T>(schema: z.ZodType<T>, resource: string) =>
   (input: unknown): Effect.Effect<T, ApiValidationError> => {

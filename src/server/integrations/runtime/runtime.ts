@@ -4,7 +4,7 @@ import { RateLimiter } from 'effect/unstable/persistence';
 import { databaseLayer } from './db';
 import { debugSinkDisabled } from './debug';
 import { syncOne, type RegisteredIntegration } from './registry';
-import { causeMessage, type SyncSummary } from './run';
+import { causeMessage, runTrackerLayer, type SyncSummary } from './run';
 
 const rateLimiterLayer = RateLimiter.layer.pipe(Layer.provide(RateLimiter.layerStoreMemory));
 
@@ -12,13 +12,10 @@ const appLayers = Layer.mergeAll(
   databaseLayer,
   debugSinkDisabled,
   FetchHttpClient.layer,
-  rateLimiterLayer
+  rateLimiterLayer,
+  runTrackerLayer.pipe(Layer.provide(databaseLayer))
 );
 
-/**
- * Promise boundary for the non-Effect CLI: builds the runtime, runs one sync,
- * and disposes. Failures reject with a plain Error carrying a readable message.
- */
 export const runIntegrationSync = async (
   name: RegisteredIntegration,
   options: { readonly debug: boolean }

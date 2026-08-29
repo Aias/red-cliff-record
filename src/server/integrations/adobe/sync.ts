@@ -18,15 +18,16 @@ import { LightroomJsonResponseSchema, type LightroomJsonResponse } from './types
 const ALBUM_URL =
   'https://lightroom.adobe.com/v2/spaces/f89a3c5060d8467a952c66de97edbe39/albums/f1edd4179e2f4e1d802f8a94f40b542c/assets?embed=asset%3Buser&order_after=-&exclude=incomplete&subtype=image';
 
+const JSONP_GUARD_PREFIX = /^while\s*\(1\)\s*{\s*}\s*/;
+
 const decodeAlbum = decodeZod(LightroomJsonResponseSchema, 'lightroom album');
 
 const fetchAlbum = Effect.gen(function* () {
   const client = (yield* HttpClient.HttpClient).pipe(HttpClient.filterStatusOk);
   const response = yield* client.get(ALBUM_URL);
   const text = yield* response.text;
-  // Adobe returns JSONP with a while(1){} prefix ahead of the JSON body
   const json = yield* Effect.try({
-    try: (): unknown => JSON.parse(text.replace(/^while\s*\(1\)\s*{\s*}\s*/, '')),
+    try: (): unknown => JSON.parse(text.replace(JSONP_GUARD_PREFIX, '')),
     catch: (cause) => new ApiRequestError({ resource: 'lightroom album', cause }),
   });
   const sink = yield* DebugSink;

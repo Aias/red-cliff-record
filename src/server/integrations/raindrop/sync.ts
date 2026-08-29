@@ -47,7 +47,6 @@ const raindropClient = Effect.gen(function* () {
   });
 });
 
-/** Collections have no cursor and are always fully re-fetched (root + children). */
 const fetchCollections = Effect.gen(function* () {
   const client = yield* raindropClient;
   const sink = yield* DebugSink;
@@ -93,8 +92,6 @@ const fetchNewRaindrops = (lastKnownDate: Date | undefined) =>
         yield* sink.capture(json);
         const parsed = yield* decodeRaindrops(json);
         yield* Effect.logInfo(`Retrieved ${parsed.items.length} raindrops (page ${page + 1})`);
-        // Stop once a page reaches raindrops at or before the last known date,
-        // keeping only the newer items from that page
         const reachedExisting = parsed.items.some(
           ({ lastUpdate }) => lastKnownDate && lastUpdate <= lastKnownDate
         );
@@ -140,11 +137,6 @@ const upsertCollection = (collection: RaindropCollection, runId: number) =>
     );
   });
 
-/**
- * Upserts one bookmark with its cover image and highlights atomically. Each
- * bookmark gets its own transaction so one bad bookmark cannot poison the
- * rest of the batch.
- */
 const upsertRaindrop = (raindrop: Raindrop, runId: number) =>
   Effect.gen(function* () {
     const database = yield* Database;
@@ -225,7 +217,6 @@ const persistAll = (
     yield* Effect.logInfo(
       `Upserted ${raindropResults.successes.length} of ${raindrops.length} raindrops`
     );
-    // Tags and media are independent of each other; records then depend on both
     yield* Effect.all(
       [
         legacyOperation('raindrop.tags', () => createRaindropTags(runId)),
