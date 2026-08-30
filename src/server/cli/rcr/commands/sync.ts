@@ -8,7 +8,6 @@ import { z } from 'zod';
 import { checkDatabaseConnection } from '@/server/db/connections/postgres';
 import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
 import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
-import { syncFeedbin } from '@/server/integrations/feedbin/sync';
 import { runIntegrationSync } from '@/server/integrations/runtime/runtime';
 import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
@@ -119,51 +118,17 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
         duration: Math.round(performance.now() - startTime),
       };
     }
-    case 'github-commits': {
-      const summary = await runIntegrationSync('github-commits', { debug });
-      return {
-        integration,
-        success: true,
-        entriesCreated: summary.entriesCreated,
-        failedItems: summary.failures.length,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'readwise': {
-      const summary = await runIntegrationSync('readwise', { debug });
-      return {
-        integration,
-        success: true,
-        entriesCreated: summary.entriesCreated,
-        failedItems: summary.failures.length,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'raindrop': {
-      const summary = await runIntegrationSync('raindrop', { debug });
-      return {
-        integration,
-        success: true,
-        entriesCreated: summary.entriesCreated,
-        failedItems: summary.failures.length,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'adobe': {
-      const summary = await runIntegrationSync('adobe', { debug });
-      return {
-        integration,
-        success: true,
-        entriesCreated: summary.entriesCreated,
-        failedItems: summary.failures.length,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
+    case 'github-commits':
+    case 'readwise':
+    case 'raindrop':
+    case 'adobe':
     case 'feedbin': {
-      await syncFeedbin(debug);
+      const summary = await runIntegrationSync(integration, { debug });
       return {
         integration,
         success: true,
+        entriesCreated: summary.entriesCreated,
+        failedItems: summary.failures.length,
         duration: Math.round(performance.now() - startTime),
       };
     }

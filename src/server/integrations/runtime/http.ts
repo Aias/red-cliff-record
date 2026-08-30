@@ -8,7 +8,7 @@ const MAX_TRANSIENT_RETRIES = 3;
 export const makeApiClient = (options: {
   readonly baseUrl: string;
   readonly authorization: {
-    readonly scheme: 'Bearer' | 'Token';
+    readonly scheme: 'Basic' | 'Bearer' | 'Token';
     readonly token: Redacted.Redacted<string>;
   };
   readonly rateLimit: {

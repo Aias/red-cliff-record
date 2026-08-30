@@ -8,7 +8,7 @@ import {
 } from '@hozo';
 import type { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';
-import { Effect, Option, Stream } from 'effect';
+import { Array as Arr, Effect, Option, Stream } from 'effect';
 import { db } from '@/server/db/connections/postgres';
 import { Database } from '../runtime/db';
 import { DebugSink } from '../runtime/debug';
@@ -174,14 +174,6 @@ const makeCommitProcessor = (octokit: Octokit, integrationRunId: number) => {
   };
 };
 
-const chunked = <T>(items: ReadonlyArray<T>, size: number): Array<Array<T>> => {
-  const chunks: Array<Array<T>> = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-  return chunks;
-};
-
 export const persistCommits = (
   octokit: Octokit,
   items: ReadonlyArray<CommitSearchItem>,
@@ -190,7 +182,7 @@ export const persistCommits = (
   Effect.gen(function* () {
     const database = yield* Database;
     const existingShas = new Set<string>();
-    for (const chunk of chunked(
+    for (const chunk of Arr.chunksOf(
       items.map((item) => item.sha),
       SHA_CHUNK_SIZE
     )) {

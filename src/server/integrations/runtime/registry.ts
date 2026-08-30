@@ -1,5 +1,6 @@
 import { Effect, Layer } from 'effect';
 import { adobeIntegration } from '../adobe/sync';
+import { feedbinIntegration } from '../feedbin/sync';
 import { githubCommitsIntegration, githubIntegration } from '../github/sync';
 import { raindropIntegration } from '../raindrop/sync';
 import { readwiseIntegration } from '../readwise/sync';
@@ -8,6 +9,7 @@ import { CurrentRun, withRun, type IntegrationDef } from './run';
 
 const registry = {
   adobe: adobeIntegration,
+  feedbin: feedbinIntegration,
   github: githubIntegration,
   'github-commits': githubCommitsIntegration,
   raindrop: raindropIntegration,

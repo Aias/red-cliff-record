@@ -36,6 +36,8 @@ export const feeds = pgTable(
   (table) => [index().on(table.feedUrl), index().on(table.siteUrl), index().on(table.ownerId)]
 );
 
+export type FeedInsert = typeof feeds.$inferInsert;
+
 export const FeedEnclosure = z.object({
   enclosureUrl: z.url(),
   enclosureType: z.string(),
