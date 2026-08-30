@@ -1,87 +1,67 @@
-/**
- * Enrich commands for the CLI
- *
- * Runs enrichment operations on existing records:
- * - avatars: Upload external avatar URLs to R2
- * - alt-text: Generate alt text for image/video media using OpenAI vision
- * - embeddings: Generate text embeddings for records
- * - elo: Refit ELO scores from the stored matchup history
- */
-
 import { z } from 'zod';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runEloRefit } from '@/server/services/refit-elo';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
+import { runUpdateSourcesIntegration } from '@/server/services/update-sources';
 import { assertNever } from '@/shared/lib/type-utils';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createError } from '../lib/errors';
+import { withInterruptSignal } from '../lib/interrupt';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
-const EnrichmentNameSchema = z.enum(['avatars', 'alt-text', 'embeddings', 'elo']);
+const EnrichmentNameSchema = z.enum(['avatars', 'alt-text', 'embeddings', 'elo', 'sources']);
 type EnrichmentName = z.infer<typeof EnrichmentNameSchema>;
 const ENRICHMENT_LIST = EnrichmentNameSchema.options;
+
+const DEFAULT_ENRICHMENTS: EnrichmentName[] = ['avatars', 'alt-text', 'embeddings', 'elo'];
 
 const EnrichOptionsSchema = BaseOptionsSchema.extend({
   limit: z.coerce.number().positive().int().optional(),
 }).strict();
 
-/**
- * Run enrichment operations on existing records
- * Usage: rcr enrich [enrichment] [--debug] [--limit=N]
- *
- * Available enrichments:
- *   avatars     Upload external avatar URLs to R2
- *   alt-text    Generate alt text for image/video media using OpenAI vision
- *   embeddings  Generate text embeddings for records
- *   elo         Refit ELO scores from the stored matchup history
- *
- * If no enrichment is specified, runs all of them in order.
- *
- * Options:
- *   --limit=N   For alt-text: max media items to process (default: 100)
- */
-export const run: CommandHandler = async (args, options) => {
-  const parsedOptions = parseOptions(EnrichOptionsSchema, options);
-  const { debug, limit } = parsedOptions;
+export const run: CommandHandler = (args, options) =>
+  withInterruptSignal(async (signal) => {
+    const parsedOptions = parseOptions(EnrichOptionsSchema, options);
+    const { debug, limit } = parsedOptions;
 
-  const rawEnrichment = args[0]?.toLowerCase();
+    const rawEnrichment = args[0]?.toLowerCase();
 
-  // If no enrichment specified, run all
-  if (!rawEnrichment) {
-    return runAllEnrichments({ debug, limit });
-  }
+    if (!rawEnrichment) {
+      return runAllEnrichments({ debug, limit, signal });
+    }
 
-  const enrichmentResult = EnrichmentNameSchema.safeParse(rawEnrichment);
-  if (!enrichmentResult.success) {
-    throw createError(
-      'VALIDATION_ERROR',
-      `Unknown enrichment: ${rawEnrichment}. Available: ${ENRICHMENT_LIST.join(', ')}`
-    );
-  }
-  const enrichment = enrichmentResult.data;
+    const enrichmentResult = EnrichmentNameSchema.safeParse(rawEnrichment);
+    if (!enrichmentResult.success) {
+      throw createError(
+        'VALIDATION_ERROR',
+        `Unknown enrichment: ${rawEnrichment}. Available: ${ENRICHMENT_LIST.join(', ')}`
+      );
+    }
+    const enrichment = enrichmentResult.data;
 
-  if (enrichment !== 'alt-text' && limit !== undefined) {
-    throw createError('VALIDATION_ERROR', '--limit is only supported for `rcr enrich alt-text`.');
-  }
+    if (enrichment !== 'alt-text' && limit !== undefined) {
+      throw createError('VALIDATION_ERROR', '--limit is only supported for `rcr enrich alt-text`.');
+    }
 
-  const result = await runSingleEnrichment(enrichment, { debug, limit });
-  return success(result as Parameters<typeof success>[0]);
-};
+    const result = await runSingleEnrichment(enrichment, { debug, limit, signal });
+    return success(result);
+  });
 
 interface EnrichOptions {
   debug: boolean;
   limit?: number;
+  signal: AbortSignal;
 }
 
 async function runSingleEnrichment(enrichment: EnrichmentName, options: EnrichOptions) {
-  const { debug, limit } = options;
+  const { debug, limit, signal } = options;
   const startTime = performance.now();
 
   switch (enrichment) {
     case 'avatars': {
-      await runSaveAvatarsIntegration();
+      await runSaveAvatarsIntegration(signal);
       return {
         enrichment,
         success: true,
@@ -89,7 +69,7 @@ async function runSingleEnrichment(enrichment: EnrichmentName, options: EnrichOp
       };
     }
     case 'alt-text': {
-      const result = await runAltTextIntegration({ debug, limit });
+      const result = await runAltTextIntegration({ debug, limit, signal });
       return {
         enrichment,
         success: true,
@@ -98,7 +78,7 @@ async function runSingleEnrichment(enrichment: EnrichmentName, options: EnrichOp
       };
     }
     case 'embeddings': {
-      await runEmbedRecordsIntegration();
+      await runEmbedRecordsIntegration(signal);
       return {
         enrichment,
         success: true,
@@ -114,20 +94,26 @@ async function runSingleEnrichment(enrichment: EnrichmentName, options: EnrichOp
         duration: Math.round(performance.now() - startTime),
       };
     }
+    case 'sources': {
+      const result = await runUpdateSourcesIntegration(signal);
+      return {
+        enrichment,
+        success: true,
+        ...result,
+        duration: Math.round(performance.now() - startTime),
+      };
+    }
     default:
       assertNever(enrichment);
   }
 }
 
-/**
- * Run all enrichments in order: avatars → alt-text → embeddings → elo
- */
 async function runAllEnrichments(options: EnrichOptions) {
-  const enrichments: EnrichmentName[] = ['avatars', 'alt-text', 'embeddings', 'elo'];
   const results: Array<{ enrichment: string; success: boolean; error?: string }> = [];
   const startTime = performance.now();
 
-  for (const enrichment of enrichments) {
+  for (const enrichment of DEFAULT_ENRICHMENTS) {
+    options.signal.throwIfAborted();
     try {
       await runSingleEnrichment(enrichment, options);
       results.push({ enrichment, success: true });
@@ -146,9 +132,9 @@ async function runAllEnrichments(options: EnrichOptions) {
     {
       results,
       summary: {
-        total: enrichments.length,
+        total: DEFAULT_ENRICHMENTS.length,
         succeeded: successCount,
-        failed: enrichments.length - successCount,
+        failed: DEFAULT_ENRICHMENTS.length - successCount,
       },
     },
     { duration: Math.round(performance.now() - startTime) }

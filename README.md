@@ -9,6 +9,7 @@ A personal knowledge repository that aggregates data from multiple external sour
 - **Frontend**: React 19 + TanStack (Start, Router, Query) + Tailwind CSS v4
 - **Sync**: [Rocicorp Zero](https://zero.rocicorp.dev) replicates the entity graph (records, links, matchups, media) to the client; reads are local ZQL queries and writes are optimistic custom mutators
 - **Backend**: tRPC + Drizzle ORM + PostgreSQL (search, list/opponent selection, and heavy mutations like create/delete/merge; also the full CLI surface)
+- **Integrations**: external-source syncs built on [Effect](https://effect.website) v4 — typed errors, per-API rate limiting, tracked runs that finalize on failure and interrupt — with Zod validation at every API boundary
 - **Deployment/Hosting**: Bun server + local PostgreSQL on a Tailscale network
 - **Search**: PostgreSQL full-text search + OpenAI embeddings
 
@@ -27,7 +28,6 @@ Before you begin, ensure you have the following installed:
 
 ### Optional Requirements
 
-- **Airtable** - for Airtable integration
 - **Arc Browser** - for Arc Browser integration
 - **Dia Browser** - for Dia Browser integration
 - **Feedbin** - for RSS feed integration
@@ -147,15 +147,6 @@ Each integration is optional. Only configure the ones you need:
   ```
 
   [Create a token](https://github.com/settings/tokens) with `repo` and `user` scopes.
-
-- **Airtable** - For syncing Airtable bases
-
-  ```
-  AIRTABLE_BASE_ID=app...
-  AIRTABLE_ACCESS_TOKEN=pat...
-  ```
-
-  [Get your API key](https://airtable.com/create/tokens)
 
 - **Raindrop.io** - For syncing bookmarks
 
@@ -294,14 +285,12 @@ rcr links create '{"sourceId":1,"targetId":2,"predicateId":3}'
 
 # Sync integrations
 rcr sync github
-rcr sync airtable
 rcr sync raindrop
 rcr sync readwise
 rcr sync feedbin
 rcr sync adobe
 rcr sync browsing                       # Arc + Dia browser history (macOS)
 rcr sync twitter
-rcr sync agents                         # Claude, Codex, Cursor histories
 rcr sync avatars                        # Transfer avatars to R2
 rcr sync embeddings                     # Generate embeddings for records
 rcr sync                                # Run all daily syncs

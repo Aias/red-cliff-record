@@ -13,11 +13,11 @@ import { z } from 'zod';
 import { contentTimestamps, databaseTimestamps, integrationRuns } from './operations';
 import { records } from './records';
 
-export const feedSources = ['feedbin', 'feedly', 'reeder'] as const;
-export const FeedSourceSchema = z.enum(feedSources);
+export const FeedSourceSchema = z.enum(['feedbin', 'feedly', 'reeder']);
+export const feedSources = FeedSourceSchema.options;
 export type FeedSource = z.infer<typeof FeedSourceSchema>;
 
-export const feedSourceEnum = pgEnum('feed_source', feedSources);
+export const feedSourceEnum = pgEnum('feed_source', FeedSourceSchema.enum);
 
 export const feeds = pgTable(
   'feeds',
@@ -35,6 +35,8 @@ export const feeds = pgTable(
   },
   (table) => [index().on(table.feedUrl), index().on(table.siteUrl), index().on(table.ownerId)]
 );
+
+export type FeedInsert = typeof feeds.$inferInsert;
 
 export const FeedEnclosure = z.object({
   enclosureUrl: z.url(),

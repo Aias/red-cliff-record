@@ -1,32 +1,28 @@
 import { throttling } from '@octokit/plugin-throttling';
 import { Octokit } from '@octokit/rest';
-import { createIntegrationLogger } from '../common/logging';
-
-const logger = createIntegrationLogger('github', 'api');
+import { Config, Effect, Redacted } from 'effect';
 
 const ThrottledOctokit = Octokit.plugin(throttling);
 
-/**
- * Creates an authenticated Octokit client that respects GitHub's primary and
- * secondary rate limits reactively: throttled requests are retried after the
- * server-indicated delay instead of pacing every request with fixed sleeps.
- */
-export function createGithubClient() {
+const MAX_THROTTLE_RETRIES = 2;
+
+export const githubClient = Effect.gen(function* () {
+  const token = yield* Config.redacted('GITHUB_TOKEN');
   return new ThrottledOctokit({
-    auth: process.env.GITHUB_TOKEN,
+    auth: Redacted.value(token),
     throttle: {
       onRateLimit: (retryAfter, options, _octokit, retryCount) => {
-        logger.warn(
-          `Rate limit hit for ${options.method} ${options.url}; retrying after ${retryAfter}s`
+        console.warn(
+          `GitHub rate limit for ${options.method} ${options.url}; retrying after ${retryAfter}s`
         );
-        return retryCount < 2;
+        return retryCount < MAX_THROTTLE_RETRIES;
       },
       onSecondaryRateLimit: (retryAfter, options, _octokit, retryCount) => {
-        logger.warn(
-          `Secondary rate limit hit for ${options.method} ${options.url}; retrying after ${retryAfter}s`
+        console.warn(
+          `GitHub secondary rate limit for ${options.method} ${options.url}; retrying after ${retryAfter}s`
         );
-        return retryCount < 2;
+        return retryCount < MAX_THROTTLE_RETRIES;
       },
     },
   });
-}
+});

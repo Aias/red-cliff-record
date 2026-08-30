@@ -28,8 +28,6 @@ export const ServerEnvSchema = z.object({
   ASSETS_DOMAIN: z.string(),
 
   // External Services
-  AIRTABLE_BASE_ID: z.string(),
-  AIRTABLE_ACCESS_TOKEN: z.string(),
   GITHUB_TOKEN: z.string(),
   FEEDBIN_USERNAME: z.string(),
   FEEDBIN_PASSWORD: z.string(),

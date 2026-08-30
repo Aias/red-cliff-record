@@ -12,12 +12,6 @@ const URL_PATTERN = /(https?:\/\/[^\s]+)/gi;
 const resolvedUrlCache = new Map<string, string>();
 
 /**
- * Collapse all whitespace (including newlines) to single spaces.
- * Used for comparison purposes only.
- */
-export const collapseWhitespace = (value: string): string => value.replace(/\s+/g, ' ').trim();
-
-/**
  * Normalize whitespace while preserving newlines.
  * - Collapses multiple spaces/tabs to single space
  * - Trims each line
@@ -150,9 +144,6 @@ export const normalizeTweetContent = async (
   return normalizeWhitespace(normalized);
 };
 
-export const stripUrls = (text: string): string =>
-  collapseWhitespace(text.replace(URL_PATTERN, ' '));
-
 export const loadKnownTweetIds = async (): Promise<KnownTweetIds> => {
   const tweets = await db.query.twitterTweets.findMany({
     columns: { id: true },
@@ -160,13 +151,4 @@ export const loadKnownTweetIds = async (): Promise<KnownTweetIds> => {
   });
 
   return new Set(tweets.map((tweet) => tweet.id));
-};
-
-export const fetchTweetTextById = async (tweetId: string): Promise<string | null> => {
-  const tweet = await db.query.twitterTweets.findFirst({
-    columns: { text: true },
-    where: { id: tweetId },
-  });
-
-  return tweet?.text ?? null;
 };

@@ -1,62 +1,36 @@
-import { arcSchema, browsingHistory, type Browser, type BrowsingHistoryInsert } from '@hozo';
+import {
+  arcSchema,
+  browsingHistory,
+  BrowserSchema,
+  type Browser,
+  type BrowsingHistoryInsert,
+} from '@hozo';
+import { createClient } from '@libsql/client';
 import { and, eq, gt, isNotNull, ne, notLike, sql } from 'drizzle-orm';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import { db } from '@/server/db/connections/postgres';
-import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
-import { createIntegrationLogger } from '../common/logging';
-import { runIntegration } from '../common/run-integration';
+import { drizzle, type LibSQLDatabase } from 'drizzle-orm/libsql';
+import { Array as Arr, Config, Context, Data, Effect } from 'effect';
+import { Database } from '../runtime/db';
+import { DebugSink } from '../runtime/debug';
+import { DbError, SyncPreconditionError } from '../runtime/errors';
+import {
+  forEachCollect,
+  requireRunId,
+  type IntegrationDef,
+  type SyncSummary,
+} from '../runtime/run';
+import { decodeZod } from '../runtime/zod';
 import {
   CHROME_EPOCH_TO_UNIX_SECONDS,
   chromeEpochMicrosecondsToDatetime,
   collapseSequentialVisits,
   createDailyVisitsQuery,
 } from './helpers';
-import {
-  BrowserNotInstalledError,
-  DailyVisitsQueryResultSchema,
-  type BrowserConfig,
-} from './types';
+import { DailyVisitsQueryResultSchema } from './types';
 
-const logger = createIntegrationLogger('browser-history', 'sync');
+const MAX_URL_LENGTH = 1000;
+const INSERT_BATCH_SIZE = 100;
+const INSERT_CONCURRENCY = 8;
 
-/**
- * Gets the machine hostname by invoking the system `hostname` command.
- *
- * We prefer this over environment variables because `process.env.HOSTNAME` is often unset
- * in local shells, which can cause spurious "unknown hostname" prompts.
- */
-async function getHostnameFromCli(): Promise<string> {
-  // If explicitly provided, prefer env override.
-  const envHostname = process.env.HOSTNAME?.trim();
-  if (envHostname && envHostname.length > 0) return envHostname;
-
-  const proc = Bun.spawn(['hostname'], {
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-
-  const stdout = await new Response(proc.stdout).text();
-  const exitCode = await proc.exited;
-
-  if (exitCode === 0) {
-    const hostname = stdout.trim();
-    if (hostname.length > 0) return hostname;
-  }
-
-  // Fallback: stable placeholder
-  return 'unknown';
-}
-
-/**
- * Configuration constants
- */
-const MAX_URL_LENGTH = 1000; // Maximum acceptable URL length
-const BATCH_SIZE = 100; // Number of history entries to insert at once
-
-/**
- * List of query parameters that are likely not critical for history purposes
- * These will be removed when sanitizing long URLs
- */
 const REMOVABLE_QUERY_PARAMS = [
   'access_token',
   'as',
@@ -83,484 +57,330 @@ const REMOVABLE_QUERY_PARAMS = [
   'upn',
 ];
 
-/**
- * Asks the user for confirmation
- *
- * @param message - The message to display to the user
- * @returns Promise that resolves to true if the user confirms, false otherwise
- */
-const askForConfirmation = (message: string): boolean => {
-  const answer = prompt(`${message} (y/N) `);
-  return answer?.trim().toLowerCase() === 'y';
-};
+export const AllowNewHostname = Context.Reference<boolean>('integrations/AllowNewHostname', {
+  defaultValue: () => false,
+});
 
-/**
- * Sanitizes a URL by removing non-critical query parameters
- *
- * This function attempts to shorten URLs that exceed the maximum length
- * by removing query parameters that are typically not essential for
- * history purposes.
- *
- * @param url - The URL to sanitize
- * @returns The sanitized URL, or null if it's still too long
- */
-function sanitizeUrl(url: string): string | null {
-  // If URL is already within acceptable length, return it as is
+class BrowserNotInstalledError extends Data.TaggedError('BrowserNotInstalledError')<{
+  readonly message: string;
+}> {}
+
+interface BrowserSpec {
+  readonly name: Browser;
+  readonly displayName: string;
+  readonly historyPath: string;
+  readonly cutoffDate?: Date;
+}
+
+const BROWSERS: ReadonlyArray<BrowserSpec> = [
+  {
+    name: BrowserSchema.enum.arc,
+    displayName: 'Arc',
+    historyPath: 'Library/Application Support/Arc/User Data/Default/History',
+  },
+  {
+    name: BrowserSchema.enum.dia,
+    displayName: 'Dia',
+    historyPath: 'Library/Application Support/Dia/User Data/Default/History',
+    cutoffDate: new Date('2025-06-20'),
+  },
+];
+
+const browserConnection = (spec: BrowserSpec) =>
+  Effect.acquireRelease(
+    Effect.gen(function* () {
+      const home = yield* Config.string('HOME');
+      const dbPath = `${home}/${spec.historyPath}`;
+      const copyPath = `${dbPath}-copy`;
+      const sourceFile = Bun.file(dbPath);
+      const exists = yield* Effect.tryPromise({
+        try: () => sourceFile.exists(),
+        catch: (cause) => new DbError({ operation: `${spec.name}.historyFile`, cause }),
+      });
+      if (!exists) {
+        return yield* Effect.fail(
+          new BrowserNotInstalledError({
+            message: `${spec.displayName} browser not installed (missing file: ${dbPath})`,
+          })
+        );
+      }
+      yield* Effect.tryPromise({
+        try: () => Bun.write(copyPath, sourceFile),
+        catch: (cause) => new DbError({ operation: `${spec.name}.historyCopy`, cause }),
+      });
+      const client = createClient({ url: `file:${copyPath}`, intMode: 'bigint' });
+      return { db: drizzle({ client, relations: arcSchema.relations }), client };
+    }),
+    ({ client }) => Effect.sync(() => client.close())
+  );
+
+const getHostname = Effect.gen(function* () {
+  const fromEnv = yield* Config.string('HOSTNAME').pipe(Effect.catch(() => Effect.succeed('')));
+  if (fromEnv.trim()) return fromEnv.trim();
+  const fromCli = yield* Effect.tryPromise(async () => {
+    const proc = Bun.spawn(['hostname'], { stdout: 'pipe', stderr: 'pipe' });
+    const stdout = await new Response(proc.stdout).text();
+    return (await proc.exited) === 0 ? stdout.trim() : '';
+  }).pipe(Effect.catch(() => Effect.succeed('')));
+  return fromCli || 'unknown';
+});
+
+const checkHostname = (hostname: string) =>
+  Effect.gen(function* () {
+    const database = yield* Database;
+    const existing = yield* database.use('browsingHistory.hostname', (client) =>
+      client.query.browsingHistory.findFirst({
+        where: { hostname },
+        columns: { hostname: true },
+      })
+    );
+    if (existing) return;
+    if (yield* AllowNewHostname) {
+      yield* Effect.logInfo(`Proceeding with new hostname "${hostname}"`);
+      return;
+    }
+    const known = yield* database.use('browsingHistory.hostnames', (client) =>
+      client
+        .select({ hostname: browsingHistory.hostname })
+        .from(browsingHistory)
+        .groupBy(browsingHistory.hostname)
+    );
+    return yield* Effect.fail(
+      new SyncPreconditionError({
+        message: `Current hostname "${hostname}" has not been seen before (known: ${known.map((row) => row.hostname).join(', ')}). Re-run with --allow-new-hostname to proceed.`,
+      })
+    );
+  });
+
+const getLastSyncPoint = (hostname: string, browser: Browser) =>
+  Effect.gen(function* () {
+    const database = yield* Database;
+    const latestVisit = yield* database.use('browsingHistory.lastVisit', (client) =>
+      client.query.browsingHistory.findFirst({
+        columns: { viewEpochMicroseconds: true },
+        where: { browser, hostname, viewEpochMicroseconds: { isNotNull: true } },
+        orderBy: { viewEpochMicroseconds: 'desc' },
+      })
+    );
+    return latestVisit?.viewEpochMicroseconds ?? null;
+  });
+
+const toChromeEpochMicroseconds = (date: Date) =>
+  BigInt((date.getTime() + CHROME_EPOCH_TO_UNIX_SECONDS * 1000) * 1000);
+
+const fetchNewHistoryEntries = (
+  spec: BrowserSpec,
+  browserDb: LibSQLDatabase<typeof arcSchema.relations>,
+  cutoff: bigint | null
+) =>
+  Effect.tryPromise({
+    try: () =>
+      createDailyVisitsQuery(browserDb).where(
+        and(
+          notLike(arcSchema.urls.url, 'chrome-extension://%'),
+          notLike(arcSchema.urls.url, 'chrome://%'),
+          notLike(arcSchema.urls.url, 'about:%'),
+          isNotNull(arcSchema.urls.url),
+          isNotNull(arcSchema.urls.title),
+          ne(arcSchema.urls.title, ''),
+          ne(arcSchema.urls.url, ''),
+          cutoff ? gt(arcSchema.visits.visitTime, Number(cutoff)) : undefined
+        )
+      ),
+    catch: (cause) => new DbError({ operation: `${spec.name}.dailyVisits`, cause }),
+  });
+
+const decodeDailyVisits = decodeZod(DailyVisitsQueryResultSchema, 'browser daily visits');
+
+const sanitizeUrl = (url: string): string | null => {
   if (url.length <= MAX_URL_LENGTH) return url;
-
   try {
     const parsed = new URL(url);
-
-    // Remove non-critical query parameters
     for (const param of REMOVABLE_QUERY_PARAMS) {
       parsed.searchParams.delete(param);
     }
-
     const sanitized = parsed.toString();
-
-    // Check if the sanitized URL is now within acceptable length
-    if (sanitized.length <= MAX_URL_LENGTH) {
-      return sanitized;
-    } else {
-      return null; // Still too long
-    }
-  } catch (error) {
-    logger.warn('Failed to parse URL, excluding record: ' + url, error);
+    return sanitized.length <= MAX_URL_LENGTH ? sanitized : null;
+  } catch {
     return null;
   }
-}
+};
 
-/**
- * Synchronizes browser history with the database
- *
- * This function:
- * 1. Checks if the current hostname is known
- * 2. Retrieves the most recent history entry
- * 3. Fetches new history entries
- * 4. Processes and sanitizes the entries
- * 5. Inserts them into the database
- *
- * @param browserConfig - The browser configuration
- * @param integrationRunId - The ID of the current integration run
- * @returns The number of history entries inserted
- * @throws Error if synchronization fails
- */
-async function syncBrowserHistory(
-  browserConfig: BrowserConfig,
-  integrationRunId: number,
-  collectDebugData?: unknown[],
-  skipPersist = false
-): Promise<number> {
-  // Get current hostname
-  const currentHostname = await getHostnameFromCli();
+type HistoryRow = Omit<BrowsingHistoryInsert, 'integrationRunId'>;
 
-  // Step 1: Check if the current hostname is known (skip in debug mode)
-  if (!skipPersist) {
-    const shouldProceed = await checkHostname(currentHostname, browserConfig.name);
-    if (!shouldProceed) {
-      logger.info('Sync cancelled by user');
-      return 0;
-    }
-  }
-
-  logger.start(
-    skipPersist
-      ? `Fetching ${browserConfig.displayName} browser history (debug mode)`
-      : `Starting ${browserConfig.displayName} browser history incremental update`
-  );
-
-  // Step 2: Get the most recent history entry (in debug mode - fetch last 24 hours)
-  let lastKnownTime: bigint | null;
-  if (skipPersist) {
-    // In debug mode, fetch last 24 hours
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    lastKnownTime = BigInt((oneDayAgo.getTime() + CHROME_EPOCH_TO_UNIX_SECONDS * 1000) * 1000);
-    logger.info(
-      `Debug mode: fetching history from last 24 hours (since ${oneDayAgo.toISOString()})`
+const dedupeMillisecondDuplicates = (entries: ReadonlyArray<HistoryRow>, hostname: string) =>
+  Effect.gen(function* () {
+    const database = yield* Database;
+    const toMillisecondFloor = (micros: bigint) => (micros / 1000000n) * 1000000n;
+    const timestamps = [
+      ...new Set(
+        entries.flatMap((entry) =>
+          entry.viewEpochMicroseconds ? [toMillisecondFloor(entry.viewEpochMicroseconds)] : []
+        )
+      ),
+    ];
+    if (timestamps.length === 0) return [...entries];
+    const timestampStrings = timestamps.map((timestamp) => timestamp.toString());
+    const existingEntries = yield* database.use('browsingHistory.millisecondDuplicates', (client) =>
+      client
+        .select({
+          url: browsingHistory.url,
+          viewEpochMicroseconds: browsingHistory.viewEpochMicroseconds,
+        })
+        .from(browsingHistory)
+        .where(
+          and(
+            eq(browsingHistory.hostname, hostname),
+            sql`(${browsingHistory.viewEpochMicroseconds} / 1000000) * 1000000 IN (${sql.join(timestampStrings, sql`, `)})`
+          )
+        )
     );
-  } else {
-    lastKnownTime = await getLastSyncPoint(currentHostname, browserConfig.name);
-    logLastSyncPoint(lastKnownTime);
-  }
-
-  // Step 3: Fetch new history entries
-  logger.info('Retrieving new history entries...');
-  const { db: browserDb, client } = await browserConfig.createConnection();
-
-  try {
-    // Calculate effective cutoff time (use the later of lastKnownTime or browser cutoff date)
-    let effectiveCutoff = lastKnownTime;
-    if (browserConfig.cutoffDate) {
-      const cutoffMicroseconds = BigInt(
-        (browserConfig.cutoffDate.getTime() + CHROME_EPOCH_TO_UNIX_SECONDS * 1000) * 1000
+    const existingKeys = new Set(
+      existingEntries.flatMap((entry) =>
+        entry.viewEpochMicroseconds
+          ? [`${toMillisecondFloor(entry.viewEpochMicroseconds)}:${entry.url}`]
+          : []
+      )
+    );
+    const deduped = entries.filter(
+      (entry) =>
+        !entry.viewEpochMicroseconds ||
+        !existingKeys.has(`${toMillisecondFloor(entry.viewEpochMicroseconds)}:${entry.url}`)
+    );
+    const skipped = entries.length - deduped.length;
+    if (skipped > 0) {
+      yield* Effect.logInfo(
+        `Pre-filtered ${skipped} entries that already exist at millisecond precision`
       );
+    }
+    return deduped;
+  });
+
+const insertHistoryEntries = (entries: ReadonlyArray<HistoryRow>, runId: number) =>
+  Effect.gen(function* () {
+    const database = yield* Database;
+    const batches = Arr.chunksOf(entries, INSERT_BATCH_SIZE).map((rows, index) => ({
+      rows,
+      index,
+    }));
+    const result = yield* forEachCollect(batches, {
+      concurrency: INSERT_CONCURRENCY,
+      label: (batch) => `batch ${batch.index + 1}`,
+      worker: (batch) =>
+        database.use(`browsingHistory.insert:${batch.index}`, (client) =>
+          client
+            .insert(browsingHistory)
+            .values(batch.rows.map((row) => ({ ...row, integrationRunId: runId })))
+            .onConflictDoNothing()
+            .returning({ id: browsingHistory.id })
+        ),
+    });
+    const inserted = result.successes.reduce((sum, rows) => sum + rows.length, 0);
+    return { inserted, failures: result.failures };
+  });
+
+const syncBrowser = (spec: BrowserSpec, hostname: string) =>
+  Effect.gen(function* () {
+    const sink = yield* DebugSink;
+    const lastKnownTime = yield* getLastSyncPoint(hostname, spec.name);
+    yield* Effect.logInfo(
+      lastKnownTime
+        ? `Last known visit time: ${chromeEpochMicrosecondsToDatetime(lastKnownTime).toISOString()}`
+        : 'Last known visit time: none'
+    );
+    let effectiveCutoff = lastKnownTime;
+    if (spec.cutoffDate) {
+      const cutoffMicroseconds = toChromeEpochMicroseconds(spec.cutoffDate);
       if (!effectiveCutoff || cutoffMicroseconds > effectiveCutoff) {
         effectiveCutoff = cutoffMicroseconds;
-        logger.info(`Using browser cutoff date: ${browserConfig.cutoffDate.toISOString()}`);
+        yield* Effect.logInfo(`Using browser cutoff date: ${spec.cutoffDate.toISOString()}`);
       }
     }
-
-    const rawHistory = await fetchNewHistoryEntries(browserDb, effectiveCutoff);
-    logger.info(`Retrieved ${rawHistory.length} new history entries`);
-
-    // Collect debug data if requested
-    if (collectDebugData) {
-      collectDebugData.push(...rawHistory);
-    }
-
-    // Step 4: Process and sanitize the entries
-    const processedHistory = processHistoryEntries(
-      rawHistory,
-      currentHostname,
-      integrationRunId,
-      browserConfig.name
-    );
-
-    // Step 5: Insert the entries into the database (skip in debug mode)
-    if (skipPersist) {
-      logger.info(`Would insert ${processedHistory.length} history entries (debug mode)`);
-      return processedHistory.length;
-    }
-
-    if (processedHistory.length > 0) {
-      await insertHistoryEntries(processedHistory);
-    } else {
-      logger.info('No new history entries to insert');
-    }
-
-    return processedHistory.length;
-  } catch (error) {
-    if (error instanceof BrowserNotInstalledError) {
-      throw error;
-    }
-    logger.error(`Error syncing ${browserConfig.displayName} browser history`, error);
-    throw new Error(
-      `Failed to sync ${browserConfig.displayName} browser history: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
-  } finally {
-    client.close();
-  }
-}
-
-/**
- * Checks if the current hostname is known and asks for confirmation if not
- *
- * @param currentHostname - The current hostname
- * @param browser - The browser type
- * @returns Promise that resolves to true if the sync should proceed, false otherwise
- */
-async function checkHostname(currentHostname: string, _browser: Browser): Promise<boolean> {
-  const existing = await db.query.browsingHistory.findFirst({
-    where: { hostname: currentHostname },
-    columns: { hostname: true },
-  });
-
-  // If current hostname is not in the database, ask for confirmation
-  if (!existing) {
-    const uniqueHostnames = await db
-      .select({
-        hostname: browsingHistory.hostname,
-      })
-      .from(browsingHistory)
-      .groupBy(browsingHistory.hostname);
-    logger.info('Known hostnames: ' + uniqueHostnames.map((h) => h.hostname).join(', '));
-    return askForConfirmation(
-      `Current hostname "${currentHostname}" has not been seen before. Proceed with sync?`
-    );
-  }
-
-  return true;
-}
-
-/**
- * Gets the timestamp of the most recent history entry
- *
- * @param hostname - The hostname to check
- * @param browser - The browser type
- * @returns The timestamp of the most recent entry, or null if none exists
- */
-async function getLastSyncPoint(hostname: string, browser: Browser): Promise<bigint | null> {
-  const latestVisit = await db.query.browsingHistory.findFirst({
-    columns: {
-      viewEpochMicroseconds: true,
-    },
-    where: {
-      browser: browser,
-      hostname: hostname,
-      viewEpochMicroseconds: {
-        isNotNull: true,
-      },
-    },
-    orderBy: {
-      viewEpochMicroseconds: 'desc',
-    },
-  });
-
-  return latestVisit?.viewEpochMicroseconds ?? null;
-}
-
-/**
- * Logs information about the last sync point
- *
- * @param lastKnownTime - The timestamp of the most recent entry
- */
-function logLastSyncPoint(lastKnownTime: bigint | null): void {
-  if (lastKnownTime) {
-    const date = chromeEpochMicrosecondsToDatetime(lastKnownTime);
-    logger.info(`Last known visit time: ${date.toLocaleString()} (${date.toISOString()})`);
-  } else {
-    logger.info('Last known visit time: none');
-  }
-}
-
-/**
- * Fetches new history entries from the database
- *
- * @param browserDb - The browser database connection
- * @param lastKnownTime - The timestamp of the most recent entry
- * @returns Array of new history entries
- */
-async function fetchNewHistoryEntries(
-  browserDb: LibSQLDatabase<typeof arcSchema.relations>,
-  lastKnownTime: bigint | null
-) {
-  const dailyVisitsQuery = createDailyVisitsQuery(browserDb);
-  return dailyVisitsQuery.where(
-    and(
-      notLike(arcSchema.urls.url, 'chrome-extension://%'),
-      notLike(arcSchema.urls.url, 'chrome://%'),
-      notLike(arcSchema.urls.url, 'about:%'),
-      isNotNull(arcSchema.urls.url),
-      isNotNull(arcSchema.urls.title),
-      ne(arcSchema.urls.title, ''),
-      ne(arcSchema.urls.url, ''),
-      lastKnownTime ? gt(arcSchema.visits.visitTime, Number(lastKnownTime)) : undefined
-    )
-  );
-}
-
-/**
- * Processes and sanitizes history entries
- *
- * @param rawHistory - The raw history entries
- * @param hostname - The current hostname
- * @param integrationRunId - The ID of the current integration run
- * @param browser - The browser type
- * @returns Array of processed history entries
- */
-function processHistoryEntries(
-  rawHistory: unknown[],
-  hostname: string,
-  integrationRunId: number,
-  browser: Browser
-): BrowsingHistoryInsert[] {
-  // Parse and validate the history data
-  const dailyHistory = DailyVisitsQueryResultSchema.parse(rawHistory);
-
-  // Collapse sequential visits to the same URL
-  const collapsedHistory = collapseSequentialVisits(dailyHistory);
-  logger.info(`Collapsed into ${collapsedHistory.length} entries`);
-
-  // Convert to database format
-  const history: BrowsingHistoryInsert[] = collapsedHistory.map((h) => ({
-    browser: browser,
-    hostname: hostname,
-    viewTime: chromeEpochMicrosecondsToDatetime(h.viewTime),
-    viewEpochMicroseconds: BigInt(h.viewTime),
-    viewDuration: h.viewDuration ? Math.round(h.viewDuration / 1000000) : 0,
-    durationSinceLastView: h.durationSinceLastView
-      ? Math.round(h.durationSinceLastView / 1000000)
-      : 0,
-    url: h.url,
-    pageTitle: h.pageTitle,
-    searchTerms: h.searchTerms,
-    relatedSearches: h.relatedSearches,
-    integrationRunId,
-  }));
-
-  // Sanitize URLs
-  const processedHistory: BrowsingHistoryInsert[] = [];
-  for (const h of history) {
-    const sanitizedUrl = sanitizeUrl(h.url);
-    if (sanitizedUrl === null) {
-      continue; // Skip entries with URLs that are too long
-    }
-    processedHistory.push({
-      ...h,
-      url: sanitizedUrl,
-    });
-  }
-
-  return processedHistory;
-}
-
-/**
- * Checks for existing entries at millisecond precision
- * This handles cases where browsers round microseconds differently
- */
-async function checkForMillisecondDuplicates(
-  entries: BrowsingHistoryInsert[]
-): Promise<BrowsingHistoryInsert[]> {
-  if (entries.length === 0) return entries;
-
-  // Group entries by hostname for efficient querying
-  const entriesByHostname = entries.reduce(
-    (acc, entry) => {
-      const hostname = entry.hostname;
-      if (!acc[hostname]) {
-        acc[hostname] = [];
-      }
-      acc[hostname].push(entry);
-      return acc;
-    },
-    {} as Record<string, BrowsingHistoryInsert[]>
-  );
-
-  const dedupedEntries: BrowsingHistoryInsert[] = [];
-
-  for (const [hostname, hostnameEntries] of Object.entries(entriesByHostname)) {
-    // Get all unique millisecond timestamps for this hostname
-    const millisecondTimestamps = [
-      ...new Set(
-        hostnameEntries
-          .map((e) => {
-            if (!e.viewEpochMicroseconds) return null;
-            // Round to milliseconds
-            return (BigInt(e.viewEpochMicroseconds) / 1000000n) * 1000000n;
-          })
-          .filter((t) => t !== null)
-      ),
-    ] as bigint[];
-
-    if (millisecondTimestamps.length === 0) {
-      dedupedEntries.push(...hostnameEntries);
-      continue;
-    }
-
-    // Query existing entries at millisecond precision
-    // Convert BigInts to strings to avoid JSON serialization issues in Drizzle's cache layer
-    const timestampStrings = millisecondTimestamps.map((t) => t.toString());
-    const existingEntries = await db
-      .select({
-        url: browsingHistory.url,
-        viewEpochMicroseconds: browsingHistory.viewEpochMicroseconds,
-      })
-      .from(browsingHistory)
-      .where(
-        and(
-          eq(browsingHistory.hostname, hostname),
-          // Check for any microsecond value within the same millisecond
-          sql`(${browsingHistory.viewEpochMicroseconds} / 1000000) * 1000000 IN (${sql.join(timestampStrings, sql`, `)})`
-        )
-      );
-
-    // Create a Set of existing entries at millisecond precision
-    const existingMillisecondKeys = new Set(
-      existingEntries.map((e) => {
-        if (!e.viewEpochMicroseconds) return '';
-        const ms = (BigInt(e.viewEpochMicroseconds) / 1000000n) * 1000000n;
-        return `${ms}:${e.url}`;
+    const rawHistory = yield* Effect.scoped(
+      Effect.gen(function* () {
+        const { db } = yield* browserConnection(spec);
+        return yield* fetchNewHistoryEntries(spec, db, effectiveCutoff);
       })
     );
-
-    // Filter out entries that already exist at millisecond precision
-    for (const entry of hostnameEntries) {
-      if (!entry.viewEpochMicroseconds) {
-        dedupedEntries.push(entry);
+    yield* Effect.logInfo(`Retrieved ${rawHistory.length} new history entries`);
+    yield* sink.capture({ browser: spec.name, entries: rawHistory });
+    const dailyHistory = yield* decodeDailyVisits(rawHistory);
+    const collapsedHistory = collapseSequentialVisits(dailyHistory);
+    yield* Effect.logInfo(`Collapsed into ${collapsedHistory.length} entries`);
+    const processedHistory: Array<HistoryRow> = [];
+    let excluded = 0;
+    for (const visit of collapsedHistory) {
+      const sanitizedUrl = sanitizeUrl(visit.url);
+      if (sanitizedUrl === null) {
+        excluded++;
         continue;
       }
-
-      const ms = (BigInt(entry.viewEpochMicroseconds) / 1000000n) * 1000000n;
-      const key = `${ms}:${entry.url}`;
-
-      if (!existingMillisecondKeys.has(key)) {
-        dedupedEntries.push(entry);
-      }
+      processedHistory.push({
+        browser: spec.name,
+        hostname,
+        viewTime: chromeEpochMicrosecondsToDatetime(visit.viewTime),
+        viewEpochMicroseconds: BigInt(visit.viewTime),
+        viewDuration: visit.viewDuration ? Math.round(visit.viewDuration / 1000000) : 0,
+        durationSinceLastView: visit.durationSinceLastView
+          ? Math.round(visit.durationSinceLastView / 1000000)
+          : 0,
+        url: sanitizedUrl,
+        pageTitle: visit.pageTitle,
+        searchTerms: visit.searchTerms,
+        relatedSearches: visit.relatedSearches,
+      });
     }
-  }
-
-  const skipped = entries.length - dedupedEntries.length;
-  if (skipped > 0) {
-    logger.info(`Pre-filtered ${skipped} entries that already exist at millisecond precision`);
-  }
-
-  return dedupedEntries;
-}
-
-/**
- * Inserts history entries into the database
- *
- * @param processedHistory - The processed history entries
- */
-async function insertHistoryEntries(processedHistory: BrowsingHistoryInsert[]): Promise<void> {
-  logger.info(`Inserting ${processedHistory.length} new history entries`);
-
-  // Pre-filter entries that might already exist at millisecond precision
-  const dedupedHistory = await checkForMillisecondDuplicates(processedHistory);
-
-  if (dedupedHistory.length === 0) {
-    logger.info('All entries already exist (detected at millisecond precision)');
-    return;
-  }
-
-  // Insert in batches to avoid overwhelming the database
-  const batches: BrowsingHistoryInsert[][] = [];
-  for (let i = 0; i < dedupedHistory.length; i += BATCH_SIZE) {
-    batches.push(dedupedHistory.slice(i, i + BATCH_SIZE));
-  }
-
-  const results = await runConcurrentPool({
-    items: batches,
-    concurrency: 8,
-    worker: async (batch, index) => {
-      // Use onConflictDoNothing to skip duplicate entries
-      // The unique constraint on (hostname, viewEpochMicroseconds, url) will prevent duplicates
-      const result = await db
-        .insert(browsingHistory)
-        .values(batch)
-        .onConflictDoNothing()
-        .returning({ id: browsingHistory.id });
-
-      const insertedCount = result.length;
-      const expectedCount = batch.length;
-
-      logger.info(
-        `Inserted batch ${index + 1} of ${batches.length} (${insertedCount}/${expectedCount} entries)`
-      );
-
-      return expectedCount - insertedCount;
-    },
+    if (excluded > 0) {
+      yield* Effect.logInfo(`Excluded ${excluded} entries with unparseable or overlong URLs`);
+    }
+    if (sink.enabled) {
+      yield* Effect.logInfo(`Debug mode: would insert ${processedHistory.length} history entries`);
+      return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
+    }
+    if (processedHistory.length === 0) {
+      yield* Effect.logInfo('No new history entries to insert');
+      return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
+    }
+    const runId = yield* requireRunId;
+    const deduped = yield* dedupeMillisecondDuplicates(processedHistory, hostname);
+    if (deduped.length === 0) {
+      yield* Effect.logInfo('All entries already exist (detected at millisecond precision)');
+      return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
+    }
+    const { inserted, failures } = yield* insertHistoryEntries(deduped, runId);
+    yield* Effect.logInfo(
+      `Inserted ${inserted} of ${deduped.length} history entries (${deduped.length - inserted} duplicates skipped)`
+    );
+    return { entriesCreated: inserted, failures } satisfies SyncSummary;
   });
 
-  throwPoolFailures(results, 'Insert history batch', batches.length);
-
-  const skippedCount = results.reduce((sum, r) => sum + (r.ok ? r.value : 0), 0);
-
-  if (skippedCount > 0) {
-    logger.info(`Skipped ${skippedCount} duplicate entries`);
+const sync = Effect.gen(function* () {
+  const sink = yield* DebugSink;
+  const hostname = yield* getHostname;
+  yield* Effect.logInfo(`Syncing browser history for hostname "${hostname}"`);
+  if (!sink.enabled) {
+    yield* checkHostname(hostname);
   }
-  logger.complete('New history entries inserted');
-}
+  const results = yield* Effect.forEach(
+    BROWSERS,
+    (spec) =>
+      syncBrowser(spec, hostname).pipe(
+        Effect.catchTag('BrowserNotInstalledError', (error) =>
+          Effect.logWarning(`${error.message} Skipping ${spec.displayName} sync.`).pipe(
+            Effect.as({ entriesCreated: 0, failures: [] } satisfies SyncSummary)
+          )
+        ),
+        Effect.annotateLogs({ browser: spec.name })
+      ),
+    { concurrency: BROWSERS.length }
+  );
+  return {
+    entriesCreated: results.reduce((sum, summary) => sum + summary.entriesCreated, 0),
+    failures: results.flatMap((summary) => summary.failures),
+  } satisfies SyncSummary;
+});
 
-/**
- * Creates a sync function for a specific browser
- *
- * @param browserConfig - The browser configuration
- * @returns A function that syncs the browser's history
- */
-export { syncBrowserHistory };
-
-export function createBrowserSyncFunction(browserConfig: BrowserConfig) {
-  return async (): Promise<void> => {
-    try {
-      await runIntegration('browser_history', (integrationRunId) =>
-        syncBrowserHistory(browserConfig, integrationRunId)
-      );
-    } catch (error) {
-      logger.error(`Error syncing ${browserConfig.displayName} browser history`, error);
-      throw error;
-    }
-  };
-}
+export const browserHistoryIntegration: IntegrationDef = {
+  integrationType: 'browser_history',
+  sync,
+};

@@ -147,7 +147,7 @@ const LightroomAssetPayloadSchema = z.object({
     )
     .optional(),
   aesthetics: LightroomAestheticsSchema,
-  autoTags: LightroomAutoTagsSchema,
+  autoTags: LightroomAutoTagsSchema.optional(),
   location: LightroomLocationSchema.optional(),
   importSource: LightroomAssetPayloadImportSourceSchema,
   changedOnDevice: z.string().optional(),

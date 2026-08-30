@@ -1,776 +1,505 @@
-import { feedEntries, feeds } from '@hozo';
+import { feedEntries, feeds, type FeedEnclosure, type FeedInsert } from '@hozo';
 import { inArray } from 'drizzle-orm';
-import { db } from '@/server/db/connections/postgres';
-import { runConcurrentPool } from '@/shared/lib/async-pool';
-import { createDebugContext } from '../common/debug-output';
-import { createIntegrationLogger } from '../common/logging';
-import { runIntegration } from '../common/run-integration';
+import { Array as Arr, Config, Effect, Redacted, Schedule } from 'effect';
+import { Database } from '../runtime/db';
+import { DebugSink } from '../runtime/debug';
+import { makeApiClient } from '../runtime/http';
 import {
-  fetchEntriesByIds,
-  fetchFeed,
-  fetchIcons,
-  fetchRecentlyReadEntryIds,
-  fetchStarredEntryIds,
-  fetchSubscriptions,
-  fetchUnreadEntryIds,
-  fetchUpdatedEntryIds,
-} from './client';
-import type { FeedbinEntry, FeedbinIcon, FeedbinSubscription } from './types';
+  forEachCollect,
+  requireRunId,
+  type IntegrationDef,
+  type ItemFailure,
+  type SyncSummary,
+} from '../runtime/run';
+import { decodeZod } from '../runtime/zod';
+import {
+  FeedbinEntriesResponseSchema,
+  FeedbinEntryIdsResponseSchema,
+  FeedbinFeedSchema,
+  FeedbinIconsResponseSchema,
+  FeedbinSubscriptionsResponseSchema,
+  type FeedbinEntry,
+  type FeedbinSubscription,
+} from './types';
 
-const logger = createIntegrationLogger('feedbin', 'sync');
-
-/** Concurrency for processing entries */
+const API_BASE_URL = 'https://api.feedbin.com/v2';
+const ENTRY_BATCH_SIZE = 100;
 const ENTRY_CONCURRENCY = 30;
-
-/**
- * Cache of synced feed IDs to avoid repeated fetches
- */
-const syncedFeedIds = new Set<number>();
-
-function buildIconMap(icons: FeedbinIcon[]): Map<string, string> {
-  const iconMap = new Map<string, string>();
-  for (const icon of icons) {
-    iconMap.set(icon.host, icon.url);
-  }
-  return iconMap;
-}
-
-/**
- * Get the most recent feed entry IDs with read/starred status
- */
-async function getRecentEntryStatuses(
-  limit = 1000
-): Promise<Map<number, { read: boolean; starred: boolean }>> {
-  const rows = await db.query.feedEntries.findMany({
-    columns: { id: true, read: true, starred: true },
-    orderBy: { recordCreatedAt: 'desc' },
-    limit,
-  });
-  return new Map(rows.map((r) => [r.id, { read: r.read, starred: r.starred }]));
-}
-
-/**
- * Get the most recent feed IDs
- */
-async function getRecentFeedIds(limit = 1000): Promise<Set<number>> {
-  const rows = await db.query.feeds.findMany({
-    columns: { id: true },
-    orderBy: { recordCreatedAt: 'desc' },
-    limit,
-  });
-  return new Set(rows.map((r) => r.id));
-}
-
-/** Chunk size for `in` queries against candidate entry IDs */
-const EXISTING_ENTRY_ID_CHUNK_SIZE = 1000;
-
-/**
- * Get which of the given candidate entry IDs already exist in the database
- */
-async function getExistingEntryIds(candidateIds: number[]): Promise<Set<number>> {
-  const existing = new Set<number>();
-
-  for (let i = 0; i < candidateIds.length; i += EXISTING_ENTRY_ID_CHUNK_SIZE) {
-    const chunk = candidateIds.slice(i, i + EXISTING_ENTRY_ID_CHUNK_SIZE);
-    if (chunk.length === 0) continue;
-
-    const rows = await db.query.feedEntries.findMany({
-      where: { id: { in: chunk } },
-      columns: { id: true },
-    });
-
-    for (const row of rows) existing.add(row.id);
-  }
-
-  return existing;
-}
-
-/**
- * Bulk update read status for multiple entries
- */
-async function bulkUpdateReadStatus(entryIds: number[], read: boolean): Promise<void> {
-  if (entryIds.length === 0) return;
-
-  const now = new Date();
-  const BATCH_SIZE = 1000;
-  const BATCH_TIMEOUT_MS = 30000; // 30 seconds per batch
-
-  for (let i = 0; i < entryIds.length; i += BATCH_SIZE) {
-    const batch = entryIds.slice(i, i + BATCH_SIZE);
-    const batchStartTime = Date.now();
-
-    logger.info(
-      `Updating read status for batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} entries)`
-    );
-
-    try {
-      await Promise.race([
-        db
-          .update(feedEntries)
-          .set({ read, recordUpdatedAt: now })
-          .where(inArray(feedEntries.id, batch)),
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`Bulk update timeout after ${BATCH_TIMEOUT_MS}ms`)),
-            BATCH_TIMEOUT_MS
-          )
-        ),
-      ]);
-
-      const batchDuration = Date.now() - batchStartTime;
-      logger.info(`Bulk update batch completed in ${batchDuration}ms`);
-    } catch (error) {
-      logger.error(`Bulk update batch failed or timed out`, error);
-      // Continue with next batch even if this one fails
-    }
-  }
-}
-
-/**
- * Sync a single feed from Feedbin
- */
-async function syncSingleFeed(feedId: number, iconMap?: Map<string, string>): Promise<void> {
-  const FEED_TIMEOUT_MS = 15000; // 15 seconds per feed
-
-  try {
-    await Promise.race([
-      (async () => {
-        const feed = await fetchFeed(feedId);
-
-        // Extract icon URL
-        let iconUrl: string | null = null;
-        if (feed.site_url) {
-          try {
-            if (iconMap) {
-              const url = new URL(feed.site_url);
-              iconUrl = iconMap.get(url.hostname) || null;
-            }
-          } catch {
-            // Ignore URL parsing errors
-          }
-        }
-
-        await db
-          .insert(feeds)
-          .values({
-            id: feed.id,
-            name: feed.title,
-            feedUrl: feed.feed_url,
-            siteUrl: feed.site_url,
-            iconUrl,
-            sources: ['feedbin'],
-          })
-          .onConflictDoUpdate({
-            target: feeds.id,
-            set: {
-              name: feed.title,
-              feedUrl: feed.feed_url,
-              siteUrl: feed.site_url,
-              iconUrl,
-              recordUpdatedAt: new Date(),
-            },
-          });
-      })(),
-      new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error(`Single feed sync timeout after ${FEED_TIMEOUT_MS}ms`)),
-          FEED_TIMEOUT_MS
-        )
-      ),
-    ]);
-  } catch (error) {
-    logger.warn(`Failed to sync feed ${feedId}`, error);
-    throw error;
-  }
-}
-
-/** Concurrency for upserting feeds */
 const FEED_CONCURRENCY = 10;
+const MISSING_FEED_CONCURRENCY = 20;
+const DB_CHUNK_SIZE = 1000;
+const RECENT_LIMIT = 1000;
+const FEED_TIMEOUT = '15 seconds';
+const ENTRY_TIMEOUT = '30 seconds';
+const STATUS_BATCH_TIMEOUT = '30 seconds';
 
-/**
- * Sync feeds from Feedbin subscriptions
- */
-async function syncFeeds(
-  subscriptions: FeedbinSubscription[],
-  iconMap: Map<string, string>,
-  _integrationRunId: number
-): Promise<void> {
-  logger.start(`Syncing ${subscriptions.length} feeds`);
+const feedbinClient = Effect.gen(function* () {
+  const username = yield* Config.redacted('FEEDBIN_USERNAME');
+  const password = yield* Config.redacted('FEEDBIN_PASSWORD');
+  const credentials = Buffer.from(
+    `${Redacted.value(username)}:${Redacted.value(password)}`
+  ).toString('base64');
+  return yield* makeApiClient({
+    baseUrl: API_BASE_URL,
+    authorization: { scheme: 'Basic', token: Redacted.make(credentials) },
+    rateLimit: { key: 'feedbin', limit: 120, window: '1 minute' },
+  });
+});
 
-  const FEED_TIMEOUT_MS = 15000; // 15 seconds per feed
+const secondAfter = (date: Date) => new Date(date.getTime() + 1000);
 
-  const results = await runConcurrentPool({
-    items: subscriptions,
-    concurrency: FEED_CONCURRENCY,
-    timeoutMs: FEED_TIMEOUT_MS,
-    worker: async (subscription, index) => {
-      // Extract domain from site URL for icon lookup
-      const siteUrl = subscription.site_url;
-      let iconUrl: string | null = null;
+const fetchSubscriptions = (since: Date | null) =>
+  Effect.gen(function* () {
+    const client = yield* feedbinClient;
+    const sink = yield* DebugSink;
+    const response = yield* client.get(
+      '/subscriptions.json',
+      since ? { urlParams: { since: secondAfter(since).toISOString() } } : {}
+    );
+    const json = yield* response.json;
+    yield* sink.capture(json);
+    const subscriptions = yield* decodeZod(
+      FeedbinSubscriptionsResponseSchema,
+      'feedbin subscriptions'
+    )(json);
+    yield* Effect.logInfo(`Fetched ${subscriptions.length} subscriptions`);
+    return subscriptions;
+  });
 
-      if (siteUrl) {
-        try {
-          const url = new URL(siteUrl);
-          iconUrl = iconMap.get(url.hostname) || null;
-        } catch {
-          // Ignore URL parsing errors
-        }
-      }
+const fetchIconMap = Effect.gen(function* () {
+  const client = yield* feedbinClient;
+  const sink = yield* DebugSink;
+  const response = yield* client.get('/icons.json');
+  const json = yield* response.json;
+  yield* sink.capture(json);
+  const icons = yield* decodeZod(FeedbinIconsResponseSchema, 'feedbin icons')(json);
+  return new Map(icons.map((icon) => [icon.host, icon.url]));
+});
 
-      // Upsert feed
-      await db
+const fetchEntryIds = (path: string, resource: string, since?: Date) =>
+  Effect.gen(function* () {
+    const client = yield* feedbinClient;
+    const response = yield* client.get(
+      path,
+      since ? { urlParams: { since: since.toISOString() } } : {}
+    );
+    const json = yield* response.json;
+    const ids = yield* decodeZod(FeedbinEntryIdsResponseSchema, resource)(json);
+    yield* Effect.logInfo(`Fetched ${ids.length} ${resource}`);
+    return ids;
+  });
+
+const decodeEntries = decodeZod(FeedbinEntriesResponseSchema, 'feedbin entries');
+
+const fetchEntriesByIds = (ids: ReadonlyArray<number>) =>
+  Effect.gen(function* () {
+    const client = yield* feedbinClient;
+    const sink = yield* DebugSink;
+    const batches = yield* Effect.forEach(
+      Arr.chunksOf(ids, ENTRY_BATCH_SIZE),
+      (batch) =>
+        Effect.gen(function* () {
+          const response = yield* client.get('/entries.json', {
+            urlParams: { ids: batch.join(','), mode: 'extended', include_enclosure: 'true' },
+          });
+          const json = yield* response.json;
+          yield* sink.capture(json);
+          return yield* decodeEntries(json);
+        }),
+      { concurrency: 4 }
+    );
+    const entries = batches.flat();
+    yield* Effect.logInfo(`Fetched ${entries.length} entries`);
+    return entries;
+  });
+
+const fetchFeed = (feedId: number) =>
+  Effect.gen(function* () {
+    const client = yield* feedbinClient;
+    const response = yield* client.get(`/feeds/${feedId}.json`);
+    const json = yield* response.json;
+    return yield* decodeZod(FeedbinFeedSchema, `feedbin feed ${feedId}`)(json);
+  });
+
+const getRecentEntryStatuses = Effect.gen(function* () {
+  const database = yield* Database;
+  const rows = yield* database.use('feedEntries.recentStatuses', (client) =>
+    client.query.feedEntries.findMany({
+      columns: { id: true, read: true, starred: true },
+      orderBy: { recordCreatedAt: 'desc' },
+      limit: RECENT_LIMIT,
+    })
+  );
+  return new Map(rows.map((row) => [row.id, { read: row.read, starred: row.starred }]));
+});
+
+const getRecentFeedIds = Effect.gen(function* () {
+  const database = yield* Database;
+  const rows = yield* database.use('feeds.recentIds', (client) =>
+    client.query.feeds.findMany({
+      columns: { id: true },
+      orderBy: { recordCreatedAt: 'desc' },
+      limit: RECENT_LIMIT,
+    })
+  );
+  return new Set(rows.map((row) => row.id));
+});
+
+const getLastFeedSyncTime = Effect.gen(function* () {
+  const database = yield* Database;
+  const result = yield* database.use('feeds.lastContentCreatedAt', (client) =>
+    client.query.feeds.findFirst({
+      columns: { contentCreatedAt: true },
+      where: { contentCreatedAt: { isNotNull: true } },
+      orderBy: { contentCreatedAt: 'desc' },
+    })
+  );
+  return result?.contentCreatedAt ?? null;
+});
+
+const getLastEntrySyncTime = Effect.gen(function* () {
+  const database = yield* Database;
+  const result = yield* database.use('integrationRuns.lastFeedbinSuccess', (client) =>
+    client.query.integrationRuns.findFirst({
+      columns: { runStartTime: true },
+      where: { integrationType: 'feedbin', status: 'success' },
+      orderBy: { runStartTime: 'desc' },
+    })
+  );
+  return result?.runStartTime ?? null;
+});
+
+const getExistingEntryIds = (candidateIds: ReadonlyArray<number>) =>
+  Effect.gen(function* () {
+    const database = yield* Database;
+    const existing = new Set<number>();
+    for (const chunk of Arr.chunksOf(candidateIds, DB_CHUNK_SIZE)) {
+      const rows = yield* database.use('feedEntries.existingIds', (client) =>
+        client.query.feedEntries.findMany({
+          where: { id: { in: chunk } },
+          columns: { id: true },
+        })
+      );
+      for (const row of rows) existing.add(row.id);
+    }
+    return existing;
+  });
+
+interface EntryStatusChanges {
+  readonly toStar: Array<number>;
+  readonly toUnstar: Array<number>;
+  readonly toMarkRead: Array<number>;
+  readonly toMarkUnread: Array<number>;
+}
+
+const diffEntryStatuses = (
+  existing: ReadonlyMap<number, { read: boolean; starred: boolean }>,
+  unreadIds: ReadonlySet<number>,
+  starredIds: ReadonlySet<number>
+): EntryStatusChanges => {
+  const toStar: Array<number> = [];
+  const toUnstar: Array<number> = [];
+  const toMarkRead: Array<number> = [];
+  const toMarkUnread: Array<number> = [];
+  for (const [id, status] of existing) {
+    const shouldStar = starredIds.has(id);
+    if (shouldStar && !status.starred) toStar.push(id);
+    if (!shouldStar && status.starred) toUnstar.push(id);
+    const shouldBeUnread = unreadIds.has(id);
+    if (shouldBeUnread && status.read) toMarkUnread.push(id);
+    if (!shouldBeUnread && !status.read) toMarkRead.push(id);
+  }
+  return { toStar, toUnstar, toMarkRead, toMarkUnread };
+};
+
+const applyStatusChanges = (changes: EntryStatusChanges) =>
+  Effect.gen(function* () {
+    const database = yield* Database;
+    const updates = [
+      { action: 'unstar', ids: changes.toUnstar, set: { starred: false } },
+      { action: 'star', ids: changes.toStar, set: { starred: true } },
+      { action: 'markRead', ids: changes.toMarkRead, set: { read: true } },
+      { action: 'markUnread', ids: changes.toMarkUnread, set: { read: false } },
+    ].flatMap(({ action, ids, set }) =>
+      Arr.chunksOf(ids, DB_CHUNK_SIZE).map((chunk, index) => ({
+        label: `${action}:${index}`,
+        chunk,
+        set,
+      }))
+    );
+    const result = yield* forEachCollect(updates, {
+      concurrency: 1,
+      label: (update) => update.label,
+      worker: (update) =>
+        database
+          .use(`feedEntries.${update.label}`, (client) =>
+            client
+              .update(feedEntries)
+              .set({ ...update.set, recordUpdatedAt: new Date() })
+              .where(inArray(feedEntries.id, update.chunk))
+          )
+          .pipe(Effect.timeout(STATUS_BATCH_TIMEOUT)),
+    });
+    return result.failures;
+  });
+
+const iconUrlFor = (siteUrl: string | null | undefined, iconMap: ReadonlyMap<string, string>) => {
+  if (!siteUrl) return null;
+  try {
+    return iconMap.get(new URL(siteUrl).hostname) ?? null;
+  } catch {
+    return null;
+  }
+};
+
+const upsertFeed = (values: FeedInsert) =>
+  Effect.gen(function* () {
+    const database = yield* Database;
+    yield* database.use(`feeds.upsert:${values.id}`, (client) =>
+      client
         .insert(feeds)
-        .values({
+        .values(values)
+        .onConflictDoUpdate({
+          target: feeds.id,
+          set: {
+            name: values.name,
+            feedUrl: values.feedUrl,
+            siteUrl: values.siteUrl,
+            iconUrl: values.iconUrl,
+            recordUpdatedAt: new Date(),
+          },
+        })
+    );
+  });
+
+const persistFeeds = (
+  subscriptions: ReadonlyArray<FeedbinSubscription>,
+  iconMap: ReadonlyMap<string, string>
+) =>
+  Effect.gen(function* () {
+    if (subscriptions.length === 0) return [];
+    const result = yield* forEachCollect(subscriptions, {
+      concurrency: FEED_CONCURRENCY,
+      label: (subscription) => subscription.title,
+      worker: (subscription) =>
+        upsertFeed({
           id: subscription.feed_id,
           name: subscription.title,
           feedUrl: subscription.feed_url,
           siteUrl: subscription.site_url,
-          iconUrl,
+          iconUrl: iconUrlFor(subscription.site_url, iconMap),
           sources: ['feedbin'],
           contentCreatedAt: subscription.created_at,
-        })
-        .onConflictDoUpdate({
-          target: feeds.id,
-          set: {
-            name: subscription.title,
-            feedUrl: subscription.feed_url,
-            siteUrl: subscription.site_url,
-            iconUrl,
-            recordUpdatedAt: new Date(),
-          },
-        });
-
-      logger.info(`Synced feed "${subscription.title}" (${index + 1} of ${subscriptions.length})`);
-    },
-  });
-
-  const successCount = results.filter((r) => r.ok).length;
-  const errorCount = results.length - successCount;
-
-  results.forEach((result, index) => {
-    if (!result.ok) {
-      const subscription = subscriptions[index];
-      logger.warn(
-        `Failed to sync feed ${subscription?.feed_id} (${index + 1} of ${subscriptions.length})`,
-        result.error
-      );
-    }
-  });
-
-  logger.complete(`Synced ${successCount} feeds (${errorCount} errors)`);
-}
-
-/** Result of processing a single entry */
-type EntryResult =
-  | { status: 'success'; entryId: number }
-  | { status: 'skipped'; entryId: number }
-  | { status: 'error'; entryId: number; entry: FeedbinEntry };
-
-/**
- * Process a single entry (for use with runConcurrentPool)
- */
-async function processSingleEntry(
-  entry: FeedbinEntry,
-  unreadIds: Set<number>,
-  starredIds: Set<number>,
-  integrationRunId: number,
-  updatedEntryIds: Set<number> | undefined
-): Promise<EntryResult> {
-  // Determine a usable URL for the entry
-  const effectiveUrl = entry.url ?? entry.extracted_content_url ?? null;
-  if (!effectiveUrl) {
-    // Skip entries without any URL; database requires non-null URL
-    logger.warn(
-      `Skipping entry #${entry.id}: ${entry.title} (feed ${entry.feed_id}) because it has no URL`
-    );
-    return { status: 'skipped', entryId: entry.id };
-  }
-
-  // For updated entries, preserve existing read/starred status
-  // For new entries, use the status from Feedbin
-  const isUpdatedEntry = updatedEntryIds?.has(entry.id) ?? false;
-  let isRead = !unreadIds.has(entry.id);
-  let isStarred = starredIds.has(entry.id);
-
-  if (isUpdatedEntry) {
-    // Fetch current status from database for updated entries
-    const existingEntry = await db.query.feedEntries.findFirst({
-      where: {
-        id: entry.id,
-      },
-      columns: { read: true, starred: true },
+        }).pipe(Effect.timeout(FEED_TIMEOUT)),
     });
-    if (existingEntry) {
-      isRead = existingEntry.read;
-      isStarred = existingEntry.starred;
-    }
-  }
+    yield* Effect.logInfo(`Upserted ${result.successes.length} of ${subscriptions.length} feeds`);
+    return result.failures;
+  });
 
-  // Extract image URLs from content if available
-  let imageUrls: string[] | null = null;
-  if (entry.images?.original_url) {
-    imageUrls = [entry.images.original_url];
-  }
-
-  // Process enclosure - skip if it has invalid data
-  let enclosure = null;
-  if (entry.enclosure) {
-    const enc = entry.enclosure;
-    // Skip if enclosure_type is "false", false, null, or if URLs are objects
-    if (
-      enc.enclosure_type !== 'false' &&
-      enc.enclosure_type !== false &&
-      enc.enclosure_type !== null &&
-      typeof enc.enclosure_url !== 'object' &&
-      enc.enclosure_url !== null
-    ) {
-      let enclosureUrl = '';
-      if (typeof enc.enclosure_url === 'string') {
-        enclosureUrl = enc.enclosure_url;
-      }
-
-      let itunesImage = null;
-      if (typeof enc.itunes_image === 'string') {
-        itunesImage = enc.itunes_image;
-      }
-
-      if (enclosureUrl) {
-        enclosure = {
-          enclosureUrl,
-          enclosureType: typeof enc.enclosure_type === 'string' ? enc.enclosure_type : '',
-          enclosureLength: typeof enc.enclosure_length === 'number' ? enc.enclosure_length : 0,
-          itunesDuration: enc.itunes_duration || null,
-          itunesImage,
-        };
-      }
-    }
-  }
-
-  // Upsert entry (without embedding - will be done in post-process)
-  await db
-    .insert(feedEntries)
-    .values({
-      id: entry.id,
-      feedId: entry.feed_id,
-      url: effectiveUrl,
-      title: entry.title,
-      author: entry.author,
-      summary: entry.summary,
-      content: entry.content,
-      imageUrls,
-      enclosure,
-      read: isRead,
-      starred: isStarred,
-      publishedAt: entry.published,
-      integrationRunId,
-    })
-    .onConflictDoUpdate({
-      target: feedEntries.id,
-      set: {
-        title: entry.title,
-        author: entry.author,
-        summary: entry.summary,
-        content: entry.content,
-        imageUrls,
-        enclosure,
-        read: isRead,
-        starred: isStarred,
-        publishedAt: entry.published,
-        recordUpdatedAt: new Date(),
-      },
+const syncMissingFeeds = (
+  entries: ReadonlyArray<FeedbinEntry>,
+  existingFeedIds: ReadonlySet<number>,
+  iconMap: ReadonlyMap<string, string>
+) =>
+  Effect.gen(function* () {
+    const missingFeedIds = [...new Set(entries.map((entry) => entry.feed_id))].filter(
+      (id) => !existingFeedIds.has(id)
+    );
+    if (missingFeedIds.length === 0) return [];
+    yield* Effect.logInfo(`Fetching ${missingFeedIds.length} missing feeds`);
+    const result = yield* forEachCollect(missingFeedIds, {
+      concurrency: MISSING_FEED_CONCURRENCY,
+      label: (feedId) => `feed ${feedId}`,
+      worker: (feedId) =>
+        Effect.gen(function* () {
+          const feed = yield* fetchFeed(feedId);
+          yield* upsertFeed({
+            id: feed.id,
+            name: feed.title,
+            feedUrl: feed.feed_url,
+            siteUrl: feed.site_url,
+            iconUrl: iconUrlFor(feed.site_url, iconMap),
+            sources: ['feedbin'],
+          });
+        }).pipe(Effect.timeout(FEED_TIMEOUT)),
     });
+    return result.failures;
+  });
 
-  return { status: 'success', entryId: entry.id };
-}
+const normalizeEnclosure = (enclosure: FeedbinEntry['enclosure']): FeedEnclosure | null => {
+  if (!enclosure) return null;
+  if (
+    enclosure.enclosure_type === 'false' ||
+    enclosure.enclosure_type === false ||
+    enclosure.enclosure_type === null
+  ) {
+    return null;
+  }
+  if (typeof enclosure.enclosure_url !== 'string' || !enclosure.enclosure_url) return null;
+  return {
+    enclosureUrl: enclosure.enclosure_url,
+    enclosureType: typeof enclosure.enclosure_type === 'string' ? enclosure.enclosure_type : '',
+    enclosureLength:
+      typeof enclosure.enclosure_length === 'number' ? enclosure.enclosure_length : 0,
+    itunesDuration: enclosure.itunes_duration || null,
+    itunesImage: typeof enclosure.itunes_image === 'string' ? enclosure.itunes_image : null,
+  };
+};
 
-/** Retry delays for failed entries (exponential backoff: 1s, 2s, 4s) */
-const RETRY_DELAYS = [1000, 2000, 4000];
-
-/**
- * Process an entry with retry logic inside the worker
- */
-async function processEntryWithRetry(
-  entry: FeedbinEntry,
-  unreadIds: Set<number>,
-  starredIds: Set<number>,
-  integrationRunId: number,
-  updatedEntryIds: Set<number> | undefined
-): Promise<EntryResult> {
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
-    if (attempt > 0) {
-      const delay = RETRY_DELAYS[attempt - 1];
-      if (delay === undefined) {
-        throw new Error(`Missing retry delay for attempt ${attempt}`);
+const persistEntries = (
+  entries: ReadonlyArray<FeedbinEntry>,
+  unreadIds: ReadonlySet<number>,
+  starredIds: ReadonlySet<number>,
+  updatedEntryIds: ReadonlySet<number>,
+  runId: number
+) =>
+  Effect.gen(function* () {
+    const database = yield* Database;
+    const withUrls: Array<{ entry: FeedbinEntry; url: string }> = [];
+    for (const entry of entries) {
+      const url = entry.url ?? entry.extracted_content_url ?? null;
+      if (url) {
+        withUrls.push({ entry, url });
+      } else {
+        yield* Effect.logWarning(
+          `Skipping entry ${entry.id} (${entry.title ?? 'untitled'}): no URL`
+        );
       }
-      logger.info(`Retry ${attempt}/${RETRY_DELAYS.length} for entry ${entry.id} after ${delay}ms`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
     }
-
-    try {
-      return await processSingleEntry(
-        entry,
-        unreadIds,
-        starredIds,
-        integrationRunId,
-        updatedEntryIds
-      );
-    } catch (error) {
-      lastError = error;
-      logger.warn(`Attempt ${attempt + 1} failed for entry ${entry.id}`, error);
-    }
-  }
-
-  logger.error(`Failed to sync entry ${entry.id} after ${RETRY_DELAYS.length} retries`, lastError);
-  return { status: 'error', entryId: entry.id, entry };
-}
-
-/**
- * Sync feed entries from Feedbin
- */
-async function syncFeedEntries(
-  entries: FeedbinEntry[],
-  unreadIds: Set<number>,
-  starredIds: Set<number>,
-  integrationRunId: number,
-  updatedEntryIds?: Set<number>
-): Promise<number> {
-  logger.start(`Syncing ${entries.length} entries`);
-
-  const results = await runConcurrentPool({
-    items: entries,
-    concurrency: ENTRY_CONCURRENCY,
-    timeoutMs: 30_000, // 30 seconds per entry (including retries)
-    worker: async (entry) => {
-      return processEntryWithRetry(entry, unreadIds, starredIds, integrationRunId, updatedEntryIds);
-    },
-    onProgress: (completed, total) => {
-      if (completed % 50 === 0 || completed === total) {
-        logger.info(`Progress: ${completed}/${total} entries processed`);
-      }
-    },
-  });
-
-  const successCount = results.filter((r) => r.ok && r.value.status === 'success').length;
-  const skippedCount = results.filter((r) => r.ok && r.value.status === 'skipped').length;
-  const errorCount = results.filter((r) => !r.ok || r.value.status === 'error').length;
-
-  if (errorCount > 0) {
-    logger.warn(`Failed to sync ${errorCount} entries after retry attempts`);
-  }
-
-  logger.complete(
-    `Synced ${successCount} of ${entries.length} entries (${skippedCount} skipped, ${errorCount} errors)`
-  );
-  return successCount;
-}
-
-/**
- * Bulk update starred status for multiple entries
- */
-async function bulkUpdateStarredStatus(entryIds: number[], starred: boolean): Promise<void> {
-  if (entryIds.length === 0) return;
-
-  const BATCH_SIZE = 1000;
-  const BATCH_TIMEOUT_MS = 30000; // 30 seconds per batch
-
-  for (let i = 0; i < entryIds.length; i += BATCH_SIZE) {
-    const batch = entryIds.slice(i, i + BATCH_SIZE);
-    const batchStartTime = Date.now();
-
-    logger.info(
-      `Updating starred status for batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} entries)`
-    );
-
-    try {
-      await Promise.race([
-        db.update(feedEntries).set({ starred }).where(inArray(feedEntries.id, batch)),
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`Bulk update timeout after ${BATCH_TIMEOUT_MS}ms`)),
-            BATCH_TIMEOUT_MS
-          )
-        ),
-      ]);
-
-      const batchDuration = Date.now() - batchStartTime;
-      logger.info(`Bulk update batch completed in ${batchDuration}ms`);
-    } catch (error) {
-      logger.error(`Bulk update batch failed or timed out`, error);
-      // Continue with next batch even if this one fails
-    }
-  }
-}
-
-/**
- * Get the most recent feed update timestamp
- */
-async function getLastFeedSyncTime(): Promise<Date | null> {
-  const result = await db.query.feeds.findFirst({
-    columns: {
-      contentCreatedAt: true,
-    },
-    where: {
-      contentCreatedAt: {
-        isNotNull: true,
-      },
-    },
-    orderBy: {
-      contentCreatedAt: 'desc',
-    },
-  });
-
-  return result?.contentCreatedAt || null;
-}
-
-/**
- * Get the most recent entry sync timestamp
- */
-async function getLastEntrySyncTime(): Promise<Date | null> {
-  const result = await db.query.integrationRuns.findFirst({
-    columns: {
-      runStartTime: true,
-    },
-    where: {
-      integrationType: 'feedbin',
-      status: 'success',
-    },
-    orderBy: {
-      runStartTime: 'desc',
-    },
-  });
-
-  return result?.runStartTime || null;
-}
-
-/**
- * Main sync function for Feedbin integration
- */
-async function syncFeedbin(
-  integrationRunId: number,
-  collectDebugData?: { subscriptions: unknown[]; entries: unknown[]; icons: unknown[] }
-): Promise<number> {
-  try {
-    // Clear the synced feed cache
-    syncedFeedIds.clear();
-
-    // Get existing IDs for recent entries and feeds
-    const [existingEntryStatuses, existingFeedIds] = await Promise.all([
-      getRecentEntryStatuses(),
-      getRecentFeedIds(),
-    ]);
-
-    // Step 1: Get last sync time and fetch new subscriptions
-    const lastSyncTime = await getLastFeedSyncTime();
-    logger.info(`Last feed sync: ${lastSyncTime?.toISOString() || 'never'}`);
-
-    // Fetch subscriptions created since last sync
-    const [newSubscriptions, icons] = await Promise.all([
-      fetchSubscriptions(lastSyncTime || undefined),
-      fetchIcons(),
-    ]);
-    const iconMap = buildIconMap(icons);
-
-    // Collect debug data if requested
-    if (collectDebugData) {
-      collectDebugData.subscriptions.push(...newSubscriptions);
-      collectDebugData.icons.push(...icons);
-    }
-
-    if (newSubscriptions.length > 0) {
-      logger.info(`Syncing ${newSubscriptions.length} new subscriptions`);
-      await syncFeeds(newSubscriptions, iconMap, integrationRunId);
-    }
-
-    // Step 2: Get last entry sync time for updated entries
-    const lastEntrySyncTime = await getLastEntrySyncTime();
-    logger.info(`Last entry sync: ${lastEntrySyncTime?.toISOString() || 'never'}`);
-
-    // Step 3: Fetch entry IDs from Feedbin
-    logger.start('Fetching entry IDs');
-    const [unreadIds, starredIds, recentlyReadIds, updatedIds] = await Promise.all([
-      fetchUnreadEntryIds(),
-      fetchStarredEntryIds(),
-      fetchRecentlyReadEntryIds(),
-      fetchUpdatedEntryIds(lastEntrySyncTime || undefined),
-    ]);
-
-    const unreadSet = new Set(unreadIds);
-    const starredSet = new Set(starredIds);
-
-    // Determine status changes for existing entries
-    const toStar: number[] = [];
-    const toUnstar: number[] = [];
-    const toMarkRead: number[] = [];
-    const toMarkUnread: number[] = [];
-
-    for (const [id, status] of existingEntryStatuses) {
-      const shouldStar = starredSet.has(id);
-      if (shouldStar && !status.starred) toStar.push(id);
-      if (!shouldStar && status.starred) toUnstar.push(id);
-
-      const shouldUnread = unreadSet.has(id);
-      if (shouldUnread && status.read) toMarkUnread.push(id);
-      if (!shouldUnread && !status.read) toMarkRead.push(id);
-    }
-
-    logger.info(`Starred changes: ${toStar.length} newly starred, ${toUnstar.length} unstarred`);
-
-    // Combine all IDs we need to consider
-    const idsToConsider = new Set<number>([...unreadSet, ...recentlyReadIds, ...starredSet]);
-
-    // Check which of the candidate IDs already exist in the database
-    const candidateIds = Array.from(new Set([...idsToConsider, ...updatedIds]));
-    const existingEntryIds = await getExistingEntryIds(candidateIds);
-
-    // Split between new entries to fetch and updated entries to re-fetch
-    const newEntriesToFetch = Array.from(idsToConsider).filter((id) => !existingEntryIds.has(id));
-    const updatedEntriesToFetch = updatedIds.filter((id) => existingEntryIds.has(id));
-
-    logger.info(`Found ${newEntriesToFetch.length} new entries to fetch`);
-    logger.info(`Found ${updatedEntriesToFetch.length} updated entries to re-fetch`);
-
-    // Step 4: Fetch full entry data
-    const entriesToFetch = [...newEntriesToFetch, ...updatedEntriesToFetch];
-    const entries = await fetchEntriesByIds(entriesToFetch);
-
-    // Collect debug data if requested
-    if (collectDebugData) {
-      collectDebugData.entries.push(...entries);
-    }
-
-    // Step 5: Update existing entry states
-    if (toUnstar.length > 0) {
-      logger.info(`Updating ${toUnstar.length} entries to unstarred`);
-      await bulkUpdateStarredStatus(toUnstar, false);
-    }
-    if (toStar.length > 0) {
-      logger.info(`Updating ${toStar.length} entries to starred`);
-      await bulkUpdateStarredStatus(toStar, true);
-    }
-    if (toMarkRead.length > 0) {
-      logger.info(`Marking ${toMarkRead.length} entries read`);
-      await bulkUpdateReadStatus(toMarkRead, true);
-    }
-    if (toMarkUnread.length > 0) {
-      logger.info(`Marking ${toMarkUnread.length} entries unread`);
-      await bulkUpdateReadStatus(toMarkUnread, false);
-    }
-
-    // Step 6: Ensure all required feeds exist before syncing entries
-    const uniqueFeedIds = Array.from(new Set(entries.map((entry) => entry.feed_id)));
-    const missingFeedIds = uniqueFeedIds.filter(
-      (feedId) => !existingFeedIds.has(feedId) && !syncedFeedIds.has(feedId)
-    );
-
-    if (missingFeedIds.length > 0) {
-      logger.info(`Fetching ${missingFeedIds.length} missing feeds before syncing entries`);
-
-      await runConcurrentPool({
-        items: missingFeedIds,
-        concurrency: 20,
-        worker: async (feedId) => {
-          try {
-            await syncSingleFeed(feedId, iconMap);
-            syncedFeedIds.add(feedId);
-            existingFeedIds.add(feedId);
-          } catch (error) {
-            logger.warn(`Failed to fetch feed ${feedId}`, error);
+    const result = yield* forEachCollect(withUrls, {
+      concurrency: ENTRY_CONCURRENCY,
+      label: ({ entry }) => `entry ${entry.id}`,
+      worker: ({ entry, url }) =>
+        Effect.gen(function* () {
+          let read = !unreadIds.has(entry.id);
+          let starred = starredIds.has(entry.id);
+          if (updatedEntryIds.has(entry.id)) {
+            const existing = yield* database.use(`feedEntries.status:${entry.id}`, (client) =>
+              client.query.feedEntries.findFirst({
+                where: { id: entry.id },
+                columns: { read: true, starred: true },
+              })
+            );
+            if (existing) {
+              read = existing.read;
+              starred = existing.starred;
+            }
           }
-        },
-        onProgress: (completed, total) => {
-          logger.info(`Fetched feed ${completed} of ${total}`);
-        },
-      });
-    }
-
-    // Step 7: Sync entries
-    const updatedEntrySet = new Set(updatedEntriesToFetch);
-    const entriesCreated = await syncFeedEntries(
-      entries,
-      unreadSet,
-      starredSet,
-      integrationRunId,
-      updatedEntrySet
-    );
-
-    logger.complete('Feedbin sync completed successfully');
-    return entriesCreated;
-  } catch (error) {
-    logger.error('Feedbin sync failed', error);
-    throw error;
-  }
-}
-
-/**
- * Fetches all Feedbin data from API without persisting
- *
- * @param debugData - Object to collect raw API data
- */
-async function fetchFeedbinDataOnly(debugData: {
-  subscriptions: unknown[];
-  entries: unknown[];
-  icons: unknown[];
-}): Promise<void> {
-  // Fetch subscriptions and icons
-  const [subscriptions, icons] = await Promise.all([fetchSubscriptions(), fetchIcons()]);
-  debugData.subscriptions.push(...subscriptions);
-  debugData.icons.push(...icons);
-  logger.info(`Fetched ${subscriptions.length} subscriptions and ${icons.length} icons`);
-
-  // Fetch entry IDs
-  const [unreadIds, starredIds, recentlyReadIds] = await Promise.all([
-    fetchUnreadEntryIds(),
-    fetchStarredEntryIds(),
-    fetchRecentlyReadEntryIds(),
-  ]);
-
-  // Combine IDs and fetch entries
-  const idsToFetch = [...new Set([...unreadIds, ...recentlyReadIds, ...starredIds])];
-  logger.info(`Fetching ${idsToFetch.length} entries`);
-  const entries = await fetchEntriesByIds(idsToFetch);
-  debugData.entries.push(...entries);
-  logger.info(`Fetched ${entries.length} entries`);
-}
-
-/**
- * Orchestrates the Feedbin data synchronization process
- *
- * @param debug - If true, fetches data and outputs to .temp/ without writing to database
- */
-async function syncFeedbinData(debug = false): Promise<void> {
-  const debugContext = createDebugContext<{
-    subscriptions: unknown[];
-    entries: unknown[];
-    icons: unknown[];
-  }>('feedbin', debug, {
-    subscriptions: [],
-    entries: [],
-    icons: [],
-  });
-  try {
-    if (debug) {
-      // Debug mode: fetch data and output to .temp/ only, skip database writes
-      logger.start('Starting Feedbin data fetch (debug mode - no database writes)');
-      if (debugContext.data) {
-        await fetchFeedbinDataOnly(debugContext.data);
-      }
-      logger.complete('Feedbin data fetch completed (debug mode)');
-    } else {
-      // Normal mode: full sync with database writes
-      logger.start('Starting Feedbin data synchronization');
-      await runIntegration('feedbin', (runId) => syncFeedbin(runId, debugContext.data));
-      logger.complete('Feedbin data synchronization completed successfully');
-    }
-  } catch (error) {
-    logger.error('Error syncing Feedbin data', error);
-    throw error;
-  } finally {
-    await debugContext.flush().catch((flushError) => {
-      logger.error('Failed to write debug output for Feedbin', flushError);
+          const imageUrls = entry.images?.original_url ? [entry.images.original_url] : null;
+          const enclosure = normalizeEnclosure(entry.enclosure);
+          yield* database.use(`feedEntries.upsert:${entry.id}`, (client) =>
+            client
+              .insert(feedEntries)
+              .values({
+                id: entry.id,
+                feedId: entry.feed_id,
+                url,
+                title: entry.title,
+                author: entry.author,
+                summary: entry.summary,
+                content: entry.content,
+                imageUrls,
+                enclosure,
+                read,
+                starred,
+                publishedAt: entry.published,
+                integrationRunId: runId,
+              })
+              .onConflictDoUpdate({
+                target: feedEntries.id,
+                set: {
+                  title: entry.title,
+                  author: entry.author,
+                  summary: entry.summary,
+                  content: entry.content,
+                  imageUrls,
+                  enclosure,
+                  read,
+                  starred,
+                  publishedAt: entry.published,
+                  recordUpdatedAt: new Date(),
+                },
+              })
+          );
+        }).pipe(
+          Effect.retry({ schedule: Schedule.exponential('1 second'), times: 3 }),
+          Effect.timeout(ENTRY_TIMEOUT)
+        ),
     });
-  }
-}
+    yield* Effect.logInfo(
+      `Upserted ${result.successes.length} of ${entries.length} entries (${entries.length - withUrls.length} skipped)`
+    );
+    return {
+      entriesCreated: result.successes.length,
+      failures: result.failures,
+    } satisfies SyncSummary;
+  });
 
-export { syncFeedbinData as syncFeedbin };
+const sync = Effect.gen(function* () {
+  const sink = yield* DebugSink;
+  const [entryStatuses, existingFeedIds, lastFeedSyncTime, lastEntrySyncTime] = yield* Effect.all(
+    [getRecentEntryStatuses, getRecentFeedIds, getLastFeedSyncTime, getLastEntrySyncTime],
+    { concurrency: 4 }
+  );
+  yield* Effect.logInfo(
+    `Last feed sync: ${lastFeedSyncTime?.toISOString() ?? 'never'}; last entry sync: ${lastEntrySyncTime?.toISOString() ?? 'never'}`
+  );
+  const [subscriptions, iconMap] = yield* Effect.all(
+    [fetchSubscriptions(lastFeedSyncTime), fetchIconMap],
+    { concurrency: 2 }
+  );
+  const [unreadIds, starredIds, recentlyReadIds, updatedIds] = yield* Effect.all(
+    [
+      fetchEntryIds('/unread_entries.json', 'unread entry IDs'),
+      fetchEntryIds('/starred_entries.json', 'starred entry IDs'),
+      fetchEntryIds('/recently_read_entries.json', 'recently read entry IDs'),
+      fetchEntryIds('/updated_entries.json', 'updated entry IDs', lastEntrySyncTime ?? undefined),
+    ],
+    { concurrency: 4 }
+  );
+  const unreadSet = new Set(unreadIds);
+  const starredSet = new Set(starredIds);
+  const changes = diffEntryStatuses(entryStatuses, unreadSet, starredSet);
+  yield* Effect.logInfo(
+    `Status changes: ${changes.toStar.length} starred, ${changes.toUnstar.length} unstarred, ${changes.toMarkRead.length} read, ${changes.toMarkUnread.length} unread`
+  );
+  const idsToConsider = new Set([...unreadSet, ...recentlyReadIds, ...starredSet]);
+  const existingEntryIds = yield* getExistingEntryIds([
+    ...new Set([...idsToConsider, ...updatedIds]),
+  ]);
+  const newEntryIds = [...idsToConsider].filter((id) => !existingEntryIds.has(id));
+  const updatedEntryIds = updatedIds.filter((id) => existingEntryIds.has(id));
+  yield* Effect.logInfo(
+    `${newEntryIds.length} new entries to fetch, ${updatedEntryIds.length} updated entries to re-fetch`
+  );
+  const entries = yield* fetchEntriesByIds([...newEntryIds, ...updatedEntryIds]);
+  if (sink.enabled) {
+    yield* Effect.logInfo('Debug mode: skipping database writes');
+    return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
+  }
+  const runId = yield* requireRunId;
+  const feedFailures: Array<ItemFailure> = yield* persistFeeds(subscriptions, iconMap);
+  const statusFailures = yield* applyStatusChanges(changes);
+  const missingFeedFailures = yield* syncMissingFeeds(entries, existingFeedIds, iconMap);
+  const entrySummary = yield* persistEntries(
+    entries,
+    unreadSet,
+    starredSet,
+    new Set(updatedEntryIds),
+    runId
+  );
+  return {
+    entriesCreated: entrySummary.entriesCreated,
+    failures: [
+      ...feedFailures,
+      ...statusFailures,
+      ...missingFeedFailures,
+      ...entrySummary.failures,
+    ],
+  } satisfies SyncSummary;
+});
+
+export const feedbinIntegration: IntegrationDef = {
+  integrationType: 'feedbin',
+  sync,
+};

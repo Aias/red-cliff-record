@@ -12,6 +12,7 @@ import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
 import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { getRecordId, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
+import { withLightroomApiKey } from './helpers';
 
 /** Default concurrency for database operations */
 const DB_CONCURRENCY = 10;
@@ -117,7 +118,9 @@ const mapLightroomImageToRecord = (image: LightroomImageSelect): RecordInsert =>
     isCurated: false,
     isPrivate: false,
     sources: ['lightroom'],
-    avatarUrl: `${image.baseUrl}${image.links['/rels/rendition_type/thumbnail2x'].href}`,
+    avatarUrl: withLightroomApiKey(
+      `${image.baseUrl}${image.links['/rels/rendition_type/thumbnail2x'].href}`
+    ),
     recordCreatedAt: image.recordCreatedAt,
     recordUpdatedAt: image.recordUpdatedAt,
     contentCreatedAt: image.captureDate,

@@ -1,201 +1,121 @@
-/**
- * Sync commands for the CLI
- *
- * Calls sync functions directly for all integrations.
- */
-
 import { z } from 'zod';
 import { checkDatabaseConnection } from '@/server/db/connections/postgres';
-import { syncLightroomImages } from '@/server/integrations/adobe/sync';
-import { syncClaudeHistory } from '@/server/integrations/agents/sync-claude';
-import { syncCodexHistory } from '@/server/integrations/agents/sync-codex';
-import { syncCursorHistory } from '@/server/integrations/agents/sync-cursor';
-import { syncAirtableData } from '@/server/integrations/airtable/sync';
-import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
-import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
-import { syncFeedbin } from '@/server/integrations/feedbin/sync';
-import { syncGitHubData } from '@/server/integrations/github/sync';
-import { syncRaindropData } from '@/server/integrations/raindrop/sync';
-import { syncReadwiseDocuments } from '@/server/integrations/readwise/sync';
-import { syncTwitterData } from '@/server/integrations/twitter/sync';
+import { runIntegrationSync } from '@/server/integrations/runtime/runtime';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
 import { assertNever } from '@/shared/lib/type-utils';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createError } from '../lib/errors';
+import { withInterruptSignal } from '../lib/interrupt';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
 const IntegrationNameSchema = z.enum([
   'github',
+  'github-commits',
   'readwise',
   'raindrop',
-  'airtable',
   'adobe',
   'feedbin',
   'browsing',
   'twitter',
-  'agents',
 ]);
 type IntegrationName = z.infer<typeof IntegrationNameSchema>;
 const INTEGRATION_LIST = IntegrationNameSchema.options;
 
-/**
- * Run an integration sync
- * Usage: rcr sync [integration] [--debug]
- *
- * With no arguments, runs all daily syncs (browsing, raindrop, readwise,
- * airtable, twitter, github) followed by enrichments.
- *
- * With an integration name, runs that single sync followed by enrichments.
- * Available: github, readwise, raindrop, airtable, adobe, feedbin,
- *   browsing, twitter, agents
- *
- * Use `rcr enrich` to run enrichments separately.
- */
-export const run: CommandHandler = async (args, options) => {
-  const rawIntegration = args[0]?.toLowerCase();
+const SyncCommandOptionsSchema = BaseOptionsSchema.extend({
+  'allow-new-hostname': z.boolean().default(false),
+});
 
-  const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
-  const { debug } = parsedOptions;
+export const run: CommandHandler = (args, options) =>
+  withInterruptSignal(async (signal) => {
+    const rawIntegration = args[0]?.toLowerCase();
 
-  // Fail fast if the database is unreachable
-  try {
-    await checkDatabaseConnection();
-  } catch (e) {
-    throw createError('DATABASE_ERROR', e instanceof Error ? e.message : String(e));
-  }
+    const parsedOptions = parseOptions(SyncCommandOptionsSchema.strict(), options);
+    const { debug } = parsedOptions;
+    const syncOptions = { debug, allowNewHostname: parsedOptions['allow-new-hostname'], signal };
 
-  // No argument: run all daily syncs + enrichments
-  if (!rawIntegration) {
-    return runDailySync({ debug });
-  }
+    try {
+      await checkDatabaseConnection();
+    } catch (e) {
+      throw createError('DATABASE_ERROR', e instanceof Error ? e.message : String(e));
+    }
 
-  const integrationResult = IntegrationNameSchema.safeParse(rawIntegration);
-  if (!integrationResult.success) {
-    throw createError(
-      'VALIDATION_ERROR',
-      `Unknown integration: ${rawIntegration}. Available: ${INTEGRATION_LIST.join(', ')}`
-    );
-  }
-  const integration = integrationResult.data;
+    if (!rawIntegration) {
+      return runDailySync(syncOptions);
+    }
 
-  // Run the single sync, then enrichments
-  const startTime = performance.now();
-  const syncResult = await runSingleSync(integration, { debug });
-  await runEnrichments(debug);
+    const integrationResult = IntegrationNameSchema.safeParse(rawIntegration);
+    if (!integrationResult.success) {
+      throw createError(
+        'VALIDATION_ERROR',
+        `Unknown integration: ${rawIntegration}. Available: ${INTEGRATION_LIST.join(', ')}`
+      );
+    }
+    const integration = integrationResult.data;
 
-  return success({
-    ...syncResult,
-    duration: Math.round(performance.now() - startTime),
+    const startTime = performance.now();
+    const syncResult = await runSingleSync(integration, syncOptions);
+    if (!debug) await runEnrichments(signal);
+
+    return success({
+      ...syncResult,
+      duration: Math.round(performance.now() - startTime),
+    });
   });
-};
 
-// Also export as default command name for `rcr sync github` style
 export { run as github };
 export { run as readwise };
 export { run as raindrop };
-export { run as airtable };
 export { run as adobe };
 export { run as feedbin };
 export { run as browsing };
 export { run as twitter };
-export { run as agents };
 
 interface SyncOptions {
   debug: boolean;
+  allowNewHostname: boolean;
+  signal: AbortSignal;
 }
 
-/** Run all enrichments in order: avatars → alt-text → embeddings */
-async function runEnrichments(debug: boolean) {
-  await runSaveAvatarsIntegration();
-  await runAltTextIntegration({ debug });
-  await runEmbedRecordsIntegration();
+async function runEnrichments(signal: AbortSignal) {
+  signal.throwIfAborted();
+  await runSaveAvatarsIntegration(signal);
+  signal.throwIfAborted();
+  await runAltTextIntegration({ signal });
+  signal.throwIfAborted();
+  await runEmbedRecordsIntegration(signal);
 }
 
 async function runSingleSync(integration: IntegrationName, options: SyncOptions) {
-  const { debug } = options;
   const startTime = performance.now();
 
   switch (integration) {
     case 'github': {
-      await syncGitHubData(debug);
+      const commits = await runIntegrationSync('github-commits', options);
+      const stars = await runIntegrationSync('github', options);
       return {
         integration,
         success: true,
+        entriesCreated: commits.entriesCreated + stars.entriesCreated,
+        failedItems: commits.failures.length + stars.failures.length,
         duration: Math.round(performance.now() - startTime),
       };
     }
-    case 'readwise': {
-      await syncReadwiseDocuments(debug);
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'raindrop': {
-      await syncRaindropData(debug);
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'airtable': {
-      await syncAirtableData(debug);
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'adobe': {
-      await syncLightroomImages(debug);
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'feedbin': {
-      await syncFeedbin(debug);
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'browsing': {
-      await syncAllBrowserData(debug);
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
+    case 'github-commits':
+    case 'readwise':
+    case 'raindrop':
+    case 'adobe':
+    case 'feedbin':
+    case 'browsing':
     case 'twitter': {
-      await syncTwitterData(debug);
+      const summary = await runIntegrationSync(integration, options);
       return {
         integration,
         success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'agents': {
-      const sessionLimit = 5;
-      const settled = await Promise.allSettled([
-        withBufferedLogs(() => syncClaudeHistory(debug, { sessionLimit })),
-        withBufferedLogs(() => syncCodexHistory(debug, { sessionLimit })),
-        withBufferedLogs(() => syncCursorHistory(debug, { sessionLimit })),
-      ]);
-      for (const result of settled) {
-        if (result.status === 'rejected') throw result.reason;
-      }
-      return {
-        integration,
-        success: true,
+        entriesCreated: summary.entriesCreated,
+        failedItems: summary.failures.length,
         duration: Math.round(performance.now() - startTime),
       };
     }
@@ -209,20 +129,16 @@ async function runDailySync(options: SyncOptions) {
     'browsing',
     'raindrop',
     'readwise',
-    'airtable',
     'twitter',
     'github',
   ];
 
   const startTime = performance.now();
 
-  // Run external syncs concurrently — they hit disjoint APIs. Each
-  // integration's logs are buffered and emitted as one contiguous block when
-  // it finishes, so concurrent output never interleaves.
   const results: Array<{ step: string; success: boolean; error?: string }> = await Promise.all(
     dailyIntegrations.map(async (integration) => {
       try {
-        await withBufferedLogs(() => runSingleSync(integration, options));
+        await runSingleSync(integration, options);
         return { step: integration, success: true };
       } catch (e) {
         return {
@@ -234,17 +150,20 @@ async function runDailySync(options: SyncOptions) {
     })
   );
 
-  // Run enrichments once at the end
-  try {
-    await runEnrichments(options.debug);
-    results.push({ step: 'enrich', success: true });
-  } catch (e) {
-    results.push({
-      step: 'enrich',
-      success: false,
-      error: e instanceof Error ? e.message : String(e),
-    });
+  options.signal.throwIfAborted();
+  if (!options.debug) {
+    try {
+      await runEnrichments(options.signal);
+      results.push({ step: 'enrich', success: true });
+    } catch (e) {
+      results.push({
+        step: 'enrich',
+        success: false,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
   }
+  options.signal.throwIfAborted();
 
   const successCount = results.filter((r) => r.success).length;
 

@@ -10,7 +10,7 @@ Install the CLI once from the repo, then run syncs via `rcr`:
 bun link
 ```
 
-You can run integrations with the CLI instead of the per-integration scripts:
+Run integrations with the CLI:
 
 ```bash
 rcr sync github
@@ -31,6 +31,7 @@ Debug mode:
 
 - Fetches data from the API as normal
 - Skips all database writes
+- Skips enrichments (avatars, alt-text, embeddings)
 - Outputs raw API responses to `.temp/<integration>-<timestamp>.json`
 - Useful for testing credentials, viewing raw data, and debugging API issues
 
@@ -59,39 +60,6 @@ Syncs your GitHub repositories, stars, and commits.
 
 ```bash
 rcr sync github
-```
-
-## Airtable Integration
-
-Syncs records from Airtable bases with a specific structure.
-
-**Important**: This integration is configured specifically for the database structure used by the [barnsworthburning](https://github.com/Aias/barnsworthburning) project. If you want to use Airtable as a data source, you should:
-
-1. Fork the barnsworthburning repository
-2. Set up your own Airtable base following that project's structure
-3. Configure the integration with your base ID and token
-
-### Setup
-
-1. Go to [Airtable API](https://airtable.com/create/tokens)
-2. Create a new personal access token
-3. Give it a read-only scope
-4. Add your base to the token's access list
-5. Copy token to `.env` as `AIRTABLE_ACCESS_TOKEN`
-6. Find your base ID (starts with 'app') from Airtable URL
-7. Add to `.env` as `AIRTABLE_BASE_ID`
-
-### What Gets Synced
-
-- All records from configured tables
-- Attachments and media
-- Rich text content
-- Record relationships
-
-### Sync Command
-
-```bash
-rcr sync airtable
 ```
 
 ## Raindrop.io Integration
@@ -235,16 +203,20 @@ Syncs browsing history from Chromium-based browsers locally. Currently configure
 rcr sync browsing
 ```
 
-This runs both Arc and Dia syncs sequentially under a single integration run.
+This runs both Arc and Dia syncs under a single integration run.
+
+History is tracked per machine hostname. Syncing from a hostname the database has never seen fails with an error listing the known hostnames; pass `--allow-new-hostname` to confirm the new machine:
+
+```bash
+rcr sync browsing --allow-new-hostname
+```
 
 ### Adding Other Chromium Browsers
 
 To add support for other Chromium-based browsers:
 
-1. Create a new browser config in `src/server/integrations/browser-history/browsers/`
-2. Update the database connection to point to the browser's history file
-3. Add the browser to the `browserEnum` in the database schema
-4. Create a sync script following the Arc/Dia pattern
+1. Add the browser to the `BROWSERS` list in `src/server/integrations/browser-history/sync.ts` with its history file path
+2. Add the browser to the `browserEnum` in the database schema
 
 Common browser history locations on macOS:
 
@@ -318,12 +290,11 @@ To sync all configured integrations at once:
 rcr sync
 ```
 
-This runs: browsing, raindrop, readwise, github, airtable, twitter, then enrichments (avatars, alt-text, embeddings). Adobe, feedbin, and agents are excluded—run them individually if needed.
+This runs: browsing, raindrop, readwise, github, twitter, then enrichments (avatars, alt-text, embeddings). Adobe and feedbin are excluded—run them individually if needed.
 
 ## Rate Limits and Best Practices
 
 - **GitHub**: 5,000 requests/hour for authenticated requests
-- **Airtable**: 5 requests/second per base
 - **Raindrop**: 120 requests/minute
 - **Readwise**: Reasonable use expected
 - **Feedbin**: Reasonable use expected

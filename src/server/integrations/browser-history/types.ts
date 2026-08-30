@@ -1,6 +1,4 @@
-import { emptyStringToNull, type arcSchema, type Browser } from '@hozo';
-import type { Client } from '@libsql/client';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
+import { emptyStringToNull } from '@hozo';
 import { z } from 'zod';
 
 const sanitizeString = (str: string | null): string | null => {
@@ -21,27 +19,3 @@ export const DailyVisitsQueryRowSchema = z.object({
 export type DailyVisitsQueryRow = z.infer<typeof DailyVisitsQueryRowSchema>;
 
 export const DailyVisitsQueryResultSchema = z.array(DailyVisitsQueryRowSchema);
-
-export interface BrowserConnection {
-  db: LibSQLDatabase<typeof arcSchema.relations>;
-  client: Client;
-}
-
-export interface BrowserConfig {
-  name: Browser;
-  displayName: string;
-  createConnection: () => Promise<BrowserConnection>;
-  // Optional cutoff date to avoid fetching history before this date
-  // Useful for browsers that import history from other browsers
-  cutoffDate?: Date;
-}
-
-/**
- * Custom error for when a browser is not installed (history file missing)
- */
-export class BrowserNotInstalledError extends Error {
-  constructor(browserName: string, filePath: string) {
-    super(`${browserName} browser not installed (missing file: ${filePath})`);
-    this.name = 'BrowserNotInstalledError';
-  }
-}

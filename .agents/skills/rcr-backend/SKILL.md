@@ -28,9 +28,11 @@ Supplements global `typescript-guidelines` skill.
 
 Canonical guide: `INTEGRATIONS.md`.
 
-- Sync logic wrapped by `runIntegration`; exposed via `rcr sync <name>`
-- File convention: `types.ts` (Zod schemas), `client.ts` (API client), `sync.ts` (orchestration)
-- Respect rate limits; batch where needed; upsert for idempotency
+- Syncs are Effect v4 pipelines registered in `src/server/integrations/runtime/registry.ts`; the shared runtime (`src/server/integrations/runtime/`) provides run-row tracking, typed errors, rate-limited HTTP clients, debug capture, and the `ManagedRuntime` boundary the CLI calls through
+- File convention: `types.ts` (Zod schemas at the API boundary), `sync.ts` (Effect pipeline), `map.ts` (staging-to-record promotion, plain async invoked via `legacyOperation`)
+- Item failures collect into the run summary via `forEachCollect` — one bad item never fails a run; only systemic errors (auth, config, connectivity) do
+- Rate limits come from `makeApiClient` (fixed-window limiter, auto-429 with Retry-After, bounded transient retries); upsert for idempotency
+- `effect` and `@effect/platform-bun` are exact-pinned to the same v4 RC version — bump both together and deliberately; the `unstable/http` and `unstable/persistence` modules carry no semver guarantee until 4.0 stable
 
 ## Database Management
 

@@ -1,11 +1,12 @@
 import { githubCommits, GithubCommitTypeSchema } from '@hozo';
 import { eq } from 'drizzle-orm';
+import { Array as Arr, Effect } from 'effect';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
-import { db } from '@/server/db/connections/postgres';
 import { getOpenAIClient, OPENAI_MODEL } from '@/server/lib/openai';
-import { runConcurrentPool } from '@/shared/lib/async-pool';
-import { createIntegrationLogger } from '../common/logging';
+import { Database } from '../runtime/db';
+import { ApiRequestError } from '../runtime/errors';
+import { forEachCollect, type ItemFailure } from '../runtime/run';
 
 export const CommitSummaryInputSchema = z.object({
   message: z.string(),
@@ -105,102 +106,75 @@ export const summarizeCommit = async (
   return response.output_parsed;
 };
 
-type CommitWithRelations = Awaited<ReturnType<typeof getCommitsWithoutSummaries>>[number];
+const SUMMARY_CONCURRENCY = 20;
 
-const logger = createIntegrationLogger('github', 'summarize-commits');
-
-async function getCommitsWithoutSummaries() {
-  return db.query.githubCommits.findMany({
-    with: {
-      repository: true,
-      commitChanges: true,
-    },
-    where: {
-      summary: {
-        isNull: true,
-      },
-    },
-    orderBy: {
-      committedAt: 'asc',
-    },
-  });
-}
-
-async function processCommit(
-  commit: CommitWithRelations
-): Promise<{ success: boolean; sha: string }> {
-  try {
-    if (!commit.repository) {
-      logger.error(`[${commit.sha.slice(0, 7)}] Skipped — no repository`);
-      return { success: false, sha: commit.sha };
-    }
-
-    const summary = await summarizeCommit({
-      message: commit.message,
-      sha: commit.sha,
-      changes: commit.changes,
-      additions: commit.additions,
-      deletions: commit.deletions,
-      commitChanges: commit.commitChanges.map((change) => ({
-        filename: change.filename,
-        status: change.status,
-        changes: change.changes,
-        deletions: change.deletions,
-        additions: change.additions,
-        patch: change.patch,
-      })),
-      repository: {
-        fullName: commit.repository.fullName,
-        description: commit.repository.description,
-        language: commit.repository.language,
-        topics: commit.repository.topics,
-        licenseName: commit.repository.licenseName,
-      },
-    });
-
-    await db
-      .update(githubCommits)
-      .set({
-        summary: summary.summary,
-        commitType: summary.primary_purpose,
-        technologies: summary.technologies,
-      })
-      .where(eq(githubCommits.sha, commit.sha));
-
-    logger.info(
-      `[${commit.sha.slice(0, 7)}] ${commit.repository.fullName}: ${summary.primary_purpose}`
-    );
-
-    return { success: true, sha: commit.sha };
-  } catch (error) {
-    logger.error(`[${commit.sha.slice(0, 7)}] Failed`, error);
-    return { success: false, sha: commit.sha };
-  }
-}
-
-export async function syncCommitSummaries(): Promise<number> {
-  const commits = await getCommitsWithoutSummaries();
-
+export const summarizeMissingCommits = Effect.gen(function* () {
+  const database = yield* Database;
+  const commits = yield* database.use('githubCommits.withoutSummaries', (client) =>
+    client.query.githubCommits.findMany({
+      with: { repository: true, commitChanges: true },
+      where: { summary: { isNull: true } },
+      orderBy: { committedAt: 'asc' },
+    })
+  );
   if (commits.length === 0) {
-    logger.skip('No commits to summarize');
-    return 0;
+    yield* Effect.logInfo('No commits to summarize');
+    return { summarized: 0, failures: Arr.empty<ItemFailure>() };
   }
-
-  logger.start(`Starting summarization of ${commits.length} commits (concurrency: 20)`);
-
-  const results = await runConcurrentPool({
-    items: commits,
-    concurrency: 20,
-    worker: async (commit) => processCommit(commit),
-    onProgress: (completed, total) => {
-      if (completed % 20 === 0 || completed === total) {
-        logger.info(`Progress: ${completed}/${total} (${Math.round((completed / total) * 100)}%)`);
-      }
-    },
+  yield* Effect.logInfo(`Summarizing ${commits.length} commits`);
+  const results = yield* forEachCollect(commits, {
+    concurrency: SUMMARY_CONCURRENCY,
+    label: (commit) => commit.sha.slice(0, 7),
+    worker: (commit) =>
+      Effect.gen(function* () {
+        const repository = commit.repository;
+        if (!repository) {
+          return yield* Effect.fail(
+            new ApiRequestError({
+              resource: `github commit ${commit.sha.slice(0, 7)}`,
+              cause: 'no repository',
+            })
+          );
+        }
+        const summary = yield* Effect.tryPromise({
+          try: () =>
+            summarizeCommit({
+              message: commit.message,
+              sha: commit.sha,
+              changes: commit.changes,
+              additions: commit.additions,
+              deletions: commit.deletions,
+              commitChanges: commit.commitChanges.map((change) => ({
+                filename: change.filename,
+                status: change.status,
+                changes: change.changes,
+                deletions: change.deletions,
+                additions: change.additions,
+                patch: change.patch,
+              })),
+              repository: {
+                fullName: repository.fullName,
+                description: repository.description,
+                language: repository.language,
+                topics: repository.topics,
+                licenseName: repository.licenseName,
+              },
+            }),
+          catch: (cause) =>
+            new ApiRequestError({ resource: `summarize ${commit.sha.slice(0, 7)}`, cause }),
+        });
+        yield* database.use(`githubCommits.summary:${commit.sha.slice(0, 7)}`, (client) =>
+          client
+            .update(githubCommits)
+            .set({
+              summary: summary.summary,
+              commitType: summary.primary_purpose,
+              technologies: summary.technologies,
+            })
+            .where(eq(githubCommits.sha, commit.sha))
+        );
+      }),
   });
-
-  const successful = results.filter((r) => r.ok && r.value.success).length;
-  logger.complete(`Finished summarizing commits (${successful}/${commits.length} successful)`);
-
-  return successful;
-}
+  yield* Effect.logInfo(`Summarized ${results.successes.length} of ${commits.length} commits`);
+  return { summarized: results.successes.length, failures: results.failures };
+});

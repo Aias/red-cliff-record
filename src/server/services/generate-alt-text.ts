@@ -5,7 +5,6 @@ import { media } from '@hozo';
 import { eq } from 'drizzle-orm';
 import mime from 'mime-types';
 import { db } from '@/server/db/connections/postgres';
-import { writeDebugOutput } from '@/server/integrations/common/debug-output';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import { getOpenAIClient, OPENAI_MODEL } from '@/server/lib/openai';
 import { embedRecordsByIds } from '@/server/services/embed-records';
@@ -117,6 +116,8 @@ export interface GenerateAltTextOptions {
   force?: boolean;
   /** Do not write to the database (generate + return only) */
   dryRun?: boolean;
+  /** Optional external signal; aborting stops new items and aborts in-flight generation */
+  signal?: AbortSignal;
 }
 
 export interface GenerateAltTextResult {
@@ -815,6 +816,7 @@ export async function generateAltText(
     items: mediaIds,
     concurrency: 10,
     timeoutMs: ALT_TEXT_WORKER_TIMEOUT_MS,
+    signal: options.signal,
     worker: async (mediaId, _index, signal) => {
       const internalOptions: GenerateAltTextInternalOptions = { ...options, signal };
       try {
@@ -876,6 +878,8 @@ export interface AltTextSyncOptions {
   limit?: number;
   /** If true, do not write; output results to `.temp/` */
   debug?: boolean;
+  /** Optional external signal; aborting stops new items and aborts in-flight generation */
+  signal?: AbortSignal;
 }
 
 export interface AltTextSyncResult {
@@ -894,7 +898,7 @@ export interface AltTextSyncResult {
 async function generateMissingAltText(
   options: AltTextSyncOptions = {}
 ): Promise<AltTextSyncResult> {
-  const { limit = 100, debug = false } = options;
+  const { limit = 100, debug = false, signal } = options;
 
   logger.start(`Generating alt text for up to ${limit} media items without descriptions`);
 
@@ -924,7 +928,7 @@ async function generateMissingAltText(
   logger.info(`Found ${mediaWithoutAltText.length} media items to process`);
 
   const mediaIds = mediaWithoutAltText.map((m) => m.id);
-  const results = await generateAltText(mediaIds, { dryRun: debug });
+  const results = await generateAltText(mediaIds, { dryRun: debug, signal });
 
   const summary = {
     total: results.length,
@@ -935,12 +939,13 @@ async function generateMissingAltText(
 
   let debugOutputPath: string | undefined;
   if (debug) {
-    debugOutputPath = await writeDebugOutput('alt-text', {
-      generatedAt: new Date().toISOString(),
-      limit,
-      results,
-      summary,
-    });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    debugOutputPath = `.temp/alt-text-${timestamp}.json`;
+    await Bun.write(
+      debugOutputPath,
+      JSON.stringify({ generatedAt: new Date().toISOString(), limit, results, summary }, null, 2)
+    );
+    logger.info(`Debug output written to ${debugOutputPath}`);
   }
 
   logger.complete(`Generated alt text for ${summary.generated} media items`);
