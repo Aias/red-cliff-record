@@ -9,7 +9,6 @@ import { checkDatabaseConnection } from '@/server/db/connections/postgres';
 import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
 import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
 import { syncFeedbin } from '@/server/integrations/feedbin/sync';
-import { syncGitHubData } from '@/server/integrations/github/sync';
 import { runIntegrationSync } from '@/server/integrations/runtime/runtime';
 import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
@@ -23,6 +22,7 @@ import type { CommandHandler } from '../lib/types';
 
 const IntegrationNameSchema = z.enum([
   'github',
+  'github-commits',
   'readwise',
   'raindrop',
   'adobe',
@@ -41,7 +41,7 @@ const INTEGRATION_LIST = IntegrationNameSchema.options;
  * twitter, github) followed by enrichments.
  *
  * With an integration name, runs that single sync followed by enrichments.
- * Available: github, readwise, raindrop, adobe, feedbin,
+ * Available: github, github-commits, readwise, raindrop, adobe, feedbin,
  *   browsing, twitter
  *
  * Use `rcr enrich` to run enrichments separately.
@@ -109,10 +109,23 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
 
   switch (integration) {
     case 'github': {
-      await syncGitHubData(debug);
+      const commits = await runIntegrationSync('github-commits', { debug });
+      const stars = await runIntegrationSync('github', { debug });
       return {
         integration,
         success: true,
+        entriesCreated: commits.entriesCreated + stars.entriesCreated,
+        failedItems: commits.failures.length + stars.failures.length,
+        duration: Math.round(performance.now() - startTime),
+      };
+    }
+    case 'github-commits': {
+      const summary = await runIntegrationSync('github-commits', { debug });
+      return {
+        integration,
+        success: true,
+        entriesCreated: summary.entriesCreated,
+        failedItems: summary.failures.length,
         duration: Math.round(performance.now() - startTime),
       };
     }
