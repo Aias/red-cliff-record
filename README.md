@@ -27,7 +27,6 @@ Before you begin, ensure you have the following installed:
 
 ### Optional Requirements
 
-- **Airtable** - for Airtable integration
 - **Arc Browser** - for Arc Browser integration
 - **Dia Browser** - for Dia Browser integration
 - **Feedbin** - for RSS feed integration
@@ -147,15 +146,6 @@ Each integration is optional. Only configure the ones you need:
   ```
 
   [Create a token](https://github.com/settings/tokens) with `repo` and `user` scopes.
-
-- **Airtable** - For syncing Airtable bases
-
-  ```
-  AIRTABLE_BASE_ID=app...
-  AIRTABLE_ACCESS_TOKEN=pat...
-  ```
-
-  [Get your API key](https://airtable.com/create/tokens)
 
 - **Raindrop.io** - For syncing bookmarks
 
@@ -294,7 +284,6 @@ rcr links create '{"sourceId":1,"targetId":2,"predicateId":3}'
 
 # Sync integrations
 rcr sync github
-rcr sync airtable
 rcr sync raindrop
 rcr sync readwise
 rcr sync feedbin

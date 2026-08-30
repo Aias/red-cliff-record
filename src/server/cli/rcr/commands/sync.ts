@@ -6,7 +6,6 @@
 
 import { z } from 'zod';
 import { checkDatabaseConnection } from '@/server/db/connections/postgres';
-import { syncAirtableData } from '@/server/integrations/airtable/sync';
 import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
 import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
 import { syncFeedbin } from '@/server/integrations/feedbin/sync';
@@ -26,7 +25,6 @@ const IntegrationNameSchema = z.enum([
   'github',
   'readwise',
   'raindrop',
-  'airtable',
   'adobe',
   'feedbin',
   'browsing',
@@ -40,10 +38,10 @@ const INTEGRATION_LIST = IntegrationNameSchema.options;
  * Usage: rcr sync [integration] [--debug]
  *
  * With no arguments, runs all daily syncs (browsing, raindrop, readwise,
- * airtable, twitter, github) followed by enrichments.
+ * twitter, github) followed by enrichments.
  *
  * With an integration name, runs that single sync followed by enrichments.
- * Available: github, readwise, raindrop, airtable, adobe, feedbin,
+ * Available: github, readwise, raindrop, adobe, feedbin,
  *   browsing, twitter
  *
  * Use `rcr enrich` to run enrichments separately.
@@ -89,7 +87,6 @@ export const run: CommandHandler = async (args, options) => {
 export { run as github };
 export { run as readwise };
 export { run as raindrop };
-export { run as airtable };
 export { run as adobe };
 export { run as feedbin };
 export { run as browsing };
@@ -139,14 +136,6 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
         duration: Math.round(performance.now() - startTime),
       };
     }
-    case 'airtable': {
-      await syncAirtableData(debug);
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
     case 'adobe': {
       const summary = await runIntegrationSync('adobe', { debug });
       return {
@@ -191,7 +180,6 @@ async function runDailySync(options: SyncOptions) {
     'browsing',
     'raindrop',
     'readwise',
-    'airtable',
     'twitter',
     'github',
   ];

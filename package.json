@@ -62,7 +62,6 @@
     "@trpc/client": "~11.18.0",
     "@trpc/server": "~11.18.0",
     "@trpc/tanstack-react-query": "~11.18.0",
-    "airtable": "~0.12.2",
     "cmdk": "~1.1.1",
     "colorjs.io": "~0.7.1",
     "dataloader": "~2.2.3",
