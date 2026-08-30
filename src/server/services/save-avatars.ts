@@ -96,7 +96,12 @@ export async function saveAvatarsToR2(): Promise<number> {
             logger.error(`Invalid URL for record ${record.id}: ${record.avatarUrl}`, error);
             await db
               .update(records)
-              .set({ avatarUrl: null, recordUpdatedAt: new Date(), isCurated: false })
+              .set({
+                avatarUrl: null,
+                recordUpdatedAt: new Date(),
+                isCurated: false,
+                recordCuratedAt: null,
+              })
               .where(eq(records.id, record.id));
             return { status: 'error' };
           }
@@ -114,7 +119,12 @@ export async function saveAvatarsToR2(): Promise<number> {
           if (attempt > maxRetries) {
             await db
               .update(records)
-              .set({ avatarUrl: null, recordUpdatedAt: new Date(), isCurated: false })
+              .set({
+                avatarUrl: null,
+                recordUpdatedAt: new Date(),
+                isCurated: false,
+                recordCuratedAt: null,
+              })
               .where(eq(records.id, record.id));
             return { status: 'error' };
           }

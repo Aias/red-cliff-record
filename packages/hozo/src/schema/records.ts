@@ -53,6 +53,7 @@ export const records = pgTable(
     eloScore: integer('elo_score').notNull().default(1200),
     isPrivate: boolean('is_private').notNull().default(false),
     isCurated: boolean('is_curated').notNull().default(false),
+    recordCuratedAt: timestamp('curated_at', { withTimezone: true }),
     reminderAt: timestamp('reminder_at', { withTimezone: true }),
     sources: integrationTypeEnum('sources').array(),
     /**

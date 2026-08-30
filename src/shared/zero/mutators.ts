@@ -40,6 +40,17 @@ export async function queueEmbeddings(
   ctx?.regenerateEmbeddings(unique);
 }
 
+async function curatedAtForUpdate(
+  tx: Transaction,
+  id: DbId,
+  isCurated: boolean | undefined
+): Promise<{ recordCuratedAt?: number | null }> {
+  if (isCurated === undefined) return {};
+  if (!isCurated) return { recordCuratedAt: null };
+  const existing = await tx.run(zql.records.where('id', id).one());
+  return { recordCuratedAt: existing?.recordCuratedAt ?? Date.now() };
+}
+
 export const RecordUpdateFieldsSchema = z.object({
   type: RecordTypeSchema.optional(),
   title: z.string().nullable().optional(),
@@ -151,13 +162,15 @@ export const mutators = defineMutators({
      * keeping a list of which columns feed the vector in step with the text. */
     update: defineMutator(UpdateRecordSchema, async ({ tx, ctx, args }) => {
       const { id, ...fields } = args;
-      await tx.mutate.records.update({ ...fields, id, recordUpdatedAt: Date.now() });
+      const curation = await curatedAtForUpdate(tx, id, fields.isCurated);
+      await tx.mutate.records.update({ ...fields, ...curation, id, recordUpdatedAt: Date.now() });
       await queueEmbeddings(tx, ctx, [id]);
     }),
     bulkUpdate: defineMutator(BulkUpdateSchema, async ({ tx, ctx, args: { ids, data } }) => {
       const now = Date.now();
       for (const id of ids) {
-        await tx.mutate.records.update({ ...data, id, recordUpdatedAt: now });
+        const curation = await curatedAtForUpdate(tx, id, data.isCurated);
+        await tx.mutate.records.update({ ...data, ...curation, id, recordUpdatedAt: now });
       }
       await queueEmbeddings(tx, ctx, ids);
     }),

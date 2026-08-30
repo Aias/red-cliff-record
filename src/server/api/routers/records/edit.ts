@@ -1,6 +1,6 @@
 import { RecordInsertSchema, records } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { inArray } from 'drizzle-orm';
+import { inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { queueRecordEmbeddings } from '@/server/services/embed-records';
 import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
@@ -18,6 +18,18 @@ const BulkUpdateDataSchema = RecordInsertSchema.omit({
   textEmbeddedAt: true,
 }).partial();
 
+const curatedAtUpdate = (data: { isCurated?: boolean; recordCuratedAt?: Date | null }) =>
+  data.recordCuratedAt !== undefined || data.isCurated === undefined
+    ? {}
+    : {
+        recordCuratedAt: data.isCurated ? sql`coalesce(${records.recordCuratedAt}, now())` : null,
+      };
+
+const curatedAtInsert = (data: { isCurated?: boolean; recordCuratedAt?: Date | null }) =>
+  data.recordCuratedAt !== undefined || data.isCurated === undefined
+    ? {}
+    : { recordCuratedAt: data.isCurated ? new Date() : null };
+
 export const upsert = publicProcedure
   .input(RecordInsertSchema)
   .mutation(async ({ ctx: { db, loaders }, input }): Promise<RecordGet> => {
@@ -30,11 +42,12 @@ export const upsert = publicProcedure
 
     const [result] = await db
       .insert(records)
-      .values(input)
+      .values({ ...input, ...curatedAtInsert(input) })
       .onConflictDoUpdate({
         target: records.id,
         set: {
           ...updateFields,
+          ...curatedAtUpdate(input),
           recordUpdatedAt: new Date(),
           ...(affectsEmbedding ? { textEmbedding: null, textEmbeddedAt: null } : {}),
         },
@@ -90,6 +103,7 @@ export const bulkUpdate = publicProcedure
       .update(records)
       .set({
         ...updateData,
+        ...curatedAtUpdate(data),
         recordUpdatedAt: new Date(),
         ...(affectsEmbedding ? { textEmbedding: null, textEmbeddedAt: null } : {}),
       })
