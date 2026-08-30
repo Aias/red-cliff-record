@@ -138,7 +138,6 @@ export const mapRaindropBookmarkToRecord = (bookmark: RaindropBookmarkSelect): R
     eloScore: starsToElo(bookmark.important ? 1 : 0),
     sources: ['raindrop'],
     isPrivate: false,
-    isCurated: false,
     recordCreatedAt: bookmark.recordCreatedAt,
     recordUpdatedAt: bookmark.recordUpdatedAt,
     contentCreatedAt: bookmark.contentCreatedAt,
@@ -330,7 +329,6 @@ export const mapRaindropTagToRecord = (tag: RaindropTagSelect): RecordInsert => 
     type: 'concept',
     title: tag.tag,
     sources: ['raindrop'],
-    isCurated: false,
     isPrivate: false,
     recordCreatedAt: tag.recordCreatedAt,
     recordUpdatedAt: tag.recordUpdatedAt,
@@ -376,14 +374,7 @@ export async function createRecordsFromRaindropTags() {
       const [newCategory] = await db
         .insert(records)
         .values(newCategoryDefaults)
-        .returning({ id: records.id })
-        .onConflictDoUpdate({
-          target: records.id,
-          set: {
-            recordUpdatedAt: new Date(),
-            isCurated: false,
-          },
-        });
+        .returning({ id: records.id });
 
       if (!newCategory) {
         throw new Error('Failed to create category');
@@ -426,7 +417,6 @@ export const mapRaindropHighlightToRecord = (
     url: highlight.bookmark.linkUrl,
     sources: ['raindrop'],
     isPrivate: false,
-    isCurated: false,
     recordCreatedAt: highlight.recordCreatedAt,
     recordUpdatedAt: highlight.recordUpdatedAt,
     contentCreatedAt: highlight.contentCreatedAt,

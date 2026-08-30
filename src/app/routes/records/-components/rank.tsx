@@ -60,7 +60,7 @@ export const RankSection = ({ id }: { id: DbId }) => {
   const isChildArtifact =
     record?.type === 'artifact' &&
     (record.outgoingLinks?.some((link) => link.predicate === 'contained_by') ?? false);
-  const eligible = record?.isCurated === true && !isChildArtifact;
+  const eligible = record !== undefined && record.recordCuratedAt !== null && !isChildArtifact;
 
   // Individual slots so a resolved opponent can be swapped out without
   // re-rolling the other rows; `seen` keeps replacements fresh.

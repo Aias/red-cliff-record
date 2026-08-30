@@ -31,7 +31,6 @@ export default drizzleZeroConfig(
         mediaCaption: true,
         eloScore: number().from('elo_score'),
         isPrivate: boolean().from('is_private'),
-        isCurated: boolean().from('is_curated'),
         recordCuratedAt: true,
         reminderAt: true,
         sources: true,

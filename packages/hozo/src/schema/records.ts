@@ -52,7 +52,6 @@ export const records = pgTable(
     mediaCaption: text('media_caption'),
     eloScore: integer('elo_score').notNull().default(1200),
     isPrivate: boolean('is_private').notNull().default(false),
-    isCurated: boolean('is_curated').notNull().default(false),
     recordCuratedAt: timestamp('curated_at', { withTimezone: true }),
     reminderAt: timestamp('reminder_at', { withTimezone: true }),
     sources: integrationTypeEnum('sources').array(),
@@ -81,7 +80,9 @@ export const records = pgTable(
     index('idx_records_abbreviation_trgm').using('gist', table.abbreviation.op('gist_trgm_ops')),
     index().on(table.recordCreatedAt),
     index().on(table.recordUpdatedAt),
-    index().on(table.isCurated),
+    index('idx_records_curated_recency')
+      .on(table.type, table.recordCuratedAt.desc().nullsFirst(), table.id.desc().nullsFirst())
+      .where(sql`${table.recordCuratedAt} is not null`),
     index().on(table.type, table.eloScore),
     index().using('hnsw', table.textEmbedding.op('vector_cosine_ops')),
     index('idx_records_text_search').using('gin', table.textSearch),

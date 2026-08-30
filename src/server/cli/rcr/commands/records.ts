@@ -5,15 +5,17 @@
  * reusing all query logic from the API routers.
  */
 
-import { IntegrationTypeSchema, RecordInsertSchema, RecordTypeSchema } from '@hozo';
+import { IntegrationTypeSchema, RecordTypeSchema } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
+  BulkUpdateDataSchema,
   DEFAULT_LIMIT,
   LimitSchema,
   OffsetSchema,
   OrderCriteriaSchema,
   RecordFiltersSchema,
+  RecordUpsertSchema,
   type ListRecordsInput,
 } from '@/shared/types/api';
 import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
@@ -212,7 +214,7 @@ export const list: CommandHandler = async (_args, options) => {
  */
 export const create: CommandHandler = async (args, options) => {
   parseOptions(BaseOptionsSchema.strict(), options);
-  const input = await parseJsonInput(RecordInsertSchema, args);
+  const input = await parseJsonInput(RecordUpsertSchema, args);
 
   try {
     const record = await caller.records.upsert(input);
@@ -232,7 +234,7 @@ export const create: CommandHandler = async (args, options) => {
 export const update: CommandHandler = async (args, options) => {
   parseOptions(BaseOptionsSchema.strict(), options);
   const id = parseId(args);
-  const input = await parseJsonInput(RecordInsertSchema, args.slice(1));
+  const input = await parseJsonInput(RecordUpsertSchema, args.slice(1));
 
   try {
     const record = await caller.records.upsert({ ...input, id });
@@ -247,15 +249,6 @@ export const update: CommandHandler = async (args, options) => {
     throw e;
   }
 };
-
-// Schema for bulk update data (matches API schema)
-const BulkUpdateDataSchema = RecordInsertSchema.omit({
-  id: true,
-  slug: true,
-  sources: true,
-  textEmbedding: true,
-  textEmbeddedAt: true,
-}).partial();
 
 /**
  * Bulk update records

@@ -211,13 +211,14 @@ Configure the `ZERO_*` and `PUBLIC_ZERO_CACHE_URL` variables in `.env` (see `.en
 
 The Zero client schema is generated from the Drizzle schema via `drizzle-zero.config.ts`; regenerate with `bun run zero:generate` after schema changes to synced tables.
 
-`zero:publication` points the `zero_data` publication at exactly the columns that schema declares. It is needed because `records` holds types Zero cannot replicate — `text_embedding` (vector) and `text_search` (tsvector) — so the publication names columns explicitly rather than publishing whole tables, and **a Postgres column list pins the published set**: a column added later is not replicated until the list is restated, and until then zero-cache rejects every client with `SchemaVersionNotSupported`. Deriving the list from the generated schema keeps the two from drifting. The command is declarative and idempotent — it creates the publication if it is missing — and the deploy pipeline runs it after every migration.
+`zero:publication` points the `zero_data` publication at exactly the columns that schema declares. It is needed because `records` holds types Zero cannot replicate — `text_embedding` (vector) and `text_search` (tsvector) — so the publication names columns explicitly rather than publishing whole tables, and **a Postgres column list pins the published set**: a column added later is not replicated until the list is restated, and until then zero-cache rejects every client with `SchemaVersionNotSupported`. Deriving the list from the generated schema keeps the two from drifting. The command is declarative and idempotent — it creates the publication if it is missing — and the deploy pipeline runs it on both sides of every migration: before, to release columns the migration is about to drop (Postgres refuses to drop a column a publication still names), and after, to publish the ones it added.
 
 So a migration on a synced table needs only:
 
 ```bash
 bun run zero:generate     # if columns were added, removed, or renamed
-bun run zero:publication  # after the migration is applied
+bun run zero:publication  # before the migration, to release dropped columns
+bun run zero:publication  # after the migration, to publish added columns
 ```
 
 No restart or replica rebuild: zero-cache installs DDL event triggers on the upstream database, sees published schema changes as they commit, and applies them to its replica (backfilling added columns) while running.

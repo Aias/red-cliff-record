@@ -161,16 +161,17 @@ export const mutators = defineMutators({
      * media, and regeneration is cheap, so every write queues one rather than
      * keeping a list of which columns feed the vector in step with the text. */
     update: defineMutator(UpdateRecordSchema, async ({ tx, ctx, args }) => {
-      const { id, ...fields } = args;
-      const curation = await curatedAtForUpdate(tx, id, fields.isCurated);
+      const { id, isCurated, ...fields } = args;
+      const curation = await curatedAtForUpdate(tx, id, isCurated);
       await tx.mutate.records.update({ ...fields, ...curation, id, recordUpdatedAt: Date.now() });
       await queueEmbeddings(tx, ctx, [id]);
     }),
     bulkUpdate: defineMutator(BulkUpdateSchema, async ({ tx, ctx, args: { ids, data } }) => {
       const now = Date.now();
+      const { isCurated, ...fields } = data;
       for (const id of ids) {
-        const curation = await curatedAtForUpdate(tx, id, data.isCurated);
-        await tx.mutate.records.update({ ...data, ...curation, id, recordUpdatedAt: now });
+        const curation = await curatedAtForUpdate(tx, id, isCurated);
+        await tx.mutate.records.update({ ...fields, ...curation, id, recordUpdatedAt: now });
       }
       await queueEmbeddings(tx, ctx, ids);
     }),
