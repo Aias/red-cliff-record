@@ -4,6 +4,7 @@ import { feedbinIntegration } from '../feedbin/sync';
 import { githubCommitsIntegration, githubIntegration } from '../github/sync';
 import { raindropIntegration } from '../raindrop/sync';
 import { readwiseIntegration } from '../readwise/sync';
+import { twitterIntegration } from '../twitter/sync';
 import { debugSinkCapture } from './debug';
 import { CurrentRun, withRun, type IntegrationDef } from './run';
 
@@ -14,6 +15,7 @@ const registry = {
   'github-commits': githubCommitsIntegration,
   raindrop: raindropIntegration,
   readwise: readwiseIntegration,
+  twitter: twitterIntegration,
 } satisfies Record<string, IntegrationDef>;
 
 export type RegisteredIntegration = keyof typeof registry;

@@ -9,7 +9,6 @@ import { checkDatabaseConnection } from '@/server/db/connections/postgres';
 import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
 import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
 import { runIntegrationSync } from '@/server/integrations/runtime/runtime';
-import { syncTwitterData } from '@/server/integrations/twitter/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
@@ -122,7 +121,8 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
     case 'readwise':
     case 'raindrop':
     case 'adobe':
-    case 'feedbin': {
+    case 'feedbin':
+    case 'twitter': {
       const summary = await runIntegrationSync(integration, { debug });
       return {
         integration,
@@ -134,14 +134,6 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
     }
     case 'browsing': {
       await syncAllBrowserData(debug);
-      return {
-        integration,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'twitter': {
-      await syncTwitterData(debug);
       return {
         integration,
         success: true,

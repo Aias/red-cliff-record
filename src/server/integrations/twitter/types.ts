@@ -1,26 +1,16 @@
 import { z } from 'zod';
 
-// ===============================
-// URL Entity Schema (shared by users and tweets)
-// ===============================
-
-export const UrlEntitySchema = z.object({
+const UrlEntitySchema = z.object({
   display_url: z.string(),
   expanded_url: z.string(),
   url: z.string(),
   indices: z.tuple([z.number(), z.number()]),
 });
 
-// ===============================
-// User Schemas
-// ===============================
-
-export const UserLegacySchema = z.object({
-  // Core user identity fields (optional - may be missing for suspended/unavailable accounts)
+const UserLegacySchema = z.object({
   created_at: z.string().optional(),
   name: z.string().optional(),
   screen_name: z.string().optional(),
-  // Profile fields
   description: z.string().optional(),
   profile_banner_url: z.string().optional(),
   profile_image_url_https: z.string().optional(),
@@ -40,7 +30,6 @@ export const UserLegacySchema = z.object({
         .optional(),
     })
     .optional(),
-  // Additional fields that may be present
   default_profile: z.boolean().optional(),
   default_profile_image: z.boolean().optional(),
   fast_followers_count: z.number().optional(),
@@ -61,7 +50,7 @@ export const UserLegacySchema = z.object({
   withheld_in_countries: z.array(z.string()).optional(),
 });
 
-export const UserSchema = z.object({
+const UserSchema = z.object({
   __typename: z.string(),
   id: z.string(),
   rest_id: z.string(),
@@ -83,7 +72,6 @@ export const UserSchema = z.object({
       location: z.string().optional(),
     })
     .optional(),
-  // Additional fields that may be present
   affiliates_highlighted_label: z.unknown().optional(),
   business_account: z.unknown().optional(),
   has_graduated_access: z.boolean().optional(),
@@ -97,25 +85,21 @@ export const UserSchema = z.object({
   super_follow_eligible: z.boolean().optional(),
 });
 
-// ===============================
-// Media Schemas
-// ===============================
-
-export const VideoVariantSchema = z.object({
+const VideoVariantSchema = z.object({
   bitrate: z.number().optional(),
   content_type: z.string(),
   url: z.string(),
 });
 
-export const VideoInfoSchema = z.object({
+const VideoInfoSchema = z.object({
   aspect_ratio: z.tuple([z.number(), z.number()]),
   duration_millis: z.number().optional(),
   variants: z.array(VideoVariantSchema),
 });
 
-export const TwitterMediaTypeSchema = z.enum(['photo', 'video', 'animated_gif']);
+const TwitterMediaTypeSchema = z.enum(['photo', 'video', 'animated_gif']);
 
-export const MediaSchema = z.object({
+const MediaSchema = z.object({
   display_url: z.string(),
   expanded_url: z.string(),
   id_str: z.string(),
@@ -125,7 +109,6 @@ export const MediaSchema = z.object({
   type: TwitterMediaTypeSchema,
   url: z.string(),
   video_info: VideoInfoSchema.optional(),
-  // Additional optional fields
   ext_media_availability: z.any().optional(),
   sizes: z.any().optional(),
   original_info: z.any().optional(),
@@ -133,11 +116,7 @@ export const MediaSchema = z.object({
   media_results: z.any().optional(),
 });
 
-// ===============================
-// Note Tweet Schemas
-// ===============================
-
-export const NoteTweetSchema = z.object({
+const NoteTweetSchema = z.object({
   is_expandable: z.boolean(),
   note_tweet_results: z.object({
     result: z.object({
@@ -163,16 +142,11 @@ export const NoteTweetSchema = z.object({
   }),
 });
 
-// ===============================
-// Tweet Schemas
-// ===============================
-
-export const TweetLegacySchema = z.object({
+const TweetLegacySchema = z.object({
   created_at: z.string(),
   full_text: z.string(),
   user_id_str: z.string(),
   id_str: z.string(),
-  // Optional fields that may be present
   bookmark_count: z.number().optional(),
   bookmarked: z.boolean().optional(),
   conversation_control: z.any().optional(),
@@ -216,8 +190,7 @@ export const TweetLegacySchema = z.object({
   quote_count: z.number().optional(),
 });
 
-// Simplified approach - avoid recursive references for now
-export const TweetDataSchema = z.object({
+const TweetDataSchema = z.object({
   rest_id: z.string(),
   isQuoted: z.boolean().optional(),
   quotedTweetId: z.string().optional(),
@@ -228,13 +201,11 @@ export const TweetDataSchema = z.object({
   }),
   note_tweet: NoteTweetSchema.optional(),
   legacy: TweetLegacySchema,
-  // For quoted tweets, we'll just use any for now to avoid recursion
   quoted_status_result: z
     .object({
       result: z.any(),
     })
     .optional(),
-  // Additional fields from the API
   unmention_data: z.any().optional(),
   edit_control: z.any().optional(),
   previous_counts: z.any().optional(),
@@ -244,13 +215,13 @@ export const TweetDataSchema = z.object({
   grok_analysis_button: z.boolean().optional(),
 });
 
-export const TweetSchema = z
+const TweetSchema = z
   .object({
     __typename: z.literal('Tweet'),
   })
   .extend(TweetDataSchema.shape);
 
-export const TweetWithVisibilityResultsSchema = z.object({
+const TweetWithVisibilityResultsSchema = z.object({
   __typename: z.literal('TweetWithVisibilityResults'),
   tweet: TweetDataSchema,
   limitedActionResults: z.object({
@@ -258,17 +229,13 @@ export const TweetWithVisibilityResultsSchema = z.object({
   }),
 });
 
-// ===============================
-// Timeline Schemas
-// ===============================
-
-export const TimelineCursorSchema = z.object({
+const TimelineCursorSchema = z.object({
   __typename: z.literal('TimelineTimelineCursor'),
   cursorType: z.string().optional(),
   value: z.string().optional(),
 });
 
-export const TweetTombstoneSchema = z.object({
+const TweetTombstoneSchema = z.object({
   __typename: z.literal('TweetTombstone'),
 });
 
@@ -279,81 +246,14 @@ export const TimelineItemSchema = z.union([
   TweetTombstoneSchema,
 ]);
 
-export const TwitterBookmarkSchema = z.object({
-  entryId: z.string().optional(),
-  sortIndex: z.string().optional(),
-  content: z.object({
-    __typename: z.string(),
-    entryType: z.string().optional(),
-    itemContent: z
-      .object({
-        tweet_results: z.object({
-          result: TimelineItemSchema,
-        }),
-        itemType: z.string().optional(),
-        __typename: z.string().optional(),
-      })
-      .optional(),
-  }),
-});
-
-export const InstructionSchema = z.object({
-  type: z.string(),
-  entries: z.array(TwitterBookmarkSchema),
-});
-
-export const TwitterBookmarkResponseSchema = z.object({
-  url: z.string(),
-  timestamp: z.string(),
-  response: z.object({
-    data: z.object({
-      bookmark_timeline_v2: z.object({
-        timeline: z.object({
-          instructions: z.array(InstructionSchema),
-        }),
-      }),
-    }),
-  }),
-});
-
-export const TwitterBookmarksArraySchema = z.array(TwitterBookmarkResponseSchema);
-
-// ===============================
-// Inferred Types
-// ===============================
-
 export type UrlEntity = z.infer<typeof UrlEntitySchema>;
-export type UserLegacy = z.infer<typeof UserLegacySchema>;
 export type User = z.infer<typeof UserSchema>;
-
-export type VideoVariant = z.infer<typeof VideoVariantSchema>;
-export type VideoInfo = z.infer<typeof VideoInfoSchema>;
-export type TwitterMediaType = z.infer<typeof TwitterMediaTypeSchema>;
 export type Media = z.infer<typeof MediaSchema>;
-
-export type NoteTweet = z.infer<typeof NoteTweetSchema>;
-export type TweetLegacy = z.infer<typeof TweetLegacySchema>;
 export type TweetData = z.infer<typeof TweetDataSchema>;
 export type Tweet = z.infer<typeof TweetSchema>;
 export type TweetWithVisibilityResults = z.infer<typeof TweetWithVisibilityResultsSchema>;
-
-export type TimelineCursor = z.infer<typeof TimelineCursorSchema>;
-export type TweetTombstone = z.infer<typeof TweetTombstoneSchema>;
 export type TimelineItem = z.infer<typeof TimelineItemSchema>;
 
-export type TwitterBookmark = z.infer<typeof TwitterBookmarkSchema>;
-export type Instruction = z.infer<typeof InstructionSchema>;
-export type TwitterBookmarkResponse = z.infer<typeof TwitterBookmarkResponseSchema>;
-export type TwitterBookmarksArray = z.infer<typeof TwitterBookmarksArraySchema>;
-
-// ===============================
-// Raw API Response Schema
-// ===============================
-
-/**
- * Schema for the raw GraphQL API response from Twitter's Bookmarks endpoint.
- * This matches the actual API response before any transformation.
- */
 const RawBookmarkEntryContentSchema = z.object({
   __typename: z.string(),
   cursorType: z.string().optional(),
@@ -406,39 +306,64 @@ export const RawBookmarksApiResponseSchema = z.object({
     .optional(),
 });
 
-export type RawBookmarksApiResponse = z.infer<typeof RawBookmarksApiResponseSchema>;
-export type RawBookmarkEntry = z.infer<typeof RawBookmarkEntrySchema>;
+export const TweetDetailEnvelopeSchema = z.object({
+  data: z
+    .object({
+      tweetResult: z
+        .object({
+          result: z.unknown().optional(),
+        })
+        .optional(),
+      threaded_conversation_with_injections_v2: z
+        .object({
+          instructions: z
+            .array(
+              z.object({
+                entries: z
+                  .array(
+                    z.object({
+                      content: z
+                        .object({
+                          itemContent: z
+                            .object({
+                              tweet_results: z
+                                .object({
+                                  result: z.unknown().optional(),
+                                })
+                                .optional(),
+                            })
+                            .optional(),
+                        })
+                        .optional(),
+                    })
+                  )
+                  .optional(),
+              })
+            )
+            .optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+  errors: z
+    .array(
+      z.object({
+        message: z.string(),
+      })
+    )
+    .optional(),
+});
 
-// ===============================
-// Type Guards
-// ===============================
-
-/** Type guard to check if a TimelineItem is a Tweet */
 export function isTweet(item: TimelineItem): item is Tweet {
   return item.__typename === 'Tweet';
 }
 
-/** Type guard to check if a TimelineItem is a TweetWithVisibilityResults */
 export function isTweetWithVisibilityResults(
   item: TimelineItem
 ): item is TweetWithVisibilityResults {
   return item.__typename === 'TweetWithVisibilityResults';
 }
 
-/** Type guard to check if a TimelineItem is a TimelineCursor */
-export function isTimelineCursor(item: TimelineItem): item is TimelineCursor {
-  return item.__typename === 'TimelineTimelineCursor';
-}
-
-/** Type guard to check if a TimelineItem is a TweetTombstone */
-export function isTweetTombstone(item: TimelineItem): item is TweetTombstone {
-  return item.__typename === 'TweetTombstone';
-}
-
-/**
- * Extracts the tweet ID from a TimelineItem if it's a tweet type.
- * Returns undefined for cursors and tombstones.
- */
 export function extractTweetId(item: TimelineItem): string | undefined {
   if (isTweet(item)) {
     return item.rest_id;
@@ -447,13 +372,4 @@ export function extractTweetId(item: TimelineItem): string | undefined {
     return item.tweet.rest_id;
   }
   return undefined;
-}
-
-/**
- * Safely parses an unknown value as a TimelineItem.
- * Returns undefined if parsing fails.
- */
-export function parseTimelineItem(value: unknown): TimelineItem | undefined {
-  const result = TimelineItemSchema.safeParse(value);
-  return result.success ? result.data : undefined;
 }
