@@ -1,9 +1,9 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "0e5719f2-5140-45cf-9624-14132c6f1384",
+  "id": "b13c2c94-a6f0-4dad-a021-d516730815ae",
   "prevIds": [
-    "ba6fab1e-476d-4c3d-9d4a-d9f317319b70"
+    "00000000-0000-0000-0000-000000000000"
   ],
   "ddl": [
     {
@@ -136,7 +136,8 @@
         "pdf",
         "epub",
         "tweet",
-        "video"
+        "video",
+        "podcast"
       ],
       "name": "readwise_category",
       "entityType": "enums",
@@ -345,6 +346,12 @@
     {
       "isRlsEnabled": false,
       "name": "readwise_tags",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "elo_matchups",
       "entityType": "tables",
       "schema": "public"
     },
@@ -4887,6 +4894,84 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "record_a_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "record_b_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "winner_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "type": "record_type",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "record_type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "type": "serial",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "links"
     },
     {
@@ -5124,14 +5209,14 @@
       "table": "records"
     },
     {
-      "type": "smallint",
+      "type": "integer",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
-      "default": "0",
+      "default": "1200",
       "generated": null,
       "identity": null,
-      "name": "rating",
+      "name": "elo_score",
       "entityType": "columns",
       "schema": "public",
       "table": "records"
@@ -5150,14 +5235,14 @@
       "table": "records"
     },
     {
-      "type": "boolean",
+      "type": "timestamp with time zone",
       "typeSchema": null,
-      "notNull": true,
+      "notNull": false,
       "dimensions": 0,
-      "default": "false",
+      "default": null,
       "generated": null,
       "identity": null,
-      "name": "is_curated",
+      "name": "curated_at",
       "entityType": "columns",
       "schema": "public",
       "table": "records"
@@ -5184,6 +5269,22 @@
       "generated": null,
       "identity": null,
       "name": "sources",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "records"
+    },
+    {
+      "type": "tsvector",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": {
+        "as": "setweight(to_tsvector('english', coalesce(\"records\".\"title\", '') || ' ' || coalesce(\"records\".\"abbreviation\", '') || ' ' || coalesce(\"records\".\"sense\", '')), 'A') || setweight(to_tsvector('english', coalesce(\"records\".\"summary\", '') || ' ' || coalesce(\"records\".\"media_caption\", '')), 'B') || setweight(to_tsvector('english', left(coalesce(\"records\".\"content\", ''), 100000)), 'C') || setweight(to_tsvector('english', coalesce(\"records\".\"notes\", '') || ' ' || coalesce(\"records\".\"url\", '')), 'D')",
+        "type": "stored"
+      },
+      "identity": null,
+      "name": "text_search",
       "entityType": "columns",
       "schema": "public",
       "table": "records"
@@ -5249,6 +5350,19 @@
       "generated": null,
       "identity": null,
       "name": "text_embedding",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "records"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "text_embedded_at",
       "entityType": "columns",
       "schema": "public",
       "table": "records"
@@ -7211,6 +7325,69 @@
       "nameExplicit": false,
       "columns": [
         {
+          "value": "record_a_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "elo_matchups_record_a_id_index",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        {
+          "value": "record_b_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "elo_matchups_record_b_id_index",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        {
+          "value": "record_type",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "elo_matchups_record_type_index",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        {
           "value": "source_id",
           "isExpression": false,
           "asc": true,
@@ -7500,10 +7677,52 @@
       "table": "records"
     },
     {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "type",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "curated_at",
+          "isExpression": false,
+          "asc": false,
+          "nullsFirst": true,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": false,
+          "nullsFirst": true,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"curated_at\" is not null",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_records_curated_recency",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "records"
+    },
+    {
       "nameExplicit": false,
       "columns": [
         {
-          "value": "is_curated",
+          "value": "type",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "elo_score",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -7515,7 +7734,7 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "records_is_curated_index",
+      "name": "records_type_elo_score_index",
       "entityType": "indexes",
       "schema": "public",
       "table": "records"
@@ -7540,6 +7759,27 @@
       "method": "hnsw",
       "concurrently": false,
       "name": "records_text_embedding_index",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "records"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "text_search",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "gin",
+      "concurrently": false,
+      "name": "idx_records_text_search",
       "entityType": "indexes",
       "schema": "public",
       "table": "records"
@@ -7724,7 +7964,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "lightroom_images_integration_run_id_integration_runs_id_fk",
+      "name": "lightroom_images_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "lightroom_images"
@@ -7741,7 +7981,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "lightroom_images_record_id_records_id_fk",
+      "name": "lightroom_images_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "lightroom_images"
@@ -7758,7 +7998,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "lightroom_images_media_id_media_id_fk",
+      "name": "lightroom_images_media_id_media_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "lightroom_images"
@@ -7775,7 +8015,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "airtable_attachments_extract_id_airtable_extracts_id_fk",
+      "name": "airtable_attachments_extract_id_airtable_extracts_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_attachments"
@@ -7792,7 +8032,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "airtable_attachments_media_id_media_id_fk",
+      "name": "airtable_attachments_media_id_media_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_attachments"
@@ -7809,7 +8049,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "airtable_creators_integration_run_id_integration_runs_id_fk",
+      "name": "airtable_creators_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_creators"
@@ -7826,7 +8066,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "airtable_creators_record_id_records_id_fk",
+      "name": "airtable_creators_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_creators"
@@ -7877,7 +8117,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "airtable_extract_creators_extract_id_airtable_extracts_id_fk",
+      "name": "airtable_extract_creators_extract_id_airtable_extracts_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_extract_creators"
@@ -7894,7 +8134,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "airtable_extract_creators_creator_id_airtable_creators_id_fk",
+      "name": "airtable_extract_creators_creator_id_airtable_creators_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_extract_creators"
@@ -7911,7 +8151,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "airtable_extract_spaces_extract_id_airtable_extracts_id_fk",
+      "name": "airtable_extract_spaces_extract_id_airtable_extracts_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_extract_spaces"
@@ -7928,7 +8168,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "airtable_extract_spaces_space_id_airtable_spaces_id_fk",
+      "name": "airtable_extract_spaces_space_id_airtable_spaces_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_extract_spaces"
@@ -7945,7 +8185,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "airtable_extracts_format_id_airtable_formats_id_fk",
+      "name": "airtable_extracts_format_id_airtable_formats_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_extracts"
@@ -7962,7 +8202,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "airtable_extracts_parent_id_airtable_extracts_id_fk",
+      "name": "airtable_extracts_parent_id_airtable_extracts_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_extracts"
@@ -7979,7 +8219,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "airtable_extracts_integration_run_id_integration_runs_id_fk",
+      "name": "airtable_extracts_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_extracts"
@@ -7996,7 +8236,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "airtable_extracts_record_id_records_id_fk",
+      "name": "airtable_extracts_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_extracts"
@@ -8013,7 +8253,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "airtable_formats_integration_run_id_integration_runs_id_fk",
+      "name": "airtable_formats_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_formats"
@@ -8030,7 +8270,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "airtable_formats_record_id_records_id_fk",
+      "name": "airtable_formats_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_formats"
@@ -8047,7 +8287,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "airtable_spaces_integration_run_id_integration_runs_id_fk",
+      "name": "airtable_spaces_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_spaces"
@@ -8064,7 +8304,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "airtable_spaces_record_id_records_id_fk",
+      "name": "airtable_spaces_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "airtable_spaces"
@@ -8081,7 +8321,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "browsing_history_integration_run_id_integration_runs_id_fk",
+      "name": "browsing_history_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "browsing_history"
@@ -8098,7 +8338,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "feed_entries_feed_id_feeds_id_fk",
+      "name": "feed_entries_feed_id_feeds_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "feed_entries"
@@ -8115,7 +8355,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "feed_entries_record_id_records_id_fk",
+      "name": "feed_entries_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "feed_entries"
@@ -8132,7 +8372,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "feed_entries_integration_run_id_integration_runs_id_fk",
+      "name": "feed_entries_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "feed_entries"
@@ -8149,7 +8389,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "feeds_owner_id_records_id_fk",
+      "name": "feeds_owner_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "feeds"
@@ -8166,7 +8406,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "github_commit_changes_commit_id_github_commits_id_fk",
+      "name": "github_commit_changes_commit_id_github_commits_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "github_commit_changes"
@@ -8183,7 +8423,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "github_commits_repository_id_github_repositories_id_fk",
+      "name": "github_commits_repository_id_github_repositories_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "github_commits"
@@ -8200,7 +8440,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "github_commits_integration_run_id_integration_runs_id_fk",
+      "name": "github_commits_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "github_commits"
@@ -8217,7 +8457,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "github_repositories_owner_id_github_users_id_fk",
+      "name": "github_repositories_owner_id_github_users_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "github_repositories"
@@ -8234,7 +8474,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "github_repositories_integration_run_id_integration_runs_id_fk",
+      "name": "github_repositories_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "github_repositories"
@@ -8251,7 +8491,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "github_repositories_record_id_records_id_fk",
+      "name": "github_repositories_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "github_repositories"
@@ -8268,7 +8508,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "github_users_integration_run_id_integration_runs_id_fk",
+      "name": "github_users_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "github_users"
@@ -8285,7 +8525,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "github_users_record_id_records_id_fk",
+      "name": "github_users_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "github_users"
@@ -8302,7 +8542,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "media_record_id_records_id_fk",
+      "name": "media_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "media"
@@ -8319,7 +8559,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "media_version_of_media_id_media_id_fk",
+      "name": "media_version_of_media_id_media_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "media"
@@ -8336,7 +8576,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "raindrop_bookmark_tags_bookmark_id_raindrop_bookmarks_id_fk",
+      "name": "raindrop_bookmark_tags_bookmark_id_raindrop_bookmarks_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_bookmark_tags"
@@ -8353,7 +8593,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "raindrop_bookmark_tags_tag_id_raindrop_tags_id_fk",
+      "name": "raindrop_bookmark_tags_tag_id_raindrop_tags_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_bookmark_tags"
@@ -8370,7 +8610,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "raindrop_bookmarks_collection_id_raindrop_collections_id_fk",
+      "name": "raindrop_bookmarks_collection_id_raindrop_collections_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_bookmarks"
@@ -8387,7 +8627,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "raindrop_bookmarks_integration_run_id_integration_runs_id_fk",
+      "name": "raindrop_bookmarks_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_bookmarks"
@@ -8404,7 +8644,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "raindrop_bookmarks_record_id_records_id_fk",
+      "name": "raindrop_bookmarks_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_bookmarks"
@@ -8421,7 +8661,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "raindrop_collections_parent_id_raindrop_collections_id_fk",
+      "name": "raindrop_collections_parent_id_raindrop_collections_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_collections"
@@ -8438,7 +8678,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "raindrop_collections_integration_run_id_integration_runs_id_fk",
+      "name": "raindrop_collections_RartR9WGeuKw_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_collections"
@@ -8455,7 +8695,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "raindrop_collections_record_id_records_id_fk",
+      "name": "raindrop_collections_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_collections"
@@ -8506,7 +8746,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "raindrop_images_bookmark_id_raindrop_bookmarks_id_fk",
+      "name": "raindrop_images_bookmark_id_raindrop_bookmarks_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_images"
@@ -8523,7 +8763,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "raindrop_images_media_id_media_id_fk",
+      "name": "raindrop_images_media_id_media_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_images"
@@ -8540,7 +8780,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "raindrop_tags_record_id_records_id_fk",
+      "name": "raindrop_tags_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "raindrop_tags"
@@ -8557,7 +8797,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "readwise_authors_record_id_records_id_fk",
+      "name": "readwise_authors_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "readwise_authors"
@@ -8574,7 +8814,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "readwise_document_tags_document_id_readwise_documents_id_fk",
+      "name": "readwise_document_tags_document_id_readwise_documents_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "readwise_document_tags"
@@ -8591,7 +8831,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "readwise_document_tags_tag_id_readwise_tags_id_fk",
+      "name": "readwise_document_tags_tag_id_readwise_tags_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "readwise_document_tags"
@@ -8608,7 +8848,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "readwise_documents_author_id_readwise_authors_id_fk",
+      "name": "readwise_documents_author_id_readwise_authors_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "readwise_documents"
@@ -8625,7 +8865,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "readwise_documents_parent_id_readwise_documents_id_fk",
+      "name": "readwise_documents_parent_id_readwise_documents_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "readwise_documents"
@@ -8642,7 +8882,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "readwise_documents_integration_run_id_integration_runs_id_fk",
+      "name": "readwise_documents_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "readwise_documents"
@@ -8659,7 +8899,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "readwise_documents_record_id_records_id_fk",
+      "name": "readwise_documents_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "readwise_documents"
@@ -8676,10 +8916,61 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "readwise_tags_record_id_records_id_fk",
+      "name": "readwise_tags_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "readwise_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "record_a_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "records",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "elo_matchups_record_a_id_records_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "record_b_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "records",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "elo_matchups_record_b_id_records_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "elo_matchups"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "winner_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "records",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "name": "elo_matchups_winner_id_records_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "elo_matchups"
     },
     {
       "nameExplicit": false,
@@ -8693,7 +8984,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "links_source_id_records_id_fk",
+      "name": "links_source_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "links"
@@ -8710,7 +9001,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "links_target_id_records_id_fk",
+      "name": "links_target_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "links"
@@ -8727,7 +9018,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "twitter_media_tweet_id_twitter_tweets_id_fk",
+      "name": "twitter_media_tweet_id_twitter_tweets_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "twitter_media"
@@ -8744,7 +9035,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "twitter_media_media_id_media_id_fk",
+      "name": "twitter_media_media_id_media_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "twitter_media"
@@ -8761,7 +9052,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
-      "name": "twitter_tweets_user_id_twitter_users_id_fk",
+      "name": "twitter_tweets_user_id_twitter_users_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "twitter_tweets"
@@ -8778,7 +9069,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "twitter_tweets_quoted_tweet_id_twitter_tweets_id_fk",
+      "name": "twitter_tweets_quoted_tweet_id_twitter_tweets_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "twitter_tweets"
@@ -8812,7 +9103,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "twitter_tweets_integration_run_id_integration_runs_id_fk",
+      "name": "twitter_tweets_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "twitter_tweets"
@@ -8829,7 +9120,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "twitter_tweets_record_id_records_id_fk",
+      "name": "twitter_tweets_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "twitter_tweets"
@@ -8846,7 +9137,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "twitter_users_integration_run_id_integration_runs_id_fk",
+      "name": "twitter_users_integration_run_id_integration_runs_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "twitter_users"
@@ -8863,7 +9154,7 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
-      "name": "twitter_users_record_id_records_id_fk",
+      "name": "twitter_users_record_id_records_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "twitter_users"
@@ -8874,7 +9165,7 @@
         "to_extract_id"
       ],
       "nameExplicit": false,
-      "name": "airtable_extract_connections_from_extract_id_to_extract_id_pk",
+      "name": "airtable_extract_connections_pkey",
       "entityType": "pks",
       "schema": "public",
       "table": "airtable_extract_connections"
@@ -8885,7 +9176,7 @@
         "creator_id"
       ],
       "nameExplicit": false,
-      "name": "airtable_extract_creators_extract_id_creator_id_pk",
+      "name": "airtable_extract_creators_pkey",
       "entityType": "pks",
       "schema": "public",
       "table": "airtable_extract_creators"
@@ -8896,7 +9187,7 @@
         "space_id"
       ],
       "nameExplicit": false,
-      "name": "airtable_extract_spaces_extract_id_space_id_pk",
+      "name": "airtable_extract_spaces_pkey",
       "entityType": "pks",
       "schema": "public",
       "table": "airtable_extract_spaces"
@@ -9166,6 +9457,16 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "elo_matchups_pkey",
+      "schema": "public",
+      "table": "elo_matchups",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "links_pkey",
       "schema": "public",
       "table": "links",
@@ -9303,7 +9604,7 @@
         "name"
       ],
       "nullsNotDistinct": false,
-      "name": "airtable_formats_name_unique",
+      "name": "airtable_formats_name_key",
       "schema": "public",
       "table": "airtable_formats",
       "entityType": "uniques"
@@ -9314,7 +9615,7 @@
         "sha"
       ],
       "nullsNotDistinct": false,
-      "name": "github_commits_sha_unique",
+      "name": "github_commits_sha_key",
       "schema": "public",
       "table": "github_commits",
       "entityType": "uniques"
@@ -9325,7 +9626,7 @@
         "node_id"
       ],
       "nullsNotDistinct": false,
-      "name": "github_repositories_node_id_unique",
+      "name": "github_repositories_node_id_key",
       "schema": "public",
       "table": "github_repositories",
       "entityType": "uniques"
@@ -9336,7 +9637,7 @@
         "node_id"
       ],
       "nullsNotDistinct": false,
-      "name": "github_users_node_id_unique",
+      "name": "github_users_node_id_key",
       "schema": "public",
       "table": "github_users",
       "entityType": "uniques"
@@ -9347,7 +9648,7 @@
         "tag"
       ],
       "nullsNotDistinct": false,
-      "name": "raindrop_tags_tag_unique",
+      "name": "raindrop_tags_tag_key",
       "schema": "public",
       "table": "raindrop_tags",
       "entityType": "uniques"
@@ -9358,7 +9659,7 @@
         "tag"
       ],
       "nullsNotDistinct": false,
-      "name": "readwise_tags_tag_unique",
+      "name": "readwise_tags_tag_key",
       "schema": "public",
       "table": "readwise_tags",
       "entityType": "uniques"
@@ -9369,7 +9670,7 @@
         "slug"
       ],
       "nullsNotDistinct": false,
-      "name": "records_slug_unique",
+      "name": "records_slug_key",
       "schema": "public",
       "table": "records",
       "entityType": "uniques"
@@ -9380,7 +9681,7 @@
         "media_url"
       ],
       "nullsNotDistinct": false,
-      "name": "twitter_media_media_url_unique",
+      "name": "twitter_media_media_url_key",
       "schema": "public",
       "table": "twitter_media",
       "entityType": "uniques"
@@ -9391,7 +9692,7 @@
         "thumbnail_url"
       ],
       "nullsNotDistinct": false,
-      "name": "twitter_media_thumbnail_url_unique",
+      "name": "twitter_media_thumbnail_url_key",
       "schema": "public",
       "table": "twitter_media",
       "entityType": "uniques"
