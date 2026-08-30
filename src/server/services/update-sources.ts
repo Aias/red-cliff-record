@@ -116,10 +116,11 @@ const updateSources = Effect.gen(function* () {
   return { scanned, updated, failed } satisfies UpdateSourcesResult;
 });
 
-export const runUpdateSourcesIntegration = (): Promise<UpdateSourcesResult> =>
+export const runUpdateSourcesIntegration = (signal?: AbortSignal): Promise<UpdateSourcesResult> =>
   runAppEffect(
     updateSources.pipe(
       Effect.annotateLogs({ integration: 'enrich.sources' }),
       Effect.withLogSpan('enrich.sources')
-    )
+    ),
+    signal
   );

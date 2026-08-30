@@ -6,7 +6,7 @@ import { requireRunId, type IntegrationDef, type SyncSummary } from '../runtime/
 import { createRecordsFromGithubRepositories, createRecordsFromGithubUsers } from './map';
 import { githubClient } from './octokit';
 import { summarizeMissingCommits } from './summarize-commits';
-import { fetchNewCommits, persistCommits } from './sync-commits';
+import { fetchNewCommits, hydrateCommits, persistCommits } from './sync-commits';
 import { fetchNewStars, persistStars } from './sync-stars';
 import { updatePartialUsers } from './sync-users';
 
@@ -40,13 +40,14 @@ const commitsSync = Effect.gen(function* () {
   const octokit = yield* githubClient;
   const items = yield* fetchNewCommits(octokit);
   yield* Effect.logInfo(`Fetched ${items.length} commits from search`);
+  const hydration = yield* hydrateCommits(octokit, items);
   const sink = yield* DebugSink;
   if (sink.enabled) {
     yield* Effect.logInfo('Debug mode: skipping database writes');
-    return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
+    return { entriesCreated: 0, failures: hydration.failures } satisfies SyncSummary;
   }
   const runId = yield* requireRunId;
-  const commitSummary = yield* persistCommits(octokit, items, runId);
+  const commitSummary = yield* persistCommits(hydration, runId);
   const summaries = yield* summarizeMissingCommits;
   const reconcileFailures = yield* reconcileGithubEntities(octokit);
   return {

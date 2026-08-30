@@ -66,8 +66,7 @@ describe('makeApiClient', () => {
       runWithVirtualTime(program).pipe(Effect.provide(testLayers(stub)))
     );
     expect(Result.isFailure(result)).toBe(true);
-    expect(stub.attempts()).toBeGreaterThan(1);
-    expect(stub.attempts()).toBeLessThan(50);
+    expect(stub.attempts()).toBe(6);
   });
 
   test('a persistent 500 fails after bounded transient retries', async () => {
@@ -80,8 +79,7 @@ describe('makeApiClient', () => {
       runWithVirtualTime(program).pipe(Effect.provide(testLayers(stub)))
     );
     expect(Result.isFailure(result)).toBe(true);
-    expect(stub.attempts()).toBeGreaterThan(1);
-    expect(stub.attempts()).toBeLessThan(50);
+    expect(stub.attempts()).toBe(4);
   });
 
   test('recovers when a 429 is followed by success', async () => {
@@ -92,6 +90,29 @@ describe('makeApiClient', () => {
     );
     const program = Effect.gen(function* () {
       const api = yield* client;
+      return yield* api.get('/things');
+    });
+    const result = await Effect.runPromise(
+      runWithVirtualTime(program).pipe(Effect.provide(testLayers(stub)))
+    );
+    expect(Result.isSuccess(result)).toBe(true);
+    expect(stub.attempts()).toBe(2);
+  });
+
+  test('does not apply the request timeout to rate-limit waits', async () => {
+    const stub = makeHttpStub((attempt) =>
+      attempt === 1
+        ? new Response('rate limited', { status: 429, headers: { 'retry-after': '60' } })
+        : new Response('{"ok":true}', { status: 200 })
+    );
+    const timedClient = makeApiClient({
+      baseUrl: 'https://api.example.com',
+      authorization: { scheme: 'Bearer', token: Redacted.make('secret') },
+      rateLimit: { key: 'test', limit: 1000, window: '1 minute' },
+      requestTimeout: '30 seconds',
+    });
+    const program = Effect.gen(function* () {
+      const api = yield* timedClient;
       return yield* api.get('/things');
     });
     const result = await Effect.runPromise(

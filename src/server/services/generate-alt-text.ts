@@ -116,6 +116,8 @@ export interface GenerateAltTextOptions {
   force?: boolean;
   /** Do not write to the database (generate + return only) */
   dryRun?: boolean;
+  /** Optional external signal; aborting stops new items and aborts in-flight generation */
+  signal?: AbortSignal;
 }
 
 export interface GenerateAltTextResult {
@@ -814,6 +816,7 @@ export async function generateAltText(
     items: mediaIds,
     concurrency: 10,
     timeoutMs: ALT_TEXT_WORKER_TIMEOUT_MS,
+    signal: options.signal,
     worker: async (mediaId, _index, signal) => {
       const internalOptions: GenerateAltTextInternalOptions = { ...options, signal };
       try {
@@ -875,6 +878,8 @@ export interface AltTextSyncOptions {
   limit?: number;
   /** If true, do not write; output results to `.temp/` */
   debug?: boolean;
+  /** Optional external signal; aborting stops new items and aborts in-flight generation */
+  signal?: AbortSignal;
 }
 
 export interface AltTextSyncResult {
@@ -893,7 +898,7 @@ export interface AltTextSyncResult {
 async function generateMissingAltText(
   options: AltTextSyncOptions = {}
 ): Promise<AltTextSyncResult> {
-  const { limit = 100, debug = false } = options;
+  const { limit = 100, debug = false, signal } = options;
 
   logger.start(`Generating alt text for up to ${limit} media items without descriptions`);
 
@@ -923,7 +928,7 @@ async function generateMissingAltText(
   logger.info(`Found ${mediaWithoutAltText.length} media items to process`);
 
   const mediaIds = mediaWithoutAltText.map((m) => m.id);
-  const results = await generateAltText(mediaIds, { dryRun: debug });
+  const results = await generateAltText(mediaIds, { dryRun: debug, signal });
 
   const summary = {
     total: results.length,

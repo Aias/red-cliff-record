@@ -1,6 +1,6 @@
 import { githubCommits, GithubCommitTypeSchema } from '@hozo';
 import { eq } from 'drizzle-orm';
-import { Effect } from 'effect';
+import { Array as Arr, Effect } from 'effect';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { getOpenAIClient, OPENAI_MODEL } from '@/server/lib/openai';
@@ -119,7 +119,7 @@ export const summarizeMissingCommits = Effect.gen(function* () {
   );
   if (commits.length === 0) {
     yield* Effect.logInfo('No commits to summarize');
-    return { summarized: 0, failures: [] as Array<ItemFailure> };
+    return { summarized: 0, failures: Arr.empty<ItemFailure>() };
   }
   yield* Effect.logInfo(`Summarizing ${commits.length} commits`);
   const results = yield* forEachCollect(commits, {

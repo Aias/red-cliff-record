@@ -1,5 +1,5 @@
 import { readwiseDocuments, type ReadwiseDocumentInsert } from '@hozo';
-import { Config, Effect, Option, Stream } from 'effect';
+import { Config, Effect, Option, Stream, Tuple } from 'effect';
 import { Database, legacyOperation } from '../runtime/db';
 import { DebugSink } from '../runtime/debug';
 import { makeApiClient } from '../runtime/http';
@@ -49,12 +49,13 @@ const getMostRecentUpdateTime = Effect.gen(function* () {
 });
 
 const justAfter = (date: Date) => new Date(date.getTime() + 1);
+const firstPageCursor = (): string | null => null;
 
 const fetchAllDocuments = (updatedAfter: Date | null) =>
   Effect.gen(function* () {
     const client = yield* readwiseClient;
     const sink = yield* DebugSink;
-    const pages = Stream.paginate(null as string | null, (pageCursor) =>
+    const pages = Stream.paginate(firstPageCursor(), (pageCursor) =>
       Effect.gen(function* () {
         const urlParams: Record<string, string> = { withHtmlContent: 'true' };
         if (pageCursor) urlParams.pageCursor = pageCursor;
@@ -66,10 +67,10 @@ const fetchAllDocuments = (updatedAfter: Date | null) =>
         yield* sink.capture(json);
         const page = yield* decodePage(json);
         yield* Effect.logInfo(`Retrieved ${page.results.length} documents`);
-        return [
+        return Tuple.make(
           page.results,
-          page.nextPageCursor ? Option.some(page.nextPageCursor) : Option.none<string | null>(),
-        ] as const;
+          page.nextPageCursor ? Option.some(page.nextPageCursor) : Option.none<string | null>()
+        );
       })
     );
     return yield* Stream.runCollect(pages);

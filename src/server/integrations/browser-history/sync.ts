@@ -303,7 +303,7 @@ const syncBrowser = (spec: BrowserSpec, hostname: string) =>
       })
     );
     yield* Effect.logInfo(`Retrieved ${rawHistory.length} new history entries`);
-    yield* sink.capture(rawHistory);
+    yield* sink.capture({ browser: spec.name, entries: rawHistory });
     const dailyHistory = yield* decodeDailyVisits(rawHistory);
     const collapsedHistory = collapseSequentialVisits(dailyHistory);
     yield* Effect.logInfo(`Collapsed into ${collapsedHistory.length} entries`);
@@ -361,10 +361,9 @@ const sync = Effect.gen(function* () {
   if (!sink.enabled) {
     yield* checkHostname(hostname);
   }
-  const results = yield* forEachCollect(BROWSERS, {
-    concurrency: BROWSERS.length,
-    label: (spec) => spec.displayName,
-    worker: (spec) =>
+  const results = yield* Effect.forEach(
+    BROWSERS,
+    (spec) =>
       syncBrowser(spec, hostname).pipe(
         Effect.catchTag('BrowserNotInstalledError', (error) =>
           Effect.logWarning(`${error.message} Skipping ${spec.displayName} sync.`).pipe(
@@ -373,10 +372,11 @@ const sync = Effect.gen(function* () {
         ),
         Effect.annotateLogs({ browser: spec.name })
       ),
-  });
+    { concurrency: BROWSERS.length }
+  );
   return {
-    entriesCreated: results.successes.reduce((sum, summary) => sum + summary.entriesCreated, 0),
-    failures: [...results.successes.flatMap((summary) => summary.failures), ...results.failures],
+    entriesCreated: results.reduce((sum, summary) => sum + summary.entriesCreated, 0),
+    failures: results.flatMap((summary) => summary.failures),
   } satisfies SyncSummary;
 });
 

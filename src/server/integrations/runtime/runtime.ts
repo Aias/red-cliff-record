@@ -19,11 +19,12 @@ const appLayers = Layer.mergeAll(
 );
 
 export const runAppEffect = async <A, E>(
-  effect: Effect.Effect<A, E, Layer.Success<typeof appLayers>>
+  effect: Effect.Effect<A, E, Layer.Success<typeof appLayers>>,
+  signal?: AbortSignal
 ): Promise<A> => {
   const runtime = ManagedRuntime.make(appLayers);
   try {
-    const exit = await runtime.runPromiseExit(effect);
+    const exit = await runtime.runPromiseExit(effect, { signal });
     if (Exit.isSuccess(exit)) return exit.value;
     throw new Error(causeMessage(exit.cause));
   } finally {
@@ -33,13 +34,14 @@ export const runAppEffect = async <A, E>(
 
 export const runIntegrationSync = (
   name: RegisteredIntegration,
-  options: SyncOneOptions
-): Promise<SyncSummary> => runAppEffect(syncOne(name, options));
+  options: SyncOneOptions & { readonly signal?: AbortSignal }
+): Promise<SyncSummary> => runAppEffect(syncOne(name, options), options.signal);
 
 export const runTrackedEnrichment = (
   integrationType: IntegrationType,
   operation: string,
-  work: () => Promise<number>
+  work: () => Promise<number>,
+  signal?: AbortSignal
 ): Promise<SyncSummary> =>
   runAppEffect(
     withRun(
@@ -48,5 +50,6 @@ export const runTrackedEnrichment = (
         try: work,
         catch: (cause) => new DbError({ operation, cause }),
       }).pipe(Effect.map((entriesCreated) => ({ entriesCreated, failures: [] })))
-    ).pipe(Effect.annotateLogs({ integration: operation }), Effect.withLogSpan(operation))
+    ).pipe(Effect.annotateLogs({ integration: operation }), Effect.withLogSpan(operation)),
+    signal
   );

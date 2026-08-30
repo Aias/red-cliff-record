@@ -8,17 +8,30 @@ import {
 } from '@hozo';
 import type { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';
-import { Array as Arr, Effect, Option, Stream } from 'effect';
+import { Array as Arr, Effect, Option, Stream, Tuple } from 'effect';
 import { db } from '@/server/db/connections/postgres';
 import { Database } from '../runtime/db';
 import { DebugSink } from '../runtime/debug';
 import { ApiRequestError } from '../runtime/errors';
-import { forEachCollect, type SyncSummary } from '../runtime/run';
+import { forEachCollect, type ItemFailure, type SyncSummary } from '../runtime/run';
 import { ensureGithubUserExists } from './sync-users';
 import { toGithubId } from './types';
 
 type GithubRepository = Endpoints['GET /repos/{owner}/{repo}']['response']['data'];
 type CommitSearchItem = Endpoints['GET /search/commits']['response']['data']['items'][number];
+type DetailedCommit = Endpoints['GET /repos/{owner}/{repo}/commits/{ref}']['response']['data'];
+
+interface HydratedCommit {
+  readonly item: CommitSearchItem;
+  readonly repository: GithubRepository;
+  readonly detail: DetailedCommit;
+}
+
+interface CommitHydration {
+  readonly candidateCount: number;
+  readonly commits: ReadonlyArray<HydratedCommit>;
+  readonly failures: ReadonlyArray<ItemFailure>;
+}
 
 const MAX_PATCH_LENGTH = 2048;
 const PER_PAGE = 100;
@@ -74,13 +87,13 @@ export const fetchNewCommits = (octokit: Octokit) =>
         yield* sink.capture(items);
         yield* Effect.logInfo(`Retrieved ${items.length} commits (page ${page})`);
         const hasMore = items.length === PER_PAGE && page < MAX_SEARCH_PAGES;
-        return [items, hasMore ? Option.some(page + 1) : Option.none<number>()] as const;
+        return Tuple.make(items, hasMore ? Option.some(page + 1) : Option.none<number>());
       })
     );
     return yield* Stream.runCollect(pages);
   });
 
-const makeCommitProcessor = (octokit: Octokit, integrationRunId: number) => {
+const makeCommitHydrator = (octokit: Octokit) => {
   const repositoryDataCache = new Map<string, Promise<GithubRepository>>();
   const getRepositoryData = (owner: string, repo: string): Promise<GithubRepository> => {
     const key = `${owner}/${repo}`;
@@ -92,24 +105,39 @@ const makeCommitProcessor = (octokit: Octokit, integrationRunId: number) => {
     return cached;
   };
 
-  const ensureRepositoryExists = async (repoData: GithubRepository): Promise<number> => {
-    await ensureGithubUserExists(repoData.owner, integrationRunId);
+  return async (item: CommitSearchItem): Promise<Option.Option<HydratedCommit>> => {
+    const repository = await getRepositoryData(item.repository.owner.login, item.repository.name);
+    if (repository.fork && new Date(item.commit.author.date) < new Date(repository.created_at)) {
+      return Option.none();
+    }
+    const detail = await octokit.rest.repos.getCommit({
+      owner: item.repository.owner.login,
+      repo: item.repository.name,
+      ref: item.sha,
+    });
+    return Option.some({ item, repository, detail: detail.data });
+  };
+};
+
+const makeCommitPersister = (integrationRunId: number) => {
+  const ensureRepositoryExists = async (repository: GithubRepository): Promise<number> => {
+    await ensureGithubUserExists(repository.owner, integrationRunId);
     const newRepo: GithubRepositoryInsert = {
-      id: toGithubId(repoData.id),
-      nodeId: repoData.node_id,
-      name: repoData.name,
-      fullName: repoData.full_name,
-      ownerId: toGithubId(repoData.owner.id),
-      private: repoData.private,
-      htmlUrl: repoData.html_url,
-      homepageUrl: repoData.homepage,
-      licenseName: repoData.license?.name,
-      description: repoData.description,
-      language: repoData.language,
-      topics: repoData.topics,
+      id: toGithubId(repository.id),
+      nodeId: repository.node_id,
+      name: repository.name,
+      fullName: repository.full_name,
+      ownerId: toGithubId(repository.owner.id),
+      private: repository.private,
+      htmlUrl: repository.html_url,
+      homepageUrl: repository.homepage,
+      licenseName: repository.license?.name,
+      description: repository.description,
+      language: repository.language,
+      topics: repository.topics,
       integrationRunId,
-      contentCreatedAt: new Date(repoData.created_at),
-      contentUpdatedAt: new Date(repoData.updated_at),
+      contentCreatedAt: new Date(repository.created_at),
+      contentUpdatedAt: new Date(repository.updated_at),
     };
     await db
       .insert(githubRepositories)
@@ -118,31 +146,22 @@ const makeCommitProcessor = (octokit: Octokit, integrationRunId: number) => {
         target: githubRepositories.id,
         set: { ...newRepo, recordUpdatedAt: new Date() },
       });
-    return toGithubId(repoData.id);
+    return toGithubId(repository.id);
   };
 
   const ensuredRepositories = new Map<number, Promise<number>>();
-  const ensureRepositoryOnce = (repoData: GithubRepository): Promise<number> => {
-    const repositoryId = toGithubId(repoData.id);
+  const ensureRepositoryOnce = (repository: GithubRepository): Promise<number> => {
+    const repositoryId = toGithubId(repository.id);
     let ensured = ensuredRepositories.get(repositoryId);
     if (!ensured) {
-      ensured = ensureRepositoryExists(repoData);
+      ensured = ensureRepositoryExists(repository);
       ensuredRepositories.set(repositoryId, ensured);
     }
     return ensured;
   };
 
-  return async (item: CommitSearchItem): Promise<'inserted' | 'skipped'> => {
-    const repoData = await getRepositoryData(item.repository.owner.login, item.repository.name);
-    if (repoData.fork && new Date(item.commit.author.date) < new Date(repoData.created_at)) {
-      return 'skipped';
-    }
-    const detailedCommit = await octokit.rest.repos.getCommit({
-      owner: item.repository.owner.login,
-      repo: item.repository.name,
-      ref: item.sha,
-    });
-    await ensureRepositoryOnce(repoData);
+  return async ({ item, repository, detail }: HydratedCommit): Promise<void> => {
+    await ensureRepositoryOnce(repository);
     const newCommit: GithubCommitInsert = {
       id: item.node_id,
       sha: item.sha,
@@ -152,12 +171,12 @@ const makeCommitProcessor = (octokit: Octokit, integrationRunId: number) => {
       committedAt: item.commit.committer?.date ? new Date(item.commit.committer.date) : null,
       contentCreatedAt: new Date(item.commit.author.date),
       integrationRunId,
-      changes: detailedCommit.data.stats?.total ?? null,
-      additions: detailedCommit.data.stats?.additions ?? null,
-      deletions: detailedCommit.data.stats?.deletions ?? null,
+      changes: detail.stats?.total ?? null,
+      additions: detail.stats?.additions ?? null,
+      deletions: detail.stats?.deletions ?? null,
     };
     await db.insert(githubCommits).values(newCommit);
-    const files = detailedCommit.data.files ?? [];
+    const files = detail.files ?? [];
     if (files.length > 0) {
       const newChanges: Array<GithubCommitChangeInsert> = files.map((file) => ({
         filename: file.filename,
@@ -170,51 +189,87 @@ const makeCommitProcessor = (octokit: Octokit, integrationRunId: number) => {
       }));
       await db.insert(githubCommitChanges).values(newChanges);
     }
-    return 'inserted';
   };
 };
 
-export const persistCommits = (
-  octokit: Octokit,
-  items: ReadonlyArray<CommitSearchItem>,
-  runId: number
-) =>
+export const hydrateCommits = (octokit: Octokit, items: ReadonlyArray<CommitSearchItem>) =>
   Effect.gen(function* () {
     const database = yield* Database;
+    const sink = yield* DebugSink;
     const existingShas = new Set<string>();
-    for (const chunk of Arr.chunksOf(
-      items.map((item) => item.sha),
-      SHA_CHUNK_SIZE
-    )) {
-      const rows = yield* database.use('githubCommits.existing', (client) =>
-        client.query.githubCommits.findMany({
-          columns: { sha: true },
-          where: { sha: { in: chunk } },
-        })
-      );
-      for (const row of rows) {
-        existingShas.add(row.sha);
+    if (!sink.enabled) {
+      for (const chunk of Arr.chunksOf(
+        items.map((item) => item.sha),
+        SHA_CHUNK_SIZE
+      )) {
+        const rows = yield* database.use('githubCommits.existing', (client) =>
+          client.query.githubCommits.findMany({
+            columns: { sha: true },
+            where: { sha: { in: chunk } },
+          })
+        );
+        for (const row of rows) {
+          existingShas.add(row.sha);
+        }
       }
     }
-    const newItems = items.filter((item) => !existingShas.has(item.sha));
+    const candidates = sink.enabled ? items : items.filter((item) => !existingShas.has(item.sha));
     yield* Effect.logInfo(
-      `Processing ${newItems.length} new commits (${existingShas.size} already exist)`
+      sink.enabled
+        ? `Hydrating ${candidates.length} commits for debug validation`
+        : `Processing ${candidates.length} new commits (${existingShas.size} already exist)`
     );
-    if (newItems.length === 0) {
-      return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
+    if (candidates.length === 0) {
+      return {
+        candidateCount: 0,
+        commits: [],
+        failures: [],
+      } satisfies CommitHydration;
     }
-    const processItem = makeCommitProcessor(octokit, runId);
-    const results = yield* forEachCollect(newItems, {
+    const hydrateItem = makeCommitHydrator(octokit);
+    const results = yield* forEachCollect(candidates, {
       concurrency: COMMIT_CONCURRENCY,
       label: (item) => `${item.repository.full_name}@${item.sha.slice(0, 7)}`,
       worker: (item) =>
         Effect.tryPromise({
-          try: () => processItem(item),
+          try: () => hydrateItem(item),
           catch: (cause) =>
             new ApiRequestError({ resource: `github commit ${item.sha.slice(0, 7)}`, cause }),
         }),
     });
-    const inserted = results.successes.filter((status) => status === 'inserted').length;
-    yield* Effect.logInfo(`Inserted ${inserted} of ${newItems.length} commits`);
-    return { entriesCreated: inserted, failures: results.failures } satisfies SyncSummary;
+    const commits = Arr.getSomes(results.successes);
+    for (const { repository, detail } of commits) {
+      yield* sink.capture({ repository, commit: detail });
+    }
+    yield* Effect.logInfo(`Hydrated ${commits.length} of ${candidates.length} commits`);
+    return {
+      candidateCount: candidates.length,
+      commits,
+      failures: results.failures,
+    } satisfies CommitHydration;
+  });
+
+export const persistCommits = (hydration: CommitHydration, runId: number) =>
+  Effect.gen(function* () {
+    const persistCommit = makeCommitPersister(runId);
+    const results = yield* forEachCollect(hydration.commits, {
+      concurrency: COMMIT_CONCURRENCY,
+      label: ({ item }) => `${item.repository.full_name}@${item.sha.slice(0, 7)}`,
+      worker: (commit) =>
+        Effect.tryPromise({
+          try: () => persistCommit(commit),
+          catch: (cause) =>
+            new ApiRequestError({
+              resource: `github commit ${commit.item.sha.slice(0, 7)}`,
+              cause,
+            }),
+        }),
+    });
+    yield* Effect.logInfo(
+      `Inserted ${results.successes.length} of ${hydration.candidateCount} commits`
+    );
+    return {
+      entriesCreated: results.successes.length,
+      failures: [...hydration.failures, ...results.failures],
+    } satisfies SyncSummary;
   });

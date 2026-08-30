@@ -1,9 +1,9 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { Config, Effect, Redacted, Result } from 'effect';
-import { HttpClient } from 'effect/unstable/http';
-import { RateLimiter } from 'effect/unstable/persistence';
+import { HttpClientError } from 'effect/unstable/http';
 import { DebugSink } from '../runtime/debug';
-import { ApiRequestError, describeError } from '../runtime/errors';
+import { ApiRequestError } from '../runtime/errors';
+import { makeApiClient } from '../runtime/http';
 import { decodeZod } from '../runtime/zod';
 import { buildBookmarksFeatures, buildTweetDetailFeatures } from './features';
 import {
@@ -19,14 +19,15 @@ const BEARER_TOKEN =
 
 const TWITTER_API_BASE = 'https://x.com/i/api/graphql';
 
-const QUERY_IDS = {
+type TwitterOperation = 'Bookmarks' | 'TweetDetail';
+
+const QUERY_IDS: Record<TwitterOperation, ReadonlyArray<string>> = {
   Bookmarks: ['RV1g3b8n_SGOHwkqKYSCFw', 'tmd4ifV8RHltzn8ymGg1aw'],
   TweetDetail: ['97JF30KziU00483E_8elBA', '_NvJCnIjOW__EP5-RF197A'],
-} as const;
+};
 
 const PAGE_SIZE = 20;
 const REQUEST_TIMEOUT = '30 seconds';
-const MAX_RATE_LIMIT_RETRIES = 2;
 
 const decodeBookmarksResponse = decodeZod(RawBookmarksApiResponseSchema, 'twitter bookmarks');
 const decodeTweetDetailResponse = decodeZod(TweetDetailEnvelopeSchema, 'twitter tweet detail');
@@ -55,6 +56,11 @@ type AttemptOutcome =
   | { readonly kind: 'advance'; readonly reason: string }
   | { readonly kind: 'fatal'; readonly error: ApiRequestError };
 
+const hasStatus = (error: unknown, status: number) =>
+  HttpClientError.isHttpClientError(error) &&
+  error.reason._tag === 'StatusCodeError' &&
+  error.reason.response.status === status;
+
 const parseTimelineItems = (
   rawResults: ReadonlyArray<unknown>
 ): Effect.Effect<Array<TimelineItem>> =>
@@ -80,19 +86,16 @@ const parseTimelineItems = (
 export const twitterClient = Effect.gen(function* () {
   const authToken = yield* cookieConfig('TWITTER_AUTH_TOKEN', 'auth_token');
   const ct0 = yield* cookieConfig('TWITTER_CT0', 'ct0');
-  const limiter = yield* RateLimiter.RateLimiter;
-  const http = HttpClient.withRateLimiter(yield* HttpClient.HttpClient, {
-    limiter,
-    key: 'twitter',
-    limit: 120,
-    window: '1 minute',
-    times: MAX_RATE_LIMIT_RETRIES,
+  const http = yield* makeApiClient({
+    baseUrl: TWITTER_API_BASE,
+    authorization: { scheme: 'Bearer', token: Redacted.make(BEARER_TOKEN) },
+    rateLimit: { key: 'twitter', limit: 120, window: '1 minute' },
+    requestTimeout: REQUEST_TIMEOUT,
   });
   const clientUuid = randomUUID();
   const baseHeaders = {
     accept: '*/*',
     'accept-language': 'en-US,en;q=0.9',
-    authorization: `Bearer ${BEARER_TOKEN}`,
     'x-csrf-token': Redacted.value(ct0),
     'x-twitter-auth-type': 'OAuth2Session',
     'x-twitter-active-user': 'yes',
@@ -106,46 +109,41 @@ export const twitterClient = Effect.gen(function* () {
     'content-type': 'application/json',
   };
 
-  const attempt = (url: string): Effect.Effect<AttemptOutcome> =>
+  const attempt = (path: string): Effect.Effect<AttemptOutcome> =>
     Effect.gen(function* () {
       const headers = {
         ...baseHeaders,
         'x-client-transaction-id': randomBytes(16).toString('hex'),
       };
-      const result = yield* http
-        .get(url, { headers })
-        .pipe(Effect.timeout(REQUEST_TIMEOUT), Effect.result);
+      const result = yield* http.get(path, { headers }).pipe(Effect.result);
       if (Result.isFailure(result)) {
-        return { kind: 'advance', reason: describeError(result.failure) } as const;
-      }
-      const response = result.success;
-      if (response.status === 404) {
-        return { kind: 'advance', reason: 'HTTP 404' } as const;
-      }
-      if (response.status < 200 || response.status >= 300) {
-        const text = yield* response.text.pipe(Effect.catch(() => Effect.succeed('')));
+        if (hasStatus(result.failure, 404)) {
+          return { kind: 'advance', reason: 'HTTP 404' } satisfies AttemptOutcome;
+        }
         return {
           kind: 'fatal',
           error: new ApiRequestError({
-            resource: url,
-            cause: new Error(`HTTP ${response.status}: ${text.slice(0, 200)}`),
+            resource: path,
+            cause: result.failure,
           }),
-        } as const;
+        } satisfies AttemptOutcome;
       }
+      const response = result.success;
       const json = yield* response.json.pipe(Effect.result);
       if (Result.isFailure(json)) {
-        return { kind: 'advance', reason: describeError(json.failure) } as const;
+        return {
+          kind: 'fatal',
+          error: new ApiRequestError({ resource: path, cause: json.failure }),
+        } satisfies AttemptOutcome;
       }
-      return { kind: 'json', json: json.success } as const;
+      return { kind: 'json', json: json.success } satisfies AttemptOutcome;
     });
 
   const requestJson = (operation: keyof typeof QUERY_IDS, params: URLSearchParams) =>
     Effect.gen(function* () {
       let lastReason = 'no query IDs configured';
       for (const queryId of QUERY_IDS[operation]) {
-        const outcome = yield* attempt(
-          `${TWITTER_API_BASE}/${queryId}/${operation}?${params.toString()}`
-        );
+        const outcome = yield* attempt(`/${queryId}/${operation}?${params.toString()}`);
         if (outcome.kind === 'json') return outcome.json;
         if (outcome.kind === 'fatal') return yield* Effect.fail(outcome.error);
         lastReason = outcome.reason;

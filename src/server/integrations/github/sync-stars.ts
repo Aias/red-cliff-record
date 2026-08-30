@@ -1,6 +1,6 @@
 import { githubRepositories, type GithubRepositoryInsert } from '@hozo';
 import type { Octokit } from '@octokit/rest';
-import { Effect, Option, Stream } from 'effect';
+import { Effect, Option, Stream, Tuple } from 'effect';
 import { Database } from '../runtime/db';
 import { DebugSink } from '../runtime/debug';
 import { ApiRequestError, DbError } from '../runtime/errors';
@@ -53,7 +53,7 @@ export const fetchNewStars = (octokit: Octokit) =>
         );
         const reachedExisting = newStars.length < stars.length;
         const hasMore = stars.length === PAGE_SIZE && !reachedExisting;
-        return [newStars, hasMore ? Option.some(page + 1) : Option.none<number>()] as const;
+        return Tuple.make(newStars, hasMore ? Option.some(page + 1) : Option.none<number>());
       })
     );
     return yield* Stream.runCollect(pages);

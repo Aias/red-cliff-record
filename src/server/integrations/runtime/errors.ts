@@ -1,4 +1,4 @@
-import { Data, type Config } from 'effect';
+import { Data, type Cause, type Config } from 'effect';
 import type { HttpClientError } from 'effect/unstable/http';
 import type { RateLimiter } from 'effect/unstable/persistence';
 import type { z } from 'zod';
@@ -27,6 +27,7 @@ export type IntegrationError =
   | ApiValidationError
   | DbError
   | SyncPreconditionError
+  | Cause.TimeoutError
   | HttpClientError.HttpClientError
   | Config.ConfigError
   | RateLimiter.RateLimiterError;

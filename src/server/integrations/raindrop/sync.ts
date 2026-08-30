@@ -8,7 +8,7 @@ import {
   type RaindropCollectionInsert,
   type RaindropHighlightInsert,
 } from '@hozo';
-import { Config, Effect, Option, Stream } from 'effect';
+import { Config, Effect, Option, Stream, Tuple } from 'effect';
 import type { z } from 'zod';
 import { Database, legacyOperation } from '../runtime/db';
 import { DebugSink } from '../runtime/debug';
@@ -58,11 +58,10 @@ const fetchCollections = Effect.gen(function* () {
       const parsed = yield* decodeCollections(json);
       return parsed.items;
     });
-  const root = yield* fetchPath('/collections');
+  const roots = yield* fetchPath('/collections');
   const children = yield* fetchPath('/collections/childrens');
-  const all = [...root, ...children];
-  yield* Effect.logInfo(`Retrieved ${all.length} total collections`);
-  return all;
+  yield* Effect.logInfo(`Retrieved ${roots.length + children.length} total collections`);
+  return { roots, children };
 });
 
 const getLastSyncDate = Effect.gen(function* () {
@@ -99,14 +98,14 @@ const fetchNewRaindrops = (lastKnownDate: Date | undefined) =>
           const newItems = parsed.items.filter(
             ({ lastUpdate }) => !lastKnownDate || lastUpdate > lastKnownDate
           );
-          return [newItems, Option.none<number>()] as const;
+          return Tuple.make(newItems, Option.none<number>());
         }
-        return [
+        return Tuple.make(
           parsed.items,
           parsed.items.length === RAINDROPS_PAGE_SIZE
             ? Option.some(page + 1)
-            : Option.none<number>(),
-        ] as const;
+            : Option.none<number>()
+        );
       })
     );
     return yield* Stream.runCollect(pages);
@@ -196,18 +195,24 @@ const upsertRaindrop = (raindrop: Raindrop, runId: number) =>
   });
 
 const persistAll = (
-  collections: ReadonlyArray<RaindropCollection>,
+  rootCollections: ReadonlyArray<RaindropCollection>,
+  childCollections: ReadonlyArray<RaindropCollection>,
   raindrops: ReadonlyArray<Raindrop>
 ) =>
   Effect.gen(function* () {
     const runId = yield* requireRunId;
-    const collectionResults = yield* forEachCollect(collections, {
+    const rootCollectionResults = yield* forEachCollect(rootCollections, {
+      concurrency: 5,
+      label: (collection) => String(collection._id),
+      worker: (collection) => upsertCollection(collection, runId),
+    });
+    const childCollectionResults = yield* forEachCollect(childCollections, {
       concurrency: 5,
       label: (collection) => String(collection._id),
       worker: (collection) => upsertCollection(collection, runId),
     });
     yield* Effect.logInfo(
-      `Upserted ${collectionResults.successes.length} of ${collections.length} collections`
+      `Upserted ${rootCollectionResults.successes.length + childCollectionResults.successes.length} of ${rootCollections.length + childCollections.length} collections`
     );
     const raindropResults = yield* forEachCollect(raindrops, {
       concurrency: DB_CONCURRENCY,
@@ -230,8 +235,15 @@ const persistAll = (
       createRecordsFromRaindropHighlights()
     );
     return {
-      entriesCreated: collectionResults.successes.length + raindropResults.successes.length,
-      failures: [...collectionResults.failures, ...raindropResults.failures],
+      entriesCreated:
+        rootCollectionResults.successes.length +
+        childCollectionResults.successes.length +
+        raindropResults.successes.length,
+      failures: [
+        ...rootCollectionResults.failures,
+        ...childCollectionResults.failures,
+        ...raindropResults.failures,
+      ],
     } satisfies SyncSummary;
   });
 
@@ -240,14 +252,14 @@ const sync = Effect.gen(function* () {
   const lastKnownDate = yield* getLastSyncDate;
   const raindrops = yield* fetchNewRaindrops(lastKnownDate);
   yield* Effect.logInfo(
-    `Fetched ${collections.length} collections and ${raindrops.length} new raindrops`
+    `Fetched ${collections.roots.length + collections.children.length} collections and ${raindrops.length} new raindrops`
   );
   const sink = yield* DebugSink;
   if (sink.enabled) {
     yield* Effect.logInfo('Debug mode: skipping database writes');
     return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
   }
-  return yield* persistAll(collections, raindrops);
+  return yield* persistAll(collections.roots, collections.children, raindrops);
 });
 
 export const raindropIntegration: IntegrationDef = {

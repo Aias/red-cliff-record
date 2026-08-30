@@ -219,6 +219,6 @@ export async function embedRecords(): Promise<number> {
   return successCount;
 }
 
-export async function runEmbedRecordsIntegration() {
-  await runTrackedEnrichment('embeddings', 'enrich.embeddings', embedRecords);
+export async function runEmbedRecordsIntegration(signal?: AbortSignal) {
+  await runTrackedEnrichment('embeddings', 'enrich.embeddings', embedRecords, signal);
 }

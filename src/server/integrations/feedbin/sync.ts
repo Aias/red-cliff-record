@@ -320,8 +320,8 @@ const syncMissingFeeds = (
             siteUrl: feed.site_url,
             iconUrl: iconUrlFor(feed.site_url, iconMap),
             sources: ['feedbin'],
-          }).pipe(Effect.timeout(FEED_TIMEOUT));
-        }),
+          });
+        }).pipe(Effect.timeout(FEED_TIMEOUT)),
     });
     return result.failures;
   });

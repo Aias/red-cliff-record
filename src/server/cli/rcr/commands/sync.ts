@@ -7,6 +7,7 @@ import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
 import { assertNever } from '@/shared/lib/type-utils';
 import { BaseOptionsSchema, parseOptions } from '../lib/args';
 import { createError } from '../lib/errors';
+import { withInterruptSignal } from '../lib/interrupt';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
@@ -27,41 +28,42 @@ const SyncCommandOptionsSchema = BaseOptionsSchema.extend({
   'allow-new-hostname': z.boolean().default(false),
 });
 
-export const run: CommandHandler = async (args, options) => {
-  const rawIntegration = args[0]?.toLowerCase();
+export const run: CommandHandler = (args, options) =>
+  withInterruptSignal(async (signal) => {
+    const rawIntegration = args[0]?.toLowerCase();
 
-  const parsedOptions = parseOptions(SyncCommandOptionsSchema.strict(), options);
-  const { debug } = parsedOptions;
-  const syncOptions = { debug, allowNewHostname: parsedOptions['allow-new-hostname'] };
+    const parsedOptions = parseOptions(SyncCommandOptionsSchema.strict(), options);
+    const { debug } = parsedOptions;
+    const syncOptions = { debug, allowNewHostname: parsedOptions['allow-new-hostname'], signal };
 
-  try {
-    await checkDatabaseConnection();
-  } catch (e) {
-    throw createError('DATABASE_ERROR', e instanceof Error ? e.message : String(e));
-  }
+    try {
+      await checkDatabaseConnection();
+    } catch (e) {
+      throw createError('DATABASE_ERROR', e instanceof Error ? e.message : String(e));
+    }
 
-  if (!rawIntegration) {
-    return runDailySync(syncOptions);
-  }
+    if (!rawIntegration) {
+      return runDailySync(syncOptions);
+    }
 
-  const integrationResult = IntegrationNameSchema.safeParse(rawIntegration);
-  if (!integrationResult.success) {
-    throw createError(
-      'VALIDATION_ERROR',
-      `Unknown integration: ${rawIntegration}. Available: ${INTEGRATION_LIST.join(', ')}`
-    );
-  }
-  const integration = integrationResult.data;
+    const integrationResult = IntegrationNameSchema.safeParse(rawIntegration);
+    if (!integrationResult.success) {
+      throw createError(
+        'VALIDATION_ERROR',
+        `Unknown integration: ${rawIntegration}. Available: ${INTEGRATION_LIST.join(', ')}`
+      );
+    }
+    const integration = integrationResult.data;
 
-  const startTime = performance.now();
-  const syncResult = await runSingleSync(integration, syncOptions);
-  if (!debug) await runEnrichments();
+    const startTime = performance.now();
+    const syncResult = await runSingleSync(integration, syncOptions);
+    if (!debug) await runEnrichments(signal);
 
-  return success({
-    ...syncResult,
-    duration: Math.round(performance.now() - startTime),
+    return success({
+      ...syncResult,
+      duration: Math.round(performance.now() - startTime),
+    });
   });
-};
 
 export { run as github };
 export { run as readwise };
@@ -74,12 +76,16 @@ export { run as twitter };
 interface SyncOptions {
   debug: boolean;
   allowNewHostname: boolean;
+  signal: AbortSignal;
 }
 
-async function runEnrichments() {
-  await runSaveAvatarsIntegration();
-  await runAltTextIntegration();
-  await runEmbedRecordsIntegration();
+async function runEnrichments(signal: AbortSignal) {
+  signal.throwIfAborted();
+  await runSaveAvatarsIntegration(signal);
+  signal.throwIfAborted();
+  await runAltTextIntegration({ signal });
+  signal.throwIfAborted();
+  await runEmbedRecordsIntegration(signal);
 }
 
 async function runSingleSync(integration: IntegrationName, options: SyncOptions) {
@@ -144,9 +150,10 @@ async function runDailySync(options: SyncOptions) {
     })
   );
 
+  options.signal.throwIfAborted();
   if (!options.debug) {
     try {
-      await runEnrichments();
+      await runEnrichments(options.signal);
       results.push({ step: 'enrich', success: true });
     } catch (e) {
       results.push({
@@ -156,6 +163,7 @@ async function runDailySync(options: SyncOptions) {
       });
     }
   }
+  options.signal.throwIfAborted();
 
   const successCount = results.filter((r) => r.success).length;
 

@@ -28,6 +28,8 @@ export interface ConcurrentPoolOptions<T, R> {
   timeoutMs?: number;
   /** Optional progress callback, called after each item settles (success/error/timeout) */
   onProgress?: (completed: number, total: number) => void;
+  /** Optional external signal; aborting stops new item pickup and aborts in-flight worker signals */
+  signal?: AbortSignal;
 }
 
 export type ConcurrentPoolItemResult<R> =
@@ -41,7 +43,7 @@ export type ConcurrentPoolItemResult<R> =
 export async function runConcurrentPool<T, R>(
   options: ConcurrentPoolOptions<T, R>
 ): Promise<Array<ConcurrentPoolItemResult<R>>> {
-  const { items, concurrency, worker, timeoutMs, onProgress } = options;
+  const { items, concurrency, worker, timeoutMs, onProgress, signal } = options;
 
   if (items.length === 0) {
     return [];
@@ -83,7 +85,15 @@ export async function runConcurrentPool<T, R>(
         onProgress?.(completedCount, items.length);
         continue;
       }
+      if (signal?.aborted) {
+        results[index] = { ok: false, error: new Error('Aborted'), timedOut: false };
+        completedCount++;
+        onProgress?.(completedCount, items.length);
+        continue;
+      }
       const controller = new AbortController();
+      const onAbort = () => controller.abort();
+      signal?.addEventListener('abort', onAbort, { once: true });
 
       const workerPromise = Promise.resolve().then(() => worker(item, index, controller.signal));
 
@@ -94,6 +104,8 @@ export async function runConcurrentPool<T, R>(
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
           results[index] = { ok: false, error: err, timedOut: false };
+        } finally {
+          signal?.removeEventListener('abort', onAbort);
         }
       } else {
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -124,6 +136,7 @@ export async function runConcurrentPool<T, R>(
           if (timeoutId !== undefined) {
             clearTimeout(timeoutId);
           }
+          signal?.removeEventListener('abort', onAbort);
         }
       }
 

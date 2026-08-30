@@ -140,6 +140,6 @@ export async function saveAvatarsToR2(): Promise<number> {
   return processedCount;
 }
 
-export async function runSaveAvatarsIntegration(): Promise<void> {
-  await runTrackedEnrichment('manual', 'enrich.avatars', saveAvatarsToR2);
+export async function runSaveAvatarsIntegration(signal?: AbortSignal): Promise<void> {
+  await runTrackedEnrichment('manual', 'enrich.avatars', saveAvatarsToR2, signal);
 }

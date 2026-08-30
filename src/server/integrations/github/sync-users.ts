@@ -1,7 +1,7 @@
 import { githubUsers, type GithubUserInsert } from '@hozo';
 import type { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';
-import { Effect } from 'effect';
+import { Array as Arr, Effect } from 'effect';
 import { db } from '@/server/db/connections/postgres';
 import { Database } from '../runtime/db';
 import { ApiRequestError } from '../runtime/errors';
@@ -54,7 +54,7 @@ export const updatePartialUsers = (octokit: Octokit) =>
     );
     yield* Effect.logInfo(`Found ${partialUsers.length} partial users to update`);
     if (partialUsers.length === 0) {
-      return { updated: 0, failures: [] as Array<ItemFailure> };
+      return { updated: 0, failures: Arr.empty<ItemFailure>() };
     }
     const results = yield* forEachCollect(partialUsers, {
       concurrency: USER_CONCURRENCY,
