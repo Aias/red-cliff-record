@@ -10,7 +10,7 @@ Install the CLI once from the repo, then run syncs via `rcr`:
 bun link
 ```
 
-You can run integrations with the CLI instead of the per-integration scripts:
+Run integrations with the CLI:
 
 ```bash
 rcr sync github

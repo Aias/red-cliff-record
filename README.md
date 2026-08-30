@@ -9,6 +9,7 @@ A personal knowledge repository that aggregates data from multiple external sour
 - **Frontend**: React 19 + TanStack (Start, Router, Query) + Tailwind CSS v4
 - **Sync**: [Rocicorp Zero](https://zero.rocicorp.dev) replicates the entity graph (records, links, matchups, media) to the client; reads are local ZQL queries and writes are optimistic custom mutators
 - **Backend**: tRPC + Drizzle ORM + PostgreSQL (search, list/opponent selection, and heavy mutations like create/delete/merge; also the full CLI surface)
+- **Integrations**: external-source syncs built on [Effect](https://effect.website) v4 — typed errors, per-API rate limiting, tracked runs that finalize on failure and interrupt — with Zod validation at every API boundary
 - **Deployment/Hosting**: Bun server + local PostgreSQL on a Tailscale network
 - **Search**: PostgreSQL full-text search + OpenAI embeddings
 
