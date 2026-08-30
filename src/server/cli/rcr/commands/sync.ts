@@ -1,12 +1,5 @@
-/**
- * Sync commands for the CLI
- *
- * Calls sync functions directly for all integrations.
- */
-
 import { z } from 'zod';
 import { checkDatabaseConnection } from '@/server/db/connections/postgres';
-import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
 import { runIntegrationSync } from '@/server/integrations/runtime/runtime';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
@@ -30,19 +23,6 @@ const IntegrationNameSchema = z.enum([
 type IntegrationName = z.infer<typeof IntegrationNameSchema>;
 const INTEGRATION_LIST = IntegrationNameSchema.options;
 
-/**
- * Run an integration sync
- * Usage: rcr sync [integration] [--debug]
- *
- * With no arguments, runs all daily syncs (browsing, raindrop, readwise,
- * twitter, github) followed by enrichments.
- *
- * With an integration name, runs that single sync followed by enrichments.
- * Available: github, github-commits, readwise, raindrop, adobe, feedbin,
- *   browsing, twitter
- *
- * Use `rcr enrich` to run enrichments separately.
- */
 const SyncCommandOptionsSchema = BaseOptionsSchema.extend({
   'allow-new-hostname': z.boolean().default(false),
 });
@@ -54,14 +34,12 @@ export const run: CommandHandler = async (args, options) => {
   const { debug } = parsedOptions;
   const syncOptions = { debug, allowNewHostname: parsedOptions['allow-new-hostname'] };
 
-  // Fail fast if the database is unreachable
   try {
     await checkDatabaseConnection();
   } catch (e) {
     throw createError('DATABASE_ERROR', e instanceof Error ? e.message : String(e));
   }
 
-  // No argument: run all daily syncs + enrichments
   if (!rawIntegration) {
     return runDailySync(syncOptions);
   }
@@ -85,7 +63,6 @@ export const run: CommandHandler = async (args, options) => {
   });
 };
 
-// Also export as default command name for `rcr sync github` style
 export { run as github };
 export { run as readwise };
 export { run as raindrop };
@@ -99,7 +76,6 @@ interface SyncOptions {
   allowNewHostname: boolean;
 }
 
-/** Run all enrichments in order: avatars → alt-text → embeddings */
 async function runEnrichments() {
   await runSaveAvatarsIntegration();
   await runAltTextIntegration();
@@ -153,13 +129,10 @@ async function runDailySync(options: SyncOptions) {
 
   const startTime = performance.now();
 
-  // Run external syncs concurrently — they hit disjoint APIs. Each
-  // integration's logs are buffered and emitted as one contiguous block when
-  // it finishes, so concurrent output never interleaves.
   const results: Array<{ step: string; success: boolean; error?: string }> = await Promise.all(
     dailyIntegrations.map(async (integration) => {
       try {
-        await withBufferedLogs(() => runSingleSync(integration, options));
+        await runSingleSync(integration, options);
         return { step: integration, success: true };
       } catch (e) {
         return {

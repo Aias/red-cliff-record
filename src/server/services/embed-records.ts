@@ -1,12 +1,12 @@
-import { records, RunTypeSchema } from '@hozo';
+import { records } from '@hozo';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
+import { runTrackedEnrichment } from '@/server/integrations/runtime/runtime';
 import { createEmbeddings } from '@/server/lib/create-embedding';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { createRecordEmbeddingText, getRecordTitle } from '@/shared/lib/embedding';
 import type { FullRecord } from '@/shared/types/domain';
 import { createIntegrationLogger } from '../integrations/common/logging';
-import { runIntegration } from '../integrations/common/run-integration';
 
 const logger = createIntegrationLogger('services', 'embed-records');
 
@@ -220,21 +220,5 @@ export async function embedRecords(): Promise<number> {
 }
 
 export async function runEmbedRecordsIntegration() {
-  await runIntegration('embeddings', embedRecords, RunTypeSchema.enum.sync);
-}
-
-const main = async (): Promise<void> => {
-  try {
-    logger.start('Starting embedding for records');
-    await runEmbedRecordsIntegration();
-    logger.complete('Embedding for records completed');
-    process.exit(0);
-  } catch (error) {
-    logger.error('Error in embedding records', error);
-    process.exit(1);
-  }
-};
-
-if (import.meta.main) {
-  void main();
+  await runTrackedEnrichment('embeddings', 'enrich.embeddings', embedRecords);
 }

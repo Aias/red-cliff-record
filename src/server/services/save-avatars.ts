@@ -1,11 +1,11 @@
-import { records, RunTypeSchema } from '@hozo';
+import { records } from '@hozo';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
+import { runTrackedEnrichment } from '@/server/integrations/runtime/runtime';
 import { uploadMediaToR2 } from '@/server/lib/media';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
 import { EnvSchemaBase } from '@/shared/lib/env';
 import { createIntegrationLogger } from '../integrations/common/logging';
-import { runIntegration } from '../integrations/common/run-integration';
 
 const logger = createIntegrationLogger('services', 'save-avatars');
 
@@ -140,29 +140,6 @@ export async function saveAvatarsToR2(): Promise<number> {
   return processedCount;
 }
 
-/**
- * Run the avatar saving process as a tracked integration
- */
 export async function runSaveAvatarsIntegration(): Promise<void> {
-  await runIntegration('manual', saveAvatarsToR2, RunTypeSchema.enum.sync);
-}
-
-/**
- * Main execution function when run as a standalone script
- */
-const main = async (): Promise<void> => {
-  try {
-    logger.start('Starting avatar transfer');
-    await runSaveAvatarsIntegration();
-    logger.complete('Avatar transfer completed');
-    process.exit(0);
-  } catch (error) {
-    logger.error('Error in avatar transfer', error);
-    process.exit(1);
-  }
-};
-
-// Execute main function if this file is run directly
-if (import.meta.main) {
-  void main();
+  await runTrackedEnrichment('manual', 'enrich.avatars', saveAvatarsToR2);
 }

@@ -5,7 +5,6 @@ import { media } from '@hozo';
 import { eq } from 'drizzle-orm';
 import mime from 'mime-types';
 import { db } from '@/server/db/connections/postgres';
-import { writeDebugOutput } from '@/server/integrations/common/debug-output';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import { getOpenAIClient, OPENAI_MODEL } from '@/server/lib/openai';
 import { embedRecordsByIds } from '@/server/services/embed-records';
@@ -935,12 +934,13 @@ async function generateMissingAltText(
 
   let debugOutputPath: string | undefined;
   if (debug) {
-    debugOutputPath = await writeDebugOutput('alt-text', {
-      generatedAt: new Date().toISOString(),
-      limit,
-      results,
-      summary,
-    });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    debugOutputPath = `.temp/alt-text-${timestamp}.json`;
+    await Bun.write(
+      debugOutputPath,
+      JSON.stringify({ generatedAt: new Date().toISOString(), limit, results, summary }, null, 2)
+    );
+    logger.info(`Debug output written to ${debugOutputPath}`);
   }
 
   logger.complete(`Generated alt text for ${summary.generated} media items`);
