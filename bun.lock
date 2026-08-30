@@ -60,7 +60,7 @@
     },
     "packages/hozo": {
       "name": "@aias/hozo",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "devDependencies": {
         "drizzle-kit": "1.0.0-rc.4",
         "drizzle-orm": "1.0.0-rc.4",
