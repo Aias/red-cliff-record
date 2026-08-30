@@ -1,40 +1,32 @@
-import { RecordInsertSchema, records } from '@hozo';
+import { records } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { queueRecordEmbeddings } from '@/server/services/embed-records';
 import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
-import { IdSchema, type DbId } from '@/shared/types/api';
+import { BulkUpdateDataSchema, IdSchema, RecordUpsertSchema, type DbId } from '@/shared/types/api';
 import type { RecordGet } from '@/shared/types/domain';
 import { publicProcedure } from '../../init';
 
-// Schema for bulk update data - omit fields that shouldn't be bulk-updated
-const BulkUpdateDataSchema = RecordInsertSchema.omit({
-  id: true,
-  slug: true,
-  sources: true,
-  eloScore: true,
-  textEmbedding: true,
-  textEmbeddedAt: true,
-}).partial();
+type CuratedAt = Date | null | undefined;
 
-const curatedAtUpdate = (data: { isCurated?: boolean; recordCuratedAt?: Date | null }) =>
-  data.recordCuratedAt !== undefined || data.isCurated === undefined
+const curatedAtUpdate = (isCurated: boolean | undefined, recordCuratedAt: CuratedAt) =>
+  recordCuratedAt !== undefined || isCurated === undefined
     ? {}
-    : {
-        recordCuratedAt: data.isCurated ? sql`coalesce(${records.recordCuratedAt}, now())` : null,
-      };
+    : { recordCuratedAt: isCurated ? sql`coalesce(${records.recordCuratedAt}, now())` : null };
 
-const curatedAtInsert = (data: { isCurated?: boolean; recordCuratedAt?: Date | null }) =>
-  data.recordCuratedAt !== undefined || data.isCurated === undefined
+const curatedAtInsert = (isCurated: boolean | undefined, recordCuratedAt: CuratedAt) =>
+  recordCuratedAt !== undefined || isCurated === undefined
     ? {}
-    : { recordCuratedAt: data.isCurated ? new Date() : null };
+    : { recordCuratedAt: isCurated ? new Date() : null };
 
 export const upsert = publicProcedure
-  .input(RecordInsertSchema)
+  .input(RecordUpsertSchema)
   .mutation(async ({ ctx: { db, loaders }, input }): Promise<RecordGet> => {
+    const { isCurated, ...fields } = input;
+    const curation = curatedAtUpdate(isCurated, fields.recordCuratedAt);
     const updateFields = Object.fromEntries(
-      Object.entries(input).filter(([, v]) => v !== undefined)
+      Object.entries(fields).filter(([, v]) => v !== undefined)
     );
 
     const embeddingFields = new Set<string>(EMBEDDING_RECORD_FIELDS);
@@ -42,12 +34,12 @@ export const upsert = publicProcedure
 
     const [result] = await db
       .insert(records)
-      .values({ ...input, ...curatedAtInsert(input) })
+      .values({ ...fields, ...curatedAtInsert(isCurated, fields.recordCuratedAt) })
       .onConflictDoUpdate({
         target: records.id,
         set: {
           ...updateFields,
-          ...curatedAtUpdate(input),
+          ...curation,
           recordUpdatedAt: new Date(),
           ...(affectsEmbedding ? { textEmbedding: null, textEmbeddedAt: null } : {}),
         },
@@ -86,8 +78,11 @@ export const bulkUpdate = publicProcedure
     })
   )
   .mutation(async ({ ctx: { db }, input: { ids, data } }): Promise<DbId[]> => {
-    // Filter out undefined values to only update provided fields
-    const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+    const { isCurated, ...fields } = data;
+    const definedFields = Object.fromEntries(
+      Object.entries(fields).filter(([, v]) => v !== undefined)
+    );
+    const updateData = { ...definedFields, ...curatedAtUpdate(isCurated, fields.recordCuratedAt) };
 
     if (Object.keys(updateData).length === 0) {
       throw new TRPCError({
@@ -97,13 +92,12 @@ export const bulkUpdate = publicProcedure
     }
 
     const embeddingFields = new Set<string>(EMBEDDING_RECORD_FIELDS);
-    const affectsEmbedding = Object.keys(updateData).some((k) => embeddingFields.has(k));
+    const affectsEmbedding = Object.keys(definedFields).some((k) => embeddingFields.has(k));
 
     const updated = await db
       .update(records)
       .set({
         ...updateData,
-        ...curatedAtUpdate(data),
         recordUpdatedAt: new Date(),
         ...(affectsEmbedding ? { textEmbedding: null, textEmbeddedAt: null } : {}),
       })

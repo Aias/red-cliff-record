@@ -77,7 +77,7 @@ function valuesFromRecord(record: RecordData): RecordFormValues {
     content: record.content,
     notes: record.notes,
     mediaCaption: record.mediaCaption,
-    isCurated: record.isCurated,
+    isCurated: record.recordCuratedAt !== null,
     isPrivate: record.isPrivate,
   };
 }

@@ -94,7 +94,9 @@ export const queries = defineQueries({
       );
     if (args.types?.length) q = q.where('type', 'IN', args.types);
     if (args.isPrivate !== undefined) q = q.where('isPrivate', args.isPrivate);
-    if (args.isCurated !== undefined) q = q.where('isCurated', args.isCurated);
+    if (args.isCurated !== undefined) {
+      q = q.where('recordCuratedAt', args.isCurated ? 'IS NOT' : 'IS', null);
+    }
     if (args.hasTitle !== undefined) {
       q = q.where('title', args.hasTitle ? 'IS NOT' : 'IS', null);
     }
@@ -117,7 +119,7 @@ export const queries = defineQueries({
   eloPool: defineQuery(z.object({ type: RecordTypeSchema }), ({ args: { type } }) =>
     zql.records
       .where('type', type)
-      .where('isCurated', true)
+      .where('recordCuratedAt', 'IS NOT', null)
       .related('outgoingLinks', (q) => q.where('predicate', 'contained_by'))
   ),
   /** ELO matchups a record has participated in (either side). */

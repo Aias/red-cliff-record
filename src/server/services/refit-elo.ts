@@ -51,7 +51,7 @@ async function computePriors(): Promise<Map<number, number>> {
     SELECT
       r.id,
       r.type,
-      r.is_curated,
+      r.curated_at IS NOT NULL AS is_curated,
       r.notes IS NOT NULL AND r.notes != '' AS has_notes,
       r.url IS NOT NULL AND r.url != '' AS has_url,
       r.summary IS NOT NULL AND r.summary != '' AS has_summary,

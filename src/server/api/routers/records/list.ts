@@ -22,6 +22,9 @@ const RRF_K = 60;
 const NOT_NULL = { isNotNull: true } as const;
 const IS_NULL = { isNull: true } as const;
 
+const presence = (flag: boolean | undefined) =>
+  flag === undefined ? undefined : flag ? NOT_NULL : IS_NULL;
+
 function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
   const {
     types,
@@ -39,19 +42,19 @@ function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
 
   return {
     type: types?.length ? { in: types } : undefined,
-    title: hasTitle === true ? NOT_NULL : hasTitle === false ? IS_NULL : undefined,
+    title: presence(hasTitle),
     isPrivate,
-    isCurated,
+    recordCuratedAt: presence(isCurated),
     ...(hasParent === true
       ? { outgoingLinks: { predicate: { in: containmentPredicateSlugs } } }
       : hasParent === false
         ? { NOT: { outgoingLinks: { predicate: { in: containmentPredicateSlugs } } } }
         : {}),
     media: hasMedia,
-    reminderAt: hasReminder === true ? NOT_NULL : hasReminder === false ? IS_NULL : undefined,
+    reminderAt: presence(hasReminder),
     sources: sources?.length ? { arrayOverlaps: sources } : undefined,
     eloScore: minElo || maxElo ? { gte: minElo, lte: maxElo } : undefined,
-    textEmbedding: hasEmbedding === true ? NOT_NULL : hasEmbedding === false ? IS_NULL : undefined,
+    textEmbedding: presence(hasEmbedding),
   };
 }
 

@@ -61,6 +61,15 @@ while true; do
                     continue
                 fi
 
+                # Release columns this migration drops from Zero's publication
+                log "Syncing Zero publication before migrating..."
+                if ! NODE_ENV=production bun run zero:publication; then
+                    log "ERROR: Zero publication sync failed, aborting deploy"
+                    LAST_COMMIT=$REMOTE_COMMIT
+                    sleep $CHECK_INTERVAL
+                    continue
+                fi
+
                 # Run database migrations
                 log "Running database migrations..."
                 if ! NODE_ENV=production bunx drizzle-kit migrate; then
@@ -71,7 +80,7 @@ while true; do
                 fi
 
                 # Point Zero's publication at the columns the client schema expects
-                log "Syncing Zero publication..."
+                log "Syncing Zero publication after migrating..."
                 if ! NODE_ENV=production bun run zero:publication; then
                     log "ERROR: Zero publication sync failed, aborting deploy"
                     LAST_COMMIT=$REMOTE_COMMIT

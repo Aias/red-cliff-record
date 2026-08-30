@@ -1,3 +1,4 @@
+import { RecordInsertSchema } from '@hozo';
 import { IntegrationTypeSchema } from '@hozo/schema/operations.shared';
 import { RecordTypeSchema } from '@hozo/schema/records.shared';
 import { z } from 'zod';
@@ -51,6 +52,19 @@ export const RecordFiltersSchema = z.object({
 export const LimitSchema = z.number().int().positive();
 export const OffsetSchema = z.number().int().gte(0);
 export const OrderBySchema = z.array(OrderCriteriaSchema);
+
+export const RecordUpsertSchema = RecordInsertSchema.extend({
+  isCurated: z.boolean().optional(),
+});
+
+export const BulkUpdateDataSchema = RecordUpsertSchema.omit({
+  id: true,
+  slug: true,
+  sources: true,
+  eloScore: true,
+  textEmbedding: true,
+  textEmbeddedAt: true,
+}).partial();
 
 export const ListRecordsInputSchema = z.object({
   searchQuery: z.string().optional(),

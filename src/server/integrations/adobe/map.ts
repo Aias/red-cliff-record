@@ -115,7 +115,6 @@ const mapLightroomImageToRecord = (image: LightroomImageSelect): RecordInsert =>
     type: 'artifact',
     title: image.fileName,
     mediaCaption: generateImageDescription(image),
-    isCurated: false,
     isPrivate: false,
     sources: ['lightroom'],
     avatarUrl: withLightroomApiKey(

@@ -122,7 +122,6 @@ const mapReadwiseAuthorToRecord = (author: ReadwiseAuthorSelect): RecordInsert =
     title: author.name,
     url: author.origin ? mapUrl(author.origin) : undefined,
     sources: ['readwise'],
-    isCurated: false,
     isPrivate: false,
     recordCreatedAt: author.recordCreatedAt,
     recordUpdatedAt: author.recordUpdatedAt,
@@ -313,7 +312,6 @@ const mapReadwiseTagToRecord = (tag: ReadwiseTagSelect): RecordInsert => {
     type: 'concept',
     title: tag.tag,
     sources: ['readwise'],
-    isCurated: false,
     isPrivate: false,
     recordCreatedAt: tag.recordCreatedAt,
     recordUpdatedAt: tag.recordUpdatedAt,
@@ -476,7 +474,6 @@ export const mapReadwiseDocumentToRecord = (
     summary: document.summary || null,
     notes: notes || null,
     isPrivate: false,
-    isCurated: false,
     avatarUrl: document.imageUrl?.startsWith(
       'https://assets.feedbin.com/assets-site/images/icon-manifest.png' // Ignore Feedbin favicon
     )

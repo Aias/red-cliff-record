@@ -79,7 +79,6 @@ export function mergeRecords<T extends RecordSlim>(
             'sources',
             'eloScore',
             'isPrivate',
-            'isCurated',
             'recordCuratedAt',
             'recordUpdatedAt',
             'recordCreatedAt',
@@ -102,7 +101,6 @@ export function mergeRecords<T extends RecordSlim>(
     sources: allSources.length > 0 ? allSources : null,
     eloScore: Math.max(source.eloScore, target.eloScore),
     isPrivate: source.isPrivate || target.isPrivate,
-    isCurated: source.isCurated || target.isCurated,
     recordCuratedAt: getEarliestDate(source.recordCuratedAt, target.recordCuratedAt),
     // Use earliest dates for creation timestamps, most recent for update timestamps
     recordCreatedAt: getEarliestDate(source.recordCreatedAt, target.recordCreatedAt),

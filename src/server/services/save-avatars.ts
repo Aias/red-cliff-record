@@ -14,7 +14,7 @@ const logger = createIntegrationLogger('services', 'save-avatars');
  *
  * Looks for records with:
  * 1. Non-null avatarUrl
- * 2. isCurated set to true
+ * 2. A curation timestamp
  *
  * Then:
  * 1. Uploads the avatar image to R2
@@ -29,7 +29,6 @@ export async function saveAvatarsToR2(): Promise<number> {
     process.env
   );
 
-  // Find records with non-null avatarUrl and isCurated set to true
   const recordsWithAvatars = await db.query.records.findMany({
     columns: {
       id: true,
@@ -41,7 +40,7 @@ export async function saveAvatarsToR2(): Promise<number> {
         isNotNull: true,
         notIlike: `%${assetsDomain}%`,
       },
-      isCurated: true,
+      recordCuratedAt: { isNotNull: true },
     },
   });
 
@@ -99,7 +98,6 @@ export async function saveAvatarsToR2(): Promise<number> {
               .set({
                 avatarUrl: null,
                 recordUpdatedAt: new Date(),
-                isCurated: false,
                 recordCuratedAt: null,
               })
               .where(eq(records.id, record.id));
@@ -122,7 +120,6 @@ export async function saveAvatarsToR2(): Promise<number> {
               .set({
                 avatarUrl: null,
                 recordUpdatedAt: new Date(),
-                isCurated: false,
                 recordCuratedAt: null,
               })
               .where(eq(records.id, record.id));
