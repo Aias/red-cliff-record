@@ -1,11 +1,10 @@
 import { defineConfig } from 'drizzle-kit';
-import { connectionUrl } from '@/server/db/connections/arc-sqlite';
 
 export default defineConfig({
   out: './migrations/arc',
   schema: './packages/hozo/src/schema/arc',
   dialect: 'sqlite',
   dbCredentials: {
-    url: connectionUrl,
+    url: `file:${process.env.HOME}/Library/Application Support/Arc/User Data/Default/History-copy`,
   },
 });

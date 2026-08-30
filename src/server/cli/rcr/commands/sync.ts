@@ -6,7 +6,6 @@
 
 import { z } from 'zod';
 import { checkDatabaseConnection } from '@/server/db/connections/postgres';
-import { syncAllBrowserData } from '@/server/integrations/browser-history/sync-all';
 import { withBufferedLogs } from '@/server/integrations/common/buffered-logs';
 import { runIntegrationSync } from '@/server/integrations/runtime/runtime';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
@@ -44,11 +43,16 @@ const INTEGRATION_LIST = IntegrationNameSchema.options;
  *
  * Use `rcr enrich` to run enrichments separately.
  */
+const SyncCommandOptionsSchema = BaseOptionsSchema.extend({
+  'allow-new-hostname': z.boolean().default(false),
+});
+
 export const run: CommandHandler = async (args, options) => {
   const rawIntegration = args[0]?.toLowerCase();
 
-  const parsedOptions = parseOptions(BaseOptionsSchema.strict(), options);
+  const parsedOptions = parseOptions(SyncCommandOptionsSchema.strict(), options);
   const { debug } = parsedOptions;
+  const syncOptions = { debug, allowNewHostname: parsedOptions['allow-new-hostname'] };
 
   // Fail fast if the database is unreachable
   try {
@@ -59,7 +63,7 @@ export const run: CommandHandler = async (args, options) => {
 
   // No argument: run all daily syncs + enrichments
   if (!rawIntegration) {
-    return runDailySync({ debug });
+    return runDailySync(syncOptions);
   }
 
   const integrationResult = IntegrationNameSchema.safeParse(rawIntegration);
@@ -72,7 +76,7 @@ export const run: CommandHandler = async (args, options) => {
   const integration = integrationResult.data;
 
   const startTime = performance.now();
-  const syncResult = await runSingleSync(integration, { debug });
+  const syncResult = await runSingleSync(integration, syncOptions);
   if (!debug) await runEnrichments();
 
   return success({
@@ -92,6 +96,7 @@ export { run as twitter };
 
 interface SyncOptions {
   debug: boolean;
+  allowNewHostname: boolean;
 }
 
 /** Run all enrichments in order: avatars → alt-text → embeddings */
@@ -102,13 +107,12 @@ async function runEnrichments() {
 }
 
 async function runSingleSync(integration: IntegrationName, options: SyncOptions) {
-  const { debug } = options;
   const startTime = performance.now();
 
   switch (integration) {
     case 'github': {
-      const commits = await runIntegrationSync('github-commits', { debug });
-      const stars = await runIntegrationSync('github', { debug });
+      const commits = await runIntegrationSync('github-commits', options);
+      const stars = await runIntegrationSync('github', options);
       return {
         integration,
         success: true,
@@ -122,21 +126,14 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
     case 'raindrop':
     case 'adobe':
     case 'feedbin':
+    case 'browsing':
     case 'twitter': {
-      const summary = await runIntegrationSync(integration, { debug });
+      const summary = await runIntegrationSync(integration, options);
       return {
         integration,
         success: true,
         entriesCreated: summary.entriesCreated,
         failedItems: summary.failures.length,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'browsing': {
-      await syncAllBrowserData(debug);
-      return {
-        integration,
-        success: true,
         duration: Math.round(performance.now() - startTime),
       };
     }

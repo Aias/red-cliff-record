@@ -18,10 +18,15 @@ export class DbError extends Data.TaggedError('DbError')<{
   readonly cause: unknown;
 }> {}
 
+export class SyncPreconditionError extends Data.TaggedError('SyncPreconditionError')<{
+  readonly message: string;
+}> {}
+
 export type IntegrationError =
   | ApiRequestError
   | ApiValidationError
   | DbError
+  | SyncPreconditionError
   | HttpClientError.HttpClientError
   | Config.ConfigError
   | RateLimiter.RateLimiterError;

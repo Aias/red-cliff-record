@@ -3,7 +3,7 @@ import { FetchHttpClient } from 'effect/unstable/http';
 import { RateLimiter } from 'effect/unstable/persistence';
 import { databaseLayer } from './db';
 import { debugSinkDisabled } from './debug';
-import { syncOne, type RegisteredIntegration } from './registry';
+import { syncOne, type RegisteredIntegration, type SyncOneOptions } from './registry';
 import { causeMessage, runTrackerLayer, type SyncSummary } from './run';
 
 const rateLimiterLayer = RateLimiter.layer.pipe(Layer.provide(RateLimiter.layerStoreMemory));
@@ -18,7 +18,7 @@ const appLayers = Layer.mergeAll(
 
 export const runIntegrationSync = async (
   name: RegisteredIntegration,
-  options: { readonly debug: boolean }
+  options: SyncOneOptions
 ): Promise<SyncSummary> => {
   const runtime = ManagedRuntime.make(appLayers);
   try {

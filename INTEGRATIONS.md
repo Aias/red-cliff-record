@@ -203,16 +203,20 @@ Syncs browsing history from Chromium-based browsers locally. Currently configure
 rcr sync browsing
 ```
 
-This runs both Arc and Dia syncs sequentially under a single integration run.
+This runs both Arc and Dia syncs under a single integration run.
+
+History is tracked per machine hostname. Syncing from a hostname the database has never seen fails with an error listing the known hostnames; pass `--allow-new-hostname` to confirm the new machine:
+
+```bash
+rcr sync browsing --allow-new-hostname
+```
 
 ### Adding Other Chromium Browsers
 
 To add support for other Chromium-based browsers:
 
-1. Create a new browser config in `src/server/integrations/browser-history/browsers/`
-2. Update the database connection to point to the browser's history file
-3. Add the browser to the `browserEnum` in the database schema
-4. Create a sync script following the Arc/Dia pattern
+1. Add the browser to the `BROWSERS` list in `src/server/integrations/browser-history/sync.ts` with its history file path
+2. Add the browser to the `browserEnum` in the database schema
 
 Common browser history locations on macOS:
 
