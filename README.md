@@ -97,7 +97,7 @@ The migration system uses Drizzle ORM and includes all necessary PostgreSQL exte
 bun run db:migrate
 ```
 
-**Note**: The initial migration (`0000_rapid_triathlon.sql`) creates the `extensions` schema and installs required extensions. Ensure your PostgreSQL user has permission to create extensions, or install them manually before running migrations:
+**Note**: The initial migration creates the `extensions` schema and installs required extensions. Ensure your PostgreSQL user has permission to create extensions, or install them manually before running migrations:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;

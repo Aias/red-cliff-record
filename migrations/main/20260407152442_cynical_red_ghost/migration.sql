@@ -1,1 +1,0 @@
-ALTER TYPE "readwise_category" ADD VALUE 'podcast';

@@ -1,1 +1,0 @@
-ALTER TABLE "media" ADD COLUMN "alt_text_generated_at" timestamp with time zone;
