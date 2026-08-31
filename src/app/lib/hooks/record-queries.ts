@@ -4,7 +4,7 @@ import { useQuery as useZeroQuery, type useZero } from '@rocicorp/zero/react';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/app/trpc';
 import { matchupKey, type PoolCandidate } from '@/shared/lib/elo';
-import type { DbId, ListRecordsInput } from '@/shared/types/api';
+import type { DbId, ListRecordsInput, RecordSort } from '@/shared/types/api';
 import { queries } from '@/shared/zero/queries';
 
 /** A record row from the synced graph, with media and title-fallback edges. */
@@ -20,7 +20,16 @@ export function useRecord(id: DbId) {
   };
 }
 
-export type RecordListInput = Omit<ListRecordsInput, 'offset'>;
+export type RecordListInput = Omit<ListRecordsInput, 'offset' | 'orderBy'> & {
+  orderBy: RecordSort;
+};
+
+function shuffleKey(seed: number, id: number): number {
+  let h = (id ^ seed) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  return (h ^ (h >>> 16)) >>> 0;
+}
 
 /**
  * Record list backed by the synced graph. Browse mode (no search query) runs
@@ -33,24 +42,31 @@ export function useRecordList(input: RecordListInput) {
   const needsServer = Boolean(searchQuery) || hasEmbedding !== undefined;
   const hasJsFilters =
     Boolean(sources?.length) || hasParent !== undefined || hasMedia !== undefined;
+  const randomSeed = Array.isArray(orderBy) ? undefined : orderBy.seed;
+  const columnOrderBy: ListRecordsInput['orderBy'] = Array.isArray(orderBy)
+    ? orderBy
+    : [{ field: 'id', direction: 'asc' }];
 
   const trpc = useTRPC();
   const serverList = useQuery(
     trpc.records.list.queryOptions(
-      { ...input, offset: 0 },
+      { ...input, orderBy: columnOrderBy, offset: 0 },
       { enabled: needsServer, placeholderData: (prev) => prev }
     )
   );
-  const serverIds = serverList.data?.ids.map((entry) => entry.id) ?? [];
+  let serverIds = serverList.data?.ids.map((entry) => entry.id) ?? [];
+  if (randomSeed !== undefined && !searchQuery) {
+    serverIds = serverIds.toSorted((a, b) => shuffleKey(randomSeed, a) - shuffleKey(randomSeed, b));
+  }
   const [serverRows] = useZeroQuery(needsServer && queries.recordsByIds({ ids: serverIds }));
 
   const [browseRows, browseDetails] = useZeroQuery(
     !needsServer &&
       queries.browseRecords({
         ...zqlFilters,
-        orderBy,
-        // JS-evaluated filters run below, so the cap must come after them.
-        limit: hasJsFilters ? undefined : limit,
+        orderBy: columnOrderBy,
+        // JS-evaluated filtering and shuffling run below, so the cap must come after them.
+        limit: hasJsFilters || randomSeed !== undefined ? undefined : limit,
       })
   );
 
@@ -66,20 +82,25 @@ export function useRecordList(input: RecordListInput) {
 
   let records = browseRows ?? [];
   if (hasJsFilters) {
-    records = records
-      .filter((row) => {
-        if (sources?.length && !row.sources?.some((source) => sources.includes(source)))
-          return false;
-        if (hasMedia !== undefined && row.media.length > 0 !== hasMedia) return false;
-        if (hasParent !== undefined) {
-          const parented = row.outgoingLinks.some(
-            (link) => PREDICATES[link.predicate]?.type === 'containment'
-          );
-          if (parented !== hasParent) return false;
-        }
-        return true;
-      })
-      .slice(0, limit);
+    records = records.filter((row) => {
+      if (sources?.length && !row.sources?.some((source) => sources.includes(source))) return false;
+      if (hasMedia !== undefined && row.media.length > 0 !== hasMedia) return false;
+      if (hasParent !== undefined) {
+        const parented = row.outgoingLinks.some(
+          (link) => PREDICATES[link.predicate]?.type === 'containment'
+        );
+        if (parented !== hasParent) return false;
+      }
+      return true;
+    });
+  }
+  if (randomSeed !== undefined) {
+    records = records.toSorted(
+      (a, b) => shuffleKey(randomSeed, a.id) - shuffleKey(randomSeed, b.id)
+    );
+  }
+  if (hasJsFilters || randomSeed !== undefined) {
+    records = records.slice(0, limit);
   }
   return {
     ids: records.map((row) => row.id),

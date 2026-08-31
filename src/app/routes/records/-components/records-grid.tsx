@@ -16,7 +16,7 @@ import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
 import { getRecordTitleFallbacks, useRecord, useRecordList } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
-import { useRecordFilters } from '@/lib/hooks/use-record-filters';
+import { defaultOrderBy, useRecordFilters } from '@/lib/hooks/use-record-filters';
 import type { DbId } from '@/shared/types/api';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
@@ -133,16 +133,18 @@ function RecordRow({ recordId }: { recordId: DbId }) {
 }
 
 export const RecordsGrid = () => {
-  const { state, setFilters, setLimit, reset } = useRecordFilters();
+  const { state, setFilters, setLimit, setOrderBy, reset } = useRecordFilters();
   const { ids: recordIds, isLoading } = useRecordList(state);
 
   const {
     filters: { types, isCurated, isPrivate, sources, hasParent, hasMedia },
     limit,
+    orderBy,
   } = state;
 
   const [limitInput, setLimitInput] = useState(limit?.toString() ?? '');
 
+  const sortValue = Array.isArray(orderBy) ? 'date' : 'random';
   const curatedValue = isCurated === undefined ? 'All' : isCurated ? 'Yes' : 'No';
   const privateValue = isPrivate === undefined ? 'All' : isPrivate ? 'Yes' : 'No';
   const hasParentValue = hasParent === undefined ? 'All' : hasParent ? 'Yes' : 'No';
@@ -176,6 +178,14 @@ export const RecordsGrid = () => {
         [field]: value === 'All' ? undefined : value === 'Yes',
       }));
     };
+
+  const handleSortByDate = () => {
+    setOrderBy(defaultOrderBy);
+  };
+
+  const handleSortByRandom = () => {
+    setOrderBy({ mode: 'random', seed: Math.floor(Math.random() * 0x100000000) });
+  };
 
   const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -392,6 +402,36 @@ export const RecordsGrid = () => {
             <ToggleGroup.Item value="Yes">Yes</ToggleGroup.Item>
             <ToggleGroup.Item value="No">No</ToggleGroup.Item>
           </ToggleGroup.Root>
+        </styled.div>
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
+          <Label htmlFor="sort">Sort By</Label>
+          <DropdownMenu.Root>
+            <Button
+              variant="outline"
+              css={{
+                width: 'full',
+                justifyContent: 'space-between',
+                _childIcon: {
+                  boxSize: '4',
+                  opacity: '50%',
+                },
+              }}
+              render={<DropdownMenu.Trigger id="sort" />}
+            >
+              {sortValue === 'random' ? 'Random' : 'Date Created'}
+              <ChevronDownIcon />
+            </Button>
+            <DropdownMenu.Content align="start" css={{ width: '48' }}>
+              <DropdownMenu.RadioGroup value={sortValue}>
+                <DropdownMenu.RadioItem value="date" onClick={handleSortByDate}>
+                  Date Created
+                </DropdownMenu.RadioItem>
+                <DropdownMenu.RadioItem value="random" onClick={handleSortByRandom}>
+                  Random
+                </DropdownMenu.RadioItem>
+              </DropdownMenu.RadioGroup>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </styled.div>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="limit">Results Limit</Label>

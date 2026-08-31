@@ -3,22 +3,27 @@ import type { z } from 'zod';
 import {
   DEFAULT_LIMIT,
   ListRecordsInputSchema,
-  type ListRecordsInput,
+  RecordSortSchema,
   type RecordFiltersSchema,
+  type RecordSort,
 } from '@/shared/types/api';
 import { createLocalStorageStore } from '../create-local-storage-store';
 
 // Schema for stored state (no offset - always reset to 0)
-const StoredFiltersSchema = ListRecordsInputSchema.omit({ offset: true });
+const StoredFiltersSchema = ListRecordsInputSchema.omit({ offset: true, orderBy: true }).extend({
+  orderBy: RecordSortSchema,
+});
 type StoredFilters = z.infer<typeof StoredFiltersSchema>;
+
+export const defaultOrderBy: RecordSort = [
+  { field: 'recordCreatedAt', direction: 'desc' },
+  { field: 'id', direction: 'desc' },
+];
 
 const defaultState: StoredFilters = {
   filters: {},
   limit: DEFAULT_LIMIT,
-  orderBy: [
-    { field: 'recordCreatedAt', direction: 'desc' },
-    { field: 'id', direction: 'desc' },
-  ],
+  orderBy: defaultOrderBy,
 };
 
 const store = createLocalStorageStore<StoredFilters>({
@@ -37,7 +42,6 @@ const store = createLocalStorageStore<StoredFilters>({
 });
 
 type RecordFilters = z.infer<typeof RecordFiltersSchema>;
-type OrderCriteria = ListRecordsInput['orderBy'][number];
 
 export type RecordFiltersState = StoredFilters;
 
@@ -60,7 +64,7 @@ export function useRecordFilters() {
     store.set({ ...store.get(), limit });
   }, []);
 
-  const setOrderBy = useCallback((orderBy: OrderCriteria[]) => {
+  const setOrderBy = useCallback((orderBy: RecordSort) => {
     store.set({ ...store.get(), orderBy });
   }, []);
 
