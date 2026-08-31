@@ -6,7 +6,7 @@ import { requireRunId, type IntegrationDef, type SyncSummary } from '../runtime/
 import { createRecordsFromGithubRepositories, createRecordsFromGithubUsers } from './map';
 import { githubClient } from './octokit';
 import { summarizeMissingCommits } from './summarize-commits';
-import { fetchNewCommits, hydrateCommits, persistCommits } from './sync-commits';
+import { fetchCommitCandidates, hydrateCommits, persistCommits } from './sync-commits';
 import { fetchNewStars, persistStars } from './sync-stars';
 import { updatePartialUsers } from './sync-users';
 
@@ -38,13 +38,16 @@ const starsSync = Effect.gen(function* () {
 
 const commitsSync = Effect.gen(function* () {
   const octokit = yield* githubClient;
-  const items = yield* fetchNewCommits(octokit);
-  yield* Effect.logInfo(`Fetched ${items.length} commits from search`);
-  const hydration = yield* hydrateCommits(octokit, items);
+  const fetched = yield* fetchCommitCandidates(octokit);
+  yield* Effect.logInfo(`Collected ${fetched.candidates.length} commit candidates`);
+  const hydration = yield* hydrateCommits(octokit, fetched.candidates);
   const sink = yield* DebugSink;
   if (sink.enabled) {
     yield* Effect.logInfo('Debug mode: skipping database writes');
-    return { entriesCreated: 0, failures: hydration.failures } satisfies SyncSummary;
+    return {
+      entriesCreated: 0,
+      failures: [...fetched.failures, ...hydration.failures],
+    } satisfies SyncSummary;
   }
   const runId = yield* requireRunId;
   const commitSummary = yield* persistCommits(hydration, runId);
@@ -52,7 +55,12 @@ const commitsSync = Effect.gen(function* () {
   const reconcileFailures = yield* reconcileGithubEntities(octokit);
   return {
     entriesCreated: commitSummary.entriesCreated,
-    failures: [...commitSummary.failures, ...summaries.failures, ...reconcileFailures],
+    failures: [
+      ...fetched.failures,
+      ...commitSummary.failures,
+      ...summaries.failures,
+      ...reconcileFailures,
+    ],
   } satisfies SyncSummary;
 });
 
