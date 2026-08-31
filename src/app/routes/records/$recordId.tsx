@@ -26,24 +26,27 @@ type TreeNode = {
   isStructural: boolean;
   title?: string | null;
   id: DbId;
-  recordCreatedAt: number;
 };
 
-/** A tree edge whose far endpoint resolved, keyed by that endpoint's creation time. */
-type TreeEdge<T> = { predicate: PredicateSlug; record: T; recordCreatedAt: number };
+/** A tree edge whose far endpoint resolved. */
+type TreeEdge<T> = { predicate: PredicateSlug; record: T };
+
+/** Content chronology, matching the public site's child ordering. */
+type ChronologyRecord = { id: DbId; recordCreatedAt: number; contentCreatedAt?: number | null };
+
+const chronologyAt = (record: ChronologyRecord) =>
+  record.contentCreatedAt ?? record.recordCreatedAt;
 
 const resolveEdges = <TLink extends { predicate: PredicateSlug }, TRecord>(
   links: readonly TLink[],
-  endpoint: (link: TLink) => (TRecord & { recordCreatedAt: number }) | undefined
-): TreeEdge<TRecord & { recordCreatedAt: number }>[] => {
+  endpoint: (link: TLink) => (TRecord & ChronologyRecord) | undefined
+): TreeEdge<TRecord & ChronologyRecord>[] => {
   return links
     .flatMap((link) => {
       const record = endpoint(link);
-      return record
-        ? [{ predicate: link.predicate, record, recordCreatedAt: record.recordCreatedAt }]
-        : [];
+      return record ? [{ predicate: link.predicate, record }] : [];
     })
-    .sort((a, b) => a.recordCreatedAt - b.recordCreatedAt);
+    .sort((a, b) => chronologyAt(a.record) - chronologyAt(b.record) || a.record.id - b.record.id);
 };
 
 const toNode = (edge: TreeEdge<{ id: DbId; title: string | null }>): TreeNode => ({
@@ -51,7 +54,6 @@ const toNode = (edge: TreeEdge<{ id: DbId; title: string | null }>): TreeNode =>
   isStructural: isStructuralContainment(edge.predicate),
   id: edge.record.id,
   title: edge.record.title,
-  recordCreatedAt: edge.recordCreatedAt,
 });
 
 const flattenTree = (tree: RecordTreeData): TreeNode[] => {
@@ -73,7 +75,6 @@ const flattenTree = (tree: RecordTreeData): TreeNode[] => {
     nodes.push({
       id: tree.id,
       title: tree.title,
-      recordCreatedAt: tree.recordCreatedAt,
       isStructural: true,
     });
   }
