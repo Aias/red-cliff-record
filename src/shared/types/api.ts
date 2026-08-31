@@ -52,6 +52,9 @@ export const RecordFiltersSchema = z.object({
 export const LimitSchema = z.number().int().positive();
 export const OffsetSchema = z.number().int().gte(0);
 export const OrderBySchema = z.array(OrderCriteriaSchema);
+export const RandomSortSchema = z.object({ mode: z.literal('random'), seed: z.number().int() });
+export const RecordSortSchema = z.union([OrderBySchema, RandomSortSchema]);
+export type RecordSort = z.infer<typeof RecordSortSchema>;
 
 export const RecordUpsertSchema = RecordInsertSchema.extend({
   isCurated: z.boolean().optional(),
