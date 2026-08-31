@@ -7,7 +7,8 @@ import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-short
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { RecordLink } from './-components/record-link';
-import { RecordsGrid } from './-components/records-grid';
+import { RecordsIndex } from './-components/records-index';
+import { SortMenu } from './-components/sort-menu';
 
 export const Route = createFileRoute('/records')({
   component: RouteComponent,
@@ -124,6 +125,7 @@ function RouteComponent() {
                 Index
               </Link>
             </styled.header>
+            <SortMenu hideLabel css={{ paddingInline: '3' }} />
             <RadioCards
               aria-labelledby="records-sidebar-heading"
               value={currentRecordId?.toString()}
@@ -147,7 +149,7 @@ function RouteComponent() {
           <Outlet />
         </>
       ) : (
-        <RecordsGrid />
+        <RecordsIndex />
       )}
     </styled.main>
   );
