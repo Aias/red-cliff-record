@@ -1,7 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import type { z } from 'zod';
 import {
-  DEFAULT_LIMIT,
   ListRecordsInputSchema,
   RecordSortSchema,
   type RecordFiltersSchema,
@@ -22,7 +21,7 @@ export const defaultOrderBy: RecordSort = [
 
 const defaultState: StoredFilters = {
   filters: {},
-  limit: DEFAULT_LIMIT,
+  limit: 100,
   orderBy: defaultOrderBy,
 };
 
