@@ -23,10 +23,13 @@ export const apply: CommandHandler = async (args, options) => {
     options
   );
   const path = args[0];
-  if (!path)
+  if (!path) {
     throw createError('VALIDATION_ERROR', 'Provide a preview JSON file created with --raw.');
-  const cleanup = ReadwiseCleanupPreviewSchema.parse(await Bun.file(path).json());
+  }
+  const { changes } = ReadwiseCleanupPreviewSchema.parse(await Bun.file(path).json());
   return success(
-    await caller.records.applyReadwiseCleanup({ preview: cleanup, recordIds: records })
+    await caller.records.applyReadwiseCleanup({
+      changes: changes.filter((change) => records.includes(change.target.id)),
+    })
   );
 };

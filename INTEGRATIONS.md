@@ -114,24 +114,24 @@ rcr sync readwise
 
 ### Highlight cleanup
 
-New highlights import formatted Markdown from Reader before they become RCR records. Formatting fetch failures leave highlights pending for the next sync. Existing records keep their text.
+New highlights import Reader's formatted Markdown before they become RCR records. When the formatted fetch fails, the highlights wait for the next sync. Existing records keep their text.
 
-Cleanup compares highlights with the document HTML saved by Reader, or Reader's document Markdown when HTML is unavailable. It restores source formatting, removes semantic footnote markers, and recovers selected images as URL-backed media attachments. Highlights stay separate unless explicitly combined. Only continuous or overlapping selections can combine. Unselected prose and media separate selections.
+Cleanup compares each highlight with the document HTML saved by Reader, fetching and storing the HTML for documents synced without it. It restores source formatting, removes footnote markers, and recovers selected images as URL-backed media attachments. Highlights stay separate unless you merge them. Only continuous or overlapping selections can merge; unselected prose and media keep selections apart.
 
-Open cleanup from a Readwise document or highlight in the record toolbar. The preview compares each proposed change with the saved record and selects every update by default. Deselect changes to exclude them. Eligible neighboring highlights can be combined and separated again before applying the preview. Existing edits, ambiguous matches, and unsupported media remain flagged for review. Applying a stale preview fails without changing records. Merges retain notes, links, media, and curation information.
+Open cleanup from a Readwise document or highlight in the record toolbar. The preview lists every highlight, selects each proposed change by default, and lets you deselect changes or merge eligible neighbors before applying. Existing edits, ambiguous matches, and unsupported media stay flagged for review. Applying a stale preview fails without changing records. Merges keep notes, links, media, and curation data on the surviving highlight, and an undo action reverses everything applied.
 
-The spelling and grammar check uses OpenAI for small corrections and is enabled by default in the preview dialog. Its suggestions are selected alongside source-based updates and remain flagged for review. Automatic cleanup excludes spelling and grammar checks.
+The spelling and grammar check uses OpenAI for small literal corrections. It is enabled by default in the preview dialog, and its suggestions stay flagged for review. Automatic cleanup never runs it.
 
 `READWISE_CLEANUP_MODE` controls cleanup during sync:
 
-| Value               | Behavior                                                                                                                    |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `preview` (default) | Inspect newly imported highlights and report proposal counts in the sync log. Review a document through its cleanup action. |
-| `automatic`         | Apply warning-free source corrections to newly imported records while keeping highlights separate.                          |
+| Value               | Behavior                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| `preview` (default) | Import formatted highlights only. Review documents through the toolbar action.             |
+| `automatic`         | Also apply warning-free, single-highlight corrections to the records created by that sync. |
 
-Neither mode runs cleanup across existing records. Combining highlights requires an explicit choice in a document preview.
+Neither mode touches existing records. Merging requires an explicit choice in a document preview.
 
-The CLI supports the same preview and selected application:
+The CLI offers the same preview and selective apply:
 
 ```bash
 rcr readwise preview 123 --raw > preview.json
@@ -139,7 +139,7 @@ rcr readwise preview 123 --editorial --raw > preview.json
 rcr readwise apply preview.json --records 124,125
 ```
 
-The selected IDs identify the surviving highlight in each proposed change. Reader's formatted content uses the same `READWISE_TOKEN` through the [Readwise MCP service](https://readwise.io/mcp).
+The `--records` ids name the surviving highlight of each change to apply. Reader's formatted highlights come from the [Readwise MCP service](https://readwise.io/mcp) with the same `READWISE_TOKEN`.
 
 ## Feedbin Integration
 

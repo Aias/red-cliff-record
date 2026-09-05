@@ -11,7 +11,7 @@ import {
   type SyncSummary,
 } from '../runtime/run';
 import { decodeZod } from '../runtime/zod';
-import { restoreNativeReadwiseHighlights, runNewReadwiseCleanup } from './cleanup/run';
+import { cleanupDocuments, formatNewHighlights } from './cleanup/sync';
 import {
   createReadwiseAuthors,
   createReadwiseTags,
@@ -190,8 +190,8 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
       failures.push(...result.failures);
     }
     yield* Effect.logInfo(`Upserted ${entriesCreated} of ${documents.length} documents`);
-    const nativeHighlights = yield* restoreNativeReadwiseHighlights();
-    failures.push(...nativeHighlights.failures);
+    const formatted = yield* formatNewHighlights();
+    failures.push(...formatted.failures);
     yield* Effect.all(
       [
         legacyOperation('readwise.authors', async () => {
@@ -205,13 +205,28 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
       ],
       { concurrency: 2 }
     );
-    const promotion = yield* database.use('readwise.documents', () =>
-      createRecordsFromReadwiseDocuments(runId, nativeHighlights.restoredHighlightIds)
+    const created = yield* database.use('readwise.documents', () =>
+      createRecordsFromReadwiseDocuments(runId, formatted.readyHighlightIds)
     );
-    failures.push(...promotion.failures);
-    if (promotion.recordIds.length) {
+    const mode = yield* Config.literals(['preview', 'automatic'], 'READWISE_CLEANUP_MODE').pipe(
+      Config.withDefault('preview')
+    );
+    if (mode === 'automatic' && created.recordIds.length) {
+      const parents = yield* database.use('readwise.newHighlightParents', (client) =>
+        client.query.readwiseDocuments.findMany({
+          where: { recordId: { in: created.recordIds }, category: 'highlight' },
+          columns: { id: true },
+          with: { parent: { columns: { recordId: true } } },
+        })
+      );
+      const parentRecordIds = [
+        ...new Set(parents.flatMap((row) => (row.parent?.recordId ? [row.parent.recordId] : []))),
+      ];
       failures.push(
-        ...(yield* runNewReadwiseCleanup(promotion.recordIds, nativeHighlights.nativeByParent))
+        ...(yield* cleanupDocuments(parentRecordIds, {
+          onlyRecordIds: new Set(created.recordIds),
+          nativeByParent: formatted.nativeByParent,
+        }))
       );
     }
     return { entriesCreated, failures } satisfies SyncSummary;

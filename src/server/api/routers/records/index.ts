@@ -8,7 +8,6 @@ import { list } from './list';
 import { merge } from './merge';
 import {
   applyReadwiseCleanupProcedure,
-  combineReadwiseCleanupProcedure,
   previewReadwiseCleanupProcedure,
   undoReadwiseCleanupProcedure,
 } from './readwise-cleanup';
@@ -25,7 +24,6 @@ export const recordsRouter = createTRPCRouter({
   merge,
   previewReadwiseCleanup: previewReadwiseCleanupProcedure,
   applyReadwiseCleanup: applyReadwiseCleanupProcedure,
-  combineReadwiseCleanup: combineReadwiseCleanupProcedure,
   undoReadwiseCleanup: undoReadwiseCleanupProcedure,
   refitElo,
   undoMerge,

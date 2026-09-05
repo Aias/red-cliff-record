@@ -368,19 +368,9 @@ export async function undoMergeInTransaction(tx: MergeTransaction, snapshot: Mer
     await tx.insert(links).values(snapshot.links.map(({ id: _id, ...link }) => link));
   }
 
-  const [restoredSourceRecord, restoredTargetRecord] = await Promise.all([
-    tx.query.records.findFirst({ where: { id: sourceRecord.id } }),
-    tx.query.records.findFirst({ where: { id: targetRecord.id } }),
-  ]);
-  if (!restoredSourceRecord || !restoredTargetRecord) {
-    throw new TRPCError({
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to fetch restored records.',
-    });
-  }
   return {
-    sourceRecord: restoredSourceRecord,
-    targetRecord: restoredTargetRecord,
+    sourceId: sourceRecord.id,
+    targetId: targetRecord.id,
     touchedIds: [
       ...new Set([...bothIds, ...snapshot.links.flatMap((link) => [link.sourceId, link.targetId])]),
     ],

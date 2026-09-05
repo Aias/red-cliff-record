@@ -15,10 +15,9 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { starsToElo } from '@/server/lib/elo';
 import { mapUrl } from '@/server/lib/url-utils';
-import { collectPoolFailures, runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
+import { runConcurrentPool, throwPoolFailures } from '@/shared/lib/async-pool';
 import { bulkInsertLinks, linkRecords } from '../common/db-helpers';
 import { createIntegrationLogger } from '../common/logging';
-import type { ItemFailure } from '../runtime/run';
 
 /** Default concurrency for database operations */
 const DB_CONCURRENCY = 10;
@@ -483,10 +482,9 @@ export const mapReadwiseDocumentToRecord = (
 
 export async function createRecordsFromReadwiseDocuments(
   integrationRunId: number,
-  restoredHighlightIds: string[]
+  readyHighlightIds: string[]
 ) {
   logger.start('Creating records from Readwise documents');
-  const failures: ItemFailure[] = [];
 
   const documents = await db.query.readwiseDocuments.findMany({
     with: {
@@ -496,11 +494,8 @@ export async function createRecordsFromReadwiseDocuments(
       OR: [
         {
           category: 'highlight',
-          id: { in: restoredHighlightIds },
-          parent: {
-            location: ReadwiseLocationSchema.enum.archive,
-            deletedAt: { isNull: true },
-          },
+          id: { in: readyHighlightIds },
+          parent: { location: ReadwiseLocationSchema.enum.archive },
         },
         {
           category: { ne: 'highlight' },
@@ -529,7 +524,7 @@ export async function createRecordsFromReadwiseDocuments(
 
   if (documents.length === 0 && updatedMappedDocuments.length === 0) {
     logger.skip('No new or updated documents to process');
-    return { recordIds: [], failures };
+    return { recordIds: [] };
   }
 
   logger.info(
@@ -542,45 +537,36 @@ export async function createRecordsFromReadwiseDocuments(
     items: documents,
     concurrency: DB_CONCURRENCY,
     async worker(doc) {
-      const insertedRecord = await db.transaction(async (tx) => {
-        const [document] = await tx
-          .select()
-          .from(readwiseDocuments)
-          .where(eq(readwiseDocuments.id, doc.id))
-          .for('update');
-        if (document?.recordId !== null || document.deletedAt !== null) return null;
-        const [inserted] = await tx
-          .insert(records)
-          .values(mapReadwiseDocumentToRecord({ ...document, children: doc.children }))
-          .onConflictDoUpdate({
-            target: records.id,
-            set: { recordUpdatedAt: new Date() },
-          })
-          .returning({ id: records.id });
-        if (!inserted) throw new Error(`Failed to create record for Readwise document ${doc.id}`);
-        await tx
-          .update(readwiseDocuments)
-          .set({ recordId: inserted.id })
-          .where(eq(readwiseDocuments.id, doc.id));
-        return inserted;
-      });
-      if (!insertedRecord) return;
+      const recordPayload = mapReadwiseDocumentToRecord(doc);
+
+      const [insertedRecord] = await db
+        .insert(records)
+        .values(recordPayload)
+        .onConflictDoUpdate({
+          target: records.id,
+          set: { recordUpdatedAt: new Date() },
+        })
+        .returning({ id: records.id });
+
+      if (!insertedRecord) {
+        logger.error(`Failed to create record for readwise document ${doc.id}`);
+        return;
+      }
 
       logger.info(
         `Created record ${insertedRecord.id} for readwise document ${doc.title || doc.content?.slice(0, 20)} (${doc.id})`
       );
 
+      await db
+        .update(readwiseDocuments)
+        .set({ recordId: insertedRecord.id })
+        .where(eq(readwiseDocuments.id, doc.id));
+
       recordMap.set(doc.id, insertedRecord.id);
       logger.info(`Linked readwise document ${doc.id} to record ${insertedRecord.id}`);
     },
   });
-  failures.push(
-    ...collectPoolFailures(
-      documentResults,
-      documents,
-      (document) => `readwise.document:${document.id}`
-    )
-  );
+  throwPoolFailures(documentResults, 'Readwise document→record mapping', documents.length);
 
   const documentsWithParents = documents.filter((doc) => doc.parentId && recordMap.has(doc.id));
 
@@ -606,16 +592,14 @@ export async function createRecordsFromReadwiseDocuments(
         await linkRecords(childRecordId, parentRecordId, 'contained_by', db);
         logger.info(`Linked child record ${childRecordId} to parent record ${parentRecordId}`);
       } else {
-        throw new Error(`Parent document ${doc.parentId} has no record for child ${doc.id}`);
+        logger.warn(`Skipping linking for document ${doc.id} due to missing parent record id`);
       }
     },
   });
-  failures.push(
-    ...collectPoolFailures(
-      parentLinkResults,
-      documentsWithParents,
-      (document) => `readwise.parent-link:${document.id}`
-    )
+  throwPoolFailures(
+    parentLinkResults,
+    'Readwise parent-child linking',
+    documentsWithParents.length
   );
 
   const documentsToLink: Array<{
@@ -683,43 +667,53 @@ export async function createRecordsFromReadwiseDocuments(
     }
   }
 
-  const metadataLinkResults = await runConcurrentPool({
-    items: documentsToLink,
-    concurrency: DB_CONCURRENCY,
-    async worker(doc) {
-      const values: LinkInsert[] = [];
-      const authorRecordId = doc.authorId ? authorIndexMap.get(doc.authorId) : undefined;
-      if (authorRecordId !== undefined) {
-        values.push({
-          sourceId: doc.recordId,
-          targetId: authorRecordId,
-          predicate: 'created_by',
-        });
+  const recordCreatorsValues: LinkInsert[] = [];
+  const recordRelationsValues: LinkInsert[] = [];
+
+  for (const doc of documentsToLink) {
+    const { recordId } = doc;
+
+    if (doc.authorId && authorIndexMap.has(doc.authorId)) {
+      const authorRecordId = authorIndexMap.get(doc.authorId);
+      if (authorRecordId === undefined) {
+        continue;
       }
-      for (const tag of doc.tags ?? []) {
-        const tagRecordId = tagIndexMap.get(tag);
-        if (tagRecordId !== undefined) {
-          values.push({
-            sourceId: doc.recordId,
+      recordCreatorsValues.push({
+        sourceId: recordId,
+        targetId: authorRecordId,
+        predicate: 'created_by',
+      });
+    }
+
+    if (doc.tags && Array.isArray(doc.tags)) {
+      for (const tag of doc.tags) {
+        if (tagIndexMap.has(tag)) {
+          const tagRecordId = tagIndexMap.get(tag);
+          if (tagRecordId === undefined) {
+            continue;
+          }
+          recordRelationsValues.push({
+            sourceId: recordId,
             targetId: tagRecordId,
             predicate: 'tagged_with',
           });
         }
       }
-      if (values.length) await bulkInsertLinks(values, db);
-    },
-  });
-  failures.push(
-    ...collectPoolFailures(
-      metadataLinkResults,
-      documentsToLink,
-      (document) => `readwise.metadata-links:${document.recordId}`
-    )
-  );
+    }
+  }
 
-  for (const failure of failures) logger.warn(`${failure.label}: ${failure.message}`);
+  if (recordCreatorsValues.length > 0) {
+    await bulkInsertLinks(recordCreatorsValues, db);
+    logger.info(`Linked ${recordCreatorsValues.length} authors to records`);
+  }
+
+  if (recordRelationsValues.length > 0) {
+    await bulkInsertLinks(recordRelationsValues, db);
+    logger.info(`Linked ${recordRelationsValues.length} tags to records`);
+  }
+
   logger.complete(
     `Processed ${recordMap.size} new and ${updatedMappedDocuments.length} updated Readwise documents`
   );
-  return { recordIds: [...recordMap.values()], failures };
+  return { recordIds: [...recordMap.values()] };
 }

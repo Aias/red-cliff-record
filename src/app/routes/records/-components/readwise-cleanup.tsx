@@ -13,11 +13,8 @@ import { Markdown } from '@/components/markdown';
 import { Spinner } from '@/components/spinner';
 import { Tooltip } from '@/components/tooltip';
 import { replaceBasketId } from '@/lib/hooks/use-basket';
-import {
-  canCombineReadwiseChanges,
-  hasReadwiseCleanupChanges,
-  type ReadwiseCleanupChange,
-} from '@/shared/readwise-cleanup';
+import type { ReadwiseCleanupChange, ReadwiseCleanupPreview } from '@/shared/readwise-cleanup';
+import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 
 const Checkbox = styled(BaseCheckbox.Root, {
@@ -44,19 +41,39 @@ const Checkbox = styled(BaseCheckbox.Root, {
   },
 });
 
+const Note = styled('p', { base: { textStyle: 'sm', color: 'secondary' } });
+const Column = styled('div', {
+  base: { display: 'flex', flexDirection: 'column', gap: '2', minWidth: '0' },
+});
+const passage = css.raw({ textStyle: 'sm', overflowWrap: 'anywhere' });
+
 const sourceLabels = {
-  readwise: 'Readwise formatting',
   document: 'Source reconstruction',
   model: 'Editorial correction',
+  readwise: 'Readwise formatting',
 };
 
 const unbatched = { trpc: { context: { skipBatch: true } } };
 
-type CleanupEntry = {
-  change: ReadwiseCleanupChange;
-  checked: boolean;
-  originals?: CleanupEntry[];
-};
+type Entry = { change: ReadwiseCleanupChange; checked: boolean; originals?: Entry[] };
+
+const recordIds = (change: ReadwiseCleanupChange) => [
+  change.target.id,
+  ...change.merged.map((record) => record.id),
+];
+
+function canMerge(left: Entry, right: Entry, pairs: ReadwiseCleanupPreview['mergeable']) {
+  const leftIds = recordIds(left.change);
+  const rightIds = recordIds(right.change);
+  return (
+    !leftIds.some((id) => rightIds.includes(id)) &&
+    pairs.some(
+      ([first, second]) =>
+        (leftIds.includes(first) && rightIds.includes(second)) ||
+        (leftIds.includes(second) && rightIds.includes(first))
+    )
+  );
+}
 
 export function ReadwiseCleanup({ recordId }: { recordId: number }) {
   const trpc = useTRPC();
@@ -64,8 +81,8 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [editorial, setEditorial] = useState(true);
-  const [entries, setEntries] = useState<CleanupEntry[]>([]);
-  const [combiningRecordId, setCombiningRecordId] = useState<number>();
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [mergingId, setMergingId] = useState<number>();
   const previewQuery = useQuery(
     trpc.records.previewReadwiseCleanup.queryOptions(
       { id: recordId, editorial },
@@ -84,24 +101,20 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
   );
   const applyMutation = useMutation(
     trpc.records.applyReadwiseCleanup.mutationOptions({
-      onSuccess: ({ updatedRecordIds, deletedRecordIds, snapshot }, { preview }) => {
-        for (const change of preview.changes) {
-          const [targetId] = change.recordIds;
-          if (!updatedRecordIds.includes(targetId)) continue;
-          for (const sourceId of change.recordIds) {
-            if (deletedRecordIds.includes(sourceId)) replaceBasketId(sourceId, targetId);
+      onSuccess: ({ updatedRecordIds, deletedRecordIds, snapshot }, { changes }) => {
+        for (const change of changes) {
+          for (const record of change.merged) {
+            if (deletedRecordIds.includes(record.id)) replaceBasketId(record.id, change.target.id);
           }
         }
         for (const id of [recordId, ...updatedRecordIds, ...deletedRecordIds]) {
           void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id }));
         }
-        const deleted = deletedRecordIds.includes(recordId);
-        if (deleted) {
-          const target = preview.changes.find((change) => change.recordIds.includes(recordId));
-          void navigate({
-            to: '/records/$recordId',
-            params: { recordId: target?.recordIds[0] ?? preview.recordId },
-          });
+        const survivor = changes.find((change) =>
+          change.merged.some((record) => record.id === recordId)
+        )?.target.id;
+        if (survivor !== undefined) {
+          void navigate({ to: '/records/$recordId', params: { recordId: survivor } });
         }
         setOpen(false);
         toast('Readwise highlights cleaned up', {
@@ -109,7 +122,9 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
             label: 'Undo',
             onClick: () => {
               void undoMutation.mutateAsync({ snapshot }).then(() => {
-                if (deleted) void navigate({ to: '/records/$recordId', params: { recordId } });
+                if (survivor !== undefined) {
+                  void navigate({ to: '/records/$recordId', params: { recordId } });
+                }
               });
             },
           },
@@ -119,16 +134,10 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
     })
   );
   const preview = previewQuery.data;
-  const updates = entries.filter(({ change }) => hasReadwiseCleanupChanges(change));
-  const selectedRecordIds = updates.flatMap(({ change, checked }) =>
-    checked ? [change.recordIds[0]] : []
-  );
-  const unchangedCount =
-    preview?.unchangedRecordIds.filter(
-      (id) => !updates.some(({ change }) => change.recordIds.includes(id))
-    ).length ?? 0;
+  const selected = entries.filter((entry) => entry.checked).map((entry) => entry.change);
+  const unchangedCount = entries.filter((entry) => !entry.change.changed).length;
   const applying = applyMutation.isPending;
-  const busy = previewQuery.isFetching || combiningRecordId !== undefined || applying;
+  const busy = previewQuery.isFetching || mergingId !== undefined || applying;
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (applying) return;
@@ -145,60 +154,54 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
 
   const handlePreview = () => {
     void previewQuery.refetch().then(({ data }) => {
-      if (data) {
-        setEntries(
-          data.changes.map((change) => ({ change, checked: hasReadwiseCleanupChanges(change) }))
-        );
-      }
+      if (data) setEntries(data.changes.map((change) => ({ change, checked: change.changed })));
     });
   };
 
-  const handleCombine = (left: CleanupEntry, right: CleanupEntry) => {
-    setCombiningRecordId(left.change.recordIds[0]);
+  const handleMerge = (left: Entry, right: Entry) => {
+    setMergingId(left.change.target.id);
     queryClient
       .query(
-        trpc.records.combineReadwiseCleanup.queryOptions(
+        trpc.records.previewReadwiseCleanup.queryOptions(
           {
             id: recordId,
-            recordIds: [...left.change.recordIds, ...right.change.recordIds],
             editorial,
+            merge: [...recordIds(left.change), ...recordIds(right.change)],
           },
           unbatched
         )
       )
-      .then((change) => {
+      .then((merged) => {
+        const [change] = merged.changes;
+        if (!change) return;
+        const entry: Entry = {
+          change: { ...change, warnings: [...new Set([...change.warnings, ...merged.issues])] },
+          checked: true,
+          originals: [left, right],
+        };
         setEntries((current) =>
-          current.flatMap((entry) => {
-            if (entry === left) return [{ change, checked: true, originals: [left, right] }];
-            return entry === right ? [] : [entry];
+          current.flatMap((item) => {
+            if (item === left) return [entry];
+            return item === right ? [] : [item];
           })
         );
       })
       .catch(() => undefined)
-      .finally(() => setCombiningRecordId(undefined));
+      .finally(() => setMergingId(undefined));
   };
 
-  const handleUndoCombine = (entry: CleanupEntry) => {
+  const handleUnmerge = (entry: Entry) => {
     setEntries((current) =>
       current.flatMap((item) => (item === entry ? (entry.originals ?? [entry]) : [item]))
     );
   };
 
+  const handleSelectionChange = (entry: Entry, checked: boolean) => {
+    setEntries((current) => current.map((item) => (item === entry ? { ...item, checked } : item)));
+  };
+
   const handleApply = () => {
-    if (preview) {
-      applyMutation.mutate({
-        preview: { ...preview, changes: entries.map(({ change }) => change) },
-        recordIds: selectedRecordIds,
-      });
-    }
-  };
-
-  const handleCancel = () => {
-    handleOpenChange(false);
-  };
-
-  const handleSelectionChange = (entry: CleanupEntry, checked: boolean) => {
-    setEntries((current) => current.map((item) => (item === entry ? { ...entry, checked } : item)));
+    applyMutation.mutate({ changes: selected });
   };
 
   return (
@@ -229,7 +232,7 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
         <Dialog.Header>
           <Dialog.Title>Clean up Readwise highlights</Dialog.Title>
           <Dialog.Description>
-            Review the suggested changes. Highlights stay separate unless you combine them. Nothing
+            Review the suggested changes. Highlights stay separate unless you merge them. Nothing
             changes until you apply your selections.
           </Dialog.Description>
         </Dialog.Header>
@@ -243,17 +246,7 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
             containerType: 'inline-size',
           }}
         >
-          {!preview && (
-            <Label>
-              <Checkbox checked={editorial} onCheckedChange={setEditorial} disabled={busy}>
-                <BaseCheckbox.Indicator>
-                  <CheckIcon />
-                </BaseCheckbox.Indicator>
-              </Checkbox>
-              Check spelling and grammar
-            </Label>
-          )}
-          {preview && (
+          {preview ? (
             <>
               <styled.header css={{ display: 'flex', flexDirection: 'column', gap: '1' }}>
                 <styled.h3 css={{ textStyle: 'base', fontWeight: 'semibold' }}>
@@ -265,62 +258,62 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
                   </ExternalLink>
                 )}
                 {!preview.sourceAvailable && (
-                  <styled.p css={{ textStyle: 'sm', color: 'secondary' }}>
+                  <Note>
                     The original document was unavailable. Review the Readwise-based changes
                     carefully.
-                  </styled.p>
+                  </Note>
                 )}
               </styled.header>
-              {preview.issues.length > 0 && <CleanupWarnings warnings={preview.issues} />}
+              {preview.issues.length > 0 && <Warnings warnings={preview.issues} />}
               {entries.map((entry, index) => {
-                const [id] = entry.change.recordIds;
-                const nextEntry = entries[index + 1];
+                const next = entries[index + 1];
                 return (
-                  <CleanupChange
-                    key={id}
+                  <CleanupEntry
+                    key={entry.change.target.id}
                     entry={entry}
-                    nextEntry={nextEntry}
-                    recordId={id}
-                    canCombine={
-                      nextEntry !== undefined &&
-                      canCombineReadwiseChanges(
-                        entry.change,
-                        nextEntry.change,
-                        preview.combinablePairs
-                      )
-                    }
-                    combining={combiningRecordId === id}
+                    merging={mergingId === entry.change.target.id}
                     disabled={busy}
                     onSelectionChange={handleSelectionChange}
-                    onCombine={handleCombine}
-                    onUndoCombine={handleUndoCombine}
+                    onMerge={
+                      next && canMerge(entry, next, preview.mergeable)
+                        ? () => handleMerge(entry, next)
+                        : undefined
+                    }
+                    onUnmerge={handleUnmerge}
                   />
                 );
               })}
-              {updates.length === 0 ? (
-                <styled.p css={{ textStyle: 'sm', color: 'secondary' }}>
-                  No cleanup changes were found.
-                </styled.p>
+              {entries.length === unchangedCount ? (
+                <Note>No cleanup changes were found.</Note>
               ) : (
                 unchangedCount > 0 && (
-                  <styled.p css={{ textStyle: 'sm', color: 'secondary' }}>
+                  <Note>
                     {unchangedCount === 1
                       ? '1 highlight needs no changes.'
                       : `${unchangedCount} highlights need no changes.`}
-                  </styled.p>
+                  </Note>
                 )
               )}
             </>
+          ) : (
+            <Label>
+              <Checkbox checked={editorial} onCheckedChange={setEditorial} disabled={busy}>
+                <BaseCheckbox.Indicator>
+                  <CheckIcon />
+                </BaseCheckbox.Indicator>
+              </Checkbox>
+              Check spelling and grammar
+            </Label>
           )}
         </styled.div>
         <Dialog.Footer>
-          <Button variant="outline" onClick={handleCancel} disabled={applying}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={applying}>
             Cancel
           </Button>
           {preview ? (
-            <Button onClick={handleApply} disabled={busy || selectedRecordIds.length === 0}>
+            <Button onClick={handleApply} disabled={busy || selected.length === 0}>
               {applying && <Spinner />}
-              Apply selected ({selectedRecordIds.length})
+              Apply selected ({selected.length})
             </Button>
           ) : (
             <Button onClick={handlePreview} disabled={busy}>
@@ -334,43 +327,29 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
   );
 }
 
-function CleanupChange({
+function CleanupEntry({
   entry,
-  nextEntry,
-  recordId,
-  canCombine,
-  combining,
+  merging,
   disabled,
   onSelectionChange,
-  onCombine,
-  onUndoCombine,
+  onMerge,
+  onUnmerge,
 }: {
-  entry: CleanupEntry;
-  nextEntry: CleanupEntry | undefined;
-  recordId: number;
-  canCombine: boolean;
-  combining: boolean;
+  entry: Entry;
+  merging: boolean;
   disabled: boolean;
-  onSelectionChange: (entry: CleanupEntry, checked: boolean) => void;
-  onCombine: (left: CleanupEntry, right: CleanupEntry) => void;
-  onUndoCombine: (entry: CleanupEntry) => void;
+  onSelectionChange: (entry: Entry, checked: boolean) => void;
+  onMerge: (() => void) | undefined;
+  onUnmerge: (entry: Entry) => void;
 }) {
   const { change, checked } = entry;
-  const hasChanges = hasReadwiseCleanupChanges(change);
-  const handleCheckedChange = (nextChecked: boolean) => {
-    onSelectionChange(entry, nextChecked);
-  };
-  const handleCombine = () => {
-    if (nextEntry) onCombine(entry, nextEntry);
-  };
-  const handleUndoCombine = () => {
-    onUndoCombine(entry);
-  };
+  const id = change.target.id;
+  const before = [change.target, ...change.merged];
 
   return (
     <>
       <styled.section
-        aria-label={`Highlight ${recordId}`}
+        aria-label={`Highlight ${id}`}
         css={{
           display: 'flex',
           flexDirection: 'column',
@@ -389,41 +368,43 @@ function CleanupChange({
             gap: '2',
           }}
         >
-          {hasChanges ? (
+          {change.changed ? (
             <Label>
-              <Checkbox checked={checked} onCheckedChange={handleCheckedChange} disabled={disabled}>
+              <Checkbox
+                checked={checked}
+                onCheckedChange={(next) => onSelectionChange(entry, next)}
+                disabled={disabled}
+              >
                 <BaseCheckbox.Indicator>
                   <CheckIcon />
                 </BaseCheckbox.Indicator>
               </Checkbox>
               {sourceLabels[change.source]}
-              {change.recordIds.length > 1 && ` · Combine ${change.recordIds.length} highlights`}
+              {change.merged.length > 0 && ` · Merge ${before.length} highlights`}
             </Label>
           ) : (
-            <styled.p css={{ textStyle: 'sm', color: 'secondary' }}>
-              Highlight {recordId} · No changes suggested
-            </styled.p>
+            <Note>Highlight {id} · No changes suggested</Note>
           )}
           {entry.originals && (
-            <Button variant="ghost" size="sm" disabled={disabled} onClick={handleUndoCombine}>
-              Undo combine
+            <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onUnmerge(entry)}>
+              Undo merge
             </Button>
           )}
         </styled.header>
-        {hasChanges && change.reasons.length > 0 && (
+        {change.changed && change.reasons.length > 0 && (
           <styled.ul css={{ display: 'flex', flexDirection: 'column', gap: '1', textStyle: 'sm' }}>
             {change.reasons.map((reason) => (
               <li key={reason}>{reason}</li>
             ))}
           </styled.ul>
         )}
-        {change.warnings.length > 0 && <CleanupWarnings warnings={change.warnings} />}
-        {change.recordIds.length > 1 && (
+        {change.warnings.length > 0 && <Warnings warnings={change.warnings} />}
+        {change.merged.length > 0 && (
           <styled.p css={{ textStyle: 'xs', color: 'secondary' }}>
-            Keep highlight {recordId} with the combined text, notes, links, and media.
+            Keep highlight {id} with the merged text, notes, links, and media.
           </styled.p>
         )}
-        {hasChanges ? (
+        {change.changed ? (
           <styled.div
             css={{
               display: 'grid',
@@ -433,10 +414,10 @@ function CleanupChange({
               },
             }}
           >
-            <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '2', minWidth: '0' }}>
-              {change.before.map((original) => (
+            <Column>
+              {before.map((record) => (
                 <styled.article
-                  key={original.id}
+                  key={record.id}
                   css={{ display: 'flex', flexDirection: 'column', gap: '2' }}
                 >
                   <styled.h4
@@ -452,20 +433,16 @@ function CleanupChange({
                     <styled.span
                       css={{ textStyle: 'xs', fontWeight: 'normal', color: 'secondary' }}
                     >
-                      Highlight {original.id}
+                      Highlight {record.id}
                     </styled.span>
                   </styled.h4>
-                  <Markdown css={{ textStyle: 'sm', overflowWrap: 'anywhere' }}>
-                    {original.content ?? ''}
-                  </Markdown>
+                  <Markdown css={passage}>{record.content ?? ''}</Markdown>
                 </styled.article>
               ))}
-            </styled.div>
-            <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '2', minWidth: '0' }}>
+            </Column>
+            <Column>
               <styled.h4 css={{ textStyle: 'sm', fontWeight: 'semibold' }}>After</styled.h4>
-              <Markdown css={{ textStyle: 'sm', overflowWrap: 'anywhere' }}>
-                {change.content}
-              </Markdown>
+              <Markdown css={passage}>{change.content}</Markdown>
               {change.images.length > 0 && (
                 <>
                   <styled.h5 css={{ textStyle: 'xs', fontWeight: 'semibold' }}>
@@ -488,29 +465,29 @@ function CleanupChange({
                   </styled.ul>
                 </>
               )}
-            </styled.div>
+            </Column>
           </styled.div>
         ) : (
-          <Markdown css={{ textStyle: 'sm', overflowWrap: 'anywhere' }}>{change.content}</Markdown>
+          <Markdown css={passage}>{change.content}</Markdown>
         )}
       </styled.section>
-      {canCombine && (
+      {onMerge && (
         <Button
           variant="outline"
           size="sm"
           css={{ alignSelf: 'center' }}
           disabled={disabled}
-          onClick={handleCombine}
+          onClick={onMerge}
         >
-          {combining && <Spinner />}
-          {combining ? 'Combining highlights' : 'Combine highlights'}
+          {merging && <Spinner />}
+          {merging ? 'Merging highlights' : 'Merge highlights'}
         </Button>
       )}
     </>
   );
 }
 
-function CleanupWarnings({ warnings }: { warnings: string[] }) {
+function Warnings({ warnings }: { warnings: string[] }) {
   return (
     <styled.ul
       css={{

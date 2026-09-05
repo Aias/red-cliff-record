@@ -1,25 +1,24 @@
+import { readwiseDocuments } from '@hozo';
 import { TRPCError } from '@trpc/server';
+import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
-import { hasReadwiseCleanupChanges } from '@/shared/readwise-cleanup';
-import { fetchReaderDocument, fetchReaderHighlights } from '../reader';
+import type { ReadwiseCleanupPreview } from '@/shared/readwise-cleanup';
+import { fetchDocumentHtml, fetchReaderHighlights } from '../reader';
 import { addEditorialSuggestions } from './editorial';
-import { proposeReadwiseCleanup } from './proposals';
-import { renderMarkdown } from './source';
+import { proposeCleanup } from './propose';
+import { parseSource } from './source';
 
-export async function previewReadwiseCleanup(
+type PreviewOptions = {
+  editorial?: boolean;
+  merge?: number[];
+  nativeById?: ReadonlyMap<string, string>;
+  signal?: AbortSignal;
+};
+
+export async function previewCleanup(
   recordId: number,
-  {
-    editorial = false,
-    combineRecordIds = [],
-    nativeById,
-    signal,
-  }: {
-    editorial?: boolean;
-    combineRecordIds?: number[];
-    nativeById?: Map<string, string>;
-    signal?: AbortSignal;
-  } = {}
-) {
+  { editorial = false, merge, nativeById, signal }: PreviewOptions = {}
+): Promise<ReadwiseCleanupPreview> {
   const mapped = await db.query.readwiseDocuments.findFirst({
     where: { recordId, deletedAt: { isNull: true } },
     with: { parent: true },
@@ -32,7 +31,7 @@ export async function previewReadwiseCleanup(
     });
   }
   const parentRecordId = parent.recordId;
-  const mappedHighlights = await db.query.readwiseDocuments.findMany({
+  const rows = await db.query.readwiseDocuments.findMany({
     where: { parentId: parent.id, category: 'highlight', deletedAt: { isNull: true } },
     columns: { id: true, recordId: true, content: true },
     with: {
@@ -48,81 +47,56 @@ export async function previewReadwiseCleanup(
       },
     },
   });
-  const issues = mappedHighlights
-    .filter((highlight) => highlight.recordId === parentRecordId)
-    .map(
-      (highlight) =>
-        `Highlight ${highlight.id} is merged into the document record and was left unchanged.`
-    );
-  const highlights = mappedHighlights.filter((highlight) => highlight.recordId !== parentRecordId);
+  const issues = rows
+    .filter((row) => row.recordId === parentRecordId)
+    .map((row) => `Highlight ${row.id} is merged into the document record and was left unchanged.`);
+  const failed =
+    <T>(fallback: T) =>
+    (error: unknown) => {
+      if (signal?.aborted) throw error;
+      issues.push(error instanceof Error ? error.message : String(error));
+      return fallback;
+    };
+  const highlights = rows.flatMap(({ record, ...row }) =>
+    record && record.id !== parentRecordId && (!merge || merge.includes(record.id))
+      ? [{ ...row, record }]
+      : []
+  );
   const native =
     nativeById ??
     new Map(
-      (
-        await fetchReaderHighlights(parent.id, signal).catch((error: unknown) => {
-          if (signal?.aborted) throw error;
-          issues.push(
-            error instanceof Error ? error.message : 'Formatted highlights are unavailable.'
-          );
-          return [];
-        })
-      ).map((highlight) => [highlight.id, highlight.content])
+      (await fetchReaderHighlights(parent.id, signal).catch(failed([]))).map((highlight) => [
+        highlight.id,
+        highlight.content,
+      ])
     );
   let html = parent.htmlContent;
   if (!html) {
-    const document = await fetchReaderDocument(parent.id, signal).catch((error: unknown) => {
-      if (signal?.aborted) throw error;
-      issues.push(error instanceof Error ? error.message : 'The source document is unavailable.');
-      return null;
-    });
-    if (document?.content) html = renderMarkdown(document.content);
-  }
-  const {
-    changes,
-    combinablePairs,
-    issues: sourceIssues,
-    sourceAvailable,
-  } = proposeReadwiseCleanup(
-    combineRecordIds.length
-      ? highlights.filter(
-          (highlight) =>
-            highlight.recordId !== null && combineRecordIds.includes(highlight.recordId)
-        )
-      : highlights,
-    native,
-    html,
-    parent.sourceUrl,
-    editorial,
-    combineRecordIds
-  );
-  issues.push(...sourceIssues);
-  const unchangedRecordIds: number[] = [];
-
-  if (editorial) {
-    issues.push(
-      ...(await addEditorialSuggestions(changes, signal).catch((error: unknown) => {
-        if (signal?.aborted) throw error;
-        return [error instanceof Error ? error.message : 'The spelling and grammar check failed.'];
-      }))
-    );
-  }
-  const proposals = changes.filter((change) => {
-    if (!hasReadwiseCleanupChanges(change)) {
-      unchangedRecordIds.push(...change.recordIds);
-      return combinablePairs.some((pair) => pair.some((id) => change.recordIds.includes(id)));
+    html = await fetchDocumentHtml(parent.id, signal).catch(failed(null));
+    if (html) {
+      await db
+        .update(readwiseDocuments)
+        .set({ htmlContent: html })
+        .where(eq(readwiseDocuments.id, parent.id));
     }
-    return true;
-  });
-
+  }
+  const source = html ? parseSource(html, parent.sourceUrl) : null;
+  const { changes, mergeable } = proposeCleanup(
+    highlights,
+    native,
+    source,
+    parent.sourceUrl,
+    merge
+  );
+  if (editorial) issues.push(...(await addEditorialSuggestions(changes, signal).catch(failed([]))));
   return {
     documentId: parent.id,
-    recordId: parent.recordId,
+    recordId: parentRecordId,
     title: parent.title,
     sourceUrl: parent.sourceUrl,
-    sourceAvailable,
-    changes: proposals,
-    combinablePairs,
-    unchangedRecordIds,
+    sourceAvailable: source !== null,
+    changes,
+    mergeable,
     issues,
   };
 }
