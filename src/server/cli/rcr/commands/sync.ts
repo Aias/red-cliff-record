@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { checkDatabaseConnection } from '@/server/db/connections/postgres';
-import { runIntegrationSync } from '@/server/integrations/runtime/runtime';
+import { runIntegrationSync } from '@/server/integrations/runtime/sync';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';

@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.9.23",
+  "version": "0.10.0",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -48,7 +48,9 @@
   "dependencies": {
     "@base-ui/react": "~1.7.0",
     "@effect/platform-bun": "4.0.0-rc.112",
+    "@joplin/turndown-plugin-gfm": "~1.0.67",
     "@libsql/client": "~0.17.4",
+    "@mixmark-io/domino": "~2.2.0",
     "@octokit/plugin-throttling": "~11.0.5",
     "@octokit/rest": "~22.0.1",
     "@radix-ui/colors": "~3.0.0",
@@ -76,6 +78,7 @@
     "react-scan": "~0.5.7",
     "sonner": "~2.0.8",
     "superjson": "~2.2.6",
+    "turndown": "~7.2.4",
     "vite": "~8.2.2",
     "zod": "~4.5.4"
   },
@@ -87,6 +90,7 @@
     "@types/node": "~26.2.0",
     "@types/react": "~19.2.18",
     "@types/react-dom": "~19.2.4",
+    "@types/turndown": "~5.0.6",
     "@vitejs/plugin-react": "~6.1.0",
     "concurrently": "~10.0.5",
     "drizzle-kit": "1.0.0-rc.4",

@@ -105,7 +105,7 @@ let commands: Record<string, Record<string, CommandHandler>> | null = null;
 async function loadCommands() {
   if (commands) return commands;
 
-  const [browsing, db, enrich, fetch, github, links, media, records, search, sync] =
+  const [browsing, db, enrich, fetch, github, links, media, readwise, records, search, sync] =
     await Promise.all([
       import('./commands/browsing'),
       import('./commands/db'),
@@ -114,12 +114,13 @@ async function loadCommands() {
       import('./commands/github'),
       import('./commands/links'),
       import('./commands/media'),
+      import('./commands/readwise'),
       import('./commands/records'),
       import('./commands/search'),
       import('./commands/sync'),
     ]);
 
-  commands = { browsing, db, enrich, fetch, github, links, media, records, search, sync };
+  commands = { browsing, db, enrich, fetch, github, links, media, readwise, records, search, sync };
   return commands;
 }
 
@@ -151,6 +152,12 @@ Commands:
   records tree <id...>          Get hierarchical family tree(s)
   records children <id>         Get children of a record
   records parent <id>           Get parent of a record
+
+  readwise preview <id> [--editorial]  Preview one document's highlight cleanup
+  readwise apply <file> --records <ids>  Apply selected target IDs from a --raw preview
+  readwise cleanup [--since <date>] [--until <date>] [--limit <n>] [--dry-run] [--snapshots <file>]
+                                Apply warning-free cleanup to uncurated highlights, newest documents first
+  readwise undo <file>          Undo a cleanup run from its snapshots file
 
   media get <id...> [--with-record]  Fetch media item(s) by ID
   media list [filters]              List media with optional filters

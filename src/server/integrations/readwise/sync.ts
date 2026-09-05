@@ -11,6 +11,7 @@ import {
   type SyncSummary,
 } from '../runtime/run';
 import { decodeZod } from '../runtime/zod';
+import { cleanupDocuments, formatNewHighlights } from './cleanup/sync';
 import {
   createReadwiseAuthors,
   createReadwiseTags,
@@ -164,9 +165,6 @@ function groupDocumentsByDepth(documents: ReadonlyArray<ReadwiseArticle>): Readw
 const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
   Effect.gen(function* () {
     const runId = yield* requireRunId;
-    if (documents.length === 0) {
-      return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
-    }
     const database = yield* Database;
     const levels = groupDocumentsByDepth(sortDocumentsByHierarchy(documents));
     let entriesCreated = 0;
@@ -192,6 +190,8 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
       failures.push(...result.failures);
     }
     yield* Effect.logInfo(`Upserted ${entriesCreated} of ${documents.length} documents`);
+    const formatted = yield* formatNewHighlights();
+    failures.push(...formatted.failures);
     yield* Effect.all(
       [
         legacyOperation('readwise.authors', async () => {
@@ -205,7 +205,29 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
       ],
       { concurrency: 2 }
     );
-    yield* legacyOperation('readwise.documents', () => createRecordsFromReadwiseDocuments(runId));
+    const created = yield* database.use('readwise.documents', () =>
+      createRecordsFromReadwiseDocuments(runId, formatted.readyHighlightIds)
+    );
+    const mode = yield* Config.literals(['preview', 'automatic'], 'READWISE_CLEANUP_MODE').pipe(
+      Config.withDefault('preview')
+    );
+    if (mode === 'automatic' && created.recordIds.length) {
+      const parents = yield* database.use('readwise.newHighlightParents', (client) =>
+        client.query.readwiseDocuments.findMany({
+          where: { recordId: { in: created.recordIds }, category: 'highlight' },
+          columns: { id: true },
+          with: { parent: { columns: { recordId: true } } },
+        })
+      );
+      const parentRecordIds = [
+        ...new Set(parents.flatMap((row) => (row.parent?.recordId ? [row.parent.recordId] : []))),
+      ];
+      const cleanup = yield* cleanupDocuments(parentRecordIds, {
+        onlyRecordIds: new Set(created.recordIds),
+        nativeByParent: formatted.nativeByParent,
+      });
+      failures.push(...cleanup.failures);
+    }
     return { entriesCreated, failures } satisfies SyncSummary;
   });
 

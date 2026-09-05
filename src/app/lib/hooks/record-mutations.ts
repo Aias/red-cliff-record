@@ -91,10 +91,7 @@ function useUndoMerge() {
 
   return useMutation(
     trpc.records.undoMerge.mutationOptions({
-      onSuccess: ({ sourceRecord, targetRecord }) => {
-        const sourceId = sourceRecord.id;
-        const targetId = targetRecord.id;
-
+      onSuccess: ({ sourceId, targetId }) => {
         // Similarity search is excluded from global invalidation.
         void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id: sourceId }));
         void queryClient.invalidateQueries(trpc.search.byRecordId.queryFilter({ id: targetId }));
