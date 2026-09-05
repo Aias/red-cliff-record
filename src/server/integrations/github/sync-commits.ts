@@ -8,36 +8,24 @@ import {
 } from '@hozo';
 import type { Octokit } from '@octokit/rest';
 import type { Endpoints } from '@octokit/types';
-import { eq } from 'drizzle-orm';
 import { Array as Arr, Effect, Option, Stream, Tuple } from 'effect';
 import { db } from '@/server/db/connections/postgres';
 import { Database } from '../runtime/db';
 import { DebugSink } from '../runtime/debug';
 import { ApiRequestError } from '../runtime/errors';
 import { forEachCollect, type ItemFailure, type SyncSummary } from '../runtime/run';
+import { scanRepositories, type ScannedRepository } from './scan-repositories';
 import { ensureGithubUserExists } from './sync-users';
-import { toGithubId } from './types';
+import { toGithubId, type CommitCandidate } from './types';
 
 type GithubRepository = Endpoints['GET /repos/{owner}/{repo}']['response']['data'];
 type CommitSearchItem = Endpoints['GET /search/commits']['response']['data']['items'][number];
-type CommitListItem = Endpoints['GET /repos/{owner}/{repo}/commits']['response']['data'][number];
 type DetailedCommit = Endpoints['GET /repos/{owner}/{repo}/commits/{ref}']['response']['data'];
-
-export interface CommitCandidate {
-  readonly sha: string;
-  readonly nodeId: string;
-  readonly htmlUrl: string;
-  readonly message: string;
-  readonly authoredAt: string;
-  readonly committedAt: string | null;
-  readonly repoOwner: string;
-  readonly repoName: string;
-  readonly repoFullName: string;
-}
 
 export interface FetchedCommits {
   readonly candidates: ReadonlyArray<CommitCandidate>;
   readonly failures: ReadonlyArray<ItemFailure>;
+  readonly scanned: ReadonlyArray<ScannedRepository>;
 }
 
 interface HydratedCommit {
@@ -50,13 +38,17 @@ interface CommitHydration {
   readonly candidateCount: number;
   readonly commits: ReadonlyArray<HydratedCommit>;
   readonly failures: ReadonlyArray<ItemFailure>;
+  readonly settledShas: ReadonlySet<string>;
+}
+
+interface CommitPersistence extends SyncSummary {
+  readonly persistedShas: ReadonlyArray<string>;
 }
 
 const MAX_PATCH_LENGTH = 2048;
 const PER_PAGE = 100;
 const MAX_SEARCH_PAGES = 10;
 const COMMIT_CONCURRENCY = 8;
-const REPO_CONCURRENCY = 4;
 const SHA_CHUNK_SIZE = 100;
 
 const fromSearchItem = (item: CommitSearchItem): CommitCandidate => ({
@@ -70,27 +62,6 @@ const fromSearchItem = (item: CommitSearchItem): CommitCandidate => ({
   repoName: item.repository.name,
   repoFullName: item.repository.full_name,
 });
-
-const fromListItem = (
-  repoOwner: string,
-  repoName: string,
-  repoFullName: string,
-  item: CommitListItem
-): Option.Option<CommitCandidate> => {
-  const authoredAt = item.commit.author?.date ?? item.commit.committer?.date;
-  if (!authoredAt) return Option.none();
-  return Option.some({
-    sha: item.sha,
-    nodeId: item.node_id,
-    htmlUrl: item.html_url,
-    message: item.commit.message,
-    authoredAt,
-    committedAt: item.commit.committer?.date ?? null,
-    repoOwner,
-    repoName,
-    repoFullName,
-  });
-};
 
 const getMostRecentCommitDate = Effect.gen(function* () {
   const database = yield* Database;
@@ -149,99 +120,19 @@ const searchRecentCommits = (octokit: Octokit) =>
     return yield* Stream.runCollect(pages);
   });
 
-const isMissingOrEmptyRepository = (error: unknown): boolean =>
-  typeof error === 'object' &&
-  error !== null &&
-  'status' in error &&
-  (error.status === 404 || error.status === 409);
-
-const listAuthoredCommits = async (
-  octokit: Octokit,
-  owner: string,
-  repo: string,
-  author: string
-): Promise<Array<CommitListItem>> => {
-  try {
-    return await octokit.paginate(octokit.rest.repos.listCommits, {
-      owner,
-      repo,
-      author,
-      per_page: PER_PAGE,
-    });
-  } catch (error) {
-    if (isMissingOrEmptyRepository(error)) return [];
-    throw error;
-  }
-};
-
-const fetchScannableRepositoryNames = (octokit: Octokit) =>
-  Effect.gen(function* () {
-    const database = yield* Database;
-    const ownedRepositories = yield* Effect.tryPromise({
-      try: () =>
-        octokit.paginate(octokit.rest.repos.listForAuthenticatedUser, {
-          affiliation: 'owner',
-          per_page: PER_PAGE,
-        }),
-      catch: (cause) => new ApiRequestError({ resource: 'github owned repositories', cause }),
-    });
-    const committedRepositories = yield* database.use('githubRepositories.withCommits', (client) =>
-      client
-        .selectDistinct({ fullName: githubRepositories.fullName })
-        .from(githubRepositories)
-        .innerJoin(githubCommits, eq(githubCommits.repositoryId, githubRepositories.id))
-    );
-    return [
-      ...new Set([
-        ...ownedRepositories.map((repository) => repository.full_name),
-        ...committedRepositories.map((repository) => repository.fullName),
-      ]),
-    ];
-  });
-
-const scanRepositoryCommits = (octokit: Octokit) =>
-  Effect.gen(function* () {
-    const sink = yield* DebugSink;
-    const login = yield* Effect.tryPromise({
-      try: async () => (await octokit.rest.users.getAuthenticated()).data.login,
-      catch: (cause) => new ApiRequestError({ resource: 'github authenticated user', cause }),
-    });
-    const repositoryNames = yield* fetchScannableRepositoryNames(octokit);
-    yield* Effect.logInfo(
-      `Scanning ${repositoryNames.length} repositories for commits authored by ${login}`
-    );
-    const results = yield* forEachCollect(repositoryNames, {
-      concurrency: REPO_CONCURRENCY,
-      label: (fullName) => fullName,
-      worker: (fullName) =>
-        Effect.gen(function* () {
-          const [repoOwner, repoName] = fullName.split('/');
-          if (!repoOwner || !repoName) return Arr.empty<CommitCandidate>();
-          const items = yield* Effect.tryPromise({
-            try: () => listAuthoredCommits(octokit, repoOwner, repoName, login),
-            catch: (cause) =>
-              new ApiRequestError({ resource: `github repository ${fullName}`, cause }),
-          });
-          yield* sink.capture(items);
-          return Arr.getSomes(
-            items.map((item) => fromListItem(repoOwner, repoName, fullName, item))
-          );
-        }),
-    });
-    const candidates = results.successes.flat();
-    yield* Effect.logInfo(`Repository scan yielded ${candidates.length} commits`);
-    return { candidates, failures: results.failures } satisfies FetchedCommits;
-  });
-
 export const fetchCommitCandidates = (octokit: Octokit) =>
   Effect.gen(function* () {
     const searchCandidates = yield* searchRecentCommits(octokit);
-    const scan = yield* scanRepositoryCommits(octokit);
+    const scan = yield* scanRepositories(octokit);
     const bySha = new Map<string, CommitCandidate>();
     for (const candidate of [...searchCandidates, ...scan.candidates]) {
       if (!bySha.has(candidate.sha)) bySha.set(candidate.sha, candidate);
     }
-    return { candidates: [...bySha.values()], failures: scan.failures } satisfies FetchedCommits;
+    return {
+      candidates: [...bySha.values()],
+      failures: scan.failures,
+      scanned: scan.scanned,
+    } satisfies FetchedCommits;
   });
 
 const makeCommitHydrator = (octokit: Octokit) => {
@@ -371,6 +262,7 @@ export const hydrateCommits = (octokit: Octokit, candidates: ReadonlyArray<Commi
         candidateCount: 0,
         commits: [],
         failures: [],
+        settledShas: existingShas,
       } satisfies CommitHydration;
     }
     const hydrateItem = makeCommitHydrator(octokit);
@@ -382,9 +274,12 @@ export const hydrateCommits = (octokit: Octokit, candidates: ReadonlyArray<Commi
           try: () => hydrateItem(candidate),
           catch: (cause) =>
             new ApiRequestError({ resource: `github commit ${candidate.sha.slice(0, 7)}`, cause }),
-        }),
+        }).pipe(Effect.map((hydrated) => ({ candidate, hydrated }))),
     });
-    const commits = Arr.getSomes(results.successes);
+    const commits = Arr.getSomes(results.successes.map((result) => result.hydrated));
+    const skippedShas = results.successes
+      .filter((result) => Option.isNone(result.hydrated))
+      .map((result) => result.candidate.sha);
     for (const { repository, detail } of commits) {
       yield* sink.capture({ repository, commit: detail });
     }
@@ -393,6 +288,7 @@ export const hydrateCommits = (octokit: Octokit, candidates: ReadonlyArray<Commi
       candidateCount: newCandidates.length,
       commits,
       failures: results.failures,
+      settledShas: new Set([...existingShas, ...skippedShas]),
     } satisfies CommitHydration;
   });
 
@@ -410,7 +306,7 @@ export const persistCommits = (hydration: CommitHydration, runId: number) =>
               resource: `github commit ${commit.candidate.sha.slice(0, 7)}`,
               cause,
             }),
-        }),
+        }).pipe(Effect.as(commit.candidate.sha)),
     });
     yield* Effect.logInfo(
       `Inserted ${results.successes.length} of ${hydration.candidateCount} commits`
@@ -418,5 +314,6 @@ export const persistCommits = (hydration: CommitHydration, runId: number) =>
     return {
       entriesCreated: results.successes.length,
       failures: [...hydration.failures, ...results.failures],
-    } satisfies SyncSummary;
+      persistedShas: results.successes,
+    } satisfies CommitPersistence;
   });
