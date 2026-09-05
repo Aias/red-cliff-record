@@ -35,8 +35,28 @@ describe('locate', () => {
     });
   });
 
-  test('reports repeated occurrences as ambiguous', () => {
-    expect(find('same words', 'same words; same\nwords')).toEqual({ status: 'ambiguous' });
+  test('folds typographic quotes and apostrophes when matching', () => {
+    expect(find('Apple\'s "stated" goal', 'Apple’s “stated” goal')).toEqual({
+      status: 'matched',
+      range: { start: 0, end: 21 },
+    });
+  });
+
+  test('ignores bullet glyphs that Reader adds to list selections', () => {
+    expect(find('• alpha • beta', 'alpha\nbeta')).toEqual({
+      status: 'matched',
+      range: { start: 0, end: 10 },
+    });
+  });
+
+  test('reports repeated occurrences as ambiguous with their positions', () => {
+    expect(find('same words', 'same words; same\nwords')).toEqual({
+      status: 'ambiguous',
+      ranges: [
+        { start: 0, end: 10 },
+        { start: 12, end: 22 },
+      ],
+    });
   });
 
   test('refuses partial words and partial graphemes', () => {
@@ -49,6 +69,34 @@ describe('locate', () => {
       expect(find(selection, source)).toEqual({ status: 'unmatched' });
     }
     expect(find('cat', "'cat'")).toEqual({ status: 'matched', range: { start: 1, end: 4 } });
+  });
+
+  test('snaps long selections that end inside a word to the word boundary', () => {
+    const source = 'Intro. A linear generator is an algorithm that yields numbers. Outro.';
+    expect(find('A linear generator is an algorithm that yields number', source)).toEqual({
+      status: 'matched',
+      range: { start: 7, end: 61 },
+    });
+    expect(find('yields number', source)).toEqual({ status: 'unmatched' });
+    expect(
+      find('consumers will switch over', 'When matched, consumers will switch overI think so.')
+    ).toEqual({ status: 'unmatched' });
+    expect(
+      find('o how do we build good software?', 'Intro. So how do we build good software? Next.')
+    ).toEqual({ status: 'matched', range: { start: 7, end: 40 } });
+    expect(
+      find('consumers will switch over', 'When matched, consumers will switch overI think so.')
+    ).toEqual({
+      status: 'unmatched',
+    });
+  });
+
+  test('skips footnote marker ranges when asked', () => {
+    const source = 'History[5]. Whereas eukaryotes scaled up.';
+    expect(locate('History. Whereas', indexText(source, [{ start: 7, end: 10 }]))).toEqual({
+      status: 'matched',
+      range: { start: 0, end: 19 },
+    });
   });
 
   test('does not bridge omitted text or punctuation', () => {

@@ -109,6 +109,42 @@ describe('proposeCleanup', () => {
     );
   });
 
+  test('ignores whitespace differences between the record and its import', () => {
+    const result = propose(
+      [highlight('a', 1, 'North wind.\nSouth wind.', 'North wind.\n\nSouth wind.')],
+      '<p>North wind. South wind.</p>'
+    );
+    expect(result.changes[0]?.warnings).toEqual([]);
+  });
+
+  test('does not flag a record whose text already matches the proposal as edited', () => {
+    const result = propose(
+      [highlight('a', 1, 'North wind.', 'North **wind**.')],
+      '<p>North <strong>wind</strong>.</p>'
+    );
+    expect(result.changes[0]).toMatchObject({ changed: false, warnings: [] });
+  });
+
+  test('accepts an ambiguous match when every occurrence restores the same text', () => {
+    const result = propose(
+      [highlight('a', 1, 'North wind.')],
+      '<p>North wind.</p><p>Body.</p><p>North wind.</p>'
+    );
+    expect(result.changes[0]).toMatchObject({ source: 'document', warnings: [] });
+  });
+
+  test('prefers the body occurrence over a table-of-contents link when ambiguous', () => {
+    const result = propose(
+      [highlight('a', 1, 'Observation 1: Paper helps thinking.')],
+      '<ul><li><a href="#one">Observation 1: Paper helps thinking.</a></li></ul><h2 id="one">Observation 1: Paper helps thinking.</h2><p>Body.</p>'
+    );
+    expect(result.changes[0]).toMatchObject({
+      source: 'document',
+      content: '## Observation 1: Paper helps thinking.',
+      warnings: [],
+    });
+  });
+
   test('flags edits and ambiguous matches', () => {
     const result = propose(
       [highlight('a', 1, 'North wind.', 'My edited passage.')],
@@ -117,6 +153,20 @@ describe('proposeCleanup', () => {
     );
     expect(result.changes[0]?.source).toBe('readwise');
     expect(result.changes[0]?.warnings).toHaveLength(2);
+  });
+
+  test('turns an image-only highlight into a media attachment', () => {
+    const result = propose(
+      [highlight('a', 1, '')],
+      '<p>North wind.</p>',
+      new Map([['a', '![](https://example.org/map.png)']])
+    );
+    expect(result.changes[0]).toMatchObject({
+      content: '',
+      images: [{ url: 'https://example.org/map.png', altText: null }],
+      warnings: [],
+      changed: true,
+    });
   });
 
   test('falls back to the formatted highlight when the source is unavailable', () => {
@@ -129,6 +179,31 @@ describe('proposeCleanup', () => {
       content: '**North** wind.',
       source: 'readwise',
       changed: true,
+    });
+  });
+
+  test('locates a highlight whose source carries a footnote marker it lacks', () => {
+    const result = propose(
+      [highlight('a', 1, 'North wind. South wind.')],
+      '<p>North wind.<sup><a href="#fn5">[5]</a></sup> South wind.</p>'
+    );
+    expect(result.changes[0]).toMatchObject({
+      source: 'document',
+      content: 'North wind. South wind.',
+      warnings: [],
+    });
+  });
+
+  test('falls back to the imported plain text when Reader Markdown cannot be located', () => {
+    const result = propose(
+      [highlight('a', 1, 'North wind. South wind.')],
+      '<p>North wind. South wind.</p>',
+      new Map([['a', 'North wind.* South wind.*']])
+    );
+    expect(result.changes[0]).toMatchObject({
+      source: 'document',
+      content: 'North wind. South wind.',
+      warnings: [],
     });
   });
 

@@ -4,9 +4,15 @@ import { parseSource } from './source';
 
 function restore(html: string, selection: string) {
   const source = parseSource(html, 'https://example.com/articles/story');
-  const match = locate(selection, indexText(source.text));
-  if (match.status !== 'matched') throw new Error(`Selection ${match.status}`);
-  return source.render(match.range);
+  for (const [skip, omitSkippable] of [
+    [[], false],
+    [source.skippable, true],
+    [source.brackets, false],
+  ] as const) {
+    const match = locate(selection, indexText(source.text, skip));
+    if (match.status === 'matched') return source.render(match.range, { omitSkippable });
+  }
+  throw new Error('Selection not found');
 }
 
 describe('source rendering', () => {
@@ -18,6 +24,15 @@ describe('source rendering', () => {
     expect(result.content).toBe(
       '[Ada](https://example.com/author) explains *why*.\n\nThen we test.'
     );
+  });
+
+  test('moves whitespace outside emphasis delimiters', () => {
+    const result = restore(
+      '<p>A <em>bold </em>claim and <strong> more</strong>.</p>',
+      'A bold claim and more.'
+    );
+    expect(result.content).toBe('A *bold* claim and **more**.');
+    expect(result.issues).toEqual([]);
   });
 
   test('keeps code whitespace and language', () => {
@@ -46,7 +61,7 @@ describe('source rendering', () => {
     ).toBe('Area x<sup>2</sup> grows.');
     expect(
       restore(
-        '<p>Claim<sup class="reference"><a href="#cite_note-1">[1]</a></sup> continues.</p>',
+        '<p>Claim<sup class="reference"><a href="https://example.com/articles/story/#cite_note-1">[1]</a></sup> continues.</p>',
         'Claim[1] continues.'
       ).content
     ).toBe('Claim continues.');
@@ -56,6 +71,101 @@ describe('source rendering', () => {
         'Use the read function here.'
       ).content
     ).toBe('Use the [read function](https://example.com/articles/story#fn-read) here.');
+  });
+
+  test('treats same-page numeric anchors as footnotes and reports their ranges', () => {
+    const source = parseSource(
+      '<p>A common view<a href="https://example.com/articles/story/">1</a>. Next.</p>',
+      'https://example.com/articles/story'
+    );
+    expect(source.skippable).toEqual([{ start: 13, end: 14 }]);
+    expect(source.render({ start: 0, end: 15 }).content).toBe('A common view.');
+  });
+
+  test('skips captions and alt text when matching and drops captions from a skipping match', () => {
+    const source = parseSource(
+      '<p>Alpha.</p><figure><img src="/a.png" alt="HANDS"><figcaption>A caption.</figcaption></figure><p>Beta.</p>',
+      'https://example.com/'
+    );
+    expect(source.text).toBe('Alpha.\nHANDS\nA caption.\nBeta.\n');
+    expect(locate('Alpha. Beta.', indexText(source.text)).status).toBe('unmatched');
+    const match = locate('Alpha. Beta.', indexText(source.text, source.skippable));
+    if (match.status !== 'matched') throw new Error('expected a match');
+    const result = source.render(match.range, { omitSkippable: true });
+    expect(result.content).toBe('Alpha.\n\nBeta.');
+    expect(result.images.map((image) => image.url)).toEqual(['https://example.com/a.png']);
+  });
+
+  test('strips brackets that wrap a footnote anchor and indexes them as skippable', () => {
+    const source = parseSource(
+      '<p>Hard to understand. [<a href="#footnote-1"><sup>1</sup></a>] People assumed.</p>',
+      'https://example.com/'
+    );
+    expect(source.brackets).toHaveLength(2);
+    expect(locate('understand. 1 People', indexText(source.text, source.brackets)).status).toBe(
+      'matched'
+    );
+    expect(locate('understand. People', indexText(source.text, source.skippable)).status).toBe(
+      'matched'
+    );
+    expect(source.render({ start: 0, end: source.text.length }).content).toBe(
+      'Hard to understand. People assumed.'
+    );
+  });
+
+  test('skips a paragraph that repeats the figure caption', () => {
+    const source = parseSource(
+      '<p>Alpha.</p><figure><img src="/a.png"><figcaption>A card.</figcaption></figure><p>A card.</p><p>Beta.</p>',
+      'https://example.com/'
+    );
+    const match = locate('Alpha. Beta.', indexText(source.text, source.skippable));
+    if (match.status !== 'matched') throw new Error('expected a match');
+    expect(source.render(match.range, { omitSkippable: true }).content).toBe('Alpha.\n\nBeta.');
+  });
+
+  test('moves quotes and sentence punctuation outside emphasis', () => {
+    expect(
+      restore(
+        '<p>In <em>Our House\'</em>s intro, <em>"quoted."</em> Done.</p>',
+        'In Our House\'s intro, "quoted." Done.'
+      ).content
+    ).toBe('In *Our House*\'s intro, "*quoted*." Done.');
+  });
+
+  test('separates emphasis glued to neighboring words in the markup', () => {
+    const result = restore(
+      '<p>In<em><a href="/book">Orality</a></em>(1982) and <strong>bold</strong>text.</p>',
+      'InOrality(1982) and boldtext.'
+    );
+    expect(result.content).toBe(
+      'In *[Orality](https://example.com/book)*(1982) and **bold** text.'
+    );
+    expect(result.issues).toEqual([]);
+  });
+
+  test('leaves punctuation-only emphasis unwrapped', () => {
+    expect(
+      restore('<p>Over <strong>rules<em>.</em></strong> end.</p>', 'Over rules. end.').content
+    ).toBe('Over **rules**. end.');
+  });
+
+  test('keeps a horizontal rule inside the selection and drops one at its edge', () => {
+    expect(restore('<p>Alpha.</p><hr><p>Beta.</p>', 'Beta.').content).toBe('Beta.');
+    expect(restore('<p>Alpha.</p><hr><p>Beta.</p>', 'Alpha. Beta.').content).toBe(
+      'Alpha.\n\n---\n\nBeta.'
+    );
+    expect(parseSource('<p>Alpha.</p><hr><p>Beta.</p>', null).barriers).toEqual([7]);
+  });
+
+  test('matches digit-only markers against parenthesized footnote labels', () => {
+    for (const html of [
+      '<p>Armor works.(<a href="#fn5">5</a>) A rigid material spreads.</p>',
+      '<p>Armor works.<sup><a href="#footnote-5">(5)</a></sup> A rigid material spreads.</p>',
+    ]) {
+      expect(restore(html, 'Armor works. 5 A rigid material spreads.').content).toBe(
+        'Armor works. A rigid material spreads.'
+      );
+    }
   });
 
   test('recovers images inside and adjacent to the selection as attachments', () => {
@@ -97,6 +207,12 @@ describe('source rendering', () => {
       'Words stay.'
     );
     expect(result.content).toBe('Words stay.');
+    expect(
+      restore(
+        '<p><a href="javascript:bad()">Two <b>bold</b> words</a> stay.</p>',
+        'Two bold words stay.'
+      ).content
+    ).toBe('Two **bold** words stay.');
   });
 
   test('reports media positions as continuity barriers', () => {

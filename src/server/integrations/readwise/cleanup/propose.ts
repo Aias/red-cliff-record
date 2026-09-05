@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import type { ReadwiseCleanupChange } from '@/shared/readwise-cleanup';
 import { indexText, isContinuous, locate, type Match, type Range } from './locate';
-import { htmlText, parseSource, renderMarkdown, type Source } from './source';
+import { htmlText, parseSource, renderMarkdown, type Source, type SourceImage } from './source';
 
 export type CleanupHighlight = {
   id: string;
@@ -37,7 +37,21 @@ const snapshot = (record: CleanupRecord) => ({
   updatedAt: record.recordUpdatedAt.toISOString(),
 });
 
-const legacyContent = (imported: string) => imported.replace(/(?<!\n)\n(?!\n)/g, '\n\n');
+const collapse = (text: string) => text.replace(/\s+/gu, ' ').trim();
+
+const attachments = (images: SourceImage[], records: CleanupRecord[]) => {
+  const attached = new Set(records.flatMap((record) => record.media.map((media) => media.url)));
+  return [
+    ...new Map(
+      images.map((image) => [image.url, { url: image.url, altText: image.altText }])
+    ).values(),
+  ].filter((image) => !attached.has(image.url));
+};
+const withoutImages = (markdown: string) =>
+  markdown
+    .replace(/!\[[^\]]*\]\([^)]*\)/gu, '')
+    .replace(/\n{3,}/gu, '\n\n')
+    .trim();
 
 function continuousSpan(ranges: Range[], source: Source): Range | null {
   const sorted = ranges.toSorted((left, right) => left.start - right.start || left.end - right.end);
@@ -66,17 +80,51 @@ export function proposeCleanup(
   ) {
     throw invalidMerge();
   }
-  const index = source && indexText(source.text);
+  const indexes = source
+    ? [
+        { index: indexText(source.text), omitSkippable: false },
+        ...(source.skippable.length
+          ? [{ index: indexText(source.text, source.skippable), omitSkippable: true }]
+          : []),
+        ...(source.brackets.length
+          ? [{ index: indexText(source.text, source.brackets), omitSkippable: false }]
+          : []),
+      ]
+    : [];
   const located = highlights.map((highlight) => {
     const native = nativeById.get(highlight.id);
-    const plain =
-      native === undefined ? (highlight.content ?? '') : htmlText(renderMarkdown(native));
-    const match: Match = index ? locate(plain, index) : { status: 'unmatched' };
-    const current = highlight.record.content ?? '';
-    const imported = highlight.content ?? '';
+    const candidates = [
+      ...(native === undefined ? [] : [htmlText(renderMarkdown(native))]),
+      highlight.content ?? '',
+      highlight.record.content ?? '',
+    ];
+    let match: Match = { status: 'unmatched' };
+    let omitSkippable = false;
+    for (const candidate of candidates) {
+      for (const textIndex of indexes) {
+        if (match.status === 'matched') break;
+        match = locate(candidate, textIndex.index);
+        omitSkippable = textIndex.omitSkippable;
+      }
+    }
+    if (match.status === 'ambiguous' && source && match.ranges.length <= 5) {
+      const insideLink = (range: Range) =>
+        source.links.some((link) => link.start <= range.start && range.end <= link.end);
+      const candidates = match.ranges.filter((range) => !insideLink(range));
+      const [first, ...rest] = candidates.length ? candidates : match.ranges;
+      const content = first && source.render(first, { omitSkippable }).content;
+      if (
+        first &&
+        rest.every((range) => source.render(range, { omitSkippable }).content === content)
+      ) {
+        match = { status: 'matched', range: first };
+      }
+    }
+    const current = collapse(highlight.record.content ?? '');
     const edited =
-      current !== imported && current !== legacyContent(imported) && current !== (native ?? '');
-    return { highlight, native, match, edited };
+      current !== collapse(highlight.content ?? '') && current !== collapse(native ?? '');
+    const textless = candidates.every((candidate) => !candidate.trim());
+    return { highlight, native, match, omitSkippable, edited, textless };
   });
 
   const [mergeTarget] = merge;
@@ -98,13 +146,20 @@ export function proposeCleanup(
       ...new Map(items.map(({ highlight }) => [highlight.record.id, highlight.record])).values(),
     ];
     const merged = records.filter((record) => record.id !== targetId);
-    const warnings = new Set(items.filter((item) => item.edited).map(() => EDITED_WARNING));
+    const current = target.content ?? '';
+    const warnings = new Set<string>();
+    const flagEdits = (content: string) => {
+      if (content !== current && items.some((item) => item.edited)) warnings.add(EDITED_WARNING);
+    };
     const matched = items.flatMap((item) =>
       item.match.status === 'matched' ? [item.match.range] : []
     );
     const span = source && matched.length === items.length ? continuousSpan(matched, source) : null;
     if (span && source) {
-      const restored = source.render(span);
+      const restored = source.render(span, {
+        omitSkippable: items.some((item) => item.omitSkippable),
+      });
+      flagEdits(restored.content);
       const natives = items.flatMap((item) =>
         item.native ? [parseSource(renderMarkdown(item.native), sourceUrl)] : []
       );
@@ -112,15 +167,10 @@ export function proposeCleanup(
         warnings.add(NATIVE_MEDIA_WARNING);
       }
       for (const issue of restored.issues) warnings.add(issue);
-      const attached = new Set(records.flatMap((record) => record.media.map((item) => item.url)));
-      const images = [
-        ...new Map(
-          [...restored.images, ...natives.flatMap((native) => native.images)].map((image) => [
-            image.url,
-            { url: image.url, altText: image.altText },
-          ])
-        ).values(),
-      ].filter((image) => !attached.has(image.url));
+      const images = attachments(
+        [...restored.images, ...natives.flatMap((native) => native.images)],
+        records
+      );
       changes.push({
         target: snapshot(target),
         merged: merged.map(snapshot),
@@ -133,8 +183,7 @@ export function proposeCleanup(
         ],
         warnings: [...warnings],
         images,
-        changed:
-          merged.length > 0 || restored.content !== (target.content ?? '') || images.length > 0,
+        changed: merged.length > 0 || restored.content !== current || images.length > 0,
       });
       if (!merged.length) ranges.set(targetId, span);
       continue;
@@ -155,17 +204,25 @@ export function proposeCleanup(
       });
       continue;
     }
-    warnings.add(UNLOCATED_WARNING);
-    const content = item.native ?? target.content ?? '';
+    if (!item.textless) warnings.add(UNLOCATED_WARNING);
+    const nativeSource =
+      item.native === undefined ? null : parseSource(renderMarkdown(item.native), sourceUrl);
+    if (nativeSource && nativeSource.barriers.length > nativeSource.images.length) {
+      warnings.add(NATIVE_MEDIA_WARNING);
+    }
+    const images = attachments(nativeSource?.images ?? [], [target]);
+    const content = item.native === undefined ? current : withoutImages(item.native);
+    flagEdits(content);
     changes.push({
       target: snapshot(target),
       merged: [],
       content,
       source: 'readwise',
-      reasons: item.native ? ['Use the formatted highlight supplied by Readwise.'] : [],
+      reasons:
+        item.native === undefined ? [] : ['Use the formatted highlight supplied by Readwise.'],
       warnings: [...warnings],
-      images: [],
-      changed: content !== (target.content ?? ''),
+      images,
+      changed: content !== current || images.length > 0,
     });
   }
 

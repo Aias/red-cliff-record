@@ -19,11 +19,20 @@ export async function previewCleanup(
   recordId: number,
   { editorial = false, merge, nativeById, signal }: PreviewOptions = {}
 ): Promise<ReadwiseCleanupPreview> {
-  const mapped = await db.query.readwiseDocuments.findFirst({
+  const mappings = await db.query.readwiseDocuments.findMany({
     where: { recordId, deletedAt: { isNull: true } },
-    with: { parent: true },
+    with: {
+      parent: true,
+      children: {
+        where: { category: 'highlight', deletedAt: { isNull: true } },
+        columns: { id: true },
+      },
+    },
   });
-  const parent = mapped?.category === 'highlight' ? mapped.parent : mapped;
+  const parent = mappings
+    .toSorted((left, right) => right.children.length - left.children.length)
+    .map((mapping) => (mapping.category === 'highlight' ? mapping.parent : mapping))
+    .find((candidate) => candidate?.recordId);
   if (!parent?.recordId) {
     throw new TRPCError({
       code: 'NOT_FOUND',
