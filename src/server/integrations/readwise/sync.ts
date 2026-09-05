@@ -11,6 +11,7 @@ import {
   type SyncSummary,
 } from '../runtime/run';
 import { decodeZod } from '../runtime/zod';
+import { restoreNativeReadwiseHighlights, runNewReadwiseCleanup } from './cleanup/run';
 import {
   createReadwiseAuthors,
   createReadwiseTags,
@@ -164,9 +165,6 @@ function groupDocumentsByDepth(documents: ReadonlyArray<ReadwiseArticle>): Readw
 const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
   Effect.gen(function* () {
     const runId = yield* requireRunId;
-    if (documents.length === 0) {
-      return { entriesCreated: 0, failures: [] } satisfies SyncSummary;
-    }
     const database = yield* Database;
     const levels = groupDocumentsByDepth(sortDocumentsByHierarchy(documents));
     let entriesCreated = 0;
@@ -192,6 +190,8 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
       failures.push(...result.failures);
     }
     yield* Effect.logInfo(`Upserted ${entriesCreated} of ${documents.length} documents`);
+    const nativeHighlights = yield* restoreNativeReadwiseHighlights();
+    failures.push(...nativeHighlights.failures);
     yield* Effect.all(
       [
         legacyOperation('readwise.authors', async () => {
@@ -205,7 +205,15 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
       ],
       { concurrency: 2 }
     );
-    yield* legacyOperation('readwise.documents', () => createRecordsFromReadwiseDocuments(runId));
+    const promotion = yield* database.use('readwise.documents', () =>
+      createRecordsFromReadwiseDocuments(runId, nativeHighlights.restoredHighlightIds)
+    );
+    failures.push(...promotion.failures);
+    if (promotion.recordIds.length) {
+      failures.push(
+        ...(yield* runNewReadwiseCleanup(promotion.recordIds, nativeHighlights.nativeByParent))
+      );
+    }
     return { entriesCreated, failures } satisfies SyncSummary;
   });
 

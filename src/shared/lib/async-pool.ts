@@ -169,3 +169,19 @@ export function throwPoolFailures<R>(
     cause: first.error,
   });
 }
+
+export function collectPoolFailures<T>(
+  results: ReadonlyArray<ConcurrentPoolItemResult<unknown>>,
+  items: ReadonlyArray<T>,
+  label: (item: T) => string
+): Array<{ label: string; message: string }> {
+  const failures: Array<{ label: string; message: string }> = [];
+  for (const [index, result] of results.entries()) {
+    if (result.ok === false) {
+      const item = items[index];
+      if (item === undefined) continue;
+      failures.push({ label: label(item), message: result.error.message });
+    }
+  }
+  return failures;
+}
