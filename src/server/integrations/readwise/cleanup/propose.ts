@@ -12,6 +12,7 @@ export type CleanupHighlight = {
     contentCreatedAt: Date | null;
     recordCreatedAt: Date;
     recordUpdatedAt: Date;
+    recordCuratedAt: Date | null;
     media: { url: string }[];
   };
 };
@@ -19,6 +20,7 @@ export type CleanupHighlight = {
 type CleanupRecord = CleanupHighlight['record'];
 
 const EDITED_WARNING = 'This record has edits in RCR. Review them before replacing its text.';
+const CURATED_WARNING = 'This record is curated. Review it before replacing its text.';
 const UNLOCATED_WARNING = 'The selection could not be uniquely located in the saved source.';
 const SPLIT_WARNING =
   'This record combines selections that are separate or could not be located in the source.';
@@ -171,6 +173,10 @@ export function proposeCleanup(
         [...restored.images, ...natives.flatMap((native) => native.images)],
         records
       );
+      const changed = merged.length > 0 || restored.content !== current || images.length > 0;
+      if (changed && records.some((record) => record.recordCuratedAt)) {
+        warnings.add(CURATED_WARNING);
+      }
       changes.push({
         target: snapshot(target),
         merged: merged.map(snapshot),
@@ -183,7 +189,7 @@ export function proposeCleanup(
         ],
         warnings: [...warnings],
         images,
-        changed: merged.length > 0 || restored.content !== current || images.length > 0,
+        changed,
       });
       if (!merged.length) ranges.set(targetId, span);
       continue;
@@ -213,6 +219,8 @@ export function proposeCleanup(
     const images = attachments(nativeSource?.images ?? [], [target]);
     const content = item.native === undefined ? current : withoutImages(item.native);
     flagEdits(content);
+    const changed = content !== current || images.length > 0;
+    if (changed && target.recordCuratedAt) warnings.add(CURATED_WARNING);
     changes.push({
       target: snapshot(target),
       merged: [],
@@ -222,7 +230,7 @@ export function proposeCleanup(
         item.native === undefined ? [] : ['Use the formatted highlight supplied by Readwise.'],
       warnings: [...warnings],
       images,
-      changed: content !== current || images.length > 0,
+      changed,
     });
   }
 

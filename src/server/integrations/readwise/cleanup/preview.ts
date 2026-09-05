@@ -51,6 +51,7 @@ export async function previewCleanup(
           contentCreatedAt: true,
           recordCreatedAt: true,
           recordUpdatedAt: true,
+          recordCuratedAt: true,
         },
         with: { media: { columns: { url: true } } },
       },

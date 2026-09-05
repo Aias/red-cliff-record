@@ -118,7 +118,7 @@ New highlights import Reader's formatted Markdown before they become RCR records
 
 Cleanup compares each highlight with the document HTML saved by Reader, fetching and storing the HTML for documents synced without it. It restores source formatting, removes footnote markers, and recovers selected images as URL-backed media attachments. Highlights stay separate unless you merge them. Only continuous or overlapping selections can merge; unselected prose and media keep selections apart.
 
-Open cleanup from a Readwise document or highlight in the record toolbar. The preview lists every highlight, selects each proposed change by default, and lets you deselect changes or merge eligible neighbors before applying. Existing edits, ambiguous matches, and unsupported media stay flagged for review. Applying a stale preview fails without changing records. Merges keep notes, links, media, and curation data on the surviving highlight, and an undo action reverses everything applied.
+Open cleanup from a Readwise document or highlight in the record toolbar. The preview lists every highlight, selects each proposed change by default, and lets you deselect changes or merge eligible neighbors before applying. Existing edits, curated records, ambiguous matches, and unsupported media stay flagged for review. Applying a stale preview fails without changing records. Merges keep notes, links, media, and curation data on the surviving highlight, and an undo action reverses everything applied.
 
 The spelling and grammar check uses OpenAI for small literal corrections. It is enabled by default in the preview dialog, and its suggestions stay flagged for review. Automatic cleanup never runs it.
 
@@ -129,7 +129,9 @@ The spelling and grammar check uses OpenAI for small literal corrections. It is 
 | `preview` (default) | Import formatted highlights only. Review documents through the toolbar action.             |
 | `automatic`         | Also apply warning-free, single-highlight corrections to the records created by that sync. |
 
-Neither mode touches existing records. Merging requires an explicit choice in a document preview.
+A warning-free change is one whose highlight was located exactly once in the saved page, whose record has neither manual edits nor a curation date, and whose selection contains no embedded media, formula, or text the Markdown conversion could not preserve.
+
+Neither mode touches existing records. Merging requires an explicit choice in a document preview. To backfill the library, `rcr readwise cleanup` applies the same warning-free changes to every document with highlights, newest first, optionally limited with `--since <date>` and `--until <date>` to documents saved in that range and with `--limit <n>` to a number of documents. `--dry-run` reports counts without changing records (fetched HTML is still stored). Each run writes the undo snapshots of the documents it changed to a file, and `rcr readwise undo <file>` reverses that run.
 
 The CLI offers the same preview and selective apply:
 
@@ -137,6 +139,9 @@ The CLI offers the same preview and selective apply:
 rcr readwise preview 123 --raw > preview.json
 rcr readwise preview 123 --editorial --raw > preview.json
 rcr readwise apply preview.json --records 124,125
+rcr readwise cleanup --since 2025-01-01 --until 2025-04-01 --dry-run
+rcr readwise cleanup --snapshots cleanup.jsonl
+rcr readwise undo cleanup.jsonl
 ```
 
 The `--records` ids name the surviving highlight of each change to apply. Reader's formatted highlights come from the [Readwise MCP service](https://readwise.io/mcp) with the same `READWISE_TOKEN`.

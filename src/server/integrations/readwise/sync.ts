@@ -222,12 +222,11 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
       const parentRecordIds = [
         ...new Set(parents.flatMap((row) => (row.parent?.recordId ? [row.parent.recordId] : []))),
       ];
-      failures.push(
-        ...(yield* cleanupDocuments(parentRecordIds, {
-          onlyRecordIds: new Set(created.recordIds),
-          nativeByParent: formatted.nativeByParent,
-        }))
-      );
+      const cleanup = yield* cleanupDocuments(parentRecordIds, {
+        onlyRecordIds: new Set(created.recordIds),
+        nativeByParent: formatted.nativeByParent,
+      });
+      failures.push(...cleanup.failures);
     }
     return { entriesCreated, failures } satisfies SyncSummary;
   });

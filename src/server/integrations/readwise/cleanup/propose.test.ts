@@ -16,6 +16,7 @@ const highlight = (
     contentCreatedAt: new Date('2026-01-01'),
     recordCreatedAt: new Date('2026-01-01'),
     recordUpdatedAt: new Date('2026-01-01'),
+    recordCuratedAt: null,
     media: [],
   },
 });
@@ -143,6 +144,15 @@ describe('proposeCleanup', () => {
       content: '## Observation 1: Paper helps thinking.',
       warnings: [],
     });
+  });
+
+  test('flags curated records only when the proposal would change them', () => {
+    const curated = highlight('a', 1, 'North wind.');
+    curated.record.recordCuratedAt = new Date('2026-02-01');
+    expect(propose([curated], '<p>North <em>wind</em>.</p>').changes[0]?.warnings).toEqual([
+      'This record is curated. Review it before replacing its text.',
+    ]);
+    expect(propose([curated], '<p>North wind.</p>').changes[0]?.warnings).toEqual([]);
   });
 
   test('flags edits and ambiguous matches', () => {

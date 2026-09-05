@@ -155,6 +155,9 @@ Commands:
 
   readwise preview <id> [--editorial]  Preview one document's highlight cleanup
   readwise apply <file> --records <ids>  Apply selected target IDs from a --raw preview
+  readwise cleanup [--since <date>] [--until <date>] [--limit <n>] [--dry-run] [--snapshots <file>]
+                                Apply warning-free cleanup to uncurated highlights, newest documents first
+  readwise undo <file>          Undo a cleanup run from its snapshots file
 
   media get <id...> [--with-record]  Fetch media item(s) by ID
   media list [filters]              List media with optional filters

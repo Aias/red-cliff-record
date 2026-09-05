@@ -1,11 +1,13 @@
 import { readwiseDocuments } from '@hozo';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, isNull, lt } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { Effect } from 'effect';
+import { db } from '@/server/db/connections/postgres';
 import { Database } from '../../runtime/db';
 import { ApiRequestError } from '../../runtime/errors';
 import { forEachCollect } from '../../runtime/run';
 import { fetchReaderHighlights } from '../reader';
-import { applyCleanup } from './apply';
+import { applyCleanup, type ReadwiseCleanupSnapshot } from './apply';
 import { previewCleanup } from './preview';
 
 const DOCUMENT_CONCURRENCY = 3;
@@ -67,14 +69,44 @@ export const formatNewHighlights = () =>
     };
   });
 
+export async function listCleanupParents(since?: Date, until?: Date) {
+  const parent = alias(readwiseDocuments, 'parent');
+  const rows = await db
+    .selectDistinct({ recordId: parent.recordId, savedAt: parent.savedAt })
+    .from(readwiseDocuments)
+    .innerJoin(parent, eq(readwiseDocuments.parentId, parent.id))
+    .where(
+      and(
+        eq(readwiseDocuments.category, 'highlight'),
+        isNull(readwiseDocuments.deletedAt),
+        isNotNull(readwiseDocuments.recordId),
+        isNull(parent.deletedAt),
+        isNotNull(parent.recordId),
+        since ? gte(parent.savedAt, since) : undefined,
+        until ? lt(parent.savedAt, until) : undefined
+      )
+    )
+    .orderBy(desc(parent.savedAt));
+  return rows.flatMap((row) => (row.recordId ? [row.recordId] : []));
+}
+
+export type CleanupResult = {
+  documentId: string;
+  recordId: number;
+  recordIds: number[];
+  snapshot: ReadwiseCleanupSnapshot | null;
+};
+
 type CleanupOptions = {
   onlyRecordIds?: ReadonlySet<number>;
   nativeByParent?: ReadonlyMap<string, ReadonlyMap<string, string>>;
+  dryRun?: boolean;
+  onApplied?: (result: CleanupResult) => Promise<void>;
 };
 
 export const cleanupDocuments = (
   parentRecordIds: number[],
-  { onlyRecordIds, nativeByParent }: CleanupOptions = {}
+  { onlyRecordIds, nativeByParent, dryRun = false, onApplied }: CleanupOptions = {}
 ) =>
   Effect.gen(function* () {
     const database = yield* Database;
@@ -84,38 +116,45 @@ export const cleanupDocuments = (
         columns: { id: true, recordId: true },
       })
     );
-    const result = yield* forEachCollect(
+    const byRecord = new Map(
       parents.flatMap((parent) =>
-        parent.recordId ? [{ id: parent.id, recordId: parent.recordId }] : []
-      ),
-      {
-        concurrency: DOCUMENT_CONCURRENCY,
-        label: (parent) => parent.id,
-        worker: (parent) =>
-          Effect.tryPromise({
-            try: async (signal) => {
-              const preview = await previewCleanup(parent.recordId, {
-                nativeById: nativeByParent?.get(parent.id),
-                signal,
-              });
-              const safe = preview.changes.filter(
-                (change) =>
-                  change.changed &&
-                  !change.warnings.length &&
-                  !change.merged.length &&
-                  (!onlyRecordIds || onlyRecordIds.has(change.target.id))
-              );
-              if (safe.length) await applyCleanup(safe);
-              return safe.length;
-            },
-            catch: (cause) =>
-              new ApiRequestError({ resource: `Readwise cleanup ${parent.id}`, cause }),
-          }),
-      }
+        parent.recordId ? [[parent.recordId, { id: parent.id, recordId: parent.recordId }]] : []
+      )
     );
-    const applied = result.successes.reduce((sum, count) => sum + count, 0);
+    const result = yield* forEachCollect([...byRecord.values()], {
+      concurrency: DOCUMENT_CONCURRENCY,
+      label: (parent) => parent.id,
+      worker: (parent) =>
+        Effect.tryPromise({
+          try: async (signal) => {
+            const preview = await previewCleanup(parent.recordId, {
+              nativeById: nativeByParent?.get(parent.id),
+              signal,
+            });
+            const safe = preview.changes.filter(
+              (change) =>
+                change.changed &&
+                !change.warnings.length &&
+                !change.merged.length &&
+                (!onlyRecordIds || onlyRecordIds.has(change.target.id))
+            );
+            const applied = safe.length && !dryRun ? await applyCleanup(safe) : null;
+            const result: CleanupResult = {
+              documentId: parent.id,
+              recordId: parent.recordId,
+              recordIds: safe.map((change) => change.target.id),
+              snapshot: applied?.snapshot ?? null,
+            };
+            if (applied) await onApplied?.(result);
+            return result;
+          },
+          catch: (cause) =>
+            new ApiRequestError({ resource: `Readwise cleanup ${parent.id}`, cause }),
+        }),
+    });
+    const count = result.successes.reduce((sum, item) => sum + item.recordIds.length, 0);
     yield* Effect.logInfo(
-      `Applied Readwise cleanup to ${applied} records across ${parents.length} documents`
+      `${dryRun ? 'Found' : 'Applied'} ${count} Readwise cleanup changes across ${parents.length} documents`
     );
-    return result.failures;
+    return { results: result.successes, failures: result.failures };
   });

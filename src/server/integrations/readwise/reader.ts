@@ -60,10 +60,17 @@ export async function fetchReaderHighlights(documentId: string, signal?: AbortSi
 
 export async function fetchDocumentHtml(documentId: string, signal?: AbortSignal) {
   const query = new URLSearchParams({ id: documentId, withHtmlContent: 'true' });
-  const response = await fetch(`https://readwise.io/api/v3/list/?${query}`, {
-    headers: { Authorization: `Token ${readwiseToken()}` },
-    signal: withTimeout(signal),
-  });
+  const request = () =>
+    fetch(`https://readwise.io/api/v3/list/?${query}`, {
+      headers: { Authorization: `Token ${readwiseToken()}` },
+      signal: withTimeout(signal),
+    });
+  let response = await request();
+  if (response.status === 429) {
+    await Bun.sleep((Number(response.headers.get('Retry-After')) || 60) * 1000);
+    signal?.throwIfAborted();
+    response = await request();
+  }
   if (!response.ok) throw new Error(`Reader document ${documentId}: HTTP ${response.status}`);
   const page = ReadwiseArticlesResponseSchema.parse(await response.json());
   return page.results[0]?.html_content || null;
