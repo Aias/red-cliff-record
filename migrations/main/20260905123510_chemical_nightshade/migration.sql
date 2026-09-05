@@ -1,0 +1,1 @@
+ALTER TABLE "github_repositories" ADD COLUMN "synced_head_sha" text;

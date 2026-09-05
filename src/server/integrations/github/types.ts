@@ -72,3 +72,29 @@ export const GithubStarredReposResponseSchema = z.object({
 });
 
 export type StarredRepo = z.infer<typeof GithubStarredRepoSchema>;
+
+export interface CommitCandidate {
+  readonly sha: string;
+  readonly nodeId: string;
+  readonly htmlUrl: string;
+  readonly message: string;
+  readonly authoredAt: string;
+  readonly committedAt: string | null;
+  readonly repoOwner: string;
+  readonly repoName: string;
+  readonly repoFullName: string;
+}
+
+const RepositoryHeadSchema = z.object({
+  name: z.string(),
+  owner: z.object({ login: z.string() }),
+  nameWithOwner: z.string(),
+  defaultBranchRef: z.object({ target: z.object({ oid: z.string() }).nullable() }).nullable(),
+});
+
+export const RepositoryHeadsResponseSchema = z.object({
+  viewer: z.object({ login: z.string() }),
+  nodes: z.array(RepositoryHeadSchema.nullable()),
+});
+
+export type RepositoryHead = z.infer<typeof RepositoryHeadSchema>;

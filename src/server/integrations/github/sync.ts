@@ -5,6 +5,7 @@ import { DebugSink } from '../runtime/debug';
 import { requireRunId, type IntegrationDef, type SyncSummary } from '../runtime/run';
 import { createRecordsFromGithubRepositories, createRecordsFromGithubUsers } from './map';
 import { githubClient } from './octokit';
+import { recordSyncedHeads } from './scan-repositories';
 import { summarizeMissingCommits } from './summarize-commits';
 import { fetchCommitCandidates, hydrateCommits, persistCommits } from './sync-commits';
 import { fetchNewStars, persistStars } from './sync-stars';
@@ -51,6 +52,10 @@ const commitsSync = Effect.gen(function* () {
   }
   const runId = yield* requireRunId;
   const commitSummary = yield* persistCommits(hydration, runId);
+  yield* recordSyncedHeads(
+    fetched.scanned,
+    new Set([...hydration.settledShas, ...commitSummary.persistedShas])
+  );
   const summaries = yield* summarizeMissingCommits;
   const reconcileFailures = yield* reconcileGithubEntities(octokit);
   return {

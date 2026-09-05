@@ -87,6 +87,7 @@ export const githubRepositories = pgTable(
     language: text('language'),
     topics: text('topics').array(),
     starredAt: timestamp('starred_at', { withTimezone: true }),
+    syncedHeadSha: text('synced_head_sha'),
     integrationRunId: integer('integration_run_id')
       .references(() => integrationRuns.id)
       .notNull(),
