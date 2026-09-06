@@ -5,7 +5,6 @@ import { RateLimiter } from 'effect/unstable/persistence';
 import { databaseLayer } from './db';
 import { debugSinkDisabled } from './debug';
 import { DbError } from './errors';
-import { syncOne, type RegisteredIntegration, type SyncOneOptions } from './registry';
 import { causeMessage, runTrackerLayer, withRun, type SyncSummary } from './run';
 
 const rateLimiterLayer = RateLimiter.layer.pipe(Layer.provide(RateLimiter.layerStoreMemory));
@@ -31,11 +30,6 @@ export const runAppEffect = async <A, E>(
     await runtime.dispose();
   }
 };
-
-export const runIntegrationSync = (
-  name: RegisteredIntegration,
-  options: SyncOneOptions & { readonly signal?: AbortSignal }
-): Promise<SyncSummary> => runAppEffect(syncOne(name, options), options.signal);
 
 export const runTrackedEnrichment = (
   integrationType: IntegrationType,

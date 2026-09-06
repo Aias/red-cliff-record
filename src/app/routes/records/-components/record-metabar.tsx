@@ -23,6 +23,7 @@ import { addToBasket, removeFromBasket, useInBasket } from '@/lib/hooks/use-bask
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import type { ComponentProps } from '@/styled-system/types';
+import { ReadwiseCleanup } from './readwise-cleanup';
 
 type MetabarProps = ComponentProps<typeof styled.div> & {
   recordId: number;
@@ -101,6 +102,9 @@ export const Metabar = ({ recordId, onDelete, css: cssProp, ...props }: MetabarP
         </styled.div>
       )}
       <styled.div css={{ display: 'flex', alignItems: 'center', gap: '0.5' }}>
+        {record.type === 'artifact' && record.sources?.includes('readwise') && (
+          <ReadwiseCleanup recordId={recordId} />
+        )}
         <Tooltip.Root>
           <Tooltip.Trigger
             render={

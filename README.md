@@ -350,6 +350,10 @@ Flags: `--dry-run` (`-n`) prints commands without executing. `-D` operates on da
 
 Backup files are named by environment label (`prod-`, `dev-`), not database name. Restore auto-discovers the most recent `.dump` file in the backup directory.
 
+Full backups contain the application schemas (`public` and `drizzle`), excluding Zero's environment-specific replication state. After restoring, both `restore` and `clone-prod-to-dev` synchronize the `zero_data` publication against the destination database. The restore command reports success only after publication setup succeeds. Zero rebuilds its local replica when a recreated database requires a fresh sync.
+
+For a restored development database missing `zero_data`, run `NODE_ENV=development bun run zero:publication` before starting `bun dev`.
+
 **Reset workflow** (squash migrations while preserving data):
 
 1. `rcr db backup dev --data-only`

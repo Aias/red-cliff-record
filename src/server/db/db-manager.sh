@@ -10,6 +10,7 @@ DATA_ONLY=false
 DRY_RUN=false
 RESTORE_FILE=""
 SKIP_CONFIRM=false
+CREATED_BACKUP_FILE=""
 
 # Parse connection details from .env
 if [ -f .env ]; then
@@ -104,9 +105,21 @@ elif [[ ! "$COMMAND" =~ ^(backup|restore|reset|seed)$ ]] || [[ ! "$ENVIRONMENT" 
     exit 1
 fi
 
+print_arg() {
+    local displayed_arg
+    displayed_arg=$1
+    if [[ "$displayed_arg" =~ ^(.*postgres(ql)?://)[^@/]+@(.*)$ ]]; then
+        displayed_arg="${BASH_REMATCH[1]}<credentials>@${BASH_REMATCH[3]}"
+    fi
+    printf '%q ' "$displayed_arg"
+}
+
 print_cmd() {
     printf '[dry-run] '
-    printf '%q ' "$@"
+    local arg
+    for arg in "$@"; do
+        print_arg "$arg"
+    done
     printf '\n'
 }
 
@@ -125,7 +138,10 @@ run_cmd_with_redirect() {
 
     if [ "$DRY_RUN" = true ]; then
         printf '[dry-run] '
-        printf '%q ' "$@"
+        local arg
+        for arg in "$@"; do
+            print_arg "$arg"
+        done
         printf '> %q\n' "$output_file"
         return 0
     fi
@@ -151,33 +167,30 @@ set_target() {
     DATABASE_NAME=$(get_database_name "$TARGET_DB_URL")
 }
 
-# Function to perform backup
 do_backup() {
     local source=$1
     local date=$(date +%Y-%m-%d-%H-%M-%S)
-    local backup_file
     local dump_args=(--format=custom --verbose --no-owner --no-privileges --no-comments)
 
     set_target "$source"
 
     if [ "$DATA_ONLY" = true ]; then
         echo "Preparing data-only backup..."
-        backup_file="$BACKUP_DIR/${source}-data-${date}.dump"
+        CREATED_BACKUP_FILE="$BACKUP_DIR/${source}-data-${date}.dump"
         dump_args+=(--data-only --schema=public)
     else
-        backup_file="$BACKUP_DIR/${source}-${date}.dump"
+        CREATED_BACKUP_FILE="$BACKUP_DIR/${source}-${date}.dump"
         dump_args+=(--schema=public --schema=drizzle)
     fi
 
     ensure_backup_dir
 
     echo "Creating backup from $TARGET_LABEL database..."
-    run_cmd_with_redirect "$backup_file" pg_dump "$TARGET_DB_URL" "${dump_args[@]}"
+    run_cmd_with_redirect "$CREATED_BACKUP_FILE" pg_dump "$TARGET_DB_URL" "${dump_args[@]}"
 
-    echo "Backup created at: $backup_file"
+    echo "Backup created at: $CREATED_BACKUP_FILE"
 }
 
-# Function to perform clean database setup for local restore
 do_clean_setup() {
     local db_url=$1
     local target_label=$2
@@ -189,56 +202,70 @@ do_clean_setup() {
 
     echo "Performing clean database setup${label_suffix}..."
 
-    # Extract database name from URL
     local db_name=$(echo "$db_url" | sed 's|.*/||')
-
-    # Parse postgres URL to get connection details
     local postgres_url=$(echo "$db_url" | sed "s|/${db_name}|/postgres|")
-
-    # Check if database exists
     local db_exists
 
     if [ "$DRY_RUN" = true ]; then
-        print_cmd psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$db_name'"
+        print_cmd psql -X -v ON_ERROR_STOP=1 "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$db_name'"
         db_exists=1
     else
-        db_exists=$(psql "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$db_name'")
+        db_exists=$(psql -X -v ON_ERROR_STOP=1 "$postgres_url" -tAc "SELECT 1 FROM pg_database WHERE datname = '$db_name'")
     fi
 
     if [ "$db_exists" = "1" ]; then
-        # Terminate all connections to the database if it exists
         echo "Terminating connections to existing database..."
-        run_cmd psql "$postgres_url" -c "
+        run_cmd psql -X -v ON_ERROR_STOP=1 "$postgres_url" -c "
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
             WHERE pg_stat_activity.datname = '$db_name'
             AND pid <> pg_backend_pid();"
 
-        # Drop the database
         echo "Dropping database $db_name..."
-        run_cmd psql "$postgres_url" -c "DROP DATABASE \"$db_name\";"
+        run_cmd psql -X -v ON_ERROR_STOP=1 "$postgres_url" -c "DROP DATABASE \"$db_name\";"
     else
         echo "Database $db_name does not exist, will create it..."
     fi
 
-    # Create the database
     echo "Creating database $db_name..."
-    run_cmd psql "$postgres_url" -c "CREATE DATABASE \"$db_name\";"
+    run_cmd psql -X -v ON_ERROR_STOP=1 "$postgres_url" -c "CREATE DATABASE \"$db_name\";"
 
-    # Create extensions
     echo "Creating required extensions..."
-    run_cmd psql "$db_url" -c "CREATE SCHEMA IF NOT EXISTS extensions;"
-    run_cmd psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;"
-    run_cmd psql "$db_url" -c "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;"
+    run_cmd psql -X -v ON_ERROR_STOP=1 "$db_url" -c "CREATE SCHEMA IF NOT EXISTS extensions;"
+    run_cmd psql -X -v ON_ERROR_STOP=1 "$db_url" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;"
+    run_cmd psql -X -v ON_ERROR_STOP=1 "$db_url" -c "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;"
 
-    # Set up search path to include extensions schema for vector operations
     echo "Setting up search path for vector operations..."
-    run_cmd psql "$db_url" -c "ALTER DATABASE \"$db_name\" SET search_path TO public, extensions;"
+    run_cmd psql -X -v ON_ERROR_STOP=1 "$db_url" -c "ALTER DATABASE \"$db_name\" SET search_path TO public, extensions;"
 
     echo "Clean setup completed"
 }
 
-# Function to perform restore
+sync_zero_publication() {
+    local target=$1
+    local db_url=$2
+    local node_env
+
+    if [ "$target" = "prod" ]; then
+        node_env=production
+    else
+        node_env=development
+    fi
+
+    echo "Synchronizing Zero publication for $TARGET_LABEL database..."
+    if [ "$DRY_RUN" = true ]; then
+        printf '[dry-run] NODE_ENV=%q DATABASE_URL=%q DATABASE_URL_PROD=%q DATABASE_URL_DEV=%q ' "$node_env" '<restore-target>' '<restore-target>' '<restore-target>'
+        printf '%q ' bun run zero:publication
+        printf '\n'
+        return 0
+    fi
+
+    if ! NODE_ENV="$node_env" DATABASE_URL="$db_url" DATABASE_URL_PROD="$db_url" DATABASE_URL_DEV="$db_url" bun run zero:publication; then
+        echo "Error: Zero publication sync failed for $target"
+        return 1
+    fi
+}
+
 do_restore() {
     local target=$1
     local dump_file
@@ -247,14 +274,12 @@ do_restore() {
     set_target "$target"
 
     if [ -n "$RESTORE_FILE" ]; then
-        # Use explicitly specified file
         dump_file="$RESTORE_FILE"
         if [ ! -f "$dump_file" ] && [ "$DRY_RUN" = false ]; then
             echo "Error: Specified backup file not found: $dump_file"
             exit 1
         fi
     else
-        # Auto-discover the most recent backup file
         if [ "$DATA_ONLY" = true ]; then
             dump_file=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "${target}-data-[0-9]*.dump" -print 2>/dev/null | LC_ALL=C sort -r | head -n1 || true)
         else
@@ -294,32 +319,29 @@ do_restore() {
     if [ "$CLEAN_RESTORE" = true ] && [ "$DATA_ONLY" = false ]; then
         echo "Skipping additional connection termination after clean restore."
     else
-        # Extract database name from URL for connection termination
         local db_name=$(echo "$TARGET_DB_URL" | sed 's|.*/||')
         echo "Terminating connections to $TARGET_LABEL database..."
-        run_cmd psql "$TARGET_DB_URL" -c "
+        run_cmd psql -X -v ON_ERROR_STOP=1 "$TARGET_DB_URL" -c "
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
             WHERE pg_stat_activity.datname = '$db_name'
             AND pid <> pg_backend_pid();"
     fi
 
-    restore_args=(--dbname="$TARGET_DB_URL" --no-owner --no-privileges -v)
+    restore_args=(--dbname="$TARGET_DB_URL" --no-owner --no-privileges --verbose --exit-on-error --single-transaction)
 
     if [ "$DATA_ONLY" = true ]; then
-        # For data-only restore, we use --data-only.
-        # --clean causes issues with --data-only in pg_restore in some versions,
-        # but generally we want to truncate. However, since we just did a clean reset
-        # and migration, the tables are empty anyway.
-        # --single-transaction helps performance by wrapping the entire restore in one transaction
-        restore_args+=(--data-only --disable-triggers --single-transaction)
+        restore_args+=(--data-only --disable-triggers)
     else
-        # Full restore
         restore_args+=(--clean --if-exists)
     fi
 
-    run_cmd pg_restore "${restore_args[@]}" "$dump_file"
+    if ! run_cmd pg_restore "${restore_args[@]}" "$dump_file"; then
+        echo "Error: Restore to $target failed"
+        return 1
+    fi
 
+    sync_zero_publication "$target" "$TARGET_DB_URL"
     echo "Restore completed successfully"
 }
 
@@ -371,78 +393,33 @@ do_seed() {
     fi
 }
 
-# Function to clone production to dev
 do_clone_prod_to_dev() {
-    PROD_URL="$DATABASE_URL_PROD"
-    DEV_URL="$DATABASE_URL_DEV"
+    local prod_db=$(get_database_name "$DATABASE_URL_PROD")
+    local dev_db=$(get_database_name "$DATABASE_URL_DEV")
 
-    if [ -z "$PROD_URL" ] || [ -z "$DEV_URL" ]; then
-        echo "Error: Both DATABASE_URL_PROD and DATABASE_URL_DEV must be configured"
-        exit 1
-    fi
-
-    PROD_DB=$(get_database_name "$PROD_URL")
-    DEV_DB=$(get_database_name "$DEV_URL")
-
-    # Safety confirmation (before dry-run check so user sees what would happen)
     echo "WARNING: This will completely replace the dev database with production data."
-    echo "  Production: $PROD_DB"
-    echo "  Development: $DEV_DB"
+    echo "  Production: $prod_db"
+    echo "  Development: $dev_db"
     echo ""
 
-    if [ "$DRY_RUN" = true ]; then
-        echo "[dry-run] Would perform:"
-        echo "  1. Backup production database (schema + data): $PROD_DB"
-        echo "  2. Drop and recreate dev database: $DEV_DB"
-        echo "  3. Install extensions (vector, pg_trgm)"
-        echo "  4. Restore backup to dev"
-        exit 0
-    fi
-
-    if [ "$SKIP_CONFIRM" = false ]; then
+    if [ "$DRY_RUN" = false ] && [ "$SKIP_CONFIRM" = false ]; then
         echo "Press Ctrl+C to cancel, or Enter to continue..."
         read -r
     fi
 
-    # Verify prod database is accessible
-    if ! psql "$PROD_URL" -c '\q' 2>/dev/null; then
-        echo "Error: Cannot connect to production database"
-        exit 1
-    fi
+    DATA_ONLY=false
+    CLEAN_RESTORE=true
+    RESTORE_FILE=""
 
-    echo "[1/4] Backing up production database (schema + data)..."
-    BACKUP_FILE="$BACKUP_DIR/prod-$(date +%Y-%m-%d-%H-%M-%S).dump"
-    ensure_backup_dir
-    pg_dump "$PROD_URL" --format=custom --schema=public --schema=drizzle --verbose > "$BACKUP_FILE"
+    echo "[1/2] Backing up production database (schema + data)..."
+    do_backup prod
 
-    if [ $? -ne 0 ]; then
-        echo "Error: Production backup failed"
-        exit 1
-    fi
-
-    echo "[2/4] Dropping and recreating dev database..."
-    # Parse postgres URL to get connection details
-    local postgres_url=$(echo "$DEV_URL" | sed "s|/${DEV_DB}|/postgres|")
-    psql "$postgres_url" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DEV_DB' AND pid <> pg_backend_pid();"
-    psql "$postgres_url" -c "DROP DATABASE IF EXISTS \"$DEV_DB\";"
-    psql "$postgres_url" -c "CREATE DATABASE \"$DEV_DB\";"
-
-    echo "[3/4] Installing extensions..."
-    psql "$DEV_URL" -c "CREATE SCHEMA IF NOT EXISTS extensions;"
-    psql "$DEV_URL" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;"
-    psql "$DEV_URL" -c "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;"
-    psql "$DEV_URL" -c "ALTER DATABASE \"$DEV_DB\" SET search_path TO public, extensions;"
-
-    echo "[4/4] Restoring backup to dev..."
-    pg_restore --dbname="$DEV_URL" --verbose --no-owner --no-privileges --clean --if-exists "$BACKUP_FILE"
-
-    if [ $? -ne 0 ]; then
-        echo "Error: Restore to dev failed"
-        exit 1
-    fi
+    RESTORE_FILE="$CREATED_BACKUP_FILE"
+    echo "[2/2] Restoring production backup to development..."
+    do_restore dev
 
     echo "✓ Successfully cloned production to development"
-    echo "  Backup saved: $BACKUP_FILE"
+    echo "  Backup saved: $CREATED_BACKUP_FILE"
 }
 
 # Execute command

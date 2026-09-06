@@ -436,16 +436,9 @@ type ReadwiseDocumentWithChildren = ReadwiseDocumentSelect & {
   children: ReadwiseDocumentSelect[];
 };
 
-/**
- * Maps a Readwise document to a record
- *
- * @param document - The Readwise document to map
- * @returns A record insert object
- */
 export const mapReadwiseDocumentToRecord = (
   document: ReadwiseDocumentWithChildren
 ): RecordInsert => {
-  // Combine notes from children and document
   const notes = [
     document.notes,
     ...document.children.filter((child) => child.category === 'note').map((child) => child.content),
@@ -453,7 +446,6 @@ export const mapReadwiseDocumentToRecord = (
     .filter(Boolean)
     .join('\n\n');
 
-  // Determine star signal from tags
   let stars = 0;
   if (document.tags?.includes('⭐')) {
     stars = 1;
@@ -470,12 +462,12 @@ export const mapReadwiseDocumentToRecord = (
     type: 'artifact',
     title: document.title || null,
     url: document.sourceUrl,
-    content: document.content ? document.content.replace(/(?<!\n)\n(?!\n)/g, '\n\n') : null, // Normalize newlines: add extra newlines between paragraphs but keep existing double newlines.
+    content: document.content,
     summary: document.summary || null,
     notes: notes || null,
     isPrivate: false,
     avatarUrl: document.imageUrl?.startsWith(
-      'https://assets.feedbin.com/assets-site/images/icon-manifest.png' // Ignore Feedbin favicon
+      'https://assets.feedbin.com/assets-site/images/icon-manifest.png'
     )
       ? null
       : document.imageUrl,
@@ -488,18 +480,12 @@ export const mapReadwiseDocumentToRecord = (
   };
 };
 
-/**
- * Creates records from Readwise documents that don't have associated records
- * yet. When an integration run id is given, also refreshes author and tag
- * links for already-mapped documents updated in that run — a tag added in
- * Readwise to a previously synced document arrives as a document update, not
- * a new document, and would otherwise never be linked.
- */
-export async function createRecordsFromReadwiseDocuments(integrationRunId?: number) {
+export async function createRecordsFromReadwiseDocuments(
+  integrationRunId: number,
+  readyHighlightIds: string[]
+) {
   logger.start('Creating records from Readwise documents');
 
-  // Query readwise documents that need records created (skip notes-only docs)
-  // We only want to process documents that are in the archive or have no location set (i.e. are highlights within other documents) and whose parent is in the archive.
   const documents = await db.query.readwiseDocuments.findMany({
     with: {
       children: true,
@@ -507,14 +493,12 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
     where: {
       OR: [
         {
-          location: {
-            isNull: true,
-          },
-          parent: {
-            location: ReadwiseLocationSchema.enum.archive,
-          },
+          category: 'highlight',
+          id: { in: readyHighlightIds },
+          parent: { location: ReadwiseLocationSchema.enum.archive },
         },
         {
+          category: { ne: 'highlight' },
           location: ReadwiseLocationSchema.enum.archive,
         },
       ],
@@ -530,33 +514,25 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
     },
   });
 
-  const updatedMappedDocuments = integrationRunId
-    ? await db.query.readwiseDocuments.findMany({
-        where: {
-          integrationRunId,
-          recordId: {
-            isNotNull: true,
-          },
-          deletedAt: {
-            isNull: true,
-          },
-        },
-      })
-    : [];
+  const updatedMappedDocuments = await db.query.readwiseDocuments.findMany({
+    where: {
+      integrationRunId,
+      recordId: { isNotNull: true },
+      deletedAt: { isNull: true },
+    },
+  });
 
   if (documents.length === 0 && updatedMappedDocuments.length === 0) {
     logger.skip('No new or updated documents to process');
-    return;
+    return { recordIds: [] };
   }
 
   logger.info(
     `Found ${documents.length} unmapped and ${updatedMappedDocuments.length} updated Readwise documents`
   );
 
-  // Map to store the new record IDs keyed by the corresponding readwise document ID.
   const recordMap = new Map<string, number>();
 
-  // Step 1: Insert each document as a record (can run in parallel - no parent-child FK in records table).
   const documentResults = await runConcurrentPool({
     items: documents,
     concurrency: DB_CONCURRENCY,
@@ -581,7 +557,6 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
         `Created record ${insertedRecord.id} for readwise document ${doc.title || doc.content?.slice(0, 20)} (${doc.id})`
       );
 
-      // Update the readwise document with the corresponding record id.
       await db
         .update(readwiseDocuments)
         .set({ recordId: insertedRecord.id })
@@ -593,7 +568,6 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
   });
   throwPoolFailures(documentResults, 'Readwise document→record mapping', documents.length);
 
-  // Step 2: Update the parent-child relationships (can run in parallel after Step 1).
   const documentsWithParents = documents.filter((doc) => doc.parentId && recordMap.has(doc.id));
 
   const parentLinkResults = await runConcurrentPool({
@@ -603,8 +577,6 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
       const childRecordId = recordMap.get(doc.id);
       if (!childRecordId || !doc.parentId) return;
 
-      // Determine the parent's record id:
-      // Either it was just created in this run or exists already.
       let parentRecordId = recordMap.get(doc.parentId);
       if (!parentRecordId) {
         const parentDoc = await db.query.readwiseDocuments.findFirst({
@@ -630,9 +602,6 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
     documentsWithParents.length
   );
 
-  // Step 3: Link records to index entries via recordCreators (for authors) and recordCategories (for tags).
-  // Covers both newly created records and already-mapped documents updated in
-  // this run; link upserts make relinking existing pairs a no-op.
   const documentsToLink: Array<{
     authorId: number | null;
     tags: string[] | null;
@@ -650,7 +619,6 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
     }
   }
 
-  // Build a map for authors.
   const authorIdsSet = new Set<number>();
   for (const doc of documentsToLink) {
     if (doc.authorId) {
@@ -675,7 +643,6 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
     }
   }
 
-  // Build a map for tags.
   const tagSet = new Set<string>();
   for (const doc of documentsToLink) {
     if (doc.tags) {
@@ -700,14 +667,12 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
     }
   }
 
-  // Bulk prepare linking arrays.
   const recordCreatorsValues: LinkInsert[] = [];
   const recordRelationsValues: LinkInsert[] = [];
 
   for (const doc of documentsToLink) {
     const { recordId } = doc;
 
-    // Link author via recordCreators.
     if (doc.authorId && authorIndexMap.has(doc.authorId)) {
       const authorRecordId = authorIndexMap.get(doc.authorId);
       if (authorRecordId === undefined) {
@@ -720,7 +685,6 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
       });
     }
 
-    // Link tags via recordRelations.
     if (doc.tags && Array.isArray(doc.tags)) {
       for (const tag of doc.tags) {
         if (tagIndexMap.has(tag)) {
@@ -738,7 +702,6 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
     }
   }
 
-  // Bulk insert relationships
   if (recordCreatorsValues.length > 0) {
     await bulkInsertLinks(recordCreatorsValues, db);
     logger.info(`Linked ${recordCreatorsValues.length} authors to records`);
@@ -752,4 +715,5 @@ export async function createRecordsFromReadwiseDocuments(integrationRunId?: numb
   logger.complete(
     `Processed ${recordMap.size} new and ${updatedMappedDocuments.length} updated Readwise documents`
   );
+  return { recordIds: [...recordMap.values()] };
 }
