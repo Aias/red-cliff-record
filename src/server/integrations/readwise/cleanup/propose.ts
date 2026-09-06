@@ -112,8 +112,8 @@ export function proposeCleanup(
     if (match.status === 'ambiguous' && source && match.ranges.length <= 5) {
       const insideLink = (range: Range) =>
         source.links.some((link) => link.start <= range.start && range.end <= link.end);
-      const candidates = match.ranges.filter((range) => !insideLink(range));
-      const [first, ...rest] = candidates.length ? candidates : match.ranges;
+      const unlinkedRanges = match.ranges.filter((range) => !insideLink(range));
+      const [first, ...rest] = unlinkedRanges.length ? unlinkedRanges : match.ranges;
       const content = first && source.render(first, { omitSkippable }).content;
       if (
         first &&

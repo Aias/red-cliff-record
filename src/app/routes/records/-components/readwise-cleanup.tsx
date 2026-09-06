@@ -1,7 +1,7 @@
 import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { CheckIcon, EraserIcon } from 'lucide-react';
+import { BroomSparklesIcon, CheckIcon, MergeIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTRPC } from '@/app/trpc';
@@ -9,12 +9,11 @@ import { Button } from '@/components/button';
 import { Dialog } from '@/components/dialog';
 import { ExternalLink } from '@/components/external-link';
 import { Label } from '@/components/label';
-import { Markdown } from '@/components/markdown';
+import { MarkdownEditor } from '@/components/markdown-editor';
 import { Spinner } from '@/components/spinner';
 import { Tooltip } from '@/components/tooltip';
 import { replaceBasketId } from '@/lib/hooks/use-basket';
 import type { ReadwiseCleanupChange, ReadwiseCleanupPreview } from '@/shared/readwise-cleanup';
-import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 
 const Checkbox = styled(BaseCheckbox.Root, {
@@ -40,12 +39,14 @@ const Checkbox = styled(BaseCheckbox.Root, {
     _childIcon: { boxSize: '3' },
   },
 });
+const CheckboxIndicator = styled(BaseCheckbox.Indicator, {
+  base: { display: 'flex', alignItems: 'center', justifyContent: 'center' },
+});
 
 const Note = styled('p', { base: { textStyle: 'sm', color: 'secondary' } });
 const Column = styled('div', {
   base: { display: 'flex', flexDirection: 'column', gap: '2', minWidth: '0' },
 });
-const passage = css.raw({ textStyle: 'sm', overflowWrap: 'anywhere' });
 
 const sourceLabels = {
   document: 'Source reconstruction',
@@ -200,6 +201,16 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
     setEntries((current) => current.map((item) => (item === entry ? { ...item, checked } : item)));
   };
 
+  const handleContentChange = (id: number, content: string) => {
+    setEntries((current) =>
+      current.map((item) =>
+        item.change.target.id === id
+          ? { ...item, change: { ...item.change, content }, checked: true }
+          : item
+      )
+    );
+  };
+
   const handleApply = () => {
     applyMutation.mutate({ changes: selected });
   };
@@ -212,7 +223,7 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
             <Dialog.Trigger
               render={
                 <Button size="icon" variant="ghost" aria-label="Clean up Readwise highlights">
-                  <EraserIcon />
+                  <BroomSparklesIcon />
                 </Button>
               }
             />
@@ -274,6 +285,7 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
                     merging={mergingId === entry.change.target.id}
                     disabled={busy}
                     onSelectionChange={handleSelectionChange}
+                    onContentChange={handleContentChange}
                     onMerge={
                       next && canMerge(entry, next, preview.mergeable)
                         ? () => handleMerge(entry, next)
@@ -298,9 +310,9 @@ export function ReadwiseCleanup({ recordId }: { recordId: number }) {
           ) : (
             <Label>
               <Checkbox checked={editorial} onCheckedChange={setEditorial} disabled={busy}>
-                <BaseCheckbox.Indicator>
+                <CheckboxIndicator>
                   <CheckIcon />
-                </BaseCheckbox.Indicator>
+                </CheckboxIndicator>
               </Checkbox>
               Check spelling and grammar
             </Label>
@@ -332,6 +344,7 @@ function CleanupEntry({
   merging,
   disabled,
   onSelectionChange,
+  onContentChange,
   onMerge,
   onUnmerge,
 }: {
@@ -339,12 +352,16 @@ function CleanupEntry({
   merging: boolean;
   disabled: boolean;
   onSelectionChange: (entry: Entry, checked: boolean) => void;
+  onContentChange: (id: number, content: string) => void;
   onMerge: (() => void) | undefined;
   onUnmerge: (entry: Entry) => void;
 }) {
   const { change, checked } = entry;
   const id = change.target.id;
   const before = [change.target, ...change.merged];
+  const handleContentChange = (content: string) => {
+    onContentChange(id, content);
+  };
 
   return (
     <>
@@ -375,9 +392,9 @@ function CleanupEntry({
                 onCheckedChange={(next) => onSelectionChange(entry, next)}
                 disabled={disabled}
               >
-                <BaseCheckbox.Indicator>
+                <CheckboxIndicator>
                   <CheckIcon />
-                </BaseCheckbox.Indicator>
+                </CheckboxIndicator>
               </Checkbox>
               {sourceLabels[change.source]}
               {change.merged.length > 0 && ` · Merge ${before.length} highlights`}
@@ -392,7 +409,16 @@ function CleanupEntry({
           )}
         </styled.header>
         {change.changed && change.reasons.length > 0 && (
-          <styled.ul css={{ display: 'flex', flexDirection: 'column', gap: '1', textStyle: 'sm' }}>
+          <styled.ul
+            css={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1',
+              paddingInlineStart: '4',
+              textStyle: 'xs',
+              listStyleType: 'disc',
+            }}
+          >
             {change.reasons.map((reason) => (
               <li key={reason}>{reason}</li>
             ))}
@@ -436,13 +462,21 @@ function CleanupEntry({
                       Highlight {record.id}
                     </styled.span>
                   </styled.h4>
-                  <Markdown css={passage}>{record.content ?? ''}</Markdown>
+                  <MarkdownEditor
+                    value={record.content ?? ''}
+                    label={`Before cleanup for highlight ${record.id}`}
+                  />
                 </styled.article>
               ))}
             </Column>
             <Column>
               <styled.h4 css={{ textStyle: 'sm', fontWeight: 'semibold' }}>After</styled.h4>
-              <Markdown css={passage}>{change.content}</Markdown>
+              <MarkdownEditor
+                value={change.content}
+                onChange={handleContentChange}
+                disabled={disabled}
+                label={`After cleanup for highlight ${id}`}
+              />
               {change.images.length > 0 && (
                 <>
                   <styled.h5 css={{ textStyle: 'xs', fontWeight: 'semibold' }}>
@@ -468,7 +502,7 @@ function CleanupEntry({
             </Column>
           </styled.div>
         ) : (
-          <Markdown css={passage}>{change.content}</Markdown>
+          <MarkdownEditor value={change.content} label={`Highlight ${id}`} />
         )}
       </styled.section>
       {onMerge && (
@@ -479,7 +513,7 @@ function CleanupEntry({
           disabled={disabled}
           onClick={onMerge}
         >
-          {merging && <Spinner />}
+          {merging ? <Spinner /> : <MergeIcon />}
           {merging ? 'Merging highlights' : 'Merge highlights'}
         </Button>
       )}

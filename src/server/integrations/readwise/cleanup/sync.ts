@@ -121,7 +121,7 @@ export const cleanupDocuments = (
         parent.recordId ? [[parent.recordId, { id: parent.id, recordId: parent.recordId }]] : []
       )
     );
-    const result = yield* forEachCollect([...byRecord.values()], {
+    const collected = yield* forEachCollect([...byRecord.values()], {
       concurrency: DOCUMENT_CONCURRENCY,
       label: (parent) => parent.id,
       worker: (parent) =>
@@ -152,9 +152,9 @@ export const cleanupDocuments = (
             new ApiRequestError({ resource: `Readwise cleanup ${parent.id}`, cause }),
         }),
     });
-    const count = result.successes.reduce((sum, item) => sum + item.recordIds.length, 0);
+    const count = collected.successes.reduce((sum, item) => sum + item.recordIds.length, 0);
     yield* Effect.logInfo(
       `${dryRun ? 'Found' : 'Applied'} ${count} Readwise cleanup changes across ${parents.length} documents`
     );
-    return { results: result.successes, failures: result.failures };
+    return { results: collected.successes, failures: collected.failures };
   });
