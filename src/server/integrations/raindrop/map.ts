@@ -13,7 +13,7 @@ import {
   type RaindropTagSelect,
   type RecordInsert,
 } from '@hozo';
-import { eq, inArray } from 'drizzle-orm';
+import { EmptyFilter, eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { starsToElo } from '@/server/lib/elo';
 import { getMediaInsertData, uploadMediaToR2 } from '@/server/lib/media';
@@ -34,7 +34,7 @@ export async function createRaindropTags(integrationRunId?: number) {
       tags: {
         isNotNull: true,
       },
-      integrationRunId: integrationRunId,
+      integrationRunId: integrationRunId ?? EmptyFilter,
     },
   });
 

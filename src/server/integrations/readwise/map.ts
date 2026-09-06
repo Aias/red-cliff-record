@@ -11,7 +11,7 @@ import {
   type ReadwiseTagSelect,
   type RecordInsert,
 } from '@hozo';
-import { eq, inArray } from 'drizzle-orm';
+import { EmptyFilter, eq, inArray } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { starsToElo } from '@/server/lib/elo';
 import { mapUrl } from '@/server/lib/url-utils';
@@ -209,7 +209,7 @@ export async function createReadwiseTags(integrationRunId?: number) {
       tags: {
         isNotNull: true,
       },
-      integrationRunId: integrationRunId,
+      integrationRunId: integrationRunId ?? EmptyFilter,
     },
   });
 

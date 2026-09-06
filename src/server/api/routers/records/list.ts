@@ -1,5 +1,11 @@
-import { containmentPredicateSlugs } from '@hozo';
-import { cosineDistance, sql } from 'drizzle-orm';
+import { containmentPredicateSlugs, type relations } from '@hozo';
+import {
+  cosineDistance,
+  EmptyFilter,
+  sql,
+  type RelationsFieldFilter,
+  type RelationsFilter,
+} from 'drizzle-orm';
 import type { z } from 'zod';
 import {
   exactMatchTier,
@@ -19,11 +25,12 @@ import { publicProcedure } from '../../init';
 const SEARCH_CAP = 200;
 const RRF_K = 60;
 
-const NOT_NULL = { isNotNull: true } as const;
-const IS_NULL = { isNull: true } as const;
-
 const presence = (flag: boolean | undefined) =>
-  flag === undefined ? undefined : flag ? NOT_NULL : IS_NULL;
+  (flag === undefined
+    ? {}
+    : flag
+      ? { isNotNull: true }
+      : { isNull: true }) satisfies RelationsFieldFilter;
 
 function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
   const {
@@ -41,21 +48,21 @@ function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
   } = filters;
 
   return {
-    type: types?.length ? { in: types } : undefined,
+    type: types?.length ? { in: types } : EmptyFilter,
     title: presence(hasTitle),
-    isPrivate,
+    isPrivate: isPrivate ?? EmptyFilter,
     recordCuratedAt: presence(isCurated),
     ...(hasParent === true
       ? { outgoingLinks: { predicate: { in: containmentPredicateSlugs } } }
       : hasParent === false
         ? { NOT: { outgoingLinks: { predicate: { in: containmentPredicateSlugs } } } }
         : {}),
-    media: hasMedia,
+    media: hasMedia ?? EmptyFilter,
     reminderAt: presence(hasReminder),
-    sources: sources?.length ? { arrayOverlaps: sources } : undefined,
-    eloScore: minElo || maxElo ? { gte: minElo, lte: maxElo } : undefined,
+    sources: sources?.length ? { arrayOverlaps: sources } : EmptyFilter,
+    eloScore: { gte: minElo ?? EmptyFilter, lte: maxElo ?? EmptyFilter },
     textEmbedding: presence(hasEmbedding),
-  };
+  } satisfies RelationsFilter<typeof relations.records, typeof relations>;
 }
 
 function rrfMerge<T extends { id: number }>(...lists: { items: T[]; weight?: number }[]): T[] {
@@ -136,7 +143,7 @@ export const list = publicProcedure
           columns: { id: true },
           where: {
             ...filterWhere,
-            textEmbedding: NOT_NULL,
+            textEmbedding: { isNotNull: true },
           },
           orderBy: (records) => [cosineDistance(records.textEmbedding, vector)],
           limit: effectiveLimit,
