@@ -7,7 +7,7 @@ import {
   type RecordType,
 } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { cosineDistance, inArray, sql } from 'drizzle-orm';
+import { cosineDistance, EmptyFilter, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   exactMatchTier,
@@ -88,7 +88,7 @@ export const searchRouter = createTRPCRouter({
         return tx.query.records.findMany({
           where: {
             RAW: (t) => lexicalMatchCondition(t, query),
-            type: recordType,
+            type: recordType ?? EmptyFilter,
           },
           limit,
           orderBy: (t, { desc }) => [

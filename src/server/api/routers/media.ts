@@ -7,7 +7,7 @@ import {
   twitterMedia,
 } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { eq, inArray } from 'drizzle-orm';
+import { EmptyFilter, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getMediaInsertData, uploadClientFileToR2, uploadMediaToR2 } from '@/server/lib/media';
 import { embedRecordById } from '@/server/services/embed-records';
@@ -63,14 +63,14 @@ export const mediaRouter = createTRPCRouter({
 
     const results = await db.query.media.findMany({
       where: {
-        type,
-        recordId,
+        type: type ?? EmptyFilter,
+        recordId: recordId ?? EmptyFilter,
         altText:
           hasAltText === true
             ? { isNotNull: true }
             : hasAltText === false
               ? { isNull: true }
-              : undefined,
+              : EmptyFilter,
       },
       limit,
       offset,
