@@ -124,12 +124,12 @@ The spelling and grammar check uses OpenAI for small literal corrections. It is 
 
 `READWISE_CLEANUP_MODE` controls cleanup during sync:
 
-| Value               | Behavior                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| `preview` (default) | Import formatted highlights only. Review documents through the toolbar action.             |
-| `automatic`         | Also apply warning-free, single-highlight corrections to the records created by that sync. |
+| Value                 | Behavior                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| `automatic` (default) | Also apply warning-free, single-highlight corrections to the records created by that sync. |
+| `preview`             | Import formatted highlights only. Review documents through the toolbar action.             |
 
-A warning-free change is one whose highlight was located exactly once in the saved page, whose record has neither manual edits nor a curation date, and whose selection contains no embedded media, formula, or text the Markdown conversion could not preserve.
+A warning-free change passes the source-matching, existing-edit, curation, media, and text-preservation checks. Recoverable image-only highlights can gain attachments without a source-text match.
 
 Neither mode touches existing records. Merging requires an explicit choice in a document preview. To backfill the library, `rcr readwise cleanup` applies the same warning-free changes to every document with highlights, newest first, optionally limited with `--since <date>` and `--until <date>` to documents saved in that range and with `--limit <n>` to a number of documents. `--dry-run` reports counts without changing records (fetched HTML is still stored). Each run writes the undo snapshots of the documents it changed to a file, and `rcr readwise undo <file>` reverses that run.
 

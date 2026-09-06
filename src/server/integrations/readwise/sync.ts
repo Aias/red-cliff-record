@@ -209,7 +209,7 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
       createRecordsFromReadwiseDocuments(runId, formatted.readyHighlightIds)
     );
     const mode = yield* Config.literals(['preview', 'automatic'], 'READWISE_CLEANUP_MODE').pipe(
-      Config.withDefault('preview')
+      Config.withDefault('automatic')
     );
     if (mode === 'automatic' && created.recordIds.length) {
       const parents = yield* database.use('readwise.newHighlightParents', (client) =>
