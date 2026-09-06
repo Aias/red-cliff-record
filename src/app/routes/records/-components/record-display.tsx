@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { RectangleEllipsisIcon, ShoppingBasketIcon } from 'lucide-react';
 import { memo } from 'react';
 import { Avatar } from '@/components/avatar';
@@ -13,6 +13,7 @@ import { createStyleContext } from '@/styled-system/jsx';
 import type { SystemStyleObject } from '@/styled-system/types';
 import { getRecordTitle, SourceLogos } from './record-parts';
 import { recordTypeIcons } from './type-icons';
+import { useRecordNavigation } from './use-record-navigation';
 
 const recordDisplay = sva({
   className: 'record-display',
@@ -130,7 +131,7 @@ export const RecordDisplay = memo(function RecordDisplay({
 }: RecordDisplayProps) {
   const { data: record, isError } = useRecord(recordId);
   const inBasket = useInBasket(recordId);
-  const navigate = useNavigate();
+  const openRecord = useRecordNavigation();
 
   if (!record) {
     return isError ? (
@@ -169,9 +170,7 @@ export const RecordDisplay = memo(function RecordDisplay({
       compact={compact}
       className={cx('group', className)}
       css={cssProp}
-      onClick={() => {
-        void navigate({ to: '/records/$recordId', params: { recordId: id } });
-      }}
+      onClick={openRecord(id)}
     >
       <Header>
         <TypeIcon className={slotClasses.typeIcon} />
@@ -179,7 +178,6 @@ export const RecordDisplay = memo(function RecordDisplay({
           <Link
             to="/records/$recordId"
             params={{ recordId: id }}
-            onClick={(e) => e.stopPropagation()}
             data-has-title={Boolean(title ?? creatorTitle)}
             className={slotClasses.title}
           >

@@ -14,6 +14,7 @@ import { RankSection } from './-components/rank';
 import { RecordDisplay } from './-components/record-display';
 import { RecordLink } from './-components/record-link';
 import { RelationsList, SimilarRecords } from './-components/relations';
+import { useRecordNavigation } from './-components/use-record-navigation';
 
 export const Route = createFileRoute('/records/$recordId')({
   params: { parse: (params) => ({ recordId: CoercedIdSchema.parse(params.recordId) }) },
@@ -119,6 +120,7 @@ const getPreviousRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId 
 
 function RouteComponent() {
   const navigate = Route.useNavigate();
+  const openRecord = useRecordNavigation();
   const { state: filtersState } = useRecordFilters();
   const { ids: listIds } = useRecordList(filtersState);
   const { recordId } = Route.useParams();
@@ -295,7 +297,12 @@ function RouteComponent() {
             as="li"
             compact={!node.isStructural}
             data-record-id={node.id}
-            css={{ flexShrink: '0', _last: { marginBlockEnd: '8' } }}
+            onClick={node.id === recordId ? undefined : openRecord(node.id)}
+            css={{
+              flexShrink: '0',
+              cursor: node.id === recordId ? undefined : 'pointer',
+              _last: { marginBlockEnd: '8' },
+            }}
           >
             {node.id === recordId ? (
               <RecordForm
