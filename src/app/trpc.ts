@@ -52,10 +52,14 @@ function getBaseUrl() {
 }
 
 function showTRPCError(err: unknown) {
-  if (err instanceof TRPCClientError) {
-    toast.error(err.message); // human‑readable message from server
-  } else {
+  if (!(err instanceof TRPCClientError)) {
     toast.error('Unexpected error occurred');
+  } else if (err.cause instanceof TypeError) {
+    toast.error('Lost the connection to the server before it responded', {
+      description: err.message,
+    });
+  } else {
+    toast.error(err.message);
   }
 }
 

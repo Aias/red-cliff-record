@@ -10,6 +10,9 @@ const handle = async ({ request }: { request: Request }) =>
     req: request,
     router: appRouter,
     createContext: () => createTRPCContext({ headers: request.headers }),
+    onError: ({ error, path }) => {
+      console.error(`[tRPC] ${path ?? '<no-path>'} failed:`, error);
+    },
   });
 
 export const Route = createFileRoute('/api/trpc/$')({

@@ -485,6 +485,7 @@ async function initializeServer() {
   // Create Bun server
   const server = Bun.serve({
     port: SERVER_PORT,
+    idleTimeout: 255,
 
     routes: {
       // Serve static assets (preloaded or on-demand)
