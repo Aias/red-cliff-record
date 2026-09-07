@@ -1,0 +1,40 @@
+name: Publish hozo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/hozo/**
+
+concurrency:
+  group: publish-hozo
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: packages/hozo
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '26'
+          registry-url: https://registry.npmjs.org
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+        working-directory: .
+      - id: version
+        run: |
+          version=$(jq -r .version package.json)
+          published=$(npm view "@aias/hozo@$version" version 2>/dev/null || true)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "published=${published:+true}" >> "$GITHUB_OUTPUT"
+      - if: steps.version.outputs.published != 'true'
+        run: npm publish --provenance --access public
