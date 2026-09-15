@@ -33,7 +33,7 @@ const decodeBookmarksResponse = decodeZod(RawBookmarksApiResponseSchema, 'twitte
 const decodeTweetDetailResponse = decodeZod(TweetDetailEnvelopeSchema, 'twitter tweet detail');
 
 const cookieConfig = (name: string, cookie: string) =>
-  Config.redacted(name).pipe(
+  Config.Redacted(name).pipe(
     Effect.catch(() =>
       Effect.fail(
         new ApiRequestError({

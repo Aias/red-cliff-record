@@ -89,7 +89,7 @@ const BROWSERS: ReadonlyArray<BrowserSpec> = [
 const browserConnection = (spec: BrowserSpec) =>
   Effect.acquireRelease(
     Effect.gen(function* () {
-      const home = yield* Config.string('HOME');
+      const home = yield* Config.String('HOME');
       const dbPath = `${home}/${spec.historyPath}`;
       const copyPath = `${dbPath}-copy`;
       const sourceFile = Bun.file(dbPath);
@@ -115,7 +115,7 @@ const browserConnection = (spec: BrowserSpec) =>
   );
 
 const getHostname = Effect.gen(function* () {
-  const fromEnv = yield* Config.string('HOSTNAME').pipe(Effect.catch(() => Effect.succeed('')));
+  const fromEnv = yield* Config.String('HOSTNAME').pipe(Effect.catch(() => Effect.succeed('')));
   if (fromEnv.trim()) return fromEnv.trim();
   const fromCli = yield* Effect.tryPromise(async () => {
     const proc = Bun.spawn(['hostname'], { stdout: 'pipe', stderr: 'pipe' });

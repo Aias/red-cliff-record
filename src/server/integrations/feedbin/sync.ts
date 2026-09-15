@@ -34,8 +34,8 @@ const ENTRY_TIMEOUT = '30 seconds';
 const STATUS_BATCH_TIMEOUT = '30 seconds';
 
 const feedbinClient = Effect.gen(function* () {
-  const username = yield* Config.redacted('FEEDBIN_USERNAME');
-  const password = yield* Config.redacted('FEEDBIN_PASSWORD');
+  const username = yield* Config.Redacted('FEEDBIN_USERNAME');
+  const password = yield* Config.Redacted('FEEDBIN_PASSWORD');
   const credentials = Buffer.from(
     `${Redacted.value(username)}:${Redacted.value(password)}`
   ).toString('base64');

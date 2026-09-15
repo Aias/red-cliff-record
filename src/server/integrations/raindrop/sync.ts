@@ -39,7 +39,7 @@ const decodeCollections = decodeZod(CollectionsResponseSchema, 'raindrop collect
 const decodeRaindrops = decodeZod(RaindropResponseSchema, 'raindrop bookmarks');
 
 const raindropClient = Effect.gen(function* () {
-  const token = yield* Config.redacted('RAINDROP_TEST_TOKEN');
+  const token = yield* Config.Redacted('RAINDROP_TEST_TOKEN');
   return yield* makeApiClient({
     baseUrl: API_BASE_URL,
     authorization: { scheme: 'Bearer', token },

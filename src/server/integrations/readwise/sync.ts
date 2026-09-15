@@ -27,7 +27,7 @@ const DB_CONCURRENCY = 10;
 const decodePage = decodeZod(ReadwiseArticlesResponseSchema, 'readwise documents');
 
 const readwiseClient = Effect.gen(function* () {
-  const token = yield* Config.redacted('READWISE_TOKEN');
+  const token = yield* Config.Redacted('READWISE_TOKEN');
   return yield* makeApiClient({
     baseUrl: API_BASE_URL,
     authorization: { scheme: 'Token', token },
@@ -208,7 +208,7 @@ const persistDocuments = (documents: ReadonlyArray<ReadwiseArticle>) =>
     const created = yield* database.use('readwise.documents', () =>
       createRecordsFromReadwiseDocuments(runId, formatted.readyHighlightIds)
     );
-    const mode = yield* Config.literals(['preview', 'automatic'], 'READWISE_CLEANUP_MODE').pipe(
+    const mode = yield* Config.Literals(['preview', 'automatic'], 'READWISE_CLEANUP_MODE').pipe(
       Config.withDefault('automatic')
     );
     if (mode === 'automatic' && created.recordIds.length) {
