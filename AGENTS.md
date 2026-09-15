@@ -11,6 +11,7 @@ Project overview, CLI reference, and setup: `README.md`. Integration guide: `INT
 ## Release Checklist
 
 - Bump `version` in `package.json` before opening PRs.
+- Bump `version` in `packages/hozo/package.json` when changing Hozo's published code or dependency requirements, including peer dependencies. Use a patch bump for compatible dependency updates. The publish workflow skips versions already on npm.
 
 ## `rcr` CLI
 
