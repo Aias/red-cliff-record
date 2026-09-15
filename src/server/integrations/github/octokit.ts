@@ -7,7 +7,7 @@ const ThrottledOctokit = Octokit.plugin(throttling);
 const MAX_THROTTLE_RETRIES = 2;
 
 export const githubClient = Effect.gen(function* () {
-  const token = yield* Config.redacted('GITHUB_TOKEN');
+  const token = yield* Config.Redacted('GITHUB_TOKEN');
   return new ThrottledOctokit({
     auth: Redacted.value(token),
     throttle: {
