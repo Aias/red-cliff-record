@@ -16,9 +16,6 @@ export const conditionsPreset = definePreset({
       dark: ':where([data-color-scheme="dark"], [data-dark], .dark) &',
       light: ':where([data-color-scheme="light"], [data-light], .light) &',
       childIcon: '& :where(svg, .icon, .lucide)',
-      // Hovered parent → child icon. Panda v2 composes `_hover: { _childIcon }` as the
-      // icon's own hover, so the parent-hover form needs its own condition.
-      hoverChildIcon: '&:is(:hover, [data-hover]) :where(svg, .icon, .lucide)',
       dataFocused: '&[data-focused]:not([data-focused=false])',
       sideBottom: '&[data-side=bottom]',
       sideTop: '&[data-side=top]',

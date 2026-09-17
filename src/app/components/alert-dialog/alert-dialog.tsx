@@ -1,11 +1,11 @@
 import { AlertDialog as BaseAlertDialog } from '@base-ui/react/alert-dialog';
-import { createSlotRecipeContext } from '@/styled-system/jsx';
+import { createStyleContext } from '@/styled-system/jsx';
 import { dialog } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
 // An alert dialog is a dialog with the `alertdialog` role and no light-dismiss — it
 // shares the dialog's visuals, so it reuses the dialog recipe rather than duplicating it.
-const { withProvider, withContext } = createSlotRecipeContext(dialog);
+const { withProvider, withContext } = createStyleContext(dialog);
 
 export const Root = withProvider(BaseAlertDialog.Root, 'root');
 export const Trigger = withContext(BaseAlertDialog.Trigger, 'trigger');

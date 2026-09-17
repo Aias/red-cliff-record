@@ -59,7 +59,7 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
               },
               '& [data-slot="label"]': {
                 srOnly: true,
-                '@container (min-width: 40rem)': {
+                '@/sm': {
                   srOnly: false,
                 },
               },

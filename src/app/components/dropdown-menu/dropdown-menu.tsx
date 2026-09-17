@@ -1,10 +1,10 @@
 import { Menu as BaseMenu } from '@base-ui/react/menu';
 import { CheckIcon, ChevronRightIcon } from 'lucide-react';
-import { createSlotRecipeContext, styled } from '@/styled-system/jsx';
+import { createStyleContext, styled } from '@/styled-system/jsx';
 import { dropdownMenu } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createSlotRecipeContext(dropdownMenu);
+const { withProvider, withContext } = createStyleContext(dropdownMenu);
 
 export const Root = withProvider(BaseMenu.Root, 'root');
 export const Trigger = withContext(BaseMenu.Trigger, 'trigger');

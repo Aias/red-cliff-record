@@ -12,8 +12,10 @@ const Anchor = styled(
         transitionTimingFunction: 'easeOut.quad',
         opacity: '50%',
       },
-      _hoverChildIcon: {
-        opacity: '100%',
+      _hover: {
+        _childIcon: {
+          opacity: '100%',
+        },
       },
     },
   },

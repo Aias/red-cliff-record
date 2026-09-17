@@ -1,10 +1,10 @@
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import { XIcon } from 'lucide-react';
-import { createSlotRecipeContext, styled } from '@/styled-system/jsx';
+import { createStyleContext, styled } from '@/styled-system/jsx';
 import { dialog } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createSlotRecipeContext(dialog);
+const { withProvider, withContext } = createStyleContext(dialog);
 
 export const Root = withProvider(BaseDialog.Root, 'root');
 export const Trigger = withContext(BaseDialog.Trigger, 'trigger');

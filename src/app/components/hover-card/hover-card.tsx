@@ -1,9 +1,9 @@
 import { PreviewCard as BasePreviewCard } from '@base-ui/react/preview-card';
-import { createSlotRecipeContext } from '@/styled-system/jsx';
+import { createStyleContext } from '@/styled-system/jsx';
 import { hoverCard } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createSlotRecipeContext(hoverCard);
+const { withProvider, withContext } = createStyleContext(hoverCard);
 
 export const createHandle = BasePreviewCard.createHandle;
 export const Root = BasePreviewCard.Root;

@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.11.0",
+  "version": "0.10.6",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -73,7 +73,7 @@
     "cmdk": "~1.1.1",
     "colorjs.io": "~0.7.1",
     "dataloader": "~2.2.3",
-    "drizzle-orm": "1.0.0-rc.5-5935859",
+    "drizzle-orm": "1.0.0-rc.5-ab785fc",
     "effect": "4.0.0-rc.115",
     "lucide-react": "~1.47.0",
     "markdown-it": "~15.0.2",
@@ -91,9 +91,7 @@
   },
   "devDependencies": {
     "@octokit/types": "~18.0.0",
-    "@pandacss/dev": "~2.0.0-beta.18",
-    "@pandacss/preset-base": "~2.0.0-beta.18",
-    "@pandacss/types": "~2.0.0-beta.18",
+    "@pandacss/dev": "~1.12.1",
     "@types/bun": "~1.4.2",
     "@types/mime-types": "~3.0.1",
     "@types/node": "~26.6.1",
@@ -102,7 +100,7 @@
     "@types/turndown": "~5.0.6",
     "@vitejs/plugin-react": "~6.1.1",
     "concurrently": "~10.0.5",
-    "drizzle-kit": "1.0.0-rc.5-5935859",
+    "drizzle-kit": "1.0.0-rc.5-ab785fc",
     "drizzle-zero": "~1.0.0-beta.1",
     "oxc-transform-react": "~0.150.0",
     "oxfmt": "~0.68.0",
@@ -113,9 +111,6 @@
   },
   "engines": {
     "node": ">=26"
-  },
-  "patchedDependencies": {
-    "drizzle-zero@1.0.0-beta.1": "patches/drizzle-zero@1.0.0-beta.1.patch"
   },
   "trustedDependencies": [
     "@parcel/watcher",

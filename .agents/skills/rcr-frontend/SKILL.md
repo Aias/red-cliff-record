@@ -23,7 +23,7 @@ Supplements global `react-best-practices` and `code-quality` skills.
 - Reusable components: `src/app/components/` (kebab-case).
 - **Simple component** → single file: `src/app/components/badge.tsx`.
 - **Component with a recipe** → folder with colocated recipe: `src/app/components/button/{index.tsx, button.recipe.ts}`.
-- **Multi-slot component** → folder with slot recipe and primitives: `src/app/components/scroll-area/{scroll-area.recipe.ts, scroll-area.tsx, index.ts}` (Base UI + `createSlotRecipeContext`) or `alert-dialog/` (legacy Radix, pending migration).
+- **Multi-slot component** → folder with slot recipe and primitives: `src/app/components/scroll-area/{scroll-area.recipe.ts, scroll-area.tsx, index.ts}` (Base UI + `createStyleContext`) or `alert-dialog/` (legacy Radix, pending migration).
 - **Page-specific components** → `-components/` folder adjacent to the route or `-component.tsx` suffix (TanStack Router convention for excluded directories).
 - Register new recipes in `panda.config.ts` (`theme.extend.recipes` for single, `theme.extend.slotRecipes` for slot) and run `bun run stylegen` so `src/app/styled-system/recipes` updates.
 
@@ -135,13 +135,12 @@ Numeric tokens are `0.25rem` multiples: `0, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 
 
 ## Custom conditions and utilities
 
-| Condition                                               | Selector                                                 | Use for                                                                                                                                                                     |
-| ------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `_dark`                                                 | `:where([data-color-scheme="dark"], .dark) &`            | Color-scheme-scoped overrides                                                                                                                                               |
-| `_light`                                                | `:where([data-color-scheme="light"], .light) &`          | Color-scheme-scoped overrides                                                                                                                                               |
-| `_childIcon`                                            | `& :where(svg, .icon, .lucide)`                          | Size/color icons inside a container. Prefer over `& svg`.                                                                                                                   |
-| `_hoverChildIcon`                                       | `&:is(:hover, [data-hover]) :where(svg, .icon, .lucide)` | Icon styles while the parent is hovered. Use this instead of nesting `_childIcon` inside `_hover`, which Panda v2 turns into the icon's own hover.                          |
-| `_sideBottom` / `_sideTop` / `_sideLeft` / `_sideRight` | `&[data-side=<side>]`                                    | Radix/popper-positioned content (popover, dropdown, hover-card) — directional slide-in animation per placement. Use these instead of raw `'&[data-side=bottom]'` selectors. |
+| Condition                                               | Selector                                        | Use for                                                                                                                                                                     |
+| ------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_dark`                                                 | `:where([data-color-scheme="dark"], .dark) &`   | Color-scheme-scoped overrides                                                                                                                                               |
+| `_light`                                                | `:where([data-color-scheme="light"], .light) &` | Color-scheme-scoped overrides                                                                                                                                               |
+| `_childIcon`                                            | `& :where(svg, .icon, .lucide)`                 | Size/color icons inside a container. Prefer over `& svg`.                                                                                                                   |
+| `_sideBottom` / `_sideTop` / `_sideLeft` / `_sideRight` | `&[data-side=<side>]`                           | Radix/popper-positioned content (popover, dropdown, hover-card) — directional slide-in animation per placement. Use these instead of raw `'&[data-side=bottom]'` selectors. |
 
 Reach for a defined condition over a raw `[data-*]` selector — but **first check Panda's built-ins so you don't duplicate one**: `_vertical` / `_horizontal` (`[data-orientation]`), `_open` / `_closed` (`[data-state]`), `_hover`, `_focusVisible`, `_disabled`, `_invalid`, `_placeholder`, and the `_group*` / `_peer*` families all ship out of the box. Only when Panda has nothing (e.g. the project's `_side*`, `_childIcon`) add it to `styles/conditions.ts` (and `bun run stylegen`) rather than inlining the attribute selector in a recipe.
 
@@ -186,17 +185,17 @@ export type InputProps = ComponentProps<typeof Input>;
 
 Same pattern for native elements (`styled('label', label)`) and non-Base UI hosts (`styled(Link, button)`). See `input/`, `button/`, `badge/`, `label/`, `separator/`.
 
-### Multi-slot — `defineSlotRecipe` + `createSlotRecipeContext`
+### Multi-slot — `defineSlotRecipe` + `createStyleContext`
 
-Registered slot recipes bind via `createSlotRecipeContext(slotRecipe)` → `withProvider` (root) + `withContext` (child slots). Canonical Base UI examples: `scroll-area/`, `tooltip/`. Legacy Radix still on `alert-dialog/` — migrate to Base UI when touched.
+Registered slot recipes bind via `createStyleContext(slotRecipe)` → `withProvider` (root) + `withContext` (child slots). Canonical Base UI examples: `scroll-area/`, `tooltip/`. Legacy Radix still on `alert-dialog/` — migrate to Base UI when touched.
 
 ```tsx
 import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area';
-import { createSlotRecipeContext } from '@/styled-system/jsx';
+import { createStyleContext } from '@/styled-system/jsx';
 import { scrollArea } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createSlotRecipeContext(scrollArea);
+const { withProvider, withContext } = createStyleContext(scrollArea);
 
 const Root = withProvider(BaseScrollArea.Root, 'root');
 const Viewport = withContext(BaseScrollArea.Viewport, 'viewport');
@@ -229,7 +228,7 @@ Models: `scroll-area/` and `tooltip/` (Base UI + slot recipe), `alert-dialog/` (
 - **Import naming.** Base UI namespace imports use `Base*` — `import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area'`. Never `*Primitive`; that suffix is Radix/Shadcn (`ScrollAreaPrimitive`, `AlertDialogPrimitive`).
 - **Slots** = every part the headless primitive exposes in its documented anatomy, plus `root`. Don't invent slots the primitive never had; don't omit parts it requires in the tree (Base UI `ScrollArea.Content` inside `Viewport` is mandatory — Radix hid an equivalent wrapper inside `Viewport`). `root` is mandatory — bind with `withProvider`, or `withRootProvider` when the root renders no DOM (Radix context-only roots during migration).
 - **Structural slots.** Register and bind every anatomy part with `withContext` even when the recipe adds no styles — use `slotName: {}` in `base` (see `scroll-area` `content` and `corner`). The slot still gets a generated class and accepts `css` overrides at call sites; the primitive may apply its own inline defaults (e.g. Base UI `Content`'s `minWidth: fit-content`).
-- **Recipe-only variants.** Variants that style slots but aren't props on the headless root go on the `withProvider` root — `createSlotRecipeContext` consumes them for styling without forwarding to the primitive. Example: `orientation` on `ScrollArea`'s `Root` drives scrollbar slot styles; Base UI takes `orientation` on `Scrollbar`, not `Root`.
+- **Recipe-only variants.** Variants that style slots but aren't props on the headless root go on the `withProvider` root — `createStyleContext` consumes them for styling without forwarding to the primitive. Example: `orientation` on `ScrollArea`'s `Root` drives scrollbar slot styles; Base UI takes `orientation` on `Scrollbar`, not `Root`.
 - **Bind every rendered slot** with `withContext`, and **compose with the bound slots** — a `Content` that needs a portal renders `<Portal>`, never the raw Base UI portal outside styled wrappers.
 - **Portal is internal by default.** A composed `Content` includes the `Portal` (portal-by-default, like Base UI), so bind `Portal` as a non-exported `const` and render it inside `Content`. Don't export it — an exported `Portal` lets a consumer double-wrap (`<X.Portal><X.Content/></X.Portal>`) into nested portals. Export `Portal` only for the manual-composition pattern where `Content` is a bare slot and the consumer writes `<Portal><Overlay/><Content/></Portal>` themselves (e.g. `alert-dialog`).
 - **Composed vs part exports.** When the app always uses the full tree, export one composed component (`ScrollArea`). When consumers assemble parts (`Tooltip.Root`, `Tooltip.Trigger`, `Tooltip.Content`), export the bound parts. Keep internal styled slots (`StyledPositioner`, `StyledPopup`) unexported when a composed wrapper owns them.
@@ -242,7 +241,7 @@ Models: `scroll-area/` and `tooltip/` (Base UI + slot recipe), `alert-dialog/` (
 ### When to reach for a recipe
 
 - Reused across the app → recipe in the component folder, registered in `panda.config.ts`.
-- One-off page-local multi-slot component → inline `sva()` from `@/styled-system/css`, optionally with `createSlotRecipeContext`.
+- One-off page-local multi-slot component → inline `sva()` from `@/styled-system/css`, optionally with `createStyleContext`.
 - One-off single-element → `css` prop on a `styled.*` element. No recipe needed.
 
 ## Base UI primitives

@@ -84,9 +84,9 @@ export const buttonRecipe = defineRecipe({
         _hover: {
           backgroundColor: 'mist',
           color: 'accentActive',
-        },
-        _hoverChildIcon: {
-          color: 'primary',
+          _childIcon: {
+            color: 'primary',
+          },
         },
       },
     },
