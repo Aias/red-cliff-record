@@ -1,5 +1,5 @@
-import type { PropertyConfig } from '@pandacss/dev';
 import { defineUtility } from '@pandacss/dev';
+import type { PropertyConfig } from '@pandacss/types';
 import { borderDeclarations } from './borders';
 import { chromaticDeclarations, paletteDeclarations, palettes, type PaletteName } from './colors';
 

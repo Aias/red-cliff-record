@@ -9,7 +9,7 @@ import { getRecordTitleFallbacks, useRecord } from '@/lib/hooks/record-queries';
 import { useInBasket } from '@/lib/hooks/use-basket';
 import type { DbId } from '@/shared/types/api';
 import { cx, sva } from '@/styled-system/css';
-import { createStyleContext } from '@/styled-system/jsx';
+import { createSlotRecipeContext } from '@/styled-system/jsx';
 import type { SystemStyleObject } from '@/styled-system/types';
 import { getRecordTitle, SourceLogos } from './record-parts';
 import { recordTypeIcons } from './type-icons';
@@ -99,7 +99,7 @@ const recordDisplay = sva({
   },
 });
 
-const { withProvider, withContext } = createStyleContext(recordDisplay);
+const { withProvider, withContext } = createSlotRecipeContext(recordDisplay);
 
 const Root = withProvider('article', 'root');
 const ErrorState = withProvider('div', 'errorState');

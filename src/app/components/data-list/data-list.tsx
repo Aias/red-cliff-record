@@ -1,8 +1,8 @@
-import { createStyleContext } from '@/styled-system/jsx';
+import { createSlotRecipeContext } from '@/styled-system/jsx';
 import { dataList } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createStyleContext(dataList);
+const { withProvider, withContext } = createSlotRecipeContext(dataList);
 
 export const Root = withProvider('dl', 'root');
 export type RootProps = ComponentProps<typeof Root>;

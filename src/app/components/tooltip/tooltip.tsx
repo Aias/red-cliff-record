@@ -1,9 +1,9 @@
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
-import { createStyleContext } from '@/styled-system/jsx';
+import { createSlotRecipeContext } from '@/styled-system/jsx';
 import { tooltip } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createStyleContext(tooltip);
+const { withProvider, withContext } = createSlotRecipeContext(tooltip);
 
 export function Provider({ delay = 300, ...props }: BaseTooltip.Provider.Props) {
   return <BaseTooltip.Provider delay={delay} {...props} />;

@@ -1,9 +1,9 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
-import { createStyleContext } from '@/styled-system/jsx';
+import { createSlotRecipeContext } from '@/styled-system/jsx';
 import { popover } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createStyleContext(popover);
+const { withProvider, withContext } = createSlotRecipeContext(popover);
 
 export const createHandle = BasePopover.createHandle;
 export const Root = BasePopover.Root;

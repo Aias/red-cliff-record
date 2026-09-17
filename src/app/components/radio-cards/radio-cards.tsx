@@ -1,11 +1,11 @@
 import { Radio } from '@base-ui/react/radio';
 import { RadioGroup } from '@base-ui/react/radio-group';
 import type { ReactNode } from 'react';
-import { createStyleContext, type HTMLStyledProps } from '@/styled-system/jsx';
+import { createSlotRecipeContext, type HTMLStyledProps } from '@/styled-system/jsx';
 import { radioCards, type RadioCardsVariantProps } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createStyleContext(radioCards);
+const { withProvider, withContext } = createSlotRecipeContext(radioCards);
 
 const RadioCardsRoot = withProvider(RadioGroup, 'root');
 type RadioCardsRootProps = ComponentProps<typeof RadioCardsRoot>;

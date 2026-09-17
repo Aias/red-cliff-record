@@ -1,9 +1,9 @@
 import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area';
-import { createStyleContext } from '@/styled-system/jsx';
+import { createSlotRecipeContext } from '@/styled-system/jsx';
 import { scrollArea } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createStyleContext(scrollArea);
+const { withProvider, withContext } = createSlotRecipeContext(scrollArea);
 
 const Root = withProvider(BaseScrollArea.Root, 'root');
 export type RootProps = ComponentProps<typeof Root>;

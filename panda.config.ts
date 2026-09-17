@@ -49,7 +49,7 @@ export default defineConfig({
   jsxStyleProps: 'minimal',
   shorthands: false,
 
-  presets: [conditionsPreset],
+  presets: ['@pandacss/preset-base', conditionsPreset],
   globalCss: globalStyles,
   theme: {
     extend: {

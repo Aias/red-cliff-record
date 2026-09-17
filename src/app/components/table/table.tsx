@@ -1,7 +1,7 @@
-import { createStyleContext } from '@/styled-system/jsx';
+import { createSlotRecipeContext } from '@/styled-system/jsx';
 import { table } from '@/styled-system/recipes';
 
-const { withProvider, withContext } = createStyleContext(table);
+const { withProvider, withContext } = createSlotRecipeContext(table);
 
 export const Root = withProvider('div', 'root');
 export const Table = withContext('table', 'table');

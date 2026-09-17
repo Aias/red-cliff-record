@@ -1,8 +1,8 @@
-import type { RecipeConfig, SlotRecipeConfig } from '@pandacss/dev';
+import type { RecipeConfig, SlotRecipeConfig } from '@pandacss/types';
 import type {
-  RecipeConfig as TypeSafeRecipeConfig,
+  RecipeDefinition as TypeSafeRecipeConfig,
   RecipeVariantRecord,
-  SlotRecipeConfig as TypeSafeSlotRecipeConfig,
+  SlotRecipeDefinition as TypeSafeSlotRecipeConfig,
   SlotRecipeVariantRecord,
 } from '@/styled-system/types';
 
@@ -17,8 +17,16 @@ import type {
  * @see https://github.com/chakra-ui/panda/discussions/1776#discussioncomment-8198659
  */
 
+/** Non-style recipe metadata (`className`, `description`, `jsx`, `staticCss`, …) that the
+ * generated `RecipeDefinition` types no longer carry in Panda v2. */
+type RecipeMeta = Omit<RecipeConfig, 'base' | 'variants' | 'defaultVariants' | 'compoundVariants'>;
+type SlotRecipeMeta = Omit<
+  SlotRecipeConfig,
+  'slots' | 'base' | 'variants' | 'defaultVariants' | 'compoundVariants'
+>;
+
 export function defineRecipe<T extends RecipeVariantRecord>(
-  config: TypeSafeRecipeConfig<T>
+  config: TypeSafeRecipeConfig<T> & RecipeMeta
 ): RecipeConfig {
   return config as RecipeConfig;
 }
@@ -26,6 +34,6 @@ export function defineRecipe<T extends RecipeVariantRecord>(
 export function defineSlotRecipe<
   S extends string = string,
   T extends SlotRecipeVariantRecord<S> = SlotRecipeVariantRecord<S>,
->(config: TypeSafeSlotRecipeConfig<S, T>): SlotRecipeConfig {
+>(config: TypeSafeSlotRecipeConfig<S, T> & SlotRecipeMeta): SlotRecipeConfig {
   return config as SlotRecipeConfig;
 }

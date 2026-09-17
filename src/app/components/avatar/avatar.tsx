@@ -1,8 +1,8 @@
 import { Avatar as BaseAvatar } from '@base-ui/react/avatar';
-import { createStyleContext } from '@/styled-system/jsx';
+import { createSlotRecipeContext } from '@/styled-system/jsx';
 import { avatar } from '@/styled-system/recipes';
 
-const { withProvider, withContext } = createStyleContext(avatar);
+const { withProvider, withContext } = createSlotRecipeContext(avatar);
 
 export const Root = withProvider(BaseAvatar.Root, 'root');
 
