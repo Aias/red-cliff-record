@@ -31,6 +31,7 @@ import { and, eq, getColumns, getTableName, inArray, or } from 'drizzle-orm';
 import { z } from 'zod';
 import type { db } from '@/server/db/connections/postgres';
 import { mergeRecords } from '@/shared/lib/merge-records';
+import { resolveMergeFields } from './resolve-merge-fields';
 
 export const integrationTableMap = {
   airtable_creators: airtableCreators,
@@ -190,10 +191,11 @@ export async function mergeRecordsInTransaction(
     .orderBy(eloMatchups.id)
     .for('update');
 
+  const resolutions = await resolveMergeFields(source, target);
   if (source.slug) await tx.update(records).set({ slug: null }).where(eq(records.id, sourceId));
   const [updatedRecord] = await tx
     .update(records)
-    .set(mergeRecords(source, target))
+    .set(mergeRecords(source, target, resolutions))
     .where(eq(records.id, targetId))
     .returning();
   if (!updatedRecord) {
