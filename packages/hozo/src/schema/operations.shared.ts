@@ -10,7 +10,6 @@ export const integrationTypes = [
   'browser_history',
   'crawler',
   'embeddings',
-  'feedbin',
   'github',
   'lightroom',
   'manual',

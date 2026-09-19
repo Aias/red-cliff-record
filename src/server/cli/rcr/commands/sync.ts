@@ -17,7 +17,6 @@ const IntegrationNameSchema = z.enum([
   'readwise',
   'raindrop',
   'adobe',
-  'feedbin',
   'browsing',
   'twitter',
 ]);
@@ -69,7 +68,6 @@ export { run as github };
 export { run as readwise };
 export { run as raindrop };
 export { run as adobe };
-export { run as feedbin };
 export { run as browsing };
 export { run as twitter };
 
@@ -107,7 +105,6 @@ async function runSingleSync(integration: IntegrationName, options: SyncOptions)
     case 'readwise':
     case 'raindrop':
     case 'adobe':
-    case 'feedbin':
     case 'browsing':
     case 'twitter': {
       const summary = await runIntegrationSync(integration, options);

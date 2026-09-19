@@ -5,8 +5,6 @@ import {
   airtableSpaces,
   eloMatchups,
   EloMatchupSelectSchema,
-  feedEntries,
-  feeds,
   githubRepositories,
   githubUsers,
   lightroomImages,
@@ -39,7 +37,6 @@ export const integrationTableMap = {
   airtable_extracts: airtableExtracts,
   airtable_formats: airtableFormats,
   airtable_spaces: airtableSpaces,
-  feed_entries: feedEntries,
   github_repositories: githubRepositories,
   github_users: githubUsers,
   lightroom_images: lightroomImages,
@@ -78,7 +75,6 @@ export const MergeSnapshotSchema = z.object({
       recordId: z.number(),
     })
   ),
-  feedIds: z.array(z.number()),
   eloMatchups: z.array(EloMatchupSelectSchema),
 });
 
@@ -175,12 +171,6 @@ export async function mergeRecordsInTransaction(
       }
     }
   }
-  const premergeFeeds = await tx
-    .select({ id: feeds.id })
-    .from(feeds)
-    .where(eq(feeds.ownerId, sourceId))
-    .orderBy(feeds.id)
-    .for('update');
   const premergeLinks = await tx
     .select()
     .from(links)
@@ -222,10 +212,6 @@ export async function mergeRecordsInTransaction(
       .set({ recordId: targetId, recordUpdatedAt: new Date() })
       .where(eq(table.recordId, sourceId));
   }
-  await tx
-    .update(feeds)
-    .set({ ownerId: targetId, recordUpdatedAt: new Date() })
-    .where(eq(feeds.ownerId, sourceId));
 
   if (premergeLinks.length) {
     await tx.delete(links).where(
@@ -276,7 +262,6 @@ export async function mergeRecordsInTransaction(
     links: premergeLinks,
     mediaAssignments: premergeMedia,
     integrationAssignments: premergeIntegrations,
-    feedIds: premergeFeeds.map((feed) => feed.id),
     eloMatchups: premergeMatchups,
   };
   return {
@@ -343,12 +328,6 @@ export async function undoMergeInTransaction(tx: MergeTransaction, snapshot: Mer
       .update(table)
       .set({ recordId: assignment.recordId, recordUpdatedAt: new Date() })
       .where(eq(table.id, assignment.id));
-  }
-  if (snapshot.feedIds.length) {
-    await tx
-      .update(feeds)
-      .set({ ownerId: sourceRecord.id, recordUpdatedAt: new Date() })
-      .where(inArray(feeds.id, snapshot.feedIds));
   }
   if (snapshot.eloMatchups.length) {
     await tx.delete(eloMatchups).where(

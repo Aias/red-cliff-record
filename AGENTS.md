@@ -28,18 +28,18 @@ psql $DATABASE_URL_DEV -c "\dt table_name"
 
 ## Database Migrations
 
-**CRITICAL: Never run migrations.** The agent must never execute migration commands (`bun run db:migrate`, `bunx drizzle-kit migrate`, or any equivalent), even against dev. Always provide the commands for the user to run and verify.
-
-**Production migrations run automatically** as part of the deploy pipeline when a PR is merged to main. Never run migrations against prod in a development context.
+**Dev is the agent's to migrate; prod is the deploy pipeline's.** Apply and verify every migration against dev before handoff. Never run migrations against prod: merging to main deploys them automatically (backup, publication sync, migrate, publication sync, build, restart), and a migration that would need manual steps on the server is a defect in the migration, not a reason to run it by hand.
 
 **Migration workflow:**
 
-1. Schema changes → `bun run db:generate` generates migration files only (safe for agent to run)
-2. **User applies to dev** → `bun run zero:generate && NODE_ENV=development bun run zero:publication && NODE_ENV=development bunx drizzle-kit migrate && NODE_ENV=development bun run zero:publication` (the `NODE_ENV` prefix binds to one command only — repeat it, or every unprefixed command falls back to `DATABASE_URL`, which points at prod)
-3. **User verifies** → Query dev database to confirm schema is correct
-4. PR merged → deploy script auto-runs migration against prod
+1. Schema changes → `bun run db:generate` (add `--name=<slug>` for a meaningful folder name)
+2. Apply to dev → `bun run zero:generate && NODE_ENV=development bun run zero:publication && NODE_ENV=development bunx drizzle-kit migrate && NODE_ENV=development bun run zero:publication` (the `NODE_ENV` prefix binds to one command only — repeat it, or every unprefixed command falls back to `DATABASE_URL`, which points at prod)
+3. Verify → query dev with `psql $DATABASE_URL_DEV` to confirm the schema and data
+4. PR merged → deploy script runs the same sequence against prod
 
-If the migration touches a Zero-synced table (records, links, elo_matchups, media), run `bun run zero:generate` first — `zero:publication` derives its column list from the generated schema — then `bun run zero:publication` on both sides of the migration. The `zero_data` publication names columns explicitly (to exclude `text_embedding`/`text_search`), and a pinned column list never picks up new columns on its own. Skip the run after and clients fail with `SchemaVersionNotSupported` however often the replica is rebuilt; skip the run before and Postgres refuses to drop a column the publication still names. Nothing else is needed: zero-cache applies published DDL to its replica while running. Recovery steps for an already-diverged replica are in `README.md` (Zero Sync Engine).
+Data steps (deletes, backfills) go into the generated `migration.sql` alongside the DDL, ordered so every statement can succeed: rows referenced by a foreign key are removed after the referencing table is dropped, and enum values are removed only after no row still uses them. Regenerating the migration discards those edits.
+
+If the migration touches a Zero-synced table (records, links, elo_matchups, media), run `bun run zero:generate` first — `zero:publication` derives its column list from the generated schema — then `bun run zero:publication` on both sides of the migration. The `zero_data` publication names columns explicitly (to exclude `text_embedding`/`text_search`), and a pinned column list never picks up new columns on its own. Skip the run after and clients fail with `SchemaVersionNotSupported` however often the replica is rebuilt; skip the run before and Postgres refuses to drop a column the publication still names. Postgres also refuses to change the type of a column the publication names, and the sync script cannot help there because the column stays in the schema: the migration itself must `ALTER PUBLICATION "zero_data" SET TABLE ...` without the column before the type change and restore the full list after (recreating an enum retypes every column that uses it). Nothing else is needed: zero-cache applies published DDL to its replica while running. Recovery steps for an already-diverged replica are in `README.md` (Zero Sync Engine).
 
 **OR** keep dev synced with prod: `rcr db clone-prod-to-dev --yes`
 

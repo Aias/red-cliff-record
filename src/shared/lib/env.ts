@@ -29,8 +29,6 @@ export const ServerEnvSchema = z.object({
 
   // External Services
   GITHUB_TOKEN: z.string(),
-  FEEDBIN_USERNAME: z.string(),
-  FEEDBIN_PASSWORD: z.string(),
   RAINDROP_TEST_TOKEN: z.string(),
   READWISE_TOKEN: z.string(),
   OPENAI_API_KEY: z.string(),

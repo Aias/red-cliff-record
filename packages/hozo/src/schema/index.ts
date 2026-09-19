@@ -1,7 +1,6 @@
 export * from './adobe';
 export * from './airtable';
 export * from './browser-history';
-export * from './feeds';
 export * from './github';
 export * from './media';
 export * from './operations';

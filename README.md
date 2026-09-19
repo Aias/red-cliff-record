@@ -30,7 +30,6 @@ Before you begin, ensure you have the following installed:
 
 - **Arc Browser** - for Arc Browser integration
 - **Dia Browser** - for Dia Browser integration
-- **Feedbin** - for RSS feed integration
 - **GitHub** - for GitHub integration
 - **Raindrop.io** - for Raindrop.io integration
 - **Readwise** - for Readwise integration
@@ -164,15 +163,6 @@ Each integration is optional. Only configure the ones you need:
 
   [Get your token](https://readwise.io/access_token)
 
-- **Feedbin** - For syncing RSS feeds and entries
-
-  ```
-  FEEDBIN_USERNAME=your@email.com
-  FEEDBIN_PASSWORD=your-password
-  ```
-
-  Sign up at [feedbin.com](https://feedbin.com)
-
 - **Adobe Lightroom** - For syncing photos from a Lightroom album
 
   Note: Currently hardcoded to the author's album. See [INTEGRATIONS.md](./INTEGRATIONS.md#adobe-lightroom-integration) for setup details.
@@ -288,7 +278,6 @@ rcr links create '{"sourceId":1,"targetId":2,"predicateId":3}'
 rcr sync github
 rcr sync raindrop
 rcr sync readwise
-rcr sync feedbin
 rcr sync adobe
 rcr sync browsing                       # Arc + Dia browser history (macOS)
 rcr sync twitter

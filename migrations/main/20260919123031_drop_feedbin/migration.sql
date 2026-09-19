@@ -1,0 +1,13 @@
+ALTER TABLE "feed_entries" DROP CONSTRAINT "feed_entries_feed_id_feeds_id_fkey";--> statement-breakpoint
+DROP TABLE "feed_entries";--> statement-breakpoint
+DROP TABLE "feeds";--> statement-breakpoint
+DELETE FROM "integration_runs" WHERE "integration_type" = 'feedbin';--> statement-breakpoint
+ALTER PUBLICATION "zero_data" SET TABLE "elo_matchups" ("id", "record_a_id", "record_b_id", "winner_id", "record_type", "created_at"), "links" ("id", "source_id", "target_id", "notes", "created_at", "updated_at", "predicate"), "media" ("id", "record_id", "url", "alt_text", "type", "format", "content_type_string", "file_size", "width", "height", "version_of_media_id", "created_at", "updated_at", "alt_text_generated_at"), "records" ("id", "slug", "type", "title", "sense", "abbreviation", "url", "avatar_url", "summary", "content", "notes", "media_caption", "is_private", "reminder_at", "created_at", "updated_at", "content_created_at", "content_updated_at", "elo_score", "text_embedded_at", "curated_at");--> statement-breakpoint
+ALTER TABLE "integration_runs" ALTER COLUMN "integration_type" SET DATA TYPE text;--> statement-breakpoint
+ALTER TABLE "records" ALTER COLUMN "sources" SET DATA TYPE text[];--> statement-breakpoint
+DROP TYPE "integration_type";--> statement-breakpoint
+CREATE TYPE "integration_type" AS ENUM('ai_chat', 'airtable', 'browser_history', 'crawler', 'embeddings', 'github', 'lightroom', 'manual', 'raindrop', 'readwise', 'twitter');--> statement-breakpoint
+ALTER TABLE "integration_runs" ALTER COLUMN "integration_type" SET DATA TYPE "integration_type" USING "integration_type"::"integration_type";--> statement-breakpoint
+ALTER TABLE "records" ALTER COLUMN "sources" SET DATA TYPE "integration_type"[] USING "sources"::"integration_type"[];--> statement-breakpoint
+DROP TYPE "feed_source";--> statement-breakpoint
+ALTER PUBLICATION "zero_data" SET TABLE "elo_matchups" ("id", "record_a_id", "record_b_id", "winner_id", "record_type", "created_at"), "links" ("id", "source_id", "target_id", "notes", "created_at", "updated_at", "predicate"), "media" ("id", "record_id", "url", "alt_text", "type", "format", "content_type_string", "file_size", "width", "height", "version_of_media_id", "created_at", "updated_at", "alt_text_generated_at"), "records" ("id", "slug", "type", "title", "sense", "abbreviation", "url", "avatar_url", "summary", "content", "notes", "media_caption", "is_private", "reminder_at", "sources", "created_at", "updated_at", "content_created_at", "content_updated_at", "elo_score", "text_embedded_at", "curated_at");
