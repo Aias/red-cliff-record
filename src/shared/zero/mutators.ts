@@ -62,6 +62,7 @@ export const RecordUpdateFieldsSchema = z.object({
   content: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   mediaCaption: z.string().nullable().optional(),
+  formatId: IdSchema.nullable().optional(),
   isCurated: z.boolean().optional(),
   isPrivate: z.boolean().optional(),
 });

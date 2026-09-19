@@ -27,7 +27,7 @@ import {
   type PredicateSlug,
 } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { and, eq, getColumns, getTableName, inArray, or } from 'drizzle-orm';
+import { and, eq, getColumns, getTableName, inArray, ne, or } from 'drizzle-orm';
 import { z } from 'zod';
 import type { db } from '@/server/db/connections/postgres';
 import { mergeRecords } from '@/shared/lib/merge-records';
@@ -76,6 +76,7 @@ export const MergeSnapshotSchema = z.object({
       recordId: z.number(),
     })
   ),
+  formatAssignments: z.array(z.number()),
   eloMatchups: z.array(EloMatchupSelectSchema),
 });
 
@@ -190,12 +191,19 @@ export async function mergeRecordsInTransaction(
     )
     .orderBy(eloMatchups.id)
     .for('update');
+  const premergeFormatAssignments = await tx
+    .select({ id: records.id })
+    .from(records)
+    .where(and(eq(records.formatId, sourceId), ne(records.id, targetId)))
+    .orderBy(records.id)
+    .for('update');
 
   const resolutions = await resolveMergeFields(source, target);
+  const merged = mergeRecords(source, target, resolutions);
   if (source.slug) await tx.update(records).set({ slug: null }).where(eq(records.id, sourceId));
   const [updatedRecord] = await tx
     .update(records)
-    .set(mergeRecords(source, target, resolutions))
+    .set({ ...merged, formatId: merged.formatId === targetId ? null : merged.formatId })
     .where(eq(records.id, targetId))
     .returning();
   if (!updatedRecord) {
@@ -213,6 +221,17 @@ export async function mergeRecordsInTransaction(
       .update(table)
       .set({ recordId: targetId, recordUpdatedAt: new Date() })
       .where(eq(table.recordId, sourceId));
+  }
+  if (premergeFormatAssignments.length) {
+    await tx
+      .update(records)
+      .set({ formatId: targetId, recordUpdatedAt: new Date() })
+      .where(
+        inArray(
+          records.id,
+          premergeFormatAssignments.map((record) => record.id)
+        )
+      );
   }
 
   if (premergeLinks.length) {
@@ -264,6 +283,7 @@ export async function mergeRecordsInTransaction(
     links: premergeLinks,
     mediaAssignments: premergeMedia,
     integrationAssignments: premergeIntegrations,
+    formatAssignments: premergeFormatAssignments.map((record) => record.id),
     eloMatchups: premergeMatchups,
   };
   return {
@@ -330,6 +350,12 @@ export async function undoMergeInTransaction(tx: MergeTransaction, snapshot: Mer
       .update(table)
       .set({ recordId: assignment.recordId, recordUpdatedAt: new Date() })
       .where(eq(table.id, assignment.id));
+  }
+  if (snapshot.formatAssignments.length) {
+    await tx
+      .update(records)
+      .set({ formatId: sourceRecord.id, recordUpdatedAt: new Date() })
+      .where(inArray(records.id, snapshot.formatAssignments));
   }
   if (snapshot.eloMatchups.length) {
     await tx.delete(eloMatchups).where(

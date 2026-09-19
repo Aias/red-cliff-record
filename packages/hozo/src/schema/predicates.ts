@@ -32,7 +32,7 @@ export interface Predicate {
  * - Only rows with `canonical: true` are stored in `links`.
  * - `inverseSlug` supplies a readable label when traversing the edge
  *   in the opposite direction.
- * - Active-present verb style: created_by, contained_by, format_of...
+ * - Active-present verb style: created_by, contained_by, tagged_with...
  */
 export const PREDICATES = {
   /* ────────────  Creation  ──────────── */
@@ -128,22 +128,6 @@ export const PREDICATES = {
     name: 'quoted in',
     type: 'containment',
     inverseSlug: 'quotes',
-    canonical: false,
-  },
-
-  /* ───────────  Form  ─────────── */
-  has_format: {
-    slug: 'has_format',
-    name: 'has format',
-    type: 'form',
-    inverseSlug: 'format_of',
-    canonical: true,
-  },
-  format_of: {
-    slug: 'format_of',
-    name: 'format of',
-    type: 'form',
-    inverseSlug: 'has_format',
     canonical: false,
   },
 

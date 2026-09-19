@@ -65,7 +65,7 @@ async function computePriors(): Promise<Map<number, number>> {
       SELECT
         rid,
         COUNT(*) FILTER (WHERE predicate IN ('contained_by', 'quotes')) AS containment_cnt,
-        COUNT(*) FILTER (WHERE predicate NOT IN ('contained_by', 'quotes', 'has_format')) AS other_cnt
+        COUNT(*) FILTER (WHERE predicate NOT IN ('contained_by', 'quotes')) AS other_cnt
       FROM (
         SELECT source_id AS rid, predicate FROM links
         UNION ALL

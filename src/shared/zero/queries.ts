@@ -22,6 +22,7 @@ const BrowseRecordsArgsSchema = z.object({
   isPrivate: z.boolean().optional(),
   isCurated: z.boolean().optional(),
   hasReminder: z.boolean().optional(),
+  formatId: IdSchema.optional(),
   orderBy: OrderBySchema,
   limit: LimitSchema.optional(),
 });
@@ -32,6 +33,7 @@ export const queries = defineQueries({
     zql.records
       .where('id', id)
       .related('media')
+      .related('format', (f) => f.one())
       .related('outgoingLinks', (q) =>
         q
           .where('predicate', 'IN', creationContainmentPredicateSlugs)
@@ -39,6 +41,8 @@ export const queries = defineQueries({
       )
       .one()
   ),
+  /** Records whose format is this record. */
+  formatOf: defineQuery(IdArgsSchema, ({ args: { id } }) => zql.records.where('formatId', id)),
   /** Batch variant of `record` for list views. */
   recordsByIds: defineQuery(z.object({ ids: z.array(IdSchema) }), ({ args: { ids } }) =>
     zql.records
@@ -105,6 +109,7 @@ export const queries = defineQueries({
     }
     if (args.minElo !== undefined) q = q.where('eloScore', '>=', args.minElo);
     if (args.maxElo !== undefined) q = q.where('eloScore', '<=', args.maxElo);
+    if (args.formatId !== undefined) q = q.where('formatId', args.formatId);
     for (const { field, direction } of args.orderBy) {
       q = q.orderBy(field, direction);
     }

@@ -48,7 +48,6 @@ export async function embedRecordsByIds(recordIds: number[]): Promise<EmbedRecor
         with: {
           source: { columns: { textEmbedding: false, textSearch: false } },
         },
-        where: { predicate: { notIn: ['format_of'] } },
       },
       media: true,
     },

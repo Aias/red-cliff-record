@@ -10,6 +10,7 @@ import {
   text,
   timestamp,
   unique,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-orm/zod';
 import { z } from 'zod';
@@ -55,6 +56,10 @@ export const records = pgTable(
     recordCuratedAt: timestamp('curated_at', { withTimezone: true }),
     reminderAt: timestamp('reminder_at', { withTimezone: true }),
     sources: integrationTypeEnum('sources').array(),
+    formatId: integer('format_id').references((): AnyPgColumn => records.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
     /**
      * Weighted full-text search document: title/abbreviation/sense (A),
      * summary/mediaCaption (B), content (C), notes/url (D). Postgres tokenizes
@@ -86,6 +91,7 @@ export const records = pgTable(
     index().on(table.type, table.eloScore),
     index().using('hnsw', table.textEmbedding.op('vector_cosine_ops')),
     index('idx_records_text_search').using('gin', table.textSearch),
+    index().on(table.formatId),
   ]
 );
 
