@@ -227,7 +227,7 @@ export const SiteSearch = () => {
               key="create-record"
               onSelect={() => {
                 createRecordMutation.mutate(
-                  { type: 'artifact', title: inputValue },
+                  { title: inputValue },
                   { onSuccess: (newRecord) => handleSelectResult(newRecord.id) }
                 );
               }}
