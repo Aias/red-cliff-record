@@ -42,7 +42,6 @@ const LogoComponent = ({ service }: { service: IntegrationType }) => {
     case 'ai_chat':
     case 'crawler':
     case 'embeddings':
-    case 'feedbin':
     case 'manual':
       return null;
     default:

@@ -146,42 +146,6 @@ rcr readwise undo cleanup.jsonl
 
 The `--records` ids name the surviving highlight of each change to apply. Reader's formatted highlights come from the [Readwise MCP service](https://readwise.io/mcp) with the same `READWISE_TOKEN`.
 
-## Feedbin Integration
-
-Syncs your RSS feed subscriptions and entries from Feedbin.
-
-### Setup
-
-1. Create a [Feedbin](https://feedbin.com) account if you don't have one
-2. Add your Feedbin credentials to `.env`:
-   ```
-   FEEDBIN_USERNAME=your@email.com
-   FEEDBIN_PASSWORD=your-password
-   ```
-
-### What Gets Synced
-
-- All feed subscriptions
-- Feed entries (unread, starred, and recently read)
-- Feed metadata and icons
-- Read/starred status
-- Differential sync for starred items (only syncs changes)
-- Embeddings generated after initial sync
-
-### Sync Command
-
-```bash
-rcr sync feedbin
-```
-
-### Features
-
-- Incremental sync based on last sync time
-- Efficient starred entry syncing (only fetches new starred items)
-- Automatic feed discovery for entries without feeds
-- Batch processing for embeddings
-- Enclosure/podcast support
-
 ## Browser History Integration (macOS Only)
 
 Syncs browsing history from Chromium-based browsers locally. Currently configured for Arc and Dia browsers, but the same approach works for any Chromium-based browser (Chrome, Edge, Brave, etc.) with path adjustments.
@@ -324,14 +288,13 @@ To sync all configured integrations at once:
 rcr sync
 ```
 
-This runs: browsing, raindrop, readwise, github, twitter, then enrichments (avatars, alt-text, embeddings). Adobe and feedbin are excluded—run them individually if needed.
+This runs: browsing, raindrop, readwise, github, twitter, then enrichments (avatars, alt-text, embeddings). Adobe is excluded—run it individually if needed.
 
 ## Rate Limits and Best Practices
 
 - **GitHub**: 5,000 requests/hour for authenticated requests
 - **Raindrop**: 120 requests/minute
 - **Readwise**: Reasonable use expected
-- **Feedbin**: Reasonable use expected
 - **Arc/Dia**: Local only, no rate limits
 
 ### Scheduling Syncs
