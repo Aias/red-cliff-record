@@ -81,7 +81,7 @@ const joinList = (items: string[], threshold = 4): string => {
  * Structure prioritizes semantic content first, then relationships and metadata.
  * This ordering helps embedding models weight substance over structural metadata.
  *
- * Structural identifiers (format links, identity links, source URLs) are
+ * Structural identifiers (formats, identity links, source URLs) are
  * deliberately excluded: they describe where a record came from rather than
  * what it says, and including them clusters records by platform (e.g., all
  * tweets near all tweets) instead of by meaning.

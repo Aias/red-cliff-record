@@ -478,6 +478,14 @@ export const relations = defineRelations(
         from: r.records.id,
         to: r.links.targetId,
       }),
+      format: r.one.records({
+        from: r.records.formatId,
+        to: r.records.id,
+      }),
+      formatOf: r.many.records({
+        from: r.records.id,
+        to: r.records.formatId,
+      }),
       eloMatchupsAsA: r.many.eloMatchups({
         from: r.records.id,
         to: r.eloMatchups.recordAId,

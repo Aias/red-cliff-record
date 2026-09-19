@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { runFormatEnrichment } from '@/server/services/classify-record-format';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runEloRefit } from '@/server/services/refit-elo';
@@ -11,11 +12,24 @@ import { withInterruptSignal } from '../lib/interrupt';
 import { success } from '../lib/output';
 import type { CommandHandler } from '../lib/types';
 
-const EnrichmentNameSchema = z.enum(['avatars', 'alt-text', 'embeddings', 'elo', 'sources']);
+const EnrichmentNameSchema = z.enum([
+  'avatars',
+  'alt-text',
+  'embeddings',
+  'formats',
+  'elo',
+  'sources',
+]);
 type EnrichmentName = z.infer<typeof EnrichmentNameSchema>;
 const ENRICHMENT_LIST = EnrichmentNameSchema.options;
 
-const DEFAULT_ENRICHMENTS: EnrichmentName[] = ['avatars', 'alt-text', 'embeddings', 'elo'];
+const DEFAULT_ENRICHMENTS: EnrichmentName[] = [
+  'avatars',
+  'alt-text',
+  'embeddings',
+  'formats',
+  'elo',
+];
 
 const EnrichOptionsSchema = BaseOptionsSchema.extend({
   limit: z.coerce.number().positive().int().optional(),
@@ -41,8 +55,11 @@ export const run: CommandHandler = (args, options) =>
     }
     const enrichment = enrichmentResult.data;
 
-    if (enrichment !== 'alt-text' && limit !== undefined) {
-      throw createError('VALIDATION_ERROR', '--limit is only supported for `rcr enrich alt-text`.');
+    if (enrichment !== 'alt-text' && enrichment !== 'formats' && limit !== undefined) {
+      throw createError(
+        'VALIDATION_ERROR',
+        '--limit is only supported for `rcr enrich alt-text` and `rcr enrich formats`.'
+      );
     }
 
     const result = await runSingleEnrichment(enrichment, { debug, limit, signal });
@@ -82,6 +99,15 @@ async function runSingleEnrichment(enrichment: EnrichmentName, options: EnrichOp
       return {
         enrichment,
         success: true,
+        duration: Math.round(performance.now() - startTime),
+      };
+    }
+    case 'formats': {
+      const result = await runFormatEnrichment({ limit, signal });
+      return {
+        enrichment,
+        success: true,
+        assigned: result.entriesCreated,
         duration: Math.round(performance.now() - startTime),
       };
     }

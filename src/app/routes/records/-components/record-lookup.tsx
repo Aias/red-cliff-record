@@ -7,7 +7,13 @@ import {
 } from '@hozo';
 import { useQuery as useZeroQuery } from '@rocicorp/zero/react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ChevronDownIcon,
+  PlusCircleIcon,
+  XIcon,
+} from 'lucide-react';
 import {
   createContext,
   useContext,
@@ -54,7 +60,7 @@ interface RecordSearchProps {
   onSelect(id: DbId): void;
 }
 
-function RecordSearch({ onSelect }: RecordSearchProps) {
+export function RecordSearch({ onSelect }: RecordSearchProps) {
   const trpc = useTRPC();
   const [query, setQuery] = useState('');
   const createRecordMutation = useCreateRecord();
@@ -151,6 +157,97 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
         </Command.Item>
       </Command.List>
     </Command.Root>
+  );
+}
+
+/* --------------------------------------------------------------------------
+ * RecordPicker –– a popover button that picks or clears a single record,
+ * for fields and filters that point at one other record (e.g. format).
+ * -------------------------------------------------------------------------- */
+interface RecordPickerProps {
+  id?: string;
+  value: DbId | null;
+  label: ReactNode;
+  onSelect(id: DbId): void;
+  onClear(): void;
+  placeholder?: string;
+  disabled?: boolean;
+  size?: ButtonProps['size'];
+}
+
+export function RecordPicker({
+  id,
+  value,
+  label,
+  onSelect,
+  onClear,
+  placeholder = 'None',
+  disabled,
+  size = 'default',
+}: RecordPickerProps) {
+  const [open, setOpen] = useState(false);
+
+  const handleSelect = (selectedId: DbId) => {
+    onSelect(selectedId);
+    setOpen(false);
+  };
+
+  const handleClear = () => {
+    onClear();
+    setOpen(false);
+  };
+
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger
+        id={id}
+        render={
+          <Button
+            variant="outline"
+            size={size}
+            disabled={disabled}
+            css={{
+              width: 'full',
+              justifyContent: 'space-between',
+              _childIcon: { boxSize: '4', opacity: '50%' },
+            }}
+          >
+            <styled.span
+              data-placeholder={value === null || undefined}
+              css={{
+                flex: '1',
+                truncate: true,
+                textAlign: 'start',
+                '&[data-placeholder]': { color: 'secondary' },
+              }}
+            >
+              {value === null ? placeholder : label}
+            </styled.span>
+            <ChevronDownIcon />
+          </Button>
+        }
+      />
+      <Popover.Content side="bottom" align="start" css={{ width: '80', padding: '0' }}>
+        {value !== null && (
+          <styled.div
+            css={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+              padding: '2',
+              borderBlockEndWidth: '1px',
+              borderBlockEndColor: 'divider',
+            }}
+          >
+            <styled.span css={{ flex: '1', truncate: true, textStyle: 'sm' }}>{label}</styled.span>
+            <Button variant="ghost" size="icon-sm" aria-label="Clear" onClick={handleClear}>
+              <XIcon />
+            </Button>
+          </styled.div>
+        )}
+        <RecordSearch onSelect={handleSelect} />
+      </Popover.Content>
+    </Popover.Root>
   );
 }
 

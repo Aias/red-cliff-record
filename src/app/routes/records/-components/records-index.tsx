@@ -12,13 +12,20 @@ import { Placeholder } from '@/components/placeholder';
 import { RadioCards, RadioCardsItem } from '@/components/radio-cards';
 import { Spinner } from '@/components/spinner';
 import { ToggleGroup } from '@/components/toggle-group';
-import { useRecordList } from '@/lib/hooks/record-queries';
+import { useRecord, useRecordList } from '@/lib/hooks/record-queries';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
+import type { DbId } from '@/shared/types/api';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
 import { RecordLink } from './record-link';
+import { RecordPicker } from './record-lookup';
 import { SortMenu } from './sort-menu';
 import { recordTypeIcons } from './type-icons';
+
+function FormatFilterLabel({ id }: { id: DbId }) {
+  const { data: record } = useRecord(id);
+  return record?.title ?? id;
+}
 
 export const RecordsIndex = () => {
   const navigate = useNavigate();
@@ -26,7 +33,7 @@ export const RecordsIndex = () => {
   const { ids: recordIds, isLoading } = useRecordList(state);
 
   const {
-    filters: { types, isCurated, isPrivate, sources, hasParent, hasMedia },
+    filters: { types, isCurated, isPrivate, sources, hasParent, hasMedia, formatId },
     limit,
   } = state;
 
@@ -242,6 +249,17 @@ export const RecordsIndex = () => {
                 })}
             </DropdownMenu.Content>
           </DropdownMenu.Root>
+        </styled.div>
+        <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
+          <Label htmlFor="format">Format</Label>
+          <RecordPicker
+            id="format"
+            value={formatId ?? null}
+            label={formatId !== undefined ? <FormatFilterLabel id={formatId} /> : null}
+            placeholder="All Formats"
+            onSelect={(id) => setFilters((prev) => ({ ...prev, formatId: id }))}
+            onClear={() => setFilters((prev) => ({ ...prev, formatId: undefined }))}
+          />
         </styled.div>
         <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
           <Label htmlFor="curated">Is Curated?</Label>

@@ -34,6 +34,7 @@ export default drizzleZeroConfig(
         recordCuratedAt: true,
         reminderAt: true,
         sources: true,
+        formatId: true,
         textSearch: false,
         textEmbedding: false,
         textEmbeddedAt: true,

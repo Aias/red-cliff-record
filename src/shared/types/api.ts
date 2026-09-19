@@ -47,6 +47,7 @@ export const RecordFiltersSchema = z.object({
   hasEmbedding: z.boolean().optional(),
   hasMedia: z.boolean().optional(),
   sources: z.array(IntegrationTypeSchema).optional(),
+  formatId: IdSchema.optional(),
 });
 
 export const LimitSchema = z.number().int().positive();
