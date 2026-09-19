@@ -1,6 +1,6 @@
 import { containmentPredicateSlugs, records, type PredicateSlug, type RecordSelect } from '@hozo';
-import { choice } from '@typesafe-ai/sdk';
-import { eq, isNotNull } from 'drizzle-orm';
+import { choice, type Description } from '@typesafe-ai/sdk';
+import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import { runTrackedEnrichment } from '@/server/integrations/runtime/runtime';
@@ -9,39 +9,91 @@ import { runConcurrentPool } from '@/shared/lib/async-pool';
 
 const CONFIDENCE_FLOOR = 0.65;
 const CONTENT_PREVIEW_LENGTH = 1500;
+const DEFINITION_LENGTH = 400;
+const EXAMPLES_PER_FORMAT = 5;
 const CONCURRENCY = 8;
 const NONE_LABEL = 'none of these';
 
 const logger = createIntegrationLogger('services', 'classify-record-format');
 
-export type FormatOption = { id: number; title: string; description: string | null };
+export type FormatOption = { id: number; title: string; description: Description };
+
+export type FormatSource = {
+  id: number;
+  title: string;
+  summary: string | null;
+  sense: string | null;
+  content: string | null;
+  parent: string | null;
+  examples: string[];
+};
+
+export function formatOptions(sources: FormatSource[]): FormatOption[] {
+  return sources.map((source) => {
+    const description: Record<string, string | string[]> = {};
+    const definition = source.summary?.trim() || source.content?.trim().slice(0, DEFINITION_LENGTH);
+    if (definition) description.definition = definition;
+    const sense = source.sense?.trim();
+    if (sense) description.sense = sense;
+    if (source.parent) description.kindOf = source.parent;
+    if (source.examples.length) description.examples = source.examples;
+    return {
+      id: source.id,
+      title: source.title,
+      description: Object.keys(description).length ? description : null,
+    };
+  });
+}
 
 export async function loadFormatVocabulary(): Promise<FormatOption[]> {
-  const used = await db
-    .selectDistinct({ id: records.formatId })
-    .from(records)
-    .where(isNotNull(records.formatId));
-  const ids = used.flatMap((row) => (row.id === null ? [] : [row.id]));
+  const used = await db.query.records.findMany({
+    where: { type: 'artifact', formatId: { isNotNull: true } },
+    columns: { formatId: true },
+  });
+  const ids = [...new Set(used.flatMap((row) => (row.formatId === null ? [] : [row.formatId])))];
   if (ids.length === 0) return [];
-  const formats = await db.query.records.findMany({
-    where: { id: { in: ids } },
-    columns: { id: true, title: true, summary: true },
-    with: { format: { columns: { title: true } } },
-    orderBy: { title: 'asc' },
-  });
-  return formats.flatMap((format) => {
-    if (!format.title) return [];
-    const parent = format.format?.title;
-    const description = [format.summary?.trim(), parent ? `A kind of ${parent}.` : undefined]
-      .filter((part): part is string => Boolean(part))
-      .join(' ');
-    return [{ id: format.id, title: format.title, description: description || null }];
-  });
+  const [formats, curated] = await Promise.all([
+    db.query.records.findMany({
+      where: { id: { in: ids } },
+      columns: { id: true, title: true, summary: true, sense: true, content: true },
+      with: { format: { columns: { title: true } } },
+      orderBy: { title: 'asc' },
+    }),
+    db.query.records.findMany({
+      where: { type: 'artifact', formatId: { in: ids }, recordCuratedAt: { isNotNull: true } },
+      columns: { formatId: true, title: true },
+      orderBy: { recordCuratedAt: 'desc' },
+    }),
+  ]);
+  const examples = new Map<number, string[]>();
+  for (const record of curated) {
+    if (record.formatId === null || !record.title) continue;
+    const titles = examples.get(record.formatId) ?? [];
+    if (titles.length < EXAMPLES_PER_FORMAT)
+      examples.set(record.formatId, [...titles, record.title]);
+  }
+  return formatOptions(
+    formats.flatMap((format) =>
+      format.title
+        ? [
+            {
+              id: format.id,
+              title: format.title,
+              summary: format.summary,
+              sense: format.sense,
+              content: format.content,
+              parent: format.format?.title ?? null,
+              examples: examples.get(format.id) ?? [],
+            },
+          ]
+        : []
+    )
+  );
 }
 
 export function formatQuestion(vocabulary: FormatOption[]) {
   const idsByLabel = new Map<string, number>();
-  const criteria: Record<string, string | null> = {
+  const criteria: Record<string, Description> = {
     [NONE_LABEL]: 'None of the listed formats describes what the record is.',
   };
   for (const option of vocabulary) {
@@ -144,7 +196,7 @@ async function assignMissingFormats(limit: number | undefined, signal: AbortSign
   }
   const question = formatQuestion(vocabulary);
   const pending = await db.query.records.findMany({
-    where: { formatId: { isNull: true } },
+    where: { type: 'artifact', formatId: { isNull: true } },
     columns: {
       id: true,
       type: true,

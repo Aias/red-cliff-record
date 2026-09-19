@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { describeOrigin, formatQuestion } from './classify-record-format';
+import { describeOrigin, formatOptions, formatQuestion } from './classify-record-format';
 
 describe('formatQuestion', () => {
   test('labels options by title, disambiguates duplicates, and keeps a no-match option', () => {
@@ -15,6 +15,44 @@ describe('formatQuestion', () => {
     ]);
     expect(question.criteria['none of these']).toBeString();
     expect(question.criteria['Painting']).toBe('A kind of Artwork.');
+  });
+});
+
+describe('formatOptions', () => {
+  test('builds a structured description from the concept fields, parent, and examples', () => {
+    expect(
+      formatOptions([
+        {
+          id: 1,
+          title: 'Painting',
+          summary: ' A painted work. ',
+          sense: null,
+          content: 'ignored when a summary exists',
+          parent: 'Artwork',
+          examples: ['Empty Every Night'],
+        },
+        {
+          id: 2,
+          title: 'Websites',
+          summary: null,
+          sense: null,
+          content: null,
+          parent: null,
+          examples: [],
+        },
+      ])
+    ).toEqual([
+      {
+        id: 1,
+        title: 'Painting',
+        description: {
+          definition: 'A painted work.',
+          kindOf: 'Artwork',
+          examples: ['Empty Every Night'],
+        },
+      },
+      { id: 2, title: 'Websites', description: null },
+    ]);
   });
 });
 
