@@ -134,6 +134,10 @@ Edit your `.env` file and add API keys for the services you want to use:
   ```
   OPENAI_API_KEY=sk-...
   ```
+- **TypeSafe** - For typed judgments (record type on create, merge field selection, copyedit acceptance)
+  ```
+  TYPESAFE_API_KEY=apikey_...
+  ```
 
 #### Optional Integrations
 

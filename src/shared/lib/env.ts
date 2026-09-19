@@ -32,6 +32,7 @@ export const ServerEnvSchema = z.object({
   RAINDROP_TEST_TOKEN: z.string(),
   READWISE_TOKEN: z.string(),
   OPENAI_API_KEY: z.string(),
+  TYPESAFE_API_KEY: z.string(),
 });
 
 // Base environment variables schema (without refinements, allows .pick())

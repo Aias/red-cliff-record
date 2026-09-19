@@ -141,7 +141,7 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
           key="create-record"
           onSelect={() => {
             createRecordMutation.mutate(
-              { type: 'artifact', title: query },
+              { title: query },
               { onSuccess: (newRecord) => onSelect(newRecord.id) }
             );
           }}

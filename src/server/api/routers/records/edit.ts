@@ -2,6 +2,7 @@ import { records } from '@hozo';
 import { TRPCError } from '@trpc/server';
 import { inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { classifyRecordType } from '@/server/services/classify-record-type';
 import { queueRecordEmbeddings } from '@/server/services/embed-records';
 import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
 import { BulkUpdateDataSchema, IdSchema, RecordUpsertSchema, type DbId } from '@/shared/types/api';
@@ -24,6 +25,8 @@ export const upsert = publicProcedure
   .input(RecordUpsertSchema)
   .mutation(async ({ ctx: { db, loaders }, input }): Promise<RecordGet> => {
     const { isCurated, ...fields } = input;
+    const type =
+      fields.type ?? (input.id === undefined ? await classifyRecordType(fields) : undefined);
     const curation = curatedAtUpdate(isCurated, fields.recordCuratedAt);
     const updateFields = Object.fromEntries(
       Object.entries(fields).filter(([, v]) => v !== undefined)
@@ -34,7 +37,11 @@ export const upsert = publicProcedure
 
     const [result] = await db
       .insert(records)
-      .values({ ...fields, ...curatedAtInsert(isCurated, fields.recordCuratedAt) })
+      .values({
+        ...fields,
+        ...(type ? { type } : {}),
+        ...curatedAtInsert(isCurated, fields.recordCuratedAt),
+      })
       .onConflictDoUpdate({
         target: records.id,
         set: {
