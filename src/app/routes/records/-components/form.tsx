@@ -90,7 +90,7 @@ const iconButton = css.raw({
   padding: '0',
   border: 'none',
   backgroundColor: 'transparent',
-  color: 'primary',
+  color: 'accent',
   cursor: 'pointer',
   _disabled: { opacity: '50%', pointerEvents: 'none' },
 });
