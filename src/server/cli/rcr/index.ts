@@ -191,7 +191,7 @@ Commands:
   enrich avatars                Upload external avatar URLs to R2
   enrich alt-text               Generate alt text for image/video media [--limit=N]
   enrich embeddings             Generate text embeddings for records
-  enrich formats                Choose a format for records that lack one [--limit=N]
+  enrich formats                Choose a format for uncurated records that lack one [--limit=N]
   enrich elo                    Refit ELO scores from matchup history
   enrich sources                Recompute record sources from staged relations (manual only)
 

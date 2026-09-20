@@ -196,7 +196,7 @@ async function assignMissingFormats(limit: number | undefined, signal: AbortSign
   }
   const question = formatQuestion(vocabulary);
   const pending = await db.query.records.findMany({
-    where: { type: 'artifact', formatId: { isNull: true } },
+    where: { type: 'artifact', formatId: { isNull: true }, recordCuratedAt: { isNull: true } },
     columns: {
       id: true,
       type: true,
