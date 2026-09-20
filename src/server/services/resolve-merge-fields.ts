@@ -19,26 +19,32 @@ const scalarQualities: Record<MergeScalarField, string> = {
   title:
     'is the more complete and specific title, cleanly formatted without a site name, trailing punctuation, or truncation',
   abbreviation: 'is the more widely recognized short form, handle, or acronym',
-  sense: 'more precisely disambiguates what the record is',
+  sense: 'more precisely disambiguates what the thing is',
   url: 'points to the original source rather than an aggregator, mirror, shortened link, tracking link, or search page',
   mediaCaption: 'describes the media more accurately and completely',
 };
 
 const scalarQuestion = (field: MergeScalarField) =>
-  choice(`Which of \`a.${field}\` and \`b.${field}\` should one record that describes both keep?`, {
-    a: `\`a.${field}\` ${scalarQualities[field]}.`,
-    b: `\`b.${field}\` ${scalarQualities[field]}.`,
-    equivalent:
-      'They are the same value, differing only in capitalization, punctuation, or whitespace.',
-  });
+  choice(
+    `Entries \`a\` and \`b\` describe the same thing and are being merged into one. Which \`${field}\` should the merged entry keep?`,
+    {
+      a: `\`a.${field}\` ${scalarQualities[field]}.`,
+      b: `\`b.${field}\` ${scalarQualities[field]}.`,
+      equivalent:
+        'They are the same value, differing only in capitalization, punctuation, or whitespace.',
+    }
+  );
 
 const textQuestion = (field: MergeTextField) =>
-  choice(`How does \`a.${field}\` relate to \`b.${field}\`?`, {
-    a: `\`a.${field}\` contains all the meaningful information in \`b.${field}\`.`,
-    b: `\`b.${field}\` contains all the meaningful information in \`a.${field}\`.`,
-    equivalent: 'They convey the same information in different words.',
-    distinct: 'Each contains meaningful information the other lacks.',
-  });
+  choice(
+    `Entries \`a\` and \`b\` describe the same thing. How does \`a.${field}\` relate to \`b.${field}\`?`,
+    {
+      a: `\`a.${field}\` contains all the meaningful information in \`b.${field}\`.`,
+      b: `\`b.${field}\` contains all the meaningful information in \`a.${field}\`.`,
+      equivalent: 'They convey the same information in different words.',
+      distinct: 'Each contains meaningful information the other lacks.',
+    }
+  );
 
 type MergeQuestion = ReturnType<typeof scalarQuestion> | ReturnType<typeof textQuestion>;
 type MergeAnswer =

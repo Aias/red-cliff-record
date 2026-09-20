@@ -76,10 +76,12 @@ describe('describeOrigin', () => {
         readwiseDocuments: [{ category: 'highlight' }],
         outgoingLinks: [{ predicate: 'contained_by' }],
       })
-    ).toBe('a highlight saved from a document in Readwise; part of a larger record');
-    expect(describeOrigin({ ...empty, raindropBookmarks: [{ type: 'link' }] })).toBe(
-      'a Raindrop bookmark of type "link"'
+    ).toBe(
+      'a passage highlighted while reading a longer piece; an excerpt or part of a longer piece'
     );
-    expect(describeOrigin(empty)).toBe('created by hand');
+    expect(describeOrigin({ ...empty, raindropBookmarks: [{ type: 'link' }] })).toBe(
+      'a bookmarked web page'
+    );
+    expect(describeOrigin(empty)).toBe('added by hand');
   });
 });

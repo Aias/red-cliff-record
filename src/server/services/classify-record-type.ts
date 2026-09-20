@@ -26,7 +26,7 @@ export async function classifyRecordType(record: Classifiable): Promise<RecordTy
   const state = stateFields({
     title: record.title,
     abbreviation: record.abbreviation,
-    sense: record.sense,
+    disambiguation: record.sense,
     url: record.url,
     summary: record.summary,
     content: record.content?.slice(0, CONTENT_PREVIEW_LENGTH),
@@ -36,7 +36,12 @@ export async function classifyRecordType(record: Classifiable): Promise<RecordTy
   try {
     const { answers } = await getTypeSafeClient().systemOne({
       state,
-      questions: { type: choice('What kind of thing does this record describe?', criteria) },
+      questions: {
+        type: choice(
+          'The state describes one item saved to a personal collection. Judging by its `title` and the other fields, what kind of thing is it?',
+          criteria
+        ),
+      },
     });
     return answers.type.confidence >= CONFIDENCE_FLOOR ? answers.type.choice : null;
   } catch (error) {

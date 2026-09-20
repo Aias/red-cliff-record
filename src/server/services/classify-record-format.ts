@@ -94,7 +94,7 @@ export async function loadFormatVocabulary(): Promise<FormatOption[]> {
 export function formatQuestion(vocabulary: FormatOption[]) {
   const idsByLabel = new Map<string, number>();
   const criteria: Record<string, Description> = {
-    [NONE_LABEL]: 'None of the listed formats describes what the record is.',
+    [NONE_LABEL]: 'None of the listed formats is the kind of thing the item is.',
   };
   for (const option of vocabulary) {
     const taken = option.title === NONE_LABEL || idsByLabel.has(option.title);
@@ -104,7 +104,7 @@ export function formatQuestion(vocabulary: FormatOption[]) {
   }
   return {
     question: choice(
-      'Which format best describes what this record is, as distinct from what it is about?',
+      "The state is one item saved to a personal collection: its `title`, `url`, `summary`, an excerpt of its `content`, the collector's `notes`, and `origin`, which says how it was collected. Which of the listed formats is the kind of thing the item is, as opposed to the subject it is about?",
       criteria
     ),
     idsByLabel,
@@ -125,35 +125,55 @@ type OriginSignals = {
   outgoingLinks: { predicate: PredicateSlug }[];
 };
 
+const READ_LATER_KINDS: Record<string, string> = {
+  article: 'an article',
+  email: 'an email newsletter',
+  epub: 'an e-book',
+  pdf: 'a PDF',
+  podcast: 'a podcast episode',
+  rss: 'a feed post',
+  tweet: 'a tweet',
+  video: 'a video',
+};
+
+const BOOKMARK_KINDS: Record<string, string> = {
+  article: 'a bookmarked article',
+  audio: 'a bookmarked audio file',
+  document: 'a bookmarked document',
+  image: 'a bookmarked image',
+  link: 'a bookmarked web page',
+  video: 'a bookmarked video',
+};
+
 export function describeOrigin(row: OriginSignals): string {
   const parts: string[] = [];
   const readwise = row.readwiseDocuments[0];
   if (readwise) {
-    parts.push(
-      readwise.category === 'highlight'
-        ? 'a highlight saved from a document in Readwise'
-        : readwise.category
-          ? `a Readwise document of category "${readwise.category}"`
-          : 'a Readwise document'
-    );
+    if (readwise.category === 'highlight') {
+      parts.push('a passage highlighted while reading a longer piece');
+    } else {
+      const kind = readwise.category ? READ_LATER_KINDS[readwise.category] : undefined;
+      parts.push(kind ? `${kind} saved to a read-later app` : 'saved to a read-later app');
+    }
   }
   const raindrop = row.raindropBookmarks[0];
-  if (raindrop)
-    parts.push(`a Raindrop bookmark${raindrop.type ? ` of type "${raindrop.type}"` : ''}`);
-  if (row.raindropHighlights.length) parts.push('a highlight from a Raindrop bookmark');
-  if (row.twitterTweets.length) parts.push('a tweet');
-  if (row.twitterUsers.length) parts.push('a Twitter account');
-  if (row.githubRepositories.length) parts.push('a GitHub repository');
-  if (row.githubUsers.length) parts.push('a GitHub user or organization');
-  if (row.lightroomImages.length) parts.push('a photograph from Lightroom');
+  if (raindrop) {
+    parts.push((raindrop.type ? BOOKMARK_KINDS[raindrop.type] : undefined) ?? 'a bookmark');
+  }
+  if (row.raindropHighlights.length) parts.push('a passage highlighted on a bookmarked web page');
+  if (row.twitterTweets.length) parts.push('a post on Twitter');
+  if (row.twitterUsers.length) parts.push('a Twitter account profile');
+  if (row.githubRepositories.length) parts.push('a source code repository on GitHub');
+  if (row.githubUsers.length) parts.push('a GitHub account profile');
+  if (row.lightroomImages.length) parts.push("a photograph from the collector's own camera");
   if (
     row.outgoingLinks.some((link) =>
       containmentPredicateSlugs.some((slug) => slug === link.predicate)
     )
   ) {
-    parts.push('part of a larger record');
+    parts.push('an excerpt or part of a longer piece');
   }
-  return parts.length ? parts.join('; ') : 'created by hand';
+  return parts.length ? parts.join('; ') : 'added by hand';
 }
 
 export type ClassifiableRecord = Pick<
@@ -166,10 +186,9 @@ export async function classifyRecordFormat(
   { question, idsByLabel }: FormatQuestion
 ) {
   const state = stateFields({
-    type: record.type,
     title: record.title,
     abbreviation: record.abbreviation,
-    sense: record.sense,
+    disambiguation: record.sense,
     url: record.url,
     summary: record.summary,
     content: record.content?.slice(0, CONTENT_PREVIEW_LENGTH),
