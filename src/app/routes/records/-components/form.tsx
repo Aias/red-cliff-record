@@ -1,10 +1,18 @@
 import type { RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
-import { useRouterState } from '@tanstack/react-router';
-import { BadgeCheckIcon, BadgeIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { Link, useRouterState } from '@tanstack/react-router';
+import {
+  ArrowUpRightIcon,
+  BadgeCheckIcon,
+  BadgeIcon,
+  EyeIcon,
+  EyeOffIcon,
+  XIcon,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { Button } from '@/components/button';
 import { ExternalLink } from '@/components/external-link';
 import { GhostInput } from '@/components/input';
 import { Label } from '@/components/label';
@@ -507,26 +515,59 @@ export function RecordForm({
                   </Table.Cell>
                   <Table.Cell>
                     <form.Field name="formatId">
-                      {(field) => (
-                        <RecordPicker
-                          id="format"
-                          value={field.value}
-                          label={
-                            record?.format ? (record.format.title ?? record.format.id) : field.value
-                          }
-                          placeholder="No format"
-                          disabled={isFormLoading}
-                          size="sm"
-                          onSelect={(value) => {
-                            field.handleChange(value);
-                            debouncedSave();
-                          }}
-                          onClear={() => {
-                            field.handleChange(null);
-                            debouncedSave();
-                          }}
-                        />
-                      )}
+                      {(field) => {
+                        const clearFormat = () => {
+                          field.handleChange(null);
+                          debouncedSave();
+                        };
+                        return (
+                          <styled.div css={{ display: 'flex', alignItems: 'center', gap: '2' }}>
+                            <RecordPicker
+                              id="format"
+                              variant="ghost"
+                              value={field.value}
+                              label={
+                                record?.format
+                                  ? (record.format.title ?? record.format.id)
+                                  : field.value
+                              }
+                              placeholder="No format"
+                              disabled={isFormLoading}
+                              onSelect={(value) => {
+                                field.handleChange(value);
+                                debouncedSave();
+                              }}
+                              onClear={clearFormat}
+                            />
+                            {field.value !== null && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label="Clear format"
+                                  disabled={isFormLoading}
+                                  onClick={clearFormat}
+                                >
+                                  <XIcon />
+                                </Button>
+                                <Link
+                                  to="/records/$recordId"
+                                  params={{ recordId: field.value }}
+                                  aria-label="Open format"
+                                  className={css({
+                                    display: 'inline-flex',
+                                    color: 'muted',
+                                    _hover: { color: 'display' },
+                                    _focusVisible: { color: 'display' },
+                                  })}
+                                >
+                                  <ArrowUpRightIcon className={css({ boxSize: '4' })} />
+                                </Link>
+                              </>
+                            )}
+                          </styled.div>
+                        );
+                      }}
                     </form.Field>
                   </Table.Cell>
                 </Table.Row>

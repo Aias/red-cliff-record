@@ -37,6 +37,7 @@ import type { DbId } from '@/shared/types/api';
 import { queries } from '@/shared/zero/queries';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import { ghostInput } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
@@ -164,8 +165,11 @@ export function RecordSearch({ onSelect }: RecordSearchProps) {
  * RecordPicker –– a popover button that picks or clears a single record,
  * for fields and filters that point at one other record (e.g. format).
  * -------------------------------------------------------------------------- */
+const GhostTrigger = styled('button', ghostInput);
+
 interface RecordPickerProps {
   id?: string;
+  variant?: 'outline' | 'ghost';
   value: DbId | null;
   label: ReactNode;
   onSelect(id: DbId): void;
@@ -177,6 +181,7 @@ interface RecordPickerProps {
 
 export function RecordPicker({
   id,
+  variant = 'outline',
   value,
   label,
   onSelect,
@@ -202,33 +207,50 @@ export function RecordPicker({
       <Popover.Trigger
         id={id}
         render={
-          <Button
-            variant="outline"
-            size={size}
-            disabled={disabled}
-            css={{
-              width: 'full',
-              justifyContent: 'space-between',
-              _childIcon: { boxSize: '4', opacity: '50%' },
-            }}
-          >
-            <styled.span
+          variant === 'ghost' ? (
+            <GhostTrigger
+              type="button"
+              disabled={disabled}
               data-placeholder={value === null || undefined}
               css={{
-                flex: '1',
                 truncate: true,
                 textAlign: 'start',
-                '&[data-placeholder]': { color: 'secondary' },
+                cursor: 'pointer',
+                color: 'display',
+                '&[data-placeholder]': { color: 'muted' },
               }}
             >
               {value === null ? placeholder : label}
-            </styled.span>
-            <ChevronDownIcon />
-          </Button>
+            </GhostTrigger>
+          ) : (
+            <Button
+              variant="outline"
+              size={size}
+              disabled={disabled}
+              css={{
+                width: 'full',
+                justifyContent: 'space-between',
+                _childIcon: { boxSize: '4', opacity: '50%' },
+              }}
+            >
+              <styled.span
+                data-placeholder={value === null || undefined}
+                css={{
+                  flex: '1',
+                  truncate: true,
+                  textAlign: 'start',
+                  '&[data-placeholder]': { color: 'secondary' },
+                }}
+              >
+                {value === null ? placeholder : label}
+              </styled.span>
+              <ChevronDownIcon />
+            </Button>
+          )
         }
       />
       <Popover.Content side="bottom" align="start" css={{ width: '80', padding: '0' }}>
-        {value !== null && (
+        {value !== null && variant === 'outline' && (
           <styled.div
             css={{
               display: 'flex',
