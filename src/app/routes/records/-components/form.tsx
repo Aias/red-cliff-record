@@ -12,7 +12,6 @@ import {
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { Button } from '@/components/button';
 import { ExternalLink } from '@/components/external-link';
 import { GhostInput } from '@/components/input';
 import { Label } from '@/components/label';
@@ -73,6 +72,30 @@ const defaultData: RecordFormValues = {
   isCurated: false,
   isPrivate: false,
 };
+
+const iconAction = css.raw({
+  display: 'inline-flex',
+  _childIcon: {
+    opacity: '50%',
+    transitionProperty: '[opacity]',
+    transitionDuration: '150',
+    transitionTimingFunction: 'easeOut.quad',
+  },
+  _hover: { _childIcon: { opacity: '100%' } },
+  _focusVisible: { _childIcon: { opacity: '100%' } },
+});
+const iconActionClass = css(iconAction);
+const IconAction = styled('button', {
+  base: {
+    ...iconAction,
+    padding: '0',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    cursor: 'pointer',
+    _disabled: { opacity: '50%', pointerEvents: 'none' },
+  },
+});
 
 /** How long typing must pause before the pending changes commit. */
 const COMMIT_DEBOUNCE_MS = 300;
@@ -541,27 +564,21 @@ export function RecordForm({
                             />
                             {field.value !== null && (
                               <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
+                                <IconAction
+                                  type="button"
                                   aria-label="Clear format"
                                   disabled={isFormLoading}
                                   onClick={clearFormat}
                                 >
                                   <XIcon />
-                                </Button>
+                                </IconAction>
                                 <Link
                                   to="/records/$recordId"
                                   params={{ recordId: field.value }}
                                   aria-label="Open format"
-                                  className={css({
-                                    display: 'inline-flex',
-                                    color: 'muted',
-                                    _hover: { color: 'display' },
-                                    _focusVisible: { color: 'display' },
-                                  })}
+                                  className={iconActionClass}
                                 >
-                                  <ArrowUpRightIcon className={css({ boxSize: '4' })} />
+                                  <ArrowUpRightIcon />
                                 </Link>
                               </>
                             )}
