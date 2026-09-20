@@ -13,6 +13,7 @@ const DEFINITION_LENGTH = 400;
 const EXAMPLES_PER_FORMAT = 5;
 const CONCURRENCY = 8;
 const NONE_LABEL = 'none of these';
+const SUGGESTION_COUNT = 5;
 
 const logger = createIntegrationLogger('services', 'classify-record-format');
 
@@ -181,10 +182,31 @@ export type ClassifiableRecord = Pick<
   'id' | 'type' | 'title' | 'abbreviation' | 'sense' | 'url' | 'summary' | 'content' | 'notes'
 > & { origin: string };
 
-export async function classifyRecordFormat(
-  record: ClassifiableRecord,
-  { question, idsByLabel }: FormatQuestion
-) {
+const CLASSIFIABLE_COLUMNS = {
+  id: true,
+  type: true,
+  title: true,
+  abbreviation: true,
+  sense: true,
+  url: true,
+  summary: true,
+  content: true,
+  notes: true,
+} as const;
+
+const ORIGIN_RELATIONS = {
+  readwiseDocuments: { columns: { category: true } },
+  raindropBookmarks: { columns: { type: true } },
+  raindropHighlights: { columns: { id: true } },
+  twitterTweets: { columns: { id: true } },
+  twitterUsers: { columns: { id: true } },
+  githubRepositories: { columns: { id: true } },
+  githubUsers: { columns: { id: true } },
+  lightroomImages: { columns: { id: true } },
+  outgoingLinks: { columns: { predicate: true } },
+} as const;
+
+async function askFormat(record: ClassifiableRecord, question: FormatQuestion['question']) {
   const state = stateFields({
     title: record.title,
     abbreviation: record.abbreviation,
@@ -199,12 +221,48 @@ export async function classifyRecordFormat(
     state,
     questions: { format: question },
   });
-  const { choice: label, confidence } = answers.format;
+  return answers.format;
+}
+
+export async function classifyRecordFormat(
+  record: ClassifiableRecord,
+  { question, idsByLabel }: FormatQuestion
+) {
+  const { choice: label, confidence } = await askFormat(record, question);
   const formatId = idsByLabel.get(label);
   if (formatId === undefined || formatId === record.id || confidence < CONFIDENCE_FLOOR) {
     return { label, confidence, formatId: null };
   }
   return { label, confidence, formatId };
+}
+
+export type FormatSuggestion = { id: number; title: string; probability: number };
+
+export async function suggestRecordFormats(
+  recordId: number,
+  limit = SUGGESTION_COUNT
+): Promise<FormatSuggestion[] | null> {
+  const row = await db.query.records.findFirst({
+    where: { id: recordId },
+    columns: CLASSIFIABLE_COLUMNS,
+    with: ORIGIN_RELATIONS,
+  });
+  if (!row) return null;
+  const vocabulary = await loadFormatVocabulary();
+  if (vocabulary.length === 0) return [];
+  const { question, idsByLabel } = formatQuestion(vocabulary);
+  const titles = new Map(vocabulary.map((option) => [option.id, option.title]));
+  const { probabilities } = await askFormat({ ...row, origin: describeOrigin(row) }, question);
+  return Object.entries(probabilities)
+    .flatMap(([label, probability]) => {
+      const id = idsByLabel.get(label);
+      const title = id === undefined ? undefined : titles.get(id);
+      return id === undefined || id === recordId || title === undefined
+        ? []
+        : [{ id, title, probability }];
+    })
+    .sort((a, b) => b.probability - a.probability)
+    .slice(0, limit);
 }
 
 async function assignMissingFormats(limit: number | undefined, signal: AbortSignal | undefined) {
@@ -216,28 +274,8 @@ async function assignMissingFormats(limit: number | undefined, signal: AbortSign
   const question = formatQuestion(vocabulary);
   const pending = await db.query.records.findMany({
     where: { type: 'artifact', formatId: { isNull: true }, recordCuratedAt: { isNull: true } },
-    columns: {
-      id: true,
-      type: true,
-      title: true,
-      abbreviation: true,
-      sense: true,
-      url: true,
-      summary: true,
-      content: true,
-      notes: true,
-    },
-    with: {
-      readwiseDocuments: { columns: { category: true } },
-      raindropBookmarks: { columns: { type: true } },
-      raindropHighlights: { columns: { id: true } },
-      twitterTweets: { columns: { id: true } },
-      twitterUsers: { columns: { id: true } },
-      githubRepositories: { columns: { id: true } },
-      githubUsers: { columns: { id: true } },
-      lightroomImages: { columns: { id: true } },
-      outgoingLinks: { columns: { predicate: true } },
-    },
+    columns: CLASSIFIABLE_COLUMNS,
+    with: ORIGIN_RELATIONS,
     orderBy: { recordCreatedAt: 'desc' },
     limit,
   });

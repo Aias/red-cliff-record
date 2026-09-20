@@ -57,11 +57,19 @@ export interface RelationshipAction {
  * RecordSearch –– picks a target record by querying the server.
  * No client‑side filtering; we rely entirely on server results.
  * -------------------------------------------------------------------------- */
-interface RecordSearchProps {
-  onSelect(id: DbId): void;
+export type FormatSuggestion = { id: DbId; title: string; probability: number };
+
+export interface RecordSuggestions {
+  items: FormatSuggestion[];
+  isLoading: boolean;
 }
 
-export function RecordSearch({ onSelect }: RecordSearchProps) {
+interface RecordSearchProps {
+  onSelect(id: DbId): void;
+  suggestions?: RecordSuggestions;
+}
+
+export function RecordSearch({ onSelect, suggestions }: RecordSearchProps) {
   const trpc = useTRPC();
   const [query, setQuery] = useState('');
   const createRecordMutation = useCreateRecord();
@@ -98,6 +106,35 @@ export function RecordSearch({ onSelect }: RecordSearchProps) {
       />
       <Command.List>
         <Command.Item value="-" css={{ display: 'none' }} />
+
+        {query.length === 0 && suggestions?.isLoading && (
+          <Command.Item
+            disabled
+            css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Spinner css={{ boxSize: '4' }} />
+          </Command.Item>
+        )}
+
+        {query.length === 0 && suggestions && suggestions.items.length > 0 && (
+          <Command.Group heading="Suggested">
+            {suggestions.items.map(({ id, probability }) => (
+              <Command.Item
+                key={id}
+                value={`suggested-${id}`}
+                onSelect={() => onSelect(id)}
+                css={{ display: 'flex', alignItems: 'center', gap: '2' }}
+              >
+                <styled.div css={{ flex: '1', minWidth: '0' }}>
+                  <SearchResultItem id={id} />
+                </styled.div>
+                <styled.span css={{ textStyle: 'xs', color: 'muted', flexShrink: '0' }}>
+                  {Math.round(probability * 100)}%
+                </styled.span>
+              </Command.Item>
+            ))}
+          </Command.Group>
+        )}
 
         {shouldSearch && isSearching && (
           <Command.Item
@@ -172,6 +209,8 @@ interface RecordPickerProps {
   variant?: 'outline' | 'ghost';
   value: DbId | null;
   label: ReactNode;
+  suggestions?: RecordSuggestions;
+  onOpenChange?(open: boolean): void;
   onSelect(id: DbId): void;
   onClear(): void;
   placeholder?: string;
@@ -184,6 +223,8 @@ export function RecordPicker({
   variant = 'outline',
   value,
   label,
+  suggestions,
+  onOpenChange,
   onSelect,
   onClear,
   placeholder = 'None',
@@ -191,19 +232,23 @@ export function RecordPicker({
   size = 'default',
 }: RecordPickerProps) {
   const [open, setOpen] = useState(false);
+  const changeOpen = (next: boolean) => {
+    setOpen(next);
+    onOpenChange?.(next);
+  };
 
   const handleSelect = (selectedId: DbId) => {
     onSelect(selectedId);
-    setOpen(false);
+    changeOpen(false);
   };
 
   const handleClear = () => {
     onClear();
-    setOpen(false);
+    changeOpen(false);
   };
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root open={open} onOpenChange={changeOpen}>
       <Popover.Trigger
         id={id}
         render={
@@ -267,7 +312,7 @@ export function RecordPicker({
             </Button>
           </styled.div>
         )}
-        <RecordSearch onSelect={handleSelect} />
+        <RecordSearch onSelect={handleSelect} suggestions={suggestions} />
       </Popover.Content>
     </Popover.Root>
   );

@@ -1,5 +1,6 @@
 import type { RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useRouterState } from '@tanstack/react-router';
 import {
   ArrowUpRightIcon,
@@ -9,9 +10,10 @@ import {
   EyeOffIcon,
   XIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useTRPC } from '@/app/trpc';
 import { ExternalLink } from '@/components/external-link';
 import { GhostInput } from '@/components/input';
 import { Label } from '@/components/label';
@@ -165,6 +167,14 @@ export function RecordForm({
 }: RecordFormProps) {
   const routerState = useRouterState({ select: (s) => s.location.state });
   const { data: record, isLoading, isError } = useRecord(recordId);
+  const trpc = useTRPC();
+  const [formatPickerOpen, setFormatPickerOpen] = useState(false);
+  const formatSuggestions = useQuery(
+    trpc.records.suggestFormats.queryOptions(
+      { id: recordId },
+      { enabled: formatPickerOpen, staleTime: 5 * 60 * 1000 }
+    )
+  );
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
@@ -554,6 +564,11 @@ export function RecordForm({
                               }
                               placeholder="No format"
                               disabled={isFormLoading}
+                              suggestions={{
+                                items: formatSuggestions.data ?? [],
+                                isLoading: formatSuggestions.isLoading,
+                              }}
+                              onOpenChange={setFormatPickerOpen}
                               onSelect={(value) => {
                                 field.handleChange(value);
                                 debouncedSave();
