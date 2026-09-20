@@ -85,16 +85,14 @@ const iconAction = css.raw({
   _focusVisible: { _childIcon: { opacity: '100%' } },
 });
 const iconActionClass = css(iconAction);
-const IconAction = styled('button', {
-  base: {
-    ...iconAction,
-    padding: '0',
-    border: 'none',
-    backgroundColor: 'transparent',
-    color: 'inherit',
-    cursor: 'pointer',
-    _disabled: { opacity: '50%', pointerEvents: 'none' },
-  },
+const iconButton = css.raw({
+  ...iconAction,
+  padding: '0',
+  border: 'none',
+  backgroundColor: 'transparent',
+  color: 'display',
+  cursor: 'pointer',
+  _disabled: { opacity: '50%', pointerEvents: 'none' },
 });
 
 /** How long typing must pause before the pending changes commit. */
@@ -564,14 +562,15 @@ export function RecordForm({
                             />
                             {field.value !== null && (
                               <>
-                                <IconAction
+                                <styled.button
                                   type="button"
                                   aria-label="Clear format"
                                   disabled={isFormLoading}
                                   onClick={clearFormat}
+                                  css={iconButton}
                                 >
                                   <XIcon />
-                                </IconAction>
+                                </styled.button>
                                 <Link
                                   to="/records/$recordId"
                                   params={{ recordId: field.value }}
