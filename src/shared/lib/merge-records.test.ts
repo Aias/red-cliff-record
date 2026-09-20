@@ -20,6 +20,7 @@ const record = (overrides: Partial<RecordSlim> = {}): RecordSlim => ({
   recordCuratedAt: null,
   reminderAt: null,
   sources: null,
+  formatId: null,
   recordCreatedAt: new Date('2025-01-01'),
   recordUpdatedAt: new Date('2025-01-01'),
   contentCreatedAt: null,

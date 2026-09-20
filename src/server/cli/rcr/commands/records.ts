@@ -81,6 +81,7 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
   // Range filters
   'elo-min': RecordFiltersSchema.shape.minElo.optional(),
   'elo-max': RecordFiltersSchema.shape.maxElo.optional(),
+  format: RecordFiltersSchema.shape.formatId.optional(),
   // Ordering
   order: z.string().optional(), // e.g., "createdAt:desc,eloScore:asc"
   // Output options
@@ -98,6 +99,7 @@ const RecordsListOptionsSchema = BaseOptionsSchema.extend({
       hasEmbedding: opts.embedding,
       hasMedia: opts.media,
       hasParent: opts.parent,
+      formatId: opts.format,
       hasTitle: opts['has-title'],
     },
     limit: opts.limit ?? DEFAULT_LIMIT,
@@ -168,7 +170,7 @@ export const get: CommandHandler = async (args, options) => {
 
 /**
  * List records with filters
- * Usage: rcr records list [--type=...] [--source=...] [--order=...] [--full] [--limit=...] [--offset=...]
+ * Usage: rcr records list [--type=...] [--source=...] [--format=ID] [--order=...] [--full] [--limit=...] [--offset=...]
  *
  * Supports comma-separated values for --type and --source:
  *   --type=entity,concept --source=readwise,github

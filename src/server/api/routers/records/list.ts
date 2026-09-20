@@ -45,6 +45,7 @@ function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
     hasEmbedding,
     hasMedia,
     sources,
+    formatId,
   } = filters;
 
   return {
@@ -62,6 +63,7 @@ function buildFilterWhere(filters: z.infer<typeof RecordFiltersSchema>) {
     sources: sources?.length ? { arrayOverlaps: sources } : EmptyFilter,
     eloScore: { gte: minElo ?? EmptyFilter, lte: maxElo ?? EmptyFilter },
     textEmbedding: presence(hasEmbedding),
+    formatId: formatId ?? EmptyFilter,
   } satisfies RelationsFilter<typeof relations.records, typeof relations>;
 }
 

@@ -25,6 +25,7 @@ import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-short
 import type { UpdateRecordInput } from '@/shared/zero/mutators';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import { RecordPicker } from './record-lookup';
 import { Metabar } from './record-metabar';
 import { recordTypeIcons, recordTypeOrder } from './type-icons';
 
@@ -45,6 +46,7 @@ type RecordFormValues = {
   content: string | null;
   notes: string | null;
   mediaCaption: string | null;
+  formatId: number | null;
   isCurated: boolean;
   isPrivate: boolean;
 };
@@ -59,6 +61,7 @@ const defaultData: RecordFormValues = {
   content: null,
   notes: null,
   mediaCaption: null,
+  formatId: null,
   isCurated: false,
   isPrivate: false,
 };
@@ -77,6 +80,7 @@ function valuesFromRecord(record: RecordData): RecordFormValues {
     content: record.content,
     notes: record.notes,
     mediaCaption: record.mediaCaption,
+    formatId: record.formatId,
     isCurated: record.recordCuratedAt !== null,
     isPrivate: record.isPrivate,
   };
@@ -107,6 +111,7 @@ function collectChanges(
 ): Omit<UpdateRecordInput, 'id'> {
   const changes: Omit<UpdateRecordInput, 'id'> = {};
   if (next.type !== base.type) changes.type = next.type;
+  if (next.formatId !== base.formatId) changes.formatId = next.formatId;
   if (next.isCurated !== base.isCurated) changes.isCurated = next.isCurated;
   if (next.isPrivate !== base.isPrivate) changes.isPrivate = next.isPrivate;
   if (next.title !== base.title) changes.title = next.title;
@@ -494,6 +499,38 @@ export function RecordForm({
           <Table.Root>
             <Table.Table>
               <Table.Body css={{ '& td:first-child': { width: '20' } }}>
+                <Table.Row>
+                  <Table.Cell>
+                    <Label css={{ display: 'flex', width: 'full' }} htmlFor="format">
+                      Format
+                    </Label>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <form.Field name="formatId">
+                      {(field) => (
+                        <RecordPicker
+                          id="format"
+                          value={field.value}
+                          label={
+                            record?.format ? (record.format.title ?? record.format.id) : field.value
+                          }
+                          placeholder="No format"
+                          disabled={isFormLoading}
+                          size="sm"
+                          onSelect={(value) => {
+                            field.handleChange(value);
+                            debouncedSave();
+                          }}
+                          onClear={() => {
+                            field.handleChange(null);
+                            debouncedSave();
+                          }}
+                        />
+                      )}
+                    </form.Field>
+                  </Table.Cell>
+                </Table.Row>
+
                 <Table.Row>
                   <Table.Cell>
                     <Label css={{ display: 'flex', width: 'full' }} htmlFor="url">

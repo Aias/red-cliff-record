@@ -27,6 +27,7 @@ const recordDisplay = sva({
     'title',
     'abbreviation',
     'sense',
+    'format',
     'basketIcon',
     'sources',
     'mediaFigure',
@@ -80,6 +81,16 @@ const recordDisplay = sva({
     },
     abbreviation: { textStyle: 'xs', color: 'muted' },
     sense: { textStyle: 'xs', color: 'muted', fontStyle: 'italic' },
+    format: {
+      textStyle: 'xs',
+      color: 'muted',
+      textDecoration: 'none',
+      transitionProperty: 'colors',
+      transitionDuration: '100',
+      transitionTimingFunction: 'easeInOut.cubic',
+      _hover: { color: 'accent' },
+      _focusVisible: { textDecoration: 'underline' },
+    },
     basketIcon: { color: 'accent' },
     sources: { fontSize: '[0.875em]', opacity: '50%' },
     mediaFigure: { display: 'flex', flexDirection: 'column', gap: '1.5' },
@@ -151,6 +162,7 @@ export const RecordDisplay = memo(function RecordDisplay({
     type,
     abbreviation,
     sense,
+    format,
     avatarUrl,
     title,
     summary,
@@ -185,6 +197,15 @@ export const RecordDisplay = memo(function RecordDisplay({
           </Link>
           {abbreviation && <Abbreviation>({abbreviation})</Abbreviation>}
           {sense && <Sense>{sense}</Sense>}
+          {format && (
+            <Link
+              to="/records/$recordId"
+              params={{ recordId: format.id }}
+              className={slotClasses.format}
+            >
+              {format.title ?? format.id}
+            </Link>
+          )}
         </TitleGroup>
         {inBasket && <BasketIcon />}
         <Sources sources={sources} />
