@@ -6,7 +6,6 @@ import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Command } from '@/components/command';
 import { Popover } from '@/components/popover';
-import { Spinner } from '@/components/spinner';
 import { useCreateRecord } from '@/lib/hooks/record-mutations';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
@@ -172,24 +171,10 @@ export const SiteSearch = () => {
           />
           <Command.List css={{ maxHeight: '[75vh]' }}>
             <Command.Item value="-" css={{ display: 'none' }} />
-            <Command.Empty>
-              {!shouldSearch
-                ? 'Type to search...'
-                : isSearching
-                  ? ''
-                  : !hasResults
-                    ? 'No results found.'
-                    : ''}
-            </Command.Empty>
 
-            {shouldSearch && isSearching && (
-              <Command.Item
-                disabled
-                css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Spinner css={{ boxSize: '4' }} />
-              </Command.Item>
-            )}
+            {!shouldSearch && <Command.Placeholder>Type to search…</Command.Placeholder>}
+
+            {shouldSearch && isSearching && <Command.Loading />}
 
             {trigramResults.length > 0 && (
               <Command.Group heading="Text Matches">
@@ -211,30 +196,26 @@ export const SiteSearch = () => {
               </Command.Group>
             )}
 
-            {vector.isFetching && !vector.data && trigramResults.length > 0 && (
-              <Command.Item
-                disabled
-                css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Spinner css={{ boxSize: '4' }} />
-              </Command.Item>
+            {vector.isFetching && !vector.data && trigramResults.length > 0 && <Command.Loading />}
+
+            {shouldSearch && !isSearching && !hasResults && (
+              <Command.Placeholder>No records found</Command.Placeholder>
             )}
 
-            {shouldSearch && <Command.Separator alwaysRender />}
-
-            <Command.Item
-              disabled={inputValue.length === 0 || trigram.isFetching}
-              key="create-record"
-              onSelect={() => {
-                createRecordMutation.mutate(
-                  { title: inputValue },
-                  { onSuccess: (newRecord) => handleSelectResult(newRecord.id) }
-                );
-              }}
-              css={{ paddingInline: '3', paddingBlock: '2' }}
-            >
-              <PlusCircleIcon /> Create New Record
-            </Command.Item>
+            <Command.Footer>
+              <Command.Item
+                disabled={inputValue.length === 0 || trigram.isFetching}
+                key="create-record"
+                onSelect={() => {
+                  createRecordMutation.mutate(
+                    { title: inputValue },
+                    { onSuccess: (newRecord) => handleSelectResult(newRecord.id) }
+                  );
+                }}
+              >
+                <PlusCircleIcon /> Create New Record
+              </Command.Item>
+            </Command.Footer>
           </Command.List>
         </Command.Root>
       </Popover.Content>

@@ -7,7 +7,6 @@ import { useTRPC } from '@/app/trpc';
 import { Button } from '@/components/button';
 import { Command } from '@/components/command';
 import { Dialog } from '@/components/dialog';
-import { Spinner } from '@/components/spinner';
 import { ToggleGroup } from '@/components/toggle-group';
 import { Tooltip } from '@/components/tooltip';
 import { useRecord } from '@/lib/hooks/record-queries';
@@ -196,21 +195,15 @@ function FocusSearch({ type, onSelect }: { type: RecordType; onSelect: (id: DbId
       />
       <Command.List>
         <Command.Item value="-" css={{ display: 'none' }} />
-        {shouldSearch && results.isFetching && !results.data && (
-          <Command.Item
-            disabled
-            css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Spinner css={{ boxSize: '4' }} />
-          </Command.Item>
-        )}
+        {!shouldSearch && <Command.Placeholder>Type to search…</Command.Placeholder>}
+        {shouldSearch && results.isFetching && !results.data && <Command.Loading />}
         {ids.map(({ id }) => (
           <Command.Item key={id} value={String(id)} onSelect={() => onSelect(id)}>
             <SearchResultItem id={id} />
           </Command.Item>
         ))}
         {shouldSearch && !results.isFetching && ids.length === 0 && (
-          <Command.Item disabled>No results</Command.Item>
+          <Command.Placeholder>No records found</Command.Placeholder>
         )}
       </Command.List>
     </Command.Root>

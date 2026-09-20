@@ -107,14 +107,7 @@ export function RecordSearch({ onSelect, suggestions }: RecordSearchProps) {
       <Command.List>
         <Command.Item value="-" css={{ display: 'none' }} />
 
-        {query.length === 0 && suggestions?.isLoading && (
-          <Command.Item
-            disabled
-            css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Spinner css={{ boxSize: '4' }} />
-          </Command.Item>
-        )}
+        {query.length === 0 && suggestions?.isLoading && <Command.Loading />}
 
         {query.length === 0 && suggestions && suggestions.items.length > 0 && (
           <Command.Group heading="Suggested">
@@ -136,14 +129,11 @@ export function RecordSearch({ onSelect, suggestions }: RecordSearchProps) {
           </Command.Group>
         )}
 
-        {shouldSearch && isSearching && (
-          <Command.Item
-            disabled
-            css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Spinner css={{ boxSize: '4' }} />
-          </Command.Item>
+        {query.length === 0 && !suggestions?.isLoading && !suggestions?.items.length && (
+          <Command.Placeholder>Type to search…</Command.Placeholder>
         )}
+
+        {shouldSearch && isSearching && <Command.Loading />}
 
         {trigramResults.length > 0 && (
           <Command.Group heading="Text Matches">
@@ -165,34 +155,26 @@ export function RecordSearch({ onSelect, suggestions }: RecordSearchProps) {
           </Command.Group>
         )}
 
-        {vector.isFetching && !vector.data && trigramResults.length > 0 && (
-          <Command.Item
-            disabled
-            css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Spinner css={{ boxSize: '4' }} />
-          </Command.Item>
-        )}
+        {vector.isFetching && !vector.data && trigramResults.length > 0 && <Command.Loading />}
 
         {!isSearching && !hasResults && shouldSearch && (
-          <Command.Item disabled>No results</Command.Item>
+          <Command.Placeholder>No records found</Command.Placeholder>
         )}
 
-        {shouldSearch && <Command.Separator alwaysRender />}
-
-        <Command.Item
-          disabled={query.length === 0 || trigram.isFetching}
-          key="create-record"
-          onSelect={() => {
-            createRecordMutation.mutate(
-              { title: query },
-              { onSuccess: (newRecord) => onSelect(newRecord.id) }
-            );
-          }}
-          css={{ paddingInline: '3', paddingBlock: '2' }}
-        >
-          <PlusCircleIcon /> Create New Record
-        </Command.Item>
+        <Command.Footer>
+          <Command.Item
+            disabled={query.length === 0 || trigram.isFetching}
+            key="create-record"
+            onSelect={() => {
+              createRecordMutation.mutate(
+                { title: query },
+                { onSuccess: (newRecord) => onSelect(newRecord.id) }
+              );
+            }}
+          >
+            <PlusCircleIcon /> Create New Record
+          </Command.Item>
+        </Command.Footer>
       </Command.List>
     </Command.Root>
   );
@@ -355,17 +337,16 @@ function PredicateCombobox({
             ))}
         </Command.Group>
 
+        <Command.Empty>No matching relations</Command.Empty>
+
         {actions.length > 0 && (
-          <>
-            <Command.Separator />
-            <Command.Group heading="Actions">
-              {actions.map((a) => (
-                <Command.Item key={a.key} onSelect={a.onSelect}>
-                  {a.label}
-                </Command.Item>
-              ))}
-            </Command.Group>
-          </>
+          <Command.Footer>
+            {actions.map((a) => (
+              <Command.Item key={a.key} onSelect={a.onSelect}>
+                {a.label}
+              </Command.Item>
+            ))}
+          </Command.Footer>
         )}
       </Command.List>
     </Command.Root>
