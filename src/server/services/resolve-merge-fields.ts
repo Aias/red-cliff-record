@@ -1,5 +1,6 @@
 import type { RecordSelect } from '@hozo';
 import { choice, type ChoiceResponse } from '@typesafe-ai/sdk';
+import type { DbTransaction } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import {
   MERGE_SCALAR_FIELDS,
@@ -104,6 +105,7 @@ export function resolutionsFromAnswers(
 }
 
 export async function resolveMergeFields(
+  tx: DbTransaction,
   source: JudgedRecord,
   target: JudgedRecord,
   images: MergeContext,
@@ -112,13 +114,18 @@ export async function resolveMergeFields(
   const request = mergeFieldRequest(source, target, images);
   if (!request) return {};
   try {
-    const { result } = await judge({
-      recordId,
-      question: 'merge_fields',
-      state: request.state,
-      questions: request.questions,
-      decide: resolutionsFromAnswers,
-    });
+    const { result } = await tx.transaction((judgmentTx) =>
+      judge(
+        {
+          recordId,
+          question: 'merge_fields',
+          state: request.state,
+          questions: request.questions,
+          decide: resolutionsFromAnswers,
+        },
+        judgmentTx
+      )
+    );
     return result;
   } catch (error) {
     logger.error('Failed to judge which merged fields to keep', error);

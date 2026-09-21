@@ -58,11 +58,17 @@ export function useMergeRecords() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const undoMergeMutation = useUndoMerge();
+  const navigate = useNavigate();
 
   return useMutation(
     trpc.records.merge.mutationOptions({
       onSuccess: ({ updatedRecord, deletedRecordId, snapshot }) => {
         replaceBasketId(deletedRecordId, updatedRecord.id);
+        void navigate({
+          to: '/records/$recordId',
+          params: { recordId: updatedRecord.id },
+          state: { focusForm: true },
+        });
 
         // Similarity search is excluded from global invalidation.
         void queryClient.invalidateQueries(

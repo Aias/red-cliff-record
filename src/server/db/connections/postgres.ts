@@ -23,6 +23,7 @@ export const db = globalForDb.db ?? createDb();
 if (process.env.NODE_ENV !== 'production') globalForDb.db = db;
 
 export type Db = typeof db;
+export type DbTransaction = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 /** Verify the database is reachable. Throws with a user-friendly message on failure. */
 export async function checkDatabaseConnection() {
