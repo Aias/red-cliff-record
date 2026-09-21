@@ -19,7 +19,7 @@ const criteria = {
 
 type Classifiable = Pick<
   RecordInsert,
-  'title' | 'abbreviation' | 'sense' | 'url' | 'summary' | 'content' | 'notes'
+  'title' | 'abbreviation' | 'sense' | 'url' | 'summary' | 'content' | 'notes' | 'mediaCaption'
 >;
 
 export async function classifyRecordType(record: Classifiable): Promise<RecordType | null> {
@@ -31,6 +31,7 @@ export async function classifyRecordType(record: Classifiable): Promise<RecordTy
     summary: record.summary,
     content: record.content?.slice(0, CONTENT_PREVIEW_LENGTH),
     notes: record.notes,
+    caption: record.mediaCaption,
   });
   if (Object.keys(state).length === 0) return null;
   try {

@@ -181,7 +181,16 @@ export function describeOrigin(row: OriginSignals): string {
 
 export type ClassifiableRecord = Pick<
   RecordSelect,
-  'id' | 'type' | 'title' | 'abbreviation' | 'sense' | 'url' | 'summary' | 'content' | 'notes'
+  | 'id'
+  | 'type'
+  | 'title'
+  | 'abbreviation'
+  | 'sense'
+  | 'url'
+  | 'summary'
+  | 'content'
+  | 'notes'
+  | 'mediaCaption'
 > & { origin: string; imageDescriptions: string | null };
 
 export function describeImages(media: { altText: string | null }[]): string | null {
@@ -203,6 +212,7 @@ const CLASSIFIABLE_COLUMNS = {
   summary: true,
   content: true,
   notes: true,
+  mediaCaption: true,
 } as const;
 
 const ORIGIN_RELATIONS = {
@@ -227,6 +237,7 @@ async function askFormat(record: ClassifiableRecord, question: FormatQuestion['q
     summary: record.summary,
     content: record.content?.slice(0, CONTENT_PREVIEW_LENGTH),
     notes: record.notes,
+    caption: record.mediaCaption,
     imageDescriptions: record.imageDescriptions,
     origin: record.origin,
   });
@@ -308,6 +319,7 @@ export async function suggestRecordFormats(recordId: number): Promise<FormatSugg
     summary: record.summary,
     content: record.content?.slice(0, CONTENT_PREVIEW_LENGTH),
     notes: record.notes,
+    caption: record.mediaCaption,
     imageDescriptions: record.imageDescriptions,
     origin: record.origin,
   });
