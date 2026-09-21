@@ -108,18 +108,46 @@ describe('rankSuggestions', () => {
     { id: 3, title: 'Words', description: null },
     { id: 4, title: 'Self', description: null },
   ];
+  const idsByLabel = new Map(vocabulary.map((option) => [option.title, option.id]));
   const answer = (noul: number) => ({ type: 'noul' as const, noul });
+  const pick = (choice: string) => ({
+    type: 'choice' as const,
+    choice,
+    confidence: 0.7,
+    probabilities: { [choice]: 1 },
+  });
 
-  test('keeps formats more likely than not, highest first, never the record itself', () => {
+  test('pins the chosen format first, then formats more likely than not, never the record itself', () => {
     expect(
       rankSuggestions(
-        { '1': answer(0.92), '2': answer(0.62), '3': answer(0.36), '4': answer(0.9) },
+        {
+          format: pick('Place'),
+          '1': answer(0.92),
+          '2': answer(0.62),
+          '3': answer(0.36),
+          '4': answer(0.9),
+        },
         vocabulary,
+        idsByLabel,
         4
       )
     ).toEqual([
-      { id: 1, title: 'Photography', probability: 0.92 },
       { id: 2, title: 'Place', probability: 0.62 },
+      { id: 1, title: 'Photography', probability: 0.92 },
+    ]);
+  });
+
+  test('pins the chosen format even when its own answer is below the floor', () => {
+    expect(
+      rankSuggestions(
+        { format: pick('Words'), '1': answer(0.55), '2': answer(0.1), '3': answer(0.3) },
+        vocabulary,
+        idsByLabel,
+        4
+      )
+    ).toEqual([
+      { id: 3, title: 'Words', probability: 0.3 },
+      { id: 1, title: 'Photography', probability: 0.55 },
     ]);
   });
 });

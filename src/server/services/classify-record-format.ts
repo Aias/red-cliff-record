@@ -1,5 +1,12 @@
 import { containmentPredicateSlugs, records, type PredicateSlug, type RecordSelect } from '@hozo';
-import { choice, noul, type Description, type NoulResponse } from '@typesafe-ai/sdk';
+import {
+  choice,
+  noul,
+  type Description,
+  type NoulQuestion,
+  type NoulResponse,
+  type ResultFor,
+} from '@typesafe-ai/sdk';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
@@ -13,6 +20,7 @@ const DEFINITION_LENGTH = 400;
 const EXAMPLES_PER_FORMAT = 5;
 const CONCURRENCY = 8;
 const NONE_LABEL = 'none of these';
+const CHOICE_KEY = 'format';
 const SUGGESTION_COUNT = 5;
 const SUGGESTION_FLOOR = 0.5;
 const IMAGE_DESCRIPTIONS_LENGTH = 800;
@@ -284,21 +292,39 @@ export function formatNouls(vocabulary: FormatOption[]) {
   );
 }
 
+type SuggestionAnswer = ResultFor<FormatQuestion['question']> | NoulResponse;
+
 export function rankSuggestions(
-  answers: Readonly<Record<string, NoulResponse>>,
+  answers: Readonly<Record<string, SuggestionAnswer>>,
   vocabulary: FormatOption[],
+  idsByLabel: ReadonlyMap<string, number>,
   recordId: number,
   limit = SUGGESTION_COUNT
 ): FormatSuggestion[] {
-  return vocabulary
+  const noulOf = (id: number) => {
+    const answer = answers[String(id)];
+    return answer?.type === 'noul' ? answer.noul : null;
+  };
+  const pick = answers[CHOICE_KEY];
+  const pickedId = pick?.type === 'choice' ? idsByLabel.get(pick.choice) : undefined;
+  const pinned = vocabulary.flatMap((option) => {
+    const probability = noulOf(option.id);
+    return option.id === pickedId && option.id !== recordId && probability !== null
+      ? [{ id: option.id, title: option.title, probability }]
+      : [];
+  });
+  const rest = vocabulary
     .flatMap((option) => {
-      const answer = answers[String(option.id)];
-      return answer && option.id !== recordId && answer.noul >= SUGGESTION_FLOOR
-        ? [{ id: option.id, title: option.title, probability: answer.noul }]
+      const probability = noulOf(option.id);
+      return option.id !== pickedId &&
+        option.id !== recordId &&
+        probability !== null &&
+        probability >= SUGGESTION_FLOOR
+        ? [{ id: option.id, title: option.title, probability }]
         : [];
     })
-    .sort((a, b) => b.probability - a.probability)
-    .slice(0, limit);
+    .sort((a, b) => b.probability - a.probability);
+  return [...pinned, ...rest].slice(0, limit);
 }
 
 export async function suggestRecordFormats(recordId: number): Promise<FormatSuggestion[] | null> {
@@ -310,6 +336,7 @@ export async function suggestRecordFormats(recordId: number): Promise<FormatSugg
   if (!row) return null;
   const vocabulary = await loadFormatVocabulary();
   if (vocabulary.length === 0) return [];
+  const { question, idsByLabel } = formatQuestion(vocabulary);
   const record = classifiable(row);
   const state = stateFields({
     title: record.title,
@@ -323,11 +350,12 @@ export async function suggestRecordFormats(recordId: number): Promise<FormatSugg
     imageDescriptions: record.imageDescriptions,
     origin: record.origin,
   });
-  const { answers } = await getTypeSafeClient().systemOne({
-    state,
-    questions: formatNouls(vocabulary),
-  });
-  return rankSuggestions(answers, vocabulary, recordId);
+  const questions: Record<string, FormatQuestion['question'] | NoulQuestion> = {
+    ...formatNouls(vocabulary),
+    [CHOICE_KEY]: question,
+  };
+  const { answers } = await getTypeSafeClient().systemOne({ state, questions });
+  return rankSuggestions(answers, vocabulary, idsByLabel, recordId);
 }
 
 async function assignMissingFormats(limit: number | undefined, signal: AbortSignal | undefined) {
