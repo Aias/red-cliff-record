@@ -199,10 +199,15 @@ export async function mergeRecordsInTransaction(
     .orderBy(records.id)
     .for('update');
 
-  const resolutions = await resolveMergeFields(source, target, {
-    source: describeImages(premergeMedia.filter((item) => item.recordId === sourceId)),
-    target: describeImages(premergeMedia.filter((item) => item.recordId === targetId)),
-  });
+  const resolutions = await resolveMergeFields(
+    source,
+    target,
+    {
+      source: describeImages(premergeMedia.filter((item) => item.recordId === sourceId)),
+      target: describeImages(premergeMedia.filter((item) => item.recordId === targetId)),
+    },
+    targetId
+  );
   const merged = mergeRecords(source, target, resolutions);
   if (source.slug) await tx.update(records).set({ slug: null }).where(eq(records.id, sourceId));
   const [updatedRecord] = await tx

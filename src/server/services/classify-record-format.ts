@@ -8,11 +8,13 @@ import {
   type ResultFor,
 } from '@typesafe-ai/sdk';
 import { EmptyFilter, eq } from 'drizzle-orm';
+import { z } from 'zod';
 import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import { runTrackedEnrichment } from '@/server/integrations/runtime/runtime';
-import { getTypeSafeClient, stateFields } from '@/server/lib/typesafe';
+import { stateFields } from '@/server/lib/typesafe';
 import { runConcurrentPool } from '@/shared/lib/async-pool';
+import { judge } from './judgments';
 
 const CONFIDENCE_FLOOR = 0.65;
 const CONTENT_PREVIEW_LENGTH = 1500;
@@ -236,8 +238,8 @@ const ORIGIN_RELATIONS = {
   media: { columns: { altText: true } },
 } as const;
 
-async function askFormat(record: ClassifiableRecord, question: FormatQuestion['question']) {
-  const state = stateFields({
+const formatState = (record: ClassifiableRecord) =>
+  stateFields({
     title: record.title,
     abbreviation: record.abbreviation,
     disambiguation: record.sense,
@@ -249,11 +251,31 @@ async function askFormat(record: ClassifiableRecord, question: FormatQuestion['q
     imageDescriptions: record.imageDescriptions,
     origin: record.origin,
   });
-  const { answers } = await getTypeSafeClient().systemOne({
-    state,
+
+const FormatClassificationSchema = z.object({
+  label: z.string(),
+  confidence: z.number(),
+  formatId: z.number().nullable(),
+});
+
+export async function classifyRecordFormat(
+  record: ClassifiableRecord,
+  { question, idsByLabel }: FormatQuestion
+) {
+  const { result } = await judge({
+    recordId: record.id,
+    question: 'record_format',
+    state: formatState(record),
     questions: { format: question },
+    decide: ({ format: { choice: label, confidence } }) => {
+      const formatId = idsByLabel.get(label);
+      const accepted =
+        formatId !== undefined && formatId !== record.id && confidence >= CONFIDENCE_FLOOR;
+      return { label, confidence, formatId: accepted ? formatId : null };
+    },
+    reuse: FormatClassificationSchema,
   });
-  return answers.format;
+  return result;
 }
 
 const classifiable = <
@@ -265,18 +287,6 @@ const classifiable = <
   origin: describeOrigin(row),
   imageDescriptions: describeImages(row.media),
 });
-
-export async function classifyRecordFormat(
-  record: ClassifiableRecord,
-  { question, idsByLabel }: FormatQuestion
-) {
-  const { choice: label, confidence } = await askFormat(record, question);
-  const formatId = idsByLabel.get(label);
-  if (formatId === undefined || formatId === record.id || confidence < CONFIDENCE_FLOOR) {
-    return { label, confidence, formatId: null };
-  }
-  return { label, confidence, formatId };
-}
 
 export type FormatSuggestion = { id: number; title: string; probability: number };
 
@@ -314,6 +324,12 @@ export function rankSuggestions(
     .slice(0, limit);
 }
 
+const FormatSuggestionSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  probability: z.number(),
+});
+
 export async function suggestRecordFormats(recordId: number): Promise<FormatSuggestion[] | null> {
   const row = await db.query.records.findFirst({
     where: { id: recordId },
@@ -324,25 +340,19 @@ export async function suggestRecordFormats(recordId: number): Promise<FormatSugg
   const vocabulary = await loadFormatVocabulary();
   if (vocabulary.length === 0) return [];
   const { question, idsByLabel } = formatQuestion(vocabulary);
-  const record = classifiable(row);
-  const state = stateFields({
-    title: record.title,
-    abbreviation: record.abbreviation,
-    disambiguation: record.sense,
-    url: record.url,
-    summary: record.summary,
-    content: record.content?.slice(0, CONTENT_PREVIEW_LENGTH),
-    notes: record.notes,
-    caption: record.mediaCaption,
-    imageDescriptions: record.imageDescriptions,
-    origin: record.origin,
-  });
   const questions: Record<string, FormatQuestion['question'] | NoulQuestion> = {
     ...formatNouls(vocabulary),
     [CHOICE_KEY]: question,
   };
-  const { answers } = await getTypeSafeClient().systemOne({ state, questions });
-  return rankSuggestions(answers, vocabulary, idsByLabel, recordId);
+  const { result } = await judge({
+    recordId,
+    question: 'format_suggestions',
+    state: formatState(classifiable(row)),
+    questions,
+    decide: (answers) => rankSuggestions(answers, vocabulary, idsByLabel, recordId),
+    reuse: z.array(FormatSuggestionSchema),
+  });
+  return result;
 }
 
 type FormatEnrichmentOptions = { limit?: number; since?: Date; signal?: AbortSignal };

@@ -4,6 +4,7 @@ import { inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { classifyRecordType } from '@/server/services/classify-record-type';
 import { queueRecordEmbeddings } from '@/server/services/embed-records';
+import { attachJudgment } from '@/server/services/judgments';
 import { EMBEDDING_RECORD_FIELDS } from '@/shared/lib/embedding';
 import { BulkUpdateDataSchema, IdSchema, RecordUpsertSchema, type DbId } from '@/shared/types/api';
 import type { RecordGet } from '@/shared/types/domain';
@@ -25,8 +26,9 @@ export const upsert = publicProcedure
   .input(RecordUpsertSchema)
   .mutation(async ({ ctx: { db, loaders }, input }): Promise<RecordGet> => {
     const { isCurated, ...fields } = input;
-    const type =
-      fields.type ?? (input.id === undefined ? await classifyRecordType(fields) : undefined);
+    const classification =
+      fields.type === undefined && input.id === undefined ? await classifyRecordType(fields) : null;
+    const type = fields.type ?? classification?.type ?? undefined;
     const curation = curatedAtUpdate(isCurated, fields.recordCuratedAt);
     const updateFields = Object.fromEntries(
       Object.entries(fields).filter(([, v]) => v !== undefined)
@@ -60,6 +62,10 @@ export const upsert = publicProcedure
         code: 'INTERNAL_SERVER_ERROR',
         message: `Record upsert failed. Input data:\n\n${JSON.stringify(input, null, 2)}`,
       });
+    }
+
+    if (classification?.judgmentId !== null && classification?.judgmentId !== undefined) {
+      await attachJudgment(classification.judgmentId, result.id);
     }
 
     const record = await loaders.record.load(result.id);

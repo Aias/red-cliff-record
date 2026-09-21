@@ -1,7 +1,6 @@
 import type { RecordSelect } from '@hozo';
 import { choice, type ChoiceResponse } from '@typesafe-ai/sdk';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
-import { getTypeSafeClient } from '@/server/lib/typesafe';
 import {
   MERGE_SCALAR_FIELDS,
   MERGE_TEXT_FIELDS,
@@ -9,6 +8,7 @@ import {
   type MergeScalarField,
   type MergeTextField,
 } from '@/shared/lib/merge-records';
+import { judge } from './judgments';
 
 const CONFIDENCE_FLOOR = 0.6;
 const MAX_JUDGED_TEXT_LENGTH = 12_000;
@@ -106,13 +106,20 @@ export function resolutionsFromAnswers(
 export async function resolveMergeFields(
   source: JudgedRecord,
   target: JudgedRecord,
-  images?: MergeContext
+  images: MergeContext,
+  recordId: number
 ): Promise<MergeResolutions> {
   const request = mergeFieldRequest(source, target, images);
   if (!request) return {};
   try {
-    const { answers } = await getTypeSafeClient().systemOne(request);
-    return resolutionsFromAnswers(answers);
+    const { result } = await judge({
+      recordId,
+      question: 'merge_fields',
+      state: request.state,
+      questions: request.questions,
+      decide: resolutionsFromAnswers,
+    });
+    return result;
   } catch (error) {
     logger.error('Failed to judge which merged fields to keep', error);
     return {};

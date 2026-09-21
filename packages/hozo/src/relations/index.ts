@@ -16,6 +16,7 @@ import {
   githubRepositories,
   githubUsers,
   integrationRuns,
+  judgments,
   lightroomImages,
   links,
   media,
@@ -53,7 +54,9 @@ export const relations = defineRelations(
     githubRepositories,
     githubUsers,
     integrationRuns,
+    judgments,
     lightroomImages,
+    links,
     media,
     raindropBookmarks,
     raindropBookmarkTags,
@@ -65,7 +68,6 @@ export const relations = defineRelations(
     readwiseDocuments,
     readwiseDocumentTags,
     readwiseTags,
-    links,
     records,
     twitterMedia,
     twitterTweets,
@@ -495,6 +497,7 @@ export const relations = defineRelations(
         to: r.eloMatchups.recordBId,
       }),
       media: r.many.media(),
+      judgments: r.many.judgments(),
       airtableCreators: r.many.airtableCreators(),
       airtableExtracts: r.many.airtableExtracts(),
       airtableFormats: r.many.airtableFormats(),
@@ -511,6 +514,12 @@ export const relations = defineRelations(
       readwiseTags: r.many.readwiseTags(),
       twitterTweets: r.many.twitterTweets(),
       twitterUsers: r.many.twitterUsers(),
+    },
+    judgments: {
+      record: r.one.records({
+        from: r.judgments.recordId,
+        to: r.records.id,
+      }),
     },
     links: {
       source: r.one.records({

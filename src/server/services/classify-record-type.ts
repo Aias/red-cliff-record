@@ -1,7 +1,8 @@
 import type { RecordInsert, RecordType } from '@hozo';
 import { choice } from '@typesafe-ai/sdk';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
-import { getTypeSafeClient, stateFields } from '@/server/lib/typesafe';
+import { stateFields } from '@/server/lib/typesafe';
+import { judge } from './judgments';
 
 const CONFIDENCE_FLOOR = 0.6;
 const CONTENT_PREVIEW_LENGTH = 2000;
@@ -22,7 +23,9 @@ type Classifiable = Pick<
   'title' | 'abbreviation' | 'sense' | 'url' | 'summary' | 'content' | 'notes' | 'mediaCaption'
 >;
 
-export async function classifyRecordType(record: Classifiable): Promise<RecordType | null> {
+export type RecordTypeClassification = { type: RecordType | null; judgmentId: number | null };
+
+export async function classifyRecordType(record: Classifiable): Promise<RecordTypeClassification> {
   const state = stateFields({
     title: record.title,
     abbreviation: record.abbreviation,
@@ -33,9 +36,11 @@ export async function classifyRecordType(record: Classifiable): Promise<RecordTy
     notes: record.notes,
     caption: record.mediaCaption,
   });
-  if (Object.keys(state).length === 0) return null;
+  if (Object.keys(state).length === 0) return { type: null, judgmentId: null };
   try {
-    const { answers } = await getTypeSafeClient().systemOne({
+    const { result, judgmentId } = await judge({
+      recordId: null,
+      question: 'record_type',
       state,
       questions: {
         type: choice(
@@ -43,10 +48,12 @@ export async function classifyRecordType(record: Classifiable): Promise<RecordTy
           criteria
         ),
       },
+      decide: (answers) =>
+        answers.type.confidence >= CONFIDENCE_FLOOR ? answers.type.choice : null,
     });
-    return answers.type.confidence >= CONFIDENCE_FLOOR ? answers.type.choice : null;
+    return { type: result, judgmentId };
   } catch (error) {
     logger.error('Failed to classify record type', error);
-    return null;
+    return { type: null, judgmentId: null };
   }
 }
