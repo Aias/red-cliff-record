@@ -36,5 +36,5 @@ export const Loading = (props: ComponentProps<typeof StyledLoading>) => (
 );
 export const Empty = withContext(CommandPrimitive.Empty, 'empty');
 export const Placeholder = withContext('div', 'placeholder');
-export const Footer = withContext('div', 'footer');
+export const Footer = withContext(CommandPrimitive.Group, 'footer');
 export const Shortcut = withContext('span', 'shortcut');
