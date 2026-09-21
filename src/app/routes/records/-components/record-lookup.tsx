@@ -129,10 +129,6 @@ export function RecordSearch({ onSelect, suggestions }: RecordSearchProps) {
           </Command.Group>
         )}
 
-        {query.length === 0 && !suggestions?.isLoading && !suggestions?.items.length && (
-          <Command.Placeholder>Type to search…</Command.Placeholder>
-        )}
-
         {shouldSearch && isSearching && <Command.Loading />}
 
         {trigramResults.length > 0 && (

@@ -172,8 +172,6 @@ export const SiteSearch = () => {
           <Command.List css={{ maxHeight: '[75vh]' }}>
             <Command.Item value="-" css={{ display: 'none' }} />
 
-            {!shouldSearch && <Command.Placeholder>Type to search…</Command.Placeholder>}
-
             {shouldSearch && isSearching && <Command.Loading />}
 
             {trigramResults.length > 0 && (

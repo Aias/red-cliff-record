@@ -94,6 +94,9 @@ export const commandRecipe = defineSlotRecipe({
       padding: '1',
       borderBlockStartWidth: '1px',
       borderBlockStartColor: 'border',
+      '[cmdk-item][data-value="-"] + &': {
+        borderBlockStartWidth: '0',
+      },
     },
     group: {
       overflow: 'hidden',

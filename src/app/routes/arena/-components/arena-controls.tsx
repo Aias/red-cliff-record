@@ -195,7 +195,6 @@ function FocusSearch({ type, onSelect }: { type: RecordType; onSelect: (id: DbId
       />
       <Command.List>
         <Command.Item value="-" css={{ display: 'none' }} />
-        {!shouldSearch && <Command.Placeholder>Type to search…</Command.Placeholder>}
         {shouldSearch && results.isFetching && !results.data && <Command.Loading />}
         {ids.map(({ id }) => (
           <Command.Item key={id} value={String(id)} onSelect={() => onSelect(id)}>
