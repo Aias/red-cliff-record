@@ -60,6 +60,7 @@ export const records = pgTable(
       onDelete: 'set null',
       onUpdate: 'cascade',
     }),
+    formatCheckedAt: timestamp('format_checked_at', { withTimezone: true }),
     /**
      * Weighted full-text search document: title/abbreviation/sense (A),
      * summary/mediaCaption (B), content (C), notes/url (D). Postgres tokenizes

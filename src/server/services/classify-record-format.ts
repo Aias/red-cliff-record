@@ -7,7 +7,7 @@ import {
   type NoulResponse,
   type ResultFor,
 } from '@typesafe-ai/sdk';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import { runTrackedEnrichment } from '@/server/integrations/runtime/runtime';
@@ -353,7 +353,15 @@ async function assignMissingFormats(limit: number | undefined, signal: AbortSign
   }
   const question = formatQuestion(vocabulary);
   const pending = await db.query.records.findMany({
-    where: { type: 'artifact', formatId: { isNull: true }, recordCuratedAt: { isNull: true } },
+    where: {
+      type: 'artifact',
+      formatId: { isNull: true },
+      recordCuratedAt: { isNull: true },
+      OR: [
+        { formatCheckedAt: { isNull: true } },
+        { RAW: (t) => sql`${t.formatCheckedAt} < ${t.recordUpdatedAt}` },
+      ],
+    },
     columns: CLASSIFIABLE_COLUMNS,
     with: ORIGIN_RELATIONS,
     orderBy: { recordCreatedAt: 'desc' },
@@ -368,13 +376,15 @@ async function assignMissingFormats(limit: number | undefined, signal: AbortSign
     signal,
     async worker(row) {
       const result = await classifyRecordFormat(classifiable(row), question);
+      const now = new Date();
       if (result.formatId === null) {
+        await db.update(records).set({ formatCheckedAt: now }).where(eq(records.id, row.id));
         logger.info(`Record ${row.id}: skipped ${result.label} (${result.confidence.toFixed(2)})`);
         return false;
       }
       await db
         .update(records)
-        .set({ formatId: result.formatId, recordUpdatedAt: new Date() })
+        .set({ formatId: result.formatId, formatCheckedAt: now, recordUpdatedAt: now })
         .where(eq(records.id, row.id));
       logger.info(`Record ${row.id}: ${result.label} (${result.confidence.toFixed(2)})`);
       return true;

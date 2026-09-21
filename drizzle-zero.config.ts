@@ -35,6 +35,7 @@ export default drizzleZeroConfig(
         reminderAt: true,
         sources: true,
         formatId: true,
+        formatCheckedAt: false,
         textSearch: false,
         textEmbedding: false,
         textEmbeddedAt: true,

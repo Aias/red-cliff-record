@@ -1,0 +1,1 @@
+ALTER TABLE "records" ADD COLUMN "format_checked_at" timestamp with time zone;

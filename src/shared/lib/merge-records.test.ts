@@ -26,6 +26,7 @@ const record = (overrides: Partial<RecordSlim> = {}): RecordSlim => ({
   contentCreatedAt: null,
   contentUpdatedAt: null,
   textEmbeddedAt: null,
+  formatCheckedAt: null,
   ...overrides,
 });
 

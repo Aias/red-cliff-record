@@ -77,7 +77,12 @@ export function mergeRecords<T extends RecordSlim>(
   source: T,
   target: T,
   resolutions: MergeResolutions = {}
-): Omit<T, 'id'> & { recordUpdatedAt: Date; textEmbedding: null; textEmbeddedAt: null } {
+): Omit<T, 'id'> & {
+  recordUpdatedAt: Date;
+  textEmbedding: null;
+  textEmbeddedAt: null;
+  formatCheckedAt: null;
+} {
   // Deduplicate the sources array
   const allSources = Array.from(new Set([...(source.sources ?? []), ...(target.sources ?? [])]));
 
@@ -111,6 +116,7 @@ export function mergeRecords<T extends RecordSlim>(
             'contentUpdatedAt',
             'textEmbedding',
             'textEmbeddedAt',
+            'formatCheckedAt',
           ].includes(key)
         ) {
           return false;
@@ -135,6 +141,7 @@ export function mergeRecords<T extends RecordSlim>(
     recordUpdatedAt: new Date(),
     textEmbedding: null, // Changes require recalculating the embedding
     textEmbeddedAt: null,
+    formatCheckedAt: null,
   };
 
   // Remove id from the result and return
