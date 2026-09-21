@@ -12,6 +12,8 @@ export const commandRecipe = defineSlotRecipe({
     'separator',
     'loading',
     'empty',
+    'placeholder',
+    'footer',
     'shortcut',
   ],
   base: {
@@ -71,12 +73,30 @@ export const commandRecipe = defineSlotRecipe({
       color: 'muted',
     },
     empty: {
-      paddingBlock: '6',
+      paddingBlock: '1.5',
+      paddingInline: '2',
       textAlign: 'center',
       display: 'grid',
       placeItems: 'center',
       textStyle: 'sm',
       color: 'muted',
+    },
+    placeholder: {
+      paddingBlock: '1.5',
+      paddingInline: '2',
+      textAlign: 'center',
+      display: 'grid',
+      placeItems: 'center',
+      textStyle: 'sm',
+      color: 'muted',
+    },
+    footer: {
+      padding: '1',
+      borderBlockStartWidth: '1px',
+      borderBlockStartColor: 'border',
+      '[cmdk-item][data-value="-"] + &': {
+        borderBlockStartWidth: '0',
+      },
     },
     group: {
       overflow: 'hidden',

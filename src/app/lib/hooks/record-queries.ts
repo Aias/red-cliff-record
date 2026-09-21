@@ -130,6 +130,12 @@ export function useMatchupCount(id: DbId) {
   return matchups.length;
 }
 
+/** Number of records whose format is this record. */
+export function useFormatOfCount(id: DbId) {
+  const [records] = useZeroQuery(queries.formatOf({ id }));
+  return records.length;
+}
+
 /** Point-in-time matchup pool: rankable candidates and the pairs already played. */
 export type EloPool = { candidates: PoolCandidate[]; playedPairs: ReadonlySet<string> };
 

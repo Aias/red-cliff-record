@@ -29,6 +29,7 @@
         "@trpc/client": "~11.19.0",
         "@trpc/server": "~11.19.0",
         "@trpc/tanstack-react-query": "~11.19.0",
+        "@typesafe-ai/sdk": "~0.6.0",
         "cmdk": "~1.1.1",
         "colorjs.io": "~0.7.1",
         "dataloader": "~2.2.3",
@@ -71,7 +72,7 @@
     },
     "packages/hozo": {
       "name": "@aias/hozo",
-      "version": "0.9.0",
+      "version": "0.10.0",
       "devDependencies": {
         "drizzle-kit": "1.0.0-rc.5-ab785fc",
         "drizzle-orm": "1.0.0-rc.5-ab785fc",
@@ -1070,6 +1071,8 @@
     "@types/turndown": ["@types/turndown@5.0.6", "", {}, "sha512-ru00MoyeeouE5BX4gRL+6m/BsDfbRayOskWqUvh7CLGW+UXxHQItqALa38kKnOiZPqJrtzJUgAC2+F0rL1S4Pg=="],
 
     "@types/ws": ["@types/ws@8.18.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg=="],
+
+    "@typesafe-ai/sdk": ["@typesafe-ai/sdk@0.6.0", "", {}, "sha512-IddX+Q0XM+VagOUZFeP7wZjaO4SHMdvnh2zEBdrZZnXedWI3BNK1lKhMx3ayrkFWvVLbVcUHJy6AVZlY+e6Jaw=="],
 
     "@typescript-eslint/types": ["@typescript-eslint/types@8.60.0", "", {}, "sha512-AsE7x2XaAK+CVbeih0Fvbn+r1qHxtpLDJ3XUuFcIinT318T90yHMJC+Zgv+jUuDjQQd06HKwxnDu6sz1IcTilA=="],
 

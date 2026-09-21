@@ -8,6 +8,5 @@ export const PREDICATE_TYPE_ORDER = exhaustive<PredicateType>()([
   'creation',
   'reference',
   'association',
-  'form',
   'description',
 ]);

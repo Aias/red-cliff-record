@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { checkDatabaseConnection } from '@/server/db/connections/postgres';
 import { runIntegrationSync } from '@/server/integrations/runtime/sync';
+import { runFormatEnrichment } from '@/server/services/classify-record-format';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
@@ -84,6 +85,8 @@ async function runEnrichments(signal: AbortSignal) {
   await runAltTextIntegration({ signal });
   signal.throwIfAborted();
   await runEmbedRecordsIntegration(signal);
+  signal.throwIfAborted();
+  await runFormatEnrichment({ signal });
 }
 
 async function runSingleSync(integration: IntegrationName, options: SyncOptions) {

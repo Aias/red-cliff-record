@@ -1,10 +1,19 @@
 import type { RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
-import { useRouterState } from '@tanstack/react-router';
-import { BadgeCheckIcon, BadgeIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link, useRouterState } from '@tanstack/react-router';
+import {
+  ArrowUpRightIcon,
+  BadgeCheckIcon,
+  BadgeIcon,
+  EyeIcon,
+  EyeOffIcon,
+  XIcon,
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useTRPC } from '@/app/trpc';
 import { ExternalLink } from '@/components/external-link';
 import { GhostInput } from '@/components/input';
 import { Label } from '@/components/label';
@@ -25,6 +34,7 @@ import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-short
 import type { UpdateRecordInput } from '@/shared/zero/mutators';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import { RecordPicker } from './record-lookup';
 import { Metabar } from './record-metabar';
 import { recordTypeIcons, recordTypeOrder } from './type-icons';
 
@@ -45,6 +55,7 @@ type RecordFormValues = {
   content: string | null;
   notes: string | null;
   mediaCaption: string | null;
+  formatId: number | null;
   isCurated: boolean;
   isPrivate: boolean;
 };
@@ -59,9 +70,32 @@ const defaultData: RecordFormValues = {
   content: null,
   notes: null,
   mediaCaption: null,
+  formatId: null,
   isCurated: false,
   isPrivate: false,
 };
+
+const iconAction = css.raw({
+  display: 'inline-flex',
+  _childIcon: {
+    opacity: '50%',
+    transitionProperty: '[opacity]',
+    transitionDuration: '150',
+    transitionTimingFunction: 'easeOut.quad',
+  },
+  _hover: { _childIcon: { opacity: '100%' } },
+  _focusVisible: { _childIcon: { opacity: '100%' } },
+});
+const iconActionClass = css(iconAction);
+const iconButton = css.raw({
+  ...iconAction,
+  padding: '0',
+  border: 'none',
+  backgroundColor: 'transparent',
+  color: 'accent',
+  cursor: 'pointer',
+  _disabled: { opacity: '50%', pointerEvents: 'none' },
+});
 
 /** How long typing must pause before the pending changes commit. */
 const COMMIT_DEBOUNCE_MS = 300;
@@ -77,6 +111,7 @@ function valuesFromRecord(record: RecordData): RecordFormValues {
     content: record.content,
     notes: record.notes,
     mediaCaption: record.mediaCaption,
+    formatId: record.formatId,
     isCurated: record.recordCuratedAt !== null,
     isPrivate: record.isPrivate,
   };
@@ -107,6 +142,7 @@ function collectChanges(
 ): Omit<UpdateRecordInput, 'id'> {
   const changes: Omit<UpdateRecordInput, 'id'> = {};
   if (next.type !== base.type) changes.type = next.type;
+  if (next.formatId !== base.formatId) changes.formatId = next.formatId;
   if (next.isCurated !== base.isCurated) changes.isCurated = next.isCurated;
   if (next.isPrivate !== base.isPrivate) changes.isPrivate = next.isPrivate;
   if (next.title !== base.title) changes.title = next.title;
@@ -131,6 +167,14 @@ export function RecordForm({
 }: RecordFormProps) {
   const routerState = useRouterState({ select: (s) => s.location.state });
   const { data: record, isLoading, isError } = useRecord(recordId);
+  const trpc = useTRPC();
+  const [formatPickerOpen, setFormatPickerOpen] = useState(false);
+  const formatSuggestions = useQuery(
+    trpc.records.suggestFormats.queryOptions(
+      { id: recordId },
+      { enabled: formatPickerOpen, staleTime: 5 * 60 * 1000 }
+    )
+  );
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const mediaCaptionRef = useRef<HTMLTextAreaElement>(null);
@@ -494,6 +538,71 @@ export function RecordForm({
           <Table.Root>
             <Table.Table>
               <Table.Body css={{ '& td:first-child': { width: '20' } }}>
+                <Table.Row>
+                  <Table.Cell>
+                    <Label css={{ display: 'flex', width: 'full' }} htmlFor="format">
+                      Format
+                    </Label>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <form.Field name="formatId">
+                      {(field) => {
+                        const clearFormat = () => {
+                          field.handleChange(null);
+                          debouncedSave();
+                        };
+                        return (
+                          <styled.div css={{ display: 'flex', alignItems: 'center', gap: '2' }}>
+                            <RecordPicker
+                              id="format"
+                              variant="ghost"
+                              value={field.value}
+                              label={
+                                record?.format
+                                  ? (record.format.title ?? record.format.id)
+                                  : field.value
+                              }
+                              placeholder="No format"
+                              disabled={isFormLoading}
+                              suggestions={{
+                                items: formatSuggestions.data ?? [],
+                                isLoading: formatSuggestions.isLoading,
+                              }}
+                              onOpenChange={setFormatPickerOpen}
+                              onSelect={(value) => {
+                                field.handleChange(value);
+                                debouncedSave();
+                              }}
+                              onClear={clearFormat}
+                            />
+                            {field.value !== null && (
+                              <>
+                                <styled.button
+                                  type="button"
+                                  aria-label="Clear format"
+                                  disabled={isFormLoading}
+                                  onClick={clearFormat}
+                                  css={iconButton}
+                                >
+                                  <XIcon />
+                                </styled.button>
+                                <Link
+                                  to="/records/$recordId"
+                                  params={{ recordId: field.value }}
+                                  aria-label="Open format"
+                                  className={iconActionClass}
+                                >
+                                  <ArrowUpRightIcon />
+                                </Link>
+                              </>
+                            )}
+                          </styled.div>
+                        );
+                      }}
+                    </form.Field>
+                  </Table.Cell>
+                </Table.Row>
+
                 <Table.Row>
                   <Table.Cell>
                     <Label css={{ display: 'flex', width: 'full' }} htmlFor="url">

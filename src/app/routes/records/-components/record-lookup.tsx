@@ -7,7 +7,13 @@ import {
 } from '@hozo';
 import { useQuery as useZeroQuery } from '@rocicorp/zero/react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeftIcon, ArrowRightIcon, PlusCircleIcon } from 'lucide-react';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ChevronDownIcon,
+  PlusCircleIcon,
+  XIcon,
+} from 'lucide-react';
 import {
   createContext,
   useContext,
@@ -31,6 +37,7 @@ import type { DbId } from '@/shared/types/api';
 import { queries } from '@/shared/zero/queries';
 import { css } from '@/styled-system/css';
 import { styled } from '@/styled-system/jsx';
+import { ghostInput } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 import { SearchResultItem } from './search-result-item';
 import { RecordTypeIcon } from './type-icons';
@@ -50,11 +57,19 @@ export interface RelationshipAction {
  * RecordSearch –– picks a target record by querying the server.
  * No client‑side filtering; we rely entirely on server results.
  * -------------------------------------------------------------------------- */
-interface RecordSearchProps {
-  onSelect(id: DbId): void;
+export type FormatSuggestion = { id: DbId; title: string; probability: number };
+
+export interface RecordSuggestions {
+  items: FormatSuggestion[];
+  isLoading: boolean;
 }
 
-function RecordSearch({ onSelect }: RecordSearchProps) {
+interface RecordSearchProps {
+  onSelect(id: DbId): void;
+  suggestions?: RecordSuggestions;
+}
+
+export function RecordSearch({ onSelect, suggestions }: RecordSearchProps) {
   const trpc = useTRPC();
   const [query, setQuery] = useState('');
   const createRecordMutation = useCreateRecord();
@@ -92,14 +107,29 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
       <Command.List>
         <Command.Item value="-" css={{ display: 'none' }} />
 
-        {shouldSearch && isSearching && (
-          <Command.Item
-            disabled
-            css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Spinner css={{ boxSize: '4' }} />
-          </Command.Item>
+        {query.length === 0 && suggestions?.isLoading && <Command.Loading />}
+
+        {query.length === 0 && suggestions && suggestions.items.length > 0 && (
+          <Command.Group heading="Suggested">
+            {suggestions.items.map(({ id, probability }) => (
+              <Command.Item
+                key={id}
+                value={`suggested-${id}`}
+                onSelect={() => onSelect(id)}
+                css={{ display: 'flex', alignItems: 'center', gap: '2' }}
+              >
+                <styled.div css={{ flex: '1', minWidth: '0' }}>
+                  <SearchResultItem id={id} />
+                </styled.div>
+                <styled.span css={{ textStyle: 'xs', color: 'muted', flexShrink: '0' }}>
+                  {Math.round(probability * 100)}%
+                </styled.span>
+              </Command.Item>
+            ))}
+          </Command.Group>
         )}
+
+        {shouldSearch && isSearching && <Command.Loading />}
 
         {trigramResults.length > 0 && (
           <Command.Group heading="Text Matches">
@@ -121,36 +151,148 @@ function RecordSearch({ onSelect }: RecordSearchProps) {
           </Command.Group>
         )}
 
-        {vector.isFetching && !vector.data && trigramResults.length > 0 && (
-          <Command.Item
-            disabled
-            css={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Spinner css={{ boxSize: '4' }} />
-          </Command.Item>
-        )}
+        {vector.isFetching && !vector.data && trigramResults.length > 0 && <Command.Loading />}
 
         {!isSearching && !hasResults && shouldSearch && (
-          <Command.Item disabled>No results</Command.Item>
+          <Command.Placeholder>No records found</Command.Placeholder>
         )}
 
-        {shouldSearch && <Command.Separator alwaysRender />}
-
-        <Command.Item
-          disabled={query.length === 0 || trigram.isFetching}
-          key="create-record"
-          onSelect={() => {
-            createRecordMutation.mutate(
-              { type: 'artifact', title: query },
-              { onSuccess: (newRecord) => onSelect(newRecord.id) }
-            );
-          }}
-          css={{ paddingInline: '3', paddingBlock: '2' }}
-        >
-          <PlusCircleIcon /> Create New Record
-        </Command.Item>
+        <Command.Footer>
+          <Command.Item
+            disabled={query.length === 0 || trigram.isFetching}
+            key="create-record"
+            onSelect={() => {
+              createRecordMutation.mutate(
+                { title: query },
+                { onSuccess: (newRecord) => onSelect(newRecord.id) }
+              );
+            }}
+          >
+            <PlusCircleIcon /> Create New Record
+          </Command.Item>
+        </Command.Footer>
       </Command.List>
     </Command.Root>
+  );
+}
+
+/* --------------------------------------------------------------------------
+ * RecordPicker –– a popover button that picks or clears a single record,
+ * for fields and filters that point at one other record (e.g. format).
+ * -------------------------------------------------------------------------- */
+const GhostTrigger = styled('button', ghostInput);
+
+interface RecordPickerProps {
+  id?: string;
+  variant?: 'outline' | 'ghost';
+  value: DbId | null;
+  label: ReactNode;
+  suggestions?: RecordSuggestions;
+  onOpenChange?(open: boolean): void;
+  onSelect(id: DbId): void;
+  onClear(): void;
+  placeholder?: string;
+  disabled?: boolean;
+  size?: ButtonProps['size'];
+}
+
+export function RecordPicker({
+  id,
+  variant = 'outline',
+  value,
+  label,
+  suggestions,
+  onOpenChange,
+  onSelect,
+  onClear,
+  placeholder = 'None',
+  disabled,
+  size = 'default',
+}: RecordPickerProps) {
+  const [open, setOpen] = useState(false);
+  const changeOpen = (next: boolean) => {
+    setOpen(next);
+    onOpenChange?.(next);
+  };
+
+  const handleSelect = (selectedId: DbId) => {
+    onSelect(selectedId);
+    changeOpen(false);
+  };
+
+  const handleClear = () => {
+    onClear();
+    changeOpen(false);
+  };
+
+  return (
+    <Popover.Root open={open} onOpenChange={changeOpen}>
+      <Popover.Trigger
+        id={id}
+        render={
+          variant === 'ghost' ? (
+            <GhostTrigger
+              type="button"
+              disabled={disabled}
+              data-placeholder={value === null || undefined}
+              css={{
+                truncate: true,
+                textAlign: 'start',
+                cursor: 'pointer',
+                color: 'display',
+                '&[data-placeholder]': { color: 'muted' },
+              }}
+            >
+              {value === null ? placeholder : label}
+            </GhostTrigger>
+          ) : (
+            <Button
+              variant="outline"
+              size={size}
+              disabled={disabled}
+              css={{
+                width: 'full',
+                justifyContent: 'space-between',
+                _childIcon: { boxSize: '4', opacity: '50%' },
+              }}
+            >
+              <styled.span
+                data-placeholder={value === null || undefined}
+                css={{
+                  flex: '1',
+                  truncate: true,
+                  textAlign: 'start',
+                  '&[data-placeholder]': { color: 'secondary' },
+                }}
+              >
+                {value === null ? placeholder : label}
+              </styled.span>
+              <ChevronDownIcon />
+            </Button>
+          )
+        }
+      />
+      <Popover.Content side="bottom" align="start" css={{ width: '80', padding: '0' }}>
+        {value !== null && variant === 'outline' && (
+          <styled.div
+            css={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+              padding: '2',
+              borderBlockEndWidth: '1px',
+              borderBlockEndColor: 'divider',
+            }}
+          >
+            <styled.span css={{ flex: '1', truncate: true, textStyle: 'sm' }}>{label}</styled.span>
+            <Button variant="ghost" size="icon-sm" aria-label="Clear" onClick={handleClear}>
+              <XIcon />
+            </Button>
+          </styled.div>
+        )}
+        <RecordSearch onSelect={handleSelect} suggestions={suggestions} />
+      </Popover.Content>
+    </Popover.Root>
   );
 }
 
@@ -191,17 +333,16 @@ function PredicateCombobox({
             ))}
         </Command.Group>
 
+        <Command.Empty>No matching relations</Command.Empty>
+
         {actions.length > 0 && (
-          <>
-            <Command.Separator />
-            <Command.Group heading="Actions">
-              {actions.map((a) => (
-                <Command.Item key={a.key} onSelect={a.onSelect}>
-                  {a.label}
-                </Command.Item>
-              ))}
-            </Command.Group>
-          </>
+          <Command.Footer>
+            {actions.map((a) => (
+              <Command.Item key={a.key} onSelect={a.onSelect}>
+                {a.label}
+              </Command.Item>
+            ))}
+          </Command.Footer>
         )}
       </Command.List>
     </Command.Root>

@@ -4,7 +4,12 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { Card } from '@/components/card';
 import { Spinner } from '@/components/spinner';
 import { useBulkUpdate, useDeleteRecords } from '@/lib/hooks/record-mutations';
-import { useRecordList, useRecordTree, type RecordTreeData } from '@/lib/hooks/record-queries';
+import {
+  useFormatOfCount,
+  useRecordList,
+  useRecordTree,
+  type RecordTreeData,
+} from '@/lib/hooks/record-queries';
 import { useRecordFilters } from '@/lib/hooks/use-record-filters';
 import { useKeyboardShortcut } from '@/lib/keyboard-shortcuts/use-keyboard-shortcut';
 import { CoercedIdSchema, type DbId } from '@/shared/types/api';
@@ -121,10 +126,11 @@ const getPreviousRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId 
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const openRecord = useRecordNavigation();
-  const { state: filtersState } = useRecordFilters();
+  const { state: filtersState, setFilters } = useRecordFilters();
   const { ids: listIds } = useRecordList(filtersState);
   const { recordId } = Route.useParams();
   const { data: tree, isError: treeError, isLoading: treeLoading } = useRecordTree(recordId);
+  const formatOfCount = useFormatOfCount(recordId);
   const bulkUpdate = useBulkUpdate();
   const deleteMutation = useDeleteRecords();
 
@@ -232,6 +238,11 @@ function RouteComponent() {
     void navigate({ to: '/records' });
   }, [navigate]);
 
+  const navigateToFormatOf = useCallback(() => {
+    setFilters({ formatId: recordId });
+    void navigate({ to: '/records' });
+  }, [setFilters, navigate, recordId]);
+
   // Keyboard shortcuts for record navigation
   useKeyboardShortcut('mod+shift+arrowdown', navigateToNext, {
     description: 'Go to next record',
@@ -334,6 +345,21 @@ function RouteComponent() {
           '@container (max-width: 40rem)': { minWidth: 'screenW' },
         }}
       >
+        {formatOfCount > 0 && (
+          <styled.button
+            type="button"
+            onClick={navigateToFormatOf}
+            css={{
+              textAlign: 'start',
+              textStyle: 'sm',
+              color: 'secondary',
+              _hover: { textDecoration: 'underline' },
+              _focusVisible: { textDecoration: 'underline' },
+            }}
+          >
+            Format of {formatOfCount} {formatOfCount === 1 ? 'record' : 'records'}
+          </styled.button>
+        )}
         <RelationsList id={recordId} />
         <SimilarRecords id={recordId} />
         <RankSection key={recordId} id={recordId} />

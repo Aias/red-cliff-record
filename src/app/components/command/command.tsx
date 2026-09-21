@@ -1,5 +1,6 @@
 import { Command as CommandPrimitive } from 'cmdk';
 import { SearchIcon } from 'lucide-react';
+import { Spinner } from '@/components/spinner';
 import { createStyleContext } from '@/styled-system/jsx';
 import { command } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
@@ -27,6 +28,13 @@ export const List = withContext(CommandPrimitive.List, 'list');
 export const Item = withContext(CommandPrimitive.Item, 'item');
 export const Group = withContext(CommandPrimitive.Group, 'group');
 export const Separator = withContext(CommandPrimitive.Separator, 'separator');
-export const Loading = withContext(CommandPrimitive.Loading, 'loading');
+const StyledLoading = withContext(CommandPrimitive.Loading, 'loading');
+export const Loading = (props: ComponentProps<typeof StyledLoading>) => (
+  <StyledLoading label="Loading" {...props}>
+    <Spinner css={{ boxSize: '4' }} />
+  </StyledLoading>
+);
 export const Empty = withContext(CommandPrimitive.Empty, 'empty');
+export const Placeholder = withContext('div', 'placeholder');
+export const Footer = withContext('div', 'footer');
 export const Shortcut = withContext('span', 'shortcut');

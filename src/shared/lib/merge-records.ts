@@ -1,24 +1,40 @@
 import type { RecordSlim } from '@/shared/types/domain';
 
+export const MERGE_SCALAR_FIELDS = [
+  'title',
+  'sense',
+  'abbreviation',
+  'url',
+  'mediaCaption',
+] as const;
+export const MERGE_TEXT_FIELDS = ['summary', 'content', 'notes'] as const;
+export type MergeScalarField = (typeof MERGE_SCALAR_FIELDS)[number];
+export type MergeTextField = (typeof MERGE_TEXT_FIELDS)[number];
+export type MergeTextResolution = 'source' | 'target' | 'both';
+export type MergeResolutions = Partial<
+  Record<MergeScalarField, 'source' | 'target'> & Record<MergeTextField, MergeTextResolution>
+>;
+
+const hasText = (value: string | null | undefined): value is string =>
+  value !== null && value !== undefined && value !== '';
+
 /**
  * Helper function to merge text fields during record merging.
  * Used by both optimistic updates and backend merge operations.
  */
 export function mergeTextFields(
   sourceText: string | null,
-  targetText: string | null
+  targetText: string | null,
+  resolution: MergeTextResolution = 'both'
 ): string | null {
-  const hasSourceText = sourceText && sourceText !== '';
-  const hasTargetText = targetText && targetText !== '';
-
-  if (hasSourceText && hasTargetText) {
+  if (hasText(sourceText) && hasText(targetText)) {
+    if (resolution === 'source') return sourceText;
+    if (resolution === 'target') return targetText;
     // Prefer target text first in merged content
     return `${targetText}\n---\n${sourceText}`;
-  } else if (hasTargetText) {
-    return targetText;
-  } else if (hasSourceText) {
-    return sourceText;
   }
+  if (hasText(targetText)) return targetText;
+  if (hasText(sourceText)) return sourceText;
   return null;
 }
 
@@ -54,14 +70,23 @@ function getMostRecentDate(date1: Date | null, date2: Date | null): Date | null 
  *
  * @param source The source record (will be deleted)
  * @param target The target record (will survive the merge)
+ * @param resolutions Per-field choices for fields both records fill in
  * @returns Merged record data based on the merge rules
  */
 export function mergeRecords<T extends RecordSlim>(
   source: T,
-  target: T
+  target: T,
+  resolutions: MergeResolutions = {}
 ): Omit<T, 'id'> & { recordUpdatedAt: Date; textEmbedding: null; textEmbeddedAt: null } {
   // Deduplicate the sources array
   const allSources = Array.from(new Set([...(source.sources ?? []), ...(target.sources ?? [])]));
+
+  const sourceOverrides = Object.fromEntries(
+    MERGE_SCALAR_FIELDS.flatMap((field): [MergeScalarField, string][] => {
+      const value = source[field];
+      return resolutions[field] === 'source' && hasText(value) ? [[field, value]] : [];
+    })
+  );
 
   // Merge record data, preferring target's non-null (and non-empty string) values
   // but concatenating summary, content, and notes fields
@@ -94,10 +119,11 @@ export function mergeRecords<T extends RecordSlim>(
         return !(value === null || value === '');
       })
     ),
+    ...sourceOverrides,
     // Merge text fields
-    summary: mergeTextFields(source.summary, target.summary),
-    content: mergeTextFields(source.content, target.content),
-    notes: mergeTextFields(source.notes, target.notes),
+    summary: mergeTextFields(source.summary, target.summary, resolutions.summary),
+    content: mergeTextFields(source.content, target.content, resolutions.content),
+    notes: mergeTextFields(source.notes, target.notes, resolutions.notes),
     sources: allSources.length > 0 ? allSources : null,
     eloScore: Math.max(source.eloScore, target.eloScore),
     isPrivate: source.isPrivate || target.isPrivate,
