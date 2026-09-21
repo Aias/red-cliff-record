@@ -7,7 +7,7 @@ import {
   type NoulResponse,
   type ResultFor,
 } from '@typesafe-ai/sdk';
-import { eq } from 'drizzle-orm';
+import { EmptyFilter, eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import { runTrackedEnrichment } from '@/server/integrations/runtime/runtime';
@@ -345,7 +345,9 @@ export async function suggestRecordFormats(recordId: number): Promise<FormatSugg
   return rankSuggestions(answers, vocabulary, idsByLabel, recordId);
 }
 
-async function assignMissingFormats(limit: number | undefined, signal: AbortSignal | undefined) {
+type FormatEnrichmentOptions = { limit?: number; since?: Date; signal?: AbortSignal };
+
+async function assignMissingFormats({ limit, since, signal }: FormatEnrichmentOptions) {
   const vocabulary = await loadFormatVocabulary();
   if (vocabulary.length === 0) {
     logger.warn('No record has a format yet, so there is no vocabulary to choose from');
@@ -353,7 +355,12 @@ async function assignMissingFormats(limit: number | undefined, signal: AbortSign
   }
   const question = formatQuestion(vocabulary);
   const pending = await db.query.records.findMany({
-    where: { type: 'artifact', formatId: { isNull: true }, recordCuratedAt: { isNull: true } },
+    where: {
+      type: 'artifact',
+      formatId: { isNull: true },
+      recordCuratedAt: { isNull: true },
+      recordUpdatedAt: since ? { gte: since } : EmptyFilter,
+    },
     columns: CLASSIFIABLE_COLUMNS,
     with: ORIGIN_RELATIONS,
     orderBy: { recordCreatedAt: 'desc' },
@@ -389,11 +396,11 @@ async function assignMissingFormats(limit: number | undefined, signal: AbortSign
   return assigned;
 }
 
-export async function runFormatEnrichment(options: { limit?: number; signal?: AbortSignal } = {}) {
+export async function runFormatEnrichment(options: FormatEnrichmentOptions = {}) {
   return runTrackedEnrichment(
     'manual',
     'enrich.formats',
-    () => assignMissingFormats(options.limit, options.signal),
+    () => assignMissingFormats(options),
     options.signal
   );
 }

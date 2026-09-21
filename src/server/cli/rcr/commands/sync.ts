@@ -56,8 +56,9 @@ export const run: CommandHandler = (args, options) =>
     const integration = integrationResult.data;
 
     const startTime = performance.now();
+    const startedAt = new Date();
     const syncResult = await runSingleSync(integration, syncOptions);
-    if (!debug) await runEnrichments(signal);
+    if (!debug) await runEnrichments(signal, startedAt);
 
     return success({
       ...syncResult,
@@ -78,7 +79,7 @@ interface SyncOptions {
   signal: AbortSignal;
 }
 
-async function runEnrichments(signal: AbortSignal) {
+async function runEnrichments(signal: AbortSignal, since: Date) {
   signal.throwIfAborted();
   await runSaveAvatarsIntegration(signal);
   signal.throwIfAborted();
@@ -86,7 +87,7 @@ async function runEnrichments(signal: AbortSignal) {
   signal.throwIfAborted();
   await runEmbedRecordsIntegration(signal);
   signal.throwIfAborted();
-  await runFormatEnrichment({ signal });
+  await runFormatEnrichment({ signal, since });
 }
 
 async function runSingleSync(integration: IntegrationName, options: SyncOptions) {
@@ -134,6 +135,7 @@ async function runDailySync(options: SyncOptions) {
   ];
 
   const startTime = performance.now();
+  const startedAt = new Date();
 
   const results: Array<{ step: string; success: boolean; error?: string }> = await Promise.all(
     dailyIntegrations.map(async (integration) => {
@@ -153,7 +155,7 @@ async function runDailySync(options: SyncOptions) {
   options.signal.throwIfAborted();
   if (!options.debug) {
     try {
-      await runEnrichments(options.signal);
+      await runEnrichments(options.signal, startedAt);
       results.push({ step: 'enrich', success: true });
     } catch (e) {
       results.push({
