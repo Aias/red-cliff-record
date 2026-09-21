@@ -3,7 +3,7 @@ import { judgments, type Json, type JudgmentQuestion } from '@hozo';
 import type { EntryType, Questions, RequestOptions, SystemOneResult } from '@typesafe-ai/sdk';
 import { eq } from 'drizzle-orm';
 import type { z } from 'zod';
-import { db } from '@/server/db/connections/postgres';
+import { db, type Db } from '@/server/db/connections/postgres';
 import { getTypeSafeClient, TYPESAFE_MODEL } from '@/server/lib/typesafe';
 
 type Answers<Q extends Questions> = SystemOneResult<Q>['answers'];
@@ -39,18 +39,21 @@ export function compactAnswers(answers: Answers<Questions>): Json {
 
 export type Judged<R> = { result: R; judgmentId: number; reused: boolean };
 
-export async function judge<Q extends Questions, R>(input: {
-  recordId: number | null;
-  question: JudgmentQuestion;
-  state: EntryType;
-  questions: Q;
-  decide: (answers: Answers<Q>) => R;
-  reuse?: z.ZodType<R>;
-  options?: RequestOptions;
-}): Promise<Judged<R>> {
+export async function judge<Q extends Questions, R>(
+  input: {
+    recordId: number | null;
+    question: JudgmentQuestion;
+    state: EntryType;
+    questions: Q;
+    decide: (answers: Answers<Q>) => R;
+    reuse?: z.ZodType<R>;
+    options?: RequestOptions;
+  },
+  connection: Pick<Db, 'query' | 'insert'> = db
+): Promise<Judged<R>> {
   const fingerprint = fingerprintOf(input.state, input.questions);
   if (input.recordId !== null && input.reuse) {
-    const previous = await db.query.judgments.findFirst({
+    const previous = await connection.query.judgments.findFirst({
       where: { recordId: input.recordId, question: input.question, fingerprint },
       orderBy: { recordCreatedAt: 'desc' },
       columns: { id: true, result: true },
@@ -65,7 +68,7 @@ export async function judge<Q extends Questions, R>(input: {
     input.options
   );
   const result = input.decide(response.answers);
-  const [row] = await db
+  const [row] = await connection
     .insert(judgments)
     .values({
       recordId: input.recordId,

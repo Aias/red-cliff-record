@@ -1,6 +1,5 @@
 import { PREDICATES, type PredicateSlug, type RecordType } from '@hozo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -36,7 +35,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
   const predicates = usePredicateMap();
   const mergeRecordsMutation = useMergeRecords();
   const deleteLinkMutation = useDeleteLinks();
-  const navigate = useNavigate();
   const addRelationshipButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Keyboard shortcut to add a link to the current record
@@ -113,11 +111,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                   </>
                 ),
                 onSelect: () => {
-                  void navigate({
-                    to: '/records/$recordId',
-                    params: { recordId: targetId },
-                    state: { focusForm: true },
-                  });
                   mergeRecordsMutation.mutate({
                     sourceId,
                     targetId,
@@ -177,11 +170,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                           </>
                         ),
                         onSelect: () => {
-                          void navigate({
-                            to: '/records/$recordId',
-                            params: { recordId: targetId },
-                            state: { focusForm: true },
-                          });
                           mergeRecordsMutation.mutate({
                             sourceId,
                             targetId,
@@ -264,11 +252,6 @@ export const RelationsList = ({ id }: RelationsListProps) => {
                           </>
                         ),
                         onSelect: () => {
-                          void navigate({
-                            to: '/records/$recordId',
-                            params: { recordId: link.sourceId },
-                            state: { focusForm: true },
-                          });
                           mergeRecordsMutation.mutate({
                             sourceId: link.targetId,
                             targetId: link.sourceId,
@@ -353,7 +336,6 @@ const SimilarTypeShortcut = ({
 export const SimilarRecords = ({ id }: { id: DbId }) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const mergeRecordsMutation = useMergeRecords();
   const [typeFilter, setTypeFilter] = useState<SimilarTypeFilter>('all');
 
@@ -477,11 +459,6 @@ export const SimilarRecords = ({ id }: { id: DbId }) => {
                         </>
                       ),
                       onSelect: () => {
-                        void navigate({
-                          to: '/records/$recordId',
-                          params: { recordId: targetId },
-                          state: { focusForm: true },
-                        });
                         mergeRecordsMutation.mutate({
                           sourceId,
                           targetId,

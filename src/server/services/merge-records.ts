@@ -29,7 +29,7 @@ import {
 import { TRPCError } from '@trpc/server';
 import { and, eq, getColumns, getTableName, inArray, ne, or } from 'drizzle-orm';
 import { z } from 'zod';
-import type { db } from '@/server/db/connections/postgres';
+import type { DbTransaction } from '@/server/db/connections/postgres';
 import { mergeRecords } from '@/shared/lib/merge-records';
 import { describeImages } from './classify-record-format';
 import { resolveMergeFields } from './resolve-merge-fields';
@@ -83,8 +83,6 @@ export const MergeSnapshotSchema = z.object({
 
 export type MergeSnapshot = z.infer<typeof MergeSnapshotSchema>;
 
-type MergeTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
 export function mergeRecordLinks(
   existing: readonly LinkSelect[],
   sourceId: number,
@@ -122,7 +120,7 @@ export function mergeRecordLinks(
 }
 
 export async function mergeRecordsInTransaction(
-  tx: MergeTransaction,
+  tx: DbTransaction,
   sourceId: number,
   targetId: number
 ) {
@@ -200,6 +198,7 @@ export async function mergeRecordsInTransaction(
     .for('update');
 
   const resolutions = await resolveMergeFields(
+    tx,
     source,
     target,
     {
@@ -305,7 +304,7 @@ export async function mergeRecordsInTransaction(
   };
 }
 
-export async function undoMergeInTransaction(tx: MergeTransaction, snapshot: MergeSnapshot) {
+export async function undoMergeInTransaction(tx: DbTransaction, snapshot: MergeSnapshot) {
   const { sourceRecord, targetRecord } = snapshot;
   const [existingSource, existingTarget] = await Promise.all([
     tx.query.records.findFirst({ where: { id: sourceRecord.id }, columns: { id: true } }),
