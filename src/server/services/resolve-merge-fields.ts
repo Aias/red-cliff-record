@@ -55,7 +55,13 @@ type JudgedRecord = Pick<RecordSelect, MergeScalarField | MergeTextField>;
 
 const text = (value: string | null) => value?.trim() ?? '';
 
-export function mergeFieldRequest(source: JudgedRecord, target: JudgedRecord) {
+export type MergeContext = { source: string | null; target: string | null };
+
+export function mergeFieldRequest(
+  source: JudgedRecord,
+  target: JudgedRecord,
+  images: MergeContext = { source: null, target: null }
+) {
   const state: { a: Record<string, string>; b: Record<string, string> } = { a: {}, b: {} };
   const questions: Record<string, MergeQuestion> = {};
   const include = (
@@ -73,7 +79,10 @@ export function mergeFieldRequest(source: JudgedRecord, target: JudgedRecord) {
   for (const field of MERGE_SCALAR_FIELDS) include(field, scalarQuestion(field));
   for (const field of MERGE_TEXT_FIELDS)
     include(field, textQuestion(field), MAX_JUDGED_TEXT_LENGTH);
-  return Object.keys(questions).length > 0 ? { state, questions } : null;
+  if (Object.keys(questions).length === 0) return null;
+  if (images.target) state.a.imageDescriptions = images.target;
+  if (images.source) state.b.imageDescriptions = images.source;
+  return { state, questions };
 }
 
 export function resolutionsFromAnswers(
@@ -96,9 +105,10 @@ export function resolutionsFromAnswers(
 
 export async function resolveMergeFields(
   source: JudgedRecord,
-  target: JudgedRecord
+  target: JudgedRecord,
+  images?: MergeContext
 ): Promise<MergeResolutions> {
-  const request = mergeFieldRequest(source, target);
+  const request = mergeFieldRequest(source, target, images);
   if (!request) return {};
   try {
     const { answers } = await getTypeSafeClient().systemOne(request);

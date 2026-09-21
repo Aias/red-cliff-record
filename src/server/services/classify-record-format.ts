@@ -1,5 +1,5 @@
 import { containmentPredicateSlugs, records, type PredicateSlug, type RecordSelect } from '@hozo';
-import { choice, type Description } from '@typesafe-ai/sdk';
+import { choice, noul, type Description, type NoulResponse } from '@typesafe-ai/sdk';
 import { eq } from 'drizzle-orm';
 import { db } from '@/server/db/connections/postgres';
 import { createIntegrationLogger } from '@/server/integrations/common/logging';
@@ -14,6 +14,8 @@ const EXAMPLES_PER_FORMAT = 5;
 const CONCURRENCY = 8;
 const NONE_LABEL = 'none of these';
 const SUGGESTION_COUNT = 5;
+const SUGGESTION_FLOOR = 0.5;
+const IMAGE_DESCRIPTIONS_LENGTH = 800;
 
 const logger = createIntegrationLogger('services', 'classify-record-format');
 
@@ -172,7 +174,7 @@ export function describeOrigin(row: OriginSignals): string {
       containmentPredicateSlugs.some((slug) => slug === link.predicate)
     )
   ) {
-    parts.push('an excerpt or part of a longer piece');
+    parts.push('part of a larger collection or work');
   }
   return parts.length ? parts.join('; ') : 'added by hand';
 }
@@ -180,7 +182,16 @@ export function describeOrigin(row: OriginSignals): string {
 export type ClassifiableRecord = Pick<
   RecordSelect,
   'id' | 'type' | 'title' | 'abbreviation' | 'sense' | 'url' | 'summary' | 'content' | 'notes'
-> & { origin: string };
+> & { origin: string; imageDescriptions: string | null };
+
+export function describeImages(media: { altText: string | null }[]): string | null {
+  const descriptions = media.flatMap((item) => {
+    const text = item.altText?.trim();
+    return text ? [text] : [];
+  });
+  if (descriptions.length === 0) return null;
+  return descriptions.join(' ').slice(0, IMAGE_DESCRIPTIONS_LENGTH);
+}
 
 const CLASSIFIABLE_COLUMNS = {
   id: true,
@@ -204,6 +215,7 @@ const ORIGIN_RELATIONS = {
   githubUsers: { columns: { id: true } },
   lightroomImages: { columns: { id: true } },
   outgoingLinks: { columns: { predicate: true } },
+  media: { columns: { altText: true } },
 } as const;
 
 async function askFormat(record: ClassifiableRecord, question: FormatQuestion['question']) {
@@ -215,6 +227,7 @@ async function askFormat(record: ClassifiableRecord, question: FormatQuestion['q
     summary: record.summary,
     content: record.content?.slice(0, CONTENT_PREVIEW_LENGTH),
     notes: record.notes,
+    imageDescriptions: record.imageDescriptions,
     origin: record.origin,
   });
   const { answers } = await getTypeSafeClient().systemOne({
@@ -223,6 +236,16 @@ async function askFormat(record: ClassifiableRecord, question: FormatQuestion['q
   });
   return answers.format;
 }
+
+const classifiable = <
+  T extends Parameters<typeof describeOrigin>[0] & { media: { altText: string | null }[] },
+>(
+  row: T
+) => ({
+  ...row,
+  origin: describeOrigin(row),
+  imageDescriptions: describeImages(row.media),
+});
 
 export async function classifyRecordFormat(
   record: ClassifiableRecord,
@@ -238,10 +261,36 @@ export async function classifyRecordFormat(
 
 export type FormatSuggestion = { id: number; title: string; probability: number };
 
-export async function suggestRecordFormats(
+export function formatNouls(vocabulary: FormatOption[]) {
+  return Object.fromEntries(
+    vocabulary.map((option) => [
+      String(option.id),
+      noul(
+        `Is the item described in the state an example of the format "${option.title}": is it that kind of thing, rather than something merely about it?`,
+        { true: option.description }
+      ),
+    ])
+  );
+}
+
+export function rankSuggestions(
+  answers: Readonly<Record<string, NoulResponse>>,
+  vocabulary: FormatOption[],
   recordId: number,
   limit = SUGGESTION_COUNT
-): Promise<FormatSuggestion[] | null> {
+): FormatSuggestion[] {
+  return vocabulary
+    .flatMap((option) => {
+      const answer = answers[String(option.id)];
+      return answer && option.id !== recordId && answer.noul >= SUGGESTION_FLOOR
+        ? [{ id: option.id, title: option.title, probability: answer.noul }]
+        : [];
+    })
+    .sort((a, b) => b.probability - a.probability)
+    .slice(0, limit);
+}
+
+export async function suggestRecordFormats(recordId: number): Promise<FormatSuggestion[] | null> {
   const row = await db.query.records.findFirst({
     where: { id: recordId },
     columns: CLASSIFIABLE_COLUMNS,
@@ -250,19 +299,23 @@ export async function suggestRecordFormats(
   if (!row) return null;
   const vocabulary = await loadFormatVocabulary();
   if (vocabulary.length === 0) return [];
-  const { question, idsByLabel } = formatQuestion(vocabulary);
-  const titles = new Map(vocabulary.map((option) => [option.id, option.title]));
-  const { probabilities } = await askFormat({ ...row, origin: describeOrigin(row) }, question);
-  return Object.entries(probabilities)
-    .flatMap(([label, probability]) => {
-      const id = idsByLabel.get(label);
-      const title = id === undefined ? undefined : titles.get(id);
-      return id === undefined || id === recordId || title === undefined
-        ? []
-        : [{ id, title, probability }];
-    })
-    .sort((a, b) => b.probability - a.probability)
-    .slice(0, limit);
+  const record = classifiable(row);
+  const state = stateFields({
+    title: record.title,
+    abbreviation: record.abbreviation,
+    disambiguation: record.sense,
+    url: record.url,
+    summary: record.summary,
+    content: record.content?.slice(0, CONTENT_PREVIEW_LENGTH),
+    notes: record.notes,
+    imageDescriptions: record.imageDescriptions,
+    origin: record.origin,
+  });
+  const { answers } = await getTypeSafeClient().systemOne({
+    state,
+    questions: formatNouls(vocabulary),
+  });
+  return rankSuggestions(answers, vocabulary, recordId);
 }
 
 async function assignMissingFormats(limit: number | undefined, signal: AbortSignal | undefined) {
@@ -287,7 +340,7 @@ async function assignMissingFormats(limit: number | undefined, signal: AbortSign
     concurrency: CONCURRENCY,
     signal,
     async worker(row) {
-      const result = await classifyRecordFormat({ ...row, origin: describeOrigin(row) }, question);
+      const result = await classifyRecordFormat(classifiable(row), question);
       if (result.formatId === null) {
         logger.info(`Record ${row.id}: skipped ${result.label} (${result.confidence.toFixed(2)})`);
         return false;

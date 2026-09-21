@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import { describeOrigin, formatOptions, formatQuestion } from './classify-record-format';
+import {
+  describeImages,
+  describeOrigin,
+  formatOptions,
+  formatQuestion,
+  rankSuggestions,
+} from './classify-record-format';
 
 describe('formatQuestion', () => {
   test('labels options by title, disambiguates duplicates, and keeps a no-match option', () => {
@@ -77,11 +83,43 @@ describe('describeOrigin', () => {
         outgoingLinks: [{ predicate: 'contained_by' }],
       })
     ).toBe(
-      'a passage highlighted while reading a longer piece; an excerpt or part of a longer piece'
+      'a passage highlighted while reading a longer piece; part of a larger collection or work'
     );
     expect(describeOrigin({ ...empty, raindropBookmarks: [{ type: 'link' }] })).toBe(
       'a bookmarked web page'
     );
     expect(describeOrigin(empty)).toBe('added by hand');
+  });
+});
+
+describe('describeImages', () => {
+  test('joins non-empty alt text and returns null when there is none', () => {
+    expect(
+      describeImages([{ altText: ' A tall tower. ' }, { altText: null }, { altText: 'A pond.' }])
+    ).toBe('A tall tower. A pond.');
+    expect(describeImages([{ altText: '' }])).toBeNull();
+  });
+});
+
+describe('rankSuggestions', () => {
+  const vocabulary = [
+    { id: 1, title: 'Photography', description: null },
+    { id: 2, title: 'Place', description: null },
+    { id: 3, title: 'Words', description: null },
+    { id: 4, title: 'Self', description: null },
+  ];
+  const answer = (noul: number) => ({ type: 'noul' as const, noul });
+
+  test('keeps formats more likely than not, highest first, never the record itself', () => {
+    expect(
+      rankSuggestions(
+        { '1': answer(0.92), '2': answer(0.62), '3': answer(0.36), '4': answer(0.9) },
+        vocabulary,
+        4
+      )
+    ).toEqual([
+      { id: 1, title: 'Photography', probability: 0.92 },
+      { id: 2, title: 'Place', probability: 0.62 },
+    ]);
   });
 });

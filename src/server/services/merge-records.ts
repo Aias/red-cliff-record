@@ -31,6 +31,7 @@ import { and, eq, getColumns, getTableName, inArray, ne, or } from 'drizzle-orm'
 import { z } from 'zod';
 import type { db } from '@/server/db/connections/postgres';
 import { mergeRecords } from '@/shared/lib/merge-records';
+import { describeImages } from './classify-record-format';
 import { resolveMergeFields } from './resolve-merge-fields';
 
 export const integrationTableMap = {
@@ -150,7 +151,7 @@ export async function mergeRecordsInTransaction(
   }
 
   const premergeMedia = await tx
-    .select({ id: media.id, recordId: media.recordId })
+    .select({ id: media.id, recordId: media.recordId, altText: media.altText })
     .from(media)
     .where(inArray(media.recordId, ids))
     .orderBy(media.id)
@@ -198,7 +199,10 @@ export async function mergeRecordsInTransaction(
     .orderBy(records.id)
     .for('update');
 
-  const resolutions = await resolveMergeFields(source, target);
+  const resolutions = await resolveMergeFields(source, target, {
+    source: describeImages(premergeMedia.filter((item) => item.recordId === sourceId)),
+    target: describeImages(premergeMedia.filter((item) => item.recordId === targetId)),
+  });
   const merged = mergeRecords(source, target, resolutions);
   if (source.slug) await tx.update(records).set({ slug: null }).where(eq(records.id, sourceId));
   const [updatedRecord] = await tx
@@ -281,7 +285,7 @@ export async function mergeRecordsInTransaction(
     sourceRecord: source,
     targetRecord: target,
     links: premergeLinks,
-    mediaAssignments: premergeMedia,
+    mediaAssignments: premergeMedia.map(({ id, recordId }) => ({ id, recordId })),
     integrationAssignments: premergeIntegrations,
     formatAssignments: premergeFormatAssignments.map((record) => record.id),
     eloMatchups: premergeMatchups,
