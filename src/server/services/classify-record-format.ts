@@ -301,30 +301,17 @@ export function rankSuggestions(
   recordId: number,
   limit = SUGGESTION_COUNT
 ): FormatSuggestion[] {
-  const noulOf = (id: number) => {
-    const answer = answers[String(id)];
-    return answer?.type === 'noul' ? answer.noul : null;
-  };
   const pick = answers[CHOICE_KEY];
   const pickedId = pick?.type === 'choice' ? idsByLabel.get(pick.choice) : undefined;
-  const pinned = vocabulary.flatMap((option) => {
-    const probability = noulOf(option.id);
-    return option.id === pickedId && option.id !== recordId && probability !== null
-      ? [{ id: option.id, title: option.title, probability }]
-      : [];
-  });
-  const rest = vocabulary
+  return vocabulary
     .flatMap((option) => {
-      const probability = noulOf(option.id);
-      return option.id !== pickedId &&
-        option.id !== recordId &&
-        probability !== null &&
-        probability >= SUGGESTION_FLOOR
-        ? [{ id: option.id, title: option.title, probability }]
-        : [];
+      const answer = answers[String(option.id)];
+      if (answer?.type !== 'noul' || option.id === recordId) return [];
+      const keep = option.id === pickedId || answer.noul >= SUGGESTION_FLOOR;
+      return keep ? [{ id: option.id, title: option.title, probability: answer.noul }] : [];
     })
-    .sort((a, b) => b.probability - a.probability);
-  return [...pinned, ...rest].slice(0, limit);
+    .sort((a, b) => b.probability - a.probability)
+    .slice(0, limit);
 }
 
 export async function suggestRecordFormats(recordId: number): Promise<FormatSuggestion[] | null> {

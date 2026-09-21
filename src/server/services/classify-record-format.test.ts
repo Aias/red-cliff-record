@@ -117,7 +117,7 @@ describe('rankSuggestions', () => {
     probabilities: { [choice]: 1 },
   });
 
-  test('pins the chosen format first, then formats more likely than not, never the record itself', () => {
+  test('sorts by probability, keeps formats more likely than not, never the record itself', () => {
     expect(
       rankSuggestions(
         {
@@ -132,12 +132,12 @@ describe('rankSuggestions', () => {
         4
       )
     ).toEqual([
-      { id: 2, title: 'Place', probability: 0.62 },
       { id: 1, title: 'Photography', probability: 0.92 },
+      { id: 2, title: 'Place', probability: 0.62 },
     ]);
   });
 
-  test('pins the chosen format even when its own answer is below the floor', () => {
+  test('always includes the chosen format, even below the floor, at its own position', () => {
     expect(
       rankSuggestions(
         { format: pick('Words'), '1': answer(0.55), '2': answer(0.1), '3': answer(0.3) },
@@ -146,8 +146,8 @@ describe('rankSuggestions', () => {
         4
       )
     ).toEqual([
-      { id: 3, title: 'Words', probability: 0.3 },
       { id: 1, title: 'Photography', probability: 0.55 },
+      { id: 3, title: 'Words', probability: 0.3 },
     ]);
   });
 });
