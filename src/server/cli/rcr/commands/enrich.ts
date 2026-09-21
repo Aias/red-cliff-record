@@ -23,13 +23,7 @@ const EnrichmentNameSchema = z.enum([
 type EnrichmentName = z.infer<typeof EnrichmentNameSchema>;
 const ENRICHMENT_LIST = EnrichmentNameSchema.options;
 
-const DEFAULT_ENRICHMENTS: EnrichmentName[] = [
-  'avatars',
-  'alt-text',
-  'embeddings',
-  'formats',
-  'elo',
-];
+const DEFAULT_ENRICHMENTS: EnrichmentName[] = ['avatars', 'alt-text', 'embeddings', 'elo'];
 
 const EnrichOptionsSchema = BaseOptionsSchema.extend({
   limit: z.coerce.number().positive().int().optional(),
