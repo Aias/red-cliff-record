@@ -91,6 +91,11 @@ const flattenTree = (tree: RecordTreeData): TreeNode[] => {
   return nodes;
 };
 
+const scrollActiveCardIntoView = (card: HTMLElement | null) => {
+  if (!card || card.matches(':focus-within')) return;
+  card.scrollIntoView({ behavior: 'instant', block: 'start' });
+};
+
 const getNextRecord = (ids: DbId[], currentId: DbId, skip: Set<DbId>): DbId | undefined => {
   if (ids.length === 0) return undefined;
 
@@ -155,22 +160,6 @@ function RouteComponent() {
     if (!tree) return [];
     return flattenTree(tree);
   }, [tree]);
-
-  // Instant scroll to the active record when navigating
-  useEffect(() => {
-    if (!tree || nodes.length === 0) return;
-
-    // Use requestAnimationFrame to ensure DOM is rendered
-    requestAnimationFrame(() => {
-      const element = document.querySelector(`[data-record-id="${recordId}"]`);
-      if (element) {
-        element.scrollIntoView({
-          behavior: 'instant',
-          block: 'center',
-        });
-      }
-    });
-  }, [recordId, tree, nodes.length]);
 
   const handleFinalize = useCallback(() => {
     const idsToCurate = Array.from(new Set(nodes.map((t) => t.id)));
@@ -307,10 +296,11 @@ function RouteComponent() {
             key={node.id}
             as="li"
             compact={!node.isStructural}
-            data-record-id={node.id}
+            ref={node.id === recordId ? scrollActiveCardIntoView : undefined}
             onClick={node.id === recordId ? undefined : openRecord(node.id)}
             css={{
               flexShrink: '0',
+              scrollMarginBlockStart: '3',
               cursor: node.id === recordId ? undefined : 'pointer',
               _last: { marginBlockEnd: '8' },
             }}
