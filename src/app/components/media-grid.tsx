@@ -5,6 +5,7 @@ import { styled } from '@/styled-system/jsx';
 import { Button } from './button';
 import { LazyVideo } from './lazy-video';
 import { MediaLightbox } from './media-lightbox';
+import { Spinner } from './spinner';
 
 export interface MediaGridItem {
   id: number;
@@ -17,6 +18,7 @@ export interface MediaGridItem {
 
 interface MediaGridProps {
   media: readonly MediaGridItem[];
+  isUploading?: boolean;
   className?: string;
   onDelete?: (media: MediaGridItem) => void;
 }
@@ -152,7 +154,7 @@ function MediaTile({ item, label, imageIndex, onOpen, onDelete }: MediaTileProps
   );
 }
 
-function MediaGrid({ media, className, onDelete }: MediaGridProps) {
+function MediaGrid({ media, isUploading, className, onDelete }: MediaGridProps) {
   const images = media.filter((item) => item.type === 'image');
   const imageIndexById = new Map(images.map((item, index) => [item.id, index]));
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -165,6 +167,7 @@ function MediaGrid({ media, className, onDelete }: MediaGridProps) {
     <styled.div
       className={className}
       css={{
+        position: 'relative',
         display: 'flex',
         flexWrap: 'wrap',
         gap: 'px',
@@ -184,6 +187,29 @@ function MediaGrid({ media, className, onDelete }: MediaGridProps) {
           onDelete={onDelete}
         />
       ))}
+      {isUploading && (
+        <styled.div
+          role="status"
+          css={{
+            position: 'absolute',
+            insetBlockEnd: '2',
+            insetInlineEnd: '2',
+            zIndex: '20',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1.5',
+            paddingInline: '2',
+            paddingBlock: '1',
+            textStyle: 'xs',
+            color: 'secondary',
+            backgroundColor: 'background',
+            borderRadius: 'md',
+          }}
+        >
+          <Spinner />
+          Uploading…
+        </styled.div>
+      )}
       <MediaLightbox
         images={images}
         activeIndex={lightboxIndex}

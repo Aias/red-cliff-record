@@ -24,108 +24,89 @@ const mediaFileSchema = z
 
 type MediaUploadProps = {
   onUpload: (file: File) => void | Promise<void>;
+  isUploading: boolean;
   validationSchema?: z.ZodType<File>;
 } & ComponentProps<typeof styled.div>;
 
 export const MediaUpload = ({
   onUpload,
+  isUploading,
   css: cssProp,
   validationSchema = mediaFileSchema,
   ...props
 }: MediaUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string>(
-    'Drag file here, paste, or click to upload'
-  );
+  const statusMessage = isUploading ? 'Uploading…' : 'Drag file here, paste, or click to upload';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(
     async (file: File | null) => {
-      if (isLoading) return;
-      setError(null);
-      if (!file) {
-        setStatusMessage('No file selected.');
-        return;
-      }
-
-      setStatusMessage(`Processing ${file.name}...`);
-      setIsLoading(true);
-
-      try {
-        const validatedFile = validationSchema.parse(file);
-        setStatusMessage(`Uploading ${validatedFile.name}...`);
-        await onUpload(validatedFile);
-        setStatusMessage('Upload successful!');
-      } catch (err) {
-        let errorMessage = 'Invalid file.';
-        if (err instanceof z.ZodError) {
-          errorMessage = err.issues[0]?.message ?? errorMessage;
-        } else if (err instanceof Error) {
-          errorMessage = `Upload failed: ${err.message}`;
-        }
+      if (isUploading || !file) return;
+      const result = validationSchema.safeParse(file);
+      if (result.success) {
+        setError(null);
+        await onUpload(result.data);
+      } else {
+        const errorMessage = result.error.issues[0]?.message ?? 'Invalid file.';
         setError(errorMessage);
-        setStatusMessage('Drag file here, paste, or click to upload');
         toast.error(errorMessage);
       }
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      setIsLoading(false);
     },
-    [onUpload, validationSchema, isLoading]
+    [onUpload, validationSchema, isUploading]
   );
 
   const handleDragEnter = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
-      if (isLoading) return;
+      if (isUploading) return;
       e.preventDefault();
       e.stopPropagation();
       setIsDragging(true);
     },
-    [isLoading]
+    [isUploading]
   );
 
   const handleDragLeave = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
-      if (isLoading) return;
+      if (isUploading) return;
       e.preventDefault();
       e.stopPropagation();
       if (!e.currentTarget.contains(e.relatedTarget as Node) || e.relatedTarget === null) {
         setIsDragging(false);
-        setStatusMessage('Drag file here, paste, or click to upload');
       }
     },
-    [isLoading]
+    [isUploading]
   );
 
   const handleDragOver = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
-      if (isLoading) return;
+      if (isUploading) return;
       e.preventDefault();
       e.stopPropagation();
       setIsDragging(true);
       e.dataTransfer.dropEffect = 'copy';
     },
-    [isLoading]
+    [isUploading]
   );
 
   const handleDrop = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
-      if (isLoading) return;
+      if (isUploading) return;
       e.preventDefault();
       e.stopPropagation();
       setIsDragging(false);
       const file = e.dataTransfer.files?.[0] ?? null;
       void handleFile(file);
     },
-    [handleFile, isLoading]
+    [handleFile, isUploading]
   );
 
   const handlePaste = useCallback(
     (e: ClipboardEvent<HTMLDivElement>) => {
-      if (isLoading) return;
+      if (isUploading) return;
       setError(null);
       const items = e.clipboardData?.items;
 
@@ -146,13 +127,13 @@ export const MediaUpload = ({
         }
       }
     },
-    [handleFile, isLoading]
+    [handleFile, isUploading]
   );
 
   const handleClick = useCallback(() => {
-    if (isLoading) return;
+    if (isUploading) return;
     fileInputRef.current?.click();
-  }, [isLoading]);
+  }, [isUploading]);
 
   const handleFileChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -208,16 +189,16 @@ export const MediaUpload = ({
         },
         cssProp
       )}
-      data-dragging={isDragging && !isLoading ? '' : undefined}
+      data-dragging={isDragging && !isUploading ? '' : undefined}
       data-error={error ? '' : undefined}
-      data-loading={isLoading ? '' : undefined}
-      onDragEnter={isLoading ? undefined : handleDragEnter}
-      onDragLeave={isLoading ? undefined : handleDragLeave}
-      onDragOver={isLoading ? undefined : handleDragOver}
-      onDrop={isLoading ? undefined : handleDrop}
-      onPaste={isLoading ? undefined : handlePaste}
+      data-loading={isUploading ? '' : undefined}
+      onDragEnter={isUploading ? undefined : handleDragEnter}
+      onDragLeave={isUploading ? undefined : handleDragLeave}
+      onDragOver={isUploading ? undefined : handleDragOver}
+      onDrop={isUploading ? undefined : handleDrop}
+      onPaste={isUploading ? undefined : handlePaste}
       aria-label="Media upload zone"
-      aria-disabled={isLoading}
+      aria-disabled={isUploading}
       {...props}
     >
       <styled.input
@@ -225,10 +206,10 @@ export const MediaUpload = ({
         ref={fileInputRef}
         onChange={handleFileChange}
         css={{ srOnly: true }}
-        disabled={isLoading}
+        disabled={isUploading}
         accept="image/*,video/*"
       />
-      <Button type="button" variant="ghost" size="sm" onClick={handleClick} disabled={isLoading}>
+      <Button type="button" variant="ghost" size="sm" onClick={handleClick} disabled={isUploading}>
         <UploadIcon />
         Upload Media
       </Button>
@@ -241,7 +222,7 @@ export const MediaUpload = ({
           color: 'secondary',
         }}
       >
-        {isLoading && <Spinner css={{ boxSize: '3' }} />}
+        {isUploading && <Spinner css={{ boxSize: '3' }} />}
         <styled.span
           css={{
             color: error ? 'accent' : 'currentColor',
