@@ -784,6 +784,7 @@ export function RecordForm({
           >
             <MediaGrid
               media={record.media}
+              isUploading={isUploading}
               onDelete={(media) => deleteMediaMutation.mutate([media.id])}
               className={css({ borderRadius: 'none' })}
             />
@@ -825,7 +826,7 @@ export function RecordForm({
             </form.Field>
           </styled.div>
         ) : (
-          <MediaUpload ref={mediaUploadRef} onUpload={uploadFile} />
+          <MediaUpload ref={mediaUploadRef} onUpload={uploadFile} isUploading={isUploading} />
         )}
 
         <form.Field name="notes">
