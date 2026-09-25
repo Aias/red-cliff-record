@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.14.4",
+  "version": "0.14.5",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -74,7 +74,7 @@
     "cmdk": "~1.1.1",
     "colorjs.io": "~0.7.1",
     "dataloader": "~2.2.3",
-    "drizzle-orm": "1.0.0-rc.5-ab785fc",
+    "drizzle-orm": "1.0.0-rc.5-5935859",
     "effect": "4.0.0-rc.115",
     "lucide-react": "~1.48.0",
     "markdown-it": "~15.0.2",
@@ -101,7 +101,7 @@
     "@types/turndown": "~5.0.6",
     "@vitejs/plugin-react": "~6.1.1",
     "concurrently": "~10.0.5",
-    "drizzle-kit": "1.0.0-rc.5-ab785fc",
+    "drizzle-kit": "1.0.0-rc.5-5935859",
     "drizzle-zero": "~1.0.0-beta.1",
     "oxc-transform-react": "~0.151.0",
     "oxfmt": "~0.70.0",
