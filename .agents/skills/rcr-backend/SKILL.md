@@ -32,7 +32,7 @@ Canonical guide: `INTEGRATIONS.md`.
 - File convention: `types.ts` (Zod schemas at the API boundary), `sync.ts` (Effect pipeline), `map.ts` (staging-to-record promotion, plain async invoked via `legacyOperation`)
 - Item failures collect into the run summary via `forEachCollect` — one bad item never fails a run; only systemic errors (auth, config, connectivity) do
 - Rate limits come from `makeApiClient` (fixed-window limiter, auto-429 with Retry-After, bounded transient retries); upsert for idempotency
-- `effect` and `@effect/platform-bun` are exact-pinned to the same v4 RC version — bump both together and deliberately; the `unstable/http` and `unstable/persistence` modules carry no semver guarantee until 4.0 stable
+- `effect` and `@effect/platform-bun` are exact-pinned to the same v4 version — bump both together and deliberately. Import HTTP and persistence modules from `effect/http` and `effect/persistence`; APIs tagged `@stability unstable` may still break in minor releases, and `@stability experimental` APIs may break in patch releases
 
 ## Database Management
 

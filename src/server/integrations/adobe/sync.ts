@@ -1,6 +1,6 @@
 import { lightroomImages } from '@hozo';
 import { Effect } from 'effect';
-import { HttpClient } from 'effect/unstable/http';
+import { HttpClient } from 'effect/http';
 import { Database } from '../runtime/db';
 import { DebugSink } from '../runtime/debug';
 import { ApiRequestError, DbError } from '../runtime/errors';

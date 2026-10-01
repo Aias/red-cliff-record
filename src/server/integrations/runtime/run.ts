@@ -7,8 +7,8 @@ import {
 } from '@hozo';
 import { eq } from 'drizzle-orm';
 import { Cause, Context, Effect, Exit, Layer, Option, Result } from 'effect';
-import type { HttpClient } from 'effect/unstable/http';
-import type { RateLimiter } from 'effect/unstable/persistence';
+import type { HttpClient } from 'effect/http';
+import type { RateLimiter } from 'effect/persistence';
 import { Database } from './db';
 import type { DebugSink } from './debug';
 import { DbError, describeError, type IntegrationError } from './errors';

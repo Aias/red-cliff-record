@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { Effect, Fiber, Layer, Redacted, Result } from 'effect';
+import { HttpClient, HttpClientResponse } from 'effect/http';
+import { RateLimiter } from 'effect/persistence';
 import { TestClock } from 'effect/testing';
-import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
-import { RateLimiter } from 'effect/unstable/persistence';
 import { makeApiClient } from './http';
 
 const makeHttpStub = (respond: (attempt: number) => Response) => {

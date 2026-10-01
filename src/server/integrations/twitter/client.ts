@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { Config, Effect, Redacted, Result } from 'effect';
-import { HttpClientError } from 'effect/unstable/http';
+import { HttpClientError } from 'effect/http';
 import { DebugSink } from '../runtime/debug';
 import { ApiRequestError } from '../runtime/errors';
 import { makeApiClient } from '../runtime/http';
