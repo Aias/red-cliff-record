@@ -1,6 +1,6 @@
 import { Cause, Effect, Redacted, Schedule, type Duration } from 'effect';
-import { HttpClient, HttpClientError, HttpClientRequest } from 'effect/unstable/http';
-import { RateLimiter } from 'effect/unstable/persistence';
+import { HttpClient, HttpClientError, HttpClientRequest } from 'effect/http';
+import { RateLimiter } from 'effect/persistence';
 
 const MAX_RATE_LIMIT_RETRIES = 5;
 const MAX_TRANSIENT_RETRIES = 3;

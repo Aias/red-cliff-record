@@ -1,6 +1,6 @@
 import { Data, type Cause, type Config } from 'effect';
-import type { HttpClientError } from 'effect/unstable/http';
-import type { RateLimiter } from 'effect/unstable/persistence';
+import type { HttpClientError } from 'effect/http';
+import type { RateLimiter } from 'effect/persistence';
 import type { z } from 'zod';
 
 export class ApiRequestError extends Data.TaggedError('ApiRequestError')<{

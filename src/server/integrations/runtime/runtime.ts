@@ -1,7 +1,7 @@
 import type { IntegrationType } from '@hozo';
 import { Effect, Exit, Layer, ManagedRuntime } from 'effect';
-import { FetchHttpClient } from 'effect/unstable/http';
-import { RateLimiter } from 'effect/unstable/persistence';
+import { FetchHttpClient } from 'effect/http';
+import { RateLimiter } from 'effect/persistence';
 import { databaseLayer } from './db';
 import { debugSinkDisabled } from './debug';
 import { DbError } from './errors';
