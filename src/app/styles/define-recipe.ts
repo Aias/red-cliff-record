@@ -1,8 +1,8 @@
-import type { RecipeConfig, SlotRecipeConfig } from '@pandacss/dev';
+import type { RecipeConfig, SlotRecipeConfig } from '@pandacss/types';
 import type {
-  RecipeConfig as TypeSafeRecipeConfig,
+  RecipeDefinition,
   RecipeVariantRecord,
-  SlotRecipeConfig as TypeSafeSlotRecipeConfig,
+  SlotRecipeDefinition,
   SlotRecipeVariantRecord,
 } from '@/styled-system/types';
 
@@ -17,8 +17,10 @@ import type {
  * @see https://github.com/chakra-ui/panda/discussions/1776#discussioncomment-8198659
  */
 
+type RecipeMeta = Pick<RecipeConfig, 'className' | 'description' | 'jsx' | 'staticCss'>;
+
 export function defineRecipe<T extends RecipeVariantRecord>(
-  config: TypeSafeRecipeConfig<T>
+  config: RecipeDefinition<T> & RecipeMeta
 ): RecipeConfig {
   return config as RecipeConfig;
 }
@@ -26,6 +28,6 @@ export function defineRecipe<T extends RecipeVariantRecord>(
 export function defineSlotRecipe<
   S extends string = string,
   T extends SlotRecipeVariantRecord<S> = SlotRecipeVariantRecord<S>,
->(config: TypeSafeSlotRecipeConfig<S, T>): SlotRecipeConfig {
+>(config: SlotRecipeDefinition<S, T> & RecipeMeta): SlotRecipeConfig {
   return config as SlotRecipeConfig;
 }

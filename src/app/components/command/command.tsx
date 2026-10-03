@@ -1,11 +1,11 @@
 import { Command as CommandPrimitive } from 'cmdk';
 import { SearchIcon } from 'lucide-react';
 import { Spinner } from '@/components/spinner';
-import { createStyleContext } from '@/styled-system/jsx';
+import { createSlotRecipeContext } from '@/styled-system/jsx';
 import { command } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createStyleContext(command);
+const { withProvider, withContext } = createSlotRecipeContext(command);
 
 export const Root = withProvider(CommandPrimitive, 'root');
 export type RootProps = ComponentProps<typeof Root>;

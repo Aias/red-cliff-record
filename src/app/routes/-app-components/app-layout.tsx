@@ -58,9 +58,8 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
                 opacity: '75%',
               },
               '& [data-slot="label"]': {
-                srOnly: true,
-                '@/sm': {
-                  srOnly: false,
+                '@/smDown': {
+                  srOnly: true,
                 },
               },
             }}

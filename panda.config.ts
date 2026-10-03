@@ -19,7 +19,7 @@ import { tableRecipe } from '@/app/components/table/table.recipe';
 import { textareaRecipe } from '@/app/components/textarea/textarea.recipe';
 import { toggleRecipe } from '@/app/components/toggle/toggle.recipe';
 import { tooltipRecipe } from '@/app/components/tooltip/tooltip.recipe';
-import { easings, durations, keyframes } from '@/app/styles/animations';
+import { animationVars, easings, durations, keyframes } from '@/app/styles/animations';
 import { blurs } from '@/app/styles/blurs';
 import { borders } from '@/app/styles/borders';
 import { colors } from '@/app/styles/colors';
@@ -49,8 +49,9 @@ export default defineConfig({
   jsxStyleProps: 'minimal',
   shorthands: false,
 
-  presets: [conditionsPreset],
+  presets: ['@pandacss/preset-base', conditionsPreset],
   globalCss: globalStyles,
+  globalVars: animationVars,
   theme: {
     extend: {
       tokens: {
@@ -78,7 +79,7 @@ export default defineConfig({
       xl: '80rem',
       '2xl': '96rem',
     },
-    containerSizes: {
+    containers: {
       sm: '40rem',
     },
     recipes: {

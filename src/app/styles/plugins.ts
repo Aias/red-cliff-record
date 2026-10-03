@@ -1,5 +1,5 @@
-import type { PropertyConfig } from '@pandacss/dev';
 import { defineUtility } from '@pandacss/dev';
+import type { PropertyConfig } from '@pandacss/types';
 import { borderDeclarations } from './borders';
 import { chromaticDeclarations, paletteDeclarations, palettes, type PaletteName } from './colors';
 
@@ -7,31 +7,18 @@ import { chromaticDeclarations, paletteDeclarations, palettes, type PaletteName 
 // Composable enter/exit animation utilities
 //
 // Mirrors the tailwindcss-animate pattern: `animateIn`/`animateOut` set the
-// animation name and initialize CSS custom properties; modifier utilities
-// (`fadeIn`, `zoomIn`, `slideInX`, …) set individual properties that the
-// `enter`/`exit` keyframes (in animations.ts) read.
+// animation name; modifier utilities (`fadeIn`, `zoomIn`, `slideInX`, …) set
+// individual properties that the `enter`/`exit` keyframes (in animations.ts)
+// read. Those properties are registered without inheritance (`animationVars`),
+// so a nested animation never picks up an ancestor's values.
 // ---------------------------------------------------------------------------
-
-const enterVarDefaults = {
-  '--enter-opacity': 'initial',
-  '--enter-scale': 'initial',
-  '--enter-translate-x': 'initial',
-  '--enter-translate-y': 'initial',
-};
-
-const exitVarDefaults = {
-  '--exit-opacity': 'initial',
-  '--exit-scale': 'initial',
-  '--exit-translate-x': 'initial',
-  '--exit-translate-y': 'initial',
-};
 
 const animateInUtility = defineUtility({
   className: 'animate-in',
   values: { type: 'boolean' },
   transform: (value) => {
     if (!value) return {};
-    return { animationName: 'enter', animationDuration: '150ms', ...enterVarDefaults };
+    return { animationName: 'enter', animationDuration: '150ms' };
   },
 });
 
@@ -40,7 +27,7 @@ const animateOutUtility = defineUtility({
   values: { type: 'boolean' },
   transform: (value) => {
     if (!value) return {};
-    return { animationName: 'exit', animationDuration: '150ms', ...exitVarDefaults };
+    return { animationName: 'exit', animationDuration: '150ms' };
   },
 });
 
