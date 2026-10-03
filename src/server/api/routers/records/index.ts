@@ -13,6 +13,7 @@ import {
 } from './readwise-cleanup';
 import { refitElo } from './refit-elo';
 import { suggestFormats } from './suggest-formats';
+import { summarize } from './summarize';
 import { getFamilyTree } from './tree';
 import { undoMerge } from './undo-merge';
 
@@ -28,6 +29,7 @@ export const recordsRouter = createTRPCRouter({
   undoReadwiseCleanup: undoReadwiseCleanupProcedure,
   refitElo,
   suggestFormats,
+  summarize,
   undoMerge,
   delete: deleteRecords,
   tree: getFamilyTree,

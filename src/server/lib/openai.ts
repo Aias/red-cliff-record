@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 
 /** Model for text generation and vision tasks (alt text, commit summaries). */
-export const OPENAI_MODEL = 'gpt-5.6-luna';
+export const OPENAI_MODEL = 'gpt-6-luna';
 
 let client: OpenAI | null = null;
 

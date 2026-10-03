@@ -149,6 +149,7 @@ Commands:
   records merge <src> <target>  Merge source record into target
   records refit-elo             Refit all ELO scores from matchup history
   records embed <id...>         Generate embedding(s) for record(s)
+  records summarize <id...>     Regenerate summary(ies) for Readwise document record(s)
   records tree <id...>          Get hierarchical family tree(s)
   records children <id>         Get children of a record
   records parent <id>           Get parent of a record

@@ -387,6 +387,35 @@ export const embed: CommandHandler = async (args, options) => {
 };
 
 /**
+ * Regenerate the summary of Readwise document record(s) and refresh their embeddings
+ * Usage: rcr records summarize <id...>
+ */
+export const summarize: CommandHandler = async (args, options) => {
+  parseOptions(BaseOptionsSchema.strict(), options);
+  const ids = parseIds(args);
+
+  if (ids.length === 0) {
+    throw createError('VALIDATION_ERROR', 'At least one ID is required');
+  }
+
+  const results = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const summary = await caller.records.summarize({ id });
+        await caller.records.upsert({ id, summary });
+        await caller.records.embed({ id });
+        return { id, summary };
+      } catch (e) {
+        if (e instanceof TRPCError) return { id, error: e.message };
+        throw e;
+      }
+    })
+  );
+
+  return success(results, { count: results.length });
+};
+
+/**
  * Get hierarchical family tree for record(s)
  * Usage: rcr records tree <id...>
  */
