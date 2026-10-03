@@ -14,10 +14,6 @@ export default defineConfig(({ mode }) => {
     build: {
       sourcemap: true,
       rolldownOptions: {
-        checks: {
-          // Panda is-valid-prop.mjs — harmless misplaced @__PURE__ (chakra-ui/panda#2063)
-          invalidAnnotation: false,
-        },
         output: {
           codeSplitting: {
             // Name shared chunks honestly instead of after an arbitrary member

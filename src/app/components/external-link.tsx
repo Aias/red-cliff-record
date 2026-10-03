@@ -7,7 +7,7 @@ const Anchor = styled(
   {
     base: {
       _childIcon: {
-        transitionProperty: '[opacity]',
+        transitionProperty: 'opacity',
         transitionDuration: '150',
         transitionTimingFunction: 'easeOut.quad',
         opacity: '50%',

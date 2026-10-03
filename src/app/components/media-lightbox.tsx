@@ -84,10 +84,10 @@ export function MediaLightbox({ images, activeIndex, onClose, onIndexChange }: M
         }}
         showCloseButton={false}
         css={{
-          width: '[100dvw]',
-          maxWidth: '[100dvw]',
-          height: '[100dvh]',
-          maxHeight: '[100dvh]',
+          width: 'screenW',
+          maxWidth: 'screenW',
+          height: 'screenH',
+          maxHeight: 'screenH',
           border: 'none',
           backgroundColor: 'transparent',
           boxShadow: 'none',

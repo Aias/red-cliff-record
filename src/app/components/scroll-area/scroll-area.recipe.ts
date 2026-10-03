@@ -10,7 +10,7 @@ export const scrollAreaRecipe = defineSlotRecipe({
     viewport: {
       boxSize: 'full',
       borderRadius: 'inherit',
-      transitionProperty: '[color, box-shadow]',
+      transitionProperty: 'color, box-shadow',
       outline: 'none',
       _focusVisible: {
         focusRingWidth: '2px',

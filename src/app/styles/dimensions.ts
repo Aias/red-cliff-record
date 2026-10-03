@@ -41,7 +41,6 @@ export const sizes = defineTokens.sizes({
   ...SHARED_TOKENS,
   ...ADDITIONAL_TOKENS,
   prose: { value: '65ch' },
-  auto: { value: 'auto' },
   screenW: { value: '100dvw' },
   screenH: { value: '100dvh' },
 });

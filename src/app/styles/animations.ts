@@ -7,6 +7,7 @@
  */
 
 import { defineKeyframes, defineTokens } from '@pandacss/dev';
+import type { CssPropertyDefinition } from '@pandacss/types';
 
 /** Curve intensity levels, ordered from weakest to strongest acceleration */
 export type CurveIntensity = 'quad' | 'cubic' | 'quart' | 'quint' | 'expo' | 'circ';
@@ -122,3 +123,16 @@ export const keyframes = defineKeyframes({
     },
   },
 });
+
+const nonInheritedVar: CssPropertyDefinition = { syntax: '*', inherits: false };
+
+export const animationVars = {
+  '--enter-opacity': nonInheritedVar,
+  '--enter-scale': nonInheritedVar,
+  '--enter-translate-x': nonInheritedVar,
+  '--enter-translate-y': nonInheritedVar,
+  '--exit-opacity': nonInheritedVar,
+  '--exit-scale': nonInheritedVar,
+  '--exit-translate-x': nonInheritedVar,
+  '--exit-translate-y': nonInheritedVar,
+};

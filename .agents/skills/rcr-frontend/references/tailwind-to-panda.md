@@ -55,7 +55,7 @@ The `spacing` and `sizes` token scales in `src/app/styles/dimensions.ts` are mul
 | `max-w-6xl` | 72rem | `288`                 |
 | `max-w-7xl` | 80rem | `320`                 |
 
-Also: `screenW` = `100dvw`, `screenH` = `100dvh`, `auto` = `auto`, `prose` = `65ch`. Prefer these tokens over bracket literals (`[100vw]`, `[65ch]`).
+Also: `screenW` = `100dvw`, `screenH` = `100dvh`, `prose` = `65ch`. Prefer these tokens over bracket literals (`[100vw]`, `[65ch]`). `auto` is the bare CSS keyword.
 
 For off-scale values (e.g. `max-w-166`), pick the closest token rather than a bracket literal. If the same off-scale value recurs in multiple places, extend `SHARED_DIMENSIONS` in `dimensions.ts` and regenerate with `bun run stylegen`.
 
@@ -74,7 +74,7 @@ The trap: `outlineOffset` (and anything that resolves to a **spacing token**) ma
 
 ## Transitions — spell out the longhands
 
-Never use the `transition` shorthand. Write `transitionProperty` / `transitionDuration` / `transitionTimingFunction` separately. `transitionProperty` usually needs a bracket literal (`'[opacity]'`, `'[color, box-shadow]'`) — only `common`/`colors`/`size`/`position`/`background` are predefined values; `transitionDuration` and `transitionTimingFunction` take tokens. A bare Tailwind `transition-opacity` (no explicit duration/easing) → `transitionProperty: '[opacity]'`, `transitionDuration: '150'`, `transitionTimingFunction: 'easeOut.cubic'`. Full easing/duration guidance is in `SKILL.md` → Animations.
+Never use the `transition` shorthand. Write `transitionProperty` / `transitionDuration` / `transitionTimingFunction` separately. `transitionProperty` takes property names bare (`'opacity'`, `'color, box-shadow'`) as well as the `common`/`colors`/`size`/`position`/`background` groups; `transitionDuration` and `transitionTimingFunction` take tokens. A bare Tailwind `transition-opacity` (no explicit duration/easing) → `transitionProperty: 'opacity'`, `transitionDuration: '150'`, `transitionTimingFunction: 'easeOut.cubic'`. Full easing/duration guidance is in `SKILL.md` → Animations.
 
 ## Breakpoints — min-width, identical to Tailwind
 
@@ -185,13 +185,16 @@ Values that look arbitrary but usually work as-is:
 - `outlineWidth: '2px'` — pixel strings are valid outline widths.
 - `flex: '1'`, `flexBasis: 'auto'` — strings that match CSS values.
 - `opacity: '75%'` — percent strings.
+- `width: 'auto'`, `borderRadius: 'inherit'`, `backgroundColor: 'transparent'` — CSS keywords the property takes.
+- `aspectRatio: 'var(--ratio)'` — any `var(--…)` value.
+- `transitionProperty: 'color, box-shadow'` — property names.
+- `backgroundImage: 'linear-gradient(...)'`, `gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 12rem), 1fr))'` — open-string properties take any string.
 
 Values that genuinely need the bracket (or a real token):
 
 - `textShadow`, `boxShadow` — strict shadow types; use the bracket with token interpolation: `textShadow: '[0 0 4px {colors.black}]'`.
-- `backgroundImage` gradients — no gradient tokens, use `[linear-gradient(...)]`.
 - Viewport calcs, off-scale pixels, runtime math — `[calc({sizes.screenW} - 1rem)]`, `[75vh]`.
-- Custom `gridTemplateColumns` — `[repeat(auto-fill, minmax(min(100%, 12rem), 1fr))]`.
+- `width: '[fit-content]'`, `minHeight: '[max-content]'` — the sizing types accept `auto` but not the content keywords.
 
 Read the type error to decide: `"expects SpacingToken"` means the scale is the spacing scale; `"expects SizeToken"` means sizes; `"expects ShadowToken"` means there's no way to express this without the bracket or a shadow token.
 
@@ -202,11 +205,11 @@ The project's color system is built on `oklch`. New color literals should match:
 ```tsx
 // Good
 textShadow: '[0 0 4px {colors.black}]';
-backgroundImage: '[linear-gradient(to top, oklch(0 0 0 / 0.8), transparent)]';
+backgroundImage: 'linear-gradient(to top, oklch(0 0 0 / 0.8), transparent)';
 
 // Avoid
 textShadow: '[0 0 4px rgba(0, 0, 0, 1)]';
-backgroundImage: '[linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent)]';
+backgroundImage: 'linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent)';
 ```
 
 Use `{colors.black}` / `{colors.white}` token interpolation wherever possible; fall back to raw `oklch(...)` only for alpha-mixed literals.
@@ -262,7 +265,7 @@ Don't confuse this with Base UI's `render` prop, which is for composing a Base U
 
 ## `sr-only`, `srOnly`, and container-query visibility
 
-Replace `className="sr-only"` with `css={{ srOnly: true }}` (the Panda utility, defined in `styles/plugins.ts`). For visibility controlled by a container query:
+Replace `className="sr-only"` with `css={{ srOnly: true }}` (from `@pandacss/preset-base`). For visibility controlled by a container query, apply `srOnly: true` only where the content hides rather than unhiding it with `srOnly: false`:
 
 ```tsx
 <SearchIcon className={css({ '@container (max-width: 10rem)': { srOnly: true } })} />
@@ -278,8 +281,7 @@ When a parent recipe or `css` object needs to target a specific descendant, use 
 <LinkButton
   css={{
     '& [data-slot="label"]': {
-      srOnly: true,
-      '@/sm': { srOnly: false },
+      '@/smDown': { srOnly: true },
     },
   }}
 >

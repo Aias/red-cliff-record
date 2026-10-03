@@ -15,7 +15,7 @@ export const textareaRecipe = defineRecipe({
     textStyle: 'sm',
     outline: 'none',
     color: 'display',
-    transitionProperty: '[color, box-shadow]',
+    transitionProperty: 'color, box-shadow',
     transitionDuration: '150',
     transitionTimingFunction: 'easeOut.cubic',
     boxShadow: 'xs',

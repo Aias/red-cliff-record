@@ -40,7 +40,7 @@ const mediaFillCss = css({
 
 const overlayRevealCss = css.raw({
   opacity: 0,
-  transitionProperty: '[opacity]',
+  transitionProperty: 'opacity',
   transitionDuration: '200',
   transitionTimingFunction: 'easeOut.cubic',
   _groupHover: { opacity: 1 },
@@ -76,9 +76,9 @@ function MediaTile({ item, label, imageIndex, onOpen, onDelete }: MediaTileProps
       className="group"
       css={{
         position: 'relative',
-        flexGrow: '[var(--ratio)]',
+        flexGrow: 'var(--ratio)',
         flexBasis: '[calc(var(--ratio) * {sizes.48})]',
-        aspectRatio: '[var(--ratio)]',
+        aspectRatio: 'var(--ratio)',
         maxBlockSize: '96',
         overflow: 'hidden',
         cursor: 'pointer',
@@ -102,7 +102,7 @@ function MediaTile({ item, label, imageIndex, onOpen, onDelete }: MediaTileProps
           position: 'absolute',
           inset: '0',
           zIndex: '10',
-          backgroundImage: '[linear-gradient(to bottom, oklch(0 0 0 / 0.5), transparent)]',
+          backgroundImage: 'linear-gradient(to bottom, oklch(0 0 0 / 0.5), transparent)',
         })}
       />
       {item.type === 'video' ? (

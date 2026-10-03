@@ -100,7 +100,7 @@ export const MetadataList = ({ metadata, ...props }: MetadataListProps) => {
                       color: 'muted',
                       opacity: 0,
                       pointerEvents: 'none', // Clicks pass through to the value text
-                      transitionProperty: '[opacity]',
+                      transitionProperty: 'opacity',
                       transitionDuration: '150',
                       transitionTimingFunction: 'easeOut.quad',
                       _groupHover: {
