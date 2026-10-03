@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.14.7",
+  "version": "0.14.8",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -79,7 +79,7 @@
     "lucide-react": "~1.49.0",
     "markdown-it": "~15.0.2",
     "mime-types": "~3.0.2",
-    "openai": "~7.25.0",
+    "openai": "~7.27.0",
     "postgres": "~3.4.9",
     "react": "~19.3.0",
     "react-dom": "~19.3.0",

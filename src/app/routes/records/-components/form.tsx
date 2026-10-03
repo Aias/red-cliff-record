@@ -1,6 +1,6 @@
 import type { RecordType } from '@hozo/schema/records.shared';
 import { useForm } from '@tanstack/react-form';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useRouterState } from '@tanstack/react-router';
 import {
   ArrowUpRightIcon,
@@ -8,12 +8,14 @@ import {
   BadgeIcon,
   EyeIcon,
   EyeOffIcon,
+  RefreshCwIcon,
   XIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useTRPC } from '@/app/trpc';
+import { Button } from '@/components/button';
 import { ExternalLink } from '@/components/external-link';
 import { GhostInput } from '@/components/input';
 import { Label } from '@/components/label';
@@ -205,6 +207,20 @@ export function RecordForm({
   const { uploadFile, isUploading } = useRecordUpload(recordId);
 
   const form = useForm({ defaultValues: formData });
+
+  const summarize = useMutation(
+    trpc.records.summarize.mutationOptions({
+      onSuccess: (summary, { id }) => {
+        if (id === recordId) form.setFieldValue('summary', summary);
+        void updateRecord({ id, summary });
+      },
+    })
+  );
+  const isSummarizing = summarize.isPending && summarize.variables.id === recordId;
+  const canSummarize =
+    record?.sources?.includes('readwise') &&
+    !record.outgoingLinks.some((link) => link.predicate === 'contained_by');
+  const handleSummarize = () => summarize.mutate({ id: recordId });
 
   /* Baseline for diffing commits: the last state written to (or read from)
    * the synced record. null until the record first loads. */
@@ -736,7 +752,43 @@ export function RecordForm({
         <form.Field name="summary">
           {(field) => (
             <styled.div css={{ display: 'flex', flexDirection: 'column', gap: '1.5' }}>
-              <Label htmlFor="summary">Summary</Label>
+              <styled.div
+                css={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  minHeight: '6',
+                }}
+              >
+                <Label htmlFor="summary">Summary</Label>
+                {isSummarizing ? (
+                  <styled.span
+                    role="status"
+                    css={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1.5',
+                      textStyle: 'xs',
+                      color: 'secondary',
+                    }}
+                  >
+                    <Spinner />
+                    Summarizing…
+                  </styled.span>
+                ) : (
+                  canSummarize && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Regenerate summary"
+                      onClick={handleSummarize}
+                    >
+                      <RefreshCwIcon />
+                    </Button>
+                  )
+                )}
+              </styled.div>
               <DynamicTextarea
                 id="summary"
                 value={field.value ?? ''}
@@ -746,7 +798,7 @@ export function RecordForm({
                   debouncedSave();
                 }}
                 onBlur={() => void commit()}
-                disabled={isFormLoading}
+                disabled={isFormLoading || isSummarizing}
               />
             </styled.div>
           )}
