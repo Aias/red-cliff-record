@@ -13,7 +13,9 @@ import {
   eloMatchups,
   githubCommitChanges,
   githubCommits,
+  githubCommitTechnologies,
   githubRepositories,
+  githubTechnologies,
   githubUsers,
   integrationRuns,
   judgments,
@@ -51,7 +53,9 @@ export const relations = defineRelations(
     eloMatchups,
     githubCommitChanges,
     githubCommits,
+    githubCommitTechnologies,
     githubRepositories,
+    githubTechnologies,
     githubUsers,
     integrationRuns,
     judgments,
@@ -233,11 +237,37 @@ export const relations = defineRelations(
         from: r.githubCommits.id,
         to: r.githubCommitChanges.commitId,
       }),
+      commitTechnologies: r.many.githubCommitTechnologies({
+        from: r.githubCommits.id,
+        to: r.githubCommitTechnologies.commitId,
+      }),
     },
     githubCommitChanges: {
       commit: r.one.githubCommits({
         from: r.githubCommitChanges.commitId,
         to: r.githubCommits.id,
+      }),
+    },
+    githubCommitTechnologies: {
+      commit: r.one.githubCommits({
+        from: r.githubCommitTechnologies.commitId,
+        to: r.githubCommits.id,
+        optional: false,
+      }),
+      technology: r.one.githubTechnologies({
+        from: r.githubCommitTechnologies.technologyId,
+        to: r.githubTechnologies.id,
+        optional: false,
+      }),
+    },
+    githubTechnologies: {
+      commits: r.many.githubCommits({
+        from: r.githubTechnologies.id.through(r.githubCommitTechnologies.technologyId),
+        to: r.githubCommits.id.through(r.githubCommitTechnologies.commitId),
+      }),
+      record: r.one.records({
+        from: r.githubTechnologies.recordId,
+        to: r.records.id,
       }),
     },
     githubUsers: {
@@ -503,6 +533,7 @@ export const relations = defineRelations(
       airtableFormats: r.many.airtableFormats(),
       airtableSpaces: r.many.airtableSpaces(),
       githubRepositories: r.many.githubRepositories(),
+      githubTechnologies: r.many.githubTechnologies(),
       githubUsers: r.many.githubUsers(),
       lightroomImages: r.many.lightroomImages(),
       raindropBookmarks: r.many.raindropBookmarks(),

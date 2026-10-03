@@ -1,8 +1,14 @@
-import { githubCommits, GithubCommitTypeSchema } from '@hozo';
+import {
+  githubCommits,
+  githubCommitTechnologies,
+  GithubCommitTypeSchema,
+  githubTechnologies,
+} from '@hozo';
 import { eq } from 'drizzle-orm';
 import { Array as Arr, Effect } from 'effect';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
+import type { DbTransaction } from '@/server/db/connections/postgres';
 import { getOpenAIClient, OPENAI_MODEL } from '@/server/lib/openai';
 import { Database } from '../runtime/db';
 import { ApiRequestError } from '../runtime/errors';
@@ -106,6 +112,27 @@ export const summarizeCommit = async (
   return response.output_parsed;
 };
 
+const replaceCommitTechnologies = async (
+  tx: DbTransaction,
+  commitId: string,
+  names: ReadonlyArray<string>
+) => {
+  await tx.delete(githubCommitTechnologies).where(eq(githubCommitTechnologies.commitId, commitId));
+  const uniqueNames = [...new Set(names)].toSorted();
+  if (uniqueNames.length === 0) return;
+  const technologies = await tx
+    .insert(githubTechnologies)
+    .values(uniqueNames.map((name) => ({ name })))
+    .onConflictDoUpdate({
+      target: githubTechnologies.name,
+      set: { recordUpdatedAt: new Date() },
+    })
+    .returning({ id: githubTechnologies.id });
+  await tx
+    .insert(githubCommitTechnologies)
+    .values(technologies.map((technology) => ({ commitId, technologyId: technology.id })));
+};
+
 const SUMMARY_CONCURRENCY = 20;
 
 export const summarizeMissingCommits = Effect.gen(function* () {
@@ -164,14 +191,17 @@ export const summarizeMissingCommits = Effect.gen(function* () {
             new ApiRequestError({ resource: `summarize ${commit.sha.slice(0, 7)}`, cause }),
         });
         yield* database.use(`githubCommits.summary:${commit.sha.slice(0, 7)}`, (client) =>
-          client
-            .update(githubCommits)
-            .set({
-              summary: summary.summary,
-              commitType: summary.primary_purpose,
-              technologies: summary.technologies,
-            })
-            .where(eq(githubCommits.sha, commit.sha))
+          client.transaction(async (tx) => {
+            await tx
+              .update(githubCommits)
+              .set({
+                summary: summary.summary,
+                commitType: summary.primary_purpose,
+                technologies: summary.technologies,
+              })
+              .where(eq(githubCommits.sha, commit.sha));
+            await replaceCommitTechnologies(tx, commit.id, summary.technologies);
+          })
         );
       }),
   });
