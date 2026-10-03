@@ -23,7 +23,7 @@ Supplements global `react-best-practices` and `code-quality` skills.
 - Reusable components: `src/app/components/` (kebab-case).
 - **Simple component** → single file: `src/app/components/badge.tsx`.
 - **Component with a recipe** → folder with colocated recipe: `src/app/components/button/{index.tsx, button.recipe.ts}`.
-- **Multi-slot component** → folder with slot recipe and primitives: `src/app/components/scroll-area/{scroll-area.recipe.ts, scroll-area.tsx, index.ts}` (Base UI + `createStyleContext`) or `alert-dialog/` (legacy Radix, pending migration).
+- **Multi-slot component** → folder with slot recipe and primitives: `src/app/components/scroll-area/{scroll-area.recipe.ts, scroll-area.tsx, index.ts}` (Base UI + `createSlotRecipeContext`) or `alert-dialog/` (legacy Radix, pending migration).
 - **Page-specific components** → `-components/` folder adjacent to the route or `-component.tsx` suffix (TanStack Router convention for excluded directories).
 - Register new recipes in `panda.config.ts` (`theme.extend.recipes` for single, `theme.extend.slotRecipes` for slot) and run `bun run stylegen` so `src/app/styled-system/recipes` updates.
 
@@ -66,15 +66,15 @@ export function Toolbar({ css: cssProp }: { css?: SystemStyleObject }) {
 
 ## Panda fundamentals
 
-- **`strictTokens: true`** and **`strictPropertyValues: true`** — every value must be a defined token or a bracket-escaped literal. If TS errors on a color/spacing value, either use a token or confirm a bracket literal is truly unavoidable.
+- **`strictTokens: true`** and **`strictPropertyValues: true`** — every value must be a defined token, a keyword or free-form value the property's generated type accepts, or a bracket-escaped literal. If TS errors on a color/spacing value, either use a token or confirm a bracket literal is truly unavoidable.
 - **No shorthands.** `shorthands: false` in the config. Write `marginBlockStart`, `paddingInline`, `backgroundColor`, `flexDirection` — not `mt`, `px`, `bg`, `flexDir`.
 - **Logical properties** over physical: `inlineStart`/`inlineEnd`/`blockStart`/`blockEnd`, `paddingInline`/`paddingBlock`, `borderInlineStart`. Reserve `left`/`right`/`top`/`bottom` for actual positioning semantics (e.g. `position: 'absolute'` with `insetBlockStart`).
 - **`boxSize` when width and height match.** Same rule for `paddingInline`/`paddingBlock` over `paddingLeft` + `paddingRight`.
 - **Declaration order** follows intent (outside-in): position/display → flex/grid container → flex/grid child → sizing/spacing → overflow → typography → visual → transforms/animation → interaction. Not alphabetical.
 - **Static analysis.** Panda needs to parse style objects at build time — no dynamic values or runtime-computed keys in `css` objects. For dynamic numbers, use an inline `style` attribute; for dynamic variants, use `data-*` attributes and target them via selectors.
-- **`[]` escape hatch** is for values the token scales can't express — other units or computed values (`boxSize: '[1.15em]'`, `backgroundSize: '[200% 100%]'`, `width: '[calc(100% - 2rem)]'`). If an exact token exists, use it. When a measurement falls _between_ scale steps — say a mock specifies `0.4rem` of gap while the spacing scale offers `1.5` (0.375rem) and `2` (0.5rem) — round to the nearest token instead of bracket-escaping the exact value; staying on the scale keeps the spacing rhythm consistent and beats a pixel-perfect literal. Reserve brackets for values with no scale neighbor at all. Use real spaces inside brackets — not underscores.
+- **`[]` escape hatch** is for values the property's type rejects — other units or computed values on token-typed properties (`boxSize: '[1.15em]'`, `width: '[calc(100% - 2rem)]'`). Brackets change only the generated class name, never the emitted declaration, so a value that typechecks bare goes bare. These do: CSS-wide keywords (`inherit`), `auto` on sizes, `transparent` and `currentColor` on colors, any `var(--…)` value, property names in `transitionProperty`, and any string on open-string properties (`gridTemplateColumns`, `backgroundImage`, `backgroundSize`). `fit-content` and `max-content` still need brackets on `width` and `minHeight`. If an exact token exists, use it. When a measurement falls _between_ scale steps — say a mock specifies `0.4rem` of gap while the spacing scale offers `1.5` (0.375rem) and `2` (0.5rem) — round to the nearest token instead of bracket-escaping the exact value; staying on the scale keeps the spacing rhythm consistent and beats a pixel-perfect literal. Reserve brackets for values with no scale neighbor at all. Use real spaces inside brackets — not underscores.
 - **Token interpolation in compound values**: `border: '1px solid {colors.divider}'` (curly syntax), not `token(colors.divider)` unless providing a fallback.
-- **Regenerate after config changes.** After editing recipes, tokens, conditions, or `panda.config.ts`, run `bun run stylegen` (`panda codegen && panda cssgen`) so `src/app/styled-system/*` is in sync.
+- **Regenerate after config changes.** After editing recipes, tokens, conditions, or `panda.config.ts`, run `bun run stylegen` (`panda build --clean --max-warnings 0`) so `src/app/styled-system/*` is in sync. It fails on any compiler warning, because each warning marks a style that emits no CSS (an unknown condition, a misplaced nested property).
 
 ## Tokens
 
@@ -185,17 +185,17 @@ export type InputProps = ComponentProps<typeof Input>;
 
 Same pattern for native elements (`styled('label', label)`) and non-Base UI hosts (`styled(Link, button)`). See `input/`, `button/`, `badge/`, `label/`, `separator/`.
 
-### Multi-slot — `defineSlotRecipe` + `createStyleContext`
+### Multi-slot — `defineSlotRecipe` + `createSlotRecipeContext`
 
-Registered slot recipes bind via `createStyleContext(slotRecipe)` → `withProvider` (root) + `withContext` (child slots). Canonical Base UI examples: `scroll-area/`, `tooltip/`. Legacy Radix still on `alert-dialog/` — migrate to Base UI when touched.
+Registered slot recipes bind via `createSlotRecipeContext(slotRecipe)` → `withProvider` (root) + `withContext` (child slots). Canonical Base UI examples: `scroll-area/`, `tooltip/`. Legacy Radix still on `alert-dialog/` — migrate to Base UI when touched.
 
 ```tsx
 import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area';
-import { createStyleContext } from '@/styled-system/jsx';
+import { createSlotRecipeContext } from '@/styled-system/jsx';
 import { scrollArea } from '@/styled-system/recipes';
 import type { ComponentProps } from '@/styled-system/types';
 
-const { withProvider, withContext } = createStyleContext(scrollArea);
+const { withProvider, withContext } = createSlotRecipeContext(scrollArea);
 
 const Root = withProvider(BaseScrollArea.Root, 'root');
 const Viewport = withContext(BaseScrollArea.Viewport, 'viewport');
@@ -228,11 +228,11 @@ Models: `scroll-area/` and `tooltip/` (Base UI + slot recipe), `alert-dialog/` (
 - **Import naming.** Base UI namespace imports use `Base*` — `import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area'`. Never `*Primitive`; that suffix is Radix/Shadcn (`ScrollAreaPrimitive`, `AlertDialogPrimitive`).
 - **Slots** = every part the headless primitive exposes in its documented anatomy, plus `root`. Don't invent slots the primitive never had; don't omit parts it requires in the tree (Base UI `ScrollArea.Content` inside `Viewport` is mandatory — Radix hid an equivalent wrapper inside `Viewport`). `root` is mandatory — bind with `withProvider`, or `withRootProvider` when the root renders no DOM (Radix context-only roots during migration).
 - **Structural slots.** Register and bind every anatomy part with `withContext` even when the recipe adds no styles — use `slotName: {}` in `base` (see `scroll-area` `content` and `corner`). The slot still gets a generated class and accepts `css` overrides at call sites; the primitive may apply its own inline defaults (e.g. Base UI `Content`'s `minWidth: fit-content`).
-- **Recipe-only variants.** Variants that style slots but aren't props on the headless root go on the `withProvider` root — `createStyleContext` consumes them for styling without forwarding to the primitive. Example: `orientation` on `ScrollArea`'s `Root` drives scrollbar slot styles; Base UI takes `orientation` on `Scrollbar`, not `Root`.
+- **Recipe-only variants.** Variants that style slots but aren't props on the headless root go on the `withProvider` root — `createSlotRecipeContext` consumes them for styling without forwarding to the primitive. Example: `orientation` on `ScrollArea`'s `Root` drives scrollbar slot styles; Base UI takes `orientation` on `Scrollbar`, not `Root`.
 - **Bind every rendered slot** with `withContext`, and **compose with the bound slots** — a `Content` that needs a portal renders `<Portal>`, never the raw Base UI portal outside styled wrappers.
 - **Portal is internal by default.** A composed `Content` includes the `Portal` (portal-by-default, like Base UI), so bind `Portal` as a non-exported `const` and render it inside `Content`. Don't export it — an exported `Portal` lets a consumer double-wrap (`<X.Portal><X.Content/></X.Portal>`) into nested portals. Export `Portal` only for the manual-composition pattern where `Content` is a bare slot and the consumer writes `<Portal><Overlay/><Content/></Portal>` themselves (e.g. `alert-dialog`).
 - **Composed vs part exports.** When the app always uses the full tree, export one composed component (`ScrollArea`). When consumers assemble parts (`Tooltip.Root`, `Tooltip.Trigger`, `Tooltip.Content`), export the bound parts. Keep internal styled slots (`StyledPositioner`, `StyledPopup`) unexported when a composed wrapper owns them.
-- **No blanket `data-slot`.** Target a subcomponent via its generated `.<recipe>__<slot>` class (e.g. `.scroll-area__viewport`). Add a `data-slot` only where something genuinely needs that hook.
+- **Target slots by class, not `data-slot`.** Reach a subcomponent through its generated `.<recipe>__<slot>` class (e.g. `.scroll-area__viewport`). `createSlotRecipeContext` stamps every bound slot with `data-slot="<slot>"`, overwriting any value a caller passes, and slot names like `root` and `content` repeat across recipes.
 - **`unstyled` prop** drops a slot's recipe styles so you can restyle it via `css` in a specific composition.
 - **Shared style chunks** → a module-scope `css.raw({ ... })` const, composed at each slot with `css.raw(chunk, { ...slotSpecific })`. Never object-spread (`{ ...chunk, ...local }`) or `as const`.
 - **One slot for identical-styled primitives.** If two primitives carry identical, never-diverging slot styles (e.g. a select's scroll-up vs scroll-down buttons), bind both to a single slot (`withContext(ScrollUpButton, 'scrollButton')` + `withContext(ScrollDownButton, 'scrollButton')`) rather than defining two slots that share a copied chunk. Duplicating a chunk across slots that are never independently overridden is a smell — collapse to one slot; split only when they genuinely differ.
@@ -241,7 +241,7 @@ Models: `scroll-area/` and `tooltip/` (Base UI + slot recipe), `alert-dialog/` (
 ### When to reach for a recipe
 
 - Reused across the app → recipe in the component folder, registered in `panda.config.ts`.
-- One-off page-local multi-slot component → inline `sva()` from `@/styled-system/css`, optionally with `createStyleContext`.
+- One-off page-local multi-slot component → inline `sva()` from `@/styled-system/css`, optionally with `createSlotRecipeContext`.
 - One-off single-element → `css` prop on a `styled.*` element. No recipe needed.
 
 ## Base UI primitives
@@ -278,7 +278,7 @@ Models: `scroll-area/` and `tooltip/` (Base UI + slot recipe), `alert-dialog/` (
 
 ## Animations
 
-- **Prefer CSS/Panda animations** via `animateIn`/`animateOut` + modifiers and the `enter`/`exit` keyframes. See `dialog.tsx` and `hover-card.tsx` for entry/exit patterns.
+- **Prefer CSS/Panda animations** via `animateIn`/`animateOut` + modifiers and the `enter`/`exit` keyframes. See `dialog.tsx` and `hover-card.tsx` for entry/exit patterns. The modifier variables are registered without inheritance (`animationVars` in `animations.ts`), so set modifiers on the animating element itself, never on an ancestor.
 - **`motion/react`** (the Framer Motion successor) for genuinely complex cases — `AnimatePresence`, layout animations, gesture/drag. Import from `motion/react`, not `framer-motion`.
 - Animations must be purposeful and GPU-safe (`transform`, `opacity`). Respect reduced-motion preferences.
 
@@ -301,12 +301,12 @@ Durations are raw ms tokens: `durations.0`, `50`, `100`, `150`, `200`, `250`, `3
 **Never use the `transition` shorthand.** Always spell out the three longhands so each value is explicit and tokenized:
 
 ```ts
-transitionProperty: '[opacity, transform]',
+transitionProperty: 'opacity, transform',
 transitionDuration: '250',
 transitionTimingFunction: 'easeOut.cubic',
 ```
 
-`transitionProperty` usually needs a bracket literal (`'[opacity]'`, `'[color, box-shadow]'`) — only `common`, `colors`, `size`, `position`, `background` are predefined values. `transitionDuration` and `transitionTimingFunction` take tokens (no escape). When a Tailwind `transition-*` class carries no explicit duration/easing, default to `'150'` + `'easeOut.cubic'` unless the element's size/role calls for another curve.
+`transitionProperty` takes property names bare (`'opacity'`, `'color, box-shadow'`) as well as the predefined groups `common`, `colors`, `size`, `position`, `background`. Name exactly the properties that change rather than rounding up to a group. `transitionDuration` and `transitionTimingFunction` take tokens (no escape). When a Tailwind `transition-*` class carries no explicit duration/easing, default to `'150'` + `'easeOut.cubic'` unless the element's size/role calls for another curve.
 
 Curves, tokens, and the helpers that build them (`easingCurves`, `curveToCSS`, `getEasing`) all live in `src/app/styles/animations.ts`.
 
@@ -317,5 +317,5 @@ Curves, tokens, and the helpers that build them (`easingCurves`, `curveToCSS`, `
 ## Commands
 
 - `bun check` — lint + typecheck + format (runs `oxlint`, `tsgo`, `oxfmt`). Run after every non-trivial change.
-- `bun run stylegen` — regenerate `src/app/styled-system/*` after touching recipes, tokens, or `panda.config.ts`.
+- `bun run stylegen` — regenerate `src/app/styled-system/*` after touching recipes, tokens, or `panda.config.ts`. Fails on any Panda compiler warning.
 - `bun run dev` runs both `panda --watch` and Vite; the user starts the dev server manually — don't launch it.
