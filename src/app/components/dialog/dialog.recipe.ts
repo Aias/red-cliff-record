@@ -99,7 +99,7 @@ export const dialogRecipe = defineSlotRecipe({
       lineHeight: 'none',
       opacity: '70%',
       outlineStyle: 'none',
-      transitionProperty: '[opacity]',
+      transitionProperty: 'opacity',
       transitionDuration: '150',
       transitionTimingFunction: 'easeOut.cubic',
       _childIcon: {

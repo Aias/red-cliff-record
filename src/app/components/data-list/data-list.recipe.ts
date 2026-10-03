@@ -23,7 +23,7 @@ export const dataListRecipe = defineSlotRecipe({
       horizontal: {
         root: {
           display: 'grid',
-          gridTemplateColumns: '[auto 1fr]',
+          gridTemplateColumns: 'auto 1fr',
           columnGap: '4',
           rowGap: '2',
         },

@@ -81,7 +81,7 @@ const iconAction = css.raw({
   display: 'inline-flex',
   _childIcon: {
     opacity: '50%',
-    transitionProperty: '[opacity]',
+    transitionProperty: 'opacity',
     transitionDuration: '150',
     transitionTimingFunction: 'easeOut.quad',
   },
@@ -918,7 +918,7 @@ export function RecordForm({
       <Metabar
         recordId={recordId}
         className={css({
-          order: '[calc(-infinity)]',
+          order: 'calc(-infinity)',
           marginBlockStart: '-1',
           marginBlockEnd: '3',
           borderBlockEndWidth: '1px',

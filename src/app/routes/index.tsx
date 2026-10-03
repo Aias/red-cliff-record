@@ -49,7 +49,7 @@ function Home() {
         css={{
           display: 'grid',
           width: 'full',
-          gridTemplateColumns: '[repeat(auto-fill, minmax(min(100%, 12rem), 1fr))]',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 12rem), 1fr))',
           gap: '0.25',
         }}
       >
@@ -86,7 +86,7 @@ function Home() {
                   insetBlockStart: '1/2',
                   insetBlockEnd: '0',
                   zIndex: '10',
-                  backgroundImage: '[linear-gradient(to top, oklch(0 0 0 / 0.8), transparent)]',
+                  backgroundImage: 'linear-gradient(to top, oklch(0 0 0 / 0.8), transparent)',
                   opacity: '75%',
                 }}
               />

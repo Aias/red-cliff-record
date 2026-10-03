@@ -133,7 +133,7 @@ export function EloScrubber({
                     borderStartStartRadius: 'sm',
                     borderStartEndRadius: 'sm',
                     backgroundColor: 'flood',
-                    transitionProperty: '[background-color]',
+                    transitionProperty: 'background-color',
                     transitionDuration: '100',
                     transitionTimingFunction: 'easeOut.quad',
                     '&[data-included]': { backgroundColor: 'main' },

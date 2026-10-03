@@ -60,22 +60,22 @@ export const tooltipRecipe = defineSlotRecipe({
         insetBlockEnd: '-2.5',
       },
       _sideLeft: {
-        insetBlockStart: '[50% !important]',
+        insetBlockStart: '1/2 !important',
         insetInlineEnd: '-1',
         translateCenter: 'y',
       },
       _sideRight: {
-        insetBlockStart: '[50% !important]',
+        insetBlockStart: '1/2 !important',
         insetInlineStart: '-1',
         translateCenter: 'y',
       },
       _sideInlineEnd: {
-        insetBlockStart: '[50% !important]',
+        insetBlockStart: '1/2 !important',
         insetInlineStart: '-1',
         translateCenter: 'y',
       },
       _sideInlineStart: {
-        insetBlockStart: '[50% !important]',
+        insetBlockStart: '1/2 !important',
         insetInlineEnd: '-1',
         translateCenter: 'y',
       },

@@ -245,7 +245,7 @@ export function ArenaSession({ type, focus, side, minScore }: ArenaParams) {
       <styled.div
         css={{
           display: 'grid',
-          gridTemplateColumns: '[minmax(0, 1fr) auto minmax(0, 1fr)]',
+          gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
           alignItems: 'stretch',
           gap: '4',
           width: 'full',

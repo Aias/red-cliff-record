@@ -35,9 +35,9 @@ export const AppLayout = ({ children, currentTheme, onThemeChange }: AppLayoutPr
       <styled.menu
         css={{
           position: 'relative',
-          zIndex: '[100]',
+          zIndex: '100',
           display: 'grid',
-          gridTemplateColumns: '[auto 1fr auto]',
+          gridTemplateColumns: 'auto 1fr auto',
           alignItems: 'center',
           flexShrink: '0',
           flexBasis: 'auto',

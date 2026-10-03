@@ -162,7 +162,7 @@ export const MediaUpload = ({
           backgroundColor: 'mist',
           padding: '4',
           textAlign: 'center',
-          transitionProperty: '[color, background-color, border-color]',
+          transitionProperty: 'color, background-color, border-color',
           transitionDuration: '200',
           transitionTimingFunction: 'easeOut.cubic',
           outlineStyle: 'none',

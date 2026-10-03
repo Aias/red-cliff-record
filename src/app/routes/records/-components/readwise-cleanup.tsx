@@ -436,7 +436,7 @@ function CleanupEntry({
               display: 'grid',
               gap: '4',
               '@container (min-width: 40rem)': {
-                gridTemplateColumns: '[repeat(2, minmax(0, 1fr))]',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
               },
             }}
           >

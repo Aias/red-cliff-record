@@ -226,8 +226,6 @@ export const chromaticDeclarations = (chromatic: boolean): CssVarDeclarations =>
 });
 
 export const colors = defineTokens.colors({
-  transparent: { value: 'transparent' },
-  currentColor: { value: 'currentColor' },
   white: { value: WHITE },
   black: { value: BLACK },
   modeContrast: { value: lightDark(BLACK, WHITE) },

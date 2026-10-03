@@ -16,7 +16,7 @@ export const toggleRecipe = defineRecipe({
     borderWidth: '1px',
     borderColor: 'transparent',
     backgroundColor: 'transparent',
-    transitionProperty: '[background-color, color, box-shadow]',
+    transitionProperty: 'background-color, color, box-shadow',
     transitionDuration: '150',
     transitionTimingFunction: 'easeOut.cubic',
     _hover: {

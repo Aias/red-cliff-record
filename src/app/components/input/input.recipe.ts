@@ -16,7 +16,7 @@ export const inputRecipe = defineRecipe({
     textStyle: 'sm',
     color: 'display',
     boxShadow: 'xs',
-    transitionProperty: '[color, box-shadow]',
+    transitionProperty: 'color, box-shadow',
     transitionDuration: '150',
     transitionTimingFunction: 'easeOut.cubic',
     outline: 'none',
