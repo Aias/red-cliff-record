@@ -1,0 +1,75 @@
+diff --git a/dist/cli/index.js b/dist/cli/index.js
+index 139666ebb168430d6f9f942417a22eb5842a2cd0..c6054514b356eef76d8db14633d9737bfd222fc0 100755
+--- a/dist/cli/index.js
++++ b/dist/cli/index.js
+@@ -494,18 +494,8 @@ var normalizeBetaRelation = ({
+     table: relation.targetTable,
+     fallbackTableName: relation.targetTableName
+   });
+-  const sourceFieldNames = relation.sourceColumns.map(
+-    (column) => getDrizzleColumnKeyFromColumnName({
+-      columnName: column.name,
+-      table: getColumnTable(column)
+-    })
+-  );
+-  const targetFieldNames = relation.targetColumns.map(
+-    (column) => getDrizzleColumnKeyFromColumnName({
+-      columnName: column.name,
+-      table: getColumnTable(column)
+-    })
+-  );
++  const sourceFieldNames = relation.sourceColumns.map((column) => column._.key);
++  const targetFieldNames = relation.targetColumns.map((column) => column._.key);
+   if (!sourceFieldNames.length || !targetFieldNames.length) {
+     throw new Error(
+       `drizzle-zero: Missing join columns for beta relation ${sourceTableName}.${relation.fieldName}`
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 3a164023730d29705e8dc09c16700cf3a36aad42..26241736393da9c0caa77c348531b4428ecd5d50 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -403,18 +403,8 @@ var normalizeBetaRelation = ({
+     table: relation.targetTable,
+     fallbackTableName: relation.targetTableName
+   });
+-  const sourceFieldNames = relation.sourceColumns.map(
+-    (column) => getDrizzleColumnKeyFromColumnName({
+-      columnName: column.name,
+-      table: (0, import_column.getColumnTable)(column)
+-    })
+-  );
+-  const targetFieldNames = relation.targetColumns.map(
+-    (column) => getDrizzleColumnKeyFromColumnName({
+-      columnName: column.name,
+-      table: (0, import_column.getColumnTable)(column)
+-    })
+-  );
++  const sourceFieldNames = relation.sourceColumns.map((column) => column._.key);
++  const targetFieldNames = relation.targetColumns.map((column) => column._.key);
+   if (!sourceFieldNames.length || !targetFieldNames.length) {
+     throw new Error(
+       `drizzle-zero: Missing join columns for beta relation ${sourceTableName}.${relation.fieldName}`
+diff --git a/dist/index.js b/dist/index.js
+index eabce7f22a3b5b77d00992d530f4e9cb8c4a09e8..ed4f59d3bdf4f3bb93a07839f172b1d7dae3bd36 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -382,18 +382,8 @@ var normalizeBetaRelation = ({
+     table: relation.targetTable,
+     fallbackTableName: relation.targetTableName
+   });
+-  const sourceFieldNames = relation.sourceColumns.map(
+-    (column) => getDrizzleColumnKeyFromColumnName({
+-      columnName: column.name,
+-      table: getColumnTable(column)
+-    })
+-  );
+-  const targetFieldNames = relation.targetColumns.map(
+-    (column) => getDrizzleColumnKeyFromColumnName({
+-      columnName: column.name,
+-      table: getColumnTable(column)
+-    })
+-  );
++  const sourceFieldNames = relation.sourceColumns.map((column) => column._.key);
++  const targetFieldNames = relation.targetColumns.map((column) => column._.key);
+   if (!sourceFieldNames.length || !targetFieldNames.length) {
+     throw new Error(
+       `drizzle-zero: Missing join columns for beta relation ${sourceTableName}.${relation.fieldName}`

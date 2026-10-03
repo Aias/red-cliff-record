@@ -115,6 +115,9 @@
   "engines": {
     "node": ">=26"
   },
+  "patchedDependencies": {
+    "drizzle-zero@1.0.0-beta.1": "patches/drizzle-zero@1.0.0-beta.1.patch"
+  },
   "trustedDependencies": [
     "@parcel/watcher",
     "@rocicorp/zero-sqlite3"

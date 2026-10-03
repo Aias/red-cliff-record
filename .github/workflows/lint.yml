@@ -27,3 +27,7 @@ jobs:
       - run: bun run format:check
       - run: bun run lint:check
       - run: bun run typecheck
+
+      # 5 – Fail when the committed Zero schema differs from the generator's output
+      - run: bun run zero:generate
+      - run: git diff --exit-code src/shared/zero/schema.gen.ts
