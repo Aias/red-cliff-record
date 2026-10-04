@@ -92,6 +92,9 @@
     "@rocicorp/zero-sqlite3",
     "@parcel/watcher",
   ],
+  "patchedDependencies": {
+    "drizzle-zero@1.0.0-beta.1": "patches/drizzle-zero@1.0.0-beta.1.patch",
+  },
   "packages": {
     "@aias/hozo": ["@aias/hozo@workspace:packages/hozo"],
 

@@ -4,6 +4,7 @@ import {
   integer,
   pgEnum,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
@@ -202,3 +203,45 @@ export const GithubCommitChangeSelectSchema = createSelectSchema(githubCommitCha
 export type GithubCommitChangeSelect = typeof githubCommitChanges.$inferSelect;
 export const GithubCommitChangeInsertSchema = createInsertSchema(githubCommitChanges);
 export type GithubCommitChangeInsert = typeof githubCommitChanges.$inferInsert;
+
+export const githubTechnologies = pgTable(
+  'github_technologies',
+  {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull().unique(),
+    recordId: integer('record_id').references(() => records.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
+    ...databaseTimestamps,
+  },
+  (table) => [index().on(table.recordId)]
+);
+
+export const GithubTechnologySelectSchema = createSelectSchema(githubTechnologies);
+export type GithubTechnologySelect = typeof githubTechnologies.$inferSelect;
+export const GithubTechnologyInsertSchema = createInsertSchema(githubTechnologies);
+export type GithubTechnologyInsert = typeof githubTechnologies.$inferInsert;
+
+export const githubCommitTechnologies = pgTable(
+  'github_commit_technologies',
+  {
+    commitId: text('commit_id')
+      .references(() => githubCommits.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      })
+      .notNull(),
+    technologyId: integer('technology_id')
+      .references(() => githubTechnologies.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      })
+      .notNull(),
+    ...databaseTimestampsNonUpdatable,
+  },
+  (table) => [
+    primaryKey({ columns: [table.commitId, table.technologyId] }),
+    index().on(table.technologyId),
+  ]
+);

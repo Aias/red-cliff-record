@@ -36,12 +36,11 @@ Canonical guide: `INTEGRATIONS.md`.
 
 ## Database Management
 
-Canonical operations: `README.md` and `src/server/db/db-manager.sh`.
+Canonical operations: `README.md` and `src/server/db/db-manager.sh`. Migration workflow, including the Zero publication steps: `AGENTS.md` (Database Migrations).
 
-- `bun run db:generate` to generate migration files (safe for agent)
+- `bun run db:generate` to generate migration files
 - `bun run db:studio` for database inspection
-- Never run migrations (`bun run db:migrate`, `bunx drizzle-kit migrate`) — always provide the command for the user to run
-- When migrating a Zero-synced table (records, links, elo_matchups, media): `bun run zero:generate` for the client schema first, then `bun run zero:publication` on both sides of the migration — the `zero_data` publication names columns explicitly (to exclude `text_embedding`/`text_search`) and a pinned column list never picks up new columns. Skip the run after and clients fail with `SchemaVersionNotSupported` however often the replica is rebuilt; skip the run before and Postgres refuses to drop a column the publication still names. zero-cache applies published DDL live; a replica rebuild is recovery only, never routine (`README.md`, Zero Sync Engine)
+- Apply and verify every migration against dev before handoff. Never migrate prod: merging to main deploys migrations
 - Never run destructive operations without explicit user permission
 - Backups are named by environment (`prod-{timestamp}.dump`, `dev-{timestamp}.dump`), not database name
 

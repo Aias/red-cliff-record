@@ -28,6 +28,7 @@ const fetchRecordBatch = (offset: number) =>
           airtableFormats: { columns: { id: true } },
           airtableSpaces: { columns: { id: true } },
           githubRepositories: { columns: { id: true } },
+          githubTechnologies: { columns: { id: true } },
           githubUsers: { columns: { id: true } },
           lightroomImages: { columns: { id: true } },
           raindropBookmarks: { columns: { id: true } },
@@ -55,7 +56,11 @@ const deriveSources = (record: RecordWithRelations): IntegrationType[] => {
   ) {
     sources.push('airtable');
   }
-  if (record.githubRepositories.length > 0 || record.githubUsers.length > 0) {
+  if (
+    record.githubRepositories.length > 0 ||
+    record.githubTechnologies.length > 0 ||
+    record.githubUsers.length > 0
+  ) {
     sources.push('github');
   }
   if (
