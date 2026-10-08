@@ -97,7 +97,11 @@ export function Basket() {
     <Popover.Root>
       <Popover.Trigger
         render={
-          <Button variant="ghost" css={basket.count > 0 ? { color: 'accent' } : undefined}>
+          <Button
+            variant="ghost"
+            data-filled={basket.count > 0 || undefined}
+            css={{ '&[data-filled]': { color: 'accent' } }}
+          >
             <ShoppingBasketIcon />
             {basket.count > 0 && <span>{basket.count}</span>}
             <styled.span css={{ srOnly: true }}>items in basket</styled.span>
@@ -106,7 +110,8 @@ export function Basket() {
       />
       <Popover.Content
         align="end"
-        css={{ width: basket.count > 0 ? '128' : '[max-content]', padding: '0' }}
+        data-filled={basket.count > 0 || undefined}
+        css={{ width: '[max-content]', padding: '0', '&[data-filled]': { width: '128' } }}
       >
         {basket.count === 0 ? (
           <styled.p
