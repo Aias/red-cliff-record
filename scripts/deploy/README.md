@@ -55,6 +55,12 @@ The `ecosystem.config.cjs` file in the root directory manages:
 - **red-cliff-zero-cache**: The Zero sync engine, which replicates the entity graph to clients. The app cannot load data without it; database prerequisites (`wal_level`, publication, `ZERO_*` variables) are in the main `README.md` → Zero Sync Engine
 - **red-cliff-deploy**: The auto-deployment monitor that checks for updates every 60 seconds
 
+The `prebuild` hook restarts Zero and waits for its local readiness endpoint before the deployment build writes any output. It runs only when the build belongs to this checkout's deployment monitor. Ordinary local and CI builds do not touch PM2. This keeps new clients from connecting to an older Zero server, including when PM2 watches `dist`.
+
+The running monitor reads the hook from `package.json` on each `bun run build`, so changes to the hook take effect after a pull without restarting the monitor. A failed restart or readiness check blocks the build. A pending commit in `.zero-cache/pending-deploy-commit` lets retries wait for a slow Zero startup without restarting it again. The hook clears the marker once Zero is ready.
+
+Zero needs at least five ChangeDB connections plus one per view-syncer. The two workers in `.env.example` require at least seven ChangeDB connections, in addition to upstream and CVR database connections. `ZERO_CHANGE_MAX_CONNS` does not limit ChangeDB usage.
+
 Two of the moving parts sit outside the auto-deploy loop:
 
 - The monitor holds its loaded copy of `auto-deploy.sh` in memory, so edits to the script (new deploy steps included) take effect only after `pm2 restart red-cliff-deploy`.

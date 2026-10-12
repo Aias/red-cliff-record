@@ -88,23 +88,17 @@ while true; do
                     continue
                 fi
 
-                # Build the application
                 log "Building application..."
-                # Build hozo package first, then the main app
-                if bun run build; then
+                if name=red-cliff-deploy pm_exec_path="$REPO_DIR/scripts/deploy/auto-deploy.sh" bun run build; then
                     log "Build successful"
-                    
-                    # Restart the server and sync engine via PM2
-                    log "Restarting PM2 processes..."
-                    if pm2 restart red-cliff-record red-cliff-zero-cache; then
-                        log "PM2 restart successful"
+
+                    log "Restarting application..."
+                    if pm2 restart red-cliff-record || pm2 reload red-cliff-record; then
+                        log "Deployment complete!"
+                        LAST_COMMIT=$REMOTE_COMMIT
                     else
-                        log "WARNING: PM2 restart failed, trying reload..."
-                        pm2 reload red-cliff-record red-cliff-zero-cache
+                        log "ERROR: Application restart failed"
                     fi
-                    
-                    log "Deployment complete!"
-                    LAST_COMMIT=$REMOTE_COMMIT
                 else
                     log "ERROR: Build failed"
                 fi
