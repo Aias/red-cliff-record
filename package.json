@@ -1,6 +1,6 @@
 {
   "name": "@aias/red-cliff-record",
-  "version": "0.15.2",
+  "version": "0.15.3",
   "license": "MIT",
   "author": {
     "name": "Nick Trombley",
@@ -65,9 +65,9 @@
     "@rocicorp/zero": "~1.10.0",
     "@tanstack/react-form": "2.0.0-alpha.2",
     "@tanstack/react-query": "~5.104.2",
-    "@tanstack/react-router": "~1.170.42",
+    "@tanstack/react-router": "~1.170.44",
     "@tanstack/react-router-ssr-query": "~1.167.3",
-    "@tanstack/react-start": "~1.168.61",
+    "@tanstack/react-start": "~1.169.1",
     "@trpc/client": "~11.19.0",
     "@trpc/server": "~11.19.0",
     "@trpc/tanstack-react-query": "~11.19.0",
