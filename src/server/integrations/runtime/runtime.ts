@@ -1,5 +1,5 @@
 import type { IntegrationType } from '@hozo';
-import { Effect, Exit, Layer, ManagedRuntime } from 'effect';
+import { Effect, Exit, Layer, Logger, ManagedRuntime } from 'effect';
 import { FetchHttpClient } from 'effect/http';
 import { RateLimiter } from 'effect/persistence';
 import { databaseLayer } from './db';
@@ -9,19 +9,20 @@ import { causeMessage, runTrackerLayer, withRun, type SyncSummary } from './run'
 
 const rateLimiterLayer = RateLimiter.layer.pipe(Layer.provide(RateLimiter.layerStoreMemory));
 
-const appLayers = Layer.mergeAll(
+export const appLayer = Layer.mergeAll(
   databaseLayer,
   debugSinkDisabled,
   FetchHttpClient.layer,
   rateLimiterLayer,
-  runTrackerLayer.pipe(Layer.provide(databaseLayer))
+  runTrackerLayer.pipe(Layer.provide(databaseLayer)),
+  Layer.succeed(Logger.LogToStderr, true)
 );
 
 export const runAppEffect = async <A, E>(
-  effect: Effect.Effect<A, E, Layer.Success<typeof appLayers>>,
+  effect: Effect.Effect<A, E, Layer.Success<typeof appLayer>>,
   signal?: AbortSignal
 ): Promise<A> => {
-  const runtime = ManagedRuntime.make(appLayers);
+  const runtime = ManagedRuntime.make(appLayer);
   try {
     const exit = await runtime.runPromiseExit(effect, { signal });
     if (Exit.isSuccess(exit)) return exit.value;

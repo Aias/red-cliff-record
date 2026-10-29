@@ -1,9 +1,12 @@
 import { MediaTypeSchema, type MediaInsert, type MediaType } from '@hozo';
 import { S3Client } from 'bun';
 import mime from 'mime-types';
+import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import type { MediaMetadata } from '@/shared/types/media';
 import { getImageMetadata } from './image-metadata';
 import { validateAndFormatUrl } from './url-utils';
+
+const logger = createIntegrationLogger('media', 'r2');
 
 /* ---------------------------------------------------------------------------
  * Constants & Defaults
@@ -183,12 +186,12 @@ export async function getSmartMetadata(url: string): Promise<MediaMetadata> {
  */
 export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
   if (mediaUrl.includes(PUBLIC_DOMAIN)) {
-    console.log(`Media URL already on R2: ${mediaUrl}`);
+    logger.info(`Media URL already on R2: ${mediaUrl}`);
     return mediaUrl;
   }
 
   const startTime = Date.now();
-  console.log(`[Media Upload] Starting download: ${mediaUrl}`);
+  logger.info(`Starting download: ${mediaUrl}`);
 
   // 1. Download
   const resp = await fetch(mediaUrl);
@@ -201,25 +204,23 @@ export async function uploadMediaToR2(mediaUrl: string): Promise<string> {
   const contentType = resp.headers.get('content-type') ?? getMimeTypeFromURL(mediaUrl);
   const sizeMB = contentLength ? (parseInt(contentLength) / (1024 * 1024)).toFixed(2) : 'unknown';
 
-  console.log(
-    `[Media Upload] Downloaded ${sizeMB}MB of ${contentType} in ${Date.now() - startTime}ms`
-  );
+  logger.info(`Downloaded ${sizeMB}MB of ${contentType} in ${Date.now() - startTime}ms`);
 
   // 3. Key generation
   const key = `${crypto.randomUUID()}.${mime.extension(contentType) || 'bin'}`;
 
   // 4. Upload to R2 using Bun's S3 API
   const uploadStartTime = Date.now();
-  console.log(`[Media Upload] Uploading to R2: ${key} (${sizeMB}MB)`);
+  logger.info(`Uploading to R2: ${key} (${sizeMB}MB)`);
 
   const s3File = s3Client.file(key);
   await s3File.write(resp, { type: contentType });
 
   const totalTime = Date.now() - startTime;
   const uploadTime = Date.now() - uploadStartTime;
-  console.log(`[Media Upload] ✓ Complete: ${mediaUrl} → ${publicURL(key)}`);
-  console.log(
-    `[Media Upload]   Size: ${sizeMB}MB | Download: ${uploadStartTime - startTime}ms | Upload: ${uploadTime}ms | Total: ${totalTime}ms`
+  logger.info(`✓ Complete: ${mediaUrl} → ${publicURL(key)}`);
+  logger.info(
+    `Size: ${sizeMB}MB | Download: ${uploadStartTime - startTime}ms | Upload: ${uploadTime}ms | Total: ${totalTime}ms`
   );
 
   return publicURL(key);
@@ -249,7 +250,7 @@ export async function uploadClientFileToR2(
   const s3File = s3Client.file(key);
   await s3File.write(fileBuffer, { type: contentType });
 
-  console.log(`[uploadClientFileToR2] uploaded ${key}`);
+  logger.info(`uploaded ${key}`);
   return publicURL(key);
 }
 
@@ -259,7 +260,7 @@ export async function uploadClientFileToR2(
 export async function deleteMediaFromR2(assetId: string): Promise<void> {
   const s3File = s3Client.file(assetId);
   await s3File.delete();
-  console.log(`Successfully deleted ${assetId} from R2 bucket ${BUCKET}`);
+  logger.info(`Successfully deleted ${assetId} from R2 bucket ${BUCKET}`);
 }
 
 /**
