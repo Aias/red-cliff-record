@@ -8,6 +8,7 @@ const createDb = () =>
     connection: {
       url: getDatabaseUrl(),
       connectionTimeout: 5,
+      bigint: true,
     },
     relations,
     jit: true,
