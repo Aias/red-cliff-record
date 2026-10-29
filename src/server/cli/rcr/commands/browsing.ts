@@ -1,89 +1,53 @@
-/**
- * Browsing history commands for the CLI
- *
- * These are thin wrappers around tRPC procedures,
- * reusing all query logic from the API routers.
- */
-
-import { DateSchema } from '@/shared/types/api';
-import { BaseOptionsSchema, parseOptions } from '../lib/args';
+import { Argument, Command } from 'effect/cli';
+import { dateArgument } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
-import { createError } from '../lib/errors';
-import { success } from '../lib/output';
-import type { CommandHandler } from '../lib/types';
+import { respond, success } from '../lib/output';
 
 const caller = createCLICaller();
 
-const DailyOptionsSchema = BaseOptionsSchema.extend({}).strict();
+const patternArgument = Argument.String('pattern').pipe(
+  Argument.withDescription('SQL LIKE pattern (% is a wildcard)')
+);
 
-/**
- * Get daily browsing summary
- * Usage: rcr browsing daily <date>
- * Example: rcr browsing daily 2026-01-03
- */
-export const daily: CommandHandler = async (args, options) => {
-  parseOptions(DailyOptionsSchema, options);
+const daily = Command.make(
+  'daily',
+  {
+    date: dateArgument,
+  },
+  ({ date }) => respond(async () => success(await caller.browsing.dailySummary({ date })))
+).pipe(
+  Command.withDescription('Daily browsing summary'),
+  Command.withExamples([{ command: 'rcr browsing daily 2026-01-03' }])
+);
 
-  const date = args[0];
-  if (!date) {
-    throw createError('VALIDATION_ERROR', 'Date is required (format: YYYY-MM-DD)');
-  }
+const omit = Command.make('omit', {}, () =>
+  respond(async () => {
+    const result = await caller.browsing.listOmitPatterns();
+    return success(result, { count: result.length });
+  })
+).pipe(Command.withDescription('List omit patterns'));
 
-  const parsedDate = DateSchema.safeParse(date);
-  if (!parsedDate.success) {
-    throw createError('VALIDATION_ERROR', 'Invalid date format. Use YYYY-MM-DD');
-  }
+const omitAdd = Command.make('omit-add', { pattern: patternArgument }, ({ pattern }) =>
+  respond(async () => success(await caller.browsing.upsertOmitPattern({ pattern })))
+).pipe(
+  Command.withDescription('Add a pattern to the omit list'),
+  Command.withExamples([{ command: `rcr browsing omit-add '%example.com%'` }])
+);
 
-  const result = await caller.browsing.dailySummary({ date: parsedDate.data });
+const omitDelete = Command.make(
+  'omit-delete',
+  { patterns: patternArgument.pipe(Argument.variadic({ min: 1 })) },
+  ({ patterns }) =>
+    respond(async () => {
+      const result = await caller.browsing.deleteOmitPatterns([...patterns]);
+      return success(result, { count: result.length });
+    })
+).pipe(
+  Command.withDescription('Delete patterns from the omit list'),
+  Command.withExamples([{ command: `rcr browsing omit-delete '%example.com%' '%test.com%'` }])
+);
 
-  return success(result);
-};
-
-/**
- * List all omit patterns
- * Usage: rcr browsing omit
- */
-export const omit: CommandHandler = async (_args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-
-  const result = await caller.browsing.listOmitPatterns();
-
-  return success(result, { count: result.length });
-};
-
-/**
- * Add a pattern to the omit list
- * Usage: rcr browsing omit-add <pattern>
- * Example: rcr browsing omit-add "%example.com%"
- */
-const omitAdd: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-
-  const pattern = args[0];
-  if (!pattern) {
-    throw createError('VALIDATION_ERROR', 'Pattern is required (SQL LIKE syntax: % for wildcard)');
-  }
-
-  const result = await caller.browsing.upsertOmitPattern({ pattern });
-
-  return success(result);
-};
-
-/**
- * Delete patterns from the omit list
- * Usage: rcr browsing omit-delete <pattern...>
- * Example: rcr browsing omit-delete "%example.com%" "%test.com%"
- */
-const omitDelete: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-
-  if (args.length === 0) {
-    throw createError('VALIDATION_ERROR', 'At least one pattern is required');
-  }
-
-  const result = await caller.browsing.deleteOmitPatterns(args);
-
-  return success(result, { count: result.length });
-};
-
-export { omitAdd as 'omit-add', omitDelete as 'omit-delete' };
+export const browsing = Command.make('browsing').pipe(
+  Command.withDescription('Browsing history'),
+  Command.withSubcommands([daily, omit, omitAdd, omitDelete])
+);

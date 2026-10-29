@@ -1,5 +1,5 @@
 import { PREDICATES } from '@hozo';
-import { initTRPC } from '@trpc/server';
+import { initTRPC, TRPCError } from '@trpc/server';
 import DataLoader from 'dataloader';
 import superjson from 'superjson';
 import { z, ZodError } from 'zod';
@@ -17,7 +17,7 @@ function createRecordLoader() {
     const rows = await db.query.records.findMany({
       where: {
         id: {
-          in: ids as number[],
+          in: [...ids],
         },
       },
       columns: {
@@ -60,7 +60,7 @@ function createRecordLoader() {
       const record = byId.get(id);
       return record
         ? { ...record, matchupCount: counts.get(id) ?? 0 }
-        : new Error(`Record not found for ID: ${id}`);
+        : new TRPCError({ code: 'NOT_FOUND', message: `Record ${id} not found` });
     });
   });
 }

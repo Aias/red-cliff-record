@@ -9,11 +9,14 @@ import {
 import { TRPCError } from '@trpc/server';
 import { EmptyFilter, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import { getMediaInsertData, uploadClientFileToR2, uploadMediaToR2 } from '@/server/lib/media';
 import { embedRecordById } from '@/server/services/embed-records';
 import { generateAltText } from '@/server/services/generate-alt-text';
 import { IdSchema, LimitSchema, OffsetSchema } from '@/shared/types/api';
 import { createTRPCRouter, publicProcedure } from '../init';
+
+const logger = createIntegrationLogger('api', 'media');
 
 // Schema for media create input
 const MediaCreateFileInputSchema = z.object({
@@ -229,7 +232,7 @@ export const mediaRouter = createTRPCRouter({
         .where(inArray(airtableAttachments.mediaId, input))
         .returning();
       for (const attachment of deletedAirtableAttachments) {
-        console.log(`Deleted Airtable attachment ${attachment.filename} (${attachment.id})`);
+        logger.info(`Deleted Airtable attachment ${attachment.filename} (${attachment.id})`);
       }
 
       // Lightroom
@@ -239,7 +242,7 @@ export const mediaRouter = createTRPCRouter({
         .where(inArray(lightroomImages.mediaId, input))
         .returning();
       for (const image of deletedLightroomImages) {
-        console.log(`Deleted Lightroom image ${image.fileName} (${image.id})`);
+        logger.info(`Deleted Lightroom image ${image.fileName} (${image.id})`);
       }
 
       // Raindrop
@@ -249,7 +252,7 @@ export const mediaRouter = createTRPCRouter({
         .where(inArray(raindropImages.mediaId, input))
         .returning();
       for (const image of deletedRaindropImages) {
-        console.log(`Deleted Raindrop image ${image.url} (${image.id})`);
+        logger.info(`Deleted Raindrop image ${image.url} (${image.id})`);
       }
 
       // Twitter
@@ -259,7 +262,7 @@ export const mediaRouter = createTRPCRouter({
         .where(inArray(twitterMedia.mediaId, input))
         .returning();
       for (const m of deletedTwitterMedia) {
-        console.log(`Deleted Twitter media ${m.mediaUrl} (${m.id})`);
+        logger.info(`Deleted Twitter media ${m.mediaUrl} (${m.id})`);
       }
 
       // Delete the main media records
