@@ -26,15 +26,14 @@
     "access": "public"
   },
   "scripts": {
-    "dev:watch": "tsup src/index.ts --format esm --sourcemap --watch",
+    "dev:watch": "bun build src/index.ts --outdir dist --target node --packages external --sourcemap=linked --watch",
     "lint": "oxlint --fix --type-aware . && tsc --noEmit",
-    "prepack": "bunx --bun tsup src/index.ts --format esm --sourcemap --clean && bunx --bun tsc -p . --noEmit false --emitDeclarationOnly",
+    "prepack": "rm -rf dist && bun build src/index.ts --outdir dist --target node --packages external --sourcemap=linked && bunx --bun tsc -p . --noEmit false --emitDeclarationOnly",
     "test": "bun test"
   },
   "devDependencies": {
     "drizzle-kit": "1.0.0-rc.5",
     "drizzle-orm": "1.0.0-rc.5",
-    "tsup": "~9.0.0",
     "typescript": "7.1.0-beta",
     "zod": "~4.6.7"
   },
