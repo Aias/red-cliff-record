@@ -1,162 +1,127 @@
-import { z } from 'zod';
+import { Effect, Option } from 'effect';
+import { Argument, Command, Flag } from 'effect/cli';
+import { describeError } from '@/server/integrations/runtime/errors';
 import { runFormatEnrichment } from '@/server/services/classify-record-format';
 import { runEmbedRecordsIntegration } from '@/server/services/embed-records';
 import { runAltTextIntegration } from '@/server/services/generate-alt-text';
 import { runEloRefit } from '@/server/services/refit-elo';
 import { runSaveAvatarsIntegration } from '@/server/services/save-avatars';
 import { runUpdateSourcesIntegration } from '@/server/services/update-sources';
-import { assertNever } from '@/shared/lib/type-utils';
-import { BaseOptionsSchema, parseOptions } from '../lib/args';
+import { positiveIntFlag } from '../lib/args';
 import { createError } from '../lib/errors';
-import { withInterruptSignal } from '../lib/interrupt';
-import { success } from '../lib/output';
-import type { CommandHandler } from '../lib/types';
+import { respondWith, success } from '../lib/output';
 
-const EnrichmentNameSchema = z.enum([
+const ENRICHMENTS = ['avatars', 'alt-text', 'embeddings', 'formats', 'elo', 'sources'] as const;
+type EnrichmentName = (typeof ENRICHMENTS)[number];
+
+const DEFAULT_ENRICHMENTS: ReadonlyArray<EnrichmentName> = [
   'avatars',
   'alt-text',
   'embeddings',
-  'formats',
   'elo',
-  'sources',
-]);
-type EnrichmentName = z.infer<typeof EnrichmentNameSchema>;
-const ENRICHMENT_LIST = EnrichmentNameSchema.options;
-
-const DEFAULT_ENRICHMENTS: EnrichmentName[] = ['avatars', 'alt-text', 'embeddings', 'elo'];
-
-const EnrichOptionsSchema = BaseOptionsSchema.extend({
-  limit: z.coerce.number().positive().int().optional(),
-}).strict();
-
-export const run: CommandHandler = (args, options) =>
-  withInterruptSignal(async (signal) => {
-    const parsedOptions = parseOptions(EnrichOptionsSchema, options);
-    const { debug, limit } = parsedOptions;
-
-    const rawEnrichment = args[0]?.toLowerCase();
-
-    if (!rawEnrichment) {
-      return runAllEnrichments({ debug, limit, signal });
-    }
-
-    const enrichmentResult = EnrichmentNameSchema.safeParse(rawEnrichment);
-    if (!enrichmentResult.success) {
-      throw createError(
-        'VALIDATION_ERROR',
-        `Unknown enrichment: ${rawEnrichment}. Available: ${ENRICHMENT_LIST.join(', ')}`
-      );
-    }
-    const enrichment = enrichmentResult.data;
-
-    if (enrichment !== 'alt-text' && enrichment !== 'formats' && limit !== undefined) {
-      throw createError(
-        'VALIDATION_ERROR',
-        '--limit is only supported for `rcr enrich alt-text` and `rcr enrich formats`.'
-      );
-    }
-
-    const result = await runSingleEnrichment(enrichment, { debug, limit, signal });
-    return success(result);
-  });
+];
 
 interface EnrichOptions {
   debug: boolean;
-  limit?: number;
-  signal: AbortSignal;
+  limit: number | undefined;
 }
 
-async function runSingleEnrichment(enrichment: EnrichmentName, options: EnrichOptions) {
-  const { debug, limit, signal } = options;
-  const startTime = performance.now();
+const runners: Record<
+  EnrichmentName,
+  (options: EnrichOptions, signal: AbortSignal) => Promise<object>
+> = {
+  avatars: async (_options, signal) => {
+    await runSaveAvatarsIntegration(signal);
+    return {};
+  },
+  'alt-text': (options, signal) => runAltTextIntegration({ ...options, signal }),
+  embeddings: async (_options, signal) => {
+    await runEmbedRecordsIntegration(signal);
+    return {};
+  },
+  formats: async ({ limit }, signal) => ({
+    assigned: (await runFormatEnrichment({ limit, signal })).entriesCreated,
+  }),
+  elo: () => runEloRefit(),
+  sources: (_options, signal) => runUpdateSourcesIntegration(signal),
+};
 
-  switch (enrichment) {
-    case 'avatars': {
-      await runSaveAvatarsIntegration(signal);
-      return {
-        enrichment,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'alt-text': {
-      const result = await runAltTextIntegration({ debug, limit, signal });
-      return {
-        enrichment,
-        success: true,
-        ...result,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'embeddings': {
-      await runEmbedRecordsIntegration(signal);
-      return {
-        enrichment,
-        success: true,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'formats': {
-      const result = await runFormatEnrichment({ limit, signal });
-      return {
-        enrichment,
-        success: true,
-        assigned: result.entriesCreated,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'elo': {
-      const result = await runEloRefit();
-      return {
-        enrichment,
-        success: true,
-        ...result,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    case 'sources': {
-      const result = await runUpdateSourcesIntegration(signal);
-      return {
-        enrichment,
-        success: true,
-        ...result,
-        duration: Math.round(performance.now() - startTime),
-      };
-    }
-    default:
-      assertNever(enrichment);
-  }
-}
+const runEnrichment = (enrichment: EnrichmentName, options: EnrichOptions) =>
+  Effect.gen(function* () {
+    const startTime = performance.now();
+    const result = yield* Effect.tryPromise({
+      try: (signal) => runners[enrichment](options, signal),
+      catch: (cause) => cause,
+    });
+    return {
+      enrichment,
+      success: true,
+      ...result,
+      duration: Math.round(performance.now() - startTime),
+    };
+  });
 
-async function runAllEnrichments(options: EnrichOptions) {
-  const results: Array<{ enrichment: string; success: boolean; error?: string }> = [];
-  const startTime = performance.now();
-
-  for (const enrichment of DEFAULT_ENRICHMENTS) {
-    options.signal.throwIfAborted();
-    try {
-      await runSingleEnrichment(enrichment, options);
-      results.push({ enrichment, success: true });
-    } catch (e) {
-      results.push({
-        enrichment,
-        success: false,
-        error: e instanceof Error ? e.message : String(e),
-      });
-    }
-  }
-
-  const successCount = results.filter((r) => r.success).length;
-
-  return success(
-    {
+const runAllEnrichments = (options: EnrichOptions) =>
+  Effect.gen(function* () {
+    const results = yield* Effect.forEach(DEFAULT_ENRICHMENTS, (enrichment) =>
+      runEnrichment(enrichment, options).pipe(
+        Effect.match({
+          onFailure: (error) => ({ enrichment, success: false, error: describeError(error) }),
+          onSuccess: () => ({ enrichment, success: true }),
+        })
+      )
+    );
+    const succeeded = results.filter((result) => result.success).length;
+    return success({
       results,
       summary: {
-        total: DEFAULT_ENRICHMENTS.length,
-        succeeded: successCount,
-        failed: DEFAULT_ENRICHMENTS.length - successCount,
+        total: results.length,
+        succeeded,
+        failed: results.length - succeeded,
       },
-    },
-    { duration: Math.round(performance.now() - startTime) }
-  );
-}
+    });
+  });
+
+export const enrich = Command.make(
+  'enrich',
+  {
+    enrichment: Argument.Literals('enrichment', ENRICHMENTS).pipe(
+      Argument.withDescription(`Enrichment to run; omit to run ${DEFAULT_ENRICHMENTS.join(', ')}`),
+      Argument.optional
+    ),
+    debug: Flag.Boolean('debug').pipe(
+      Flag.withDescription('Run without writing results (alt-text only)'),
+      Flag.withDefault(false)
+    ),
+    limit: positiveIntFlag('limit').pipe(
+      Flag.withDescription('Maximum records to process (alt-text and formats only)'),
+      Flag.optional
+    ),
+  },
+  ({ enrichment, debug, limit }) =>
+    respondWith(
+      Effect.gen(function* () {
+        const options = { debug, limit: Option.getOrUndefined(limit) };
+        if (Option.isNone(enrichment)) return yield* runAllEnrichments(options);
+        if (
+          options.limit !== undefined &&
+          enrichment.value !== 'alt-text' &&
+          enrichment.value !== 'formats'
+        ) {
+          return yield* Effect.fail(
+            createError(
+              'VALIDATION_ERROR',
+              '--limit is only supported for `rcr enrich alt-text` and `rcr enrich formats`.'
+            )
+          );
+        }
+        return success(yield* runEnrichment(enrichment.value, options));
+      })
+    )
+).pipe(
+  Command.withDescription('Run record enrichments'),
+  Command.withExamples([
+    { command: 'rcr enrich', description: 'Run the default enrichments' },
+    { command: 'rcr enrich formats --limit 50', description: 'Assign formats to 50 records' },
+  ])
+);

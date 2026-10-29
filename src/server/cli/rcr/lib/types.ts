@@ -2,17 +2,6 @@
  * CLI type definitions for the rcr command
  */
 
-export type OutputFormat = 'json' | 'table';
-
-export interface ParsedArgs {
-  command: string;
-  subcommand: string;
-  args: string[];
-  options: RawCLIOptions;
-}
-
-export type RawCLIOptions = Record<string, string | boolean | number | undefined>;
-
 export type ResultValue =
   | undefined
   | string
@@ -55,12 +44,3 @@ export type ErrorCode =
   | 'UNKNOWN_COMMAND'
   | 'PERMISSION_DENIED'
   | 'INTERNAL_ERROR';
-
-export type Result<T extends ResultValue = ResultValue> = SuccessResult<T> | ErrorResult;
-
-export type CommandHandler<T extends ResultValue = ResultValue> = (
-  args: string[],
-  options: RawCLIOptions
-) => Promise<SuccessResult<T>>;
-
-export type CommandMap = Record<string, Record<string, CommandHandler>>;
