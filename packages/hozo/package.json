@@ -1,6 +1,6 @@
 {
   "name": "@aias/hozo",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "description": "Shared schema, relations, and validation for Red Cliff Record",
   "license": "MIT",
   "repository": {
@@ -26,20 +26,19 @@
     "access": "public"
   },
   "scripts": {
-    "dev:watch": "tsup src/index.ts --format esm --sourcemap --watch",
+    "dev:watch": "bun build src/index.ts --outdir dist --target node --packages external --sourcemap=linked --watch",
     "lint": "oxlint --fix --type-aware . && tsc --noEmit",
-    "prepack": "bunx --bun tsup src/index.ts --format esm --sourcemap --clean && bunx --bun tsc -p . --noEmit false --emitDeclarationOnly",
+    "prepack": "rm -rf dist && bun build src/index.ts --outdir dist --target node --packages external --sourcemap=linked && bunx --bun tsc -p . --noEmit false --emitDeclarationOnly",
     "test": "bun test"
   },
   "devDependencies": {
-    "drizzle-kit": "1.0.0-rc.5-5935859",
-    "drizzle-orm": "1.0.0-rc.5-5935859",
-    "tsup": "~8.5.1",
-    "typescript": "~7.0.2",
-    "zod": "~4.6.6"
+    "drizzle-kit": "1.0.0-rc.5",
+    "drizzle-orm": "1.0.0-rc.5",
+    "typescript": "7.1.0-beta",
+    "zod": "~4.6.7"
   },
   "peerDependencies": {
-    "drizzle-orm": "1.0.0-rc.5-5935859",
-    "zod": "~4.6.6"
+    "drizzle-orm": "1.0.0-rc.5",
+    "zod": "~4.6.7"
   }
 }

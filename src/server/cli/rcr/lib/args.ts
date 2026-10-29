@@ -1,198 +1,62 @@
-/**
- * Minimal argument parsing for the CLI
- * No external dependencies - parses process.argv directly
- */
-
+import { Option } from 'effect';
+import { Argument, Flag } from 'effect/cli';
 import type { ZodType } from 'zod';
-import { z } from 'zod';
-import { CoercedIdSchema, IdSchema, LimitSchema, OffsetSchema } from '@/shared/types/api';
+import { DateSchema } from '@/shared/types/api';
 import { createError } from './errors';
-import type { ParsedArgs, RawCLIOptions, ResultValue } from './types';
 
-// ─────────────────────────────────────────────────────────────
-// Reusable CLI Schemas
-// ─────────────────────────────────────────────────────────────
+const isPositive = (value: number) => value > 0;
+const notPositive = (value: number) => `Expected a positive integer, got ${value}`;
 
-export const BaseOptionsSchema = z.object({
-  format: z.enum(['json', 'table']).default('json'),
-  help: z.boolean().default(false),
-  version: z.boolean().default(false),
-  debug: z.boolean().default(false),
-  raw: z.boolean().default(false), // Output just data without {data, meta} wrapper
-  dev: z.boolean().default(false), // Use development database
-});
+export const idArgument = (name = 'id') =>
+  Argument.Int(name).pipe(Argument.filter(isPositive, notPositive));
 
-export type BaseOptions = z.infer<typeof BaseOptionsSchema>;
+export const idsArgument = idArgument().pipe(Argument.variadic({ min: 1 }));
 
-/** Comma-separated list of IDs (e.g., "1,2,3" or just a single number) */
-export const CommaSeparatedIdsSchema = z.preprocess((value) => {
-  if (typeof value === 'number') return [value];
-  if (typeof value === 'string') {
-    return value
-      .split(',')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0)
-      .map((item) => Number(item));
-  }
-  return value;
-}, z.array(IdSchema));
+export const positiveIntFlag = (name: string) =>
+  Flag.Int(name).pipe(Flag.filter(isPositive, notPositive));
 
-/** Re-export commonly used schemas from shared types */
-export { IdSchema, LimitSchema, OffsetSchema };
+export const limitFlag = (fallback: number) =>
+  positiveIntFlag('limit').pipe(
+    Flag.withDescription('Maximum number of results'),
+    Flag.withDefault(fallback)
+  );
 
-function parseOptionValue(value: string): string | number | boolean {
-  // Boolean-like strings
-  if (value === 'true') return true;
-  if (value === 'false') return false;
+export const offsetFlag = Flag.Int('offset').pipe(
+  Flag.filter(
+    (offset) => offset >= 0,
+    (offset) => `Expected a non-negative offset, got ${offset}`
+  ),
+  Flag.withDescription('Number of results to skip'),
+  Flag.withDefault(0)
+);
 
-  // Numbers
-  const num = Number(value);
-  if (!isNaN(num) && value.trim() !== '') return num;
+/** A boolean filter that is unset unless given as --name or --no-name. */
+export const filterFlag = (name: string, description: string) =>
+  Flag.Boolean(name).pipe(Flag.withDescription(description), Flag.optional);
 
-  // Default to string
-  return value;
-}
+export const dateArgument = Argument.String('date').pipe(
+  Argument.withDescription('Day as YYYY-MM-DD'),
+  Argument.filter(
+    (date) => DateSchema.safeParse(date).success,
+    (date) => `Expected a date formatted YYYY-MM-DD, got ${date}`
+  )
+);
 
-const SHORT_OPTIONS_WITH_VALUES = new Set(['f']);
+export const dataFlag = Flag.String('data').pipe(
+  Flag.withDescription('JSON payload; read from stdin when omitted'),
+  Flag.optional
+);
 
-export function parseArgs(argv: string[]): ParsedArgs {
-  const options: RawCLIOptions = {};
-  const positional: string[] = [];
-
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]!;
-
-    if (arg === '--') {
-      positional.push(...argv.slice(i + 1));
-      break;
-    }
-    if (arg === '--help' || arg === '-h') {
-      options.help = true;
-    } else if (arg === '--version' || arg === '-v') {
-      options.version = true;
-    } else if (arg.startsWith('--')) {
-      // Handle --key=value or --key value
-      const eqIndex = arg.indexOf('=');
-      if (eqIndex !== -1) {
-        const key = arg.slice(2, eqIndex);
-        const value = arg.slice(eqIndex + 1);
-        options[key] = parseOptionValue(value);
-      } else {
-        const key = arg.slice(2);
-        const nextArg = argv[i + 1];
-        // Check if next arg looks like a value (not another flag)
-        if (nextArg && !nextArg.startsWith('-')) {
-          options[key] = parseOptionValue(nextArg);
-          i++; // Skip the value
-        } else {
-          // Flag without value = true
-          options[key] = true;
-        }
-      }
-    } else if (arg.startsWith('-') && arg.length > 3 && !arg.startsWith('--') && arg[2] === '=') {
-      // Handle short option assignment: -k=value
-      const key = arg[1];
-      const value = arg.slice(3);
-      if (key) {
-        options[key] = parseOptionValue(value);
-      }
-    } else if (arg.startsWith('-') && arg.length === 2) {
-      // Short flags like -v, -q
-      const key = arg.slice(1);
-      if (key === 'h') {
-        options.help = true;
-      } else if (key === 'v') {
-        options.version = true;
-      } else if (SHORT_OPTIONS_WITH_VALUES.has(key)) {
-        const nextArg = argv[i + 1];
-        if (nextArg && !nextArg.startsWith('-')) {
-          options[key] = parseOptionValue(nextArg);
-          i++; // Skip the value
-        } else {
-          options[key] = true;
-        }
-      } else {
-        options[key] = true;
-      }
-    } else {
-      positional.push(arg);
-    }
-  }
-
-  return {
-    command: positional[0] ?? '',
-    subcommand: positional[1] ?? '',
-    args: positional.slice(2),
-    options,
-  };
-}
-
-export function parseBaseOptions(options: RawCLIOptions): BaseOptions {
-  const result = BaseOptionsSchema.loose().safeParse(options);
-  if (!result.success) {
-    throw createError('VALIDATION_ERROR', result.error.message);
-  }
-  return result.data;
-}
-
-export function parseOptions<T>(schema: ZodType<T>, options: RawCLIOptions): T {
-  const result = schema.safeParse(options);
-  if (!result.success) {
-    throw createError('VALIDATION_ERROR', result.error.message);
-  }
-  return result.data;
-}
-
-/**
- * Parse a JSON string from args or stdin
- */
-export async function parseJsonInput<T extends ResultValue>(
-  schema: ZodType<T>,
-  args: string[]
-): Promise<T> {
-  const jsonStr = args.length > 0 ? args.join(' ') : await Bun.stdin.text();
-
-  if (!jsonStr.trim()) {
-    throw createError('VALIDATION_ERROR', 'No JSON input provided');
-  }
-
-  let parsed: ResultValue;
+export async function parseData<T>(schema: ZodType<T>, data: Option.Option<string>): Promise<T> {
+  const json = Option.isSome(data) ? data.value : await Bun.stdin.text();
+  if (!json.trim()) throw createError('VALIDATION_ERROR', 'No JSON input provided');
+  let parsed: unknown;
   try {
-    parsed = JSON.parse(jsonStr);
+    parsed = JSON.parse(json);
   } catch {
     throw createError('VALIDATION_ERROR', 'Invalid JSON input');
   }
-
   const result = schema.safeParse(parsed);
-  if (!result.success) {
-    throw createError('VALIDATION_ERROR', result.error.message);
-  }
-
-  return result.data;
-}
-
-/**
- * Parse a list of IDs from args (coerces strings to numbers)
- */
-export function parseIds(args: string[]): number[] {
-  const result = z.array(CoercedIdSchema).safeParse(args);
-  if (!result.success) {
-    throw createError('VALIDATION_ERROR', `Invalid ID(s): ${args.join(', ')}`);
-  }
-  return result.data;
-}
-
-/**
- * Parse a single required ID from args (coerces string to number)
- */
-export function parseId(args: string[], position = 0): number {
-  const arg = args[position];
-  if (arg === undefined) {
-    throw createError('VALIDATION_ERROR', 'ID is required');
-  }
-  const result = CoercedIdSchema.safeParse(arg);
-  if (!result.success) {
-    throw createError('VALIDATION_ERROR', `Invalid ID: ${arg}`);
-  }
+  if (!result.success) throw createError('VALIDATION_ERROR', result.error.message);
   return result.data;
 }

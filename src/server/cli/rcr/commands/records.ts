@@ -1,512 +1,339 @@
-/**
- * Records commands for the CLI
- *
- * These are thin wrappers around tRPC procedures,
- * reusing all query logic from the API routers.
- */
-
 import { IntegrationTypeSchema, RecordTypeSchema } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import { z } from 'zod';
+import { Option } from 'effect';
+import { Argument, Command, Flag } from 'effect/cli';
 import {
   BulkUpdateDataSchema,
   DEFAULT_LIMIT,
-  LimitSchema,
-  OffsetSchema,
   OrderCriteriaSchema,
-  RecordFiltersSchema,
   RecordUpsertSchema,
-  type ListRecordsInput,
 } from '@/shared/types/api';
-import { BaseOptionsSchema, parseId, parseIds, parseJsonInput, parseOptions } from '../lib/args';
+import {
+  dataFlag,
+  filterFlag,
+  idArgument,
+  idsArgument,
+  limitFlag,
+  offsetFlag,
+  parseData,
+  positiveIntFlag,
+} from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
-import { success } from '../lib/output';
-import type { CommandHandler } from '../lib/types';
-
-/**
- * Parse comma-separated values into an array, validating each against the schema.
- * Returns undefined if the input is undefined.
- */
-function parseCommaSeparated<T>(value: string | undefined, schema: z.ZodType<T>): T[] | undefined {
-  if (value === undefined) return undefined;
-  const items = value
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (items.length === 0) return undefined;
-  return items.map((item) => schema.parse(item));
-}
-
-/**
- * Parse order string like "createdAt:desc,eloScore:asc" into OrderCriteria array
- */
-function parseOrderString(
-  value: string | undefined
-): z.infer<typeof OrderCriteriaSchema>[] | undefined {
-  if (!value) return undefined;
-  const criteria = value
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return criteria.map((criterion) => {
-    const [field, direction = 'desc'] = criterion.split(':');
-    return OrderCriteriaSchema.parse({ field, direction });
-  });
-}
+import { respond, success } from '../lib/output';
+import type { SuccessResult } from '../lib/types';
 
 const caller = createCLICaller();
 
-/**
- * CLI options schema that transforms to ListRecordsInput.
- * Derives validation rules from shared RecordFiltersSchema.
- *
- * Boolean filters support: --flag (true), --flag=true, --flag=false
- * Array filters support comma-separated values: --type=entity,concept
- * Order supports: --order=field:direction,field2:direction2
- */
-const RecordsListOptionsSchema = BaseOptionsSchema.extend({
-  limit: LimitSchema.optional(),
-  offset: OffsetSchema.optional(),
-  // Array filters (comma-separated)
-  type: z.string().optional(), // Parsed as comma-separated, e.g., "entity,concept"
-  source: z.string().optional(), // Parsed as comma-separated, e.g., "readwise,github"
-  // Boolean filters (support =true/=false)
-  curated: z.boolean().optional(),
-  private: z.boolean().optional(),
-  embedding: z.boolean().optional(),
-  media: z.boolean().optional(),
-  parent: z.boolean().optional(),
-  'has-title': z.boolean().optional(),
-  // Range filters
-  'elo-min': RecordFiltersSchema.shape.minElo.optional(),
-  'elo-max': RecordFiltersSchema.shape.maxElo.optional(),
-  format: RecordFiltersSchema.shape.formatId.optional(),
-  // Ordering
-  order: z.string().optional(), // e.g., "createdAt:desc,eloScore:asc"
-  // Output options
-  full: z.boolean().optional(), // Return full records instead of just IDs
-})
-  .strict()
-  .transform((opts): ListRecordsInput & { full?: boolean } => ({
-    filters: {
-      types: parseCommaSeparated(opts.type, RecordTypeSchema),
-      sources: parseCommaSeparated(opts.source, IntegrationTypeSchema),
-      isCurated: opts.curated,
-      isPrivate: opts.private,
-      minElo: opts['elo-min'],
-      maxElo: opts['elo-max'],
-      hasEmbedding: opts.embedding,
-      hasMedia: opts.media,
-      hasParent: opts.parent,
-      formatId: opts.format,
-      hasTitle: opts['has-title'],
-    },
-    limit: opts.limit ?? DEFAULT_LIMIT,
-    offset: opts.offset ?? 0,
-    orderBy: parseOrderString(opts.order) ?? [{ field: 'recordCreatedAt', direction: 'desc' }],
-    full: opts.full,
-  }));
-
-const RecordsGetOptionsSchema = BaseOptionsSchema.extend({
-  links: z.boolean().optional(),
-}).strict();
-
-/**
- * Get record(s) by ID
- * Usage: rcr records get <id...> [--links]
- */
-export const get: CommandHandler = async (args, options) => {
-  const parsedOptions = parseOptions(RecordsGetOptionsSchema, options);
-  const ids = parseIds(args);
-  const includeLinks = parsedOptions.links ?? false;
-
-  if (ids.length === 0) {
-    throw createError('VALIDATION_ERROR', 'At least one ID is required');
+const orNotFound = async <T>(
+  id: number,
+  work: Promise<T>
+): Promise<T | { id: number; error: 'NOT_FOUND' }> => {
+  try {
+    return await work;
+  } catch (e) {
+    if (e instanceof TRPCError && e.code === 'NOT_FOUND') return { id, error: 'NOT_FOUND' };
+    throw e;
   }
-
-  // Fetch records and optionally links in parallel
-  const [recordResults, linksMap] = await Promise.all([
-    Promise.all(
-      ids.map(async (id) => {
-        try {
-          return await caller.records.get({ id });
-        } catch (e) {
-          if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-            return { id, error: 'NOT_FOUND' as const };
-          }
-          throw e;
-        }
-      })
-    ),
-    includeLinks && ids.length > 0 ? caller.links.map({ recordIds: ids }) : Promise.resolve(null),
-  ]);
-
-  // Merge links into records if requested
-  const results = recordResults.map((record) => {
-    if ('error' in record) return record;
-    if (!linksMap) return record;
-
-    const links = linksMap[record.id];
-    return {
-      ...record,
-      incomingLinks: links?.incomingLinks ?? [],
-      allOutgoingLinks: links?.outgoingLinks ?? [],
-    };
-  });
-
-  // Single ID: return the record directly (or throw if not found)
-  if (ids.length === 1) {
-    const result = results[0];
-    if (result && 'error' in result) {
-      throw createError('NOT_FOUND', `Record ${ids[0]} not found`);
-    }
-    return success(result);
-  }
-
-  // Multiple IDs: return array with count
-  return success(results, { count: results.length });
 };
 
-/**
- * List records with filters
- * Usage: rcr records list [--type=...] [--source=...] [--format=ID] [--order=...] [--full] [--limit=...] [--offset=...]
- *
- * Supports comma-separated values for --type and --source:
- *   --type=entity,concept --source=readwise,github
- *
- * Supports ordering with --order=field:direction (comma-separated for multiple):
- *   --order=eloScore:desc,createdAt:asc
- *
- * Use --full to return complete record objects instead of just IDs.
- */
-export const list: CommandHandler = async (_args, options) => {
-  const { full, ...input } = parseOptions(RecordsListOptionsSchema, options);
-  const result = await caller.records.list(input);
+const settle = <T extends { id: number } | { id: number; error: string }>(
+  ids: readonly number[],
+  results: T[]
+): SuccessResult<T | T[]> => {
+  const [result] = results;
+  if (ids.length > 1 || !result) return success(results, { count: results.length });
+  if ('error' in result) {
+    throw result.error === 'NOT_FOUND'
+      ? createError('NOT_FOUND', `Record ${result.id} not found`)
+      : createError('EMBEDDING_ERROR', result.error);
+  }
+  return success(result);
+};
 
-  // If --full is requested, fetch complete records
-  if (full && result.ids.length > 0) {
-    const ids = result.ids.map((r) => r.id);
-    const records = await Promise.all(
+const recordIds = idsArgument.pipe(Argument.withDescription('Record IDs'));
+const recordId = idArgument().pipe(Argument.withDescription('Record ID'));
+
+const orderFlag = Flag.String('order').pipe(
+  Flag.filterMap(
+    (value) => {
+      const [field, direction] = value.split(':');
+      const parsed = OrderCriteriaSchema.safeParse({ field, direction });
+      return parsed.success ? Option.some(parsed.data) : Option.none();
+    },
+    (value) => `Invalid order '${value}'; expected <field>[:asc|:desc]`
+  ),
+  Flag.withDescription(
+    `Sort criterion as <field>[:asc|:desc] (default direction desc); repeatable. Fields: ${OrderCriteriaSchema.shape.field.options.join(', ')}`
+  ),
+  Flag.atLeast(0)
+);
+
+const get = Command.make(
+  'get',
+  {
+    ids: recordIds,
+    links: Flag.Boolean('links').pipe(
+      Flag.withDescription('Include incoming and outgoing links'),
+      Flag.withDefault(false)
+    ),
+  },
+  ({ ids, links }) =>
+    respond(async () => {
+      const [found, linksMap] = await Promise.all([
+        Promise.all(ids.map((id) => orNotFound(id, caller.records.get({ id })))),
+        links ? caller.links.map({ recordIds: [...ids] }) : undefined,
+      ]);
+      return settle(
+        ids,
+        found.map((record) => {
+          if ('error' in record || !linksMap) return record;
+          const recordLinks = linksMap[record.id];
+          return {
+            ...record,
+            incomingLinks: recordLinks?.incomingLinks ?? [],
+            allOutgoingLinks: recordLinks?.outgoingLinks ?? [],
+          };
+        })
+      );
+    })
+).pipe(
+  Command.withDescription('Get records by ID'),
+  Command.withExamples([{ command: 'rcr records get 123 456 --links' }])
+);
+
+const list = Command.make(
+  'list',
+  {
+    types: Flag.Literals('type', RecordTypeSchema.options).pipe(
+      Flag.withDescription('Only records of this type; repeatable'),
+      Flag.atLeast(0)
+    ),
+    sources: Flag.Literals('source', IntegrationTypeSchema.options).pipe(
+      Flag.withDescription('Only records from this integration source; repeatable'),
+      Flag.atLeast(0)
+    ),
+    curated: filterFlag('curated', 'Filter by curated status (--curated or --no-curated)'),
+    private: filterFlag('private', 'Filter by private status (--private or --no-private)'),
+    embedding: filterFlag(
+      'embedding',
+      'Filter by having an embedding (--embedding or --no-embedding)'
+    ),
+    media: filterFlag('media', 'Filter by having media (--media or --no-media)'),
+    parent: filterFlag('parent', 'Filter by having a parent (--parent or --no-parent)'),
+    hasTitle: filterFlag('has-title', 'Filter by having a title (--has-title or --no-has-title)'),
+    eloMin: Flag.Int('elo-min').pipe(Flag.withDescription('Minimum ELO score'), Flag.optional),
+    eloMax: Flag.Int('elo-max').pipe(Flag.withDescription('Maximum ELO score'), Flag.optional),
+    format: positiveIntFlag('format').pipe(
+      Flag.withDescription('Only records with this record format ID'),
+      Flag.optional
+    ),
+    order: orderFlag,
+    full: Flag.Boolean('full').pipe(
+      Flag.withDescription('Return full records instead of IDs'),
+      Flag.withDefault(false)
+    ),
+    limit: limitFlag(DEFAULT_LIMIT),
+    offset: offsetFlag,
+  },
+  (flags) =>
+    respond(async () => {
+      const { limit, offset } = flags;
+      const { ids } = await caller.records.list({
+        filters: {
+          types: flags.types.length ? [...flags.types] : undefined,
+          sources: flags.sources.length ? [...flags.sources] : undefined,
+          isCurated: Option.getOrUndefined(flags.curated),
+          isPrivate: Option.getOrUndefined(flags.private),
+          hasEmbedding: Option.getOrUndefined(flags.embedding),
+          hasMedia: Option.getOrUndefined(flags.media),
+          hasParent: Option.getOrUndefined(flags.parent),
+          hasTitle: Option.getOrUndefined(flags.hasTitle),
+          minElo: Option.getOrUndefined(flags.eloMin),
+          maxElo: Option.getOrUndefined(flags.eloMax),
+          formatId: Option.getOrUndefined(flags.format),
+        },
+        limit,
+        offset,
+        orderBy: flags.order.length
+          ? [...flags.order]
+          : [{ field: 'recordCreatedAt', direction: 'desc' }],
+      });
+      const results = flags.full
+        ? await Promise.all(ids.map(({ id }) => orNotFound(id, caller.records.get({ id }))))
+        : ids;
+      return success(results, { count: results.length, limit, offset });
+    })
+).pipe(
+  Command.withDescription('List records matching filters'),
+  Command.withExamples([
+    {
+      command:
+        'rcr records list --type entity --type concept --no-curated --order eloScore:desc --order title:asc --limit 20',
+    },
+  ])
+);
+
+const create = Command.make('create', { data: dataFlag }, ({ data }) =>
+  respond(async () =>
+    success(await caller.records.upsert(await parseData(RecordUpsertSchema, data)))
+  )
+).pipe(
+  Command.withDescription('Create a record'),
+  Command.withExamples([
+    { command: `rcr records create --data '{"type":"concept","title":"Example"}'` },
+  ])
+);
+
+const update = Command.make('update', { id: recordId, data: dataFlag }, ({ id, data }) =>
+  respond(async () =>
+    success(await caller.records.upsert({ ...(await parseData(RecordUpsertSchema, data)), id }))
+  )
+).pipe(
+  Command.withDescription('Update a record'),
+  Command.withExamples([{ command: `rcr records update 123 --data '{"title":"New title"}'` }])
+);
+
+const bulkUpdate = Command.make(
+  'bulk-update',
+  { ids: recordIds, data: dataFlag },
+  ({ ids, data }) =>
+    respond(async () => {
+      const updatedIds = await caller.records.bulkUpdate({
+        ids: [...ids],
+        data: await parseData(BulkUpdateDataSchema, data),
+      });
+      return success(updatedIds, { count: updatedIds.length });
+    })
+).pipe(
+  Command.withDescription('Apply the same changes to several records'),
+  Command.withExamples([{ command: `rcr records bulk-update 1 2 3 --data '{"isCurated":true}'` }])
+);
+
+const del = Command.make('delete', { ids: recordIds }, ({ ids }) =>
+  respond(async () => {
+    const result = await caller.records.delete([...ids]);
+    return success(result, { count: result.length });
+  })
+).pipe(Command.withDescription('Delete records by ID'));
+
+const merge = Command.make(
+  'merge',
+  {
+    sourceId: idArgument('source-id').pipe(
+      Argument.withDescription('Record merged into the target, then removed')
+    ),
+    targetId: idArgument('target-id').pipe(
+      Argument.withDescription('Record that receives the source record')
+    ),
+  },
+  ({ sourceId, targetId }) =>
+    respond(async () => {
+      if (sourceId === targetId) {
+        throw createError('VALIDATION_ERROR', 'Source and target cannot be the same record');
+      }
+      return success(await caller.records.merge({ sourceId, targetId }));
+    })
+).pipe(
+  Command.withDescription('Merge a source record into a target record'),
+  Command.withExamples([{ command: 'rcr records merge 123 456' }])
+);
+
+const refitElo = Command.make('refit-elo', {}, () =>
+  respond(async () => success(await caller.records.refitElo()))
+).pipe(Command.withDescription('Refit all ELO scores from stored matchup history'));
+
+const embed = Command.make('embed', { ids: recordIds }, ({ ids }) =>
+  respond(async () => {
+    const results = await Promise.all(
       ids.map(async (id) => {
         try {
-          return await caller.records.get({ id });
-        } catch {
-          return { id, error: 'NOT_FOUND' as const };
+          return await caller.records.embed({ id });
+        } catch (e) {
+          if (!(e instanceof TRPCError)) throw e;
+          return { id, error: e.code === 'NOT_FOUND' ? 'NOT_FOUND' : e.message };
         }
       })
     );
-    return success(records, {
-      count: records.length,
-      limit: input.limit,
-      offset: input.offset,
-    });
-  }
+    return settle(ids, results);
+  })
+).pipe(Command.withDescription('Generate embeddings for records'));
 
-  return success(result.ids, {
-    count: result.ids.length,
-    limit: input.limit,
-    offset: input.offset,
-  });
-};
-
-/**
- * Create a new record
- * Usage: rcr records create '<json>' or echo '<json>' | rcr records create
- */
-export const create: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const input = await parseJsonInput(RecordUpsertSchema, args);
-
-  try {
-    const record = await caller.records.upsert(input);
-    return success(record);
-  } catch (e) {
-    if (e instanceof TRPCError) {
-      throw createError('VALIDATION_ERROR', e.message);
-    }
-    throw e;
-  }
-};
-
-/**
- * Update an existing record
- * Usage: rcr records update <id> '<json>'
- */
-export const update: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const id = parseId(args);
-  const input = await parseJsonInput(RecordUpsertSchema, args.slice(1));
-
-  try {
-    const record = await caller.records.upsert({ ...input, id });
-    return success(record);
-  } catch (e) {
-    if (e instanceof TRPCError) {
-      if (e.code === 'NOT_FOUND') {
-        throw createError('NOT_FOUND', `Record ${id} not found`);
-      }
-      throw createError('VALIDATION_ERROR', e.message);
-    }
-    throw e;
-  }
-};
-
-/**
- * Bulk update records
- * Usage: rcr records bulk-update <id,...> '<json-data>'
- *
- * First argument is comma-separated IDs, second is the data to apply to all.
- *
- * Examples:
- *   rcr records bulk-update 1,2,3 '{"isCurated": true}'
- *   rcr records bulk-update 5,10,15 '{"notes": "reviewed", "isPrivate": false}'
- */
-export const bulkUpdate: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-
-  if (args.length < 2) {
-    throw createError('VALIDATION_ERROR', 'Usage: rcr records bulk-update <id,...> <json-data>');
-  }
-
-  const ids = parseIds(args[0]?.split(',') ?? []);
-  if (ids.length === 0) {
-    throw createError('VALIDATION_ERROR', 'At least one ID is required');
-  }
-
-  const data = await parseJsonInput(BulkUpdateDataSchema, args.slice(1));
-
-  try {
-    const updatedIds = await caller.records.bulkUpdate({ ids, data });
-    return success(updatedIds, { count: updatedIds.length });
-  } catch (e) {
-    if (e instanceof TRPCError) {
-      throw createError('VALIDATION_ERROR', e.message);
-    }
-    throw e;
-  }
-};
-// Alias for kebab-case CLI convention
-export { bulkUpdate as 'bulk-update' };
-
-/**
- * Delete record(s)
- * Usage: rcr records delete <id...>
- */
-export const del: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const ids = parseIds(args);
-
-  if (ids.length === 0) {
-    throw createError('VALIDATION_ERROR', 'At least one ID is required');
-  }
-
-  const result = await caller.records.delete(ids);
-  return success(result, { count: result.length });
-};
-export { del as delete };
-
-/**
- * Merge source record into target
- * Usage: rcr records merge <source-id> <target-id>
- */
-export const merge: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const sourceId = parseId(args, 0);
-  const targetId = parseId(args, 1);
-
-  if (sourceId === targetId) {
-    throw createError('VALIDATION_ERROR', 'Source and target cannot be the same record');
-  }
-
-  try {
-    const result = await caller.records.merge({ sourceId, targetId });
-    return success(result);
-  } catch (e) {
-    if (e instanceof TRPCError) {
-      if (e.code === 'NOT_FOUND') {
-        throw createError('NOT_FOUND', e.message);
-      }
-      throw createError('CONFLICT', e.message);
-    }
-    throw e;
-  }
-};
-
-/**
- * Refit all ELO scores from the stored matchup history (batch Bradley-Terry)
- * Usage: rcr records refit-elo
- */
-export const refitElo: CommandHandler = async (_args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const result = await caller.records.refitElo();
-  return success(result);
-};
-export { refitElo as 'refit-elo' };
-
-/**
- * Generate embedding for record(s)
- * Usage: rcr records embed <id...>
- */
-export const embed: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const ids = parseIds(args);
-
-  if (ids.length === 0) {
-    throw createError('VALIDATION_ERROR', 'At least one ID is required');
-  }
-
-  const results = await Promise.all(
-    ids.map(async (id) => {
-      try {
-        return await caller.records.embed({ id });
-      } catch (e) {
-        if (e instanceof TRPCError) {
-          if (e.code === 'NOT_FOUND') {
-            return { id, error: 'NOT_FOUND' };
-          }
-          return { id, error: e.message };
+const summarize = Command.make('summarize', { ids: recordIds }, ({ ids }) =>
+  respond(async () => {
+    const results = await Promise.all(
+      ids.map(async (id) => {
+        try {
+          const summary = await caller.records.summarize({ id });
+          await caller.records.upsert({ id, summary });
+          await caller.records.embed({ id });
+          return { id, summary };
+        } catch (e) {
+          if (e instanceof TRPCError) return { id, error: e.message };
+          throw e;
         }
-        throw e;
-      }
-    })
-  );
+      })
+    );
+    return success(results, { count: results.length });
+  })
+).pipe(
+  Command.withDescription(
+    'Regenerate the summary of Readwise document records and refresh their embeddings'
+  )
+);
 
-  if (ids.length === 1) {
-    const result = results[0];
-    if (result && 'error' in result) {
-      if (result.error === 'NOT_FOUND') {
-        throw createError('NOT_FOUND', `Record ${ids[0]} not found`);
-      }
-      throw createError('EMBEDDING_ERROR', result.error);
-    }
-    return success(result);
-  }
+const tree = Command.make('tree', { ids: recordIds }, ({ ids }) =>
+  respond(async () =>
+    settle(ids, await Promise.all(ids.map((id) => orNotFound(id, caller.records.tree({ id })))))
+  )
+).pipe(Command.withDescription('Get the hierarchical family tree of records'));
 
-  return success(results, { count: results.length });
-};
-
-/**
- * Regenerate the summary of Readwise document record(s) and refresh their embeddings
- * Usage: rcr records summarize <id...>
- */
-export const summarize: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const ids = parseIds(args);
-
-  if (ids.length === 0) {
-    throw createError('VALIDATION_ERROR', 'At least one ID is required');
-  }
-
-  const results = await Promise.all(
-    ids.map(async (id) => {
-      try {
-        const summary = await caller.records.summarize({ id });
-        await caller.records.upsert({ id, summary });
-        await caller.records.embed({ id });
-        return { id, summary };
-      } catch (e) {
-        if (e instanceof TRPCError) return { id, error: e.message };
-        throw e;
-      }
-    })
-  );
-
-  return success(results, { count: results.length });
-};
-
-/**
- * Get hierarchical family tree for record(s)
- * Usage: rcr records tree <id...>
- */
-export const tree: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const ids = parseIds(args);
-
-  if (ids.length === 0) {
-    throw createError('VALIDATION_ERROR', 'At least one ID is required');
-  }
-
-  const results = await Promise.all(
-    ids.map(async (id) => {
-      try {
-        return await caller.records.tree({ id });
-      } catch (e) {
-        if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-          return { id, error: 'NOT_FOUND' };
-        }
-        throw e;
-      }
-    })
-  );
-
-  if (ids.length === 1) {
-    const result = results[0];
-    if (result && 'error' in result) {
-      throw createError('NOT_FOUND', `Record ${ids[0]} not found`);
-    }
-    return success(result);
-  }
-
-  return success(results, { count: results.length });
-};
-
-/**
- * Get children of a record (records with contained_by links to this record)
- * Usage: rcr records children <id>
- *
- * This is a convenience wrapper around `tree` that returns just the children.
- */
-export const children: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const id = parseId(args);
-
-  try {
-    const treeResult = await caller.records.tree({ id });
-    const childRecords = treeResult.incomingLinks.map((link) => ({
+const children = Command.make('children', { id: recordId }, ({ id }) =>
+  respond(async () => {
+    const { incomingLinks } = await caller.records.tree({ id });
+    const childRecords = incomingLinks.map((link) => ({
       id: link.source.id,
       title: link.source.title,
       recordCreatedAt: link.source.recordCreatedAt,
       predicate: link.predicate,
     }));
     return success({ parentId: id, children: childRecords }, { count: childRecords.length });
-  } catch (e) {
-    if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-      throw createError('NOT_FOUND', `Record ${id} not found`);
-    }
-    throw e;
-  }
-};
+  })
+).pipe(Command.withDescription('List the children of a record (sources of contained_by links)'));
 
-/**
- * Get the parent of a record (the target of its contained_by link)
- * Usage: rcr records parent <id>
- *
- * This is a convenience wrapper around `tree` that returns just the parent.
- */
-export const parent: CommandHandler = async (args, options) => {
-  parseOptions(BaseOptionsSchema.strict(), options);
-  const id = parseId(args);
-
-  try {
-    const treeResult = await caller.records.tree({ id });
-    const parentLink = treeResult.outgoingLinks[0];
-    if (!parentLink) {
-      return success({ childId: id, parent: null });
-    }
+const parent = Command.make('parent', { id: recordId }, ({ id }) =>
+  respond(async () => {
+    const [link] = (await caller.records.tree({ id })).outgoingLinks;
     return success({
       childId: id,
-      parent: {
-        id: parentLink.target.id,
-        title: parentLink.target.title,
-        recordCreatedAt: parentLink.target.recordCreatedAt,
-        predicate: parentLink.predicate,
-      },
+      parent: link
+        ? {
+            id: link.target.id,
+            title: link.target.title,
+            recordCreatedAt: link.target.recordCreatedAt,
+            predicate: link.predicate,
+          }
+        : null,
     });
-  } catch (e) {
-    if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-      throw createError('NOT_FOUND', `Record ${id} not found`);
-    }
-    throw e;
-  }
-};
+  })
+).pipe(Command.withDescription('Get the parent of a record (target of its contained_by link)'));
+
+export const records = Command.make('records').pipe(
+  Command.withDescription('Manage records'),
+  Command.withSubcommands([
+    get,
+    list,
+    create,
+    update,
+    bulkUpdate,
+    del,
+    merge,
+    refitElo,
+    embed,
+    summarize,
+    tree,
+    children,
+    parent,
+  ]),
+  Command.withAlias('record')
+);

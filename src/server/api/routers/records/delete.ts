@@ -23,14 +23,17 @@ import {
 import { TRPCError } from '@trpc/server';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { createIntegrationLogger } from '@/server/integrations/common/logging';
 import { IdSchema } from '@/shared/types/api';
 import { publicProcedure } from '../../init';
+
+const logger = createIntegrationLogger('api', 'records');
 
 /** Executes a soft-delete update and logs the count of affected rows. */
 async function softDelete(query: Promise<unknown[]>, label: string): Promise<number> {
   const deleted = await query;
   if (deleted.length > 0) {
-    console.log(`Soft-deleted ${deleted.length} ${label}${deleted.length !== 1 ? 's' : ''}`);
+    logger.info(`Soft-deleted ${deleted.length} ${label}${deleted.length !== 1 ? 's' : ''}`);
   }
   return deleted.length;
 }

@@ -248,7 +248,7 @@ bun run dev
 
 ### CLI (rcr)
 
-`rcr` is a local CLI wrapper around the same tRPC procedures used by the app. It is JSON-first by default and supports a table output for quick inspection.
+`rcr` is a local CLI over the same tRPC procedures and integration runtime as the app, built for agents. Results print to stdout as `{data, meta}` JSON, and errors print to stderr as `{error: {code, message, details}}` JSON with exit code 1. Logs go to stderr, so stdout always parses.
 
 Install the CLI globally once from the repo:
 
@@ -257,47 +257,32 @@ bun link
 ```
 
 ```bash
-# General help
-rcr --help
+rcr --help                                # Commands; every command also takes --help
 
-# Records
-rcr records get 123
-rcr records get 123 --links              # Include all incoming/outgoing links
-rcr records get 123 456 789              # Multiple IDs in parallel
-rcr records list --type=entity --limit=10
-rcr records list --source=github --limit=10
-rcr records create '{"title":"Example","type":"concept"}'
+rcr records get 123 456 --links
+rcr records list --type entity --type concept --no-curated --order eloScore:desc --limit 10
+rcr records update 123 --data '{"title":"Example"}'
 
-# Search
-rcr search "machine learning"
-rcr search semantic "machine learning" --limit=5
-rcr search similar 456 --limit=5
+rcr search machine learning --limit 5     # Hybrid search
+rcr search semantic gardening --exclude 12
+rcr search similar 456
 
-# Links
-rcr links list 123
-rcr links list 123 456                   # Multiple records
-rcr links create '{"sourceId":1,"targetId":2,"predicateId":3}'
+rcr links list 123 --direction outgoing
+rcr links create --data '{"sourceId":1,"targetId":2,"predicate":"contained_by"}'
 
-# Sync integrations
-rcr sync github
-rcr sync raindrop
+rcr sync                                  # Every daily sync, then enrichment
 rcr sync readwise
-rcr sync adobe
-rcr sync browsing                       # Arc + Dia browser history (macOS)
-rcr sync twitter
-rcr sync avatars                        # Transfer avatars to R2
-rcr sync embeddings                     # Generate embeddings for records
-rcr sync                                # Run all daily syncs
+rcr enrich embeddings
 ```
 
-Notes:
+Conventions:
 
-- Outputs compact JSON by default; pipe to `jq` for formatting.
-- Unknown flags are rejected (strict parsing).
-- Most ID-based commands accept multiple IDs for parallel execution.
-- Use `--format=table` for human-readable output.
-- Use `--debug` to fetch data without writing to the database (outputs to `.temp/`).
-- Use `--` to stop option parsing when needed.
+- Subject IDs are positional; commands that accept several take them space-separated.
+- JSON payloads go in `--data` or on stdin.
+- Multi-valued filters repeat the flag (`--type entity --type concept`).
+- Boolean filters are unset unless given as `--flag` or `--no-flag`.
+- `--raw` prints only `data`; `--dev` uses the development database.
+- `rcr sync <integration> --debug` fetches without writing records and saves raw API data to `.temp/`.
 
 ## Production Build & Deployment
 

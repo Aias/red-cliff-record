@@ -1,159 +1,129 @@
-/**
- * Search commands for the CLI
- *
- * These are thin wrappers around tRPC procedures,
- * reusing all query logic from the API routers.
- */
-
 import { RecordTypeSchema } from '@hozo';
 import { TRPCError } from '@trpc/server';
-import {
-  BaseOptionsSchema,
-  CommaSeparatedIdsSchema,
-  LimitSchema,
-  parseIds,
-  parseOptions,
-} from '../lib/args';
+import { Option } from 'effect';
+import { Argument, Command, Flag } from 'effect/cli';
+import { idsArgument, limitFlag } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
 import { createError } from '../lib/errors';
-import { success } from '../lib/output';
-import type { CommandHandler } from '../lib/types';
+import { respond, success } from '../lib/output';
+import type { ResultValue } from '../lib/types';
 
 const caller = createCLICaller();
 
-const SearchLimitOptionsSchema = BaseOptionsSchema.extend({
-  limit: LimitSchema.optional(),
-}).strict();
+const queryArgument = Argument.String('query').pipe(
+  Argument.withDescription('Search terms, joined with spaces'),
+  Argument.variadic({ min: 1 })
+);
+const limitOption = limitFlag(20);
 
-const SearchTextOptionsSchema = BaseOptionsSchema.extend({
-  limit: LimitSchema.optional(),
-  type: RecordTypeSchema.optional(),
-}).strict();
-
-const SearchSemanticOptionsSchema = BaseOptionsSchema.extend({
-  limit: LimitSchema.optional(),
-  exclude: CommaSeparatedIdsSchema.optional(),
-}).strict();
-
-/**
- * Hybrid search (trigram + vector with RRF merge)
- * Usage: rcr search <query> [--limit=...]
- */
-export const hybrid: CommandHandler = async (args, options) => {
-  const parsedOptions = parseOptions(SearchLimitOptionsSchema, options);
-  const query = args.join(' ');
-  if (!query) {
-    throw createError('VALIDATION_ERROR', 'Search query is required');
-  }
-
-  const limit = parsedOptions.limit ?? 20;
-
-  const { ids } = await caller.records.list({ searchQuery: query, limit });
-
-  const results = await Promise.all(ids.map(({ id }) => caller.records.get({ id })));
-
-  return success(results, { count: results.length, limit });
+type SimilarMatches = {
+  id: number;
+  similar: Awaited<ReturnType<typeof caller.search.byRecordId>>;
 };
 
-/**
- * Full-text trigram search
- * Usage: rcr search text <query> [--type=...] [--limit=...]
- */
-export const text: CommandHandler = async (args, options) => {
-  const parsedOptions = parseOptions(SearchTextOptionsSchema, options);
-  const query = args.join(' ');
-  if (!query) {
-    throw createError('VALIDATION_ERROR', 'Search query is required');
-  }
+const text = Command.make(
+  'text',
+  {
+    query: queryArgument,
+    limit: limitOption,
+    type: Flag.Literals('type', RecordTypeSchema.options).pipe(
+      Flag.withDescription('Only records of this type'),
+      Flag.optional
+    ),
+  },
+  ({ query, limit, type }) =>
+    respond(async () => {
+      const results = await caller.search.byTextQuery({
+        query: query.join(' '),
+        filters: { recordType: Option.getOrUndefined(type) },
+        limit,
+      });
+      return success(results, { count: results.length, limit });
+    })
+).pipe(Command.withDescription('Full-text trigram search'));
 
-  const limit = parsedOptions.limit ?? 20;
-  const recordType = parsedOptions.type;
-
-  const results = await caller.search.byTextQuery({
-    query,
-    filters: { recordType },
-    limit,
-  });
-
-  return success(results, { count: results.length, limit });
-};
-
-/**
- * Semantic vector search using embeddings
- * Usage: rcr search semantic <query> [--limit=...] [--exclude=id,id,...]
- */
-export const semantic: CommandHandler = async (args, options) => {
-  const parsedOptions = parseOptions(SearchSemanticOptionsSchema, options);
-  const query = args.join(' ');
-  if (!query) {
-    throw createError('VALIDATION_ERROR', 'Search query is required');
-  }
-
-  const limit = parsedOptions.limit ?? 20;
-  const exclude = parsedOptions.exclude;
-
-  try {
-    const ids = await caller.search.byVector({
-      query,
-      limit,
-      exclude,
-    });
-
-    const results = await Promise.all(ids.map(({ id }) => caller.records.get({ id })));
-
-    return success(results, { count: results.length, limit });
-  } catch (e) {
-    if (e instanceof TRPCError) {
-      throw createError('EMBEDDING_ERROR', e.message);
-    }
-    throw e;
-  }
-};
-
-/**
- * Find records similar to given record ID(s)
- * Usage: rcr search similar <id...> [--limit=...]
- */
-export const similar: CommandHandler = async (args, options) => {
-  const parsedOptions = parseOptions(SearchLimitOptionsSchema, options);
-  const ids = parseIds(args);
-  const limit = parsedOptions.limit ?? 20;
-
-  if (ids.length === 0) {
-    throw createError('VALIDATION_ERROR', 'At least one ID is required');
-  }
-
-  const results = await Promise.all(
-    ids.map(async (id) => {
+const semantic = Command.make(
+  'semantic',
+  {
+    query: queryArgument,
+    limit: limitOption,
+    exclude: Flag.Int('exclude').pipe(
+      Flag.withDescription('Record ID to omit from results; repeatable'),
+      Flag.atLeast(0)
+    ),
+  },
+  ({ query, limit, exclude }) =>
+    respond(async () => {
       try {
-        const matches = await caller.search.byRecordId({ id, limit });
-        return { id, similar: matches };
+        const ids = await caller.search.byVector({
+          query: query.join(' '),
+          limit,
+          exclude: [...exclude],
+        });
+        const results = await Promise.all(ids.map(({ id }) => caller.records.get({ id })));
+        return success(results, { count: results.length, limit });
       } catch (e) {
-        if (e instanceof TRPCError) {
-          if (e.code === 'NOT_FOUND') {
-            return { id, error: 'NOT_FOUND' };
-          }
-          return { id, error: e.message };
-        }
+        if (e instanceof TRPCError) throw createError('EMBEDDING_ERROR', e.message);
         throw e;
       }
     })
-  );
+).pipe(
+  Command.withDescription('Semantic vector search using embeddings'),
+  Command.withExamples([
+    {
+      command: 'rcr search semantic gardening --exclude 12 --exclude 34',
+      description: 'Search by meaning, omitting records 12 and 34',
+    },
+  ])
+);
 
-  // Single ID: return just the similar records array
-  if (ids.length === 1) {
-    const id = ids[0];
-    const result = results[0];
-    if (!result || 'error' in result) {
-      const errorMsg = result?.error;
-      if (errorMsg === 'NOT_FOUND') {
-        throw createError('NOT_FOUND', `Record ${id} not found`);
+const similar = Command.make(
+  'similar',
+  { ids: idsArgument, limit: limitOption },
+  ({ ids, limit }) =>
+    respond<ResultValue>(async () => {
+      const results = await Promise.all(
+        ids.map(async (id): Promise<SimilarMatches | { id: number; error: string }> => {
+          try {
+            return { id, similar: await caller.search.byRecordId({ id, limit }) };
+          } catch (e) {
+            if (!(e instanceof TRPCError)) throw e;
+            return { id, error: e.code === 'NOT_FOUND' ? e.code : e.message };
+          }
+        })
+      );
+      const [only] = results;
+      if (only && results.length === 1) {
+        if ('error' in only) {
+          throw only.error === 'NOT_FOUND'
+            ? createError('NOT_FOUND', `Record ${only.id} not found`)
+            : createError('EMBEDDING_ERROR', only.error);
+        }
+        return success(only.similar, { count: only.similar.length, limit });
       }
-      throw createError('EMBEDDING_ERROR', errorMsg ?? 'Unknown error');
-    }
-    return success(result.similar, { count: result.similar.length, limit });
-  }
+      return success(results, { count: results.length, limit });
+    })
+).pipe(
+  Command.withDescription(
+    'Find records similar to the given records; one ID returns the matches directly, several return {id, similar} per ID'
+  )
+);
 
-  // Multiple IDs: return array of { id, similar } objects
-  return success(results, { count: results.length, limit });
-};
+export const search = Command.make(
+  'search',
+  { query: queryArgument, limit: limitOption },
+  ({ query, limit }) =>
+    respond(async () => {
+      const { ids } = await caller.records.list({ searchQuery: query.join(' '), limit });
+      const results = await Promise.all(ids.map(({ id }) => caller.records.get({ id })));
+      return success(results, { count: results.length, limit });
+    })
+).pipe(
+  Command.withDescription('Hybrid search (trigram and vector, merged with RRF)'),
+  Command.withExamples([
+    { command: 'rcr search machine learning --limit 5', description: 'Hybrid search' },
+    { command: 'rcr search text design --type concept', description: 'Trigram search by type' },
+    { command: 'rcr search similar 123 456', description: 'Records similar to 123 and 456' },
+  ]),
+  Command.withSubcommands([text, semantic, similar])
+);

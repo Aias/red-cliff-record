@@ -1,0 +1,38 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "39810f41-8d31-40bc-b83c-0fed95869796",
+  "prevIds": [
+    "d0f39fa2-8a54-4afc-895f-6b655ade0ff7"
+  ],
+  "footprints": [
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "judgments",
+        "input_tokens"
+      ],
+      "writes": [
+        "s|colprop|public.judgments.input_tokens.notNull"
+      ],
+      "reads": [
+        "n|tbl|public.judgments",
+        "n|sch|public",
+        "n|col|public.judgments.input_tokens"
+      ],
+      "sqlHash": "3fa2629d9874072f"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"judgments\",\"input_tokens\"]",
+      "set": {
+        "notNull": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+ALTER TABLE "judgments" ALTER COLUMN "input_tokens" DROP NOT NULL;
