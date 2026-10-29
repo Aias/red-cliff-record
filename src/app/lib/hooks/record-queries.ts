@@ -15,7 +15,7 @@ export function useRecord(id: DbId) {
   const [record, details] = useZeroQuery(queries.record({ id }));
   return {
     data: record,
-    isLoading: record === undefined && details.type === 'unknown',
+    isLoading: record === undefined && (details.type === 'unknown' || details.type === 'cached'),
     isError: details.type === 'error' || (record === undefined && details.type === 'complete'),
   };
 }
@@ -105,7 +105,8 @@ export function useRecordList(input: RecordListInput) {
   return {
     ids: records.map((row) => row.id),
     records,
-    isLoading: records.length === 0 && browseDetails.type === 'unknown',
+    isLoading:
+      records.length === 0 && (browseDetails.type === 'unknown' || browseDetails.type === 'cached'),
     isError: browseDetails.type === 'error',
   };
 }
@@ -114,7 +115,7 @@ export function useRecordTree(id: DbId) {
   const [tree, details] = useZeroQuery(queries.recordTree({ id }));
   return {
     data: tree,
-    isLoading: tree === undefined && details.type === 'unknown',
+    isLoading: tree === undefined && (details.type === 'unknown' || details.type === 'cached'),
     isError: details.type === 'error' || (tree === undefined && details.type === 'complete'),
   };
 }

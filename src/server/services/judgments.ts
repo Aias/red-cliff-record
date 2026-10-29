@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { judgments, type Json, type JudgmentQuestion } from '@hozo';
-import type { EntryType, Questions, RequestOptions, SystemOneResult } from '@typesafe-ai/sdk';
+import type { Questions, RequestOptions, SystemOneResult } from '@typesafe-ai/sdk';
 import { eq } from 'drizzle-orm';
 import type { z } from 'zod';
 import { db, type Db } from '@/server/db/connections/postgres';
@@ -8,7 +8,9 @@ import { getTypeSafeClient, TYPESAFE_MODEL } from '@/server/lib/typesafe';
 
 type Answers<Q extends Questions> = SystemOneResult<Q>['answers'];
 
-export function fingerprintOf(state: EntryType, questions: Questions): string {
+type JudgmentState = { [key: string]: Json };
+
+export function fingerprintOf(state: JudgmentState, questions: Questions): string {
   return createHash('sha256')
     .update(JSON.stringify({ model: TYPESAFE_MODEL, state, questions }))
     .digest('hex');
@@ -30,8 +32,10 @@ export function compactAnswers(answers: Answers<Questions>): Json {
         confidence: answer.confidence,
         probabilities,
       };
-    } else {
+    } else if (answer.type === 'score') {
       compacted[key] = { type: 'score', score: answer.score, confidence: answer.confidence };
+    } else {
+      compacted[key] = { type: 'box', box: { ...answer.box }, confidence: answer.confidence };
     }
   }
   return compacted;
@@ -43,7 +47,7 @@ export async function judge<Q extends Questions, R>(
   input: {
     recordId: number | null;
     question: JudgmentQuestion;
-    state: EntryType;
+    state: JudgmentState;
     questions: Q;
     decide: (answers: Answers<Q>) => R;
     reuse?: z.ZodType<R>;

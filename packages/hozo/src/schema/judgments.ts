@@ -28,7 +28,7 @@ export const judgments = pgTable(
     state: jsonb('state').notNull().$type<Json>(),
     answers: jsonb('answers').notNull().$type<Json>(),
     result: jsonb('result'),
-    inputTokens: integer('input_tokens').notNull(),
+    inputTokens: integer('input_tokens'),
     ...databaseTimestampsNonUpdatable,
   },
   (table) => [
