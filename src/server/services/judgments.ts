@@ -32,10 +32,8 @@ export function compactAnswers(answers: Answers<Questions>): Json {
         confidence: answer.confidence,
         probabilities,
       };
-    } else if (answer.type === 'score') {
-      compacted[key] = { type: 'score', score: answer.score, confidence: answer.confidence };
     } else {
-      compacted[key] = { type: 'box', box: { ...answer.box }, confidence: answer.confidence };
+      compacted[key] = { type: 'score', score: answer.score, confidence: answer.confidence };
     }
   }
   return compacted;
