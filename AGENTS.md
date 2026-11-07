@@ -4,7 +4,7 @@ Project overview, CLI reference, and setup: `README.md`. Integration guide: `INT
 
 ## Essential Commands
 
-- `bun check` — linting + type checking + formatting in ~1s. **Run after every non-trivial change.**
+- `bun check` — linting + type checking + formatting in ~1s. **Run after every non-trivial change.** Fix every warning it reports before handoff, including warnings in code outside your change.
 - `bunx` for package execution.
 
 ## Release Checklist

@@ -1,9 +1,9 @@
 import { LinkInsertSchema, PREDICATES, predicateSlugs } from '@hozo';
-import { Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { Command, Flag } from 'effect/cli';
 import { dataFlag, idArgument, idsArgument, parseData } from '../lib/args';
 import { createCLICaller } from '../lib/caller';
-import { respond, success } from '../lib/output';
+import { respond, respondWith, success } from '../lib/output';
 
 const caller = createCLICaller();
 
@@ -56,12 +56,10 @@ const del = Command.make('delete', { ids: idsArgument }, ({ ids }) =>
   })
 ).pipe(Command.withDescription('Delete links by ID'));
 
-const predicates = Command.make('predicates', {}, () =>
-  respond(async () => {
-    const result = Object.values(PREDICATES);
-    return success(result, { count: result.length });
-  })
-).pipe(Command.withDescription('List predicate types'));
+const predicates = Command.make('predicates', {}, () => {
+  const result = Object.values(PREDICATES);
+  return respondWith(Effect.succeed(success(result, { count: result.length })));
+}).pipe(Command.withDescription('List predicate types'));
 
 export const links = Command.make('links').pipe(
   Command.withDescription('Manage links between records'),
