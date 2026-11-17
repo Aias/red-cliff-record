@@ -91,6 +91,7 @@
     "@parcel/watcher",
   ],
   "patchedDependencies": {
+    "postgres@3.4.7": "patches/postgres@3.4.7.patch",
     "drizzle-zero@1.0.0-beta.1": "patches/drizzle-zero@1.0.0-beta.1.patch",
   },
   "packages": {
